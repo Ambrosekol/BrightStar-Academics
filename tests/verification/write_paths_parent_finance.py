@@ -93,6 +93,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import core.notifications as CN  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
@@ -126,7 +127,7 @@ with A.app.app_context():
     before_totals = A._finance_student_lifetime_totals(student_id, session_id)
 
 calls = {"email": [], "whatsapp": []}
-real_email, real_whatsapp = A._notify_guardian_email, A._notify_guardian_whatsapp
+real_email, real_whatsapp = CN._notify_guardian_email, CN._notify_guardian_whatsapp
 
 
 def fake_email(*args, **kwargs):
@@ -139,8 +140,8 @@ def fake_whatsapp(*args, **kwargs):
     return True, "sent"
 
 
-A._notify_guardian_email = fake_email
-A._notify_guardian_whatsapp = fake_whatsapp
+CN._notify_guardian_email = fake_email
+CN._notify_guardian_whatsapp = fake_whatsapp
 assess_id = None
 payment_id = None
 try:
@@ -172,7 +173,7 @@ try:
                 A.FinancePayment.student_id == student_id).order_by(A.FinancePayment.id.desc()))
         check("the payment was actually written", payment_id is not None)
 finally:
-    A._notify_guardian_email, A._notify_guardian_whatsapp = real_email, real_whatsapp
+    CN._notify_guardian_email, CN._notify_guardian_whatsapp = real_email, real_whatsapp
 
 check("assessing a fee emailed the guardian address on the student record",
       any(c[0] == "zz_pfin_guardian@example.com" for c in calls["email"]), str(calls["email"]))
@@ -267,8 +268,8 @@ def raising_whatsapp(*args, **kwargs):
     raise Exception("simulated WhatsApp outage")
 
 
-A._notify_guardian_email = raising_email
-A._notify_guardian_whatsapp = raising_whatsapp
+CN._notify_guardian_email = raising_email
+CN._notify_guardian_whatsapp = raising_whatsapp
 try:
     with A.app.test_client() as admin_c2:
         admin_c2.post("/login", data={"username": "zz_pfin_admin", "password": "PfinPass!123"})
@@ -281,7 +282,7 @@ try:
         check("recording a payment still succeeds when both notification channels raise",
               r7.status_code in (302, 303), str(r7.status_code))
 finally:
-    A._notify_guardian_email, A._notify_guardian_whatsapp = real_email, real_whatsapp
+    CN._notify_guardian_email, CN._notify_guardian_whatsapp = real_email, real_whatsapp
 
 with A.app.app_context():
     A.db.session.remove()

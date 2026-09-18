@@ -115,9 +115,9 @@ def _sqlite_pragmas(dbapi_connection, connection_record):
 from core.db_helpers import one, one_scalar, all_rows, tuples, obj, _flatten, _ignore_insert  # noqa: E402
 
 
-STATIC=os.path.join(BASE,'static')
-UPLOADS=os.path.join(STATIC,'uploads')
-IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
+# ---------------- static/uploads paths ----------------
+# Moved to core/uploads.py.
+from core.uploads import STATIC, UPLOADS, IMAGE_EXTENSIONS, _save_image_upload  # noqa: E402
 
 
 # ---------------- admin RBAC / audit ----------------
@@ -416,44 +416,6 @@ def _candidate_attempts(candidate_id):
             .where(Attempt.candidate_id==candidate_id)
             .order_by(Attempt.id.desc()))]
 
-
-def _save_image_upload(file_obj, subdir, prefix='image'):
-    if not file_obj or not getattr(file_obj, 'filename', ''):
-        return None
-    original=secure_filename(file_obj.filename)
-    ext=original.rsplit('.',1)[-1].lower() if '.' in original else ''
-    if ext not in IMAGE_EXTENSIONS:
-        raise ValueError('Please upload a PNG, JPG, JPEG, GIF or WEBP image.')
-    # Defense in depth: enforce a conservative upload limit and validate the
-    # actual image signature before persisting the file.
-    max_bytes=int(os.environ.get('CRAINBOW_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
-    stream=getattr(file_obj,'stream',None)
-    if stream is None:
-        raise ValueError('Invalid upload.')
-    pos=stream.tell()
-    stream.seek(0,2); size=stream.tell(); stream.seek(pos)
-    if size > max_bytes:
-        raise ValueError(f'Image uploads must be {max_bytes // (1024*1024)} MB or smaller.')
-    header=stream.read(16); stream.seek(pos)
-    # Validate the file signature, not merely the filename extension.
-    # The previous hardening patch accidentally escaped the hexadecimal
-    # signatures twice, which rejected genuine JPEG/GIF/WEBP files.
-    signatures={
-        'png': header.startswith(b'\x89PNG\r\n\x1a\n'),
-        'jpg': header.startswith(b'\xff\xd8\xff'),
-        'jpeg': header.startswith(b'\xff\xd8\xff'),
-        'gif': header.startswith((b'GIF87a',b'GIF89a')),
-        'webp': header.startswith(b'RIFF') and len(header)>=12 and header[8:12]==b'WEBP',
-    }
-    if not signatures.get(ext,False):
-        raise ValueError('The uploaded file does not appear to be a valid image.')
-    folder=os.path.join(UPLOADS,subdir)
-    os.makedirs(folder,exist_ok=True)
-    safe_prefix=secure_filename(str(prefix))[:80] or 'image'
-    filename=f"{safe_prefix}_{secrets.token_hex(10)}.{ext}"
-    path=os.path.join(folder,filename)
-    file_obj.save(path)
-    return f"uploads/{subdir}/{filename}"
 
 def _student_login_username(admission_no):
     """Use the student's admission number as the human-friendly login ID."""
@@ -898,11 +860,13 @@ def _student_display(row): return ' '.join(x for x in [row['first_name'],row['mi
 
 def _format_money(value): return f'₦{float(value or 0):,.2f}'
 
-def _ng_phone(value):
-    raw=''.join(ch for ch in str(value or '') if ch.isdigit() or ch=='+')
-    if raw.startswith('0') and len(raw)>=10: return '+234'+raw[1:]
-    if raw.startswith('234'): return '+'+raw
-    return raw
+# ---------------- guardian/parent notifications ----------------
+# Moved to core/notifications.py.
+from core.notifications import (  # noqa: E402
+    _ng_phone, _smtp_send, _notify_guardian_email, _notify_guardian_whatsapp,
+    _notify_guardians_of_school_work, _notify_parents_fee_assessed,
+    _notify_parents_payment_recorded,
+)
 
 def _num_words_under_1000(n):
     ones=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen']
@@ -1093,37 +1057,6 @@ def _receipt_pdf(payment_id):
 
     c.showPage(); c.save(); buf.seek(0); return buf.getvalue(),row
 
-def _smtp_use_ssl(port):
-    """Should the connection start TLS immediately, rather than upgrade via STARTTLS?
-
-    Port 465 is the long-standing convention for implicit TLS/SSL (SMTPS): the
-    server expects a TLS handshake as the very first bytes on the connection.
-    Port 587 (and 25) are plaintext-first, upgrading to TLS via STARTTLS after
-    the initial handshake. Connecting to port 465 with plain SMTP()+starttls()
-    sends a plaintext EHLO a TLS-only server never answers, which is exactly
-    what previously made receipt/recovery emails hang until they timed out.
-    CRAINBOW_SMTP_SSL overrides the auto-detection when a host doesn't follow
-    the convention.
-    """
-    override=os.environ.get('CRAINBOW_SMTP_SSL','').strip()
-    if override:
-        return override != '0'
-    return port == 465
-
-
-def _smtp_send(host, port, user, password, msg):
-    """Connect to the configured SMTP server and send a prepared message."""
-    if _smtp_use_ssl(port):
-        with smtplib.SMTP_SSL(host, port, timeout=20) as smtp:
-            if user: smtp.login(user, password)
-            smtp.send_message(msg)
-    else:
-        with smtplib.SMTP(host, port, timeout=20) as smtp:
-            if os.environ.get('CRAINBOW_SMTP_STARTTLS','1') != '0':
-                smtp.starttls()
-            if user: smtp.login(user, password)
-            smtp.send_message(msg)
-
 
 def _send_email_receipt(payment_id):
     row=_receipt_payload(payment_id)
@@ -1159,137 +1092,6 @@ def _send_whatsapp_receipt(payment_id):
     except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
     except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
 
-def _notify_guardian_email(guardian_email, subject, body):
-    """Best-effort plain-text email to a parent/guardian. Never raises."""
-    host=os.environ.get('CRAINBOW_SMTP_HOST','').strip(); user=os.environ.get('CRAINBOW_SMTP_USER','').strip(); password=os.environ.get('CRAINBOW_SMTP_PASSWORD',''); sender=os.environ.get('CRAINBOW_SMTP_FROM',user).strip(); port=int(os.environ.get('CRAINBOW_SMTP_PORT','587') or 587)
-    if not host or not sender: return False,'Email delivery is not configured.'
-    recipient=(guardian_email or '').strip()
-    if not recipient: return False,'No guardian email address on file.'
-    from email.message import EmailMessage
-    msg=EmailMessage(); msg['Subject']=subject; msg['From']=sender; msg['To']=recipient; msg.set_content(body)
-    try:
-        _smtp_send(host,port,user,password,msg)
-        return True,recipient
-    except Exception as exc: return False,f'Email delivery failed: {exc}'
-
-def _notify_guardian_whatsapp(guardian_phone, text):
-    """Best-effort plain-text WhatsApp message to a parent/guardian. Never raises."""
-    token=os.environ.get('CRAINBOW_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('CRAINBOW_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('CRAINBOW_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(guardian_phone)
-    if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured.'
-    if not recipient: return False,'No valid guardian WhatsApp number on file.'
-    payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'text','text':{'body':text}}).encode()
-    req=urllib.request.Request(f'https://graph.facebook.com/{version}/{phone_id}/messages',data=payload,method='POST',
-        headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
-    try:
-        with urllib.request.urlopen(req,timeout=8) as resp: result=json.loads(resp.read().decode())
-        return True,result.get('messages',[{}])[0].get('id',recipient)
-    except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
-    except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
-
-def _notify_guardians_of_school_work(student_ids, kind, title, due_date):
-    """Email + WhatsApp every assigned student's guardian about new work.
-
-    Best-effort and non-blocking to the caller's transaction: a missing
-    channel, unset guardian contact, or a delivery failure for one student
-    must never prevent the assignment/project itself from being saved for
-    everyone else, so every failure is swallowed and logged rather than
-    raised. Call this only after the assignment/project has been committed.
-    """
-    if not student_ids: return
-    rows=all_rows(select(Student.id,Student.first_name,Student.last_name,
-                         Student.guardian_email,Student.guardian_phone)
-                  .where(Student.id.in_(student_ids)))
-    due_text=due_date or 'no due date set'
-    for r in rows:
-        child=f"{r['first_name']} {r['last_name']}".strip()
-        subject=f'New {kind} for {child}'
-        body=(f'Dear Parent/Guardian,\n\n{child} has been given a new {kind}: "{title}".\n'
-              f'Due: {due_text}.\n\nPlease check the student/parent portal for details.\n\n'
-              'Creative Rainbow Montessori School')
-        text=f'Crainbow School: {child} has a new {kind} - "{title}". Due: {due_text}.'
-        try: _notify_guardian_email(r['guardian_email'],subject,body)
-        except Exception: app.logger.exception('Guardian email notification failed for student %s',r['id'])
-        try: _notify_guardian_whatsapp(r['guardian_phone'],text)
-        except Exception: app.logger.exception('Guardian WhatsApp notification failed for student %s',r['id'])
-
-def _parent_ids_for_student(student_id):
-    """Every parent account actively linked to a student, for in-app alerts."""
-    return [pid for (pid,) in tuples(
-        select(ParentStudentLink.parent_id)
-        .where(ParentStudentLink.student_id==student_id,ParentStudentLink.active==1))]
-
-def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, session_name, admin_id):
-    """Alert a student's parents that a new fee obligation has been charged.
-
-    Best-effort on every channel — an in-app notification per linked parent
-    account, plus email/WhatsApp to the guardian contact on the student
-    record. A missing channel or delivery failure never blocks the
-    assessment that was already committed. Call only after that commit.
-    """
-    student=one(select(Student.first_name,Student.last_name,Student.guardian_email,
-                       Student.guardian_phone).where(Student.id==student_id))
-    if not student: return
-    child=f"{student['first_name']} {student['last_name']}".strip()
-    items_text=', '.join(fee_names)
-    now=datetime.now(timezone.utc).isoformat()
-    title=f'New fee charged for {child}'
-    message=f'{items_text} — ₦{total_amount:,.2f} for {term} ({session_name}).'
-    try:
-        for pid in _parent_ids_for_student(student_id):
-            db.session.add(SchoolNotification(
-                recipient_type='parent',recipient_id=pid,student_id=student_id,
-                category='finance',title=title,message=message,
-                action_url=url_for('parent_child_finance',student_id=student_id),
-                created_at=now,created_by=admin_id))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        app.logger.exception('In-app fee-assessed notification failed for student %s',student_id)
-    subject=f'New fee charged — {child}'
-    body=(f'Dear Parent/Guardian,\n\n{child} has been charged a new fee: {items_text}.\n'
-          f'Amount: ₦{total_amount:,.2f} — {term} ({session_name}).\n\n'
-          'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          'Creative Rainbow Montessori School')
-    text=f'Crainbow School: {child} has been charged {items_text} — ₦{total_amount:,.2f} for {term}. Check the parent portal for details.'
-    try: _notify_guardian_email(student['guardian_email'],subject,body)
-    except Exception: app.logger.exception('Guardian email (fee assessed) failed for student %s',student_id)
-    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
-    except Exception: app.logger.exception('Guardian WhatsApp (fee assessed) failed for student %s',student_id)
-
-def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, admin_id):
-    """Alert a student's parents that a payment has been recorded for them.
-
-    Same best-effort contract as _notify_parents_fee_assessed. Call only
-    after the payment has been committed.
-    """
-    student=one(select(Student.first_name,Student.last_name,Student.guardian_email,
-                       Student.guardian_phone).where(Student.id==student_id))
-    if not student: return
-    child=f"{student['first_name']} {student['last_name']}".strip()
-    now=datetime.now(timezone.utc).isoformat()
-    title=f'Payment received for {child}'
-    message=f'₦{amount:,.2f} received for {category} — Receipt {receipt_no}.'
-    try:
-        for pid in _parent_ids_for_student(student_id):
-            db.session.add(SchoolNotification(
-                recipient_type='parent',recipient_id=pid,student_id=student_id,
-                category='finance',title=title,message=message,
-                action_url=url_for('parent_child_finance',student_id=student_id),
-                created_at=now,created_by=admin_id))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        app.logger.exception('In-app payment notification failed for student %s',student_id)
-    subject=f'Payment received — {child}'
-    body=(f'Dear Parent/Guardian,\n\nWe have received a payment of ₦{amount:,.2f} for {category} '
-          f'on behalf of {child}. Receipt number: {receipt_no}.\n\n'
-          'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          'Thank you,\nCreative Rainbow Montessori School')
-    text=f'Crainbow School: payment of ₦{amount:,.2f} received for {child} ({category}). Receipt {receipt_no}.'
-    try: _notify_guardian_email(student['guardian_email'],subject,body)
-    except Exception: app.logger.exception('Guardian email (payment recorded) failed for student %s',student_id)
-    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
-    except Exception: app.logger.exception('Guardian WhatsApp (payment recorded) failed for student %s',student_id)
 
 def init_db():
     """Create any missing tables and seed the reference data the app expects.
@@ -2153,100 +1955,12 @@ def _rate_limit(key, limit=10, window=300):
     return True
 
 
-PRESENCE_TIMEOUT_SECONDS=90
-
-def _presence_identity():
-    if session.get('admin_id'):
-        return 'admin', int(session['admin_id'])
-    if session.get('student_id'):
-        return 'student', int(session['student_id'])
-    if session.get('parent_id'):
-        return 'parent', int(session['parent_id'])
-    if session.get('candidate_id'):
-        return 'candidate', int(session['candidate_id'])
-    return None,None
-
-def _presence_token():
-    token=session.get('_presence_token')
-    if not token:
-        token=secrets.token_urlsafe(32)
-        session['_presence_token']=token
-    return token
-
-def touch_presence():
-    account_type,account_id=_presence_identity()
-    if not account_type or not account_id:
-        return
-    now=datetime.now(timezone.utc).isoformat()
-    token_hash=hashlib.sha256(_presence_token().encode()).hexdigest()
-    stmt=sqlite_insert(PresenceSession).values(
-        account_type=account_type,account_id=account_id,session_key_hash=token_hash,
-        first_seen=now,last_seen=now,active=1,
-        user_agent=request.headers.get('User-Agent','')[:500])
-    db.session.execute(stmt.on_conflict_do_update(
-        index_elements=['session_key_hash'],
-        set_={'last_seen':stmt.excluded.last_seen,'active':1,
-              'user_agent':stmt.excluded.user_agent}))
-    db.session.execute(sa_update(PresenceSession)
-        .where(PresenceSession.last_seen <
-               (datetime.now(timezone.utc)-timedelta(seconds=PRESENCE_TIMEOUT_SECONDS)).isoformat())
-        .values(active=0))
-    db.session.commit()
-
-def end_presence():
-    token=session.get('_presence_token')
-    if not token:
-        return
-    token_hash=hashlib.sha256(token.encode()).hexdigest()
-    db.session.execute(sa_update(PresenceSession)
-        .where(PresenceSession.session_key_hash==token_hash)
-        .values(active=0,last_seen=datetime.now(timezone.utc).isoformat()))
-    db.session.commit()
-    session.pop('_presence_token',None)
-
-def online_presence():
-    """Live counts and the roster of who is currently signed in."""
-    cutoff=(datetime.now(timezone.utc)-timedelta(seconds=PRESENCE_TIMEOUT_SECONDS)).isoformat()
-    db.session.execute(sa_update(PresenceSession)
-        .where(PresenceSession.last_seen < cutoff).values(active=0))
-
-    def live(kind):
-        return one_scalar(
-            select(func.count(func.distinct(PresenceSession.account_id)))
-            .where(PresenceSession.account_type==kind,PresenceSession.active==1,
-                   PresenceSession.last_seen>=cutoff), 0)
-
-    counts={'admins':live('admin'),'students':live('student'),'parents':live('parent')}
-    display=sa.case(
-        (PresenceSession.account_type=='admin', Admin.display_name),
-        (PresenceSession.account_type=='student',
-         func.trim(Student.first_name+' '+func.coalesce(Student.middle_name,'')+' '+Student.last_name)),
-        (PresenceSession.account_type=='parent', ParentAccount.display_name))
-    identifier=sa.case(
-        (PresenceSession.account_type=='admin', Admin.username),
-        (PresenceSession.account_type=='student', Student.admission_no),
-        (PresenceSession.account_type=='parent', ParentAccount.username))
-    stmt=(select(PresenceSession.account_type,PresenceSession.account_id,
-                 func.max(PresenceSession.last_seen).label('last_seen'),
-                 display.label('display_name'),identifier.label('identifier'),
-                 SchoolClass.name.label('class_name'))
-          .select_from(PresenceSession)
-          .outerjoin(Admin,and_(Admin.id==PresenceSession.account_id,
-                                PresenceSession.account_type=='admin'))
-          .outerjoin(Student,and_(Student.id==PresenceSession.account_id,
-                                  PresenceSession.account_type=='student'))
-          .outerjoin(ParentAccount,and_(ParentAccount.id==PresenceSession.account_id,
-                                        PresenceSession.account_type=='parent'))
-          .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
-                                           StudentEnrolment.active==1,
-                                           PresenceSession.account_type=='student'))
-          .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
-          .where(PresenceSession.active==1,PresenceSession.last_seen>=cutoff)
-          .group_by(PresenceSession.account_type,PresenceSession.account_id)
-          .order_by(PresenceSession.account_type,func.max(PresenceSession.last_seen).desc()))
-    rows=all_rows(stmt)
-    db.session.commit()
-    return counts,rows
+# ---------------- presence tracking ----------------
+# Moved to core/presence.py.
+from core.presence import (  # noqa: E402
+    PRESENCE_TIMEOUT_SECONDS, _presence_identity, touch_presence,
+    end_presence, online_presence,
+)
 
 def _clear_identity_sessions():
     for key in ('admin_id','admin_logged_in','admin_workspace','student_id','parent_id','candidate_id','attempt_id','_presence_token'):

@@ -1,6 +1,7 @@
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 APP=(ROOT/"app.py").read_text(encoding="utf-8")
+UPLOADS=(ROOT/"core"/"uploads.py").read_text(encoding="utf-8")
 
 def test_production_secret_has_no_known_fallback():
     assert "CRAINBOW_SECRET" in APP
@@ -47,9 +48,7 @@ def test_login_rate_limiting_exists():
 
 
 def test_upload_signature_validation_accepts_common_image_formats():
-    start=APP.index("def _save_image_upload")
-    end=APP.index("def _student_login_username",start)
-    route=APP[start:end]
+    route=UPLOADS[UPLOADS.index("def _save_image_upload"):]
     assert "'jpg': header.startswith(b'\\xff\\xd8\\xff')" in route
     assert "'jpeg': header.startswith(b'\\xff\\xd8\\xff')" in route
     assert "'gif': header.startswith((b'GIF87a',b'GIF89a'))" in route
