@@ -120,6 +120,14 @@ from core.db_helpers import one, one_scalar, all_rows, tuples, obj, _flatten, _i
 from core.uploads import STATIC, UPLOADS, IMAGE_EXTENSIONS, _save_image_upload  # noqa: E402
 
 
+# ---------------- presence tracking ----------------
+# Moved to core/presence.py.
+from core.presence import (  # noqa: E402
+    PRESENCE_TIMEOUT_SECONDS, _presence_identity, touch_presence,
+    end_presence, online_presence,
+)
+
+
 # ---------------- admin RBAC / audit ----------------
 # Permission catalogue, role presets, admin_required, current_admin,
 # audit_log and friends moved to core/security.py.
@@ -1702,19 +1710,8 @@ def csrf_check_request():
     token=request.form.get('_csrf_token','') or request.headers.get('X-CSRF-Token',''); expected=session.get('_csrf_token')
     return bool(expected and token and secrets.compare_digest(token,expected))
 
-def _public_settings():
-    # Public pages must still render on a partially-upgraded database where the
-    # settings table does not exist yet, hence the broad guard.
-    try:
-        return {key: value for key, value in tuples(
-            select(SchoolPublicSetting.setting_key, SchoolPublicSetting.setting_value))}
-    except Exception:
-        db.session.rollback()
-        return {}
-
-def _public_page(slug):
-    return db.session.scalars(select(SchoolPublicPage).where(
-        SchoolPublicPage.slug==slug, SchoolPublicPage.published==1)).first()
+# Moved to core/public_settings.py.
+from core.public_settings import _public_settings, _public_page  # noqa: E402
 
 @app.route('/school')
 def public_school_home():
@@ -1938,66 +1935,11 @@ app.config.update(
     SESSION_COOKIE_SECURE=(ENVIRONMENT in ('production','prod')),
 )
 
-_RATE_BUCKETS={}
-_RATE_LIMIT_LOCK=None
-
-def _rate_limit(key, limit=10, window=300):
-    """Small single-process guard for development/single-worker deployments.
-    Production must place rate limiting at the reverse proxy/shared store layer.
-    """
-    now=time.monotonic()
-    bucket=_RATE_BUCKETS.get(key,[])
-    bucket=[t for t in bucket if now-t < window]
-    if len(bucket) >= limit:
-        _RATE_BUCKETS[key]=bucket
-        return False
-    bucket.append(now); _RATE_BUCKETS[key]=bucket
-    return True
-
-
-# ---------------- presence tracking ----------------
-# Moved to core/presence.py.
-from core.presence import (  # noqa: E402
-    PRESENCE_TIMEOUT_SECONDS, _presence_identity, touch_presence,
-    end_presence, online_presence,
+# ---------------- unified login identity ----------------
+# Moved to core/accounts.py.
+from core.accounts import (  # noqa: E402
+    _rate_limit, _clear_identity_sessions, _authenticate_unified,
 )
-
-def _clear_identity_sessions():
-    for key in ('admin_id','admin_logged_in','admin_workspace','student_id','parent_id','candidate_id','attempt_id','_presence_token'):
-        session.pop(key,None)
-
-def _authenticate_unified(identifier, password):
-    """Identify the account type from the supplied login identifier.
-
-    Admin, candidate, parent and student credentials all arrive through one
-    form, so each store is tried in turn. The Admin model exposes
-    admin_type_name/admin_type_system as properties, which is what the join in
-    the pre-ORM query was for.
-    """
-    raw=(identifier or '').strip()
-    if not raw or not password: return None, None
-    admin=db.session.scalars(
-        select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
-        .where(func.lower(Admin.username)==raw.lower(),
-               Admin.active==1,AdminType.active==1)).first()
-    if admin and check_password_hash(admin.password_hash,password):
-        return 'admin',admin
-    candidate=db.session.scalars(select(Candidate).where(
-        Candidate.candidate_code==raw.upper(),Candidate.active==1)).first()
-    if candidate and check_password_hash(candidate.password_hash,password):
-        return 'candidate',candidate
-    parent=db.session.scalars(select(ParentAccount).where(
-        or_(func.lower(ParentAccount.username)==raw.lower(),
-            func.lower(func.coalesce(ParentAccount.email,''))==raw.lower()),
-        ParentAccount.active==1)).first()
-    if parent and check_password_hash(parent.password_hash,password):
-        return 'parent',parent
-    student=db.session.scalars(select(Student).where(
-        func.lower(Student.login_username)==raw.lower(),
-        Student.active==1,Student.account_active==1)).first()
-    if student and student.login_password_hash and check_password_hash(student.login_password_hash,password):
-        return 'student',student
-    return None, None
 
 @app.route('/login',methods=['GET','POST'])
 def login():
