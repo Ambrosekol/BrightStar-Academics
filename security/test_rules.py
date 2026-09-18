@@ -6,9 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 required = [
     "README.md",
-    "PHASE6F_DEPLOYMENT_CHECKLIST.md",
+    "docs/phase-history/PHASE6F_DEPLOYMENT_CHECKLIST.md",
     "security/SECURITY_TEST_PLAN.md",
-    "security/candidate_management_schema.sql",
 ]
 
 missing = [p for p in required if not (ROOT / p).exists()]

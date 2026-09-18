@@ -48,8 +48,7 @@ Incomplete source questions are not invented. Only verified question-bank conten
 This release adds candidate-management/security planning and deployment testing controls around the Phase 6E system. See:
 
 - `security/SECURITY_TEST_PLAN.md`
-- `security/candidate_management_schema.sql`
-- `PHASE6F_DEPLOYMENT_CHECKLIST.md`
+- `docs/phase-history/PHASE6F_DEPLOYMENT_CHECKLIST.md`
 
 Apply schema changes only after backing up the existing database.
 

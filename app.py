@@ -8837,10 +8837,6 @@ def admin_school_promotion():
         progressions=progressions,
         current_session=current)
 
-@app.route(
-    '/admin/school/promotion/<int:run_id>',
-    methods=['GET','POST']
-)
 @app.route('/admin/school/promotion/<int:run_id>', methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -9094,10 +9090,6 @@ def admin_school_promotion_run(run_id):
         summary=summary,
         actions=PROMOTION_ACTIONS)
 
-@app.route(
-    '/admin/school/promotion/progressions',
-    methods=['GET','POST']
-)
 @app.route('/admin/school/promotion/progressions', methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -9257,10 +9249,6 @@ def admin_school_sessions():
     return render_template('admin_school_sessions.html',sessions=sessions,
         ca_weights=_ca_weights(),ca_max=CA_MAX_SCORE,exam_max=EXAM_MAX_SCORE,terms=ACADEMIC_TERMS)
 
-@app.route(
-    '/admin/finance/payments/<int:payment_id>/allocate',
-    methods=['GET', 'POST']
-)
 @app.route('/admin/finance/payments/<int:payment_id>/allocate',methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -10252,43 +10240,3 @@ def health(): return jsonify(status='ok')
 
 
 if __name__=='__main__': init_db(); app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False)
-
-
-
-
-
-
-
-
-# =========================================================
-# CRAINBOW MESSAGING ATTACHMENT HANDLER
-# =========================================================
-import os, time
-from werkzeug.utils import secure_filename
-
-UPLOAD_FOLDER = os.path.join('static', 'uploads', 'messages')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx'}
-
-if 'UPLOAD_FOLDER' not in app.config:
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def handle_attachment_upload(file_obj):
-    if not file_obj or file_obj.filename == '':
-        return None, None
-    ext = file_obj.filename.rsplit('.', 1)[-1].lower() if '.' in file_obj.filename else ''
-    if ext not in ALLOWED_EXTENSIONS:
-        return None, None
-    filename = secure_filename(file_obj.filename)
-    unique_name = f"{int(time.time())}_{filename}"
-    save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
-    file_obj.save(save_path)
-    file_url = f"/static/uploads/messages/{unique_name}"
-    file_type = 'image' if ext in {'png', 'jpg', 'jpeg', 'gif'} else 'document'
-    return file_url, file_type
-
-
-
-
-
-# CRAINBOW FINANCE FEE EXPERIENCE V3
