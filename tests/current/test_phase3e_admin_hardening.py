@@ -4,15 +4,17 @@ import jinja2
 
 ROOT=Path(__file__).resolve().parents[2]
 APP=(ROOT/'app.py').read_text(encoding='utf-8')
+SECURITY=(ROOT/'core'/'security.py').read_text(encoding='utf-8')
 FORM=(ROOT/'templates/admin_account_form.html').read_text(encoding='utf-8')
 
 
 def test_app_compiles_and_admin_auth_flow_exists():
     ast.parse(APP)
+    ast.parse(SECURITY)
     assert '_new_admin_password' in APP
     assert "password_must_change" in APP
     assert "@app.route('/admin/password',methods=['GET','POST'])" in APP
-    assert "request.endpoint not in {'admin_password_change','admin_logout','logout'}" in APP
+    assert "request.endpoint not in {'admin_password_change','admin_logout','logout'}" in SECURITY
 
 
 def test_admin_creation_has_one_time_credentials_and_no_plain_password_field():
@@ -39,7 +41,7 @@ def test_messaging_retry_and_notification_actor_are_fixed():
     # is gone since the SQLAlchemy migration: the session owns the transaction.
     assert "if 'locked' not in str(exc).lower() or attempt_no==3" in APP
     assert 'sa.exc.OperationalError' in APP
-    block=APP[APP.index('def _notify_super_admins'):APP.index('def _create_control_item')]
+    block=SECURITY[SECURITY.index('def _notify_super_admins'):SECURITY.index('def admin_has_permission')]
     assert 'me=current_admin()' in block
     # The notification records who caused it, resolved before the exclusion rule.
     assert "actor_admin_id=me['id'] if me else None" in block

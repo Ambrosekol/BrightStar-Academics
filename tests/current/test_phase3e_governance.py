@@ -1,6 +1,7 @@
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 APP=(ROOT/'app.py').read_text(encoding='utf-8')
+SECURITY=(ROOT/'core'/'security.py').read_text(encoding='utf-8')
 BASE=(ROOT/'templates/admin_base.html').read_text(encoding='utf-8')
 CTRL=(ROOT/'templates/admin_controls.html').read_text(encoding='utf-8')
 SUB=(ROOT/'templates/school_subject_form.html').read_text(encoding='utf-8')
@@ -8,7 +9,7 @@ RES=(ROOT/'templates/student_assessment_result.html').read_text(encoding='utf-8'
 SCHRES=(ROOT/'templates/school_results.html').read_text(encoding='utf-8')
 MIG=(ROOT/'migrations/0004_governance_result_release.py').read_text(encoding='utf-8')
 def test_scope_defaults_to_whole_area():
-    assert "if not scopes: return True" in APP and "if not typed: return True" in APP
+    assert "if not scopes: return True" in SECURITY and "if not typed: return True" in SECURITY
 def test_notification_metadata():
     """Governance items must say who acted and when.
 
@@ -18,7 +19,7 @@ def test_notification_metadata():
     labels to an inline layout, so the contract is asserted on the data shown
     rather than on the surrounding HTML.
     """
-    assert "actor_display_name_snapshot" in APP
+    assert "actor_display_name_snapshot" in SECURITY
     assert "created_at" in CTRL, "controls page must show when an item occurred"
     assert ("sender_name" in CTRL or "requester_name" in CTRL), \
         "controls page must attribute each item to a person"

@@ -110,56 +110,9 @@ def _sqlite_pragmas(dbapi_connection, connection_record):
 # ---------------- query helpers ----------------
 # The application and its templates were written against sqlite3.Row, so the
 # read helpers return RowMapping objects, which still support row['column'].
-
-def one(stmt):
-    """First row as a mapping, or None."""
-    return db.session.execute(stmt).mappings().first()
-
-
-def one_scalar(stmt, default=None):
-    """First column of the first row, or `default` when there is no value."""
-    value = db.session.execute(stmt).scalar()
-    return default if value is None else value
-
-
-def all_rows(stmt):
-    """Every row as a mapping."""
-    return db.session.execute(stmt).mappings().all()
-
-
-def tuples(stmt):
-    """Every row as a plain tuple, for call sites that destructure."""
-    return db.session.execute(stmt).all()
-
-
-def obj(model, pk):
-    """Load a single mapped instance by primary key."""
-    if pk is None:
-        return None
-    return db.session.get(model, pk)
-
-
-def _flatten(row, entity_key, *extra_keys):
-    """Flatten a (entity, extra columns...) row into a single dict.
-
-    Queries that select a whole model alongside a few joined columns produce a
-    row whose first element is the instance. Templates expect one flat mapping,
-    so merge the instance's columns with the extras.
-    """
-    if row is None:
-        return None
-    entity = row[entity_key]
-    merged = {c.key: getattr(entity, c.key) for c in entity.__mapper__.column_attrs}
-    for key in extra_keys:
-        merged[key] = row[key]
-    return merged
-
-
-def _ignore_insert(model, rows):
-    """INSERT ... ON CONFLICT DO NOTHING, the SQLAlchemy form of INSERT OR IGNORE."""
-    if not rows:
-        return
-    db.session.execute(sqlite_insert(model).on_conflict_do_nothing(), rows)
+# Moved to core/db_helpers.py; imported back so every existing call site
+# (one(...), all_rows(...), etc.) keeps working unchanged.
+from core.db_helpers import one, one_scalar, all_rows, tuples, obj, _flatten, _ignore_insert  # noqa: E402
 
 
 STATIC=os.path.join(BASE,'static')
@@ -167,221 +120,16 @@ UPLOADS=os.path.join(STATIC,'uploads')
 IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
 
 
-# ---------------- administrator permission catalogue ----------------
-# The permission definitions, the role presets built from them, and the
-# endpoint -> permission map that admin_required enforces on every request.
-
-ADMIN_PERMISSION_DEFS = [
-    ('admin.access','Administration access','administration','Access the administration area.'),
-    ('admins.view','View administrators','administration','View administrator accounts.'),
-    ('admins.create','Create administrators','administration','Create ordinary administrator accounts.'),
-    ('admins.edit','Edit administrators','administration','Edit administrator accounts and access.'),
-    ('admins.deactivate','Deactivate administrators','administration','Activate or deactivate administrator accounts.'),
-    ('roles.view','View admin types','administration','View administrator types/roles.'),
-    ('roles.create','Create admin types','administration','Create administrator types and assign permissions.'),
-    ('roles.edit','Edit admin types','administration','Edit administrator types and permissions.'),
-    ('permissions.view','View permissions','administration','View the permission catalogue.'),
-    ('scopes.view','View scopes','administration','View administrator scopes.'),
-    ('scopes.assign','Assign scopes','administration','Assign class/subject/bank/session scopes.'),
-    ('audit.view','View audit logs','administration','Review administrative audit records.'),
-    ('dashboard.view','View dashboard','operations','View the administration dashboard.'),
-    ('candidates.view','View candidates','candidates','View registered candidates.'),
-    ('candidates.create','Register candidates','candidates','Register candidates.'),
-    ('candidates.edit','Edit candidates','candidates','Edit candidate records.'),
-    ('candidates.delete','Delete candidates','candidates','Delete candidate records.'),
-    ('candidates.credentials_reset','Reset candidate credentials','candidates','Reset candidate passwords.'),
-    ('candidates.credentials_print','Print candidate credentials','candidates','Print candidate credentials.'),
-    ('question_banks.view','View question banks','assessment','View question banks.'),
-    ('question_banks.create','Create question banks','assessment','Create question banks.'),
-    ('question_banks.edit','Edit question banks','assessment','Edit question-bank settings.'),
-    ('questions.create','Add questions','assessment','Add questions to banks.'),
-    ('questions.edit','Edit questions','assessment','Edit questions in banks.'),
-    ('questions.delete','Delete questions','assessment','Delete questions from banks.'),
-    ('questions.reorder','Reorder questions','assessment','Reorder questions.'),
-    ('examinations.manage','Manage examinations','assessment','Activate or deactivate examinations.'),
-    ('attempts.view','View attempts','results','View candidate attempts.'),
-    ('results.view','View results','results','View examination results.'),
-    ('results.print','Print results','results','Print candidate results.'),
-    ('results.retake','Grant retakes','results','Grant one-time retake access.'),
-    ('results.regrade','Regrade attempts','results','Regrade completed attempts.'),
-    ('results.rankings','View rankings','results','View rankings.'),
-    ('results.export','Export results','results','Export result data.'),
-    
-    ('school.view','View School Portal','school','Access the School Portal workspace.'),
-    ('school.students.view','View students','school','View enrolled school students.'),
-    ('school.students.create','Register students','school','Create enrolled student records.'),
-    ('school.students.edit','Edit students','school','Edit enrolled student records.'),
-    ('school.students.delete','Deactivate students','school','Deactivate school student records.'),
-    ('school.classes.view','View classes','school','View school classes.'),
-    ('school.classes.manage','Manage classes','school','Activate or configure school classes.'),
-    ('school.subjects.view','View subjects','school','View class subjects.'),
-    ('school.subjects.create','Create subjects','school','Create subjects and attach them to classes.'),
-    ('school.subjects.edit','Edit subjects','school','Edit subject details.'),
-    ('school.subjects.delete','Delete subjects','school','Delete unlocked subjects.'),
-    ('school.subjects.lock','Lock subjects','school','Lock or unlock class subjects.'),
-    ('school.assignments.view','View assignments','school','View school assignments.'),
-    ('school.assignments.create','Create assignments','school','Create subject assignments for students.'),
-    ('school.assignments.edit','Edit assignments','school','Edit school assignments.'),
-    ('school.assignments.delete','Delete assignments','school','Delete school assignments.'),
-    ('school.projects.view','View projects','school','View school projects.'),
-    ('school.projects.create','Create projects','school','Create class projects and tasks.'),
-    ('school.projects.edit','Edit projects','school','Edit school projects and student records.'),
-    ('school.projects.delete','Delete projects','school','Delete school projects.'),
-    ('school.tests.view','View tests','school','View school tests.'),
-    ('school.tests.create','Create tests','school','Create school tests and load questions.'),
-    ('school.tests.edit','Edit tests','school','Edit school tests and questions.'),
-    ('school.tests.delete','Delete tests','school','Delete school tests.'),
-    ('school.practice.view','View practice tests','school','View school practice resources.'),
-    ('school.practice.create','Create practice tests','school','Create practice tests and load questions.'),
-    ('school.practice.edit','Edit practice tests','school','Edit practice tests.'),
-    ('school.practice.delete','Delete practice tests','school','Delete practice tests.'),
-    ('school.examinations.view','View examinations','school','View school examinations.'),
-    ('school.examinations.create','Create examinations','school','Create school examinations and load questions.'),
-    ('school.examinations.edit','Edit examinations','school','Edit school examinations and questions.'),
-    ('school.examinations.delete','Delete examinations','school','Delete school examinations.'),
-    ('school.results.view','View student records','school','View student academic records.'),
-    ('school.results.release','Release student results','school','Set or change the school-wide academic result release schedule.'),
-    ('school.results.enter','Enter student results','school','Enter approved manual or offline student results.'),
-    ('school.results.verify','Verify student results','school','Verify compiled student result components.'),
-    ('school.results.approve','Approve student results','school','Approve student result components for release.'),
-    ('parent.view','View parent accounts','school','View parent account relationships.'),
-    ('parent.manage','Manage parent accounts','school','Create and manage parent accounts and relationships.'),
-    ('parent.feedback.view','View parent feedback','school','View parent messages and feedback assigned to the school academic team.'),
-    ('parent.feedback.manage','Manage parent feedback','school','Assign, reply to and resolve parent feedback.'),
-    ('presence.view','View live presence','administration','View authorized online account presence.'),
-    ('finance.view_own','View own finance collections','finance','View payments and collection totals recorded by the signed-in finance officer.'),
-    ('finance.record','Record payments','finance','Record student payments and generate official receipts.'),
-    ('finance.receipt.send','Send receipts','finance','Send receipts by email or WhatsApp and print/download receipts.'),
-    ('finance.view_all','View all finance','finance','View school-wide collections, balances, transactions and finance reports.'),
-    ('finance.manage','Manage finance','finance','Manage fee assessments, payment corrections and finance controls.'),
-    ('library.view','View library','library','View library books, members, loans and availability.'),
-    ('library.manage','Manage library','library','Add books, issue/return books and manage library records.'),
-    ('student.history.manage','Manage enrollment history','school','Record and review a student historical enrollment including Daycare, Crèche and Nursery.'),
-    ('website.view','View public website management','website','View school public website content and enquiries.'),
-    ('website.manage','Manage public website','website','Edit school public pages, news, contact information and public settings.'),
-    ('entrance.config.view','View entrance configurations','assessment','View entrance bank academic-period configurations.'),
-    ('entrance.config.create','Create entrance configurations','assessment','Create entrance bank configurations.'),
-    ('entrance.config.edit','Edit entrance configurations','assessment','Edit entrance bank configuration settings.'),
-    ('entrance.config.activate','Activate entrance configurations','assessment','Activate the applicable entrance configuration.'),
-    ('entrance.practice.manage','Manage entrance practice eligibility','assessment','Enable historical entrance banks for practice when eligible.'),
-]
-
-
-ADMIN_ROLE_PRESETS = {
-    'Entrance Examination Manager': {
-        'description': 'Runs day-to-day entrance examination operations, candidate registration and assessment monitoring.',
-        'permissions': ['dashboard.view','candidates.view','candidates.create','candidates.edit','candidates.credentials_reset','candidates.credentials_print','question_banks.view','attempts.view','results.view','results.print','results.rankings']
-    },
-    'Question Bank Manager': {
-        'description': 'Creates and maintains examination question banks, questions and periodized examination configurations.',
-        'permissions': ['dashboard.view','question_banks.view','question_banks.create','question_banks.edit','questions.create','questions.edit','questions.reorder','entrance.config.view','entrance.config.create','entrance.config.edit','entrance.config.activate','entrance.practice.manage']
-    },
-    'Student Records Officer': {
-        'description': 'Manages candidate registration records and candidate credentials for entrance processing.',
-        'permissions': ['dashboard.view','candidates.view','candidates.create','candidates.edit','candidates.credentials_reset','candidates.credentials_print']
-    },
-    'Results & Analytics Officer': {
-        'description': 'Reviews completed examinations, results, rankings and approved reporting data.',
-        'permissions': ['dashboard.view','attempts.view','results.view','results.print','results.rankings','results.export']
-    },
-    'Examination Supervisor': {
-        'description': 'Supervises live examination operations and handles controlled assessment actions.',
-        'permissions': ['dashboard.view','candidates.view','question_banks.view','examinations.manage','attempts.view','results.view','results.print','results.rankings']
-    },
-    'Read-Only Academic Viewer': {
-        'description': 'View-only access to examination information without the ability to change records.',
-        'permissions': ['dashboard.view','candidates.view','question_banks.view','attempts.view','results.view','results.print','results.rankings']
-    },
-    'School Records Officer': {
-        'description': 'Manages enrolled student records and class information within assigned school scopes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','parent.feedback.view']
-    },
-    'Primary Class Teacher': {
-        'description': 'Manages students, subjects and assessments for assigned primary classes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','parent.feedback.view']
-    },
-    'College Subject Teacher': {
-        'description': 'Manages the assigned subject across permitted college classes.',
-        'permissions': ['school.view','school.students.view','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view']
-    },
-    'School Academic Administrator': {
-        'description': 'Full school-portal academic administration without access to entrance-examination operations.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view']
-    },
-    'Finance Records Officer': {
-        'description': 'Records student payments, issues receipts and sees only collections recorded by the officer.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','library.view']
-    },
-    'Finance Manager': {
-        'description': 'Oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
-    },
-    'Secretary / Records Officer': {
-        'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
-        'permissions': ['dashboard.view','school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage']
-    },
-    'Librarian': {
-        'description': 'Manages books, loans, returns and library records.',
-        'permissions': ['dashboard.view','school.view','school.students.view','library.view','library.manage']
-    },
-    'Website & Content Manager': {
-        'description': 'Maintains the public school website, pages, news and contact information.',
-        'permissions': ['school.view','website.view','website.manage']
-    },
-    'Parents\' Feedback Officer': {
-        'description': 'Receives and manages parent feedback submitted through the Parent Portal.',
-        'permissions': ['school.view','parent.view','parent.feedback.view','parent.feedback.manage']
-    },
-}
-
-
-ADMIN_ENDPOINT_PERMISSIONS = {
-    'admin_dashboard':'dashboard.view','admin_candidates':'candidates.view','admin_new_candidate':'candidates.create',
-    'admin_candidate_detail':'candidates.view','admin_candidate_delete':'candidates.delete',
-    'admin_candidate_result_print':'results.print','admin_candidate_credentials_reset':'candidates.credentials_reset',
-    'admin_candidate_credentials_print':'candidates.credentials_print','admin_new_bank':'question_banks.create',
-    'admin_question_banks':'question_banks.view','admin_bank':'question_banks.view','admin_edit_bank':'question_banks.edit','admin_new_question':'questions.create',
-    'admin_edit_question':'questions.edit','admin_delete_question':'questions.delete','admin_reorder':'questions.reorder',
-    'admin_attempts':'attempts.view','admin_export_bank':'question_banks.view','admin_results':'results.view',
-    'admin_results_summary':'results.view','admin_results_summary_print':'results.print','admin_result_detail':'results.view',
-    'admin_result_print':'results.print','admin_rankings':'results.rankings','export_results_csv':'results.export',
-    'export_rankings_csv':'results.export','export_results_json':'results.export','toggle_exam':'examinations.manage',
-    'admin_entrance_config':'entrance.config.view','admin_entrance_config_save':'entrance.config.view','admin_entrance_config_activate':'entrance.config.activate','admin_entrance_config_practice':'entrance.practice.manage',
-    'admin_grant_retake':'results.retake','admin_regrade':'results.regrade',
-    'admin_workspace_home':'admin.access','admin_controls':'audit.view',
-    'admin_notification_read':'admin.access','admin_lock_resource':'audit.view','admin_unlock_resource':'audit.view','admin_control_resolve':'audit.view',
-    'admin_notification_open':'admin.access','admin_notifications':'admin.access','admin_school_enquiry_detail':'website.view','admin_school_parent_edit':'parent.manage','admin_school_parent_credentials_reset':'parent.manage','admin_school_parent_feedback_detail':'parent.feedback.view',
-    'admin_school_website':'website.view','admin_school_website_save':'website.manage','admin_school_news_new':'website.manage','admin_school_news_edit':'website.manage','admin_school_enquiries':'website.view','admin_school_enquiry_status':'website.manage',
-    'admin_account_edit':'admins.edit',
-    'admin_school_student_history_add':'student.history.manage','admin_school_student_history_edit':'student.history.manage',
-    'admin_finance_dashboard':'finance.view_own',
-'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_student_assessed_items':'finance.manage',
-    'admin_finance_record':'finance.record',
-    'admin_finance_receipt':'finance.view_own',
-    'admin_finance_receipt_print':'finance.view_own',
-    'admin_finance_receipt_pdf':'finance.view_own',
-    'admin_finance_receipt_email':'finance.receipt.send',
-    'admin_finance_receipt_whatsapp':'finance.receipt.send',
-    'admin_finance_receipt_settings':'finance.manage',
-    'admin_finance_student_account':'finance.view_own',
-    'admin_finance_payment_allocate':'finance.record',
-    'admin_library':'library.view',
-    'admin_library_book_new':'library.manage',
-'admin_library_book_edit':'library.manage','admin_library_book_toggle':'library.manage',
-    'admin_library_issue':'library.manage',
-    'admin_library_return':'library.manage',
-    'admin_school_home':'school.view','admin_school_students':'school.students.view','admin_school_student_new':'school.students.create','admin_school_student_edit':'school.students.edit','admin_school_student_toggle':'school.students.delete','admin_school_student_account_reset':'school.students.edit','admin_school_student_account_toggle':'school.students.edit','admin_school_student_account_print':'school.students.view',
-    'admin_school_classes':'school.classes.view','admin_school_class_edit':'school.classes.manage','admin_school_class_toggle':'school.classes.manage',
-    'admin_school_subjects':'school.subjects.view','admin_school_subject_new':'school.subjects.create','admin_school_subject_edit':'school.subjects.edit','admin_school_subject_delete':'school.subjects.delete','admin_school_subject_lock':'school.subjects.lock','admin_school_subject_final_lock':'school.subjects.lock','admin_school_subject_quick_create':'school.subjects.create',
-    'admin_school_assignments':'school.assignments.view','admin_school_assignment_new':'school.assignments.create','admin_school_assignment_edit':'school.assignments.edit','admin_school_assignment_delete':'school.assignments.delete','admin_school_assignment_detail':'school.assignments.view','admin_school_assignment_question_new':'school.assignments.edit','admin_school_assignment_student_update':'school.assignments.edit',
-    'admin_school_projects':'school.projects.view','admin_school_project_new':'school.projects.create','admin_school_project_edit':'school.projects.edit','admin_school_project_delete':'school.projects.delete','admin_school_project_detail':'school.projects.view','admin_school_project_student_update':'school.projects.edit',
-    'admin_school_tests':'school.tests.view','admin_school_test_new':'school.tests.create','admin_school_test_edit':'school.tests.edit','admin_school_test_delete':'school.tests.delete',
-    'admin_school_practice_tests':'school.practice.view','admin_school_practice_new':'school.practice.create','admin_school_practice_edit':'school.practice.edit','admin_school_practice_delete':'school.practice.delete',
-    'admin_school_examinations':'school.examinations.view','admin_school_examination_new':'school.examinations.create','admin_school_examination_edit':'school.examinations.edit','admin_school_examination_delete':'school.examinations.delete',
-    'admin_school_results':'school.results.view','admin_school_results_release':'school.results.release',
-    'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.verify',
-    'admin_school_assessment_detail':'school.view','admin_school_assessment_edit':'school.view','admin_school_assessment_toggle':'school.view','admin_school_assessment_question_new':'school.view','admin_school_assessment_question_delete':'school.view','admin_school_assessment_delete':'school.view',
-}
+# ---------------- admin RBAC / audit ----------------
+# Permission catalogue, role presets, admin_required, current_admin,
+# audit_log and friends moved to core/security.py.
+from core.security import (  # noqa: E402
+    ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
+    admin_required, current_admin, is_super_admin, admin_has_permission,
+    admin_permission_codes, admin_scope_allows, audit_display_detail,
+    audit_log, admin_scope_for_request, admin_access_error,
+    _notify_super_admins,
+)
 
 
 # ---------------- promotion decisions ----------------
@@ -398,20 +146,7 @@ PROMOTION_ACTIONS = {
 PROMOTION_DECISIONS = set(PROMOTION_ACTIONS.keys())
 
 
-
 # ---------------- shared query helpers ----------------
-
-def _active_admin(admin_id):
-    """Load an active administrator whose role is also active, else None."""
-    return db.session.scalars(
-        select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
-                     .where(Admin.id==admin_id,Admin.active==1,AdminType.active==1)
-    ).first()
-
-def _database_is_empty():
-    """True when the database holds no application tables yet."""
-    inspector = sa.inspect(db.engine)
-    return not [t for t in inspector.get_table_names() if not t.startswith('sqlite_')]
 
 
 def _add_missing_columns():
@@ -681,28 +416,6 @@ def _candidate_attempts(candidate_id):
             .where(Attempt.candidate_id==candidate_id)
             .order_by(Attempt.id.desc()))]
 
-def admin_required(fn):
-    @wraps(fn)
-    def wrapper(*args,**kwargs):
-        admin=current_admin()
-        if not admin:
-            session.pop('admin_logged_in',None); session.pop('admin_id',None)
-            return redirect(url_for('admin_login',next=request.path))
-        session['admin_logged_in']=True
-        if admin['password_must_change'] and request.endpoint not in {'admin_password_change','admin_logout','logout'}:
-            return redirect(url_for('admin_password_change'))
-        permission=ADMIN_ENDPOINT_PERMISSIONS.get(request.endpoint,'admin.access')
-        if not admin_has_permission(admin['id'],permission):
-            audit_log('authorization_denied','administration','endpoint',request.endpoint,{'permission':permission},False,admin)
-            return admin_access_error(permission)
-        scope_type,scope_value=admin_scope_for_request(kwargs)
-        if scope_type and not admin_scope_allows(admin['id'],scope_type,scope_value):
-            audit_log('scope_denied','administration',scope_type,scope_value,{'endpoint':request.endpoint},False,admin)
-            return admin_access_error(f'{scope_type}:{scope_value}')
-        if request.method in ('POST','PUT','PATCH','DELETE'):
-            audit_log('state_change_request','administration','endpoint',request.endpoint,{'method':request.method,'args':kwargs},True,admin)
-        return fn(*args,**kwargs)
-    return wrapper
 
 def _save_image_upload(file_obj, subdir, prefix='image'):
     if not file_obj or not getattr(file_obj, 'filename', ''):
@@ -1029,13 +742,6 @@ def init_admin_security():
                              password_hash=generate_password_hash(bootstrap_password),
                              admin_type_id=super_role,active=1,created_at=now))
 
-def current_admin():
-    aid=session.get('admin_id')
-    if not aid: return None
-    return db.session.scalars(
-        select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
-                     .where(Admin.id==aid,Admin.active==1,AdminType.active==1)
-    ).first()
 
 def admin_role_names(admin_id):
     return list(db.session.scalars(
@@ -1074,9 +780,6 @@ def _validate_admin_contact_fields(contact):
         if value and len(''.join(ch for ch in value if ch.isdigit())) < 7: errors.append(f'Enter a valid {label} number or leave it blank.')
     return errors
 
-def is_super_admin(admin=None):
-    admin=admin or current_admin()
-    return bool(admin and admin['admin_type_system'])
 
 def _admin_role_options():
     # System roles and the legacy generic Ordinary Admin role are deliberately
@@ -1092,31 +795,6 @@ def _admin_scope_label(scope_type, scope_value):
     labels={'global':'Whole entrance examination','academic_session':'Academic session','class':'Entry level / class','subject':'Subject','bank':'Question bank'}
     return labels.get(scope_type, scope_type.replace('_',' ').title()) + ('' if scope_value in (None,'','*') else f' — {scope_value}')
 
-def _notify_super_admins(title, message, severity='info', action_url=None, exclude_admin_id=None):
-    try:
-        # Resolve the actor before applying the exclusion rule. The previous
-        # implementation only populated `me` when no exclusion was supplied,
-        # causing every notification call that passed exclude_admin_id to fail
-        # silently before a notification row was written.
-        me=current_admin()
-        if exclude_admin_id is None and me and me['admin_type_system']:
-            exclude_admin_id=me['id']
-        now=datetime.now(timezone.utc).isoformat()
-        supers=db.session.scalars(
-            select(Admin.id).join(AdminType,AdminType.id==Admin.admin_type_id)
-                            .where(Admin.active==1,AdminType.active==1,AdminType.is_system==1)
-        ).all()
-        for sid in supers:
-            if exclude_admin_id and sid==exclude_admin_id: continue
-            db.session.add(AdminNotification(
-                admin_id=sid,title=title,message=message,severity=severity,action_url=action_url,
-                actor_admin_id=me['id'] if me else None,
-                actor_username_snapshot=me['username'] if me else None,
-                actor_display_name_snapshot=me['display_name'] if me else None,
-                created_at=now))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
 
 def _create_control_item(title, description, category, target_type=None, target_id=None, requested_by=None):
     try:
@@ -1181,46 +859,6 @@ def _unread_admin_message_summaries(admin_id, limit=8):
             .order_by(AdminMessage.sent_at.desc(),AdminMessage.id.desc())
             .limit(limit))
 
-def admin_has_permission(admin_id, code):
-    admin=_active_admin(admin_id)
-    if not admin: return False
-    # Every authenticated active administrator may enter the workspace shell;
-    # job-role capabilities govern the actual operational areas.
-    if code == 'admin.access': return True
-    if admin['admin_type_system']: return True
-    # A permission may be granted three ways: by the account's own admin type, by
-    # any additionally assigned role, or as a direct per-administrator override.
-    via_own_type=(select(sa.literal(1))
-        .select_from(AdminTypePermission)
-        .join(Permission,Permission.id==AdminTypePermission.permission_id)
-        .where(AdminTypePermission.admin_type_id==admin.admin_type_id,Permission.code==code))
-    via_assigned_role=(select(sa.literal(1))
-        .select_from(AdminRoleAssignment)
-        .join(AdminTypePermission,AdminTypePermission.admin_type_id==AdminRoleAssignment.admin_type_id)
-        .join(Permission,Permission.id==AdminTypePermission.permission_id)
-        .where(AdminRoleAssignment.admin_id==admin.id,Permission.code==code))
-    via_direct_grant=(select(sa.literal(1))
-        .select_from(AdminPermission)
-        .join(Permission,Permission.id==AdminPermission.permission_id)
-        .where(AdminPermission.admin_id==admin.id,Permission.code==code))
-    return one(via_own_type.union(via_assigned_role,via_direct_grant).limit(1)) is not None
-
-def admin_permission_codes(admin_id):
-    via_own_type=(select(Permission.code)
-        .select_from(Permission)
-        .join(AdminTypePermission,AdminTypePermission.permission_id==Permission.id)
-        .join(Admin,Admin.admin_type_id==AdminTypePermission.admin_type_id)
-        .where(Admin.id==admin_id))
-    via_assigned_role=(select(Permission.code)
-        .select_from(Permission)
-        .join(AdminTypePermission,AdminTypePermission.permission_id==Permission.id)
-        .join(AdminRoleAssignment,AdminRoleAssignment.admin_type_id==AdminTypePermission.admin_type_id)
-        .where(AdminRoleAssignment.admin_id==admin_id))
-    via_direct_grant=(select(Permission.code)
-        .select_from(Permission)
-        .join(AdminPermission,AdminPermission.permission_id==Permission.id)
-        .where(AdminPermission.admin_id==admin_id))
-    return {code for (code,) in tuples(via_own_type.union(via_assigned_role,via_direct_grant))}
 
 def admin_can_delegate_roles(actor_id, role_ids):
     """An administrator may only grant roles whose permissions they already hold."""
@@ -1236,160 +874,6 @@ def admin_can_delegate_roles(actor_id, role_ids):
     for type_id,code in rows: by_role.setdefault(type_id,set()).add(code)
     return all(perms.issubset(own) for perms in by_role.values())
 
-def admin_scope_allows(admin_id, scope_type=None, scope_value=None):
-    if not scope_type: return True
-    admin=_active_admin(admin_id)
-    if not admin: return False
-    if admin['admin_type_system']: return True
-    scopes=tuples(select(AdminScope.scope_type,AdminScope.scope_value)
-                    .where(AdminScope.admin_id==admin.id))
-    # An administrator with no explicit boundary works across the whole permitted area.
-    # A boundary only narrows the dimension it names (class, subject, bank, etc.).
-    if not scopes: return True
-    if any(s_type=='global' and s_value=='*' for s_type,s_value in scopes): return True
-    typed=[s_value for s_type,s_value in scopes if s_type==scope_type]
-    if not typed: return True
-    value=str(scope_value or '')
-    return any(s_value=='*' or s_value==value for s_value in typed)
-
-def audit_display_detail(log):
-    """Return a plain-language audit detail for the UI, never raw JSON/technical IDs."""
-    action = str(log['action'] or '')
-    details = log['details'] or ''
-    try:
-        payload = json.loads(details) if details else {}
-    except (TypeError, ValueError, json.JSONDecodeError):
-        payload = {}
-
-    friendly = {
-        'admin_login': 'Successful administrator sign-in.',
-        'authorization_denied': 'Access was denied for an administrative action.',
-        'scope_denied': 'The requested action was outside the administrator’s access boundary.',
-        'state_change_request': 'An administrative state change was requested.',
-        'school_student_created': 'A student record and school account were created.',
-        'school_student_updated': 'Student record details were updated.',
-        'school_student_account_reset': 'Student account credentials were reset.',
-        'school_student_account_status_changed': 'Student account access status was changed.',
-        'school_student_status_changed': 'Student record status was changed.',
-        'school_class_status_changed': 'Class status was changed.',
-        'school_subject_created': 'A school subject was created and assigned to classes.',
-        'school_subject_updated': 'School subject details were updated.',
-        'school_subject_deactivated': 'A school subject was deactivated.',
-        'school_subject_lock_changed': 'A class subject was locked or unlocked.',
-        'school_assignment_created': 'An assignment was created and assigned to students.',
-        'school_assignment_updated': 'Assignment details were updated.',
-        'school_assignment_deleted': 'An assignment was removed.',
-        'school_assessment_created': 'A school assessment was created.',
-        'school_assessment_updated': 'School assessment details were updated.',
-        'school_assessment_status_changed': 'School assessment availability was changed.',
-        'school_assessment_question_added': f"Question {payload.get('question_number')} was added to the assessment." if payload.get('question_number') else 'A question was added to the assessment.',
-        'school_assessment_question_deleted': 'A question was removed from the assessment.',
-        'school_assessment_deleted': 'A school assessment was deleted.',
-        'control_item_resolved': 'A governance review item was marked as resolved.',
-        'resource_locked': 'An examination resource was locked for review.',
-        'resource_unlocked': 'An examination resource was unlocked.',
-        'admin_created': 'An administrator account was created.',
-        'admin_access_updated': 'Administrator access and boundary settings were updated.',
-        'admin_status_changed': 'Administrator account status was changed.',
-        'role_created': 'A staff role was created.',
-        'role_updated': 'A staff role was updated.',
-        'question_bank_created': 'A question bank was created.',
-        'question_bank_updated': 'Question bank settings were updated.',
-        'question_added': 'A question was added to a question bank.',
-        'question_updated': 'A question was updated.',
-        'question_deleted': 'A question was removed.',
-        'questions_reordered': 'Question order was changed.',
-        'admin_logout': 'Administrator signed out.',
-        'student_login': 'Student signed in.',
-        'student_logout': 'Student signed out.',
-        'candidate_login': 'Entrance candidate signed in.',
-        'candidate_logout': 'Entrance candidate signed out.',
-        'parent_login': 'Parent signed in.',
-        'parent_logout': 'Parent signed out.',
-        'parent_password_changed': 'Parent password was changed.',
-        'parent_account_created': 'A parent account was created and linked to students.',
-        'entrance_config_created': 'An entrance examination configuration was created.',
-        'entrance_config_updated': 'An entrance examination configuration was updated.',
-        'entrance_config_activated': 'An entrance examination configuration was activated.',
-        'entrance_practice_eligibility_changed': 'Historical entrance practice eligibility was changed.',
-        'school_manual_result_entered': 'A manual/offline result was entered.',
-        'school_result_edited': 'A school result was edited and returned for verification.',
-        'school_result_verify': 'A school result was verified.',
-        'school_result_approve': 'A school result was approved.',
-        'school_result_release': 'A school result was released.',
-        'school_subject_final_locked': 'A school class subject was permanently locked.',
-        'school_assignment_question_added': 'A CBT-style assignment question was added.',
-        'school_assignment_student_updated': 'A student assignment record was updated.',
-        'school_project_created': 'A school project was created.',
-        'school_project_updated': 'A school project was updated.',
-        'school_project_deleted': 'A school project was removed.',
-        'school_project_student_updated': 'A student project record was updated.',
-        'parent_feedback_replied': 'A parent feedback message received a school reply.',
-        'parent_feedback_status_changed': 'A parent feedback status was changed.',
-
-    }
-    return friendly.get(action, 'Administrative activity recorded.')
-
-def audit_log(action,module,target_type=None,target_id=None,details=None,success=True,admin=None):
-    try:
-        admin=admin or current_admin()
-        db.session.add(AuditLog(
-            admin_id=admin['id'] if admin else None,
-            username_snapshot=admin['username'] if admin else None,
-            action=action,module=module,target_type=target_type,
-            target_id=str(target_id) if target_id is not None else None,
-            details=json.dumps(details,ensure_ascii=False,sort_keys=True) if isinstance(details,(dict,list)) else (str(details) if details else None),
-            ip_address=request.headers.get('X-Forwarded-For',request.remote_addr or ''),
-            user_agent=request.headers.get('User-Agent','')[:500],
-            success=1 if success else 0,
-            created_at=datetime.now(timezone.utc).isoformat()))
-        db.session.commit()
-        if success and action in {'admin_created','admin_status_changed','role_created'}:
-            labels={'admin_created':'A new administrator account was created.','admin_status_changed':'An administrator account status changed.','role_created':'A new staff role was created.'}
-            _notify_super_admins('Administrative change', labels.get(action,'A significant administrative change was recorded.'), 'warning', url_for('admin_controls') if request else None, admin['id'] if admin else None)
-    except Exception:
-        db.session.rollback()
-
-def admin_scope_for_request(kwargs):
-    if request.endpoint and request.endpoint.startswith('admin_account_'): return None,None
-    # Legacy collection pages currently expose mixed resources, so they require
-    # an explicit global scope until resource-aware filtering is added to those pages.
-    if request.endpoint in {'admin_candidates','admin_results','admin_results_summary','admin_results_summary_print','admin_rankings','admin_attempts','export_results_csv','export_rankings_csv','export_results_json'}:
-        return 'global','*'
-    if 'bid' in kwargs: return 'bank',kwargs.get('bid')
-    if 'cid' in kwargs:
-        target_class=one_scalar(select(Candidate.target_class).where(Candidate.id==kwargs['cid']))
-        return ('class',target_class) if target_class is not None else (None,None)
-    if 'aid' in kwargs:
-        bank_id=one_scalar(select(Attempt.bank_id).where(Attempt.id==kwargs['aid']))
-        return ('bank',bank_id) if bank_id is not None else (None,None)
-    return None,None
-
-def admin_access_error(item):
-    friendly={
-        'admin.access':'Administration access',
-        'dashboard.view':'View the examination overview',
-        'candidates.view':'View candidates',
-        'candidates.create':'Register candidates',
-        'question_banks.view':'View question banks',
-        'question_banks.create':'Create question banks',
-        'question_banks.edit':'Edit question banks',
-        'questions.create':'Add questions',
-        'questions.edit':'Edit questions',
-        'questions.delete':'Delete questions',
-        'results.view':'View results',
-        'results.rankings':'View rankings',
-        'attempts.view':'View examination activity',
-        'audit.view':'View controls and alerts',
-        'admins.view':'Manage administrators',
-        'admins.create':'Create administrators',
-        'admins.edit':'Edit administrator access',
-        'Super Admin control':'Super Admin control',
-        'Super Admin role management':'Super Admin role management',
-        'Super Admin approval':'Super Admin approval',
-        'Protected Super Admin account':'Protected Super Admin account',
-    }
-    return render_template('admin_forbidden.html',item=friendly.get(item,item.replace('_',' ').replace('.',' — ').title() if isinstance(item,str) else item),),403
 
 def _finance_can_view_all(admin=None):
     admin=admin or current_admin()
@@ -2667,7 +2151,6 @@ def _rate_limit(key, limit=10, window=300):
         return False
     bucket.append(now); _RATE_BUCKETS[key]=bucket
     return True
-
 
 
 PRESENCE_TIMEOUT_SECONDS=90
