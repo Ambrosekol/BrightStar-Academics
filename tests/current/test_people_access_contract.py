@@ -8,8 +8,9 @@ MSG=(ROOT/'templates/admin_messages.html').read_text(encoding='utf-8')
 MIG=(ROOT/'migrations/0003_admin_people_messaging.py').read_text(encoding='utf-8')
 
 def test_multi_role_model_and_ui():
-    # The join table is declared in models.py; app.py uses the mapped class.
-    MODELS=(ROOT/'models.py').read_text(encoding='utf-8')
+    # The join table is declared under models/ (a package split by domain);
+    # app.py uses the mapped class.
+    MODELS="\n".join(p.read_text(encoding='utf-8') for p in sorted((ROOT/'models').glob('*.py')))
     assert "__tablename__ = 'admin_role_assignments'" in MODELS
     assert 'AdminRoleAssignment' in APP
     assert 'name="admin_type_ids"' in FORM

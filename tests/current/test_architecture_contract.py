@@ -6,7 +6,18 @@ import ast
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "app.py"
-MODELS = ROOT / "models.py"
+MODELS_DIR = ROOT / "models"
+
+
+def _models_text():
+    """Concatenated source of every module in the models/ package.
+
+    models.py used to be one file; it's now a package split by domain
+    (models/school.py, models/finance.py, ...), so a single-file read no
+    longer sees every model. Reading every .py under models/ keeps this
+    check correct regardless of how the package is further subdivided.
+    """
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(MODELS_DIR.glob("*.py")))
 
 
 def test_app_parses():
@@ -45,7 +56,7 @@ def test_core_domain_tables_are_declared_and_used():
     checks both halves rather than grepping app.py for raw SQL table names.
     """
     app_text = APP.read_text(encoding="utf-8")
-    models_text = MODELS.read_text(encoding="utf-8")
+    models_text = _models_text()
     for table, model in (
         ("school_assessments", "SchoolAssessment"),
         ("school_questions", "SchoolQuestion"),

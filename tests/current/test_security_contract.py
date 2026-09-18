@@ -18,10 +18,10 @@ def test_student_assessment_does_not_render_correct_option():
 def test_exam_client_uses_frozen_snapshot():
     """The exam is served from the per-attempt snapshot, not the live bank.
 
-    The snapshot table is declared in models.py since the SQLAlchemy migration,
+    The snapshot table is declared under models/ (a package split by domain),
     so the route is checked for the mapped class rather than the table name.
     """
-    MODELS=(ROOT/"models.py").read_text(encoding="utf-8")
+    MODELS="\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT/"models").glob("*.py")))
     assert "__tablename__ = 'attempt_questions'" in MODELS
     assert "AttemptQuestion" in APP
     start=APP.index("def exam():")

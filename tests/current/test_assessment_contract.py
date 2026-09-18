@@ -12,9 +12,9 @@ def test_student_test_and_exam_share_required_interaction_contract():
         assert phrase in CONTRACT
 
 def test_persistent_student_attempt_model_exists():
-    # The attempt tables are declared in models.py and referred to in app.py by
-    # their mapped classes since the SQLAlchemy migration.
-    MODELS=(ROOT/"models.py").read_text(encoding="utf-8")
+    # The attempt tables are declared under models/ (a package split by domain)
+    # and referred to in app.py by their mapped classes.
+    MODELS="\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT/"models").glob("*.py")))
     for table,model in (("school_assessment_attempts","SchoolAssessmentAttempt"),
                         ("school_assessment_attempt_questions","SchoolAssessmentAttemptQuestion"),
                         ("school_assessment_answers","SchoolAssessmentAnswer")):
