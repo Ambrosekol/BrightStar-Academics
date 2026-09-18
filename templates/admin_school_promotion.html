@@ -1,0 +1,119 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div class="cr-promo-page">
+
+    <div class="page-hero">
+        <div>
+            <div class="eyebrow">ACADEMIC ADMINISTRATION</div>
+            <h1>Promotion &amp; Session Rollover</h1>
+            <p>
+                Prepare the next-session class placement for students,
+                review exceptions, and commit the rollover safely in bulk.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-secondary"
+               href="{{ url_for('admin_school_promotion_progressions') }}">
+                Configure Progression
+            </a>
+        </div>
+    </div>
+
+    <div class="cr-promo-notice">
+        <strong>No automatic silent promotion.</strong>
+        Generating a draft does not change any student enrolment.
+        Changes occur only after an authorised administrator reviews,
+        approves and commits the promotion run.
+    </div>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">CREATE ROLLOVER</span>
+                <h2>Prepare a Promotion Draft</h2>
+                <p>Select the completed session and the destination session.</p>
+            </div>
+        </div>
+
+        <form method="post" class="cr-promo-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="generate">
+
+            <label>
+                From Session
+                <select name="from_session_id" required>
+                    <option value="">Select source session</option>
+                    {% for s in sessions %}
+                    <option value="{{ s.id }}"
+                        {% if current_session and s.id == current_session.id %}selected{% endif %}>
+                        {{ s.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                To Session
+                <select name="to_session_id" required>
+                    <option value="">Select destination session</option>
+                    {% for s in sessions %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <button class="btn btn-primary" type="submit">
+                Generate Promotion Draft
+            </button>
+        </form>
+    </section>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">CONFIGURATION</span>
+                <h2>Current Class Progression</h2>
+                <p>
+                    These rules determine the default proposed destination
+                    for each class.
+                </p>
+            </div>
+        </div>
+
+        <div class="cr-promo-table-wrap">
+            <table class="cr-promo-table">
+                <thead>
+                    <tr>
+                        <th>Current Class</th>
+                        <th>Next Class</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in progressions %}
+                    <tr>
+                        <td><strong>{{ p.from_class_name }}</strong></td>
+                        <td>
+                            {% if p.to_class_name %}
+                                {{ p.to_class_name }}
+                            {% else %}
+                                <span class="cr-promo-muted">Terminal / no default</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="cr-promo-status">Active</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="cr-promo-empty">
+                            No progression rules configured yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

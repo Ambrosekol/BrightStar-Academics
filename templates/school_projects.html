@@ -1,0 +1,46 @@
+{% extends 'admin_base.html' %}
+{% block title %}Projects — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Create practical classroom projects, give them a required date, and record completion and scores.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
+<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_projects')}}">← All classes</a>{% endif %}</div>
+<div class="segment-card-grid school-segment-grid">{% for c in class_cards %}<a class="segment-card {% if selected_class==c.name %}selected{% endif %}" href="{{url_for('admin_school_projects',class=c.name)}}"><div class="segment-icon">{{c.name.split(' ')[0][:1]}}{{c.name.split(' ')[1][:1] if c.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{c.name}}</h2><p>{{c.count}} project{{'' if c.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
+{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Choose a class.</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% endif %}
+
+{% if selected_class %}
+<dialog class="cr-modal" id="projectsModal">
+  <div class="cr-modal-head">
+    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} Projects</h2><p>{{projects|length}} project{{'' if projects|length==1 else 's'}} shown.</p></div>
+    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('projectsModal').close()">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <form class="register-search" method="get" style="margin-bottom:16px">
+      <input type="hidden" name="class" value="{{selected_class}}">
+      <input name="q" value="{{search}}" placeholder="Search project or subject">
+      <button class="btn btn-light" type="submit">Search</button>
+      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_projects',class=selected_class)}}">Clear search</a>{% endif %}
+      <a class="btn btn-light" href="{{url_for('admin_school_projects')}}">← All classes</a>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Project</th><th>Subject</th><th>Students</th><th>Given</th><th>Required</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for p in projects %}
+          <tr>
+            <td><strong>{{p.title}}</strong><small>{{p.instructions|truncate(80) if p.instructions else 'No instructions'}}</small></td>
+            <td>{{p.subject_name}}</td>
+            <td>{{p.student_count}}</td>
+            <td>{{p.date_given}}</td>
+            <td>{{p.due_date or '—'}}</td>
+            <td><a class="btn btn-light btn-small" href="{{url_for('admin_school_project_detail',project_id=p.id)}}">Open</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="muted">No projects found in {{selected_class}}.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</dialog>
+<script>document.getElementById('projectsModal')?.showModal();</script>
+{% endif %}
+{% endblock %}

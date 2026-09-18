@@ -1,0 +1,147 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div class="cr-promo-page">
+
+    <div class="page-hero">
+        <div>
+            <div class="eyebrow">PROMOTION REVIEW</div>
+            <h1>{{ run.from_session_name }} → {{ run.to_session_name }}</h1>
+            <p>
+                Review the proposed destinations before approval and final
+                session rollover.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <span class="cr-promo-run-status cr-promo-run-{{ run.status }}">
+                {{ run.status|upper }}
+            </span>
+        </div>
+    </div>
+
+    <div class="cr-promo-kpis">
+        <div><strong>{{ summary.total }}</strong><span>Total Students</span></div>
+        <div><strong>{{ summary.promote }}</strong><span>Promote</span></div>
+        <div><strong>{{ summary.repeat }}</strong><span>Repeat</span></div>
+        <div><strong>{{ summary.transfer }}</strong><span>Transfer</span></div>
+        <div><strong>{{ summary.graduate }}</strong><span>Graduate</span></div>
+        <div><strong>{{ summary.hold }}</strong><span>Hold</span></div>
+    </div>
+
+    {% if run.status in ['draft','approved'] %}
+    <form method="post">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div class="cr-promo-toolbar">
+            <div>
+                <strong>Review student decisions</strong>
+                <span>
+                    Promote is the default where a progression rule exists.
+                </span>
+            </div>
+
+            <div class="cr-promo-actions">
+                {% if run.status == 'draft' %}
+                <button name="action" value="save"
+                        class="btn btn-secondary">
+                    Save Decisions
+                </button>
+                <button name="action" value="approve"
+                        class="btn btn-primary">
+                    Approve Promotion
+                </button>
+                {% elif run.status == 'approved' %}
+                <button name="action" value="commit"
+                        class="btn btn-primary"
+                        onclick="return confirm('Commit this promotion run? This will create the destination-session enrolments.');">
+                    Commit Rollover
+                </button>
+                {% endif %}
+
+                <button name="action" value="cancel"
+                        class="btn btn-danger"
+                        onclick="return confirm('Cancel this promotion draft?');">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <div class="cr-promo-table-wrap">
+            <table class="cr-promo-table cr-promo-review">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Current Class</th>
+                        <th>Proposed Class</th>
+                        <th>Decision</th>
+                        <th>Final Class</th>
+                        <th>Reason / Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <input type="hidden"
+                                   name="item_id"
+                                   value="{{ item.id }}">
+                            <strong>
+                                {{ item.first_name }}
+                                {% if item.middle_name %}{{ item.middle_name }}{% endif %}
+                                {{ item.last_name }}
+                            </strong>
+                            <small>{{ item.admission_no }}</small>
+                        </td>
+
+                        <td>{{ item.source_class_name or '—' }}</td>
+
+                        <td>
+                            {{ item.proposed_class_name or 'Terminal' }}
+                        </td>
+
+                        <td>
+                            <select name="action_{{ item.id }}">
+                                {% for key,label in actions.items() %}
+                                <option value="{{ key }}"
+                                    {% if item.action == key %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                        <td>
+                            <select name="target_{{ item.id }}">
+                                <option value="">No target</option>
+                                {% for c in classes %}
+                                <option value="{{ c.id }}"
+                                    {% if item.final_class_id == c.id %}selected{% endif %}>
+                                    {{ c.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                        <td>
+                            <input type="text"
+                                   name="reason_{{ item.id }}"
+                                   value="{{ item.reason or '' }}"
+                                   placeholder="Optional note">
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="cr-promo-empty">
+                            No students were found in the source session.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </form>
+    {% endif %}
+
+</div>
+{% endblock %}

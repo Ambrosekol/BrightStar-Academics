@@ -1,0 +1,174 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% set school_title = (public_settings.get('school_name') if public_settings else None) or (settings.get('school_name') if settings else None) or 'Creative Rainbow Montessori School' %}
+  {% set motto = (public_settings.get('school_motto') if public_settings else None) or (settings.get('school_motto') if settings else None) or 'Growing in humility and fear of God' %}
+  <title>Portal Sign In — {{ school_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #ffffff;
+      min-height: 100vh;
+    }
+    .login-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+    .login-brand-panel {
+      flex: 1;
+      background: linear-gradient(rgba(8, 41, 79, 0.85), rgba(8, 41, 79, 0.92)), url("{{ url_for('static', filename='images/school/Lumii_20250403_151442326.jpg') }}") center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3.5rem;
+      color: #ffffff;
+    }
+    .login-form-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2.5rem;
+      background-color: #ffffff;
+    }
+    .form-wrapper {
+      width: 100%;
+      max-width: 420px;
+    }
+    .brand-logo-img {
+      max-height: 90px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.4rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .btn-submit {
+      width: 100%;
+      background: #08294f;
+      color: white;
+      border: none;
+      padding: 0.9rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover {
+      background: #0284c7;
+    }
+    .info-callout {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+    @media (max-width: 900px) {
+      .login-brand-panel { display: none; }
+      .login-form-panel { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    
+    <!-- Left Panel: Brand Experience -->
+    <div class="login-brand-panel">
+      <div>
+        <a href="{{ url_for('index') }}" style="color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 0.95rem;">← Back to Main Website</a>
+      </div>
+      <div>
+        <span style="color: #38bdf8; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Official School Portal</span>
+        <h1 style="font-size: 2.75rem; font-weight: 800; margin: 0.5rem 0 1rem 0; line-height: 1.2;">{{ school_title }}</h1>
+        <p style="color: #cbd5e1; font-size: 1.1rem; line-height: 1.6; max-width: 480px;">
+          Access your personalized dashboard for academic tracking, online CBT assessments, and school communications.
+        </p>
+      </div>
+      <div>
+        <p style="font-style: italic; color: #94a3b8; margin: 0; font-size: 0.95rem;">"{{ motto }}"</p>
+      </div>
+    </div>
+
+    <!-- Right Panel: Login Form -->
+    <div class="login-form-panel">
+      <div class="form-wrapper">
+        
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <img src="{{ url_for('static', filename='images/school_logo.png') }}" alt="Creative Rainbow Logo" class="brand-logo-img">
+          <h2 style="font-size: 1.75rem; color: #08294f; margin: 0; font-weight: 700;">Portal Sign In</h2>
+          <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.4rem;">Enter your assigned ID or username to continue</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div style="padding: 0.85rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem; {% if category == 'success' %}background: #dcfce7; color: #166534;{% else %}background: #fee2e2; color: #991b1b;{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST">
+          <div class="form-group">
+            <label for="username">Username, Student ID or Candidate ID</label>
+            <input type="text" id="username" name="username" placeholder="e.g. CRMS-2026-0001" required autofocus>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn-submit">Sign In Securely →</button>
+        </form>
+
+        <div class="info-callout">
+          <strong>Need Access Credentials?</strong><br>
+          Student, candidate, and parent accounts are provisioned directly by the school administration desk. Please contact the school office if you require credential assistance.
+        </div>
+
+        <div style="text-align: center; margin-top: 1.5rem;">
+          <a href="{{ url_for('public_school_contact') }}" style="color: #0284c7; font-weight: 600; text-decoration: none; font-size: 0.9rem;">Need Help or Forgot Password?</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

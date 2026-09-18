@@ -1,0 +1,54 @@
+{
+  "phase": "6G",
+  "banks": [
+    {
+      "id": "jss3_english_2026",
+      "name": "JSS 3 → SS 1 Entrance — English Studies (Objective)",
+      "question_count": 40,
+      "source_status": "verified_from_supplied_question_sheet"
+    },
+    {
+      "id": "phase6b_test",
+      "name": "Phase 6B Engine Test Bank",
+      "question_count": 10,
+      "source_status": "verified_from_supplied_question_sheet"
+    }
+  ],
+  "pending_banks": [
+    "Year 7 Mathematics",
+    "Year 10 Mathematics",
+    "Year 7 English",
+    "General Knowledge"
+  ],
+  "pending_reason": "The available source material for these banks is incomplete/contains image placeholders in the parsed text; they are not silently reconstructed in Phase 6C.",
+  "admin_features": [
+    "admin_login",
+    "dashboard_metrics",
+    "question_bank_create_edit",
+    "question_crud",
+    "candidate_attempt_history",
+    "bank_json_export"
+  ],
+  "candidate_features": [
+    "admin_candidate_registration",
+    "entry_level_based_three_paper_assignment",
+    "candidate_id_password_login",
+    "candidate_dashboard",
+    "paper_by_paper_sessions",
+    "admin_only_individual_results",
+    "admin_only_cumulative_results",
+    "existing_timer_grading_and_retake_support_preserved"
+  ],
+  "assignment_rules": {
+    "JSS 1": [
+      "Mathematics (Year 7)",
+      "English (Year 7)",
+      "General Knowledge (shared)"
+    ],
+    "SS 1": [
+      "Mathematics (Year 10)",
+      "English (Year 10)",
+      "General Knowledge (shared)"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{% extends 'admin_base.html' %}
+{% block title %}Students — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / STUDENTS</div><h1>Students</h1><p class="hero-copy">Choose a class first. The student register then opens instantly in a panel, with a direct route to each complete student record.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_student_new')}}">+ Register Student</a></div></div>
+<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Student records are deliberately separated by their current academic class.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_students')}}">← All classes</a>{% endif %}</div>
+<div class="segment-card-grid school-segment-grid">
+{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_students',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} enrolled student{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}
+</div>
+{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Student register boundary.</strong><span>Select a class above to open its student register.</span></div>{% endif %}
+
+{% if selected_class %}
+<dialog class="cr-modal" id="studentsModal">
+  <div class="cr-modal-head">
+    <div>
+      <div class="section-label">SCHOOL CLASS</div>
+      <h2>{{selected_class}} Students</h2>
+      <p>Current session: {{school_session.name if school_session else 'Not configured'}} · {{students|length}} student{{'' if students|length==1 else 's'}} shown</p>
+    </div>
+    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('studentsModal').close()">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <form class="register-search" method="get" style="margin-bottom:16px">
+      <input type="hidden" name="class" value="{{selected_class}}">
+      <input name="q" value="{{search}}" placeholder="Search student, admission number or guardian">
+      <button class="btn btn-light" type="submit">Search</button>
+      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_students',class=selected_class)}}">Clear search</a>{% endif %}
+      <a class="btn btn-light" href="{{url_for('admin_school_students')}}">← All classes</a>
+    </form>
+    <div class="table-scroll">
+      <table class="segmented-table">
+        <thead><tr><th>Student</th><th>Admission No.</th><th>Gender</th><th>Guardian</th><th>Academic record</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td><div class="person-cell"><span class="table-avatar image-avatar">{% if s.photo_path %}<img src="{{url_for('static',filename=s.photo_path)}}" alt="">{% else %}{{s.first_name[:1]|upper}}{{s.last_name[:1]|upper}}{% endif %}</span><div><strong>{{s.first_name}} {{s.middle_name or ''}} {{s.last_name}}</strong><small>{{s.date_of_birth or 'Date of birth not set'}}</small></div></div></td>
+            <td><span class="candidate-code">{{s.admission_no}}</span></td>
+            <td>{{s.gender or '—'}}</td>
+            <td>{{s.guardian_name or '—'}}<small>{{s.guardian_phone or 'No phone recorded'}}</small></td>
+            <td>Profile, results, assignments &amp; enrolment</td>
+            <td><a class="btn btn-primary btn-small" href="{{url_for('admin_school_student_detail',sid=s.id)}}">View</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty-state"><strong>No students found in {{selected_class}}.</strong><p>Register a student or clear the search.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</dialog>
+<script>document.getElementById('studentsModal')?.showModal();</script>
+{% endif %}
+{% endblock %}

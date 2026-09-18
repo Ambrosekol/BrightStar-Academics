@@ -1,0 +1,102 @@
+{% extends 'admin_base.html' %}
+{% block title %}Receipt Settings — Crainbow Administration{% endblock %}
+{% block content %}
+<style>
+.sig-current{display:flex;align-items:center;gap:18px;padding:16px;background:#f5f8fb;border:1px solid #dce6ee;border-radius:10px;margin-bottom:22px}
+.sig-current img{max-height:60px;max-width:220px;background:#fff;border:1px solid #dce6ee;border-radius:6px;padding:6px}
+.sig-current .sig-empty{color:#637b91;font-style:italic}
+.sig-pad-wrap{background:#fff;border:2px dashed #b8c6d4;border-radius:10px;padding:10px;display:inline-block}
+#sigPad{display:block;background:#fff;border-radius:6px;touch-action:none;cursor:crosshair}
+.sig-pad-actions{margin-top:10px;display:flex;gap:10px}
+.form-section{margin-bottom:26px}
+.form-section-title{font-weight:800;margin-bottom:10px;color:#102f3e}
+</style>
+<div class="page-hero"><div><div class="eyebrow">FINANCE &amp; BURSARY</div><h1>Receipt Settings</h1><p class="hero-copy">Configure the authorised signature that appears on every printed, PDF and emailed payment receipt.</p></div></div>
+
+<div class="card modern-form" style="max-width:760px;margin:0 auto">
+
+  {% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+  <div class="form-section">
+    <div class="form-section-title">Current authorised signature</div>
+    <div class="sig-current">
+      {% if signature_path %}
+        <img src="{{ url_for('static',filename=signature_path) }}" alt="Authorised signature">
+        <form method="post" action="{{ url_for('admin_finance_receipt_settings') }}" onsubmit="return confirm('Remove the authorised signature? Receipts will show a blank signature line until a new one is set.');">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="remove">
+          <button class="btn btn-light" type="submit">Remove signature</button>
+        </form>
+      {% else %}
+        <span class="sig-empty">No signature configured yet — receipts show a blank signature line.</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">Draw a signature</div>
+    <p class="muted">Sign with a mouse, stylus or finger, then save.</p>
+    <form method="post" action="{{ url_for('admin_finance_receipt_settings') }}" id="drawForm">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="draw">
+      <input type="hidden" name="signature_data_url" id="signatureDataUrl">
+      <div class="sig-pad-wrap">
+        <canvas id="sigPad" width="560" height="180"></canvas>
+      </div>
+      <div class="sig-pad-actions">
+        <button type="button" class="btn btn-light" id="sigClear">Clear</button>
+        <button type="submit" class="btn btn-primary" id="sigSave">Save drawn signature</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">Or upload a signature image</div>
+    <p class="muted">A scanned or photographed signature on a plain background works best (PNG, JPG, GIF or WEBP).</p>
+    <form method="post" action="{{ url_for('admin_finance_receipt_settings') }}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="upload">
+      <div class="field">
+        <input type="file" name="signature_file" accept="image/png,image/jpeg,image/gif,image/webp" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload signature</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var canvas=document.getElementById('sigPad');
+  var ctx=canvas.getContext('2d');
+  var drawing=false, hasDrawn=false;
+  ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#12233a';
+
+  function pos(e){
+    var r=canvas.getBoundingClientRect();
+    var p=(e.touches && e.touches[0]) || e;
+    return [p.clientX-r.left, p.clientY-r.top];
+  }
+  function start(e){ drawing=true; hasDrawn=true; var xy=pos(e); ctx.beginPath(); ctx.moveTo(xy[0],xy[1]); e.preventDefault(); }
+  function move(e){ if(!drawing) return; var xy=pos(e); ctx.lineTo(xy[0],xy[1]); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing=false; }
+
+  canvas.addEventListener('pointerdown',start);
+  canvas.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+
+  document.getElementById('sigClear').addEventListener('click',function(){
+    ctx.clearRect(0,0,canvas.width,canvas.height); hasDrawn=false;
+  });
+
+  document.getElementById('drawForm').addEventListener('submit',function(e){
+    if(!hasDrawn){
+      e.preventDefault();
+      alert('Draw a signature on the pad before saving.');
+      return;
+    }
+    document.getElementById('signatureDataUrl').value=canvas.toDataURL('image/png');
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,244 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workspace Home — Crainbow Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #0f172a;
+    }
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2.5rem;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .top-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .top-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .public-site-link {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color 0.2s;
+    }
+    .public-site-link:hover {
+      color: #0369a1;
+      text-decoration: underline;
+    }
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      background: #0284c7;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.75rem;
+      margin-top: 2rem;
+    }
+    .workspace-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 2.25rem;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      cursor: pointer;
+    }
+    .workspace-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+    .workspace-card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .icon-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+    }
+    .badge-entrance {
+      background: #08294f;
+      color: #ffffff;
+    }
+    .badge-school {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .card-eyebrow {
+      color: #64748b;
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+    }
+    .card-title {
+      font-size: 1.5rem;
+      color: #08294f;
+      margin: 0.2rem 0 0 0;
+      font-weight: 700;
+    }
+    .card-desc {
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 1rem 0 1.5rem 0;
+    }
+    .card-action-link {
+      color: #0284c7;
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .workspace-card:hover .card-action-link {
+      text-decoration: underline;
+      color: #0369a1;
+    }
+    .notice-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem 1.75rem;
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      color: #475569;
+    }
+    @media (max-width: 768px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+      .top-nav { padding: 1rem; }
+      .container { margin: 1.5rem auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <div class="top-nav-left">
+      <span>CRAINBOW</span>
+      <span style="color: #cbd5e1;">›</span>
+      <span style="color: #0f172a;">Workspace Home</span>
+    </div>
+    
+    <div class="top-nav-right">
+      <a href="{{ url_for('index') }}" class="public-site-link">
+        ← Return to Public Site
+      </a>
+      <div class="user-profile-badge">
+        <div class="user-avatar">S</div>
+        <span>Super Admin</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <span style="color: #0284c7; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">Welcome, Super Admin</span>
+    <h1 style="font-size: 2.25rem; color: #08294f; margin: 0.4rem 0 0.6rem 0; font-weight: 800;">Choose your workspace</h1>
+    <p style="color: #64748b; font-size: 1.05rem; margin-top: 0;">Select where you want to work. Once you enter a workspace, only that workspace's tools and records are shown.</p>
+
+    <div class="workspace-grid">
+      
+      <!-- Card 1: Entrance Examination -->
+      <a href="/admin/workspace/entrance" class="workspace-card">
+        <div class="workspace-card-header">
+          <div class="icon-badge badge-entrance">📝</div>
+          <div>
+            <p class="card-eyebrow">EXAMINATION OPERATIONS</p>
+            <h2 class="card-title">Entrance Examination</h2>
+          </div>
+        </div>
+        <p class="card-desc">
+          Manage entrance-examination <strong>candidates</strong>, question banks, examination activity, results and rankings.
+        </p>
+        <span class="card-action-link">Enter Entrance Examination →</span>
+      </a>
+
+      <!-- Card 2: School Portal -->
+      <a href="/admin/workspace/school" class="workspace-card">
+        <div class="workspace-card-header">
+          <div class="icon-badge badge-school">🏫</div>
+          <div>
+            <p class="card-eyebrow">SCHOOL OPERATIONS</p>
+            <h2 class="card-title">School Portal</h2>
+          </div>
+        </div>
+        <p class="card-desc">
+          Manage enrolled <strong>students</strong>, classes, subjects, assignments, tests, practice tests, examinations and school records.
+        </p>
+        <span class="card-action-link">Enter School Portal →</span>
+      </a>
+
+    </div>
+
+    <div class="notice-box">
+      <div><strong>Workspace boundary:</strong> You must deliberately choose a workspace before its sidebar appears.</div>
+    </div>
+  </main>
+
+</body>
+</html>

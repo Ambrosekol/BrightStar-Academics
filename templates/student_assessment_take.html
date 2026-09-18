@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{assessment.title}} — Crainbow CBT</title>
+<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+</head>
+<body class="exam-page student-assessment-page">
+<header class="top exam-top student-exam-top">
+  <div class="portal-brand">
+    <img src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools">
+    <div><strong>CRAINBOW CBT</strong><span>{{assessment.assessment_type|replace('_',' ')|title}} · {{assessment.subject_name}}</span></div>
+  </div>
+  <div class="timer student-assessment-timer" id="studentTimer">--:--</div>
+</header>
+<main class="layout student-exam-layout">
+  <input type="hidden" id="csrfToken" value="{{csrf_token()}}">
+  <aside class="student-exam-sidebar">
+    <div class="candidate">Student<br><strong>{{student.first_name}} {{student.last_name}}</strong></div>
+    <details class="exam-instructions" open>
+      <summary>Instructions</summary>
+      <p>{{assessment.instructions or 'Read each question carefully. Select the best answer. Use Save & Next to record your answer and move forward. You may revisit questions before submitting.'}}</p>
+    </details>
+    <div class="palette">
+      {% for n in range(1,total+1) %}
+      <a class="qnum {% if n==current %}current{% endif %} {% if n in rows_answered %}answered{% endif %}"
+         href="{{url_for('student_assessment_take',assessment_id=assessment.id,q=n)}}">{{n}}</a>
+      {% endfor %}
+    </div>
+    <p class="hint">Answered questions are marked. You may change an answer before submission.</p>
+  </aside>
+  <section class="paper student-exam-paper">
+    <div class="progress">Question {{current}} of {{total}}</div>
+    {% if question.instruction %}
+    <details class="question-instruction" open><summary>Question instruction</summary><p>{{question.instruction}}</p></details>
+    {% endif %}
+    {% if question.image_path %}
+    <div class="question-image"><img src="{{url_for('static',filename=question.image_path)}}" alt="Question illustration"></div>
+    {% endif %}
+    <h2>{{question.question_text}}</h2>
+    <form method="post" action="{{url_for('student_assessment_answer',assessment_id=assessment.id)}}" id="studentAssessmentForm">
+      <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+      <input type="hidden" name="attempt_id" value="{{attempt_id}}">
+      <input type="hidden" name="question_id" value="{{question.question_id}}">
+      <input type="hidden" name="next_q" value="{{current+1 if current<total else current}}">
+      <div class="options student-exam-options">
+        {% for opt in [question.option_a,question.option_b,question.option_c,question.option_d] %}
+        {% if opt is not none %}
+        <label class="option">
+          <input type="radio" name="option_index" value="{{loop.index0}}" {% if saved.get(question.question_id)==loop.index0 %}checked{% endif %}>
+          <span><b>{{'ABCD'[loop.index0]}}.</b> {{opt}}</span>
+        </label>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div class="nav">
+        <a class="secondary {% if current==1 %}disabled{% endif %}"
+           href="{% if current>1 %}{{url_for('student_assessment_take',assessment_id=assessment.id,q=current-1)}}{% else %}#{% endif %}">Previous</a>
+        {% if current < total %}
+        <button class="primary" type="submit">Save &amp; Next</button>
+        {% else %}
+        <button class="submit" type="submit" name="submit_assessment" value="1">Submit {{assessment.assessment_type|replace('_',' ')|title}}</button>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+</main>
+<script>
+let remaining={{remaining}};
+const timer=document.getElementById('studentTimer');
+const form=document.getElementById('studentAssessmentForm');
+function tick(){
+  const m=Math.floor(Math.max(0,remaining)/60), s=Math.max(0,remaining)%60;
+  timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  if(remaining<=0){
+    window.location.href="{{url_for('student_assessment_result',assessment_id=assessment.id)}}";
+    return;
+  }
+  remaining--;
+}
+setInterval(tick,1000); tick();
+form.addEventListener('submit',e=>{
+  const choice=form.querySelector('input[name="option_index"]:checked');
+  if(!choice && !confirm('No answer is selected. Continue without saving an answer?')) e.preventDefault();
+});
+</script>
+</body></html>

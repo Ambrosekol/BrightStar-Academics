@@ -1,0 +1,202 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Register Student — Crainbow CBT{% endblock %}
+
+{% block content %}
+
+<div class="topbar">
+    <div>
+        <h1>Register Student</h1>
+        <p class="muted">
+            Register the student once. Enter the candidate's personal, school and parent/guardian information.
+        </p>
+    </div>
+
+    <div class="actions">
+        <a class="btn btn-light" href="{{ url_for('admin_candidates') }}">
+            Student Register
+        </a>
+    </div>
+</div>
+
+{% if errors %}
+<div class="error">
+    {% for e in errors %}
+        <div>{{ e }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <h2>Student Information</h2>
+
+    <div class="form-grid">
+
+        <div class="field">
+            <label>Candidate photo <span class="optional">(optional)</span></label>
+            <input type="file" name="photo" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp">
+            <small class="field-help">PNG, JPG, JPEG, GIF or WEBP.</small>
+        </div>
+
+        <div class="field">
+            <label>Student full name</label>
+            <input
+                name="candidate_name"
+                value="{{ form.get('candidate_name','') }}"
+                required
+                autofocus
+            >
+        </div>
+
+        <div class="field">
+            <label>Entrance examination into</label>
+
+            <select name="target_class" required>
+                <option value="">Select entry level</option>
+
+                <option value="JSS 1"
+                    {% if form.get('target_class') == 'JSS 1' %}selected{% endif %}>
+                    Primary 6 → JSS 1
+                </option>
+
+                <option value="SS 1"
+                    {% if form.get('target_class') == 'SS 1' %}selected{% endif %}>
+                    JSS 3 → SS 1
+                </option>
+            </select>
+        </div>
+
+    </div>
+
+
+    <h2>School Information</h2>
+
+    <div class="form-grid">
+
+        <div class="field">
+            <label>School attended</label>
+            <input
+                name="school_attended"
+                value="{{ form.get('school_attended','') }}"
+                required
+            >
+        </div>
+
+    </div>
+
+
+    <h2>Parent / Guardian Information</h2>
+
+    <div class="form-grid">
+
+        <div class="field">
+            <label>Parent / Guardian name</label>
+            <input
+                name="parent_guardian_name"
+                value="{{ form.get('parent_guardian_name','') }}"
+                required
+            >
+        </div>
+
+        <div class="field">
+            <label>Relationship</label>
+            <input
+                name="parent_guardian_relationship"
+                value="{{ form.get('parent_guardian_relationship','') }}"
+                placeholder="e.g. Father, Mother, Uncle, Guardian"
+                required
+            >
+        </div>
+
+        <div class="field">
+            <label>Primary Mobile / WhatsApp</label>
+            <input
+                type="tel"
+                name="primary_mobile"
+                value="{{ form.get('primary_mobile','') }}"
+                required
+            >
+        </div>
+
+        <div class="field">
+            <label>Parent / Guardian Email <span class="optional">(optional)</span></label>
+            <input type="email" name="parent_guardian_email" value="{{ form.get('parent_guardian_email','') }}" placeholder="parent@example.com">
+        </div>
+
+        <div class="field">
+            <label>Alternative Mobile</label>
+            <input
+                type="tel"
+                name="alternative_mobile"
+                value="{{ form.get('alternative_mobile','') }}"
+            >
+        </div>
+
+    </div>
+
+
+    <h2>Automatic Three-Paper Assignment</h2>
+
+    <p class="muted">
+        The candidate cannot choose papers. Based on the entry level,
+        the system assigns Mathematics, English and the shared General
+        Knowledge paper. No unrelated or test bank is substituted.
+    </p>
+
+    {% if available_papers %}
+
+    <div class="paper-assignment-preview">
+
+        {% for b in available_papers %}
+
+        <div class="info-card">
+
+            <strong>
+                {{ entrance_paper_label(loop.index, b.id, b.name) }}
+            </strong>
+
+            <p>{{ b.questions|length }} questions · {{ b.duration_seconds//60 }} min</p>
+
+            <span class="muted">Ready for the candidate</span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+    {% if missing %}
+
+    <div class="warning">
+
+        <strong>
+            Registration is blocked until the complete paper set exists.
+        </strong>
+
+        <br>
+
+        Missing: {{ missing|join(', ') }}
+
+    </div>
+
+    {% endif %}
+
+
+    <button
+        class="btn btn-primary"
+        type="submit"
+    >
+        Register Student & Generate Login
+    </button>
+
+</form>
+
+</div>
+
+{% endblock %}

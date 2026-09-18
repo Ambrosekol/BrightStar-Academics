@@ -1,0 +1,15 @@
+CREATIVE RAINBOW RESULT PAGE — LOGO INSTALLATION
+
+Copy:
+    static/images/school_logo.png
+
+into your CBT project so the final path is:
+
+    C:\Users\BAMSONJAY\Desktop\Crainbow_CBT_Phase6G_TEST_READY\static\images\school_logo.png
+
+If the static or images folder does not exist, create them.
+
+Then use the HTML/CSS changes supplied in ChatGPT for:
+    templates/admin_candidate_result_print.html
+
+Do not change app.py or any score/result/Jinja logic.

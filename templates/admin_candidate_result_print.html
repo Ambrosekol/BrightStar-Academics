@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<title>
+  Entrance Examination Result ? {{ candidate.candidate_name }}
+</title>
+
+<style>
+
+:root{
+  --navy:#0b3d68;
+  --navy-2:#123f65;
+  --blue:#1478bd;
+  --blue-2:#2388c9;
+  --blue-soft:#eef6fc;
+  --blue-pale:#f7fbfe;
+  --line:#d7e3ec;
+  --line-strong:#c4d5e2;
+  --text:#19344d;
+  --muted:#6b7e8f;
+  --white:#ffffff;
+  --shadow:rgba(11,61,104,.12);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+@page{
+  size:A4;
+  margin:0;
+}
+
+html,
+body{
+  margin:0;
+  padding:0;
+  background:#edf2f6;
+  color:var(--text);
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+body{
+  font-size:10px;
+  line-height:1.45;
+}
+
+.page{
+  width:210mm;
+  min-height:297mm;
+  margin:18px auto;
+  background:#fff;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 16px 45px var(--shadow);
+}
+
+.top-accent{
+  height:7px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--navy) 0%,
+      var(--navy) 67%,
+      var(--blue) 67%,
+      var(--blue) 100%
+    );
+}
+
+.bottom-accent{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:5px;
+  background:var(--navy);
+}
+
+.page-inner{
+  padding:23px 28px 20px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.school-header{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding-bottom:17px;
+  border-bottom:1px solid var(--line);
+}
+
+.school-logo{
+  width:76px;
+  height:76px;
+  flex:0 0 76px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.school-logo img{
+  max-width:76px;
+  max-height:76px;
+  object-fit:contain;
+}
+
+.school-brand{
+  flex:1;
+}
+
+.school-name{
+  margin:0;
+  color:var(--navy);
+  font-size:21px;
+  line-height:1.05;
+  font-weight:900;
+  letter-spacing:.1px;
+}
+
+.college-name{
+  margin-top:5px;
+  color:var(--blue);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.45px;
+}
+
+.motto{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:9px;
+  font-style:italic;
+}
+
+.official-badge{
+  min-width:165px;
+  text-align:right;
+}
+
+.badge-main{
+  display:inline-block;
+  padding:8px 11px;
+  border-radius:5px;
+  background:var(--navy);
+  color:#fff;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.badge-sub{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:700;
+}
+
+/* =========================================================
+   DOCUMENT TITLE
+   ========================================================= */
+
+.document-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:20px;
+  padding:19px 0 15px;
+}
+
+.heading-eyebrow{
+  color:var(--blue);
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+}
+
+.document-title{
+  margin:4px 0 0;
+  color:var(--navy);
+  font-size:19px;
+  line-height:1.1;
+  font-weight:900;
+}
+
+.document-ref{
+  text-align:right;
+  color:var(--muted);
+  font-size:7.5px;
+}
+
+.document-ref strong{
+  display:block;
+  margin-top:2px;
+  color:var(--navy);
+  font-size:9px;
+}
+
+/* =========================================================
+   CANDIDATE IDENTITY
+   ========================================================= */
+
+.identity-card{
+  display:flex;
+  align-items:stretch;
+  min-height:116px;
+  border:1px solid var(--line-strong);
+  border-radius:9px;
+  overflow:hidden;
+  background:var(--blue-pale);
+}
+
+.photo-column{
+  width:116px;
+  flex:0 0 116px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:11px;
+  background:#e9f3fa;
+  border-right:1px solid var(--line);
+}
+
+.photo-frame{
+  width:82px;
+  height:92px;
+  padding:3px;
+  border:1px solid #b8cddd;
+  border-radius:6px;
+  background:#fff;
+  box-shadow:0 4px 10px rgba(11,61,104,.10);
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.photo-frame img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:3px;
+}
+
+.photo-placeholder{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color:var(--muted);
+  background:#f4f7f9;
+  font-size:7px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+
+.identity-content{
+  flex:1;
+  padding:14px 17px;
+}
+
+.identity-label{
+  color:var(--blue);
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:1.1px;
+  text-transform:uppercase;
+}
+
+.identity-name{
+  margin:3px 0 12px;
+  color:var(--navy);
+  font-size:17px;
+  line-height:1.1;
+  font-weight:900;
+}
+
+.identity-details{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px 25px;
+}
+
+.identity-field label{
+  display:block;
+  margin-bottom:3px;
+  color:var(--muted);
+  font-size:6.8px;
+  font-weight:900;
+  letter-spacing:.65px;
+  text-transform:uppercase;
+}
+
+.identity-field strong{
+  color:var(--text);
+  font-size:9.5px;
+  font-weight:800;
+}
+
+/* =========================================================
+   SECTION HEADINGS
+   ========================================================= */
+
+.section-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:19px 0 8px;
+}
+
+.section-marker{
+  width:4px;
+  height:18px;
+  border-radius:3px;
+  background:var(--blue);
+}
+
+.section-heading-copy h2{
+  margin:0;
+  color:var(--navy);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.75px;
+  text-transform:uppercase;
+}
+
+.section-heading-copy p{
+  margin:2px 0 0;
+  color:var(--muted);
+  font-size:7.5px;
+}
+
+/* =========================================================
+   RESULT TABLE
+   ========================================================= */
+
+.result-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  border:1px solid var(--line-strong);
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.result-table th{
+  padding:9px 10px;
+  background:var(--navy);
+  color:#fff;
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  text-align:left;
+}
+
+.result-table th:not(:first-child){
+  text-align:center;
+}
+
+.result-table td{
+  padding:10px;
+  border-top:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  font-size:9px;
+}
+
+.result-table tbody tr:nth-child(even) td{
+  background:#f8fbfd;
+}
+
+.result-table td:not(:first-child){
+  text-align:center;
+}
+
+.result-table .subject{
+  color:var(--navy);
+  font-weight:800;
+}
+
+.result-table .value{
+  font-weight:800;
+}
+
+.result-table .total td{
+  background:#eaf4fb;
+  border-top:2px solid var(--blue);
+  color:var(--navy);
+  font-weight:900;
+}
+
+/* =========================================================
+   SUMMARY
+   ========================================================= */
+
+.summary-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+
+.summary-card{
+  min-height:67px;
+  padding:10px 8px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:#f8fbfd;
+  text-align:center;
+}
+
+.summary-label{
+  color:var(--muted);
+  font-size:6.6px;
+  font-weight:900;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+
+.summary-value{
+  margin-top:5px;
+  color:var(--navy);
+  font-size:15px;
+  line-height:1;
+  font-weight:900;
+}
+
+.summary-note{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:6.4px;
+}
+
+/* =========================================================
+   GRADE / DECISION
+   ========================================================= */
+
+.grade-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  margin-top:11px;
+  padding:13px 16px;
+  border:1px solid var(--line-strong);
+  border-left:5px solid var(--blue);
+  border-radius:7px;
+  background:#fff;
+}
+
+.grade-label{
+  color:var(--muted);
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.grade-description{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:7.5px;
+}
+
+.grade-value{
+  color:var(--navy);
+  font-size:17px;
+  line-height:1;
+  font-weight:900;
+  text-align:right;
+}
+
+/* =========================================================
+   OFFICIAL NOTICE
+   ========================================================= */
+
+.official-note{
+  margin-top:10px;
+  padding:8px 11px;
+  border-radius:6px;
+  background:var(--blue-soft);
+  color:var(--muted);
+  font-size:7px;
+  line-height:1.5;
+  text-align:center;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.document-footer{
+  display:flex;
+  justify-content:space-between;
+  gap:25px;
+  margin-top:17px;
+  padding-top:11px;
+  border-top:1px solid var(--line);
+  color:var(--muted);
+  font-size:7px;
+}
+
+.document-footer strong{
+  color:var(--navy);
+}
+
+.footer-right{
+  text-align:right;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:800px){
+
+  .page{
+    width:100%;
+    margin:0;
+  }
+
+  .page-inner{
+    padding:18px;
+  }
+
+  .school-header{
+    align-items:flex-start;
+  }
+
+  .official-badge{
+    min-width:auto;
+  }
+
+  .identity-card{
+    min-height:0;
+  }
+
+  .summary-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+/* =========================================================
+   PRINT
+   ========================================================= */
+
+@media print{
+
+  html,
+  body{
+    background:#fff;
+  }
+
+  .page{
+    width:210mm;
+    min-height:297mm;
+    margin:0;
+    box-shadow:none;
+  }
+
+  .no-print{
+    display:none !important;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <div class="top-accent"></div>
+
+  <main class="page-inner">
+
+    <!-- =====================================================
+         SCHOOL HEADER
+         ===================================================== -->
+
+    <header class="school-header">
+
+      <div class="school-logo">
+        <img
+          src="{{ url_for('static', filename='images/school_logo.png') }}"
+          alt="Creative Rainbow Schools"
+        >
+      </div>
+
+      <div class="school-brand">
+
+        <h1 class="school-name">
+          CREATIVE RAINBOW MONTESSORI SCHOOL
+        </h1>
+
+        <div class="college-name">
+          CREATIVE RAINBOW COLLEGE
+        </div>
+
+        <div class="motto">
+          Growing in humility and fear of God
+        </div>
+
+      </div>
+
+      <div class="official-badge">
+
+        <div class="badge-main">
+          Official Result
+        </div>
+
+        <div class="badge-sub">
+          Entrance Examination
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         DOCUMENT TITLE
+         ===================================================== -->
+
+    <section class="document-heading">
+
+      <div>
+
+        <div class="heading-eyebrow">
+          Academic Assessment Record
+        </div>
+
+        <h2 class="document-title">
+          Entrance Examination Result
+        </h2>
+
+      </div>
+
+      <div class="document-ref">
+        Candidate Reference
+        <strong>{{ candidate.candidate_code }}</strong>
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         CANDIDATE IDENTITY + PHOTO
+         ===================================================== -->
+
+    <section class="identity-card">
+
+      <div class="photo-column">
+
+        <div class="photo-frame">
+
+          {% if candidate.photo_path %}
+
+            <img
+              src="{{ url_for('static', filename=candidate.photo_path) }}"
+              alt="{{ candidate.candidate_name }}"
+            >
+
+          {% else %}
+
+            <div class="photo-placeholder">
+              CANDIDATE<br>PHOTO
+            </div>
+
+          {% endif %}
+
+        </div>
+
+      </div>
+
+
+      <div class="identity-content">
+
+        <div class="identity-label">
+          Candidate Information
+        </div>
+
+        <div class="identity-name">
+          {{ candidate.candidate_name }}
+        </div>
+
+        <div class="identity-details">
+
+          <div class="identity-field">
+            <label>Candidate ID</label>
+            <strong>{{ candidate.candidate_code }}</strong>
+          </div>
+
+          <div class="identity-field">
+            <label>Applied / Target Class</label>
+            <strong>{{ candidate.target_class }}</strong>
+          </div>
+
+          <div class="identity-field">
+            <label>Examination</label>
+            <strong>Entrance Examination</strong>
+          </div>
+
+          <div class="identity-field">
+            <label>Result Status</label>
+            <strong>
+              {% if completed %}
+                Completed
+              {% else %}
+                Pending
+              {% endif %}
+            </strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PERFORMANCE
+         ===================================================== -->
+
+    <div class="section-heading">
+
+      <div class="section-marker"></div>
+
+      <div class="section-heading-copy">
+
+        <h2>
+          Examination Performance
+        </h2>
+
+        <p>
+          Subject-by-subject assessment record
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <table class="result-table">
+
+      <thead>
+
+        <tr>
+          <th style="width:40%;">
+            Examination
+          </th>
+
+          <th style="width:18%;">
+            Correct
+          </th>
+
+          <th style="width:21%;">
+            Score
+          </th>
+
+          <th style="width:21%;">
+            Percentage
+          </th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {% for p in papers %}
+
+        <tr>
+
+          <td class="subject">
+            {{ p.subject_label }}
+          </td>
+
+          <td class="value">
+            {% if p.status in ('submitted','expired') %}
+              {{ p.correct_count }} / {{ p.question_count }}
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+          <td class="value">
+            {% if p.status in ('submitted','expired') %}
+              {{ p.score }} / {{ p.max_score }}
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+          <td class="value">
+            {% if p.status in ('submitted','expired') %}
+              {{ '%.1f'|format(p.percentage) }}%
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+        </tr>
+
+        {% endfor %}
+
+
+        <tr class="total">
+
+          <td>
+            TOTAL
+          </td>
+
+          <td>
+            {% if completed %}
+              {{ total_correct }} / {{ total_questions }}
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+          <td>
+            {% if completed %}
+              {{ total_score }} / {{ total_max }}
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+          <td>
+            {% if completed %}
+              {{ '%.1f'|format(pct) }}%
+            {% else %}
+              ?
+            {% endif %}
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+
+    <!-- =====================================================
+         PERFORMANCE SUMMARY
+         ===================================================== -->
+
+    <div class="summary-grid">
+
+      <div class="summary-card">
+
+        <div class="summary-label">
+          Questions Correct
+        </div>
+
+        <div class="summary-value">
+          {% if completed %}
+            {{ total_correct }}/{{ total_questions }}
+          {% else %}
+            ?
+          {% endif %}
+        </div>
+
+        <div class="summary-note">
+          Total correct answers
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-label">
+          Total Score
+        </div>
+
+        <div class="summary-value">
+          {% if completed %}
+            {{ total_score }}/{{ total_max }}
+          {% else %}
+            ?
+          {% endif %}
+        </div>
+
+        <div class="summary-note">
+          Marks earned
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-label">
+          Average Subject
+        </div>
+
+        <div class="summary-value">
+          {% if completed %}
+            {{ '%.1f'|format(average_subject_percentage) }}%
+          {% else %}
+            ?
+          {% endif %}
+        </div>
+
+        <div class="summary-note">
+          Average of completed papers
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-label">
+          Overall Percentage
+        </div>
+
+        <div class="summary-value">
+          {% if completed %}
+            {{ '%.1f'|format(pct) }}%
+          {% else %}
+            ?
+          {% endif %}
+        </div>
+
+        <div class="summary-note">
+          Cumulative performance
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         GRADE
+         ===================================================== -->
+
+    <section class="grade-card">
+
+      <div>
+
+        <div class="grade-label">
+          Overall Grade
+        </div>
+
+        <div class="grade-description">
+          Final cumulative assessment classification
+        </div>
+
+      </div>
+
+      <div class="grade-value">
+        {{ grade }}
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         OFFICIAL NOTICE
+         ===================================================== -->
+
+    <div class="official-note">
+
+      This document represents the official entrance examination
+      result recorded by Creative Rainbow Schools. Results are
+      generated from the candidate's examination record.
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <footer class="document-footer">
+
+      <div>
+
+        <strong>
+          Creative Rainbow Schools
+        </strong>
+
+        <br>
+
+        Growing in humility and fear of God
+
+      </div>
+
+
+      <div class="footer-right">
+
+        Official Entrance Examination Result
+
+        <br>
+
+        Candidate ID:
+        <strong>
+          {{ candidate.candidate_code }}
+        </strong>
+
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <div class="bottom-accent"></div>
+
+</div>
+
+</body>
+</html>

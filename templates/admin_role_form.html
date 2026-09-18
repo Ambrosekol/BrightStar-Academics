@@ -1,0 +1,9 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Edit Staff Role' if mode == 'edit' else 'Create Staff Role' }} — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>{{ 'Edit staff role' if mode == 'edit' else 'Create custom staff role' }}</h1><p class="hero-copy">Build a role around a real school responsibility. Keep the role small, understandable and least-privilege by design.</p></div></div>
+{% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+<form method="post" class="card modern-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="form-section"><div class="form-grid"><div class="field"><label>Role name</label><input name="name" value="{{ form.get('name',role.name if role is defined else '') }}" required></div><div class="field"><label>What is this role for?</label><input name="description" value="{{ form.get('description',role.description if role is defined else '') }}" placeholder="Describe the staff responsibility in plain language"></div></div></div>
+<details class="advanced-panel" open><summary>Role capabilities</summary><p class="muted">These are the underlying system capabilities. Select only what the job genuinely needs.</p><div class="permission-grid compact">{% for p in permissions %}<label class="permission-item"><input type="checkbox" name="permissions" value="{{ p.id }}" {% if p.id in (selected or []) %}checked{% endif %}><span><strong>{{ p.name }}</strong><small>{{ p.description }}</small></span></label>{% endfor %}</div></details>
+<div class="form-actions"><button class="btn btn-primary" type="submit">{{ 'Save role' if mode == 'edit' else 'Create role' }}</button><a class="btn btn-light" href="{{ url_for('admin_roles') }}">Cancel</a></div></form>
+{% endblock %}

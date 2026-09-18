@@ -1,0 +1,79 @@
+{% extends 'admin_base.html' %}
+{% block title %}Results Summary — Crainbow CBT{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1>Results Summary</h1>
+    <p class="muted">Administrative cumulative results — scores only, without examination questions and answers.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-light" href="{{ url_for('admin_results') }}">Detailed Results</a>
+    <a class="btn btn-primary" href="{{ url_for('admin_results_summary_print', target_class=selected_target, q=search) }}" target="_blank">Print Results Summary</a>
+  </div>
+</div>
+
+<form class="card filters" method="get">
+  <select name="target_class">
+    <option value="">All Classes</option>
+    {% for cls in target_classes %}
+      <option value="{{ cls }}" {% if selected_target == cls %}selected{% endif %}>{{ cls }}</option>
+    {% endfor %}
+  </select>
+  <input name="q" value="{{ search }}" placeholder="Search candidate or ID">
+  <button class="btn btn-primary">Apply</button>
+  {% if selected_target or search %}<a class="btn btn-light" href="{{ url_for('admin_results_summary') }}">Clear</a>{% endif %}
+</form>
+
+<div class="grid">
+  <div class="card"><div class="muted">Candidates</div><div class="metric">{{ summaries|length }}</div></div>
+  <div class="card"><div class="muted">Completed 3 / 3</div><div class="metric">{{ summaries|selectattr('complete')|list|length }}</div></div>
+  <div class="card"><div class="muted">Class / Filter</div><div class="metric" style="font-size:20px">{{ selected_target or 'All Classes' }}</div></div>
+  <div class="card"><div class="muted">Report Type</div><div class="metric" style="font-size:20px">Cumulative</div></div>
+</div>
+
+<div class="section">
+  <div class="card" style="overflow-x:auto">
+    <table style="min-width:1180px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Candidate</th>
+          <th>Class</th>
+          <th>English</th>
+          <th>Mathematics</th>
+          <th>General Knowledge</th>
+          <th>Total Score</th>
+          <th>Overall %</th>
+          <th>Grade</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in summaries %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ r.candidate_name }}</strong><br><span class="muted">{{ r.candidate_code }}</span></td>
+          <td>{{ r.target_class }}</td>
+          <td>{% if r.english.score is not none %}{{ r.english.score }} / {{ r.english.max_score }}<br><span class="muted">{{ '%.1f'|format(r.english.percentage) }}%</span>{% else %}—{% endif %}</td>
+          <td>{% if r.mathematics.score is not none %}{{ r.mathematics.score }} / {{ r.mathematics.max_score }}<br><span class="muted">{{ '%.1f'|format(r.mathematics.percentage) }}%</span>{% else %}—{% endif %}</td>
+          <td>{% if r.general_knowledge.score is not none %}{{ r.general_knowledge.score }} / {{ r.general_knowledge.max_score }}<br><span class="muted">{{ '%.1f'|format(r.general_knowledge.percentage) }}%</span>{% else %}—{% endif %}</td>
+          <td><strong>{{ r.total_score }} / {{ r.total_max or '—' }}</strong></td>
+          <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong></td>
+          <td>{{ r.grade }}</td>
+          <td><span class="status {% if r.complete %}submitted{% else %}active{% endif %}">{{ r.completed }} / 3</span></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10">No candidates match the current filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <strong>Scoring note:</strong>
+    Overall percentage is calculated from the combined score across all three papers (total score ÷ total possible score × 100), matching the candidate cumulative result already used by the system.
+  </div>
+</div>
+{% endblock %}

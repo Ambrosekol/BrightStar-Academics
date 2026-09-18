@@ -1,0 +1,7 @@
+Crainbow Phase 3 Development Checkpoint
+Source baseline: Crainbow_CBT_Phase6K4_FINAL_APPROVED.zip
+Baseline app.py SHA-256: 78210f5165efa5d271eb6be68d252b25109d69d72c3eed6b74cea1f6a637740e
+Baseline cbt.db SHA-256: 90d470b886e018b607e9a5ed6001164e6e5782ad122c9d3492b83fab5ed94c49
+
+Phase 3 working-copy app.py SHA-256: 0c419d320fae770de9dd9d486e0c2e04184f94f3ccba903046a7bebe4818f9a3
+Phase 3 working-copy cbt.db SHA-256: 90d470b886e018b607e9a5ed6001164e6e5782ad122c9d3492b83fab5ed94c49

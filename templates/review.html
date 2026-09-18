@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Crainbow CBT — Review</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <main class="review-page">
+    <section class="review-shell">
+      <header class="review-header">
+        <a class="review-back" href="/result">← Back to Result</a>
+        <h1>{{exam.name}}</h1>
+        <p>{{attempt.candidate}} · Submitted Attempt Review</p>
+      </header>
+
+      {% set ns = namespace(correct=0, incorrect=0, unanswered=0) %}
+      {% for q in exam.questions %}
+        {% set candidate = answers.get(q.id) %}
+        {% if candidate is none %}
+          {% set ns.unanswered = ns.unanswered + 1 %}
+        {% elif candidate == q.answer %}
+          {% set ns.correct = ns.correct + 1 %}
+        {% else %}
+          {% set ns.incorrect = ns.incorrect + 1 %}
+        {% endif %}
+      {% endfor %}
+
+      <section class="review-summary">
+        <h2 class="review-summary-title">Attempt Summary</h2>
+        <div class="review-stats">
+          <div class="review-stat"><span class="value">{{attempt.score}} / {{attempt.max_score}}</span><span class="label">Final score</span></div>
+          <div class="review-stat correct-stat"><span class="value">{{ns.correct}}</span><span class="label">Correct</span></div>
+          <div class="review-stat incorrect-stat"><span class="value">{{ns.incorrect}}</span><span class="label">Incorrect</span></div>
+          <div class="review-stat unanswered-stat"><span class="value">{{ns.unanswered}}</span><span class="label">Unanswered</span></div>
+        </div>
+      </section>
+
+      <section class="review-list">
+        {% for q in exam.questions %}
+          {% set candidate = answers.get(q.id) %}
+          {% set is_correct = candidate is not none and candidate == q.answer %}
+          {% set is_unanswered = candidate is none %}
+          <article class="reviewq {% if is_unanswered %}unanswered-question{% elif is_correct %}correct-question{% else %}incorrect-question{% endif %}">
+            <div class="reviewq-head">
+              <h3 class="reviewq-title">{{q.id}}. {{q.text}}</h3>
+              {% if is_unanswered %}
+                <span class="review-badge unanswered">⚠ Unanswered</span>
+              {% elif is_correct %}
+                <span class="review-badge correct">✓ Correct</span>
+              {% else %}
+                <span class="review-badge incorrect">✕ Incorrect</span>
+              {% endif %}
+            </div>
+
+            {% for opt in q.options %}
+              {% set is_key = q.answer == loop.index0 %}
+              {% set is_choice = candidate == loop.index0 %}
+              <div class="reviewopt {% if is_key %}correct-key{% endif %} {% if is_choice and not is_key %}candidate-wrong{% endif %} {% if is_choice and is_key %}candidate-correct{% endif %} {% if is_key and is_unanswered %}unanswered-key{% endif %}">
+                <span class="letter">{{'ABCD'[loop.index0]}}.</span>
+                <span>{{opt}}</span>
+                {% if is_key and is_choice %}<span class="review-marker">✓ Your answer · Correct</span>
+                {% elif is_key %}<span class="review-marker">✓ Correct answer</span>
+                {% elif is_choice %}<span class="review-marker">✕ Your answer</span>{% endif %}
+              </div>
+            {% endfor %}
+          </article>
+        {% endfor %}
+      </section>
+
+      <footer class="review-footer">
+        <span class="review-footer-note">End of attempt review · {{attempt.percentage|round(1)}}% achieved</span>
+        <div class="review-footer-actions">
+          <a class="secondary" href="/result">Back to Result</a>
+          <a class="primary" href="/reset">Start Another Test</a>
+        </div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

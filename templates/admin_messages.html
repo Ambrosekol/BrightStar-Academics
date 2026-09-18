@@ -1,0 +1,62 @@
+{% extends 'admin_base.html' %}
+{% block title %}Messages — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrator Messages</h1><p class="hero-copy">Private direct messages between signed-in Crainbow administrators. Use this for operational communication without mixing staff messages into student records.</p></div></div>
+{% if admin_unread_messages %}
+<div class="message-notification card" role="status" aria-live="polite">
+  <div class="message-notification-icon">✉</div>
+  <div class="message-notification-copy">
+    <strong>{{ admin_unread_messages }} new message{{ 's' if admin_unread_messages != 1 else '' }}</strong>
+    {% if admin_unread_message_summaries|length == 1 %}{% set n=admin_unread_message_summaries[0] %}<span>from <strong>{{ n.sender_name }}</strong> · {{ n.sent_at.replace('T',' ')[:16] }} UTC</span>{% else %}<span>from {% for n in admin_unread_message_summaries %}<strong>{{ n.sender_name }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}{% if admin_unread_message_summaries|length < admin_unread_messages %} and others{% endif %}</span>{% endif %}
+  </div>
+  {% if admin_unread_message_summaries %}<a class="btn btn-light btn-small" href="{{ url_for('admin_messages', **{'with': admin_unread_message_summaries[0].sender_id}) }}">Open message{{ 's' if admin_unread_messages != 1 else '' }}</a>{% endif %}
+</div>
+{% endif %}
+
+<div class="messages-shell card" data-live-message-page data-selected-admin="{{ selected.id if selected else '' }}">
+ <aside class="message-contacts"><div class="message-panel-title"><strong>Staff directory</strong><span>{{ contacts|length }} active</span></div>
+ {% for c in contacts %}<a class="message-contact {% if selected and selected.id==c.id %}active{% endif %}" href="{{ url_for('admin_messages', **{'with':c.id}) }}">{% if c.photo_path %}<img src="{{ url_for('static',filename=c.photo_path) }}" alt="">{% else %}<span class="table-avatar">{{ c.display_name[:1]|upper }}</span>{% endif %}<span><strong>{{ c.display_name }}{% if unread_map.get(c.id) %}<b class="message-unread-badge" title="{{ unread_map[c.id] }} unread message{{ 's' if unread_map[c.id] != 1 else '' }} from {{ c.display_name }}">{{ unread_map[c.id] }}</b>{% endif %}</strong><small>{{ c.username }}</small></span></a>{% else %}<div class="empty-state">No other active administrators are available.</div>{% endfor %}</aside>
+ <section class="message-thread">
+ {% if selected %}<div class="message-thread-head"><div>{% if selected.photo_path %}<img src="{{ url_for('static',filename=selected.photo_path) }}" alt="">{% else %}<span class="table-avatar">{{ selected.display_name[:1]|upper }}</span>{% endif %}<div><strong>{{ selected.display_name }}</strong><small>{{ selected.email or selected.phone or 'Administrator' }}</small></div></div></div>
+ <div class="message-list" data-live-message-thread>{% for m in thread %}
+<div class="message-bubble-wrap {% if m.sender_admin_id==current_admin.id %}mine{% endif %}">
+    <div class="message-bubble">
+        {% if m.body %}
+        <div class="message-body">{{ m.body|e|replace('\n','<br>')|safe }}</div>
+        {% endif %}
+
+        {% if m.attachment_path %}
+        <a class="message-attachment {% if m.attachment_type == 'image' %}message-attachment-image{% endif %}"
+           href="{{ url_for('admin_message_attachment', message_id=m.id) }}"
+           target="_blank" rel="noopener">
+
+            {% if m.attachment_type == 'image' %}
+                <img src="{{ url_for('admin_message_attachment', message_id=m.id) }}"
+                     alt="{{ m.attachment_name or 'Image attachment' }}">
+            {% else %}
+                <span class="message-attachment-icon">↗</span>
+                <span class="message-attachment-copy">
+                    <strong>{{ m.attachment_name or 'Attachment' }}</strong>
+                    <small>{{ (m.attachment_type or 'file')|title }} · Open attachment</small>
+                </span>
+            {% endif %}
+        </a>
+        {% endif %}
+
+        <small>{{ m.sent_at.replace('T',' ')[:16] }}{% if m.sender_admin_id==current_admin.id %} · You{% endif %}</small>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">No messages yet. Start the conversation below.</div>
+{% endfor %}</div>
+ <form enctype="multipart/form-data" method="post" action="{{ url_for('admin_message_send') }}" class="message-compose"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="recipient_id" value="{{ selected.id }}"><textarea name="body" rows="3" maxlength="5000" placeholder="Write a direct message to {{ selected.display_name }}…"></textarea><div><small>Messages are visible only to the two administrators in this conversation.</small><div class="d-inline-flex align-items-center gap-2 me-2">{% include "includes/_chat_attachment_input.html" %}</div><button class="btn btn-primary" type="submit">Send message</button></div>
+    </form>
+ {% else %}<div class="empty-state large"><strong>Select a staff member</strong><span>Choose an administrator from the directory to view the private conversation.</span></div>{% endif %}
+ </section>
+</div>
+{% endblock %}
+
+
+
+
+

@@ -1,0 +1,366 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Edit Fee Item' if editing else 'Add Fee Item to Catalogue' }} — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="cr-finance-page">
+  <div class="cr-finance-hero">
+    <div><div class="cr-finance-eyebrow">FINANCE &amp; BURSARY / MASTER DATA</div><h1>{{ 'Edit Fee Item' if editing else 'Add Fee Item' }}</h1><p>Maintain an editable fee catalogue and assign each fee to the exact active classes that should see it.</p></div>
+    <div class="cr-finance-hero-actions"><a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_fee_items') }}">← Back to Fee Structure</a></div>
+  </div>
+
+  <div class="cr-finance-form-card">
+    <div class="cr-finance-section-heading"><div><span class="cr-finance-section-kicker">FEE CATALOGUE</span><h2>{{ 'Edit Fee Item' if editing else 'Add Fee Item to Catalogue' }}</h2><p>Changing this master record affects future assessments only. Existing assessments retain their historical amount.</p></div></div>
+    {% if errors %}<div class="cr-finance-form-errors">{% for error in errors %}<div>• {{ error }}</div>{% endfor %}</div>{% endif %}
+    <form method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="cr-finance-form-grid">
+        <div class="cr-finance-field"><label>Fee Item Name</label><input type="text" name="name" required value="{{ form.get('name','') }}" placeholder="e.g. JSS 1 Tuition Fee"></div>
+        <div class="cr-finance-field">
+          <label>Category</label>
+          <select name="category" required>
+            {% set current_category = form.get('category','School Fees') %}
+            {% if legacy_category %}<option value="{{ legacy_category }}" selected>{{ legacy_category }} (legacy)</option>{% endif %}
+            {% for cat in fee_categories %}<option value="{{ cat }}" {% if not legacy_category and current_category==cat %}selected{% endif %}>{{ cat }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="cr-finance-field"><label>Amount (₦)</label><input type="number" name="amount" min="0" step="0.01" required value="{{ form.get('amount','') }}"></div>
+      </div>
+
+      <div class="cr-finance-applicability-v5">
+        <div class="cr-finance-applicability-heading-v5">
+          <strong>Applicability / Billing Rule</strong>
+          <span>When is this fee charged? Choose one term to bill it independently each term, or Full Session to cover the whole academic year in one go.</span>
+        </div>
+        <div class="cr-finance-applicability-options-v5">
+          {% set current_applicability = form.get('applicability','Full Session') %}
+          {% if legacy_applicability %}
+          <label class="cr-finance-applicability-option-v5 is-selected">
+            <input type="radio" name="applicability" value="{{ legacy_applicability }}" checked>
+            <span>{{ legacy_applicability }} (legacy)</span>
+          </label>
+          {% endif %}
+          {% for rule in fee_applicability %}
+          <label class="cr-finance-applicability-option-v5 {% if not legacy_applicability and current_applicability==rule %}is-selected{% endif %}">
+            <input type="radio" name="applicability" value="{{ rule }}" {% if not legacy_applicability and current_applicability==rule %}checked{% endif %}>
+            <span>{{ rule }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="cr-finance-fee-type-v5">
+        <div class="cr-finance-fee-type-heading-v5">
+          <div>
+            <strong>Fee Type</strong>
+            <span>Choose whether this fee is part of the student's expected obligations or an optional extra.</span>
+          </div>
+        </div>
+
+        <div class="cr-finance-fee-type-options-v5">
+          <label class="cr-finance-fee-type-option-v5 {% if form.get('required')=='1' or (editing and editing.required and not editing.optional and form.get('required') is none) or (not editing and form.get('required') is none and form.get('optional') is none) %}is-selected{% endif %}">
+            <input
+              type="radio"
+              name="fee_type_ui"
+              value="required"
+              data-fee-type-radio="required"
+              {% if form.get('required')=='1' or (editing and editing.required and not editing.optional and form.get('required') is none) or (not editing and form.get('required') is none and form.get('optional') is none) %}checked{% endif %}
+            >
+            <span class="cr-finance-radio-v5" aria-hidden="true"></span>
+            <span>
+              <strong>Required</strong>
+              <small>Normally included in the student's expected school obligations.</small>
+            </span>
+          </label>
+
+          <label class="cr-finance-fee-type-option-v5 {% if form.get('optional')=='1' or (editing and editing.optional and form.get('optional') is none) %}is-selected{% endif %}">
+            <input
+              type="radio"
+              name="fee_type_ui"
+              value="optional"
+              data-fee-type-radio="optional"
+              {% if form.get('optional')=='1' or (editing and editing.optional and form.get('optional') is none) %}checked{% endif %}
+            >
+            <span class="cr-finance-radio-v5" aria-hidden="true"></span>
+            <span>
+              <strong>Optional</strong>
+              <small>Selectable extras such as clubs, transport or special activities.</small>
+            </span>
+          </label>
+        </div>
+
+        <input type="hidden" name="required" id="financeRequiredValue" value="{% if form.get('required')=='1' or (editing and editing.required and not editing.optional and form.get('required') is none) or (not editing and form.get('required') is none and form.get('optional') is none) %}1{% else %}0{% endif %}">
+        <input type="hidden" name="optional" id="financeOptionalValue" value="{% if form.get('optional')=='1' or (editing and editing.optional and form.get('optional') is none) %}1{% else %}0{% endif %}">
+      </div>
+
+      <div class="fee-class-selector fee-class-selector-v5">
+        <div class="fee-class-selector-head-v5">
+          <div>
+            <div class="cr-finance-section-kicker">APPLICABILITY</div>
+            <strong>Which classes can receive this fee?</strong>
+            <div class="muted fee-class-help-v5">
+              Select every active class this fee applies to. These selections control which fees appear when creating a student's assessment.
+            </div>
+          </div>
+
+          <div class="fee-class-actions-v5">
+            <button type="button" class="btn btn-light btn-small" id="selectAllClasses">Select all classes</button>
+            <button type="button" class="btn btn-light btn-small" id="clearClasses">Clear all</button>
+          </div>
+        </div>
+
+        <div class="fee-class-groups-v5">
+
+          <section class="fee-class-group-v5" data-class-group="nursery">
+            <div class="fee-class-group-heading-v5">
+              <span class="fee-class-group-title-v5">Nursery</span>
+              <span class="fee-class-group-description-v5">Early years and reception classes</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="nursery">Select all Nursery</button>
+            </div>
+            <div class="fee-class-grid-v5">
+              {% for c in classes if (c.stage or '')|lower not in ['primary','jss','sss','college'] %}
+                <label class="fee-class-option-v5">
+                  <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                  <span>{{ c.name }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="fee-class-group-v5" data-class-group="primary">
+            <div class="fee-class-group-heading-v5">
+              <span class="fee-class-group-title-v5">Primary</span>
+              <span class="fee-class-group-description-v5">Primary school classes</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="primary">Select all Primary</button>
+            </div>
+            <div class="fee-class-grid-v5">
+              {% for c in classes if (c.stage or '')|lower == 'primary' %}
+                <label class="fee-class-option-v5">
+                  <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                  <span>{{ c.name }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="fee-class-group-v5" data-class-group="college">
+            <div class="fee-class-group-heading-v5">
+              <span class="fee-class-group-title-v5">College</span>
+              <span class="fee-class-group-description-v5">Junior and Senior Secondary School</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="college">Select all College</button>
+            </div>
+
+            <div class="fee-class-subgroup-v5" data-class-subgroup="jss">
+  <div class="fee-class-subgroup-title-row-v6">
+    <div class="fee-class-subgroup-title-v5">JSS</div>
+    <button type="button" class="btn btn-light btn-small fee-category-select-btn"
+            data-category-select="jss">Select all JSS</button>
+  </div>
+              <div class="fee-class-grid-v5">
+                {% for c in classes if (c.stage or '')|lower == 'jss' %}
+                  <label class="fee-class-option-v5">
+                    <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                    <span>{{ c.name }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="fee-class-subgroup-v5" data-class-subgroup="sss">
+  <div class="fee-class-subgroup-title-row-v6">
+    <div class="fee-class-subgroup-title-v5">SSS</div>
+    <button type="button" class="btn btn-light btn-small fee-category-select-btn"
+            data-category-select="sss">Select all SSS</button>
+  </div>
+              <div class="fee-class-grid-v5">
+                {% for c in classes if (c.stage or '')|lower == 'sss' %}
+                  <label class="fee-class-option-v5">
+                    <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                    <span>{{ c.name }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="fee-class-subgroup-v5" data-college-other>
+              {% for c in classes if (c.stage or '')|lower == 'college' %}
+                <label class="fee-class-option-v5">
+                  <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                  <span>{{ c.name }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <div class="cr-finance-field cr-finance-notes-field"><label>Notes</label><textarea name="notes" rows="4" placeholder="Optional internal note">{{ form.get('notes','') }}</textarea></div>
+      <div class="cr-finance-form-actions"><a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_fee_items') }}">Cancel</a><button class="cr-finance-primary-btn" type="submit">{{ 'Save Changes' if editing else 'Create Fee Item' }} →</button></div>
+    </form>
+  </div>
+</div>
+<script id="cr-finance-fee-structure-v5-js">
+(function () {
+  const allBoxes = () =>
+    Array.from(document.querySelectorAll('input[name="class_ids"]'));
+
+  const categoryLabels = {
+    nursery: 'Nursery',
+    primary: 'Primary',
+    college: 'College',
+    jss: 'JSS',
+    sss: 'SSS'
+  };
+
+  function getTargetBoxes(scope) {
+    if (scope === 'nursery' || scope === 'primary' || scope === 'college') {
+      const group = document.querySelector(
+        '.fee-class-group-v5[data-class-group="' + scope + '"]'
+      );
+
+      return group
+        ? Array.from(group.querySelectorAll('input[name="class_ids"]'))
+        : [];
+    }
+
+    if (scope === 'jss' || scope === 'sss') {
+      const subgroup = document.querySelector(
+        '.fee-class-subgroup-v5[data-class-subgroup="' + scope + '"]'
+      );
+
+      return subgroup
+        ? Array.from(subgroup.querySelectorAll('input[name="class_ids"]'))
+        : [];
+    }
+
+    return [];
+  }
+
+  function refreshCategoryButtons() {
+    document.querySelectorAll('[data-category-select]').forEach(function (button) {
+      const scope = button.getAttribute('data-category-select');
+      const targets = getTargetBoxes(scope);
+
+      if (!targets.length) {
+        button.style.display = 'none';
+        return;
+      }
+
+      button.style.display = '';
+
+      const allChecked = targets.every(function (box) {
+        return box.checked;
+      });
+
+      const label = categoryLabels[scope] || scope;
+
+      button.textContent = allChecked
+        ? 'Clear ' + label
+        : 'Select all ' + label;
+
+      button.setAttribute(
+        'aria-pressed',
+        allChecked ? 'true' : 'false'
+      );
+    });
+  }
+
+  document.querySelectorAll('[data-category-select]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const scope = button.getAttribute('data-category-select');
+      const targets = getTargetBoxes(scope);
+
+      if (!targets.length) return;
+
+      const allChecked = targets.every(function (box) {
+        return box.checked;
+      });
+
+      targets.forEach(function (box) {
+        box.checked = !allChecked;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      refreshCategoryButtons();
+    });
+  });
+
+  const selectAll = document.getElementById('selectAllClasses');
+  const clearAll = document.getElementById('clearClasses');
+
+  if (selectAll) {
+    selectAll.addEventListener('click', function () {
+      allBoxes().forEach(function (box) {
+        box.checked = true;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      refreshCategoryButtons();
+    });
+  }
+
+  if (clearAll) {
+    clearAll.addEventListener('click', function () {
+      allBoxes().forEach(function (box) {
+        box.checked = false;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      refreshCategoryButtons();
+    });
+  }
+
+  allBoxes().forEach(function (box) {
+    box.addEventListener('change', refreshCategoryButtons);
+  });
+
+  Array.from(document.querySelectorAll('.cr-finance-applicability-option-v5 input')).forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      document.querySelectorAll('.cr-finance-applicability-option-v5').forEach(function (option) {
+        option.classList.remove('is-selected');
+      });
+      radio.closest('.cr-finance-applicability-option-v5').classList.add('is-selected');
+    });
+  });
+
+  const requiredValue = document.getElementById('financeRequiredValue');
+  const optionalValue = document.getElementById('financeOptionalValue');
+
+  const typeRadios = Array.from(
+    document.querySelectorAll('[data-fee-type-radio]')
+  );
+
+  function syncFeeType(value) {
+    if (!requiredValue || !optionalValue) return;
+
+    requiredValue.value = value === 'required' ? '1' : '0';
+    optionalValue.value = value === 'optional' ? '1' : '0';
+
+    typeRadios.forEach(function (radio) {
+      const card = radio.closest('.cr-finance-fee-type-option-v5');
+
+      if (card) {
+        card.classList.toggle('is-selected', radio.checked);
+      }
+    });
+  }
+
+  typeRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (radio.checked) {
+        syncFeeType(radio.value);
+      }
+    });
+  });
+
+  const initiallyChecked = typeRadios.find(function (radio) {
+    return radio.checked;
+  });
+
+  if (initiallyChecked) {
+    syncFeeType(initiallyChecked.value);
+  } else if (typeRadios.length) {
+    typeRadios[0].checked = true;
+    syncFeeType(typeRadios[0].value);
+  }
+
+  refreshCategoryButtons();
+})();
+</script>
+{% endblock %}

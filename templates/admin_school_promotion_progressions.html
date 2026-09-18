@@ -1,0 +1,108 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div class="cr-promo-page">
+
+    <div class="page-hero">
+        <div>
+            <div class="eyebrow">SCHOOL STRUCTURE</div>
+            <h1>Class Progression Rules</h1>
+            <p>
+                Define the default next class for each configured school
+                class. The system never assumes a particular naming scheme.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-secondary"
+               href="{{ url_for('admin_school_promotion') }}">
+                Back to Promotion
+            </a>
+        </div>
+    </div>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">CONFIGURE</span>
+                <h2>Default Progression</h2>
+                <p>
+                    You can map any configured class to any other configured
+                    class.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" class="cr-promo-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="save">
+
+            <label>
+                Current Class
+                <select name="from_class_id" required>
+                    <option value="">Select class</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">
+                        {{ c.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Default Next Class
+                <select name="to_class_id">
+                    <option value="">No default / terminal class</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">
+                        {{ c.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <button class="btn btn-primary" type="submit">
+                Save Progression Rule
+            </button>
+        </form>
+    </section>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">ACTIVE RULES</span>
+                <h2>Configured Progressions</h2>
+            </div>
+        </div>
+
+        <div class="cr-promo-table-wrap">
+            <table class="cr-promo-table">
+                <thead>
+                    <tr>
+                        <th>From Class</th>
+                        <th>To Class</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for p in progressions %}
+                    <tr>
+                        <td><strong>{{ p.from_class_name }}</strong></td>
+                        <td>
+                            {{ p.to_class_name or 'Terminal / no default' }}
+                        </td>
+                        <td><span class="cr-promo-status">Active</span></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="cr-promo-empty">
+                            No progression rules configured.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Create Administrator' if mode == 'new' else 'Manage Administrator' }} — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>{{ 'Add staff administrator' if mode == 'new' else 'Manage staff administrator' }}</h1><p class="hero-copy">Create a staff identity, assign one or more job roles, and define the exact school work areas this person may manage.</p></div></div>
+<div class="card modern-form">
+ {% for e in errors %}<div class="error">{{ e }}</div>{% endfor %}
+ <form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="scope_type" value="global">
+  <input type="hidden" name="scope_value" value="*">
+  <div class="form-section">
+   <div class="form-section-title"><span class="step">1</span><div><h2>Staff identity</h2><p>Use the username as the administrator's permanent login ID. A secure one-time password is generated automatically when a new account is created.</p></div></div>
+   <div class="admin-profile-editor">
+    <div class="admin-photo-picker">
+     <div class="admin-photo-frame">
+      {% if editing and editing.photo_path %}<img id="adminPhotoPreview" class="admin-photo-preview" src="{{ url_for('static',filename=editing.photo_path) }}" alt="Current profile image">{% else %}<span id="adminPhotoPlaceholder" class="admin-photo-placeholder">{{ (editing.display_name[:1] if editing else 'A')|upper }}</span><img id="adminPhotoPreview" class="admin-photo-preview is-hidden" alt="Selected profile image">{% endif %}
+     </div>
+     <label class="admin-photo-upload-btn" for="adminPhotoInput">Choose photo</label>
+     <input id="adminPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp">
+     <small>Profile photo</small>
+    </div>
+    <div class="form-grid profile-fields">
+     <div class="field"><label>Username / Login ID</label><input name="username" value="{{ form.get('username','') }}" {% if mode=='edit' %}readonly{% endif %} autocomplete="username" required><small>{% if mode=='new' %}Give the staff member a simple permanent login ID.{% else %}Login ID cannot be changed after account creation.{% endif %}</small></div>
+     <div class="field"><label>Full name</label><input name="display_name" value="{{ form.get('display_name','') }}" autocomplete="name" required></div>
+     <div class="field"><label>Email <span class="optional">Optional</span></label><input type="email" name="email" value="{{ form.get('email','') }}" autocomplete="email"></div>
+     <div class="field"><label>Phone number <span class="optional">Optional</span></label><input type="tel" name="phone" value="{{ form.get('phone','') }}" autocomplete="tel"></div>
+     <div class="field"><label>WhatsApp number <span class="optional">Optional</span></label><input type="tel" name="whatsapp" value="{{ form.get('whatsapp','') }}"><small>Can be different from the main phone number.</small></div>
+     <div class="field field-wide"><label>Profile image <span class="optional">Optional</span></label><small>PNG, JPG, JPEG, GIF or WEBP. Maximum upload size follows the platform security policy.</small></div>
+    </div>
+   </div>
+  </div>
+  <div class="form-section">
+   <div class="form-section-title"><span class="step">2</span><div><h2>Job roles</h2><p>An administrator may hold multiple roles. Effective permissions are the union of the selected role capabilities plus approved individual overrides.</p></div></div>
+   {% if protected_super_admin %}<div class="info-banner"><strong>Protected Super Admin</strong><span>This account has full system authority and is not narrowed by staff roles or access boundaries. Its system role cannot be replaced from the staff administrator editor.</span></div>{% else %}<div class="role-choice-grid">{% for r in roles %}<label class="role-choice"><input type="checkbox" name="admin_type_ids" value="{{ r.id }}" {% if r.id in selected_role_ids %}checked{% endif %}><span class="role-choice-body"><strong>{{ r.name }}</strong><small>{{ r.description }}</small></span><span class="role-check">✓</span></label>{% endfor %}</div>{% endif %}
+  </div>
+  <div class="form-section">
+   <div class="form-section-title"><span class="step">3</span><div><h2>Access boundaries</h2><p>Leave every boundary unchecked to give the administrator their full permitted area. Select multiple boundary types when access must be an intersection—for example, <strong>Mathematics + SSS 1 + SSS 2 + SSS 3</strong>.</p></div></div>
+   {% if protected_super_admin %}<div class="info-banner"><strong>Unrestricted system access</strong><span>No class, subject, session or question-bank boundary applies to a Super Admin. Any stale boundaries are automatically cleared.</span></div>{% else %}
+   <div class="scope-help info-banner"><strong>How this works</strong><span>Multiple values within a boundary are allowed. Multiple boundary types are combined, so a teacher can be restricted to several subjects across several classes without creating separate administrator accounts.</span></div>
+   {% set groups = form.get('scope_groups', {}) %}
+   {% set type_labels = {'academic_session':'Academic session','class':'Class / entry level','subject':'Subject','bank':'Question bank'} %}
+   {% set options = {'academic_session':sessions,'class':classes,'subject':subjects} %}
+   {% for st in ['academic_session','class','subject','bank'] %}
+   <div class="scope-card {% if st == 'bank' %}scope-bank{% endif %}">
+    <label class="scope-toggle"><input type="checkbox" name="scope_types" value="{{ st }}" class="scope-type" data-target="scope_{{ st }}" {% if st in groups %}checked{% endif %}><span><strong>{{ type_labels[st] }}</strong><small>Restrict this administrator to selected {{ type_labels[st]|lower }} values.</small></span></label>
+    <div id="scope_{{ st }}" class="scope-values">
+     <select name="scope_values_{{ st }}" multiple size="5">
+      {% if st == 'bank' %}{% for b in banks %}<option value="{{ b.id }}" {% if b.id|string in groups.get(st,[])|map('string')|list %}selected{% endif %}>{{ entrance_bank_display_name(b.id,b.name) }}</option>{% endfor %}
+      {% else %}{% for item in options[st] %}<option value="{{ item.name }}" {% if item.name in groups.get(st,[]) %}selected{% endif %}>{{ item.name }}</option>{% endfor %}{% endif %}
+     </select>
+     <small>Use Ctrl-click on Windows to choose multiple values, or Shift-click for a range.</small>
+    </div>
+   </div>
+   {% endfor %}
+   {% endif %}
+  </div>
+  {% if show_advanced and permissions %}<details class="advanced-panel"><summary>Advanced: individual permission overrides</summary><p class="muted">Use this only for exceptional access. Normal staff access should come from job roles.</p><div class="permission-grid compact">{% for p in permissions %}<label class="permission-item"><input type="checkbox" name="permissions" value="{{ p.id }}" {% if direct_permissions is defined and p.id in direct_permissions %}checked{% endif %}><span><strong>{{ p.name }}</strong><small>{{ p.description }}</small></span></label>{% endfor %}</div></details>{% endif %}
+  <div class="form-actions"><button class="btn btn-primary" type="submit">{{ 'Create administrator' if mode=='new' else 'Save changes' }}</button>{% if mode=='edit' and editing and editing.active %}<button class="btn btn-light" type="submit" formaction="{{ url_for('admin_account_credentials_reset',aid=editing.id) }}" formmethod="post" onclick="return confirm('Generate a new temporary password for this administrator? Their current password will stop working.');">Reset login details</button>{% endif %}<a class="btn btn-light" href="{{ url_for('admin_accounts') }}">Cancel</a></div>
+ </form>
+</div>
+<script>
+(function(){
+ document.querySelectorAll('.scope-type').forEach(function(box){
+  var target=document.getElementById(box.dataset.target); var select=target ? target.querySelector('select') : null;
+  function sync(){ if(!target || !select) return; target.style.display=box.checked?'block':'none'; select.disabled=!box.checked; }
+  box.addEventListener('change',sync); sync();
+ });
+})();
+ document.getElementById('adminPhotoInput')?.addEventListener('change', function(){
+  var file=this.files && this.files[0];
+  var preview=document.getElementById('adminPhotoPreview');
+  var placeholder=document.getElementById('adminPhotoPlaceholder');
+  if(!file || !preview) return;
+  if(!file.type || file.type.indexOf('image/') !== 0) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ preview.src=e.target.result; preview.classList.remove('is-hidden'); if(placeholder) placeholder.classList.add('is-hidden'); };
+  reader.readAsDataURL(file);
+ });
+})();
+</script>
+{% endblock %}

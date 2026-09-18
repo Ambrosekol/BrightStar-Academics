@@ -1,0 +1,175 @@
+{% extends "admin_base.html" %}
+{% block title %}Academic Sessions — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="cr-promo-page">
+
+    <div class="page-hero">
+        <div>
+            <div class="eyebrow">SCHOOL STRUCTURE</div>
+            <h1>Academic Sessions</h1>
+            <p>
+                Create each new academic year and control which one is the
+                current session — the one every dashboard, receipt, test and
+                report is filed against by default. Super Admin only.
+            </p>
+        </div>
+    </div>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">GRADING STRUCTURE</span>
+                <h2>Continuous assessment weighting</h2>
+                <p>
+                    Every subject's term result is Exam ({{exam_max|int}}) + Continuous Assessment ({{ca_max|int}}) = 100.
+                    Terms are {{terms|join(', ')}}. The {{ca_max|int}} CA marks are split between tests, assignments
+                    and projects below — the three numbers must add up to exactly {{ca_max|int}}.
+                </p>
+            </div>
+        </div>
+        <form method="post" class="cr-session-form cr-ca-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="set_ca_weights">
+            <label>
+                Tests
+                <input type="number" name="ca_weight_test" min="0" step="0.5" value="{{ca_weights.test}}" required>
+            </label>
+            <label>
+                Assignments
+                <input type="number" name="ca_weight_assignment" min="0" step="0.5" value="{{ca_weights.assignment}}" required>
+            </label>
+            <label>
+                Projects
+                <input type="number" name="ca_weight_project" min="0" step="0.5" value="{{ca_weights.project}}" required>
+            </label>
+            <button class="btn btn-primary" type="submit">Save weighting</button>
+        </form>
+    </section>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">NEW SESSION</span>
+                <h2>Start a new academic year</h2>
+                <p>
+                    Name it however your records already use, e.g. 2027/2028.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" class="cr-session-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="create">
+
+            <label>
+                Session name
+                <input type="text" name="name" placeholder="e.g. 2027/2028" required maxlength="40">
+            </label>
+
+            <label>
+                Start date <span class="cr-promo-muted">(optional)</span>
+                <input type="date" name="start_date">
+            </label>
+
+            <label>
+                End date <span class="cr-promo-muted">(optional)</span>
+                <input type="date" name="end_date">
+            </label>
+
+            <label class="cr-session-check">
+                <input type="checkbox" name="make_current" value="1">
+                <span>Make this the current session</span>
+            </label>
+
+            <button class="btn btn-primary" type="submit">Create session</button>
+        </form>
+    </section>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
+                <span class="cr-promo-kicker">ALL SESSIONS</span>
+                <h2>Every academic session on record</h2>
+            </div>
+        </div>
+
+        <div class="cr-promo-table-wrap">
+            <table class="cr-promo-table">
+                <thead>
+                    <tr>
+                        <th>Session</th>
+                        <th>Dates</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in sessions %}
+                    <tr>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td>
+                            {% if s.start_date or s.end_date %}
+                                {{ s.start_date or '—' }} <span class="cr-promo-muted">to</span> {{ s.end_date or '—' }}
+                            {% else %}
+                                <span class="cr-promo-muted">No dates set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.is_current %}<span class="cr-promo-status cr-session-current">Current</span>{% endif %}
+                            {% if s.active %}<span class="cr-promo-status">Active</span>{% else %}<span class="cr-promo-status cr-session-archived">Archived</span>{% endif %}
+                        </td>
+                        <td class="cr-session-actions">
+                            {% if not s.is_current %}
+                            <form method="post">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="set_current">
+                                <input type="hidden" name="session_id" value="{{ s.id }}">
+                                <button class="btn btn-light btn-small" type="submit" {% if not s.active %}disabled title="Reactivate this session first"{% endif %}>Set as current</button>
+                            </form>
+                            {% endif %}
+                            {% if s.active %}
+                            <form method="post" onsubmit="return {% if s.is_current %}false{% else %}confirm('Archive {{ s.name }}? It will no longer appear as a selectable session.'){% endif %}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="archive">
+                                <input type="hidden" name="session_id" value="{{ s.id }}">
+                                <button class="btn btn-light btn-small" type="submit" {% if s.is_current %}disabled title="Set another session as current first"{% endif %}>Archive</button>
+                            </form>
+                            {% else %}
+                            <form method="post">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="reactivate">
+                                <input type="hidden" name="session_id" value="{{ s.id }}">
+                                <button class="btn btn-light btn-small" type="submit">Reactivate</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="cr-promo-empty">No academic sessions have been created yet.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+<style>
+.cr-session-form{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:16px 20px;align-items:end}
+.cr-ca-form{grid-template-columns:repeat(3,minmax(140px,1fr))}
+.cr-ca-form button{grid-column:auto;justify-self:start}
+@media (max-width:640px){.cr-ca-form{grid-template-columns:1fr}}
+.cr-session-form label{display:flex;flex-direction:column;gap:7px;font-size:.78rem;font-weight:800}
+.cr-session-form input[type=text],.cr-session-form input[type=date]{width:100%;min-height:42px;border:1px solid rgba(15,23,42,.13);border-radius:10px;padding:9px 11px;background:#fff;font:inherit}
+.cr-session-check{flex-direction:row !important;align-items:center;gap:9px !important;font-weight:700 !important}
+.cr-session-check input{width:auto;min-height:0}
+.cr-session-form button{grid-column:1/-1;justify-self:start}
+@media (max-width:640px){.cr-session-form{grid-template-columns:1fr}}
+.cr-session-current{background:rgba(37,99,235,.12);color:#1d4ed8;margin-right:6px}
+.cr-session-archived{background:rgba(100,116,139,.14);color:#475569}
+.cr-session-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cr-session-actions form{display:inline}
+.cr-session-actions button:disabled{opacity:.45;cursor:not-allowed}
+</style>
+{% endblock %}

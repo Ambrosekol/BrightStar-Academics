@@ -1,0 +1,610 @@
+{
+  "id": "crainbow_year7_entrance_mathematics",
+  "name": "Creative Rainbow College — Entrance Examination Into Year 7",
+  "level": "Year 7",
+  "subject": "Mathematics",
+  "duration_seconds": 3600,
+  "version": "production",
+  "questions": [
+    {
+      "id": 1,
+      "text": "Simplify 81 - 48 ÷ 4 + 27.",
+      "options": [
+        "98",
+        "96",
+        "44",
+        "42"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 2,
+      "text": "A number that has only two different factors is called:",
+      "options": [
+        "An even number",
+        "A factorial number",
+        "A fractional number",
+        "A prime number"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 3,
+      "text": "What is the simple Interest on ₦280.00 for 5 years at 3% per annum?",
+      "options": [
+        "₦42.00",
+        "₦168.00",
+        "₦49.00",
+        "₦84.00"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 4,
+      "text": "Find the area of a square whose perimeter is 40cm.",
+      "options": [
+        "1600cm²",
+        "240cm²",
+        "160cm²",
+        "100cm²"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 5,
+      "text": "What is the mode of the set of numbers: 0, 2, 2, 4, 4, 6, 6, 6, 6?",
+      "options": [
+        "0",
+        "2",
+        "4",
+        "6"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 6,
+      "text": "Find the range of the set of numbers.",
+      "options": [
+        "5",
+        "4",
+        "2",
+        "6"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 7,
+      "text": "Find the median of the set of numbers.",
+      "options": [
+        "0",
+        "3",
+        "4",
+        "6"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 8,
+      "text": "Express 609 in Roman numerals.",
+      "options": [
+        "CDIX",
+        "CDXI",
+        "LDIX",
+        "DCIX"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 9,
+      "text": "If 4/5 = x/25, find x.",
+      "options": [
+        "4",
+        "5",
+        "20",
+        "16"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 10,
+      "text": "3x - 6 = 3. The value of x is:",
+      "options": [
+        "2",
+        "8",
+        "4",
+        "3"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 11,
+      "text": "The volume of a cuboid with dimensions x cm, 2y cm and 5z cm is",
+      "options": [
+        "10xyz cm³",
+        "10yz/x cm³",
+        "2xy/5z cm³",
+        "5xz/2y cm³"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 12,
+      "text": "The volume of a rectangular solid is 280 cm³. If the length is 8 cm and the breadth is 7 cm, find the height.",
+      "options": [
+        "15 cm",
+        "5 cm",
+        "35 cm",
+        "40 cm"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 13,
+      "text": "Find the area of a circle whose diameter is 14cm. Take π = 3 1/7.",
+      "options": [
+        "49 cm²",
+        "154 cm²",
+        "63 cm²",
+        "161 cm²"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 14,
+      "text": "The average of three numbers is 25. Two of them are 45 and 16 respectively. Find the third number.",
+      "options": [
+        "30",
+        "14",
+        "18",
+        "25"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 15,
+      "text": "How many years will it take ₦7,200.00 to yield an Interest of ₦6,048 at 21% per annum?",
+      "options": [
+        "3yrs",
+        "2yrs",
+        "4yrs",
+        "5yrs"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 16,
+      "text": "Write the following in figures; Ten thousand three hundred and seven.",
+      "options": [
+        "13 007",
+        "1 037",
+        "10 307",
+        "13 700"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 17,
+      "text": "Evaluate 1/5 × 5/6 × 3/7 × 21/16 × 32.",
+      "options": [
+        "12",
+        "16",
+        "15",
+        "13"
+      ],
+      "answer": null,
+      "points": 1
+    },
+    {
+      "id": 18,
+      "text": "Express 25 as a fraction of 125 in Percentage.",
+      "options": [
+        "16%",
+        "20%",
+        "25%",
+        "40%"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 19,
+      "text": "If 12 men can finish a piece of work in 8 days, how many days will 6 men take to do the same piece of work, working at the same rate?",
+      "options": [
+        "12 days",
+        "16 days",
+        "96 days",
+        "18 days"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 20,
+      "text": "Simplify (40 + 5) × (30 - 22) ÷ 9.",
+      "options": [
+        "70",
+        "90",
+        "40",
+        "45"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 21,
+      "text": "What is the HCF of 27, 15, 3, 21 and 9?",
+      "options": [
+        "3",
+        "2",
+        "6",
+        "5"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 22,
+      "text": "If you share 45 in the ratio 3:2 the smaller share is.",
+      "options": [
+        "12",
+        "25",
+        "27",
+        "18"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 23,
+      "text": "30% of ₦750.00 is",
+      "options": [
+        "₦200",
+        "₦225",
+        "₦250",
+        "₦300"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 24,
+      "text": "Write as Roman number the addition of CMLXXXVI and MDCCCLXIX.",
+      "options": [
+        "MMDCCCLVI",
+        "MMDCCCLIV",
+        "MMDCCLV",
+        "MMDCCCLV"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 25,
+      "text": "Subtract three scores and three dozen from two gross.",
+      "options": [
+        "150",
+        "192",
+        "510",
+        "291"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 26,
+      "text": "Find the value of x in 2x - 8 = 3x + 5.",
+      "options": [
+        "x = 12",
+        "x = 26",
+        "x = -15",
+        "x = -13"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 27,
+      "text": "A motorist started a journey at 10.25 a.m. and ended at 6.15 p.m. Calculate the time used for the journey.",
+      "options": [
+        "8hrs 50mins",
+        "6hrs 40mins",
+        "7hrs 40mins",
+        "7hrs 50mins"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 28,
+      "text": "The perimeter of a ring is 88mm. Find its diameter. π = 22/7.",
+      "options": [
+        "14mm",
+        "28mm",
+        "135mm",
+        "150mm"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 29,
+      "text": "An article which cost ₦840.00 was sold at a loss of 3%. Find the selling price.",
+      "options": [
+        "₦814.80",
+        "₦815.40",
+        "₦700.80",
+        "₦400.80"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 30,
+      "text": "Three out of a crate of 30 eggs are broken. What percentage is good?",
+      "options": [
+        "70%",
+        "27%",
+        "97%",
+        "90%"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 31,
+      "text": "A bag of Cement weighs 56kg. A lorry can carry 4480kg of Cement on a trip. How many bags of Cement can it carry on two trips?",
+      "options": [
+        "80 bags",
+        "120 bags",
+        "160 bags",
+        "150 bags"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 32,
+      "text": "Three children shared ₦300.00 in the ratio of their ages: 9 years, 12 years and 15 years. How much did the youngest receive?",
+      "options": [
+        "₦125.00",
+        "₦200.00",
+        "₦210.00",
+        "₦75.00"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 33,
+      "text": "A boy spent 1/3 of his money on Comics, 1/4 on snacks and 1/8 on sweets. What fraction of his money is left?",
+      "options": [
+        "7/24",
+        "17/24",
+        "7/14",
+        "7/12"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 34,
+      "text": "Find x. The angles shown are 58.3° and x° on a straight line.",
+      "options": [
+        "12.17°",
+        "121.7°",
+        "1.217°",
+        "1217°"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 35,
+      "text": "How much does Mr. Jude spend on feeding?",
+      "options": [
+        "₦580,000",
+        "₦480,000",
+        "₦648,000",
+        "₦180,000"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 36,
+      "text": "What is the difference between the amount he spent on Maintenance and Transportation?",
+      "options": [
+        "₦27,000",
+        "₦28,000",
+        "₦29,000",
+        "₦26,000"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 37,
+      "text": "What percentage of his money is spent on medical?",
+      "options": [
+        "25.5%",
+        "14.5%",
+        "15.5%",
+        "12.5%"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 38,
+      "text": "A square has ______ lines of symmetry.",
+      "options": [
+        "2",
+        "1",
+        "4",
+        "3"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 39,
+      "text": "Convert 91₁₀ to binary.",
+      "options": [
+        "110 1101₂",
+        "101 1011₂",
+        "101 1101₂",
+        "101 1110₂"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 40,
+      "text": "Convert 11001₂ to base10.",
+      "options": [
+        "12",
+        "34",
+        "25",
+        "15"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 41,
+      "text": "Use the quantitative-reasoning diagram and samples provided to determine the missing value.",
+      "options": [
+        "0",
+        "5",
+        "6",
+        "3"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 42,
+      "text": "Use the quantitative-reasoning diagram and samples provided to determine the missing value.",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 43,
+      "text": "Use the quantitative-reasoning diagram and samples provided to determine the missing value.",
+      "options": [
+        "0",
+        "125",
+        "225",
+        "300"
+      ],
+      "answer": null,
+      "points": 1
+    },
+    {
+      "id": 44,
+      "text": "Use the quantitative-reasoning diagram and samples provided to determine the missing value.",
+      "options": [
+        "4",
+        "5",
+        "3",
+        "6"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 45,
+      "text": "Use the quantitative-reasoning diagram and samples provided to determine the missing value.",
+      "options": [
+        "22",
+        "81",
+        "60 1/2",
+        "5"
+      ],
+      "answer": null,
+      "points": 1
+    },
+    {
+      "id": 46,
+      "text": "3! × 2! = ?",
+      "options": [
+        "6",
+        "24",
+        "8",
+        "12"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 47,
+      "text": "(6! × 3!) ÷ 4! = ?",
+      "options": [
+        "160",
+        "240",
+        "180",
+        "120"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 48,
+      "text": "7! ÷ ? = 210",
+      "options": [
+        "4!",
+        "5!",
+        "6!",
+        "3!"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 49,
+      "text": "9! ÷ 8! = ?",
+      "options": [
+        "9",
+        "18",
+        "8",
+        "27"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 50,
+      "text": "4! + 3! + 2! + 1! = ?",
+      "options": [
+        "30",
+        "33",
+        "32",
+        "34"
+      ],
+      "answer": 1,
+      "points": 1
+    }
+  ]
+}

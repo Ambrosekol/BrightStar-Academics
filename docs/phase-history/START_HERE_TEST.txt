@@ -1,0 +1,46 @@
+CRAINBOW CBT — UNIFIED SCHOOL GATEWAY
+
+1. Run:
+   python app.py
+
+2. Open ONE address in the browser:
+   http://192.168.x.x:5000/
+   (or http://127.0.0.1:5000/ on the server computer)
+
+3. Landing page:
+   Welcome to Creative Rainbow Schools
+   - Take a Practice Test
+   - Log in to My Account
+
+4. One login surface:
+   - Staff username + password -> Workspace Home
+   - Candidate ID + password -> Candidate Dashboard
+   - Student credentials -> Student Portal when student credentials are provisioned
+
+5. Staff workspace rule:
+   Workspace Home has NO sidebar. The administrator must deliberately choose
+   Entrance Examination or School Portal first. The selected workspace then
+   controls the sidebar and URL boundary.
+
+6. To change workspace:
+   Click Exit Workspace / Back to Workspace Home, then choose the other area.
+
+7. Entrance terminology:
+   Use CANDIDATE for entrance examination participants.
+
+8. School terminology:
+   Use STUDENT for enrolled school pupils.
+
+9. Public Practice Test:
+   No login is required. Only active practice assessments from previous
+   academic sessions are eligible; current-session and entrance-examination
+   content are excluded.
+
+10. Default Super Admin:
+    username: superadmin
+    password: admin123
+    Change the password before real deployment.
+
+11. Important:
+    The existing candidate examination flow is preserved. Test it after every
+    future school-portal change.

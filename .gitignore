@@ -1,0 +1,23 @@
+# Environments
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets and local config
+.env
+.claude/
+
+# Runtime databases (never diffed in git; the app's own safeguards protect them)
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+{% extends 'admin_base.html' %}
+{% block title %}Edit Class — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / CLASSES</div><h1>Edit class</h1><p class="hero-copy">Maintain the school's class catalogue. Changing a class name changes its master label; historical enrollment snapshots remain preserved.</p></div></div>
+<div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
+<form method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid two">
+<div class="field"><label>Class name</label><input name="name" value="{{class_row.name}}" required></div>
+<div class="field"><label>Stage / category</label><input name="stage" value="{{class_row.stage}}" required></div>
+<div class="field"><label>Display order</label><input type="number" name="level_order" value="{{class_row.level_order}}" required></div>
+<label class="check-row"><input type="checkbox" name="optional" value="1" {% if class_row.optional %}checked{% endif %}> Mark as optional / not currently offered</label>
+</div><div class="form-actions"><button class="btn btn-primary" type="submit">Save class changes</button><a class="btn btn-light" href="{{url_for('admin_school_classes')}}">Cancel</a></div></form></div>
+{% endblock %}

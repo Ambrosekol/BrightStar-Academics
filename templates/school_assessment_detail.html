@@ -1,0 +1,51 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{assessment.title}} — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / {{assessment.assessment_type|upper}}</div><h1>{{assessment.title}}</h1><p class="hero-copy">{{assessment.class_name}} · {{assessment.subject_name}} · {{assessment.session_name or 'No session'}}</p></div><div class="hero-actions"><form method="post" action="{{url_for('admin_school_assessment_toggle',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-primary" type="submit">{{'Close assessment' if assessment.active else 'Activate assessment'}}</button></form></div></div>
+<div class="quick-grid"><div class="quick-card"><div><strong>Questions</strong><span>{{questions|length}} loaded</span></div></div><div class="quick-card"><div><strong>Duration</strong><span>{{assessment.duration_minutes}} minutes</span></div></div><div class="quick-card"><div><strong>Status</strong><span>{{'Active' if assessment.active else 'Draft / Closed'}}</span></div></div><div class="quick-card"><div><strong>Session</strong><span>{{assessment.session_name or '—'}}</span></div></div></div>
+<div class="card modern-form" style="margin-top:18px"><h2>Assessment details</h2><form method="post" action="{{url_for('admin_school_assessment_edit',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid"><div class="field"><label>Title</label><input name="title" value="{{assessment.title}}" required></div><div class="field"><label>Duration</label><input type="number" min="1" name="duration_minutes" value="{{assessment.duration_minutes}}" required></div><div class="field"><label>Class</label><input value="{{assessment.class_name}}" disabled><input type="hidden" name="class_id" value="{{assessment.class_id}}"></div><div class="field"><label>Subject</label><input value="{{assessment.subject_name}}" disabled><input type="hidden" name="subject_id" value="{{assessment.subject_id}}"></div><div class="field" style="grid-column:1/-1"><label>Instructions</label><textarea name="instructions" rows="4">{{assessment.instructions or ''}}</textarea></div><div class="field"><label>Academic session</label><select name="session_id">{% for s in sessions %}<option value="{{s.id}}" {% if s.id==assessment.session_id %}selected{% endif %}>{{s.name}}{% if s.is_current %} — Current{% endif %}</option>{% endfor %}</select></div><div class="field"><label>Term</label><select name="term">{% if assessment.assessment_type=='practice' %}<option value="">No term (practice test)</option>{% endif %}{% for t in terms %}<option value="{{t}}" {% if assessment.term==t %}selected{% endif %}>{{t}}</option>{% endfor %}</select></div></div><div class="form-actions"><button class="btn btn-light" type="submit">Save details</button></div></form></div>
+<div class="card modern-form" style="margin-top:18px"><div class="section-head"><div><h2>Questions</h2><p class="muted">Load objective questions directly into this {{assessment.assessment_type}}.</p></div></div><form method="post" enctype="multipart/form-data" action="{{url_for('admin_school_assessment_question_new',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="question-authoring-panel"><div class="field"><label>Question instruction <span class="optional">(optional)</span></label><textarea name="instruction" rows="3" placeholder="Tell the student exactly what to do."></textarea></div><div class="field"><label>Question image <span class="optional">(optional)</span></label><input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp"><small class="field-help">PNG, JPG, JPEG, GIF or WEBP.</small></div></div><div class="field"><label>Question</label><textarea name="question_text" rows="3" required></textarea></div><div class="form-grid"><div class="field"><label>Option A</label><input name="option_a" required></div><div class="field"><label>Option B</label><input name="option_b" required></div><div class="field"><label>Option C</label><input name="option_c" required></div><div class="field"><label>Option D</label><input name="option_d" required></div><div class="field"><label>Correct option</label><select name="correct_option"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div><div class="field"><label>Points</label><input type="number" min="1" name="points" value="1"></div></div><div class="form-actions"><button class="btn btn-primary" type="submit">+ Add question</button></div></form><div class="assessment-question-list" id="schoolQuestionList">
+{% for q in questions %}
+<div class="assessment-question school-assessment-question" data-question-id="{{q.id}}">
+  <div class="assessment-question-body">
+    <div><strong>Q{{loop.index}}.</strong> {{q.question_text}}</div>
+    {% if q.instruction %}<small class="question-list-instruction">Instruction: {{q.instruction}}</small>{% endif %}
+    {% if q.image_path %}<img class="question-list-image" src="{{url_for('static',filename=q.image_path)}}" alt="Question image">{% endif %}
+    <small>A. {{q.option_a}} · B. {{q.option_b}} · C. {{q.option_c}} · D. {{q.option_d}} · Correct: {{'ABCD'[q.correct_option]}} · {{q.points}} point{{'' if q.points==1 else 's'}}</small>
+  </div>
+  <div class="assessment-question-actions">
+    <a class="btn btn-light btn-small" href="{{url_for('admin_school_assessment_question_edit',assessment_id=assessment.id,question_id=q.id)}}">Edit</a>
+    <button type="button" class="btn btn-light btn-small" onclick="moveSchoolQuestion(this,-1)" {% if loop.first %}disabled{% endif %}>↑</button>
+    <button type="button" class="btn btn-light btn-small" onclick="moveSchoolQuestion(this,1)" {% if loop.last %}disabled{% endif %}>↓</button>
+    <form method="post" action="{{url_for('admin_school_assessment_question_delete',assessment_id=assessment.id,question_id=q.id)}}" onsubmit="return confirm('Delete this question?');">
+      <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+      <button class="btn btn-danger btn-small" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% else %}<div class="empty-state">No questions loaded yet.</div>{% endfor %}
+</div>
+{% if questions %}
+<form id="schoolQuestionOrderForm" method="post" action="{{url_for('admin_school_assessment_question_reorder',assessment_id=assessment.id)}}">
+  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+  <input type="hidden" name="order" id="schoolQuestionOrder">
+  <div class="form-actions" style="margin-top:14px"><button class="btn btn-light" type="submit">Save Question Order</button></div>
+</form>
+<script>
+function moveSchoolQuestion(button,direction){
+  const item=button.closest('.school-assessment-question');
+  const list=document.getElementById('schoolQuestionList');
+  const target=direction<0?item.previousElementSibling:item.nextElementSibling;
+  if(!target || !target.classList.contains('school-assessment-question')) return;
+  if(direction<0) list.insertBefore(item,target); else list.insertBefore(target,item);
+  [...list.querySelectorAll('.school-assessment-question')].forEach((el,i)=>{
+    const strong=el.querySelector('.assessment-question-body > div > strong');
+    if(strong) strong.textContent='Q'+(i+1)+'.';
+  });
+}
+document.getElementById('schoolQuestionOrderForm')?.addEventListener('submit',function(){
+  document.getElementById('schoolQuestionOrder').value=[...document.querySelectorAll('.school-assessment-question')].map(x=>x.dataset.questionId).join(',');
+});
+</script>
+{% endif %}</div>
+{% endblock %}

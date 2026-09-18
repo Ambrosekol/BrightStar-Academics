@@ -1,0 +1,666 @@
+{% extends 'admin_base.html' %}
+{% block title %}Fee Structure — Crainbow Administration
+
+{% endblock %}
+{% block content %}
+<style id="cr-finance-v7-1-styles">
+/* ============================================================
+   CRAINBOW FINANCE FEE STRUCTURE V7.1
+   Workspace Tabs
+   ============================================================ */
+
+.cr-finance-tabs-v7{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 24px;
+  padding:6px;
+  border:1px solid #dce6ee;
+  border-radius:14px;
+  background:#f5f8fb;
+}
+
+.cr-finance-tab-v7{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  min-width:0;
+  padding:12px 15px;
+  border:1px solid transparent;
+  border-radius:10px;
+  background:transparent;
+  color:#637b91;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+.cr-finance-tab-v7:hover{
+  color:#204b70;
+  background:#ffffff;
+}
+
+.cr-finance-tab-v7.is-active{
+  border-color:#d2e3ef;
+  background:#ffffff;
+  color:#126da5;
+  box-shadow:0 5px 14px rgba(26,62,91,.08);
+}
+
+.cr-finance-tab-v7:focus-visible{
+  outline:3px solid rgba(20,127,193,.18);
+  outline-offset:2px;
+}
+
+.cr-finance-tab-icon-v7{
+  display:grid;
+  place-items:center;
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  border-radius:9px;
+  background:#eaf3f9;
+  color:#2779aa;
+  font-size:16px;
+  font-weight:800;
+}
+
+.cr-finance-tab-v7.is-active .cr-finance-tab-icon-v7{
+  background:#dceef9;
+  color:#147fc1;
+}
+
+.cr-finance-tab-v7 strong,
+.cr-finance-tab-v7 small{
+  display:block;
+}
+
+.cr-finance-tab-v7 strong{
+  color:inherit;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.25;
+}
+
+.cr-finance-tab-v7 small{
+  margin-top:3px;
+  color:#8a9cad;
+  font-size:10px;
+  line-height:1.35;
+  font-weight:550;
+}
+
+.cr-finance-tab-panel-v7{
+  min-width:0;
+}
+
+.cr-finance-tab-panel-v7[hidden]{
+  display:none !important;
+}
+
+.cr-finance-tab-panel-v7 .cr-finance-assessment-footer{
+  position:sticky;
+  bottom:16px;
+  z-index:30;
+  margin-top:18px;
+  border:1px solid #b8d8eb;
+  border-radius:13px;
+  background:rgba(255,255,255,.97);
+  box-shadow:0 12px 30px rgba(25,65,95,.14);
+  backdrop-filter:blur(8px);
+}
+
+.cr-finance-tab-panel-v7 .cr-finance-catalogue-card{
+  box-shadow:0 8px 24px rgba(26,62,91,.045);
+}
+
+.cr-finance-tab-panel-v7 .cr-finance-catalogue-table thead th{
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:#f8fafc;
+}
+
+.cr-finance-tab-panel-v7 .cr-finance-section-heading{
+  margin-bottom:14px;
+}
+
+@media (max-width:760px){
+  .cr-finance-tabs-v7{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+
+  .cr-finance-tab-v7{
+    width:100%;
+  }
+
+  .cr-finance-tab-v7 small{
+    font-size:10px;
+  }
+
+  .cr-finance-tab-panel-v7 .cr-finance-assessment-footer{
+    bottom:8px;
+  }
+}
+
+@media (min-width:761px) and (max-width:980px){
+  .cr-finance-tab-v7{
+    padding:11px 10px;
+  }
+
+  .cr-finance-tab-v7 small{
+    display:none;
+  }
+}
+</style>
+
+<div class="cr-finance-page">
+  <div class="cr-finance-hero">
+    <div>
+      <div class="cr-finance-eyebrow">FINANCE &amp; BURSARY / FEE STRUCTURE</div>
+      <h1>Fee Structure</h1>
+      <p>Manage the school's editable fee catalogue and create accurate student obligations from the class-specific fee structure.</p>
+    </div>
+    <div class="cr-finance-hero-actions">
+      <a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_dashboard') }}">← Finance Dashboard</a>
+      <a class="cr-finance-primary-btn" href="{{ url_for('admin_finance_fee_item_new') }}" title="Create a new fee item in the editable fee catalogue">+ Add Item to Catalogue</a><div class="finance-catalogue-action-note">Add a new charge here when the school introduces a new fee.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+     CRAINBOW FINANCE FEE STRUCTURE V7.1
+     WORKSPACE TAB NAVIGATION
+     ============================================================ -->
+
+<div class="cr-finance-tabs-v7"
+     role="tablist"
+     aria-label="Fee Structure workspace">
+
+  <button
+    type="button"
+    class="cr-finance-tab-v7 is-active"
+    id="financeTabBilling"
+    role="tab"
+    aria-selected="true"
+    aria-controls="financePanelBilling"
+    data-finance-tab="billing"
+  >
+    <span class="cr-finance-tab-icon-v7" aria-hidden="true">▣</span>
+    <span>
+      <strong>Student Billing</strong>
+      <small>Create student fee obligations</small>
+    </span>
+  </button>
+
+  <button
+    type="button"
+    class="cr-finance-tab-v7"
+    id="financeTabCatalogue"
+    role="tab"
+    aria-selected="false"
+    aria-controls="financePanelCatalogue"
+    data-finance-tab="catalogue"
+    tabindex="-1"
+  >
+    <span class="cr-finance-tab-icon-v7" aria-hidden="true">☷</span>
+    <span>
+      <strong>Fee Catalogue</strong>
+      <small>Manage approved fee items</small>
+    </span>
+  </button>
+
+  <button
+    type="button"
+    class="cr-finance-tab-v7"
+    id="financeTabHistory"
+    role="tab"
+    aria-selected="false"
+    aria-controls="financePanelHistory"
+    data-finance-tab="history"
+    tabindex="-1"
+  >
+    <span class="cr-finance-tab-icon-v7" aria-hidden="true">◷</span>
+    <span>
+      <strong>Recent Assessments</strong>
+      <small>Review generated obligations</small>
+    </span>
+  </button>
+
+</div>
+<div id="financePanelBilling" class="cr-finance-tab-panel-v7 is-active" role="tabpanel" aria-labelledby="financeTabBilling" data-finance-panel="billing">
+<div class="cr-finance-section-intro">
+    <div>
+      <span class="cr-finance-section-kicker">STUDENT BILLING</span>
+      <h2>Create Student Assessment</h2>
+      <p>Select the student and academic session. The system resolves the student's actual class and displays only fee items assigned to that class.</p>
+    </div>
+    <div class="cr-finance-integrity-note">
+      <span class="cr-finance-integrity-icon">✓</span>
+      <div><strong>Class-controlled applicability</strong><small>Fee visibility and server-side assessment validation follow the student's session enrolment.</small></div>
+    </div>
+  </div>
+
+  <form id="financeAssessmentForm" class="cr-finance-assessment-workspace" method="post" action="{{ url_for('admin_finance_assessment_new') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <div class="cr-finance-assessment-top">
+      <div class="cr-finance-field">
+        <label for="financeStudent">Student</label>
+        <select id="financeStudent" name="student_id" required>
+          <option value="">Select a student</option>
+          {% for s in students %}
+          <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="cr-finance-field">
+        <label for="financeSession">Academic Session</label>
+        <select id="financeSession" name="session_id" required>
+          <option value="">Select session</option>
+          {% for session in sessions %}
+          <option value="{{ session.id }}" {% if current_session and session.id == current_session.id %}selected{% endif %}>{{ session.name }}{% if current_session and session.id == current_session.id %} — Current{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="cr-finance-field">
+        <label for="financeTerm">Billing Period</label>
+        <select id="financeTerm" name="term" required>
+          <option value="Full Session">Full Session</option>
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+      </div>
+      <div class="cr-finance-field">
+        <label for="financeDueDate">Due Date <span>Optional</span></label>
+        <input id="financeDueDate" type="date" name="due_date">
+      </div>
+    </div>
+
+    <div id="financeClassContext" class="cr-finance-class-context" hidden>
+      <div>
+        <span class="cr-finance-context-label">STUDENT'S SESSION CLASS · AUTO-RESOLVED</span>
+        <strong id="financeStudentClass">—</strong>
+      </div>
+      <div id="financeClassStatus" class="cr-finance-context-status">Automatically resolved from the student's session enrolment. This is informational and cannot be changed here.</div>
+    </div>
+
+    <div class="cr-finance-class-selector">
+      <div class="cr-finance-class-selector-head">
+        <div><span class="cr-finance-section-kicker">FEE FILTER</span><h3>Choose Class</h3><p>Start with the school section, then select the exact class. The student's class is selected automatically when available.</p></div>
+      </div>
+      <div class="cr-finance-stage-tabs" role="tablist" aria-label="School sections">
+        <button type="button" class="cr-finance-stage-tab" data-stage="nursery">Nursery</button>
+        <button type="button" class="cr-finance-stage-tab" data-stage="primary">Primary</button>
+        <button type="button" class="cr-finance-stage-tab" data-stage="college">College</button>
+      </div>
+      <div class="cr-finance-class-pills" id="financeClassPills"></div>
+    </div>
+
+    <div class="cr-finance-selection-toolbar">
+      <div><div class="cr-finance-toolbar-title">Select Fee Items</div><div class="cr-finance-toolbar-copy">Only fees assigned to the selected class are shown. Shared fees assigned to all active classes remain available.</div></div>
+      <div class="cr-finance-toolbar-actions">
+        <label class="cr-finance-search"><span aria-hidden="true">⌕</span><input id="financeFeeSearch" type="search" placeholder="Search fee items..." autocomplete="off"></label>
+        <button type="button" class="cr-finance-tool-btn" id="financeSelectAll">Select visible</button>
+        <button type="button" class="cr-finance-tool-btn" id="financeClearAll">Clear</button>
+      </div>
+    </div>
+
+    <div class="cr-finance-selection-meta">
+      <span><strong id="financeSelectedCount">0</strong> fee item(s) selected</span>
+      <span class="cr-finance-selection-total">Assessment total <strong id="financeAssessmentTotal">₦0.00</strong></span>
+    </div>
+
+    <div id="financeFeeGrid" class="cr-finance-fee-grid">
+      {% for item in items %}
+      <label class="cr-finance-fee-card" data-fee-card data-fee-item-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-category="{{ (item.category or 'School Fees')|lower }}" data-active="{{ item.active }}" data-amount="{{ item.amount|float }}" data-applicable="{{ fee_class_map.get(item.id|string, [])|map(attribute='id')|join(',') }}" hidden>
+        <input type="checkbox" name="fee_item_id" value="{{ item.id }}" data-fee-checkbox {% if not item.active %}disabled{% endif %}>
+        <span class="cr-finance-fee-check" aria-hidden="true">✓</span>
+        <span class="cr-finance-fee-main">
+          <span class="cr-finance-fee-topline"><span class="cr-finance-fee-category">{{ item.category or 'School Fees' }}</span>{% if item.optional %}<span class="cr-finance-badge optional">Optional</span>{% else %}<span class="cr-finance-badge required">Required</span>{% endif %}</span>
+          <span class="cr-finance-fee-name">{{ item.name }}</span>
+          <span class="cr-finance-fee-meta"><span class="cr-finance-applicability-text">Class-specific</span><span>•</span><span>{{ item.applicability or 'Annual' }}</span></span>
+          <span class="cr-finance-fee-bottom"><span class="cr-finance-fee-amount">₦{{ "{:,.2f}".format(item.amount|float) }}</span>{% if item.active %}<span class="cr-finance-active">Active</span>{% else %}<span class="cr-finance-inactive">Archived</span>{% endif %}</span>
+          <span class="cr-finance-fee-already" data-fee-already hidden></span>
+        </span>
+      </label>
+      {% else %}
+      <div class="cr-finance-empty"><div class="cr-finance-empty-icon">₦</div><strong>No fee items are configured.</strong><p>Add approved fee items to the fee catalogue before creating assessments.</p></div>
+      {% endfor %}
+    </div>
+
+    <div id="financeNoStudent" class="cr-finance-no-matches">Select a student and session to load the applicable fee structure.</div>
+    <div id="financeNoClass" class="cr-finance-no-matches" hidden>The selected student has no active class enrolment for this academic session.</div>
+    <div id="financeNoMatches" class="cr-finance-no-matches" hidden>No fee items match the current search.</div>
+
+    <div class="cr-finance-assessment-footer">
+      <div><span class="cr-finance-footer-label">Ready to assess</span><strong id="financeFooterSummary">Select a student and class</strong></div>
+      <button type="submit" class="cr-finance-primary-btn" id="financeCreateAssessment" disabled>Create Student Assessment →</button>
+    </div>
+  </form>
+
+  
+</div>
+<div id="financePanelCatalogue" class="cr-finance-tab-panel-v7" role="tabpanel" aria-labelledby="financeTabCatalogue" data-finance-panel="catalogue" hidden>
+<section class="cr-finance-catalogue-section">
+    <div class="cr-finance-section-heading">
+      <div><span class="cr-finance-section-kicker">MASTER DATA</span><h2>Fee Catalogue</h2><p>Editable master data. Change an amount or class applicability here without rewriting the assessment system.</p></div>
+      <div class="cr-finance-catalogue-count"><strong>{{ items|length }}</strong><span>configured items</span></div>
+    </div>
+    <div class="cr-finance-catalogue-card">
+      <div class="cr-finance-catalogue-table-wrap">
+        <table class="cr-finance-catalogue-table">
+          <thead><tr><th>Fee Item</th><th>Category</th><th>Applies To</th><th>Applicability</th><th>Type</th><th class="numeric">Amount</th><th>Status</th><th class="actions">Actions</th></tr></thead>
+          <tbody>
+          {% for item in items %}
+          {% set mapped = fee_class_map.get(item.id|string, []) %}
+          <tr data-catalogue-row data-catalogue-name="{{ item.name|lower }}">
+            <td><strong>{{ item.name }}</strong>{% if item.notes %}<small>{{ item.notes }}</small>{% endif %}</td>
+            <td>{{ item.category or 'School Fees' }}</td>
+            <td><div class="cr-finance-class-list">{% if mapped|length == classes|length %}<span class="cr-finance-class-chip all">All active classes</span>{% else %}{% for c in mapped %}<span class="cr-finance-class-chip">{{ c.name }}</span>{% endfor %}{% if not mapped %}<span class="cr-finance-class-chip warning">Not assigned</span>{% endif %}{% endif %}</div></td>
+            <td>{{ item.applicability or 'Annual' }}</td>
+            <td>{% if item.optional %}<span class="cr-finance-badge optional">Optional</span>{% else %}<span class="cr-finance-badge required">Required</span>{% endif %}</td>
+            <td class="numeric"><strong>₦{{ "{:,.2f}".format(item.amount|float) }}</strong></td>
+            <td>{% if item.active %}<span class="cr-finance-status active">Active</span>{% else %}<span class="cr-finance-status archived">Archived</span>{% endif %}</td>
+            <td class="actions"><div class="cr-finance-row-actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_fee_item_edit', item_id=item.id) }}">Edit</a><form method="post" action="{{ url_for('admin_finance_fee_item_toggle', item_id=item.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button type="submit" class="cr-finance-row-action">{{ 'Archive' if item.active else 'Activate' }}</button></form></div></td>
+          </tr>
+          {% else %}<tr><td colspan="8" class="cr-finance-table-empty">No fee items configured.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="financePanelHistory" class="cr-finance-tab-panel-v7" role="tabpanel" aria-labelledby="financeTabHistory" data-finance-panel="history" hidden>
+<section class="cr-finance-assessments-section">
+    <div class="cr-finance-section-heading"><div><span class="cr-finance-section-kicker">ASSESSMENT HISTORY</span><h2>Recent Student Assessments</h2><p>Browse by student, then session, then term.</p></div></div>
+    {% if assessed_students %}
+    <div class="cr-finance-history-toolbar">
+      <label class="cr-finance-search"><span aria-hidden="true">⌕</span><input id="financeHistorySearch" type="search" placeholder="Search student or admission number..." autocomplete="off"></label>
+    </div>
+    <div class="cr-finance-catalogue-card">
+      <div class="cr-finance-catalogue-table-wrap">
+        <table class="cr-finance-catalogue-table">
+          <thead><tr><th>Student</th><th class="numeric">Items</th><th class="numeric">Total Assessed</th><th class="actions">Actions</th></tr></thead>
+          <tbody>
+            {% for b in assessed_students %}
+            <tr data-history-row data-history-name="{{ (b.last_name ~ ' ' ~ b.first_name ~ ' ' ~ (b.admission_no or ''))|lower }}">
+              <td><strong>{{ b.last_name }} {{ b.first_name }}</strong><small>{{ b.admission_no }}</small></td>
+              <td class="numeric">{{ b.item_count }}</td>
+              <td class="numeric"><strong>₦{{ "{:,.2f}".format(b.total_assessed) }}</strong></td>
+              <td class="actions"><button type="button" class="cr-finance-row-action" onclick="document.getElementById('assessmentHistoryModal-{{ b.student_id }}').showModal()">Browse assessments</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="financeHistoryNoMatches" class="cr-finance-no-matches" hidden>No students match your search.</div>
+    </div>
+
+    {% for b in assessed_students %}
+    <dialog class="cr-modal" id="assessmentHistoryModal-{{ b.student_id }}">
+      <div class="cr-modal-head">
+        <div><div class="section-label">STUDENT ASSESSMENTS</div><h2>{{ b.last_name }} {{ b.first_name }}</h2><p>{{ b.admission_no }} · {{ b.item_count }} item{{ '' if b.item_count==1 else 's' }} · ₦{{ "{:,.2f}".format(b.total_assessed) }} total assessed</p></div>
+        <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('assessmentHistoryModal-{{ b.student_id }}').close()">×</button>
+      </div>
+      <div class="cr-modal-body">
+        {% for session_name, terms in b.sessions.items() %}
+        <div class="cr-finance-history-session">
+          <h3>{{ session_name }}</h3>
+          {% for term_name, term_items in terms.items() %}
+          <div class="cr-finance-history-term">
+            <h4>{{ term_name }}</h4>
+            <div class="cr-finance-catalogue-table-wrap">
+              <table class="cr-finance-catalogue-table">
+                <thead><tr><th>Fee</th><th class="numeric">Assessed</th><th>Payment</th><th class="actions">Actions</th></tr></thead>
+                <tbody>
+                  {% for a in term_items %}
+                  <tr>
+                    <td>{{ a.fee_name or a.category }}</td>
+                    <td class="numeric"><strong>₦{{ "{:,.2f}".format(a.amount|float) }}</strong></td>
+                    <td>{% if not a.active %}<span class="cr-finance-status archived">Voided</span>{% elif a.payment_status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif a.payment_status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>
+                    <td class="actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_student_account', student_id=a.student_id, session_id=a.session_id) }}">View account</a></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </dialog>
+    {% endfor %}
+    {% else %}
+    <div class="cr-finance-catalogue-card">
+      <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">✓</div><strong>No student assessments yet</strong><p>Once an assessment is created, its individual fee obligations will appear here.</p></div>
+    </div>
+    {% endif %}
+  </section>
+</div>
+</div>
+
+<script>
+(function(){
+  const studentSelect=document.getElementById('financeStudent');
+  const sessionSelect=document.getElementById('financeSession');
+  const termSelect=document.getElementById('financeTerm');
+  const search=document.getElementById('financeFeeSearch');
+  const selectAll=document.getElementById('financeSelectAll');
+  const clearAll=document.getElementById('financeClearAll');
+  const selectedCount=document.getElementById('financeSelectedCount');
+  const totalEl=document.getElementById('financeAssessmentTotal');
+  const footerSummary=document.getElementById('financeFooterSummary');
+  const noStudent=document.getElementById('financeNoStudent');
+  const noClass=document.getElementById('financeNoClass');
+  const noMatches=document.getElementById('financeNoMatches');
+  const classContext=document.getElementById('financeClassContext');
+  const studentClass=document.getElementById('financeStudentClass');
+  const classStatus=document.getElementById('financeClassStatus');
+  const classPills=document.getElementById('financeClassPills');
+  const createButton=document.getElementById('financeCreateAssessment');
+  const form=document.getElementById('financeAssessmentForm');
+  const cards=Array.from(document.querySelectorAll('[data-fee-card]'));
+  const stageTabs=Array.from(document.querySelectorAll('.cr-finance-stage-tab'));
+  const classMap={{ student_class_map|tojson }};
+  const groups={{ class_groups|tojson }};
+  let activeStage='primary';
+  let activeClassId=null;
+  let resolvedClass=null;
+  let assessedMap={};
+  let assessedFetchToken=0;
+
+  function money(v){return '₦'+Number(v||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function contextKey(){return (studentSelect.value||'')+':'+(sessionSelect.value||'');}
+  function applicable(card){
+    if(!activeClassId)return false;
+    return (','+(card.dataset.applicable||'')+',').includes(','+String(activeClassId)+',');
+  }
+  function applyAssessedState(){
+    const term=termSelect.value||'Full Session';
+    const forTerm=assessedMap[term]||{};
+    cards.forEach(card=>{
+      const already=forTerm[card.dataset.feeItemId];
+      const cb=card.querySelector('[data-fee-checkbox]');
+      const label=card.querySelector('[data-fee-already]');
+      if(already){
+        if(cb){cb.checked=false;cb.disabled=true;}
+        card.classList.add('is-already-assessed');
+        if(label){
+          label.hidden=false;
+          label.textContent=already.paid?'Already paid for '+term:'Already charged for '+term+' (unpaid)';
+          label.classList.toggle('is-paid',!!already.paid);
+        }
+      }else{
+        if(cb && card.dataset.active!=='0')cb.disabled=false;
+        card.classList.remove('is-already-assessed');
+        if(label){label.hidden=true;label.textContent='';}
+      }
+    });
+  }
+  function loadAssessedMap(){
+    const studentId=studentSelect.value,sessionId=sessionSelect.value;
+    assessedMap={};
+    if(!studentId||!sessionId){applyAssessedState();refresh();return;}
+    const token=++assessedFetchToken;
+    fetch('/admin/finance/students/'+encodeURIComponent(studentId)+'/assessed-items.json?session_id='+encodeURIComponent(sessionId),{credentials:'same-origin'})
+      .then(r=>r.ok?r.json():{})
+      .then(data=>{if(token!==assessedFetchToken)return;assessedMap=data||{};applyAssessedState();refresh();})
+      .catch(()=>{if(token!==assessedFetchToken)return;assessedMap={};applyAssessedState();refresh();});
+  }
+  function refresh(){
+    const query=(search.value||'').trim().toLowerCase();
+    let visible=0,selected=0,total=0;
+    cards.forEach(card=>{
+      const matches=!!resolvedClass && applicable(card) && ((card.dataset.name||'').includes(query)||(card.dataset.category||'').includes(query));
+      card.hidden=!matches;
+      if(matches)visible++;
+      const cb=card.querySelector('[data-fee-checkbox]');
+      if(cb && cb.checked){selected++;total+=Number(card.dataset.amount||0);card.classList.add('is-selected');}
+      else card.classList.remove('is-selected');
+    });
+    selectedCount.textContent=selected;
+    totalEl.textContent=money(total);
+    noStudent.hidden=!!(studentSelect.value&&sessionSelect.value);
+    noClass.hidden=true;
+    if(!resolvedClass && studentSelect.value && sessionSelect.value) noClass.hidden=false;
+    noMatches.hidden=!(resolvedClass && visible===0 && !!query);
+    createButton.disabled=!resolvedClass || selected===0;
+    footerSummary.textContent=resolvedClass?(selected?selected+' fee item'+(selected===1?'':'s')+' • '+money(total):'Select one or more applicable fee items'):'Select a student and class';
+  }
+  function renderPills(){
+    classPills.innerHTML='';
+    (groups[activeStage]||[]).forEach(c=>{
+      const b=document.createElement('button');b.type='button';b.className='cr-finance-class-pill';b.textContent=c.name;b.dataset.classId=c.id;
+      if(resolvedClass && Number(resolvedClass.class_id)===Number(c.id)) b.classList.add('active');
+      b.addEventListener('click',()=>{activeClassId=Number(c.id);resolvedClass={class_id:Number(c.id),class_name:c.name,stage:c.stage};studentClass.textContent=c.name;classStatus.textContent='Fee items assigned to this class are now available below.';classContext.hidden=false;stageTabs.forEach(x=>x.classList.toggle('active',x.dataset.stage===activeStage));renderPills();refresh();});
+      classPills.appendChild(b);
+    });
+  }
+  function setStageForClass(classId){
+    for(const key of Object.keys(groups)) if((groups[key]||[]).some(c=>Number(c.id)===Number(classId))){activeStage=key;break;}
+    stageTabs.forEach(x=>x.classList.toggle('active',x.dataset.stage===activeStage));renderPills();
+  }
+  function resolve(){
+    resolvedClass=classMap[contextKey()]||null;
+    activeClassId=resolvedClass?Number(resolvedClass.class_id):null;
+    cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.checked=false;});
+    if(resolvedClass){
+      classContext.hidden=false;studentClass.textContent=resolvedClass.class_name;classStatus.textContent='Automatically resolved from the student’s session enrolment.';setStageForClass(activeClassId);
+    }else if(studentSelect.value&&sessionSelect.value){
+      classContext.hidden=false;studentClass.textContent='No active class';classStatus.textContent='This student has no active enrolment in the selected session.';classPills.innerHTML='';
+    }else{
+      classContext.hidden=true;classPills.innerHTML='';
+    }
+    loadAssessedMap();
+  }
+  stageTabs.forEach(tab=>tab.addEventListener('click',()=>{activeStage=tab.dataset.stage;stageTabs.forEach(x=>x.classList.toggle('active',x===tab));renderPills();}));
+  studentSelect.addEventListener('change',resolve);
+  sessionSelect.addEventListener('change',resolve);
+  termSelect.addEventListener('change',()=>{applyAssessedState();refresh();});
+  search.addEventListener('input',refresh);
+  cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.addEventListener('change',refresh);});
+  selectAll.addEventListener('click',()=>{cards.forEach(card=>{if(!card.hidden&&card.dataset.active!=='0'){const cb=card.querySelector('[data-fee-checkbox]');if(cb&&!cb.disabled)cb.checked=true;}});refresh();});
+  clearAll.addEventListener('click',()=>{cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.checked=false;});refresh();});
+  form.addEventListener('submit',e=>{const checked=form.querySelectorAll('input[name="fee_item_id"]:checked');if(!resolvedClass||!checked.length){e.preventDefault();alert(!resolvedClass?'Select a student with an active class enrolment first.':'Please select at least one fee item.');}});
+  setStageForClass(resolvedClass?resolvedClass.class_id:'');
+  refresh();
+})();
+</script>
+
+<script id="cr-finance-v7-1-controller">
+/* ============================================================
+   CRAINBOW FINANCE FEE STRUCTURE V7.1
+   TAB CONTROLLER
+   ============================================================ */
+(function () {
+  const tabs = Array.from(
+    document.querySelectorAll("[data-finance-tab]")
+  );
+
+  const panels = Array.from(
+    document.querySelectorAll("[data-finance-panel]")
+  );
+
+  if (!tabs.length || !panels.length) return;
+
+  function activateTab(name) {
+    tabs.forEach(function (tab) {
+      const active = tab.dataset.financeTab === name;
+
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", active ? "true" : "false");
+      tab.tabIndex = active ? 0 : -1;
+    });
+
+    panels.forEach(function (panel) {
+      const active = panel.dataset.financePanel === name;
+
+      panel.hidden = !active;
+      panel.classList.toggle("is-active", active);
+    });
+  }
+
+  tabs.forEach(function (tab, index) {
+    tab.addEventListener("click", function () {
+      activateTab(tab.dataset.financeTab);
+    });
+
+    tab.addEventListener("keydown", function (event) {
+      let nextIndex = index;
+
+      if (
+        event.key === "ArrowRight" ||
+        event.key === "ArrowDown"
+      ) {
+        nextIndex = (index + 1) % tabs.length;
+      } else if (
+        event.key === "ArrowLeft" ||
+        event.key === "ArrowUp"
+      ) {
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = tabs.length - 1;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      tabs[nextIndex].focus();
+      activateTab(tabs[nextIndex].dataset.financeTab);
+    });
+  });
+
+  activateTab("billing");
+})();
+</script>
+
+<script id="cr-finance-history-search">
+(function () {
+  const search = document.getElementById('financeHistorySearch');
+  if (!search) return;
+  const rows = Array.from(document.querySelectorAll('[data-history-row]'));
+  const noMatches = document.getElementById('financeHistoryNoMatches');
+  search.addEventListener('input', function () {
+    const query = (search.value || '').trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(function (row) {
+      const matches = !query || (row.dataset.historyName || '').includes(query);
+      row.hidden = !matches;
+      if (matches) visible++;
+    });
+    if (noMatches) noMatches.hidden = visible !== 0;
+  });
+})();
+</script>
+{% endblock %}

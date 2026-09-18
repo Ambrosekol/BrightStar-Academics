@@ -1,0 +1,89 @@
+﻿{% extends "admin_base.html" %}
+
+{% block content %}
+<style>
+  /* Forced Inline UI Overrides */
+  .config-wrapper { padding: 1.5rem; }
+  .config-card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; padding: 2rem; margin-top: 1rem; }
+  .form-label-custom { font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.5rem; display: block; }
+  .form-control-custom { width: 100%; padding: 0.65rem 0.85rem; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #f8fafc; transition: all 0.2s ease-in-out; display: block; }
+  .form-control-custom:focus { border-color: #0284c7; background-color: #fff; outline: none; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+  .btn-submit-custom { background-color: #0284c7; color: #ffffff; font-weight: 600; border: none; padding: 0.75rem 1.75rem; border-radius: 6px; cursor: pointer; transition: background 0.2s ease; }
+  .btn-submit-custom:hover { background-color: #0369a1; }
+  
+  /* Sidebar Logo Fix */
+  .sidebar-brand img, .sidebar img, [class*="logo"] img { max-height: 40px !important; width: auto !important; object-fit: contain !important; margin: 0 auto !important; }
+</style>
+
+<div class="config-wrapper">
+  <div class="mb-3">
+    <a href="{{ url_for('admin_examination') if 'admin_examination' in endpoints else '/admin/examination' }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">← Back</a>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <span class="text-uppercase text-primary font-weight-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Entrance Examination</span>
+      <h2 class="h3 font-weight-bold text-navy mb-1">Examination Configuration</h2>
+      <p class="text-muted small">Configure periodized banks, question serving limits, and activation status for entry classes.</p>
+    </div>
+  </div>
+
+  <div class="config-card">
+    <h5 class="font-weight-bold text-navy mb-1">Create or Update Configuration</h5>
+    <p class="text-muted small mb-4">Saving a configuration sets the parameters. Activation controls when candidates see the exam.</p>
+
+    <form action="" method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="bank_id" class="form-label-custom">Question Bank</label>
+          <select name="bank_id" id="bank_id" class="form-control-custom" required>
+            <option value="">Select question bank...</option>
+            {% for bank in banks %}
+              <option value="{{ bank.id if bank.get else bank[0] }}">{{ bank.name if bank.get else bank[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="entry_class" class="form-label-custom">Entry Class</label>
+          <select name="entry_class" id="entry_class" class="form-control-custom" required>
+            <option value="">Select entry class...</option>
+            <option value="JSS 1">JSS 1</option>
+            <option value="SSS 1">SSS 1</option>
+          </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="subject" class="form-label-custom">Subject</label>
+          <select name="subject" id="subject" class="form-control-custom" required>
+            <option value="">Select subject...</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="English">English</option>
+            <option value="General Knowledge">General Knowledge</option>
+          </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="session" class="form-label-custom">Academic Session</label>
+          <select name="session" id="session" class="form-control-custom">
+            <option value="2026/2027">2026/2027 (Current)</option>
+          </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="questions_to_serve" class="form-label-custom">Questions to Serve</label>
+          <input type="number" name="questions_to_serve" id="questions_to_serve" class="form-control-custom" placeholder="e.g. 40" required>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="reason" class="form-label-custom">Reason for Configuration Change</label>
+        <textarea name="reason" id="reason" class="form-control-custom" rows="2" placeholder="Required when assigning or updating active sets..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit-custom">Save Configuration →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

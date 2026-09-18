@@ -1,0 +1,429 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Complete Student Admission' if mode == 'new' else 'Edit Student Record' }} — Crainbow Administration{% endblock %}
+{% block content %}
+{% set ns = namespace(step=0) %}
+<div class="page-hero">
+  <div>
+    <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
+    <h1>{{ 'Complete Student Admission' if mode == 'new' else 'Edit Student Record' }}</h1>
+    <p class="hero-copy">{{ 'Capture the complete official admission record. A registration number is generated automatically once this is saved.' if mode == 'new' else 'Update this student\'s core enrolment details.' }}</p>
+  </div>
+  <a class="btn btn-light" href="{{ url_for('admin_school_students') }}">Back to Students</a>
+</div>
+
+<div class="card modern-form">
+  {% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+  {% if mode == 'edit' and student and student.get('student_number') %}
+  <div class="info-banner"><strong>Registration Number</strong><span>{{ student.get('student_number') }}</span></div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="studentForm">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Student identity</h2>
+        <p>Name, class and photo. Fields marked * are required.</p>
+      </div></div>
+
+      <div class="admin-profile-editor">
+        <div class="admin-photo-picker">
+          <div class="admin-photo-frame">
+            {% if student and student.get('photo_path') %}
+              <img id="studentPhotoPreview" class="admin-photo-preview" src="{{ url_for('static',filename=student.get('photo_path')) }}" alt="Current student photo">
+            {% else %}
+              <span id="studentPhotoPlaceholder" class="admin-photo-placeholder">{{ (student.get('first_name','S')[:1] if student and student.get('first_name') else 'S')|upper }}</span>
+              <img id="studentPhotoPreview" class="admin-photo-preview is-hidden" alt="Selected student photo">
+            {% endif %}
+          </div>
+          <label class="admin-photo-upload-btn" for="studentPhotoInput">Choose photo</label>
+          <input id="studentPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp">
+          <small>Optional. PNG, JPG, GIF or WEBP.</small>
+        </div>
+
+        <div class="form-grid profile-fields">
+          {% if mode == 'edit' %}
+          <div class="field">
+            <label>Registration / Admission Number *</label>
+            <input name="admission_no" value="{{ student.get('admission_no','') if student else '' }}" required maxlength="40">
+          </div>
+          {% endif %}
+
+          <div class="field">
+            <label>Last Name / Surname *</label>
+            <input class="js-letters-only" name="last_name" required maxlength="80"
+                   pattern="[A-Za-z' -]+" title="Letters only"
+                   value="{{ student.get('last_name','') if student else '' }}">
+          </div>
+          <div class="field">
+            <label>First Name *</label>
+            <input class="js-letters-only" name="first_name" required maxlength="80"
+                   pattern="[A-Za-z' -]+" title="Letters only"
+                   value="{{ student.get('first_name','') if student else '' }}">
+          </div>
+          <div class="field">
+            <label>Middle Name <span class="optional">Optional</span></label>
+            <input class="js-letters-only" name="middle_name" maxlength="80"
+                   pattern="[A-Za-z' -]*" title="Letters only"
+                   value="{{ student.get('middle_name','') if student else '' }}">
+          </div>
+
+          <div class="field">
+            <label>Gender *</label>
+            <select name="gender" required>
+              <option value="">Select gender</option>
+              <option value="Male" {% if student and student.get('gender')=='Male' %}selected{% endif %}>Male</option>
+              <option value="Female" {% if student and student.get('gender')=='Female' %}selected{% endif %}>Female</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Date of Birth *</label>
+            <input type="date" name="date_of_birth" required
+                   value="{{ student.get('date_of_birth','') if student else '' }}">
+          </div>
+          <div class="field">
+            <label>Class *</label>
+            <select name="class_id" required>
+              <option value="">Select class</option>
+              {% for c in classes %}
+              <option value="{{ c.id }}" {% if student and student.get('class_id')|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if mode == 'new' %}
+          <div class="field">
+            <label>State of Origin *</label>
+            <select name="state_of_origin" required>
+              <option value="">Select state</option>
+              {% for s in nigerian_states %}
+              <option value="{{ s }}" {% if student and student.get('state_of_origin')==s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="field">
+            <label>Blood Group <span class="optional">Optional</span></label>
+            <select name="blood_group">
+              <option value="">Select blood group</option>
+              {% for bg in ('A+','A-','B+','B-','AB+','AB-','O+','O-') %}
+              <option value="{{ bg }}" {% if student and student.get('blood_group')==bg %}selected{% endif %}>{{ bg }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Genotype <span class="optional">Optional</span></label>
+            <select name="genotype">
+              <option value="">Select genotype</option>
+              {% for gt in ('AA','AS','SS','AC','SC','CC') %}
+              <option value="{{ gt }}" {% if student and student.get('genotype')==gt %}selected{% endif %}>{{ gt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if mode == 'new' %}
+          <div class="field">
+            <label>Previous / Last School <span class="optional">Optional</span></label>
+            <input name="previous_school" maxlength="160" value="{{ student.get('previous_school','') if student else '' }}">
+          </div>
+          <div class="field field-wide">
+            <label>Reason for Leaving <span class="optional">Optional</span></label>
+            <input name="reason_for_leaving" maxlength="200" value="{{ student.get('reason_for_leaving','') if student else '' }}">
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Guardian / emergency contact</h2>
+        <p>Used to deliver fee receipts and for password recovery on the student's account. Keep this the number/email that should always be reachable.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Guardian Name <span class="optional">Optional</span></label>
+          <input class="js-letters-only" id="guardianName" name="guardian_name" maxlength="120"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('guardian_name','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Guardian Phone <span class="optional">Optional</span></label>
+          <input class="js-phone" id="guardianPhone" type="tel" inputmode="tel" name="guardian_phone" maxlength="20"
+                 pattern="[0-9+()\- ]{7,20}" title="Digits only"
+                 value="{{ student.get('guardian_phone','') if student else '' }}">
+        </div>
+        <div class="field field-wide">
+          <label>Guardian Email <span class="optional">Optional</span></label>
+          <input type="email" id="guardianEmail" name="guardian_email" maxlength="160"
+                 value="{{ student.get('guardian_email','') if student else '' }}">
+        </div>
+      </div>
+    </div>
+
+    {% if mode == 'new' %}
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Father / guardian</h2>
+        <p>Official admission contact. A parent-portal account is created or reused automatically from this mobile number or email.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Name <span class="optional">Optional</span></label>
+          <input class="js-letters-only" id="fatherName" name="father_guardian_name" maxlength="120"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('father_guardian_name','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Address <span class="optional">Optional</span></label>
+          <input name="father_guardian_address" maxlength="200"
+                 value="{{ student.get('father_guardian_address','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Office Phone <span class="optional">Optional</span></label>
+          <input class="js-phone" type="tel" inputmode="tel" name="father_guardian_office_phone" maxlength="20"
+                 pattern="[0-9+()\- ]{0,20}" title="Digits only"
+                 value="{{ student.get('father_guardian_office_phone','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Mobile <span class="optional">Optional</span></label>
+          <input class="js-phone" id="fatherMobile" type="tel" inputmode="tel" name="father_guardian_mobile" maxlength="20"
+                 pattern="[0-9+()\- ]{0,20}" title="Digits only"
+                 value="{{ student.get('father_guardian_mobile','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Email <span class="optional">Optional</span></label>
+          <input type="email" id="fatherEmail" name="father_guardian_email" maxlength="160"
+                 value="{{ student.get('father_guardian_email','') if student else '' }}">
+        </div>
+      </div>
+      <button type="button" class="btn btn-light btn-small" id="copyFatherToGuardian" style="margin-top:14px">Use this as the guardian/emergency contact above</button>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Mother</h2>
+        <p>Optional. Matched or created as a separate parent-portal account by email.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Name <span class="optional">Optional</span></label>
+          <input class="js-letters-only" name="mother_name" maxlength="120"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('mother_name','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Address <span class="optional">Optional</span></label>
+          <input name="mother_address" maxlength="200"
+                 value="{{ student.get('mother_address','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Office Phone <span class="optional">Optional</span></label>
+          <input class="js-phone" type="tel" inputmode="tel" name="mother_office_phone" maxlength="20"
+                 pattern="[0-9+()\- ]{0,20}" title="Digits only"
+                 value="{{ student.get('mother_office_phone','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Occupation <span class="optional">Optional</span></label>
+          <input name="mother_occupation" maxlength="120"
+                 value="{{ student.get('mother_occupation','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Email <span class="optional">Optional</span></label>
+          <input type="email" name="mother_email" maxlength="160"
+                 value="{{ student.get('mother_email','') if student else '' }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Religion</h2>
+        <p>Optional.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Religion <span class="optional">Optional</span></label>
+          <input class="js-letters-only" name="religion" maxlength="60"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('religion','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Denomination <span class="optional">Optional</span></label>
+          <input class="js-letters-only" name="denomination" maxlength="80"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('denomination','') if student else '' }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Health &amp; welfare</h2>
+        <p>Optional, but helps the school respond correctly in an emergency.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Convulsion History <span class="optional">Optional</span></label>
+          <input name="convulsion_history" maxlength="200" value="{{ student.get('convulsion_history','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Asthma History <span class="optional">Optional</span></label>
+          <input name="asthma_history" maxlength="200" value="{{ student.get('asthma_history','') if student else '' }}">
+        </div>
+        <div class="field field-wide">
+          <label>Frequency <span class="optional">Optional</span></label>
+          <textarea name="medical_frequency" rows="2">{{ student.get('medical_frequency','') if student else '' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label>Treatment <span class="optional">Optional</span></label>
+          <textarea name="medical_treatment" rows="2">{{ student.get('medical_treatment','') if student else '' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label>Immunization <span class="optional">Optional</span></label>
+          <textarea name="immunization" rows="2">{{ student.get('immunization','') if student else '' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label>Other Health Challenges <span class="optional">Optional</span></label>
+          <textarea name="other_health_challenges" rows="2">{{ student.get('other_health_challenges','') if student else '' }}</textarea>
+        </div>
+        <div class="field">
+          <label>Food Allergies <span class="optional">Optional</span></label>
+          <input name="food_allergies" maxlength="200" value="{{ student.get('food_allergies','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Drug Allergies <span class="optional">Optional</span></label>
+          <input name="drug_allergies" maxlength="200" value="{{ student.get('drug_allergies','') if student else '' }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Disability / special welfare information</h2>
+        <p>Optional.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Disability <span class="optional">Optional</span></label>
+          <input name="disability" maxlength="120" value="{{ student.get('disability','') if student else '' }}">
+        </div>
+        <div class="field field-wide">
+          <label>Indication / Details <span class="optional">Optional</span></label>
+          <textarea name="disability_indication" rows="2">{{ student.get('disability_indication','') if student else '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      {% set ns.step = ns.step + 1 %}
+      <div class="form-section-title"><span class="step">{{ ns.step }}</span><div>
+        <h2>Parent declaration</h2>
+        <p>Optional.</p>
+      </div></div>
+      <div class="form-grid">
+        <div class="field field-wide">
+          <label>Parent / Guardian Signature <span class="optional">Optional</span></label>
+          <input class="js-letters-only" name="parent_signature" maxlength="120"
+                 pattern="[A-Za-z' -]*" title="Letters only"
+                 value="{{ student.get('parent_signature','') if student else '' }}">
+        </div>
+        <div class="field">
+          <label>Signature Date <span class="optional">Optional</span></label>
+          <input type="date" name="parent_signature_date" value="{{ student.get('parent_signature_date','') if student else '' }}">
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{{ 'Save Admission' if mode == 'new' else 'Save Changes' }}</button>
+      <a class="btn btn-light" href="{{ url_for('admin_school_students') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  // Live character sanitisers: strip a character the moment it's typed rather
+  // than waiting for a submit-time error, so the field is never briefly wrong.
+  function sanitize(el, allowed){
+    var pos = el.selectionStart, before = el.value;
+    var after = before.replace(allowed, '');
+    if (after !== before){
+      var removed = before.length - after.length;
+      el.value = after;
+      var newPos = Math.max(0, pos - removed);
+      el.setSelectionRange(newPos, newPos);
+    }
+  }
+  document.querySelectorAll('input.js-letters-only').forEach(function(el){
+    el.addEventListener('input', function(){ sanitize(el, /[^A-Za-z' -]/g); });
+  });
+  document.querySelectorAll('input.js-phone').forEach(function(el){
+    el.addEventListener('input', function(){ sanitize(el, /[^0-9+()\- ]/g); });
+  });
+
+  // Photo preview, matching the administrator profile picker.
+  var input = document.getElementById('studentPhotoInput');
+  var preview = document.getElementById('studentPhotoPreview');
+  var placeholder = document.getElementById('studentPhotoPlaceholder');
+  input && input.addEventListener('change', function(){
+    var file = this.files && this.files[0];
+    if (!file || !preview) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      preview.src = e.target.result;
+      preview.classList.remove('is-hidden');
+      if (placeholder) placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Convenience: copy the father/guardian's mobile/email into the primary
+  // guardian/emergency contact fields above, so the same details aren't
+  // typed twice for the common case where they're the same person.
+  var copyBtn = document.getElementById('copyFatherToGuardian');
+  copyBtn && copyBtn.addEventListener('click', function(){
+    var fName = document.getElementById('fatherName');
+    var fMobile = document.getElementById('fatherMobile');
+    var fEmail = document.getElementById('fatherEmail');
+    var gName = document.getElementById('guardianName');
+    var gPhone = document.getElementById('guardianPhone');
+    var gEmail = document.getElementById('guardianEmail');
+    if (fName && gName) gName.value = fName.value;
+    if (fMobile && gPhone) gPhone.value = fMobile.value;
+    if (fEmail && gEmail) gEmail.value = fEmail.value;
+  });
+
+  // A field the browser rejects on submit gets a visible highlight, not just
+  // the default (inconsistent, easy-to-miss) native tooltip.
+  var form = document.getElementById('studentForm');
+  form && form.addEventListener('submit', function(ev){
+    var invalid = form.querySelectorAll(':invalid');
+    invalid.forEach(function(el){
+      var field = el.closest('.field');
+      if (field) field.classList.add('invalid');
+    });
+    if (invalid.length){
+      invalid[0].closest('.field') && invalid[0].closest('.field').scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  });
+  form && form.querySelectorAll('input,select,textarea').forEach(function(el){
+    el.addEventListener('input', function(){
+      var field = el.closest('.field');
+      if (field && el.checkValidity()) field.classList.remove('invalid');
+    });
+  });
+})();
+</script>
+{% endblock %}

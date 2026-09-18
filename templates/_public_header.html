@@ -1,0 +1,104 @@
+<header class="cr-header">
+  <div class="cr-header-inner">
+    <a class="cr-brand" href="{{ url_for('index') }}">
+      <img src="{{ url_for('static', filename='images/school_logo.png') }}" alt="Creative Rainbow Montessori School logo">
+      <span>
+        <strong>Creative Rainbow Montessori School</strong>
+        <small>Growing in humility and fear of God</small>
+      </span>
+    </a>
+    
+    <button type="button" class="cr-mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="cr-mobile-nav">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="cr-nav" aria-label="Main navigation">
+      <a href="{{ url_for('index') }}">Home</a>
+      <a href="{{ url_for('public_school_about') }}">About Us</a>
+      <a href="{{ url_for('public_school_academics') }}">Academics</a>
+      <a href="{{ url_for('public_school_life') }}">School Life</a>
+      <a href="{{ url_for('public_school_admissions') }}">Admissions</a>
+      <a href="/practice" style="color: #0284c7; font-weight: 700;">Practice Zone</a>
+      <a href="{{ url_for('public_school_news') }}">News</a>
+      <a href="{{ url_for('public_school_contact') }}">Contact</a>
+      <a class="cr-nav-portal" href="{{ url_for('login') }}">Portal Login</a>
+    </nav>
+
+    <div class="cr-mobile-nav" id="cr-mobile-nav" aria-hidden="true">
+      <div class="cr-mobile-nav-inner">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('public_school_about') }}">About Us</a>
+        <a href="{{ url_for('public_school_academics') }}">Academics</a>
+        <a href="{{ url_for('public_school_life') }}">School Life</a>
+        <a href="{{ url_for('public_school_admissions') }}">Admissions</a>
+        <a href="/practice" style="color: #0284c7; font-weight: 700;">Practice Zone</a>
+        <a href="{{ url_for('public_school_news') }}">News</a>
+        <a href="{{ url_for('public_school_contact') }}">Contact</a>
+        <a class="cr-mobile-nav-portal" href="{{ url_for('login') }}">Portal Login</a>
+      </div>
+    </div>
+  </div>
+</header>
+<script>
+(function () {
+    'use strict';
+
+    function initCrainbowMobileMenu() {
+        var header = document.querySelector('.cr-header');
+        if (!header) return;
+
+        var toggle = header.querySelector('.cr-mobile-menu-toggle');
+        var menu = header.querySelector('#cr-mobile-nav');
+        if (!toggle || !menu) return;
+
+        if (toggle.dataset.crMenuReady === '1') return;
+        toggle.dataset.crMenuReady = '1';
+
+        function setMenu(open) {
+            header.classList.toggle('cr-mobile-menu-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+            menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+
+        toggle.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setMenu(!header.classList.contains('cr-mobile-menu-open'));
+        });
+
+        menu.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                setMenu(false);
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!header.contains(event.target)) {
+                setMenu(false);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                setMenu(false);
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 850) {
+                setMenu(false);
+            }
+        });
+
+        setMenu(false);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCrainbowMobileMenu);
+    } else {
+        initCrainbowMobileMenu();
+    }
+})();
+</script>
+<!-- CRAINBOW MOBILE MENU BEHAVIOUR V1 -->

@@ -1,0 +1,505 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ public_settings.get('school_name','Creative Rainbow Montessori School') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+
+<body class="public-site-page premium-school-home">
+
+<header class="premium-header">
+    <div class="premium-header-inner">
+
+        <a class="premium-brand" href="{{ url_for('public_school_home') }}">
+            <img src="{{ url_for('static', filename='images/school_logo.png') }}"
+                 alt="{{ public_settings.get('school_name','Creative Rainbow Montessori School') }} logo">
+            <span class="premium-brand-copy">
+                <strong>{{ public_settings.get('school_name','Creative Rainbow Montessori School') }}</strong>
+                <small>{{ public_settings.get('school_motto','Growing in humility and fear of God') }}</small>
+            </span>
+        </a>
+
+        <nav class="premium-nav" aria-label="Main navigation">
+            <a class="active" href="{{ url_for('public_school_home') }}">Home</a>
+            <a href="{{ url_for('public_school_about') }}">About Us</a>
+            <a href="{{ url_for('public_school_admissions') }}">Admissions</a>
+            <a href="{{ url_for('public_school_news') }}">News</a>
+            <a href="{{ url_for('public_school_contact') }}">Contact</a>
+
+            {% if signed_in_kind %}
+                <a class="premium-login" href="{{ continue_url }}">
+                    Continue
+                </a>
+            {% else %}
+                <a class="premium-login" href="{{ url_for('login') }}">
+                    Portal Login
+                </a>
+            {% endif %}
+        </nav>
+
+    </div>
+</header>
+
+
+<main>
+
+    <!-- HERO -->
+    <section class="premium-hero">
+
+        <div class="premium-hero-image">
+            <img src="{{ url_for('static', filename='images/school/Lumii_20250403_151442326.jpg') }}"
+                 alt="Creative Rainbow Montessori School campus">
+            <div class="premium-hero-image-overlay"></div>
+
+            <div class="premium-hero-photo-caption">
+                <span>CREATIVE RAINBOW MONTESSORI SCHOOL</span>
+                <strong>Growing in humility and fear of God</strong>
+            </div>
+        </div>
+
+        <div class="premium-hero-content">
+            <p class="premium-kicker">WELCOME TO CREATIVE RAINBOW</p>
+
+            <h1>
+                A place where
+                <em>every child</em>
+                can grow.
+            </h1>
+
+            <p class="premium-hero-lead">
+                {{ public_settings.get(
+                    'homepage_intro',
+                    'A caring learning environment where every child is encouraged to grow, learn and flourish.'
+                ) }}
+            </p>
+
+            <div class="premium-hero-actions">
+                <a class="premium-btn premium-btn-primary"
+                   href="{{ url_for('public_school_admissions') }}">
+                    {{ public_settings.get('homepage_cta','Explore Our School') }}
+                    <span>→</span>
+                </a>
+
+                {% if signed_in_kind %}
+                    <a class="premium-btn premium-btn-light"
+                       href="{{ continue_url }}">
+                        Continue to your account
+                    </a>
+                {% else %}
+                    <a class="premium-btn premium-btn-light"
+                       href="{{ url_for('login') }}">
+                        Access Portal
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="premium-hero-trust">
+                <div>
+                    <strong>01</strong>
+                    <span>Nurturing Environment</span>
+                </div>
+                <div>
+                    <strong>02</strong>
+                    <span>Meaningful Learning</span>
+                </div>
+                <div>
+                    <strong>03</strong>
+                    <span>Character &amp; Growth</span>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- INTRODUCTION -->
+    <section class="premium-intro premium-section">
+
+        <div class="premium-section-label">
+            <span>01</span>
+            <small>OUR SCHOOL</small>
+        </div>
+
+        <div class="premium-intro-content">
+            <div>
+                <p class="premium-kicker">MORE THAN A SCHOOL</p>
+                <h2>Learning with purpose.<br>Growing with character.</h2>
+            </div>
+
+            <div class="premium-intro-text">
+                <p>
+                    Creative Rainbow Montessori School is a learning community
+                    committed to helping children develop academically,
+                    socially and personally in a caring school environment.
+                </p>
+
+                <a class="premium-text-link"
+                   href="{{ url_for('public_school_about') }}">
+                    Discover our story <span>→</span>
+                </a>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- WHY CREATIVE RAINBOW -->
+    <section class="premium-values premium-section">
+
+        <div class="premium-section-heading">
+            <div>
+                <p class="premium-kicker">WHY CREATIVE RAINBOW</p>
+                <h2>A foundation for a brighter future.</h2>
+            </div>
+
+            <p>
+                We create space for children to learn, participate,
+                discover their strengths and grow in confidence.
+            </p>
+        </div>
+
+        <div class="premium-value-grid">
+
+            <article class="premium-value-card">
+                <span class="premium-value-number">01</span>
+                <div class="premium-value-icon">✦</div>
+                <h3>Purposeful Learning</h3>
+                <p>
+                    Learning experiences designed to encourage curiosity,
+                    understanding and steady academic development.
+                </p>
+            </article>
+
+            <article class="premium-value-card featured">
+                <span class="premium-value-number">02</span>
+                <div class="premium-value-icon">◇</div>
+                <h3>Character &amp; Values</h3>
+                <p>
+                    We place importance on humility, responsibility,
+                    good conduct and positive relationships.
+                </p>
+            </article>
+
+            <article class="premium-value-card">
+                <span class="premium-value-number">03</span>
+                <div class="premium-value-icon">○</div>
+                <h3>Whole-Child Growth</h3>
+                <p>
+                    Children are encouraged to develop beyond the classroom
+                    through participation, creativity and school life.
+                </p>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- ABOUT / CAMPUS -->
+    <section class="premium-about premium-section">
+
+        <div class="premium-about-image">
+            <img src="{{ url_for('static', filename='images/school/IMG_1320.JPG.jpeg') }}"
+                 alt="Creative Rainbow Montessori School building">
+        </div>
+
+        <div class="premium-about-content">
+            <p class="premium-kicker">ABOUT CREATIVE RAINBOW</p>
+
+            <h2>Growing children.<br>Building confidence.</h2>
+
+            <p>
+                At Creative Rainbow Montessori School, we believe that
+                education is about more than completing lessons. It is
+                about creating an environment in which children can learn,
+                participate, ask questions and develop the confidence to
+                become their best selves.
+            </p>
+
+            <div class="premium-about-points">
+                <div>
+                    <strong>01</strong>
+                    <span>A caring learning environment</span>
+                </div>
+                <div>
+                    <strong>02</strong>
+                    <span>Academic and personal development</span>
+                </div>
+                <div>
+                    <strong>03</strong>
+                    <span>Values that guide everyday learning</span>
+                </div>
+            </div>
+
+            <a class="premium-btn premium-btn-dark"
+               href="{{ url_for('public_school_about') }}">
+                Learn more about us
+                <span>→</span>
+            </a>
+        </div>
+
+    </section>
+
+
+    <!-- ACADEMIC LEVELS -->
+    <section class="premium-academics premium-section">
+
+        <div class="premium-section-heading">
+            <div>
+                <p class="premium-kicker">ACADEMIC LEVELS</p>
+                <h2>Growing at every stage.</h2>
+            </div>
+
+            <p>
+                A school journey that supports children through
+                their different stages of development.
+            </p>
+        </div>
+
+        <div class="premium-academic-grid">
+
+            <a href="{{ url_for('public_school_admissions') }}"
+               class="premium-academic-card">
+                <span>01</span>
+                <h3>Nursery</h3>
+                <p>Early learning, discovery and foundational development.</p>
+                <b>Explore admissions →</b>
+            </a>
+
+            <a href="{{ url_for('public_school_admissions') }}"
+               class="premium-academic-card">
+                <span>02</span>
+                <h3>Primary</h3>
+                <p>Building strong academic foundations and confident learners.</p>
+                <b>Explore admissions →</b>
+            </a>
+
+            <a href="{{ url_for('public_school_admissions') }}"
+               class="premium-academic-card">
+                <span>03</span>
+                <h3>College</h3>
+                <p>Supporting learners as they progress toward greater independence.</p>
+                <b>Explore admissions →</b>
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- TEACHING & LEARNING -->
+    <section class="premium-learning premium-section">
+
+        <div class="premium-learning-content">
+
+            <p class="premium-kicker">TEACHING &amp; LEARNING</p>
+
+            <h2>Learning is an experience, not just a lesson.</h2>
+
+            <p>
+                From classroom interaction to practical activities,
+                children are given opportunities to engage with what
+                they learn and develop meaningful skills along the way.
+            </p>
+
+            <a class="premium-text-link"
+               href="{{ url_for('public_school_about') }}">
+                Explore our learning environment <span>→</span>
+            </a>
+
+        </div>
+
+        <div class="premium-learning-image">
+            <img src="{{ url_for('static', filename='images/school/IMG_8999.JPG.jpg') }}"
+                 alt="Pupils engaged in a classroom learning activity">
+        </div>
+
+    </section>
+
+
+    <!-- SCHOOL LIFE -->
+    <section class="premium-life premium-section">
+
+        <div class="premium-section-heading">
+            <div>
+                <p class="premium-kicker">SCHOOL LIFE</p>
+                <h2>There is more to school than the classroom.</h2>
+            </div>
+
+            <p>
+                Moments of learning, collaboration, creativity and
+                participation help make school life memorable.
+            </p>
+        </div>
+
+        <div class="premium-photo-grid">
+
+            <figure class="premium-photo-large">
+                <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0024.jpg') }}"
+                     alt="Pupils participating in a classroom activity">
+            </figure>
+
+            <figure>
+                <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0023.jpg') }}"
+                     alt="Pupils learning together">
+            </figure>
+
+            <figure>
+                <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0012.jpg') }}"
+                     alt="Pupils engaged in a school activity">
+            </figure>
+
+            <figure>
+                <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0011.jpg') }}"
+                     alt="Young pupils participating in practical learning">
+            </figure>
+
+            <figure>
+                <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0013.jpg') }}"
+                     alt="Creative Rainbow classroom environment">
+            </figure>
+
+        </div>
+
+    </section>
+
+
+    <!-- ADMISSIONS CTA -->
+    <section class="premium-admissions">
+
+        <div class="premium-admissions-image">
+            <img src="{{ url_for('static', filename='images/school/IMG-20231103-WA0011.jpg') }}"
+                 alt="Creative Rainbow pupils">
+        </div>
+
+        <div class="premium-admissions-content">
+            <p class="premium-kicker">ADMISSIONS</p>
+
+            <h2>Give your child a place to learn, grow and flourish.</h2>
+
+            <p>
+                Explore our admissions information and discover
+                the next steps for joining Creative Rainbow Montessori School.
+            </p>
+
+            <a class="premium-btn premium-btn-white"
+               href="{{ url_for('public_school_admissions') }}">
+                View Admissions
+                <span>→</span>
+            </a>
+        </div>
+
+    </section>
+
+
+    <!-- NEWS -->
+    {% if news %}
+    <section class="premium-news premium-section">
+
+        <div class="premium-section-heading">
+            <div>
+                <p class="premium-kicker">FROM OUR SCHOOL</p>
+                <h2>Latest news &amp; updates.</h2>
+            </div>
+
+            <a class="premium-text-link"
+               href="{{ url_for('public_school_news') }}">
+                View all news <span>→</span>
+            </a>
+        </div>
+
+        <div class="premium-news-grid">
+
+            {% for n in news %}
+            <a class="premium-news-card"
+               href="{{ url_for('public_school_news_detail', slug=n.slug) }}">
+
+                <div class="premium-news-card-top">
+                    <span>NEWS</span>
+                    <small>{{ (n.published_at or n.created_at)[:10] }}</small>
+                </div>
+
+                <h3>{{ n.title }}</h3>
+
+                <p>
+                    {{ n.excerpt or n.body[:180] }}
+                    {% if n.body and n.body|length > 180 %}…{% endif %}
+                </p>
+
+                <b>Read story →</b>
+
+            </a>
+            {% endfor %}
+
+        </div>
+
+    </section>
+    {% endif %}
+
+
+    <!-- FINAL CTA -->
+    <section class="premium-final-cta">
+
+        <div>
+            <p class="premium-kicker">START THE JOURNEY</p>
+            <h2>Ready to discover Creative Rainbow?</h2>
+        </div>
+
+        <a class="premium-btn premium-btn-primary"
+           href="{{ url_for('public_school_contact') }}">
+            Talk to the School
+            <span>→</span>
+        </a>
+
+    </section>
+
+</main>
+
+
+<footer class="premium-footer">
+
+    <div class="premium-footer-main">
+
+        <div class="premium-footer-brand">
+            <img src="{{ url_for('static', filename='images/school_logo.png') }}"
+                 alt="Creative Rainbow Montessori School logo">
+
+            <div>
+                <strong>{{ public_settings.get('school_name','Creative Rainbow Montessori School') }}</strong>
+                <span>{{ public_settings.get('school_motto','Growing in humility and fear of God') }}</span>
+            </div>
+        </div>
+
+        <div class="premium-footer-links">
+            <div>
+                <small>EXPLORE</small>
+                <a href="{{ url_for('public_school_home') }}">Home</a>
+                <a href="{{ url_for('public_school_about') }}">About Us</a>
+                <a href="{{ url_for('public_school_admissions') }}">Admissions</a>
+            </div>
+
+            <div>
+                <small>CONNECT</small>
+                <a href="{{ url_for('public_school_news') }}">News</a>
+                <a href="{{ url_for('public_school_contact') }}">Contact</a>
+                <a href="{{ url_for('login') }}">Portal Login</a>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="premium-footer-bottom">
+        <span>
+            © {{ public_settings.get('school_name','Creative Rainbow Montessori School') }}
+        </span>
+        <span>
+            Growing in humility and fear of God
+        </span>
+    </div>
+
+</footer>
+
+</body>
+</html>

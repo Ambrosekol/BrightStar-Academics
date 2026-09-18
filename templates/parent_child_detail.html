@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{child.first_name}} {{child.last_name}} — Parent Portal</title>
+<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+<style>
+.pcd-top-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-top:20px}
+.pcd-fee-mini{padding:22px}
+.pcd-fee-mini .student-panel-head{margin-bottom:14px}
+.pcd-fee-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pcd-fee-stats .pd-stat{padding:12px;border-radius:10px;background:#f7fafc;text-align:center}
+.pcd-fee-stats .pd-stat span{display:block;font-size:9px;font-weight:800;text-transform:uppercase;color:#8a95a4;letter-spacing:.04em}
+.pcd-fee-stats .pd-stat strong{display:block;margin-top:6px;font-size:15px;color:#193451}
+.pcd-fee-stats .pd-stat.is-paid strong{color:#167447}
+.pcd-fee-stats .pd-stat.is-outstanding strong{color:#b42318}
+.pcd-fee-cta{margin-top:14px;display:flex;justify-content:flex-end}
+
+.pcd-notif-row{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid #edf1f5}
+.pcd-notif-row:first-child{border-top:none}
+.pcd-notif-icon{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;background:#eaf3f9;color:#1669a5}
+.pcd-notif-icon.finance{background:#eafaf0;color:#167447}
+.pcd-notif-icon.feedback{background:#fff4e0;color:#9a6700}
+.pcd-notif-body{flex:1;min-width:0}
+.pcd-notif-body strong{display:block;color:#1a314c;font-size:12.5px}
+.pcd-notif-body small{display:block;margin-top:3px;color:#718095;font-size:10.5px;line-height:1.5}
+.pcd-notif-tag{flex:0 0 auto;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.pcd-notif-tag.is-new{background:#e5f0ff;color:#0d3b70}
+.pcd-notif-tag.is-old{background:#f1f3f6;color:#8a95a4}
+</style>
+</head>
+<body class="student-portal-page">
+<header class="student-topbar">
+  <div class="student-brand">
+    <img src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools">
+    <div><strong>CREATIVE RAINBOW SCHOOLS</strong><span>Parent Portal</span></div>
+  </div>
+  <div class="student-top-actions">
+    <a href="{{url_for('parent_dashboard')}}">Dashboard</a>
+    <a href="{{url_for('parent_child_finance',student_id=child.id)}}">Fee account</a>
+    <a href="{{url_for('parent_feedback',student=child.id)}}">Message school</a>
+    <a href="{{url_for('logout')}}">Sign out</a>
+  </div>
+</header>
+
+<main class="student-dashboard-shell">
+
+  <section class="student-hero">
+    <div>
+      <p class="student-eyebrow">CHILD PROFILE</p>
+      <h1>{{child.first_name}} {{child.middle_name or ''}} {{child.last_name}}</h1>
+      <p>{{child.class_name or 'Class not assigned'}}{% if child.session_name %} · {{child.session_name}}{% endif %}{% if child.relationship %} · {{child.relationship}}{% endif %}</p>
+    </div>
+  </section>
+
+  <section class="academic-summary-grid" style="margin-top:20px">
+    <div class="card summary-card"><span>Assignments</span><strong>{{assignments|length}}</strong></div>
+    <div class="card summary-card"><span>Completion</span><strong>{{completion ~ '%' if completion is not none else '—'}}</strong></div>
+    <div class="card summary-card"><span>Assignment average</span><strong>{{avg ~ '%' if avg is not none else '—'}}</strong></div>
+    <div class="card summary-card"><span>Performance trend</span><strong>{{trend}}</strong></div>
+    <div class="card summary-card"><span>Projects</span><strong>{{projects|length}}</strong></div>
+  </section>
+
+  <div class="pcd-top-grid">
+
+    <section class="student-panel pcd-fee-mini">
+      <div class="student-panel-head">
+        <div><p class="student-eyebrow">FEES</p><h2>Fee account</h2></div>
+      </div>
+      <div class="pcd-fee-stats">
+        <div class="pd-stat"><span>Assessed</span><strong>₦{{ '{:,.0f}'.format(fee_summary.assessed) }}</strong></div>
+        <div class="pd-stat is-paid"><span>Paid</span><strong>₦{{ '{:,.0f}'.format(fee_summary.paid) }}</strong></div>
+        <div class="pd-stat {% if fee_summary.outstanding>0 %}is-outstanding{% endif %}"><span>Outstanding</span><strong>₦{{ '{:,.0f}'.format(fee_summary.outstanding) }}</strong></div>
+      </div>
+      <div class="pcd-fee-cta"><a class="btn btn-light" href="{{url_for('parent_child_finance',student_id=child.id)}}">View fee account & receipts →</a></div>
+    </section>
+
+    <section class="student-panel">
+      <div class="student-panel-head">
+        <div><p class="student-eyebrow">NOTIFICATIONS</p><h2>About this child</h2></div>
+        <span class="student-count">{{notifications|length}}</span>
+      </div>
+      {% for n in notifications %}
+      <a class="pcd-notif-row student-clickable-row" href="{{n.action_url or url_for('parent_child_detail',student_id=child.id)}}">
+        <span class="pcd-notif-icon {{n.category}}">{{'₦' if n.category=='finance' else ('✉' if n.category=='feedback' else '•')}}</span>
+        <div class="pcd-notif-body"><strong>{{n.title}}</strong><small>{{n.message}} · {{n.created_at[:10]}}</small></div>
+        <span class="pcd-notif-tag {{'is-new' if n.is_new else 'is-old'}}">{{'New' if n.is_new else 'Old'}}</span>
+      </a>
+      {% else %}
+      <div class="student-empty"><strong>No notifications about this child yet.</strong></div>
+      {% endfor %}
+    </section>
+
+  </div>
+
+  <section id="assignments" class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">ASSIGNMENTS</p><h2>Assignment performance</h2></div></div>
+    {% for a in assignments %}
+    <article class="student-list-row">
+      <div>
+        <strong>{{a.title}}</strong>
+        <small>{{a.subject_name}} · Given {{a.date_given or '—'}}{% if a.due_date %} · Due {{a.due_date}}{% endif %}</small>
+        {% if a.remark %}<p>{{a.remark}}</p>{% endif %}
+      </div>
+      <span class="student-score">{{a.status|replace('_',' ')|title}}{% if a.score is not none %} · {{a.score}}/{{a.max_score}}{% endif %}</span>
+    </article>
+    {% else %}
+    <div class="student-empty"><strong>No assignments recorded.</strong></div>
+    {% endfor %}
+  </section>
+
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">PROJECTS</p><h2>Project activity</h2></div></div>
+    {% for p in projects %}
+    <article class="student-list-row">
+      <div>
+        <strong>{{p.title}}</strong>
+        <small>{{p.subject_name}} · Given {{p.date_given or '—'}}{% if p.due_date %} · Required {{p.due_date}}{% endif %}</small>
+        {% if p.remark %}<p>{{p.remark}}</p>{% endif %}
+      </div>
+      <span class="student-score">{{p.status|replace('_',' ')|title}}{% if p.score is not none %} · {{p.score}}/{{p.max_score}}{% endif %}</span>
+    </article>
+    {% else %}
+    <div class="student-empty"><strong>No projects recorded.</strong></div>
+    {% endfor %}
+  </section>
+
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">RELEASED RESULTS</p><h2>Academic results</h2></div></div>
+    {% for r in results %}
+    <article class="student-list-row">
+      <div><strong>{{r.subject_name}}</strong><small>{{r.component_name}} · {{r.term or 'Full Session'}}</small></div>
+      <span class="student-score">{{r.score}}{% if r.max_score %}/{{r.max_score}}{% endif %}</span>
+    </article>
+    {% else %}
+    <div class="student-empty"><strong>No released results yet.</strong></div>
+    {% endfor %}
+  </section>
+
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head">
+      <div><p class="student-eyebrow">PARENT FEEDBACK</p><h2>Messages about this child</h2></div>
+      <a class="btn btn-primary" href="{{url_for('parent_feedback',student=child.id)}}">Send feedback</a>
+    </div>
+    {% for f in feedback %}
+    <article class="student-list-row">
+      <div>
+        <strong>{{f.subject}}</strong>
+        <small>{{f.status|title}} · {{f.created_at[:10]}}</small>
+        <p>{{f.body|truncate(180)}}</p>
+        {% for r in replies.get(f.id,[]) %}
+        <div class="feedback-reply"><strong>School — {{r.admin_name}}</strong><small>{{r.created_at[:19].replace('T',' ')}} UTC</small><p>{{r.body}}</p></div>
+        {% endfor %}
+      </div>
+    </article>
+    {% else %}
+    <div class="student-empty"><strong>No messages yet.</strong></div>
+    {% endfor %}
+  </section>
+
+</main>
+</body>
+</html>

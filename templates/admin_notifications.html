@@ -1,0 +1,8 @@
+{% extends 'admin_base.html' %}
+{% block title %}Notifications — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">ADMINISTRATION / INBOX</div><h1>Notifications</h1><p class="hero-copy">Your personal school-system notifications. Click an item to open the exact record or conversation it refers to.</p></div></div>
+<div class="card table-card"><div class="table-scroll"><div class="notification-list">
+{% for n in notifications %}<div class="alert-row {% if n.read_at %}read{% endif %}"><a class="alert-row-main" href="{{url_for('admin_notification_open',nid=n.id)}}"><div class="alert-dot {{n.severity}}"></div><div class="alert-copy"><strong>{{n.title}}</strong><p>{{n.message}}</p><small>{% if n.actor_display_name_snapshot %}By {{n.actor_display_name_snapshot}}{% elif n.actor_username_snapshot %}By {{n.actor_username_snapshot}}{% else %}School system{% endif %} · {{n.created_at[:19].replace('T',' ')}} UTC</small></div><span class="alert-open">Open →</span></a>{% if not n.read_at %}<form method="post" action="{{url_for('admin_notification_read',nid=n.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small">Mark read</button></form>{% endif %}</div>{% else %}<div class="empty-state">No notifications yet.</div>{% endfor %}
+</div></div></div>
+{% endblock %}

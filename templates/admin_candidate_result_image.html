@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ candidate.candidate_name }} ? Official Entrance Examination Result</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#dfe8f1}
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    color:#102f4d;
+    padding:32px;
+}
+.result-sheet{
+    width:1280px;
+    margin:0 auto;
+    background:#fbfcfe;
+    position:relative;
+    overflow:hidden;
+    border:1px solid #c7d5e2;
+    box-shadow:0 18px 55px rgba(16,47,77,.18);
+}
+.result-sheet:before{
+    content:"";
+    display:block;
+    height:9px;
+    background:linear-gradient(
+        90deg,
+        #e53935 0%,
+        #f6c343 25%,
+        #3aaa70 50%,
+        #1685c4 75%,
+        #103f68 100%
+    );
+}
+.watermark{
+    position:absolute;
+    left:50%;
+    top:55%;
+    transform:translate(-50%,-50%);
+    width:420px;
+    opacity:.035;
+    pointer-events:none;
+}
+.header{
+    margin:0 42px;
+    padding:34px 0 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid #cdd9e4;
+}
+.brand{
+    display:flex;
+    align-items:center;
+    gap:20px;
+}
+.logo{
+    width:92px;
+    height:92px;
+    object-fit:contain;
+}
+.school-name{
+    font-size:31px;
+    line-height:1.05;
+    font-weight:900;
+    letter-spacing:.3px;
+    color:#0d3d67;
+}
+.college-name{
+    margin-top:7px;
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:.8px;
+    color:#1685c4;
+}
+.motto{
+    margin-top:6px;
+    font-size:12px;
+    color:#66798b;
+    font-style:italic;
+}
+.official{
+    text-align:right;
+}
+.official-badge{
+    display:inline-block;
+    background:#103f68;
+    color:white;
+    border-radius:5px;
+    padding:10px 18px;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:1.5px;
+}
+.official-sub{
+    margin-top:8px;
+    font-size:11px;
+    color:#66798b;
+}
+.body{
+    padding:34px 42px 38px;
+    position:relative;
+}
+.eyebrow{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:2px;
+    color:#1685c4;
+}
+.title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:24px;
+}
+.title{
+    margin-top:7px;
+    font-size:30px;
+    font-weight:900;
+    color:#103f68;
+}
+.reference{
+    text-align:right;
+    font-size:10px;
+    color:#718395;
+}
+.reference strong{
+    display:block;
+    margin-top:4px;
+    color:#103f68;
+    font-size:12px;
+}
+.candidate{
+    display:grid;
+    grid-template-columns:155px 1fr;
+    min-height:178px;
+    border:1px solid #bfd2e2;
+    border-radius:12px;
+    overflow:hidden;
+    background:#f3f8fc;
+    margin-bottom:30px;
+}
+.photo-panel{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#e8f1f8;
+    border-right:1px solid #c9d9e6;
+}
+.photo-frame{
+    width:112px;
+    height:138px;
+    padding:5px;
+    background:white;
+    border:2px solid #c5a35b;
+    border-radius:8px;
+    box-shadow:0 5px 15px rgba(16,47,77,.14);
+}
+.photo-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:4px;
+}
+.candidate-info{
+    padding:23px 27px;
+}
+.section-label{
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:1.6px;
+    color:#1685c4;
+}
+.candidate-name{
+    margin-top:5px;
+    font-size:26px;
+    font-weight:900;
+    color:#103f68;
+}
+.info-grid{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px 50px;
+}
+.info-item span{
+    display:block;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:1px;
+    color:#728497;
+    text-transform:uppercase;
+}
+.info-item strong{
+    display:block;
+    margin-top:4px;
+    font-size:13px;
+    color:#102f4d;
+}
+.section-heading{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+}
+.section-heading .bar{
+    width:5px;
+    height:27px;
+    border-radius:4px;
+    background:#1685c4;
+}
+.section-heading h2{
+    margin:0;
+    font-size:17px;
+    letter-spacing:.4px;
+    color:#103f68;
+}
+.section-heading small{
+    margin-left:auto;
+    font-size:9px;
+    color:#718395;
+}
+.table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    overflow:hidden;
+    border:1px solid #bfd2e2;
+    border-radius:10px;
+    background:white;
+}
+.table th{
+    background:#103f68;
+    color:white;
+    padding:13px 15px;
+    text-align:left;
+    font-size:10px;
+    letter-spacing:.8px;
+    text-transform:uppercase;
+}
+.table th:not(:first-child),
+.table td:not(:first-child){
+    text-align:center;
+}
+.table td{
+    padding:14px 15px;
+    border-top:1px solid #dbe5ed;
+    font-size:12px;
+    font-weight:700;
+}
+.table tr:nth-child(odd) td{
+    background:#f7fafc;
+}
+.table .total td{
+    background:#eaf3fa;
+    border-top:2px solid #1685c4;
+    color:#103f68;
+    font-weight:900;
+}
+.metrics{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:17px;
+}
+.metric{
+    min-height:92px;
+    background:#fff;
+    border:1px solid #c9d9e6;
+    border-radius:9px;
+    text-align:center;
+    padding:15px 10px;
+}
+.metric-label{
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:1.2px;
+    color:#718395;
+}
+.metric-value{
+    margin-top:7px;
+    font-size:22px;
+    font-weight:900;
+    color:#103f68;
+}
+.metric-note{
+    margin-top:3px;
+    font-size:8px;
+    color:#8797a7;
+}
+.grade{
+    margin-top:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 24px;
+    border:1px solid #bcd0df;
+    border-left:6px solid #1685c4;
+    border-radius:10px;
+    background:linear-gradient(100deg,#f4f9fd,#ffffff);
+}
+.grade-label{
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:1.5px;
+    color:#6c7e90;
+}
+.grade-sub{
+    margin-top:4px;
+    font-size:9px;
+    color:#8797a7;
+}
+.grade-value{
+    font-size:26px;
+    font-weight:900;
+    color:#103f68;
+}
+.notice{
+    margin-top:18px;
+    padding:11px 15px;
+    background:#edf6fb;
+    border-radius:7px;
+    text-align:center;
+    font-size:9px;
+    color:#63788b;
+}
+.footer{
+    margin:0 42px;
+    padding:20px 0 28px;
+    border-top:1px solid #d6e1e9;
+    display:flex;
+    justify-content:space-between;
+    font-size:9px;
+    color:#6d8192;
+}
+.footer strong{color:#103f68}
+</style>
+</head>
+<body>
+<div class="result-sheet">
+
+{% if logo_data %}
+<img class="watermark" src="{{logo_data}}" alt="">
+{% endif %}
+
+<div class="header">
+    <div class="brand">
+        {% if logo_data %}
+        <img class="logo" src="{{logo_data}}" alt="Creative Rainbow Schools">
+        {% endif %}
+        <div>
+            <div class="school-name">CREATIVE RAINBOW MONTESSORI SCHOOL</div>
+            <div class="college-name">CREATIVE RAINBOW COLLEGE</div>
+            <div class="motto">Growing in humility and fear of God</div>
+        </div>
+    </div>
+    <div class="official">
+        <div class="official-badge">OFFICIAL RESULT</div>
+        <div class="official-sub">Entrance Examination</div>
+    </div>
+</div>
+
+<div class="body">
+
+<div class="title-row">
+    <div>
+        <div class="eyebrow">ACADEMIC ASSESSMENT RECORD</div>
+        <div class="title">Entrance Examination Result</div>
+    </div>
+    <div class="reference">
+        Candidate Reference
+        <strong>{{candidate.candidate_code}}</strong>
+    </div>
+</div>
+
+<div class="candidate">
+    <div class="photo-panel">
+        {% if photo_data %}
+        <div class="photo-frame">
+            <img src="{{photo_data}}" alt="{{candidate.candidate_name}}">
+        </div>
+        {% endif %}
+    </div>
+    <div class="candidate-info">
+        <div class="section-label">CANDIDATE INFORMATION</div>
+        <div class="candidate-name">{{candidate.candidate_name}}</div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span>Candidate ID</span>
+                <strong>{{candidate.candidate_code}}</strong>
+            </div>
+            <div class="info-item">
+                <span>Applied / Target Class</span>
+                <strong>{{candidate.target_class}}</strong>
+            </div>
+            <div class="info-item">
+                <span>Examination</span>
+                <strong>Entrance Examination</strong>
+            </div>
+            <div class="info-item">
+                <span>Result Status</span>
+                <strong>Completed</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section-heading">
+    <div class="bar"></div>
+    <h2>EXAMINATION PERFORMANCE</h2>
+    <small>Subject-by-subject assessment record</small>
+</div>
+
+<table class="table">
+<thead>
+<tr>
+    <th>Examination</th>
+    <th>Correct</th>
+    <th>Score</th>
+    <th>Percentage</th>
+</tr>
+</thead>
+<tbody>
+{% for p in papers %}
+<tr>
+    <td>{{p.subject_label}}</td>
+    <td>{{p.correct_count}} / {{p.question_count}}</td>
+    <td>{{p.score}} / {{p.max_score}}</td>
+    <td>{{'%.1f'|format(p.percentage)}}%</td>
+</tr>
+{% endfor %}
+<tr class="total">
+    <td>TOTAL</td>
+    <td>{{total_correct}} / {{total_questions}}</td>
+    <td>{{total_score}} / {{total_max}}</td>
+    <td>{{'%.1f'|format(pct)}}%</td>
+</tr>
+</tbody>
+</table>
+
+<div class="metrics">
+    <div class="metric">
+        <div class="metric-label">QUESTIONS CORRECT</div>
+        <div class="metric-value">{{total_correct}}/{{total_questions}}</div>
+        <div class="metric-note">Total correct answers</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">TOTAL SCORE</div>
+        <div class="metric-value">{{total_score}}/{{total_max}}</div>
+        <div class="metric-note">Marks earned</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">AVERAGE SUBJECT</div>
+        <div class="metric-value">{{'%.1f'|format(average_subject_percentage)}}%</div>
+        <div class="metric-note">Average of completed papers</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">OVERALL PERCENTAGE</div>
+        <div class="metric-value">{{'%.1f'|format(pct)}}%</div>
+        <div class="metric-note">Cumulative performance</div>
+    </div>
+</div>
+
+<div class="grade">
+    <div>
+        <div class="grade-label">OVERALL GRADE</div>
+        <div class="grade-sub">Final cumulative assessment classification</div>
+    </div>
+    <div class="grade-value">{{grade}}</div>
+</div>
+
+<div class="notice">
+    This document represents the official entrance examination result recorded by Creative Rainbow Schools.
+    Results are generated from the candidate's examination record.
+</div>
+
+</div>
+
+<div class="footer">
+    <div>
+        <strong>Creative Rainbow Schools</strong><br>
+        Growing in humility and fear of God
+    </div>
+    <div style="text-align:right">
+        Official Entrance Examination Result<br>
+        Candidate ID: <strong>{{candidate.candidate_code}}</strong>
+    </div>
+</div>
+
+</div>
+</body>
+</html>

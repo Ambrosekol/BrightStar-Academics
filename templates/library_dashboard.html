@@ -1,0 +1,85 @@
+﻿{% extends 'admin_base.html' %}
+{% block title %}Library — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY</div><h1>Library Management</h1><p class="hero-copy">Manage the catalogue, copies, borrowing and returns. Catalogue details are editable; loan history is retained.</p></div></div>
+<div class="metric-grid"><div class="metric-card"><span>Books in catalogue</span><strong>{{ books|length }}</strong></div><div class="metric-card"><span>Currently borrowed</span><strong>{{ borrowed }}</strong></div><div class="metric-card"><span>Overdue</span><strong>{{ overdue }}</strong></div></div>
+
+<div class="card form-card"><div class="section-head"><div><h3>Add a book</h3><p class="muted">Catalogue information can be corrected later without rewriting borrowing history.</p></div></div>
+<form method="post" action="{{ url_for('admin_library_book_new') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+<div class="form-grid two">
+  <div class="field"><label>Title</label><input name="title" required></div>
+  <div class="field"><label>Author</label><input name="author"></div>
+  <div class="field"><label>ISBN</label><input name="isbn"></div>
+  <div class="field"><label>Publisher</label><input name="publisher"></div>
+  <div class="field"><label>Category</label><input name="category"></div>
+  <div class="field"><label>Shelf</label><input name="shelf"></div>
+  <div class="field"><label>Publication year</label><input type="number" name="publication_year" min="0"></div>
+  <div class="field"><label>Number of copies</label><input type="number" name="copies" min="1" value="1"></div>
+</div>
+<div style="margin-top: 1.25rem;"><button class="btn btn-primary" type="submit">Add Book</button></div>
+</form></div>
+
+<div class="card form-card"><div class="section-head"><div><h3>Issue a book</h3><p class="muted">A copy is deducted from availability and restored when returned.</p></div></div>
+<form method="post" action="{{ url_for('admin_library_issue') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+<div class="form-grid two">
+  <div class="field"><label>Book</label><select name="book_id" required><option value="">Select available book</option>{% for b in books if b.available_copies>0 %}<option value="{{ b.id }}">{{ b.title }} — {{ b.available_copies }}/{{ b.total_copies }} available</option>{% endfor %}</select></div>
+  <div class="field"><label>Member type</label><select name="member_type" id="libraryMemberType"><option value="student">Student</option><option value="staff">Staff</option></select></div>
+  <div class="field" id="libraryStudentWrap"><label>Student</label><select name="member_id" id="libraryStudent"><option value="">Select student</option>{% for s in students %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} — {{ s.admission_no }}</option>{% endfor %}</select></div>
+  <div class="field" id="libraryStaffWrap" style="display:none !important;"><label>Staff</label><select id="libraryStaff"><option value="">Select staff</option>{% for a in staff %}<option value="{{ a.id }}">{{ a.display_name }} — {{ a.username }}</option>{% endfor %}</select></div>
+  <div class="field"><label>Loan days</label><input type="number" name="days" min="1" value="14"></div>
+</div>
+<div style="margin-top: 1.25rem;"><button class="btn btn-primary" type="submit">Issue Book</button></div>
+</form></div>
+
+<div class="card table-card">
+  <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding-bottom:1rem; border-bottom:1px solid #f1f5f9; margin-bottom:1rem;">
+    <div><strong>Catalogue</strong><br><span class="muted" style="font-size:0.85rem;">Search the active catalogue.</span></div>
+    <form method="get" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:nowrap;">
+      <input name="q" placeholder="Title, author, ISBN or category" value="{{ q }}" style="padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.9rem; min-width:240px;">
+      <select name="status" style="padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.9rem;">
+        <option value="all" {% if status=='all' %}selected{% endif %}>All</option>
+        <option value="available" {% if status=='available' %}selected{% endif %}>Available</option>
+      </select>
+      <button class="btn btn-light" type="submit" style="padding:8px 16px;">Search</button>
+    </form>
+  </div>
+  <div class="table-scroll"><table><thead><tr><th>Book</th><th>Author</th><th>Category</th><th>Shelf</th><th>Copies</th><th>Actions</th></tr></thead><tbody>
+  {% for b in books %}<tr><td><strong>{{ b.title }}</strong>{% if b.isbn %}<small>ISBN {{b.isbn}}</small>{% endif %}</td><td>{{b.author or '—'}}</td><td>{{b.category or '—'}}</td><td>{{b.shelf or '—'}}</td><td>{{b.available_copies}} / {{b.total_copies}} available</td><td class="row-actions"><a class="btn btn-light btn-small" href="{{url_for('admin_library_book_edit',book_id=b.id)}}">Edit</a><form method="post" action="{{url_for('admin_library_book_toggle',book_id=b.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">{{'Archive' if b.active else 'Activate'}}</button></form></td></tr>
+  {% else %}<tr><td colspan="6" class="empty-state">No books match your search.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="card table-card"><div class="table-toolbar"><div><strong>Active loans</strong><span class="muted">Returned loans remain in the database as history.</span></div></div>
+<div class="table-scroll"><table><thead><tr><th>Book</th><th>Borrower</th><th>Borrowed</th><th>Due</th><th></th></tr></thead><tbody>
+{% for l in loans %}<tr><td>{{l.title}}</td><td>{% if l.member_type=='student' %}{{l.first_name}} {{l.last_name}} <small>{{l.admission_no}}</small>{% else %}{{l.staff_name}}{% endif %}</td><td>{{l.borrowed_at[:10]}}</td><td>{{l.due_at or '—'}}</td><td><form method="post" action="{{url_for('admin_library_return',loan_id=l.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">Return</button></form></td></tr>
+{% else %}<tr><td colspan="5" class="empty-state">No active loans.</td></tr>{% endfor %}</tbody></table></div></div>
+
+<script>
+(function(){
+  const mt = document.getElementById('libraryMemberType');
+  const sw = document.getElementById('libraryStudentWrap');
+  const aw = document.getElementById('libraryStaffWrap');
+  const ss = document.getElementById('libraryStudent');
+  const sa = document.getElementById('libraryStaff');
+
+  function sync(){
+    const isStaff = mt.value === 'staff';
+    if(isStaff) {
+      sw.style.setProperty('display', 'none', 'important');
+      aw.style.setProperty('display', 'flex', 'important');
+    } else {
+      sw.style.setProperty('display', 'flex', 'important');
+      aw.style.setProperty('display', 'none', 'important');
+    }
+    ss.disabled = isStaff;
+    sa.disabled = !isStaff;
+    ss.name = isStaff ? '_student_member_id' : 'member_id';
+    sa.name = isStaff ? 'member_id' : '_staff_member_id';
+  }
+
+  if(mt) {
+    mt.addEventListener('change', sync);
+    sync();
+  }
+})();
+</script>
+{% endblock %}

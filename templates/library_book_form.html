@@ -1,0 +1,10 @@
+{% extends 'admin_base.html' %}
+{% block title %}Edit Library Book — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY / CATALOGUE</div><h1>Edit library book</h1><p class="hero-copy">Correct catalogue details or adjust the number of copies. Copies currently on loan cannot be removed from inventory.</p></div></div>
+<div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
+<form method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+<div class="form-grid two"><div class="field"><label>Title</label><input name="title" value="{{book.title}}" required></div><div class="field"><label>Author</label><input name="author" value="{{book.author or ''}}"></div><div class="field"><label>ISBN</label><input name="isbn" value="{{book.isbn or ''}}"></div><div class="field"><label>Publisher</label><input name="publisher" value="{{book.publisher or ''}}"></div><div class="field"><label>Category</label><input name="category" value="{{book.category or ''}}"></div><div class="field"><label>Shelf</label><input name="shelf" value="{{book.shelf or ''}}"></div><div class="field"><label>Publication year</label><input type="number" name="publication_year" min="0" value="{{book.publication_year or ''}}"></div><div class="field"><label>Total copies</label><input type="number" name="total_copies" min="0" value="{{book.total_copies}}" required><small>{{book.total_copies - book.available_copies}} currently on loan.</small></div></div>
+<div class="form-actions"><button class="btn btn-primary" type="submit">Save book changes</button><a class="btn btn-light" href="{{url_for('admin_library')}}">Cancel</a></div>
+</form></div>
+{% endblock %}

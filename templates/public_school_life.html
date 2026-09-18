@@ -1,0 +1,581 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ public_settings.get('school_name','Creative Rainbow Montessori School') }} | School Life</title>
+<meta name="description" content="Discover school life at Creative Rainbow Montessori School through sports, football, social activities, games, enrichment, practical experiences and character development.">
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+
+<body class="public-site-page crainbow-school-life">
+
+{% include '_public_header.html' %}
+<div class="cr-public-page-transition">
+
+<style>
+.cr-school-life-page {
+    background: #fff;
+    color: #14213d;
+}
+
+.cr-sl-hero {
+    position: relative;
+    min-height: 620px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: #0b2d5c;
+}
+
+.cr-sl-hero img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cr-sl-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(5,25,55,.92) 0%, rgba(5,25,55,.68) 45%, rgba(5,25,55,.20) 100%);
+}
+
+.cr-sl-hero-content {
+    position: relative;
+    z-index: 2;
+    width: min(1180px, 92%);
+    margin: 0 auto;
+    padding: 90px 0 85px;
+    color: #fff;
+}
+
+.cr-sl-eyebrow {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+}
+
+.cr-sl-hero h1 {
+    max-width: 760px;
+    margin: 0 0 22px;
+    font-size: clamp(2.7rem, 6vw, 5.6rem);
+    line-height: .98;
+    letter-spacing: -.045em;
+}
+
+.cr-sl-hero p {
+    max-width: 700px;
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.8;
+    color: rgba(255,255,255,.88);
+}
+
+.cr-sl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 32px;
+}
+
+.cr-sl-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 3px;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.cr-sl-primary {
+    background: #fff;
+    color: #0b2d5c;
+}
+
+.cr-sl-secondary {
+    border: 1px solid rgba(255,255,255,.55);
+    color: #fff;
+}
+
+.cr-sl-section {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+    padding: 100px 0;
+}
+
+.cr-sl-intro {
+    display: grid;
+    grid-template-columns: .8fr 1.2fr;
+    gap: 70px;
+    align-items: start;
+}
+
+.cr-sl-kicker {
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #356aa0;
+}
+
+.cr-sl-section h2 {
+    margin: 12px 0 20px;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -.035em;
+}
+
+.cr-sl-intro-copy {
+    font-size: 1.08rem;
+    line-height: 1.85;
+    color: #536174;
+}
+
+.cr-sl-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 55px;
+}
+
+.cr-sl-card {
+    overflow: hidden;
+    min-height: 330px;
+    background: #f4f7fa;
+}
+
+.cr-sl-card img {
+    width: 100%;
+    height: 230px;
+    display: block;
+    object-fit: cover;
+}
+
+.cr-sl-card-body {
+    padding: 25px 27px 28px;
+}
+
+.cr-sl-card-body h3 {
+    margin: 0 0 10px;
+    font-size: 1.35rem;
+    letter-spacing: -.02em;
+}
+
+.cr-sl-card-body p {
+    margin: 0;
+    color: #5b6675;
+    line-height: 1.7;
+}
+
+.cr-sl-feature {
+    background: #f3f6f9;
+}
+
+.cr-sl-feature-inner {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+    padding: 100px 0;
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 65px;
+    align-items: center;
+}
+
+.cr-sl-feature img {
+    width: 100%;
+    height: 500px;
+    object-fit: cover;
+}
+
+.cr-sl-list {
+    margin: 30px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cr-sl-list li {
+    position: relative;
+    padding: 15px 0 15px 25px;
+    border-top: 1px solid #d9e0e7;
+    color: #4e5b6b;
+    line-height: 1.6;
+}
+
+.cr-sl-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 24px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #356aa0;
+}
+
+.cr-sl-values {
+    background: #0b2d5c;
+    color: #fff;
+}
+
+.cr-sl-values-inner {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+    padding: 95px 0;
+}
+
+.cr-sl-values .cr-sl-kicker {
+    color: #b9d3ee;
+}
+
+.cr-sl-values h2 {
+    max-width: 760px;
+}
+
+.cr-sl-values p {
+    max-width: 780px;
+    color: rgba(255,255,255,.82);
+    line-height: 1.85;
+}
+
+.cr-sl-value-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    margin-top: 50px;
+}
+
+.cr-sl-value {
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,.16);
+}
+
+.cr-sl-value h3 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+}
+
+.cr-sl-value p {
+    margin: 0;
+    font-size: .95rem;
+    line-height: 1.7;
+}
+
+.cr-sl-cta {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+    padding: 95px 0 110px;
+    text-align: center;
+}
+
+.cr-sl-cta h2 {
+    max-width: 760px;
+    margin: 0 auto 18px;
+}
+
+.cr-sl-cta p {
+    max-width: 680px;
+    margin: 0 auto;
+    color: #5a6675;
+    line-height: 1.8;
+}
+
+.cr-sl-cta a {
+    display: inline-flex;
+    margin-top: 28px;
+    padding: 15px 25px;
+    background: #0b2d5c;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+@media (max-width: 800px) {
+    .cr-sl-hero {
+        min-height: 560px;
+    }
+
+    .cr-sl-intro,
+    .cr-sl-feature-inner {
+        grid-template-columns: 1fr;
+        gap: 35px;
+    }
+
+    .cr-sl-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cr-sl-value-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cr-sl-feature img {
+        height: 360px;
+    }
+}
+
+@media (max-width: 520px) {
+    .cr-sl-value-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<main class="cr-school-life-page">
+
+<section class="cr-sl-hero">
+<img src="{{ url_for('static', filename='images/school/school-life-students-01.jpg') }}"
+     alt="Creative Rainbow Montessori School">
+
+<div class="cr-sl-hero-content">
+<div class="cr-sl-eyebrow">SCHOOL LIFE</div>
+
+<h1>Learning continues beyond the classroom.</h1>
+
+<p>
+At Creative Rainbow Montessori School, children are encouraged
+to participate, explore, create, compete, collaborate and grow.
+School life gives every child opportunities to discover interests,
+develop confidence and build lasting character.
+</p>
+
+<div class="cr-sl-actions">
+<a class="cr-sl-primary" href="{{ url_for('public_school_admissions') }}">
+Explore Admissions
+</a>
+<a class="cr-sl-secondary" href="{{ url_for('public_school_contact') }}">
+Contact the School
+</a>
+</div>
+</div>
+</section>
+
+<section class="cr-sl-section">
+
+<div class="cr-sl-intro">
+<div>
+<div class="cr-sl-kicker">BEYOND ACADEMICS</div>
+<h2>A school experience built around participation.</h2>
+</div>
+
+<div class="cr-sl-intro-copy">
+<p>
+Children learn in many different ways. Alongside classroom
+learning, Creative Rainbow provides opportunities for pupils
+and students to develop through sports, social activities,
+games, practical experiences, creative participation and
+other forms of enrichment.
+</p>
+
+<p>
+These experiences help children discover their strengths,
+work with others, take responsibility and become more
+confident participants in their school community.
+</p>
+</div>
+</div>
+
+<div class="cr-sl-grid">
+
+<article class="cr-sl-card">
+<img src="{{ url_for('static', filename='images/school/school-life-students-03.jpg') }}"
+     alt="Students participating in school activities">
+<div class="cr-sl-card-body">
+<h3>Sports & Physical Development</h3>
+<p>
+Sport encourages discipline, teamwork, healthy competition
+and the confidence to keep improving.
+</p>
+</div>
+</article>
+
+<article class="cr-sl-card">
+<img src="{{ url_for('static', filename='images/school/school-life-students-02.jpg') }}"
+     alt="Creative Rainbow school activity">
+<div class="cr-sl-card-body">
+<h3>Football Academy</h3>
+<p>
+Football provides an avenue for children to develop teamwork,
+commitment, physical ability and sporting confidence.
+</p>
+</div>
+</article>
+
+<article class="cr-sl-card">
+<img src="{{ url_for('static', filename='images/school/shodex-gardens-02.jpg') }}"
+     alt="Students enjoying school life">
+<div class="cr-sl-card-body">
+<h3>Social & Cultural Activities</h3>
+<p>
+School activities create opportunities for children to
+participate, express themselves and celebrate community together.
+</p>
+</div>
+</article>
+
+<article class="cr-sl-card">
+<img src="{{ url_for('static', filename='images/school/shodex-gardens-01.jpg') }}"
+     alt="Students taking part in school enrichment">
+<div class="cr-sl-card-body">
+<h3>Games & Recreation</h3>
+<p>
+Play, games and recreation contribute to a balanced school
+experience while helping children build friendships and confidence.
+</p>
+</div>
+</article>
+
+</div>
+</section>
+
+<section class="cr-sl-feature">
+
+<div class="cr-sl-feature-inner">
+
+<div>
+<div class="cr-sl-kicker">EXPLORING POTENTIAL</div>
+<h2>Different experiences. Different strengths. One community.</h2>
+
+<p class="cr-sl-intro-copy">
+We recognise that children bring different interests,
+abilities and ways of expressing themselves. School life
+gives them room to explore those possibilities.
+</p>
+
+<ul class="cr-sl-list">
+<li>Creative participation and self-expression</li>
+<li>Practical and vocational exposure</li>
+<li>Opportunities to work and learn with others</li>
+<li>Confidence through participation and responsibility</li>
+<li>Summer Exploring and enrichment experiences</li>
+</ul>
+</div>
+
+<img src="{{ url_for('static', filename='images/school/vocational-week-01.jpg') }}"
+     alt="Creative Rainbow Montessori School experience">
+
+</div>
+</section>
+
+<section class="cr-sl-values">
+
+<div class="cr-sl-values-inner">
+
+<div class="cr-sl-kicker">CHARACTER & COMMUNITY</div>
+
+<h2>Growing in humility and fear of God.</h2>
+
+<p>
+School life is also part of the character journey. At Creative
+Rainbow Montessori School, children are encouraged to develop
+respect, responsibility, confidence, cooperation and positive
+values as they grow.
+</p>
+
+<div class="cr-sl-value-grid">
+
+<div class="cr-sl-value">
+<h3>Confidence</h3>
+<p>
+Encouraging children to participate and believe in their
+ability to contribute.
+</p>
+</div>
+
+<div class="cr-sl-value">
+<h3>Teamwork</h3>
+<p>
+Learning to cooperate, support others and work towards
+shared goals.
+</p>
+</div>
+
+<div class="cr-sl-value">
+<h3>Responsibility</h3>
+<p>
+Developing ownership, discipline and respect for the
+school community.
+</p>
+</div>
+
+<div class="cr-sl-value">
+<h3>Character</h3>
+<p>
+Building positive values alongside academic and personal
+development.
+</p>
+</div>
+
+</div>
+</div>
+</section>
+
+<section class="cr-sl-cta">
+
+<div class="cr-sl-kicker">JOIN THE JOURNEY</div>
+
+<h2>Give your child room to learn, participate and flourish.</h2>
+
+<p>
+Discover the educational journey and opportunities available
+at Creative Rainbow Montessori School.
+</p>
+
+<a href="{{ url_for('public_school_admissions') }}">
+View Admissions
+</a>
+
+</section>
+
+</main>
+
+<footer class="cr-footer">
+
+<div class="cr-container cr-footer-grid">
+
+<div>
+<img src="{{ url_for('static', filename='images/school_logo.png') }}"
+     alt="Creative Rainbow Montessori School logo">
+<p>{{ public_settings.get('school_name','Creative Rainbow Montessori School') }}</p>
+<span>Learning with purpose. Growing with character.</span>
+</div>
+
+<div>
+<b>EXPLORE</b>
+<a href="{{ url_for('public_school_about') }}">About Us</a>
+<a href="{{ url_for('public_school_academics') }}">Academics</a>
+<a href="{{ url_for('public_school_life') }}">School Life</a>
+<a href="{{ url_for('public_school_admissions') }}">Admissions</a>
+<a href="{{ url_for('public_school_news') }}">News</a>
+</div>
+
+<div>
+<b>CONNECT</b>
+<a href="{{ url_for('public_school_contact') }}">Contact</a>
+<a href="{{ url_for('login') }}">Portal Login</a>
+</div>
+
+</div>
+
+<div class="cr-footer-bottom cr-container">
+<span>© {{ public_settings.get('school_name','Creative Rainbow Montessori School') }}</span>
+<span>Learning with purpose. Growing with character.</span>
+</div>
+
+</footer>
+
+
+</div><!-- CRAINBOW_PUBLIC_PAGE_TRANSITION -->
+</body>
+</html>
+
+
+
+

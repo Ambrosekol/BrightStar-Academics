@@ -1,0 +1,55 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice Result — Creative Rainbow Montessori School</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style>
+    .result-wrapper { max-width: 720px; margin: 3rem auto; padding: 0 1.5rem; }
+    .result-card { background: white; border-radius: 16px; padding: 2.5rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); text-align: center; }
+    .score-badge { display: inline-block; background: #dcfce7; color: #15803d; font-size: 2.5rem; font-weight: 800; padding: 0.75rem 2rem; border-radius: 50px; margin: 1rem 0; }
+    .btn-action { display: inline-block; padding: 0.85rem 1.5rem; border-radius: 8px; font-weight: 600; text-decoration: none; margin: 0.5rem; transition: background 0.2s; }
+  </style>
+</head>
+<body class="public-site-page" style="background: #f8fafc; margin: 0; min-height: 100vh; display: flex; flex-direction: column;">
+  {% include '_public_header.html' %}
+
+  <div style="flex: 1;">
+    <main class="result-wrapper">
+      <div class="result-card">
+        <span style="color: #0284c7; font-weight: 700; text-transform: uppercase; font-size: 0.85rem;">Practice Zone Result</span>
+        <h1 style="color: #08294f; font-size: 2.25rem; margin: 0.5rem 0;">Test Completed!</h1>
+        <p style="color: #64748b; font-size: 1.05rem;">Great job attempting the Crainbow practice assessment.</p>
+
+        <div class="score-badge">
+          {{ score | default(18) }} / {{ total | default(20) }}
+        </div>
+
+        <p style="color: #334155; font-weight: 600; font-size: 1.1rem; margin-bottom: 2rem;">
+          Performance: <span style="color: #16a34a;">Excellent — Ready for Admission</span>
+        </p>
+
+        <div style="background: #f1f5f9; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; text-align: left;">
+          <h4 style="margin-top: 0; color: #08294f;">Next Steps for Parents:</h4>
+          <p style="margin: 0; color: #475569; font-size: 0.95rem; line-height: 1.6;">
+            If you are interested in enrolling your child at Creative Rainbow Montessori School, proceed directly to submit an enquiry or speak with our admissions desk.
+          </p>
+        </div>
+
+        <div>
+          <a href="{{ url_for('public_school_contact') }}" class="btn-action" style="background: #0284c7; color: white;">Apply for Admission Now &rarr;</a>
+          <a href="{{ url_for('public_school_contact') }}" class="btn-action" style="background: #f1f5f9; color: #08294f; border: 1px solid #cbd5e1;">Contact Admissions</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer style="background: white; border-top: 1px solid #e2e8f0; padding: 2rem 1.5rem; text-align: center; margin-top: 3rem;">
+    <div style="max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <span style="font-style: italic; color: #64748b; font-size: 0.95rem;">"{{ settings.get('school_motto', 'Growing in humility and fear of God') }}"</span>
+      <a href="{{ url_for('login') }}" style="color: #0284c7; text-decoration: none; font-weight: 600;">Portal Login →</a>
+    </div>
+  </footer>
+</body>
+</html>

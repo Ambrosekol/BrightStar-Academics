@@ -1,0 +1,46 @@
+{% extends 'admin_base.html' %}
+{% block title %}Assignments — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Assignments</h1><p class="hero-copy">Choose a class first, then manage the assignments belonging to that class.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_assignment_new')}}">+ Create Assignment</a></div></div>
+<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Assignments are kept inside their class boundary.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_assignments')}}">← All classes</a>{% endif %}</div>
+<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_assignments',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} assignment{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
+{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Assignment boundary.</strong><span>Select a class above to open its assignment register.</span></div>{% endif %}
+
+{% if selected_class %}
+<dialog class="cr-modal" id="assignmentsModal">
+  <div class="cr-modal-head">
+    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} Assignments</h2><p>{{assignments|length}} assignment{{'' if assignments|length==1 else 's'}} shown.</p></div>
+    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('assignmentsModal').close()">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <form class="register-search" method="get" style="margin-bottom:16px">
+      <input type="hidden" name="class" value="{{selected_class}}">
+      <input name="q" value="{{search}}" placeholder="Search assignment, subject or class">
+      <button class="btn btn-light" type="submit">Search</button>
+      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_assignments',class=selected_class)}}">Clear search</a>{% endif %}
+      <a class="btn btn-light" href="{{url_for('admin_school_assignments')}}">← All classes</a>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Assignment</th><th>Subject</th><th>Format</th><th>Students</th><th>Due</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr>
+            <td><strong>{{a.title}}</strong><small>{{a.instructions|truncate(70) if a.instructions else 'No instructions'}}</small></td>
+            <td>{{a.subject_name}}</td>
+            <td>{{'CBT-style' if a.assignment_type=='quiz' else 'Written / Task'}}{% if a.assignment_type=='quiz' %}<small>{{a.question_count}} question{{'' if a.question_count==1 else 's'}}</small>{% endif %}</td>
+            <td>{{a.student_count}}</td>
+            <td>{{a.due_date or '—'}}</td>
+            <td><div class="row-actions"><a class="btn btn-primary btn-small" href="{{url_for('admin_school_assignment_detail',assignment_id=a.id)}}">Open</a><a class="btn btn-light" href="{{url_for('admin_school_assignment_edit',assignment_id=a.id)}}">Edit</a><form method="post" action="{{url_for('admin_school_assignment_delete',assignment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" onclick="return confirm('Remove this assignment?');">Delete</button></form></div></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty-state">No assignments found in {{selected_class}}.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</dialog>
+<script>document.getElementById('assignmentsModal')?.showModal();</script>
+{% endif %}
+{% endblock %}

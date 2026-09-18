@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}
+{% block title %}Live Presence — Crainbow Administration{% endblock %}
+{% block content %}
+<style>
+.presence-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.presence-kpi{padding:18px}
+.presence-kpi-label{display:block;font-size:12px;font-weight:800;color:#637b91;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.presence-kpi-value{font-size:28px;font-weight:800;color:#102f3e}
+.presence-table{width:100%;border-collapse:collapse}
+.presence-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#637b91;padding:10px 14px;border-bottom:1px solid #e2e9ef}
+.presence-table td{padding:10px 14px;border-bottom:1px solid #eef2f6;font-size:13px;color:#102f3e}
+.presence-badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#eef2f6;color:#334a5e;border:1px solid #dce6ee;text-transform:capitalize}
+.presence-empty{padding:28px;text-align:center;color:#637b91}
+@media (max-width:720px){.presence-kpis{grid-template-columns:1fr}}
+</style>
+<div class="page-hero"><div><div class="eyebrow">LIVE PRESENCE</div><h1>Online now</h1><p class="hero-copy">Online status is based on recent server activity and automatically expires after inactivity.</p></div></div>
+
+<div class="presence-kpis">
+  <div class="card presence-kpi"><span class="presence-kpi-label">Administrators online</span><span class="presence-kpi-value">{{ counts.admins }}</span></div>
+  <div class="card presence-kpi"><span class="presence-kpi-label">Students online</span><span class="presence-kpi-value">{{ counts.students }}</span></div>
+  <div class="card presence-kpi"><span class="presence-kpi-label">Parents online</span><span class="presence-kpi-value">{{ counts.parents }}</span></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  {% if rows %}
+  <table class="presence-table">
+    <thead>
+      <tr><th>Account</th><th>Name</th><th>Identifier</th><th>Class</th><th>Last seen (WAT)</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><span class="presence-badge">{{ r.account_type }}</span></td>
+        <td>{{ r.display_name or '—' }}</td>
+        <td>{{ r.identifier or '—' }}</td>
+        <td>{{ r.class_name or '—' }}</td>
+        <td>{{ r.last_seen_wat }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="presence-empty">Nobody is currently online.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Examination Activity &mdash; Crainbow Administration{% endblock %}
+
+{% block content %}
+
+{% set ns = namespace(total=0, active=0, submitted=0, percentage_total=0, percentage_count=0) %}
+{% for a in attempts %}
+  {% set ns.total = ns.total + 1 %}
+  {% if a.status == 'active' %}
+    {% set ns.active = ns.active + 1 %}
+  {% endif %}
+  {% if a.status == 'submitted' %}
+    {% set ns.submitted = ns.submitted + 1 %}
+  {% endif %}
+  {% if a.percentage is not none %}
+    {% set ns.percentage_total = ns.percentage_total + a.percentage %}
+    {% set ns.percentage_count = ns.percentage_count + 1 %}
+  {% endif %}
+{% endfor %}
+
+<div class="attempts-page">
+
+  <section class="attempts-hero">
+    <div class="attempts-hero-copy">
+
+      <a href="/admin" class="attempts-back">
+        &larr; Back to Administration
+      </a>
+
+      <div class="attempts-eyebrow">EXAMINATION MONITORING</div>
+
+      <div class="attempts-title-row">
+        <div>
+          <h1>Examination Activity</h1>
+          <p>
+            Monitor candidate examination attempts, live sessions,
+            submission status and recorded performance from one workspace.
+          </p>
+        </div>
+
+        <div class="attempts-hero-stat">
+          <strong>{{ ns.total }}</strong>
+          <span>Total attempts</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="attempts-summary" aria-label="Examination activity summary">
+
+    <div class="attempts-summary-card">
+      <span class="attempts-summary-label">Total Attempts</span>
+      <strong>{{ ns.total }}</strong>
+      <small>Recorded examination sessions</small>
+    </div>
+
+    <div class="attempts-summary-card attempts-summary-live">
+      <span class="attempts-summary-label">Live Now</span>
+      <strong>{{ ns.active }}</strong>
+      <small>Candidate sessions in progress</small>
+    </div>
+
+    <div class="attempts-summary-card attempts-summary-complete">
+      <span class="attempts-summary-label">Submitted</span>
+      <strong>{{ ns.submitted }}</strong>
+      <small>Completed examination attempts</small>
+    </div>
+
+    <div class="attempts-summary-card">
+      <span class="attempts-summary-label">Average Score</span>
+      <strong>
+        {% if ns.percentage_count %}
+          {{ '%.1f'|format(ns.percentage_total / ns.percentage_count) }}%
+        {% else %}
+          &mdash;
+        {% endif %}
+      </strong>
+      <small>Across attempts with recorded scores</small>
+    </div>
+
+  </section>
+
+  <section class="attempts-workspace">
+
+    <div class="attempts-workspace-head">
+      <div>
+        <span class="attempts-section-eyebrow">ACTIVITY STREAM</span>
+        <h2>Examination Attempts</h2>
+        <p>
+          A chronological view of candidate activity and examination progress.
+        </p>
+      </div>
+
+      <div class="attempts-count-chip">
+        {{ ns.total }} attempt{% if ns.total != 1 %}s{% endif %}
+      </div>
+    </div>
+
+    {% if attempts %}
+
+    <div class="attempts-table-wrap">
+      <table class="attempts-table">
+
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Score</th>
+            <th>Started</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for a in attempts %}
+
+          <tr class="{% if a.status == 'active' %}attempt-row-active{% endif %}">
+
+            <td>
+              <div class="attempt-candidate">
+                <div class="attempt-avatar">
+                  {{ a.candidate[:1]|upper }}
+                </div>
+
+                <div class="attempt-candidate-copy">
+                  <strong>{{ a.candidate }}</strong>
+                  {% if a.status == 'active' %}
+                    <span class="attempt-live-label">
+                      <i aria-hidden="true"></i> Currently active
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <strong class="attempt-subject">
+                {{ entrance_subject_label(a.bank_id, a.exam_name or '') }}
+              </strong>
+            </td>
+
+            <td>
+              <span class="attempt-status {{ a.status }}">
+                {% if a.status == 'active' %}
+                  <i aria-hidden="true"></i>
+                {% endif %}
+                {{ a.status|replace('_',' ')|title }}
+              </span>
+            </td>
+
+            <td>
+              {% if a.score is not none %}
+
+              <div class="attempt-score">
+                <strong>{{ a.score }} / {{ a.max_score }}</strong>
+
+                <div class="attempt-score-detail">
+                  <span>{{ '%.1f'|format(a.percentage) }}%</span>
+
+                  <div class="attempt-score-bar" aria-hidden="true">
+                    <span style="width: {{ [a.percentage, 100]|min }}%;"></span>
+                  </div>
+                </div>
+              </div>
+
+              {% else %}
+
+              <span class="attempt-score-pending">&mdash;</span>
+
+              {% endif %}
+            </td>
+
+            <td>
+              <div class="attempt-time">
+                <strong>{{ a.started_at[:10] }}</strong>
+                <span>{{ a.started_at.replace('T',' ')[11:19] }}</span>
+              </div>
+            </td>
+
+            <td>
+              {% if a.submitted_at %}
+
+              <div class="attempt-time">
+                <strong>{{ a.submitted_at[:10] }}</strong>
+                <span>{{ a.submitted_at.replace('T',' ')[11:19] }}</span>
+              </div>
+
+              {% else %}
+
+              <span class="attempt-not-submitted">Not submitted</span>
+
+              {% endif %}
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+    </div>
+
+    {% else %}
+
+    <div class="attempts-empty">
+      <div class="attempts-empty-icon" aria-hidden="true">&#9675;</div>
+      <h3>No examination activity recorded</h3>
+      <p>
+        Candidate examination attempts will appear here once examination
+        sessions begin.
+      </p>
+    </div>
+
+    {% endif %}
+
+  </section>
+
+</div>
+
+{% endblock %}

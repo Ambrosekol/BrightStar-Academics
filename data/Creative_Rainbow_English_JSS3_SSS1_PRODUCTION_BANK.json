@@ -1,0 +1,490 @@
+{
+  "id": "creative_rainbow_english_jss3_sss1",
+  "name": "Creative Rainbow College — Entrance Examination into SSS 1",
+  "level": "SSS 1",
+  "subject": "English Language",
+  "duration_seconds": 3600,
+  "version": "production",
+  "questions": [
+    {
+      "id": 1,
+      "text": "The professor gave a lucid explanation of the theory.",
+      "options": [
+        "obscure",
+        "clear",
+        "lengthy",
+        "doubtful"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 2,
+      "text": "His decision was considered arbitrary by many.",
+      "options": [
+        "random",
+        "fair",
+        "deliberate",
+        "wise"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 3,
+      "text": "The student gave a plausible excuse for his lateness.",
+      "options": [
+        "believable",
+        "false",
+        "weak",
+        "doubtful"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 4,
+      "text": "Her response was rather evasive.",
+      "options": [
+        "direct",
+        "avoiding",
+        "rude",
+        "polite"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 5,
+      "text": "The student was reluctant to answer the question.",
+      "options": [
+        "eager",
+        "unwilling",
+        "ready",
+        "bold"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 6,
+      "text": "The manager tried to mitigate the problem.",
+      "options": [
+        "worsen",
+        "control",
+        "reduce",
+        "ignore"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 7,
+      "text": "The situation became critical within minutes.",
+      "options": [
+        "dangerous",
+        "calm",
+        "simple",
+        "funny"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 8,
+      "text": "The boy's behaviour was erratic.",
+      "options": [
+        "steady",
+        "unpredictable",
+        "calm",
+        "polite"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 9,
+      "text": "The teacher was adamant about the rules.",
+      "options": [
+        "flexible",
+        "stubborn",
+        "unsure",
+        "gentle"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 10,
+      "text": "The man gave a vague explanation of the incident.",
+      "options": [
+        "clear",
+        "detailed",
+        "unclear",
+        "honest"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 11,
+      "text": "The judge's decision was impartial.",
+      "options": [
+        "equitable",
+        "prejudiced",
+        "objective",
+        "neutral"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 12,
+      "text": "The hall was spacious enough to accommodate everyone.",
+      "options": [
+        "extensive",
+        "confined",
+        "airy",
+        "broad"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 13,
+      "text": "His argument was highly convincing.",
+      "options": [
+        "persuasive",
+        "credible",
+        "dubious",
+        "logical"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 14,
+      "text": "She remained optimistic despite the setback.",
+      "options": [
+        "enthusiastic",
+        "hopeful",
+        "despondent",
+        "confident"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 15,
+      "text": "The glass was completely transparent.",
+      "options": [
+        "visible",
+        "translucent",
+        "obscure",
+        "opaque"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 16,
+      "text": "The child was obedient to all instructions.",
+      "options": [
+        "compliant",
+        "defiant",
+        "respectful",
+        "attentive"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 17,
+      "text": "The lecture was rather tedious.",
+      "options": [
+        "engaging",
+        "lengthy",
+        "exhausting",
+        "repetitive"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 18,
+      "text": "He is widely known for being generous.",
+      "options": [
+        "charitable",
+        "benevolent",
+        "miserly",
+        "kind"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 19,
+      "text": "Her answer was accurate.",
+      "options": [
+        "precise",
+        "exact",
+        "erroneous",
+        "correct"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 20,
+      "text": "The environment was extremely hostile.",
+      "options": [
+        "aggressive",
+        "amicable",
+        "unfriendly",
+        "tense"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 21,
+      "text": "Neither the teacher nor the students ______ present at the meeting.",
+      "options": [
+        "was",
+        "were",
+        "is",
+        "be"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 22,
+      "text": "Hardly had she arrived ______ the rain started.",
+      "options": [
+        "than",
+        "when",
+        "then",
+        "that"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 23,
+      "text": "If I ______ you, I would apologize immediately.",
+      "options": [
+        "am",
+        "was",
+        "were",
+        "be"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 24,
+      "text": "He insisted that she ______ the truth.",
+      "options": [
+        "tells",
+        "told",
+        "tell",
+        "telling"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 25,
+      "text": "The book, along with the pens, ______ missing.",
+      "options": [
+        "are",
+        "were",
+        "is",
+        "be"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 26,
+      "text": "By this time next year, she ______ her degree.",
+      "options": [
+        "completes",
+        "will complete",
+        "will have completed",
+        "completed"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 27,
+      "text": "No sooner had he finished speaking ______ the audience applauded.",
+      "options": [
+        "when",
+        "than",
+        "then",
+        "that"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 28,
+      "text": "She is one of the students who ______ always punctual.",
+      "options": [
+        "is",
+        "was",
+        "are",
+        "be"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 29,
+      "text": "The news ______ shocking to everyone.",
+      "options": [
+        "were",
+        "are",
+        "is",
+        "be"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 30,
+      "text": "I would rather you ______ the truth.",
+      "options": [
+        "tell",
+        "told",
+        "telling",
+        "tells"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 31,
+      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ʃ/.",
+      "options": [
+        "Measure",
+        "Ship",
+        "Vision",
+        "Garage"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 32,
+      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /eɪ/.",
+      "options": [
+        "Bed",
+        "Make",
+        "Sit",
+        "Pot"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 33,
+      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ɔː/.",
+      "options": [
+        "Cut",
+        "Saw",
+        "Cat",
+        "Pen"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 34,
+      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ɪ/.",
+      "options": [
+        "Seat",
+        "Sit",
+        "Site",
+        "Suit"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 35,
+      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /tʃ/.",
+      "options": [
+        "Church",
+        "Judge",
+        "Pleasure",
+        "Vision"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 36,
+      "text": "A poem of six lines is called a/an ______.",
+      "options": [
+        "couplet",
+        "triplet",
+        "sestet",
+        "octave"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 37,
+      "text": "A figure of speech that compares two things using “like” or “as” is a/an ______.",
+      "options": [
+        "metaphor",
+        "simile",
+        "irony",
+        "hyperbole"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 38,
+      "text": "A story with a moral lesson is called a ______.",
+      "options": [
+        "fable",
+        "novel",
+        "play",
+        "poem"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 39,
+      "text": "The main character in a literary work is the ______.",
+      "options": [
+        "antagonist",
+        "protagonist",
+        "narrator",
+        "poet"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 40,
+      "text": "A humorous play is known as a/an ______.",
+      "options": [
+        "tragedy",
+        "comedy",
+        "epic",
+        "satire"
+      ],
+      "answer": 1,
+      "points": 1
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Official Receipt {{ payment.receipt_no }}</title><style>@page{size:A5 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}
+.receipt{position:relative;width:210mm;height:148mm;overflow:hidden;background:#fff;color:#102f3e}
+.receipt-wave{position:absolute;left:0;right:0;bottom:0;width:100%;height:26%;z-index:0}
+.receipt-logo{position:absolute;left:2.8%;top:2%;width:26%;height:auto;z-index:2}
+.receipt-topright{position:absolute;right:4%;top:3%;width:30%;z-index:2}
+.receipt-address{font-size:7.4pt;line-height:1.35;color:#222;margin:0}
+.receipt-address b{display:block;margin-top:2pt}
+.receipt-meta{margin-top:5pt;background:#d5eaf4;border-radius:1mm;padding:2mm 3mm;font-weight:700;font-size:7.4pt;color:#02101c}
+.receipt-meta .no{margin-bottom:2pt}
+.receipt-ribbon{position:absolute;left:32%;top:26.5%;width:36%;text-align:center;background:#c6241d;color:#fff;border-radius:2mm;padding:2mm 0;font-weight:800;font-size:13pt;z-index:3;box-shadow:0 1mm 0 rgba(0,0,0,.12)}
+.receipt-row{position:absolute;left:2.6%;right:3.8%;height:8.4%;background:#d5eaf4;border:0.3mm solid #b8d1dc;z-index:3;display:flex;align-items:center}
+.receipt-row .label{font-weight:800;width:28%;padding-left:4mm;font-size:9pt}
+.receipt-row .value{font-size:9pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.receipt-row.r1{top:33%}.receipt-row.r2{top:41.1%}.receipt-row.r3{top:49.2%}.receipt-row.r4{top:57.3%}.receipt-row.r5{top:65.4%}
+.receipt-amount{position:absolute;left:2.6%;bottom:9%;width:48%;height:13%;background:#f8e690;z-index:4;display:flex;align-items:stretch;font-weight:800;color:#111;border-radius:1mm;overflow:hidden}
+.receipt-amount .cap{background:#f2c221;display:flex;align-items:center;justify-content:center;width:10%;font-size:16pt}
+.receipt-amount .figure{flex:1;display:flex;align-items:center;justify-content:center;font-size:16pt}
+.receipt-signature{position:absolute;right:4%;bottom:17%;width:34%;z-index:4;text-align:center;font-size:8pt}
+.receipt-signature img{max-width:100%;max-height:9mm;margin-bottom:1mm}
+.receipt-signature .line{border-top:0.3mm solid #444;width:80%;margin:0 auto 1.5mm}
+.receipt-signature small{font-size:6.5pt;color:#222}
+.receipt-forline{position:absolute;left:2.6%;bottom:2.4%;z-index:4;color:#fff;font-weight:800;font-size:9pt}
+.receipt-void{position:absolute;inset:35mm 20mm;z-index:10;display:flex;align-items:center;justify-content:center;font-size:32pt;font-weight:900;color:#b01818;transform:rotate(-18deg);border:1mm solid #b01818;opacity:.9}
+</style></head><body>
+<div class="receipt">
+  <svg class="receipt-wave" viewBox="0 0 210 38.5" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="5%" stop-color="#1a4d9e"/><stop offset="26%" stop-color="#123d85"/><stop offset="50%" stop-color="#1f5cb8"/><stop offset="74%" stop-color="#144594"/><stop offset="95%" stop-color="#1c54a8"/>
+    </linearGradient></defs>
+    <path d="M0,38.5 L0,15.96 L3.5,15.14 L7,14.51 L10.5,14.13 L14,14 L17.5,14.14 L21,14.54 L24.5,15.18 L28,16.01 L31.5,16.99 L35,18.06 L38.5,19.16 L42,20.21 L45.5,21.17 L49,21.97 L52.5,22.56 L56,22.91 L59.5,23 L63,22.82 L66.5,22.38 L70,21.72 L73.5,20.86 L77,19.86 L80.5,18.78 L84,17.69 L87.5,16.64 L91,15.71 L94.5,14.94 L98,14.38 L101.5,14.06 L105,14.01 L108.5,14.23 L112,14.7 L115.5,15.4 L119,16.28 L122.5,17.29 L126,18.37 L129.5,19.46 L133,20.5 L136.5,21.42 L140,22.16 L143.5,22.68 L147,22.96 L150.5,22.97 L154,22.72 L157.5,22.21 L161,21.49 L164.5,20.59 L168,19.56 L171.5,18.47 L175,17.38 L178.5,16.36 L182,15.47 L185.5,14.75 L189,14.26 L192.5,14.02 L196,14.05 L199.5,14.34 L203,14.88 L206.5,15.63 L210,16.55 L210,38.5 Z" fill="url(#waveGrad)"/>
+    <path d="M0,15.96 L3.5,15.14 L7,14.51 L10.5,14.13 L14,14 L17.5,14.14 L21,14.54 L24.5,15.18 L28,16.01 L31.5,16.99 L35,18.06 L38.5,19.16 L42,20.21 L45.5,21.17 L49,21.97 L52.5,22.56 L56,22.91 L59.5,23 L63,22.82 L66.5,22.38 L70,21.72 L73.5,20.86 L77,19.86 L80.5,18.78 L84,17.69 L87.5,16.64 L91,15.71 L94.5,14.94 L98,14.38 L101.5,14.06 L105,14.01 L108.5,14.23 L112,14.7 L115.5,15.4 L119,16.28 L122.5,17.29 L126,18.37 L129.5,19.46 L133,20.5 L136.5,21.42 L140,22.16 L143.5,22.68 L147,22.96 L150.5,22.97 L154,22.72 L157.5,22.21 L161,21.49 L164.5,20.59 L168,19.56 L171.5,18.47 L175,17.38 L178.5,16.36 L182,15.47 L185.5,14.75 L189,14.26 L192.5,14.02 L196,14.05 L199.5,14.34 L203,14.88 L206.5,15.63 L210,16.55" fill="none" stroke="#f2c221" stroke-width="1.6"/>
+  </svg>
+  <img class="receipt-logo" src="{{ url_for('static',filename='images/school_logo.png',_external=True) }}" alt="">
+  <div class="receipt-topright">
+    <div class="receipt-address">20/21 Charles Okeke Street,<br>Alahun-Ozumba,<br>Off Benster Close,<br>Maza-Maza, Lagos.<b>Tel: 0803 123 4567, 0810 987 6543</b></div>
+    <div class="receipt-meta"><div class="no">No: {{ payment.receipt_no }}</div>Date: <span style="font-weight:400">{{ payment.paid_at[:10] if payment.paid_at else '' }}</span></div>
+  </div>
+  <div class="receipt-ribbon">OFFICIAL RECEIPT</div>
+  <div class="receipt-row r1"><div class="label">Received from:</div><div class="value">{{ payment.payer_name }}</div></div>
+  <div class="receipt-row r2"><div class="label">the sum of:</div><div class="value">{{ payment.amount_words }}</div></div>
+  <div class="receipt-row r3"><div class="label">Being payment for:</div><div class="value">{{ payment.category }}</div></div>
+  <div class="receipt-row r4"><div class="label">Cash/Cheque No.:</div><div class="value">{{ payment.reference or ('Cash' if payment.method|lower == 'cash' else '—') }}</div></div>
+  <div class="receipt-row r5"><div class="label">Bank:</div><div class="value">{{ payment.method or '—' }}</div></div>
+  <div class="receipt-amount"><span class="cap">N</span><span class="figure">₦{{ '{:,.0f}'.format(payment.amount_naira) }}.{{ '%02d'|format(payment.amount_kobo) }}</span><span class="cap">K</span></div>
+  <div class="receipt-signature">
+    {% if signature_path %}<img src="{{ url_for('static',filename=signature_path,_external=True) }}" alt="Authorised signature">{% endif %}
+    <div class="line"></div><small>Authorised Signature</small>
+  </div>
+  <div class="receipt-forline">For: CREATIVE RAINBOW MONTESSORI SCHOOLS &amp; KIDS PARK</div>
+  {% if payment.status == 'voided' %}<div class="receipt-void">VOIDED</div>{% endif %}
+</div>
+<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));</script>
+</body></html>

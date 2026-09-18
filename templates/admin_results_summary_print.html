@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Crainbow CBT — Results Summary</title>
+<style>
+  @page { size: A4 portrait; margin: 10mm; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #172033;
+    font-size: 9px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .header h1 {
+    margin: 0 0 3px;
+    font-size: 19px;
+  }
+
+  .header h2 {
+    margin: 0 0 4px;
+    font-size: 14px;
+  }
+
+  .header p {
+    margin: 2px 0;
+    color: #555;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin: 6px 0 9px;
+    font-size: 9px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    border: 1px solid #9ca3af;
+    padding: 5px 3px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 700;
+    background: #f1f5f9;
+  }
+
+  td.name {
+    text-align: left;
+  }
+
+  .muted {
+    color: #666;
+    font-size: 7px;
+  }
+
+  .footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    color: #555;
+    font-size: 8px;
+  }
+
+  .nowrap {
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Creative Rainbow Montessori School</h1>
+    <h2>Creative Rainbow College — Entrance Examination</h2>
+    <p><strong>RESULTS SUMMARY / CUMULATIVE RESULTS</strong></p>
+    <p>Administrative report — questions and answers excluded</p>
+  </div>
+  <div class="meta">
+    <span>Class: <strong>{{ selected_target or 'All Classes' }}</strong></span>
+    <span>Candidate filter: <strong>{{ search or 'None' }}</strong></span>
+    <span>Printed: <strong>{{ now if now is defined else '' }}</strong></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:3%">#</th>
+	<th style="width:18%">Candidate</th>
+	<th style="width:7%">Class</th>
+	<th style="width:12%">English<br>Score / %</th>
+	<th style="width:12%">Mathematics<br>Score / %</th>
+	<th style="width:14%">General Knowledge<br>Score / %</th>
+	<th style="width:10%">Total Score</th>
+	<th style="width:8%">Overall %</th>
+	<th style="width:8%">Grade</th>
+	<th style="width:8%">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in summaries %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="name"><strong>{{ r.candidate_name }}</strong><br><span class="muted">{{ r.candidate_code }}</span></td>
+        <td>{{ r.target_class }}</td>
+        <td>{% if r.english.score is not none %}{{ r.english.score }} / {{ r.english.max_score }}<br>{{ '%.1f'|format(r.english.percentage) }}%{% else %}—{% endif %}</td>
+        <td>{% if r.mathematics.score is not none %}{{ r.mathematics.score }} / {{ r.mathematics.max_score }}<br>{{ '%.1f'|format(r.mathematics.percentage) }}%{% else %}—{% endif %}</td>
+        <td>{% if r.general_knowledge.score is not none %}{{ r.general_knowledge.score }} / {{ r.general_knowledge.max_score }}<br>{{ '%.1f'|format(r.general_knowledge.percentage) }}%{% else %}—{% endif %}</td>
+        <td><strong>{{ r.total_score }} / {{ r.total_max or '—' }}</strong></td>
+        <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong></td>
+        <td>{{ r.grade }}</td>
+        <td class="nowrap">{{ r.completed }} / 3</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="footer">
+    <span>Official administrative results summary</span>
+    <span>Creative Rainbow CBT</span>
+  </div>
+</body>
+</html>

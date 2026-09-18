@@ -1,0 +1,21 @@
+{% extends 'admin_base.html' %}
+{% block title %}Administration — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">ADMINISTRATION</div><h1>People, access &amp; governance</h1><p class="hero-copy">The control centre for who can use the system, what they can do and what important changes need your attention.</p></div></div>
+<section class="grid dashboard-metric-grid administration-metrics">
+  {% for key,label,abbr,value,desc in [('admins','Administrators','AD',counts.admins,counts.active_admins ~ ' active'),('roles','Staff roles','RL',counts.roles,'Ready-to-assign job roles'),('notifications','Unread alerts','AL',counts.notifications,'Important activity'),('controls','Open controls','CT',counts.controls,'Items needing oversight')] %}
+  <article class="card dashboard-metric-card metric-card-{{key}}">
+    <div class="dashboard-metric-head"><span class="dashboard-metric-icon">{{abbr}}</span><strong>{{label}}</strong></div>
+    <div class="metric dashboard-metric-number">{{value}}</div>
+    <div class="dashboard-metric-description">{{desc}}</div>
+  </article>
+  {% endfor %}
+</section>
+<div class="admin-card-grid">
+<a class="card admin-module" href="{{ url_for('admin_accounts') }}"><div class="module-icon">♙</div><div><h2>Administrators</h2><p>Create staff accounts, assign job roles, suspend access and manage access boundaries.</p><span>Manage staff →</span></div></a>
+<a class="card admin-module" href="{{ url_for('admin_roles') }}"><div class="module-icon">◆</div><div><h2>Staff roles</h2><p>Use clear job-based roles instead of manually selecting dozens of technical capabilities.</p><span>View roles →</span></div></a>
+<a class="card admin-module" href="{{ url_for('admin_controls') }}"><div class="module-icon">◉</div><div><h2>Controls &amp; alerts</h2><p>See important changes and lock examination resources when a review or intervention is required.</p><span>Open control centre →{% if counts.notifications %} <b class="inline-badge">{{ counts.notifications }}</b>{% endif %}</span></div></a>
+<a class="card admin-module" href="{{ url_for('admin_audit_logs') }}"><div class="module-icon">≡</div><div><h2>Activity &amp; security log</h2><p>Trace administrator sign-ins, access decisions and significant changes.</p><span>View activity →</span></div></a>
+</div>
+{% if is_super_admin %}<div class="info-banner"><strong>Super Admin principle</strong><span>Job roles decide what staff can do. Governance decides what requires oversight. Technical permission codes stay behind the interface unless you intentionally open Advanced controls.</span></div>{% endif %}
+{% endblock %}

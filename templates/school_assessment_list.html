@@ -1,0 +1,46 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{title}} — Crainbow Administration{% endblock %}
+{% block content %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / {{title|upper}}</div><h1>{{title}}</h1><p class="hero-copy">{{description}} Choose a class first so assessments stay inside the correct academic boundary.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{% if assessment_type=='test' %}{{url_for('admin_school_test_new')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_new')}}{% else %}{{url_for('admin_school_examination_new')}}{% endif %}">+ Create {{'test' if assessment_type=='test' else ('practice test' if assessment_type=='practice' else 'examination')}}</a></div></div>
+<div class="segmentation-intro"><div><strong>Choose a class</strong><span>{{title}} are separated by the class they belong to.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">← All classes</a>{% endif %}</div>
+<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for(request.endpoint,class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} {{title|lower|replace('practice tests','practice test')}}{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
+{% if not selected_class %}<div class="info-banner segmentation-note"><strong>{{title}} boundary.</strong><span>Select a class above to open the {{title|lower}} register.</span></div>{% endif %}
+
+{% if selected_class %}
+<dialog class="cr-modal" id="assessmentListModal">
+  <div class="cr-modal-head">
+    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} {{title}}</h2><p>{{assessments|length}} shown.</p></div>
+    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('assessmentListModal').close()">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <form class="register-search" method="get" style="margin-bottom:16px">
+      <input type="hidden" name="class" value="{{selected_class}}">
+      <input name="q" value="{{search}}" placeholder="Search title or subject">
+      <button class="btn btn-light" type="submit">Search</button>
+      {% if search %}<a class="btn btn-light" href="{{url_for(request.endpoint,class=selected_class)}}">Clear search</a>{% endif %}
+      <a class="btn btn-light" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">← All classes</a>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Title</th><th>Subject</th><th>Questions</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for a in assessments %}
+          <tr>
+            <td><strong>{{a.title}}</strong><small>{{a.session_name or 'Session not set'}}</small></td>
+            <td>{{a.subject_name}}</td>
+            <td>{{a.question_count}}</td>
+            <td>{{a.duration_minutes}} min</td>
+            <td><span class="role-chip">{{'Active' if a.active else 'Draft / Closed'}}</span></td>
+            <td><div class="row-actions"><a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=a.id)}}">Open</a><form method="post" action="{{url_for('admin_school_assessment_delete',assessment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" onclick="return confirm('Delete this assessment?');">Delete</button></form></div></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty-state">No {{title|lower}} found in {{selected_class}}.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</dialog>
+<script>document.getElementById('assessmentListModal')?.showModal();</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,615 @@
+{
+  "id": "crainbow_year7_entrance_english_language",
+  "name": "Creative Rainbow College — Entrance Examination Into Year 7",
+  "level": "Year 7",
+  "subject": "English Language",
+  "duration_seconds": 3600,
+  "version": "production",
+  "questions": [
+    {
+      "id": 1,
+      "text": "Water-borne disease are those :",
+      "options": [
+        "That lives in water",
+        "That attacks swimmers",
+        "That only people in wet countries suffer from",
+        "That are spread mainly through unclean water.",
+        "That cause the sufferer to discharge much water."
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 2,
+      "text": "Germs grows and multiply faster in warmer countries because",
+      "options": [
+        "Temperature conditions there are very favourable",
+        "Temperature is always low",
+        "Temperature provides for germs",
+        "Warmer countries are very dirty",
+        "Warmer countries are wetter countries."
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 3,
+      "text": "As contained in this passage, water is made safe for human use:",
+      "options": [
+        "By storing it in large containers",
+        "By boiling and storing in clean containers",
+        "By filtering to remove germs and dirty",
+        "By disturbing it through taps only",
+        "By cleaning all the surroundings"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 4,
+      "text": "Pick out the answer you consider most satisfactory. To avoid a water-borne disease like infective hepatitis",
+      "options": [
+        "People should stop using water",
+        "People should live in a clean environment",
+        "People should boil the water they use",
+        "People should boil the water and everything they use",
+        "People should use boiled water and avoid dirty things"
+      ],
+      "answer": 4,
+      "points": 1
+    },
+    {
+      "id": 5,
+      "text": "Pick out the answer you consider most satisfactory. To avoid disease like hepatitis, apart from boiling drinking water and covering our food",
+      "options": [
+        "We most also wash our hands before eating with it",
+        "We must also eat from a high table",
+        "We must also dress before eating",
+        "We must also chase away all the flies in our compound",
+        "We must also avoid noise making"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 6,
+      "text": "My father begged me to continue with my studies",
+      "options": [
+        "stop",
+        "Go on",
+        "Start",
+        "Push off"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 7,
+      "text": "If you are not careful Bola, you will harm yourself",
+      "options": [
+        "Wash",
+        "Injure",
+        "Lift",
+        "Arm"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 8,
+      "text": "The old lady prefers good health to riches",
+      "options": [
+        "Wealth",
+        "Shoes",
+        "Clothes",
+        "Beauty"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 9,
+      "text": "The reception is vacant at the moment",
+      "options": [
+        "Full",
+        "Empty",
+        "Void",
+        "Null"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 10,
+      "text": "Don't let me down, I trust you",
+      "options": [
+        "Let me drop",
+        "Leave me alone",
+        "Push me down",
+        "Disappoint me"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 11,
+      "text": "The man ............ you were talking to yesterday is the richest man in the community",
+      "options": [
+        "Which",
+        "Where",
+        "Whom",
+        "Who"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 12,
+      "text": "Peter likes English ............ than Basic Science",
+      "options": [
+        "Much",
+        "Better",
+        "Best",
+        "As"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 13,
+      "text": "I did the work ............ you told me to",
+      "options": [
+        "Before",
+        "Until",
+        "Unless",
+        "If"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 14,
+      "text": "You won't catch the bus ............ You run",
+      "options": [
+        "Before",
+        "As soon as",
+        "Since",
+        "Unless"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 15,
+      "text": "You ....... better do your homework now or you will be punished",
+      "options": [
+        "Have",
+        "Where",
+        "Are",
+        "Had"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 16,
+      "text": "Kehinde is my brother and I want him to ............ part of the whole process.",
+      "options": [
+        "And",
+        "Into",
+        "Be",
+        "All"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 17,
+      "text": "Emeka, Bisi and Kemi are all students of the same school the ............ are intelligent",
+      "options": [
+        "Two",
+        "Thrice",
+        "Three",
+        "Trio"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 18,
+      "text": "The old man gave me ........ last week",
+      "options": [
+        "An advice",
+        "Many advice",
+        "A advice",
+        "Advice"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 19,
+      "text": "Either the farmer or the hunters ............ literate",
+      "options": [
+        "Was",
+        "were",
+        "are",
+        "is"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 20,
+      "text": "When Francis visited us, we asked him if he ............ tea or coffee for breakfast",
+      "options": [
+        "Will want",
+        "wanted",
+        "want",
+        "was wanting"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 21,
+      "text": "The principal rejected the explanation of the head teacher.",
+      "options": [
+        "Accepted",
+        "praised",
+        "saw",
+        "received"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 22,
+      "text": "There is no gain in being proud, let's all learn to be ............",
+      "options": [
+        "Obedient",
+        "honest",
+        "humble",
+        "polite"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 23,
+      "text": "Your face looks familiar but the other guy looks ............",
+      "options": [
+        "Strong",
+        "serious",
+        "strange",
+        "hostile"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 24,
+      "text": "Olu looked moody on christmas day",
+      "options": [
+        "sad",
+        "excited",
+        "jovial",
+        "weak"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 25,
+      "text": "The church compound was noisy on Sunday",
+      "options": [
+        "deserted",
+        "warm",
+        "quiet",
+        "busy"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 26,
+      "text": "The child felt secured in her mother's arms",
+      "options": [
+        "Protected",
+        "abandoned",
+        "detached",
+        "comfortable"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 27,
+      "text": "The criminal did not show any sign of guilt during interrogation",
+      "options": [
+        "Regret",
+        "innocence",
+        "forgiveness",
+        "repentance"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 28,
+      "text": "He was promoted for his hard work",
+      "options": [
+        "praised",
+        "punished",
+        "demoted",
+        "rewarded"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 29,
+      "text": "We found the missing item inside the abandoned building",
+      "options": [
+        "Forgotten",
+        "recovered",
+        "hidden",
+        "neglected"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 30,
+      "text": "(a) African (b) America (c) Nigeria (d) Europe",
+      "options": [
+        "African",
+        "America",
+        "Nigeria",
+        "Europe"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 31,
+      "text": "(a) Ocean (b) Mud (c) River (d) Sea",
+      "options": [
+        "Ocean",
+        "Mud",
+        "River",
+        "Sea"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 32,
+      "text": "(a) Beef (b) Chicken (c) Pork (d) Violin",
+      "options": [
+        "Beef",
+        "Chicken",
+        "Pork",
+        "Violin"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 33,
+      "text": "(a) Chef (b) Fork (c) Plate (d) Spoon",
+      "options": [
+        "Chef",
+        "Fork",
+        "Plate",
+        "Spoon"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 34,
+      "text": "(a) Goalkeeper (b) player (c) pastor (d) captain",
+      "options": [
+        "Goalkeeper",
+        "player",
+        "pastor",
+        "captain"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 35,
+      "text": "(1) I went to bed early (2) I was very tired (3) I worked hard throughout the day",
+      "options": [
+        "213",
+        "321",
+        "123",
+        "231"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 36,
+      "text": "(1) the teacher flogged us (2) we were late to school (3) the teacher was angry with us",
+      "options": [
+        "213",
+        "132",
+        "231",
+        "321"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 37,
+      "text": "(1) I went to the market to buy some oil (2) there was no oil in the house (3) I wanted to cook soup",
+      "options": [
+        "123",
+        "321",
+        "231",
+        "312"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 38,
+      "text": "(1) the boys were stung by the bees (2) the boys went for honey hunting (3) their friends laughed at them",
+      "options": [
+        "213",
+        "123",
+        "321",
+        "231"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 39,
+      "text": "(1) she cried profusely (2) she was running to meet her brother (3) she fell and got injured",
+      "options": [
+        "213",
+        "123",
+        "312",
+        "231"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 40,
+      "text": "NATIONALITY",
+      "options": [
+        "ant",
+        "lion",
+        "lot",
+        "notion"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 41,
+      "text": "ELECTRIC",
+      "options": [
+        "cite",
+        "elect",
+        "let",
+        "tick"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 42,
+      "text": "PUBLICATION",
+      "options": [
+        "into",
+        "action",
+        "note",
+        "plot"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 43,
+      "text": "Choose from option A – D the one that is correctly spelt.",
+      "options": [
+        "Acurate",
+        "Sauceage",
+        "Masculiline",
+        "Ignorance"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 44,
+      "text": "Choose from option A – D the one that is correctly spelt.",
+      "options": [
+        "Certificate",
+        "vedio",
+        "pallate",
+        "baised"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 45,
+      "text": "Choose from option A – D the one that is correctly spelt.",
+      "options": [
+        "blame",
+        "Hospittal",
+        "surrunding",
+        "Dissapoint"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 46,
+      "text": "() lame / a / c / t",
+      "options": [
+        "b",
+        "f",
+        "g",
+        "t"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 47,
+      "text": "Hea() / a / s / h",
+      "options": [
+        "C",
+        "t",
+        "d",
+        "w"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 48,
+      "text": "Tra() / e / a / l",
+      "options": [
+        "D",
+        "c",
+        "h",
+        "m"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 49,
+      "text": "() end / a / n / d",
+      "options": [
+        "F",
+        "m",
+        "b",
+        "t"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 50,
+      "text": "Pu()se / o / s / e",
+      "options": [
+        "d",
+        "h",
+        "n",
+        "r"
+      ],
+      "answer": 3,
+      "points": 1
+    }
+  ]
+}

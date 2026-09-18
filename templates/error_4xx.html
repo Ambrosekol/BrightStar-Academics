@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% set school_title = (public_settings.get('school_name') if public_settings else None) or 'Creative Rainbow Montessori School' %}
+<title>{{code}} {{name}} — {{school_title}}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+<style>
+  body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+       background:linear-gradient(145deg,#eef4fa 0%,#f8fafc 62%,#edf4fa 100%);
+       display:flex;align-items:center;justify-content:center;padding:24px}
+  .err-card{width:100%;max-width:560px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;
+            box-shadow:0 20px 60px rgba(20,40,80,.1);padding:44px 40px;text-align:center}
+  .err-logo{height:52px;margin-bottom:22px}
+  .err-code{font-size:76px;font-weight:900;line-height:1;letter-spacing:-2px;
+            background:linear-gradient(135deg,#08294f,#0284c7);-webkit-background-clip:text;
+            background-clip:text;color:transparent}
+  .err-name{margin:10px 0 4px;font-size:22px;font-weight:800;color:#08294f}
+  .err-desc{margin:0 auto;max-width:420px;color:#64748b;font-size:14.5px;line-height:1.6}
+  .err-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+  .err-btn{display:inline-flex;align-items:center;gap:6px;padding:12px 22px;border-radius:9px;
+           font-size:14px;font-weight:700;text-decoration:none;transition:background .18s ease}
+  .err-btn-primary{background:#08294f;color:#fff}
+  .err-btn-primary:hover{background:#0284c7}
+  .err-btn-light{background:#f1f5f9;color:#334155}
+  .err-btn-light:hover{background:#e2e8f0}
+  .err-footer{margin-top:26px;color:#94a3b8;font-size:12px}
+  @media(max-width:480px){.err-card{padding:32px 24px}.err-code{font-size:60px}}
+</style>
+</head>
+<body>
+  <div class="err-card">
+    <img class="err-logo" src="{{ url_for('static', filename='images/school_logo.png') }}" alt="{{school_title}}">
+    <div class="err-code">{{code}}</div>
+    <h1 class="err-name">
+      {% if code==404 %}Page Not Found
+      {% elif code==403 %}Access Denied
+      {% elif code==401 %}Sign In Required
+      {% elif code==400 %}Bad Request
+      {% elif code==405 %}Method Not Allowed
+      {% elif code==429 %}Too Many Requests
+      {% else %}{{name or 'Request Error'}}
+      {% endif %}
+    </h1>
+    <p class="err-desc">
+      {% if code==404 %}
+        The page you're looking for doesn't exist, may have been moved, or the link you followed is out of date.
+      {% elif code==403 %}
+        {{description or "You don't have permission to access this page."}}
+      {% elif code==401 %}
+        You need to sign in to view this page.
+      {% elif code==429 %}
+        {{description or 'Too many attempts in a short time. Please wait a few minutes and try again.'}}
+      {% else %}
+        {{description or 'Something about this request could not be processed.'}}
+      {% endif %}
+    </p>
+    <div class="err-actions">
+      {% if logged_in %}
+      <button type="button" class="err-btn err-btn-primary" onclick="crGoBack('{{ fallback_url }}')">← Go Back</button>
+      {% else %}
+      <a class="err-btn err-btn-primary" href="{{ url_for('index') }}">← Back to Homepage</a>
+      {% endif %}
+      {% if code in (401,403) and not logged_in %}
+      <a class="err-btn err-btn-light" href="{{ url_for('login') }}">Sign In</a>
+      {% endif %}
+      <a class="err-btn err-btn-light" href="{{ url_for('public_school_contact') }}">Contact the School</a>
+    </div>
+    <div class="err-footer">{{school_title}}</div>
+  </div>
+<script>
+  function crGoBack(fallback){
+    var ref=document.referrer;
+    if(ref && ref.indexOf(window.location.origin)===0 && ref!==window.location.href){
+      window.location.href=ref;
+    }else if(window.history.length>1){
+      window.history.back();
+    }else{
+      window.location.href=fallback;
+    }
+  }
+</script>
+</body>
+</html>

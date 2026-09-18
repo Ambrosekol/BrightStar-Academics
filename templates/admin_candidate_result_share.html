@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1">
+
+<title>
+Share Result ? {{ candidate['candidate_name'] }}
+</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background:#eef3f7;
+    color:#17324d;
+}
+
+.page{
+    width:100%;
+    max-width:1040px;
+    margin:0 auto;
+    padding:24px 18px 40px;
+}
+
+.card{
+    background:#ffffff;
+    border:1px solid #d8e1e9;
+    border-radius:18px;
+    box-shadow:
+        0 12px 36px rgba(16,47,77,.10);
+    overflow:hidden;
+}
+
+.top{
+    padding:22px 28px;
+    border-bottom:1px solid #e2e8ee;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:20px;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    min-width:0;
+}
+
+.brand img{
+    width:58px;
+    height:58px;
+    object-fit:contain;
+    flex:0 0 auto;
+}
+
+.brand-copy h1{
+    margin:0;
+    font-size:23px;
+    line-height:1.15;
+    color:#103f68;
+}
+
+.brand-copy p{
+    margin:5px 0 0;
+    font-size:13px;
+    color:#68798a;
+}
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    min-height:34px;
+
+    padding:0 13px;
+
+    border-radius:999px;
+
+    background:#eaf3fa;
+    color:#103f68;
+
+    font-size:11px;
+    font-weight:800;
+
+    letter-spacing:.7px;
+    text-transform:uppercase;
+
+    white-space:nowrap;
+}
+
+.candidate{
+    padding:16px 28px;
+
+    background:#f7fafc;
+
+    border-bottom:1px solid #e2e8ee;
+}
+
+.candidate-name{
+    font-size:20px;
+    font-weight:900;
+    color:#103f68;
+}
+
+.candidate-id{
+    margin-top:4px;
+    font-size:12px;
+    color:#68798a;
+}
+
+.preview-wrap{
+    padding:20px 28px 8px;
+}
+
+.preview-label{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    margin-bottom:10px;
+}
+
+.preview-label strong{
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#4d6479;
+}
+
+.preview-label span{
+    font-size:11px;
+    color:#7a8b9a;
+}
+
+.preview-frame{
+    background:#e7eef5;
+
+    border:1px solid #d4dee7;
+    border-radius:14px;
+
+    padding:12px;
+
+    text-align:center;
+}
+
+.preview{
+    display:block;
+
+    width:100%;
+    max-height:760px;
+
+    object-fit:contain;
+
+    border-radius:8px;
+
+    box-shadow:
+        0 6px 20px rgba(16,47,77,.10);
+
+    background:#ffffff;
+}
+
+.status{
+    min-height:24px;
+
+    padding:8px 28px 2px;
+
+    text-align:center;
+
+    color:#5f7283;
+
+    font-size:13px;
+}
+
+.status.error{
+    color:#b42318;
+}
+
+.actions{
+    display:grid;
+
+    grid-template-columns:1.4fr 1fr;
+
+    gap:12px;
+
+    padding:18px 28px 8px;
+}
+
+button,
+a.action{
+    min-height:50px;
+
+    border-radius:10px;
+
+    padding:12px 18px;
+
+    font-size:15px;
+    font-weight:800;
+
+    cursor:pointer;
+
+    text-decoration:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    transition:
+        transform .12s ease,
+        box-shadow .12s ease,
+        opacity .12s ease;
+}
+
+button:hover,
+a.action:hover{
+    transform:translateY(-1px);
+}
+
+button:focus-visible,
+a.action:focus-visible{
+    outline:3px solid rgba(22,133,196,.25);
+    outline-offset:2px;
+}
+
+button{
+    border:0;
+}
+
+.share{
+    background:#103f68;
+    color:#ffffff;
+
+    box-shadow:
+        0 5px 14px rgba(16,63,104,.18);
+}
+
+.download{
+    background:#1685c4;
+    color:#ffffff;
+
+    box-shadow:
+        0 5px 14px rgba(22,133,196,.15);
+}
+
+.back{
+    background:#ffffff;
+    color:#26323d;
+
+    border:1px solid #ccd5dd;
+
+    grid-column:1/-1;
+}
+
+button:disabled{
+    opacity:.6;
+    cursor:wait;
+    transform:none;
+}
+
+.note{
+    padding:10px 28px 24px;
+
+    text-align:center;
+
+    color:#71808c;
+
+    font-size:11px;
+    line-height:1.5;
+}
+
+@media(max-width:700px){
+
+    .page{
+        padding:10px 8px 25px;
+    }
+
+    .top{
+        padding:18px;
+        align-items:flex-start;
+    }
+
+    .brand img{
+        width:48px;
+        height:48px;
+    }
+
+    .brand-copy h1{
+        font-size:19px;
+    }
+
+    .badge{
+        display:none;
+    }
+
+    .candidate{
+        padding:14px 18px;
+    }
+
+    .candidate-name{
+        font-size:18px;
+    }
+
+    .preview-wrap{
+        padding:16px 14px 6px;
+    }
+
+    .preview-frame{
+        padding:8px;
+    }
+
+    .preview{
+        max-height:none;
+    }
+
+    .actions{
+        grid-template-columns:1fr;
+        padding:14px 18px 8px;
+    }
+
+    .back{
+        grid-column:auto;
+    }
+
+    .note{
+        padding:8px 18px 20px;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="page">
+
+<div class="card">
+
+
+<header class="top">
+
+<div class="brand">
+
+{% if logo_data %}
+
+<img
+    src="{{ logo_data }}"
+    alt="Creative Rainbow Schools logo">
+
+{% endif %}
+
+<div class="brand-copy">
+
+<h1>
+Official Result
+</h1>
+
+<p>
+Creative Rainbow Schools ? Entrance Examination
+</p>
+
+</div>
+
+</div>
+
+<div class="badge">
+Actual PNG
+</div>
+
+</header>
+
+
+<section class="candidate">
+
+<div>
+
+<div class="candidate-name">
+{{ candidate['candidate_name'] }}
+</div>
+
+<div class="candidate-id">
+Candidate ID:
+{{ candidate['candidate_code'] }}
+</div>
+
+</div>
+
+</section>
+
+
+<section class="preview-wrap">
+
+<div class="preview-label">
+
+<strong>
+Result Preview
+</strong>
+
+<span>
+Official examination record
+</span>
+
+</div>
+
+
+<div class="preview-frame">
+
+<img
+    id="resultPreview"
+    class="preview"
+    src="{{ image_url }}"
+    alt="Official examination result for {{ candidate['candidate_name'] }}">
+
+</div>
+
+</section>
+
+
+<div
+    id="status"
+    class="status"
+    role="status"
+    aria-live="polite">
+
+The official result image is ready.
+
+</div>
+
+
+<div class="actions">
+
+
+<button
+    id="shareButton"
+    class="share"
+    type="button">
+
+Share Result Image
+
+</button>
+
+
+<a
+    id="downloadButton"
+    class="action download"
+    href="{{ image_url }}"
+    download="{{ filename }}">
+
+Download Result Image
+
+</a>
+
+
+<a
+    class="action back"
+    href="{{ url_for('admin_candidate_detail', cid=candidate['id']) }}">
+
+Back to Candidate Result
+
+</a>
+
+
+</div>
+
+
+<div class="note">
+
+The Share Result button uses the actual official PNG.
+On supported phones, choose WhatsApp or another app
+from the device share sheet. On desktop browsers that
+do not support image-file sharing, the PNG downloads
+automatically for manual attachment.
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<script>
+
+(function(){
+
+"use strict";
+
+
+const shareButton =
+    document.getElementById(
+        "shareButton"
+    );
+
+
+const preview =
+    document.getElementById(
+        "resultPreview"
+    );
+
+
+const downloadButton =
+    document.getElementById(
+        "downloadButton"
+    );
+
+
+const status =
+    document.getElementById(
+        "status"
+    );
+
+
+const imageUrl =
+    {{ image_url|tojson }};
+
+
+const filename =
+    {{ filename|tojson }};
+
+
+function setStatus(
+    message,
+    isError
+){
+
+    status.textContent =
+        message;
+
+    status.classList.toggle(
+        "error",
+        !!isError
+    );
+
+}
+
+
+async function fetchResultFile(){
+
+    const response =
+        await fetch(
+            imageUrl,
+            {
+                credentials:
+                    "same-origin",
+
+                cache:
+                    "no-store"
+            }
+        );
+
+
+    if(!response.ok){
+
+        throw new Error(
+            "Could not generate the result image."
+        );
+
+    }
+
+
+    const blob =
+        await response.blob();
+
+
+    const type =
+        (
+            blob.type ||
+            ""
+        ).toLowerCase();
+
+
+    if(
+        !type.startsWith(
+            "image/"
+        )
+    ){
+
+        throw new Error(
+            "The result server did not return an image."
+        );
+
+    }
+
+
+    return new File(
+        [blob],
+        filename,
+        {
+            type:"image/png"
+        }
+    );
+
+}
+
+
+function downloadBlob(file){
+
+    const objectUrl =
+        URL.createObjectURL(
+            file
+        );
+
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.href =
+        objectUrl;
+
+    link.download =
+        file.name;
+
+
+    document.body.appendChild(
+        link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    setTimeout(
+        function(){
+
+            URL.revokeObjectURL(
+                objectUrl
+            );
+
+        },
+        1000
+    );
+
+}
+
+
+async function shareActualImage(){
+
+    shareButton.disabled =
+        true;
+
+
+    setStatus(
+        "Preparing the official result image...",
+        false
+    );
+
+
+    try{
+
+        const file =
+            await fetchResultFile();
+
+
+        /*
+         * PRIMARY PATH:
+         * Share the actual PNG file.
+         */
+
+        if(
+            navigator.share &&
+            navigator.canShare &&
+            navigator.canShare({
+                files:[file]
+            })
+        ){
+
+            await navigator.share({
+
+                title:
+                    "Creative Rainbow Schools ? Examination Result",
+
+                text:
+                    "Official examination result",
+
+                files:[
+                    file
+                ]
+
+            });
+
+
+            setStatus(
+                "Result image shared successfully.",
+                false
+            );
+
+
+            return;
+
+        }
+
+
+        /*
+         * FALLBACK:
+         * Download the actual PNG.
+         *
+         * IMPORTANT:
+         * There is deliberately NO URL-only
+         * navigator.share() fallback here.
+         */
+
+        downloadBlob(
+            file
+        );
+
+
+        setStatus(
+            "PNG downloaded. Attach the result image in WhatsApp or another messaging app.",
+            false
+        );
+
+
+        downloadButton.focus();
+
+    }
+    catch(error){
+
+        if(
+            error &&
+            error.name === "AbortError"
+        ){
+
+            setStatus(
+                "Sharing cancelled.",
+                false
+            );
+
+        }
+        else{
+
+            console.error(
+                "Result image sharing failed:",
+                error
+            );
+
+
+            setStatus(
+                "Could not prepare the result image. Use Download Result Image.",
+                true
+            );
+
+        }
+
+    }
+    finally{
+
+        shareButton.disabled =
+            false;
+
+    }
+
+}
+
+
+shareButton.addEventListener(
+    "click",
+    shareActualImage
+);
+
+
+preview.addEventListener(
+    "error",
+    function(){
+
+        setStatus(
+            "The result preview could not be loaded. Use Download Result Image.",
+            true
+        );
+
+    }
+);
+
+
+})();
+</script>
+
+
+</body>
+</html>
