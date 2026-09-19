@@ -21,7 +21,7 @@ from flask import Response, abort, flash, redirect, render_template, request, se
 from sqlalchemy import and_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import app, _school_current_session
+from app import app, _active_sessions, _school_current_session
 from models import (
     Admin, AdminNotification, AdminScope, AcademicSession, FinancePayment,
     ParentAccount, ParentFeedback, ParentFeedbackReply, ParentStudentLink,
@@ -151,7 +151,6 @@ def parent_child_detail(student_id):
 @app.route('/parent/children/<int:student_id>/finance')
 @parent_required
 def parent_child_finance(student_id):
-    from app import _active_sessions
     pid=session['parent_id']
     if not _parent_owns_student(pid,student_id): abort(404)
     student=one(select(Student.id,Student.admission_no,Student.first_name,
