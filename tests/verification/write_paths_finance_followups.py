@@ -134,6 +134,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.finance.helpers as FIN  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
@@ -213,7 +214,7 @@ with A.app.test_client() as admin_c:
 # (allocated) 25,000, outstanding 33,000 (25,000 + 8,000 - never netted
 # against the unrelated, unallocated 5,000), unallocated 5,000.
 with A.app.app_context():
-    lifetime = A._finance_student_lifetime_totals(student_id)
+    lifetime = FIN._finance_student_lifetime_totals(student_id)
 check("the student's lifetime outstanding balance includes the unresolved past-session debt",
       lifetime["outstanding"] == 33000.0, str(lifetime))
 check("the unallocated fresh payment is reported separately, not netted into outstanding",

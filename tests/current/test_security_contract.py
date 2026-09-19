@@ -38,7 +38,7 @@ def test_csrf_is_applied_to_candidate_state_changes():
 def test_security_headers_and_upload_limits_exist():
     assert "apply_security_headers" in APP
     assert "MAX_CONTENT_LENGTH" in APP
-    assert "CRAINBOW_MAX_UPLOAD_BYTES" in APP
+    assert "CRAINBOW_MAX_UPLOAD_BYTES" in UPLOADS
 
 def test_sqlite_foreign_keys_are_enabled_per_connection():
     assert "PRAGMA foreign_keys=ON" in APP

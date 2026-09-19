@@ -60,6 +60,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.finance.helpers as FIN  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
@@ -91,7 +92,7 @@ with A.app.test_client() as c:
     check("shows the no-signature message initially", "No signature configured yet" in page)
 
     with A.app.app_context():
-        pdf_bytes, _ = A._receipt_pdf(payment_id)
+        pdf_bytes, _ = FIN._receipt_pdf(payment_id)
     check("PDF renders with no signature configured", len(pdf_bytes) > 1000)
 
     token = csrf_from(page)
@@ -102,7 +103,7 @@ with A.app.test_client() as c:
     check("drawn signature redirects back", r.status_code in (302, 303), str(r.status_code))
 
     with A.app.app_context():
-        drawn_path = A._receipt_signature_abspath()
+        drawn_path = FIN._receipt_signature_abspath()
     check("drawn signature file was saved", bool(drawn_path and os.path.exists(drawn_path)))
     if drawn_path:
         saved_files.append(drawn_path)
@@ -111,7 +112,7 @@ with A.app.test_client() as c:
     check("settings page now shows a signature preview", "Authorised signature" in page2 and "img src=" in page2)
 
     with A.app.app_context():
-        pdf_bytes2, _ = A._receipt_pdf(payment_id)
+        pdf_bytes2, _ = FIN._receipt_pdf(payment_id)
     check("PDF renders with a drawn signature configured", len(pdf_bytes2) > 1000)
 
     token2 = csrf_from(page2)
@@ -123,7 +124,7 @@ with A.app.test_client() as c:
     check("uploaded signature redirects back", r2.status_code in (302, 303), str(r2.status_code))
 
     with A.app.app_context():
-        uploaded_path = A._receipt_signature_abspath()
+        uploaded_path = FIN._receipt_signature_abspath()
     check("uploaded signature file was saved", bool(uploaded_path and os.path.exists(uploaded_path)))
     check("uploading replaced the drawn file, not stacked it", uploaded_path != drawn_path)
     check("the old drawn file was deleted after being replaced", drawn_path and not os.path.exists(drawn_path))
@@ -136,7 +137,7 @@ with A.app.test_client() as c:
     check("remove redirects back", r3.status_code in (302, 303), str(r3.status_code))
 
     with A.app.app_context():
-        after_remove = A._receipt_signature_abspath()
+        after_remove = FIN._receipt_signature_abspath()
     check("signature cleared after removal", after_remove is None)
     check("the uploaded file was deleted on removal", uploaded_path and not os.path.exists(uploaded_path))
 

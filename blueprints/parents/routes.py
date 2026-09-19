@@ -1,14 +1,15 @@
 """Parent portal (dashboard, child detail, finance, feedback) plus the admin
 side of parent account management and feedback triage.
 
-A few helpers this domain calls (_release_due_school_results,
-_school_class_allowed, _active_sessions, _finance_student_lifetime_totals,
-_finance_student_outstanding, _finance_student_sessions_with_balance) still
-live in app.py and are defined further down in that file than the point
-where this module gets imported — so those are imported inside each
-function body rather than at module load time, to avoid a forward-reference
-ImportError. _school_current_session and _receipt_pdf are defined earlier
-in app.py than this import point, so those are safe to import at the top.
+A couple of helpers this domain calls (_release_due_school_results,
+_school_class_allowed) still live in app.py and are defined further down in
+that file than the point where this module gets imported — so those are
+imported inside the function bodies that need them rather than at module
+load time, to avoid a forward-reference ImportError. _school_current_session
+is defined earlier in app.py than this import point, so it's safe to import
+at the top. The finance helpers (_receipt_pdf and friends) moved out of
+app.py entirely into blueprints/finance/helpers.py, which has no dependency
+on app.py, so those import safely at the top regardless of order.
 """
 
 import re
@@ -19,7 +20,7 @@ from flask import Response, abort, flash, redirect, render_template, request, se
 from sqlalchemy import and_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import app, _receipt_pdf, _school_current_session
+from app import app, _school_current_session
 from models import (
     Admin, AdminNotification, AdminScope, AcademicSession, FinancePayment,
     ParentAccount, ParentFeedback, ParentFeedbackReply, ParentStudentLink,
@@ -28,6 +29,10 @@ from models import (
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_super_admin
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
+from blueprints.finance.helpers import (
+    _finance_student_lifetime_totals, _finance_student_outstanding,
+    _finance_student_sessions_with_balance, _receipt_pdf,
+)
 from blueprints.parents.helpers import (
     _assignment_metrics, _feedback_replies, _new_parent_password,
     _parent_children, _parent_form_context, _parent_owns_student,
@@ -39,7 +44,7 @@ from blueprints.parents.helpers import (
 @app.route('/parent/dashboard')
 @parent_required
 def parent_dashboard():
-    from app import _release_due_school_results, _finance_student_lifetime_totals
+    from app import _release_due_school_results
     pid=session['parent_id']
     parent=obj(ParentAccount,pid)
     _release_due_school_results()
@@ -119,7 +124,6 @@ def parent_child_detail(student_id):
         .order_by(ParentFeedback.id.desc()).limit(10)).all()
     replies=_feedback_replies([x.id for x in feedback])
     avg,completion,trend=_assignment_metrics(assignments)
-    from app import _finance_student_lifetime_totals
     fee_summary=_finance_student_lifetime_totals(student_id)
 
     notif_rows=db.session.scalars(select(SchoolNotification).where(
@@ -145,10 +149,7 @@ def parent_child_detail(student_id):
 @app.route('/parent/children/<int:student_id>/finance')
 @parent_required
 def parent_child_finance(student_id):
-    from app import (
-        _active_sessions, _finance_student_lifetime_totals,
-        _finance_student_outstanding, _finance_student_sessions_with_balance,
-    )
+    from app import _active_sessions
     pid=session['parent_id']
     if not _parent_owns_student(pid,student_id): abort(404)
     student=one(select(Student.id,Student.admission_no,Student.first_name,

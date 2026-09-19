@@ -94,6 +94,7 @@ os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
 import core.notifications as CN  # noqa: E402
+import blueprints.finance.helpers as FIN  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
@@ -124,7 +125,7 @@ check(".btn/.btn-primary/.btn-light now exist in app.css (parent/student pages l
 # totals are asserted as deltas against a snapshot taken before this test
 # does anything, never as hardcoded absolutes.
 with A.app.app_context():
-    before_totals = A._finance_student_lifetime_totals(student_id, session_id)
+    before_totals = FIN._finance_student_lifetime_totals(student_id, session_id)
 
 calls = {"email": [], "whatsapp": []}
 real_email, real_whatsapp = CN._notify_guardian_email, CN._notify_guardian_whatsapp
@@ -203,7 +204,7 @@ with A.app.test_client() as parent_c:
     # assessment, so it must NOT reduce "paid" or "outstanding" yet - it
     # shows up only as "unallocated" until a staff member applies it.
     with A.app.app_context():
-        after_totals = A._finance_student_lifetime_totals(student_id, session_id)
+        after_totals = FIN._finance_student_lifetime_totals(student_id, session_id)
     check("the assessed total increased by exactly N50,000",
           after_totals["assessed"] - before_totals["assessed"] == 50000, str(after_totals))
     check("the paid total does NOT increase from an unallocated payment",

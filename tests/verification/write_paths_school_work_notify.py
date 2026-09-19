@@ -66,6 +66,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import core.notifications as CN  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
@@ -89,12 +90,12 @@ def csrf_from(html):
 # --- Unit-level check of the notification helpers themselves -------------
 with A.app.app_context():
     check("SMTP is configured for this run", bool(os.environ.get("CRAINBOW_SMTP_HOST")))
-    ok, detail = A._notify_guardian_email(sender_addr, "Crainbow CBT test: new assignment alert",
+    ok, detail = CN._notify_guardian_email(sender_addr, "Crainbow CBT test: new assignment alert",
                                            "This is an automated check for the assignment/project "
                                            "guardian-notification feature. Safe to ignore.")
     check("real email notification delivers via the configured SMTP server", ok, str(detail))
 
-    ok2, detail2 = A._notify_guardian_whatsapp("08030000001", "test")
+    ok2, detail2 = CN._notify_guardian_whatsapp("08030000001", "test")
     check("WhatsApp gracefully reports 'not configured' rather than raising",
           not ok2 and "not configured" in detail2, str(detail2))
 
