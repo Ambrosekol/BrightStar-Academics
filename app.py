@@ -726,20 +726,6 @@ def _init_db():
     _record_schema_baseline()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def csrf_token():
     """Return the session-bound CSRF token used by protected forms."""
     token=session.get('_csrf_token')
