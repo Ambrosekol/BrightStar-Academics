@@ -50,6 +50,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.parents.routes as PR  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
@@ -99,7 +100,7 @@ check("feedback thread row exists", bool(feedback_id))
 # the parent's real contact details and subject - by recording calls rather
 # than performing them.
 calls = {"email": None, "whatsapp": None}
-real_email, real_whatsapp = A._notify_guardian_email, A._notify_guardian_whatsapp
+real_email, real_whatsapp = PR._notify_guardian_email, PR._notify_guardian_whatsapp
 
 
 def fake_email(*args, **kwargs):
@@ -112,8 +113,8 @@ def fake_whatsapp(*args, **kwargs):
     return True, "sent"
 
 
-A._notify_guardian_email = fake_email
-A._notify_guardian_whatsapp = fake_whatsapp
+PR._notify_guardian_email = fake_email
+PR._notify_guardian_whatsapp = fake_whatsapp
 try:
     with A.app.test_client() as admin_c:
         admin_c.post("/login", data={"username": "zz_chat_admin", "password": "ChatPass!123"})
@@ -126,7 +127,7 @@ try:
         })
         check("admin reply succeeds", r2.status_code in (302, 303), f"{r2.status_code}")
 finally:
-    A._notify_guardian_email, A._notify_guardian_whatsapp = real_email, real_whatsapp
+    PR._notify_guardian_email, PR._notify_guardian_whatsapp = real_email, real_whatsapp
 
 check("reply triggers an email notification to the parent's real address",
       bool(calls["email"] and calls["email"][0] == sender_addr), str(calls["email"]))
@@ -148,8 +149,8 @@ def raising_whatsapp(*args, **kwargs):
     raise Exception("simulated WhatsApp outage")
 
 
-A._notify_guardian_email = raising_email
-A._notify_guardian_whatsapp = raising_whatsapp
+PR._notify_guardian_email = raising_email
+PR._notify_guardian_whatsapp = raising_whatsapp
 try:
     with A.app.test_client() as admin_c2:
         admin_c2.post("/login", data={"username": "zz_chat_admin", "password": "ChatPass!123"})
@@ -162,7 +163,7 @@ try:
         check("reply still succeeds when both notification channels raise",
               r3.status_code in (302, 303), f"{r3.status_code} {r3.get_data(as_text=True)[:200]}")
 finally:
-    A._notify_guardian_email, A._notify_guardian_whatsapp = real_email, real_whatsapp
+    PR._notify_guardian_email, PR._notify_guardian_whatsapp = real_email, real_whatsapp
 
 with A.app.test_client() as parent_c2:
     parent_c2.post("/login", data={"username": "zz_chat_parent", "password": "ParentChat!1"})
