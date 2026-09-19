@@ -58,6 +58,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.student_portal.helpers as STUDENT  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
@@ -339,7 +340,7 @@ if AID:
                        WHERE student_id=? AND assessment_id=?""", STUDENT_ID, AID)[0]["n"]
             check("result row written once", res == 1, f"got {res}")
             with A.app.app_context():
-                A.student_assessment_grade(attempt_id, auto=False)
+                STUDENT.student_assessment_grade(attempt_id, auto=False)
             res2 = q("""SELECT COUNT(*) n FROM school_student_results
                         WHERE student_id=? AND assessment_id=?""", STUDENT_ID, AID)[0]["n"]
             check("re-grade is idempotent", res2 == 1, f"got {res2}")

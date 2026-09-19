@@ -9,6 +9,7 @@ RES=(ROOT/'templates/student_assessment_result.html').read_text(encoding='utf-8'
 SCHRES=(ROOT/'templates/school_results.html').read_text(encoding='utf-8')
 MIG=(ROOT/'migrations/0004_governance_result_release.py').read_text(encoding='utf-8')
 SCHOOL_ROUTES=(ROOT/'blueprints'/'school'/'routes.py').read_text(encoding='utf-8')
+STUDENT_PORTAL_HELPERS=(ROOT/'blueprints'/'student_portal'/'helpers.py').read_text(encoding='utf-8')
 def test_scope_defaults_to_whole_area():
     assert "if not scopes: return True" in SECURITY and "if not typed: return True" in SECURITY
 def test_notification_metadata():
@@ -37,7 +38,7 @@ def test_result_release_governance():
     status with entered -> verified -> approved -> released, so the entry point
     asserted here is 'entered'.
     """
-    assert "result_status='released' if assessment_meta and assessment_meta['assessment_type']=='practice' else 'entered'" in APP
+    assert "result_status='released' if assessment_meta and assessment_meta['assessment_type']=='practice' else 'entered'" in STUDENT_PORTAL_HELPERS
     assert 'result_release_at' in MIG
     assert "visible_to_student" in RES and "school.results.release" in SCHOOL_ROUTES and "result_release_at" in SCHRES
 

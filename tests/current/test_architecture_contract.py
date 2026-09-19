@@ -7,6 +7,9 @@ import ast
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "app.py"
 MODELS_DIR = ROOT / "models"
+BLUEPRINTS_DIR = ROOT / "blueprints"
+STUDENT_PORTAL_ROUTES = BLUEPRINTS_DIR / "student_portal" / "routes.py"
+STUDENT_PORTAL_HELPERS = BLUEPRINTS_DIR / "student_portal" / "helpers.py"
 
 
 def _models_text():
@@ -18,6 +21,16 @@ def _models_text():
     check correct regardless of how the package is further subdivided.
     """
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(MODELS_DIR.glob("*.py")))
+
+
+def _blueprints_text():
+    """Concatenated source of every route/helper module under blueprints/.
+
+    Routes and their private helpers used to live in app.py; they're now
+    split one package per domain, so markers that used to be found in app.py
+    directly may now live in a blueprint module instead.
+    """
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(BLUEPRINTS_DIR.rglob("*.py")))
 
 
 def test_app_parses():
@@ -36,7 +49,7 @@ def test_baseline_documents_exist():
 
 
 def test_core_security_and_domain_markers_exist():
-    text = APP.read_text(encoding="utf-8")
+    text = APP.read_text(encoding="utf-8") + _blueprints_text()
     required = [
         "def student_required",
         "def _student_assessment_context",
@@ -70,12 +83,13 @@ def test_core_domain_tables_are_declared_and_used():
 
 
 def test_student_assessment_current_flow_is_explicitly_identified_for_refactor():
-    text = APP.read_text(encoding="utf-8")
-    start = text.index("def student_assessment_take")
-    end = text.index("@app.route('/practice'", start)
-    route = text[start:end]
-    assert "SchoolAssessmentAttempt" in text
-    assert "SchoolStudentResult" in text
-    assert "student_assessment_start" in text
+    routes_text = STUDENT_PORTAL_ROUTES.read_text(encoding="utf-8")
+    helpers_text = STUDENT_PORTAL_HELPERS.read_text(encoding="utf-8")
+    start = routes_text.index("def student_assessment_take")
+    end = routes_text.index("def student_assessment_answer", start)
+    route = routes_text[start:end]
+    assert "SchoolAssessmentAttempt" in routes_text
+    assert "SchoolStudentResult" in helpers_text
+    assert "student_assessment_start" in routes_text
     # The take route reads the attempt rather than re-deriving it from the bank.
     assert "SchoolAssessmentAttempt" in route
