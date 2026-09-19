@@ -44,7 +44,8 @@ def test_sqlite_foreign_keys_are_enabled_per_connection():
     assert "PRAGMA foreign_keys=ON" in APP
 
 def test_login_rate_limiting_exists():
-    assert "_rate_limit(rate_key" in APP
+    AUTH_ROUTES=(ROOT/"blueprints"/"auth"/"routes.py").read_text(encoding="utf-8")
+    assert "_rate_limit(rate_key" in AUTH_ROUTES
 
 
 def test_upload_signature_validation_accepts_common_image_formats():
