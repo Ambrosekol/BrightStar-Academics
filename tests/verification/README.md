@@ -363,6 +363,16 @@ This test logs in as a real admin and checks both a 404 and a 500 show "Go
 Back" instead of "Back to Homepage", never show "Sign In", and that the
 fallback URL baked into the page points at the admin's own workspace.
 
+## Admin security foundation
+
+    python verify_admin_security.py
+
+Reports the row counts of every admin/RBAC table (admins, admin_types, permissions,
+admin_type_permissions, admin_permissions, admin_scopes, audit_logs) and confirms the Super
+Admin holds every permission and bypasses scope limits. A one-shot sanity check to run after
+touching the permission catalogue or role seeding, not an exhaustive equivalence check —
+that's what RBAC equivalence above is for.
+
 ## Entry point
 
     python smoke_entrypoint.py
