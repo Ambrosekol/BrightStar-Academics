@@ -5,6 +5,7 @@ import jinja2
 ROOT=Path(__file__).resolve().parents[2]
 APP=(ROOT/'app.py').read_text(encoding='utf-8')
 SECURITY=(ROOT/'core'/'security.py').read_text(encoding='utf-8')
+ADMIN_ROUTES=(ROOT/'blueprints'/'administration'/'routes.py').read_text(encoding='utf-8')
 FORM=(ROOT/'templates/admin_account_form.html').read_text(encoding='utf-8')
 
 
@@ -18,11 +19,11 @@ def test_app_compiles_and_admin_auth_flow_exists():
 
 
 def test_admin_creation_has_one_time_credentials_and_no_plain_password_field():
-    assert "temporary_password=_new_admin_password()" in APP
+    assert "temporary_password=_new_admin_password()" in ADMIN_ROUTES
     # A newly created administrator is always forced to replace the one-time
     # password; since the SQLAlchemy migration that flag is set on the model.
     assert "password_must_change=1" in APP
-    assert 'admin_credentials.html' in APP
+    assert 'admin_credentials.html' in ADMIN_ROUTES
     assert 'name="password"' not in FORM
     assert 'Admin Login ID / Username' in (ROOT/'templates/admin_credentials.html').read_text(encoding='utf-8')
 
@@ -31,16 +32,16 @@ def test_composite_multi_value_scopes_are_supported():
     assert 'name="scope_values_{{ st }}"' in FORM
     assert 'name="scope_types"' in FORM
     assert 'Multiple values within a boundary are allowed' in FORM
-    assert "scope_groups={}" in APP
-    assert 'admin_scope_allows(me[\'id\'],st,v)' in APP
+    assert "scope_groups={}" in ADMIN_ROUTES
+    assert 'admin_scope_allows(me[\'id\'],st,v)' in ADMIN_ROUTES
 
 
 def test_messaging_retry_and_notification_actor_are_fixed():
     # Sending retries briefly when SQLite reports the database is locked, rather
     # than surfacing a write conflict to the sender. The explicit BEGIN IMMEDIATE
     # is gone since the SQLAlchemy migration: the session owns the transaction.
-    assert "if 'locked' not in str(exc).lower() or attempt_no==3" in APP
-    assert 'sa.exc.OperationalError' in APP
+    assert "if 'locked' not in str(exc).lower() or attempt_no==3" in ADMIN_ROUTES
+    assert 'sa.exc.OperationalError' in ADMIN_ROUTES
     block=SECURITY[SECURITY.index('def _notify_super_admins'):SECURITY.index('def admin_has_permission')]
     assert 'me=current_admin()' in block
     # The notification records who caused it, resolved before the exclusion rule.
