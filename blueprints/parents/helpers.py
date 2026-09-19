@@ -16,6 +16,7 @@ from models import (
 )
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import _flatten, all_rows, one
+from blueprints.school.helpers import _school_class_allowed
 
 
 def parent_required(fn):
@@ -139,7 +140,6 @@ def _assignment_metrics(assignments):
 
 def _parent_form_context(me):
     """Classes and enrolled students this administrator may link."""
-    from app import _school_class_allowed
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     students=all_rows(

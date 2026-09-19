@@ -28,7 +28,7 @@ from werkzeug.utils import secure_filename
 from app import (
     app, _admin_role_options, _admin_scope_label, _contact_columns,
     _create_control_item, _lock_resource, _new_admin_password,
-    _school_class_allowed, _thread_between, _unlock_resource,
+    _thread_between, _unlock_resource,
     _unread_admin_messages, admin_can_delegate_roles, bank, csrf_check_request,
     load_banks,
 )
@@ -45,6 +45,7 @@ from core.security import (
     _notify_super_admins,
 )
 from core.uploads import _save_image_upload
+from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
     _admin_contact_fields, _sync_admin_roles, _validate_admin_contact_fields,
 )

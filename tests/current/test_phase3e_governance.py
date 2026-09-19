@@ -8,6 +8,7 @@ SUB=(ROOT/'templates/school_subject_form.html').read_text(encoding='utf-8')
 RES=(ROOT/'templates/student_assessment_result.html').read_text(encoding='utf-8')
 SCHRES=(ROOT/'templates/school_results.html').read_text(encoding='utf-8')
 MIG=(ROOT/'migrations/0004_governance_result_release.py').read_text(encoding='utf-8')
+SCHOOL_ROUTES=(ROOT/'blueprints'/'school'/'routes.py').read_text(encoding='utf-8')
 def test_scope_defaults_to_whole_area():
     assert "if not scopes: return True" in SECURITY and "if not typed: return True" in SECURITY
 def test_notification_metadata():
@@ -38,10 +39,10 @@ def test_result_release_governance():
     """
     assert "result_status='released' if assessment_meta and assessment_meta['assessment_type']=='practice' else 'entered'" in APP
     assert 'result_release_at' in MIG
-    assert "visible_to_student" in RES and "school.results.release" in APP and "result_release_at" in SCHRES
+    assert "visible_to_student" in RES and "school.results.release" in SCHOOL_ROUTES and "result_release_at" in SCHRES
 
 def test_result_workflow_stages_are_ordered():
     """Each stage may only be reached from the one before it."""
-    assert "{'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}" in APP
+    assert "{'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}" in SCHOOL_ROUTES
     for perm in ('school.results.verify','school.results.approve','school.results.release'):
-        assert perm in APP
+        assert perm in SCHOOL_ROUTES

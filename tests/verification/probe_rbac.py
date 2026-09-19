@@ -46,6 +46,7 @@ os.environ["CRAINBOW_DB"] = DB
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.school.helpers as SCH  # noqa: E402
 
 A.DB = DB
 if MODE == "new":
@@ -62,12 +63,12 @@ def record():
         for st, sv in SCOPE_PROBES:
             answers[f"scope|{aid}|{st}|{sv}"] = bool(A.admin_scope_allows(aid, st, sv))
         for cid in CLASS_IDS:
-            answers[f"class|{aid}|{cid}"] = bool(A._school_class_allowed(aid, cid))
+            answers[f"class|{aid}|{cid}"] = bool(SCH._school_class_allowed(aid, cid))
         for sid in SUBJECT_IDS:
-            answers[f"subject|{aid}|{sid}"] = bool(A._school_subject_allowed(aid, sid))
+            answers[f"subject|{aid}|{sid}"] = bool(SCH._school_subject_allowed(aid, sid))
         for cid in CLASS_IDS:
             for sid in SUBJECT_IDS:
-                answers[f"pair|{aid}|{cid}|{sid}"] = bool(A._school_pair_allowed(aid, cid, sid))
+                answers[f"pair|{aid}|{cid}|{sid}"] = bool(SCH._school_pair_allowed(aid, cid, sid))
 
 
 if MODE == "new":

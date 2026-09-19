@@ -2,6 +2,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 APP=(ROOT/"app.py").read_text(encoding="utf-8")
 UPLOADS=(ROOT/"core"/"uploads.py").read_text(encoding="utf-8")
+SCHOOL_ROUTES=(ROOT/"blueprints"/"school"/"routes.py").read_text(encoding="utf-8")
 
 def test_production_secret_has_no_known_fallback():
     assert "CRAINBOW_SECRET" in APP
@@ -56,7 +57,7 @@ def test_upload_signature_validation_accepts_common_image_formats():
     assert "'webp': header.startswith(b'RIFF')" in route
 
 def test_school_assessment_questions_are_editable():
-    assert "admin_school_assessment_question_edit" in APP
-    assert "/admin/school/assessments/<int:assessment_id>/questions/<int:question_id>/edit" in APP
+    assert "admin_school_assessment_question_edit" in SCHOOL_ROUTES
+    assert "/admin/school/assessments/<int:assessment_id>/questions/<int:question_id>/edit" in SCHOOL_ROUTES
     template=(ROOT/"templates/school_assessment_detail.html").read_text(encoding="utf-8")
     assert "admin_school_assessment_question_edit" in template

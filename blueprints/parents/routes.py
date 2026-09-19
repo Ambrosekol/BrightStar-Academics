@@ -1,15 +1,16 @@
 """Parent portal (dashboard, child detail, finance, feedback) plus the admin
 side of parent account management and feedback triage.
 
-A couple of helpers this domain calls (_release_due_school_results,
-_school_class_allowed) still live in app.py and are defined further down in
-that file than the point where this module gets imported — so those are
-imported inside the function bodies that need them rather than at module
-load time, to avoid a forward-reference ImportError. _school_current_session
-is defined earlier in app.py than this import point, so it's safe to import
-at the top. The finance helpers (_receipt_pdf and friends) moved out of
-app.py entirely into blueprints/finance/helpers.py, which has no dependency
-on app.py, so those import safely at the top regardless of order.
+_release_due_school_results still lives in app.py and is defined further
+down in that file than the point where this module gets imported — so it's
+imported inside the function body that needs it rather than at module load
+time, to avoid a forward-reference ImportError. _school_current_session is
+defined earlier in app.py than this import point, so it's safe to import at
+the top. The finance helpers (_receipt_pdf and friends) and
+_school_class_allowed moved out of app.py entirely into
+blueprints/finance/helpers.py and blueprints/school/helpers.py, neither of
+which depends on app.py, so those import safely at the top regardless of
+order.
 """
 
 import re
@@ -33,6 +34,7 @@ from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
     _finance_student_sessions_with_balance, _receipt_pdf,
 )
+from blueprints.school.helpers import _school_class_allowed
 from blueprints.parents.helpers import (
     _assignment_metrics, _feedback_replies, _new_parent_password,
     _parent_children, _parent_form_context, _parent_owns_student,
@@ -200,7 +202,6 @@ def parent_receipt_pdf(student_id, payment_id):
 @parent_required
 @csrf_protect
 def parent_feedback():
-    from app import _school_class_allowed
     pid=session['parent_id']
     children=[_flatten(r,'Student','class_name') for r in all_rows(
         select(Student,SchoolClass.name.label('class_name'))
@@ -303,7 +304,6 @@ def parent_feedback_reply(feedback_id):
 @app.route('/admin/school/parent-feedback')
 @admin_required
 def admin_school_parent_feedback():
-    from app import _school_class_allowed
     me=current_admin()
     if not admin_has_permission(me['id'],'parent.feedback.view'): return admin_access_error('parent.feedback.view')
     rows=[_flatten(r,'ParentFeedback','parent_name','parent_username','first_name',
@@ -329,7 +329,6 @@ def admin_school_parent_feedback():
 @app.route('/admin/school/parent-feedback/<int:feedback_id>')
 @admin_required
 def admin_school_parent_feedback_detail(feedback_id):
-    from app import _school_class_allowed
     me=current_admin()
     if not admin_has_permission(me['id'],'parent.feedback.view'): return admin_access_error('parent.feedback.view')
     raw=one(select(ParentFeedback,
@@ -412,7 +411,6 @@ def admin_school_parent_feedback_status(feedback_id):
 @app.route('/admin/school/parents')
 @admin_required
 def admin_school_parents():
-    from app import _school_class_allowed
     me=current_admin()
     if not admin_has_permission(me['id'],'parent.view'):
         return admin_access_error('parent.view')

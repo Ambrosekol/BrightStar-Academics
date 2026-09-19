@@ -70,6 +70,7 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import blueprints.school.helpers as SCH  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
@@ -199,7 +200,7 @@ con.commit()
 con.close()
 
 with A.app.app_context():
-    report = A._term_subject_report(student_id, session_id, "First Term", subject_id)
+    report = SCH._term_subject_report(student_id, session_id, "First Term", subject_id)
     # Exam: 45/50 -> scaled to 60 = 54
     check("exam scaled correctly (45/50 -> /60)", abs(report["exam_score"] - 54.0) < 0.01, str(report["exam_score"]))
     # Test: 8/10 -> scaled to default weight 20 = 16
@@ -246,8 +247,8 @@ with A.app.test_client() as super_c:
         "ca_weight_test": "20", "ca_weight_assignment": "20", "ca_weight_project": "20",
     })
     with A.app.app_context():
-        check("weights that don't sum to 40 are refused", A._ca_weights() == A.CA_DEFAULT_WEIGHTS,
-              str(A._ca_weights()))
+        check("weights that don't sum to 40 are refused", SCH._ca_weights() == A.CA_DEFAULT_WEIGHTS,
+              str(SCH._ca_weights()))
 
     good = super_c.post("/admin/school/sessions", data={
         "_csrf_token": token, "action": "set_ca_weights",
@@ -255,12 +256,12 @@ with A.app.test_client() as super_c:
     })
     check("weights summing to exactly 40 are accepted", good.status_code in (302, 303))
     with A.app.app_context():
-        new_weights = A._ca_weights()
+        new_weights = SCH._ca_weights()
     check("the new weighting is actually saved",
           new_weights == {"test": 15.0, "assignment": 15.0, "project": 10.0}, str(new_weights))
 
     with A.app.app_context():
-        rescaled = A._term_subject_report(student_id, session_id, "First Term", subject_id)
+        rescaled = SCH._term_subject_report(student_id, session_id, "First Term", subject_id)
     # Test 8/10 -> /15 = 12; assignment 9/10 -> /15 = 13.5; project 7/10 -> /10 = 7
     check("changing the weighting immediately changes future report calculations",
           abs(rescaled["test_score"] - 12.0) < 0.01 and abs(rescaled["assignment_score"] - 13.5) < 0.01,
