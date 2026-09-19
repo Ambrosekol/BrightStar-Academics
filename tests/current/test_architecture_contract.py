@@ -7,6 +7,7 @@ import ast
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "app.py"
 MODELS_DIR = ROOT / "models"
+CORE_DIR = ROOT / "core"
 BLUEPRINTS_DIR = ROOT / "blueprints"
 STUDENT_PORTAL_ROUTES = BLUEPRINTS_DIR / "student_portal" / "routes.py"
 STUDENT_PORTAL_HELPERS = BLUEPRINTS_DIR / "student_portal" / "helpers.py"
@@ -31,6 +32,16 @@ def _blueprints_text():
     directly may now live in a blueprint module instead.
     """
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(BLUEPRINTS_DIR.rglob("*.py")))
+
+
+def _core_text():
+    """Concatenated source of every module in the core/ package.
+
+    Cross-cutting helpers (and the model imports they need) moved out of
+    app.py into core/*.py, so a marker once only found in app.py's own text
+    may now live here instead.
+    """
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(CORE_DIR.glob("*.py")))
 
 
 def test_app_parses():
@@ -68,7 +79,9 @@ def test_core_domain_tables_are_declared_and_used():
     __tablename__ and app.py refers to the mapped classes instead, so this
     checks both halves rather than grepping app.py for raw SQL table names.
     """
-    app_text = APP.read_text(encoding="utf-8")
+    # Not just app.py: a model referenced only by a blueprint/core module
+    # after the reorganization is just as "used" as one app.py still imports.
+    everywhere = APP.read_text(encoding="utf-8") + _blueprints_text() + _core_text()
     models_text = _models_text()
     for table, model in (
         ("school_assessments", "SchoolAssessment"),
@@ -79,7 +92,7 @@ def test_core_domain_tables_are_declared_and_used():
         ("audit_logs", "AuditLog"),
     ):
         assert f"__tablename__ = '{table}'" in models_text, table
-        assert model in app_text, model
+        assert model in everywhere, model
 
 
 def test_student_assessment_current_flow_is_explicitly_identified_for_refactor():

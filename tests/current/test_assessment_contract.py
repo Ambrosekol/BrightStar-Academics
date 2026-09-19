@@ -15,13 +15,15 @@ def test_student_test_and_exam_share_required_interaction_contract():
 
 def test_persistent_student_attempt_model_exists():
     # The attempt tables are declared under models/ (a package split by domain)
-    # and referred to in app.py by their mapped classes.
+    # and referred to by their mapped classes in the student-portal blueprint,
+    # which owns the grading/attempt logic that used to live in app.py.
     MODELS="\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT/"models").glob("*.py")))
+    STUDENT_PORTAL=STUDENT_PORTAL_ROUTES+STUDENT_PORTAL_HELPERS
     for table,model in (("school_assessment_attempts","SchoolAssessmentAttempt"),
                         ("school_assessment_attempt_questions","SchoolAssessmentAttemptQuestion"),
                         ("school_assessment_answers","SchoolAssessmentAnswer")):
         assert f"__tablename__ = '{table}'" in MODELS, table
-        assert model in APP, model
+        assert model in STUDENT_PORTAL, model
     assert "student_assessment_start" in STUDENT_PORTAL_ROUTES
     assert "student_assessment_grade" in STUDENT_PORTAL_HELPERS
 

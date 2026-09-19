@@ -1,30 +1,14 @@
 from flask import (
     Flask, render_template, request, redirect, url_for, session, jsonify,
-    abort, flash, Response, send_from_directory, send_file, has_app_context,
+    flash, has_app_context,
 )
 from datetime import datetime, timedelta, timezone
-from functools import wraps
-from pathlib import Path
-from urllib.parse import quote
-import base64
-import hashlib
-import json
-import mimetypes
 import os
-import random
-import re
 import secrets
-import smtplib
 import sqlite3
-import string
 import sys
-import time
-import urllib.error
-import urllib.request
-import uuid
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
 
 from dotenv import load_dotenv
@@ -33,34 +17,28 @@ import sqlalchemy as sa
 from sqlalchemy import and_, or_, func, select, delete as sa_delete, update as sa_update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
-from services.date_format import format_display_date, format_display_date_configured
+from services.date_format import format_display_date
 from services.student_number_generator import (
     allocate_student_number,
     StudentNumberAllocationError,
 )
 from models import (
     db,
-    AcademicPromotionItem, AcademicPromotionRun, AcademicSession, Admin,
-    AdminControlItem, AdminMessage, AdminNotification, AdminPermission,
+    AcademicSession, Admin,
+    AdminControlItem, AdminMessage, AdminNotification,
     AdminResourceLock, AdminRoleAssignment, AdminScope, AdminType,
-    AdminTypePermission, Answer, AssignmentQuestion, AssignmentStudent,
-    Attempt, AttemptQuestion, AuditLog, Candidate, CandidatePaper,
-    ClassSubject, EntranceBankConfig, Examination, FinanceDeliveryLog,
-    FinanceFeeAssessment, FinanceFeeItem, FinanceFeeItemClass,
-    FinancePayment, FinancePaymentAllocation, LibraryBook, LibraryLoan,
-    ParentAccount, ParentFeedback, ParentFeedbackReply, ParentStudentLink,
-    PasswordResetToken, Permission, PresenceSession, ProjectStudent,
-    ResultWorkflowEvent, RetakeGrant, SchemaMigration, School,
-    SchoolAssessment, SchoolAssessmentAnswer, SchoolAssessmentAttempt,
-    SchoolAssessmentAttemptQuestion, SchoolAssignment,
-    SchoolAssignmentAnswer, SchoolAssignmentAttempt,
-    SchoolAssignmentAttemptQuestion, SchoolClass, SchoolClassProgression,
+    AdminTypePermission, Candidate,
+    EntranceBankConfig, Examination,
+    FinanceFeeAssessment,
+    FinancePayment, FinancePaymentAllocation,
+    ParentAccount, ParentFeedback, ParentFeedbackReply,
+    Permission, School,
+    SchoolAssessment, SchoolAssignment,
+    SchoolClass,
     SchoolNotification, SchoolNumberingPolicy, SchoolProject,
-    SchoolPublicEnquiry, SchoolPublicNews, SchoolPublicPage,
-    SchoolPublicSetting, SchoolQuestion, SchoolSetting, SchoolStudentResult,
-    SchoolSubject, SecurityEvent, Student, StudentAdmissionContact,
-    StudentAdmissionProfile, StudentEnrollmentHistory, StudentEnrolment,
-    StudentNumberAllocation,
+    SchoolPublicNews,
+    SchoolQuestion, SchoolStudentResult,
+    Student, StudentEnrolment,
 )
 
 BASE=os.path.dirname(os.path.abspath(__file__))
@@ -124,17 +102,9 @@ def _sqlite_pragmas(dbapi_connection, connection_record):
 from core.db_helpers import one, one_scalar, all_rows, tuples, obj, _flatten, _ignore_insert  # noqa: E402
 
 
-# ---------------- static/uploads paths ----------------
-# Moved to core/uploads.py.
-from core.uploads import STATIC, UPLOADS, IMAGE_EXTENSIONS, _save_image_upload  # noqa: E402
-
-
 # ---------------- presence tracking ----------------
 # Moved to core/presence.py.
-from core.presence import (  # noqa: E402
-    PRESENCE_TIMEOUT_SECONDS, _presence_identity, touch_presence,
-    end_presence, online_presence,
-)
+from core.presence import _presence_identity, touch_presence, online_presence  # noqa: E402
 
 
 # ---------------- admin RBAC / audit ----------------
@@ -143,9 +113,8 @@ from core.presence import (  # noqa: E402
 from core.security import (  # noqa: E402
     ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
     admin_required, current_admin, is_super_admin, admin_has_permission,
-    admin_permission_codes, admin_scope_allows, audit_display_detail,
-    audit_log, admin_scope_for_request, admin_access_error,
-    _notify_super_admins, csrf_protect,
+    admin_permission_codes, admin_scope_allows,
+    audit_log, admin_access_error, csrf_protect,
 )
 
 
@@ -678,9 +647,6 @@ def admin_can_delegate_roles(actor_id, role_ids):
 # Moved to core/notifications.py.
 from core.notifications import _notify_guardians_of_school_work  # noqa: E402
 
-# _ca_weights/_set_ca_weights (school domain, still in this file) also need this.
-from blueprints.finance.helpers import _primary_school_id  # noqa: E402
-
 
 
 def init_db():
@@ -819,7 +785,7 @@ def csrf_check_request():
     return bool(expected and token and secrets.compare_digest(token,expected))
 
 # Moved to core/public_settings.py.
-from core.public_settings import _public_settings, _public_page  # noqa: E402
+from core.public_settings import _public_settings  # noqa: E402
 
 # ---------------- public marketing site ----------------
 # Moved to blueprints/public/routes.py.
@@ -897,9 +863,6 @@ from core.accounts import _clear_identity_sessions  # noqa: E402
 # ---------------- parent portal + admin parent management ----------------
 # Moved to blueprints/parents/routes.py.
 import blueprints.parents.routes  # noqa: F401,E402
-# _ensure_parent (still in this file, part of student admissions) also needs
-# this to provision a parent account when registering a new student.
-from blueprints.parents.helpers import _new_parent_password  # noqa: E402
 
 def _release_due_school_results():
     """Release every approved result whose session release time has passed."""
