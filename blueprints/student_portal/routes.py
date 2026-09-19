@@ -10,7 +10,8 @@ from sqlalchemy import or_, func, select, update as sa_update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import app, csrf_token, remaining, _release_due_school_results, _student_with_enrolment
+from app import app, csrf_token, _release_due_school_results, _student_with_enrolment
+from core.entrance import remaining
 from models import (
     AssignmentQuestion, AssignmentStudent, ProjectStudent,
     SchoolAssessment, SchoolAssessmentAnswer, SchoolAssessmentAttempt,

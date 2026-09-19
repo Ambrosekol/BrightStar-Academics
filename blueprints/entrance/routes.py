@@ -13,16 +13,20 @@ from sqlalchemy import and_, func, select, delete as sa_delete, update as sa_upd
 from werkzeug.security import generate_password_hash
 
 from app import (
-    app, BASE, ENTRANCE_CONFIG_EXTRA, ENTRANCE_SUBJECT_LABELS,
-    _active_sessions, _answers_for_attempt, _candidate_papers,
-    _chrome_result_png, _create_control_item, _entrance_config_row,
-    _new_candidate_code, _new_candidate_password, _resource_locked,
-    _result_file_data_uri, _school_current_session,
+    app, BASE, ENTRANCE_CONFIG_EXTRA,
+    _active_sessions, _create_control_item,
+    _resource_locked, _school_current_session,
+    _entrance_config_select,
+)
+from core.entrance import (
+    ENTRANCE_SUBJECT_LABELS, _answers_for_attempt, _candidate_papers,
+    _chrome_result_png, _entrance_config_row,
+    _new_candidate_code, _new_candidate_password,
+    _result_file_data_uri,
     _valid_question_configuration, bank, bank_entry_group, bank_subject,
     candidate_cumulative, entrance_paper_label, entrance_subject_label,
     get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
-    _entrance_config_select,
 )
 from models import (
     AcademicSession, AdminResourceLock, Answer, Attempt, Candidate,

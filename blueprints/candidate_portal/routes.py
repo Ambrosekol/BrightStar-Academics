@@ -13,10 +13,13 @@ from sqlalchemy import select, update as sa_update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app import (
-    app, ENTRANCE_CONFIG_EXTRA, _answers_for_attempt, _entrance_config_select,
-    _school_current_session, _valid_question_configuration, bank,
+    app, ENTRANCE_CONFIG_EXTRA, _entrance_config_select,
+    _school_current_session, csrf_token,
+)
+from core.entrance import (
+    _answers_for_attempt, _valid_question_configuration, bank,
     candidate_cumulative, candidate_has_unused_retake, candidate_record,
-    csrf_token, entrance_paper_label, entrance_subject_label, get_attempt,
+    entrance_paper_label, entrance_subject_label, get_attempt,
     grade, remaining,
 )
 from models import (

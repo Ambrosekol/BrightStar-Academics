@@ -54,11 +54,12 @@ con.close()
 os.environ["CRAINBOW_DB"] = DB
 os.chdir(ROOT)
 import app as A  # noqa: E402
+import core.entrance as ENTRANCE  # noqa: E402
 
 A.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB}"
 A.app.config["TESTING"] = True
 
-BANK_ID = sorted(A.load_banks().keys())[0]
+BANK_ID = sorted(ENTRANCE.load_banks().keys())[0]
 CSRF = re.compile(rb'name="_csrf_token"[^>]*value="([^"]+)"')
 CONTROLS = "/admin/administration/controls"
 results = []
@@ -121,9 +122,9 @@ with A.app.test_client() as c:
             "_csrf_token": t.group(1).decode(), "text": "should not be added",
             "option_a": "A", "option_b": "B", "option_c": "C", "option_d": "D",
             "answer": "0", "points": "1"})
-        before = len(A.load_banks()[BANK_ID].get("questions", []))
-        A.load_banks.cache_clear() if hasattr(A.load_banks, "cache_clear") else None
-        after = len(A.load_banks()[BANK_ID].get("questions", []))
+        before = len(ENTRANCE.load_banks()[BANK_ID].get("questions", []))
+        ENTRANCE.load_banks.cache_clear() if hasattr(ENTRANCE.load_banks, "cache_clear") else None
+        after = len(ENTRANCE.load_banks()[BANK_ID].get("questions", []))
         check("locked bank rejects new questions", before == after, f"{before}->{after}")
 
     # ---- unlock ----

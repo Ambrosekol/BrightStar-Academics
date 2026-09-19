@@ -14,7 +14,8 @@ from sqlalchemy import func, select
 from models import AcademicSession, Attempt, Candidate, CandidatePaper, Examination, EntranceBankConfig, db
 from core.db_helpers import all_rows, _flatten
 from core.security import admin_scope_allows
-from app import DATA, bank, bank_subject, load_banks, sync_examinations, _entrance_config_select
+from app import _entrance_config_select
+from core.entrance import DATA, bank, bank_subject, load_banks, sync_examinations
 
 
 def _generate_bank_id(name, level=''):
