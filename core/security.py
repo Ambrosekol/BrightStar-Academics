@@ -11,12 +11,13 @@ circular reference into two files importing each other.
 """
 
 import json
+import secrets
 from datetime import datetime, timezone
 from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy import select
-from flask import redirect, render_template, request, session, url_for
+from flask import abort, redirect, render_template, request, session, url_for
 
 from models import (
     Admin, AdminNotification, AdminPermission, AdminRoleAssignment,
@@ -519,5 +520,23 @@ def admin_required(fn):
             return admin_access_error(f'{scope_type}:{scope_value}')
         if request.method in ('POST','PUT','PATCH','DELETE'):
             audit_log('state_change_request','administration','endpoint',request.endpoint,{'method':request.method,'args':kwargs},True,admin)
+        return fn(*args,**kwargs)
+    return wrapper
+
+
+def csrf_protect(fn):
+    """Require a valid session-bound CSRF token only for state-changing requests."""
+    @wraps(fn)
+    def wrapper(*args,**kwargs):
+        # GET/HEAD/OPTIONS are safe navigation requests and must be allowed to
+        # render protected forms.  The previous Phase 6H implementation
+        # validated the token on every request, which meant clicking a normal
+        # GET link such as "Edit bank" or "Register candidate" produced a
+        # 403 before the form could even be displayed.
+        if request.method in ('POST','PUT','PATCH','DELETE'):
+            token=request.form.get('_csrf_token','') or request.headers.get('X-CSRF-Token','')
+            expected=session.get('_csrf_token')
+            if not expected or not token or not secrets.compare_digest(token,expected):
+                abort(403, description='Invalid or missing CSRF token.')
         return fn(*args,**kwargs)
     return wrapper
