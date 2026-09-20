@@ -136,6 +136,28 @@ def test_sql_is_written_for_postgresql_not_just_sqlite():
         assert body.count("sqlite_where") == body.count("postgresql_where"), path
 
 
+def test_the_console_answers_on_the_loopback_names_outside_production():
+    """Every tunnel and proxy used in development forwards to localhost:PORT and
+    rewrites Host to match, so those are the names the app actually receives.
+    In production only the configured hostnames are served, so a proxy that
+    rewrites Host is caught rather than quietly serving the console."""
+    import os
+    from control_plane import config
+
+    saved = {k: os.environ.get(k) for k in ('BRIGHTSTARS_ENV', 'BRIGHTSTARS_PLATFORM_HOSTS')}
+    try:
+        os.environ['BRIGHTSTARS_PLATFORM_HOSTS'] = 'platform.example'
+        os.environ['BRIGHTSTARS_ENV'] = 'development'
+        assert {'localhost', '127.0.0.1', 'platform.example'} <= config.platform_hosts()
+        os.environ['BRIGHTSTARS_ENV'] = 'production'
+        assert config.platform_hosts() == {'platform.example'}
+    finally:
+        for k, v in saved.items():
+            os.environ.pop(k, None)
+            if v is not None:
+                os.environ[k] = v
+
+
 def test_hostname_and_slug_validation():
     from control_plane.registry import normalise_host, validate_hostname, validate_slug
     assert normalise_host("School.Example.COM:8443") == "school.example.com"

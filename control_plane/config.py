@@ -58,15 +58,36 @@ def school_db_name(slug):
     return 'brightstars_' + slug.replace('-', '_')
 
 
+def is_production():
+    return os.environ.get('BRIGHTSTARS_ENV',
+                          os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')
+
+
+# Outside production the platform console also answers on the loopback names.
+# Every tunnel and reverse proxy used in development — ngrok, VS Code dev
+# tunnels, nginx — forwards to localhost:PORT and rewrites the Host header to
+# match, so these are the names the application actually receives. Without
+# them, sharing a development server means either a tool-specific flag or an
+# environment edit for a hostname that changes on every restart.
+LOCAL_PLATFORM_HOSTS = frozenset({'localhost', '127.0.0.1', '::1'})
+
+
 def platform_hosts():
     """Hostnames that serve the platform console instead of a school.
 
     Comma-separated, no ports, e.g. ``platform.brightstars.example``. The
     default is a ``.localhost`` name, which browsers resolve to the loopback
     address without any hosts-file edit.
+
+    In production this is exactly what was configured, so a proxy that rewrites
+    Host to ``localhost`` is a misconfiguration that shows up immediately rather
+    than quietly serving the console somewhere unintended.
     """
     raw = os.environ.get('BRIGHTSTARS_PLATFORM_HOSTS', '').strip() or 'platform.localhost'
-    return {h.strip().lower() for h in raw.split(',') if h.strip()}
+    hosts = {h.strip().lower() for h in raw.split(',') if h.strip()}
+    if not is_production():
+        hosts |= LOCAL_PLATFORM_HOSTS
+    return hosts
 
 
 def portal_domain():
