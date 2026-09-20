@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Students — Crainbow Administration{% endblock %}
+{% block title %}Students — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / STUDENTS</div><h1>Students</h1><p class="hero-copy">Choose a class first. The student register then opens instantly in a panel, with a direct route to each complete student record.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_student_new')}}">+ Register Student</a></div></div>
 <div class="segmentation-intro"><div><strong>Choose a class</strong><span>Student records are deliberately separated by their current academic class.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_students')}}">← All classes</a>{% endif %}</div>

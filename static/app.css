@@ -2295,10 +2295,10 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
     }
 }
 
-.crainbow-home{--cr-blue:#123d73;--cr-blue-dark:#08294f;--cr-blue-soft:#eaf2fb;--cr-ink:#17212b;--cr-muted:#647180;--cr-white:#fff;--cr-line:#dce4ec;background:#fff;color:var(--cr-ink);font-family:Arial,Helvetica,sans-serif}
-.crainbow-home *{box-sizing:border-box}
-.crainbow-home a{text-decoration:none;color:inherit}
-.crainbow-home img{display:block;max-width:100%}
+.legacy-site-home{--cr-blue:#123d73;--cr-blue-dark:#08294f;--cr-blue-soft:#eaf2fb;--cr-ink:#17212b;--cr-muted:#647180;--cr-white:#fff;--cr-line:#dce4ec;background:#fff;color:var(--cr-ink);font-family:Arial,Helvetica,sans-serif}
+.legacy-site-home *{box-sizing:border-box}
+.legacy-site-home a{text-decoration:none;color:inherit}
+.legacy-site-home img{display:block;max-width:100%}
 .cr-container{width:min(1180px,calc(100% - 48px));margin:0 auto}
 .cr-header{position:relative;background:#fff;border-bottom:1px solid var(--cr-line);z-index:20}
 .cr-header-inner{width:min(1240px,calc(100% - 40px));min-height:92px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px}
@@ -2491,10 +2491,10 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 .cr-experience-links{grid-template-columns:1fr}
 .cr-footer-grid{grid-template-columns:1fr}
 }
-.crainbow-about{--cr-blue:#123d73;--cr-blue-dark:#08294f;--cr-ink:#17212b;--cr-muted:#647180;--cr-line:#dce4ec;background:#fff;color:var(--cr-ink);font-family:Arial,Helvetica,sans-serif}
-.crainbow-about *{box-sizing:border-box}
-.crainbow-about a{text-decoration:none;color:inherit}
-.crainbow-about img{display:block;max-width:100%}
+.legacy-site-about{--cr-blue:#123d73;--cr-blue-dark:#08294f;--cr-ink:#17212b;--cr-muted:#647180;--cr-line:#dce4ec;background:#fff;color:var(--cr-ink);font-family:Arial,Helvetica,sans-serif}
+.legacy-site-about *{box-sizing:border-box}
+.legacy-site-about a{text-decoration:none;color:inherit}
+.legacy-site-about img{display:block;max-width:100%}
 .cr-about-hero{display:grid;grid-template-columns:1.12fr .88fr;min-height:570px;background:#f2f6fa}
 .cr-about-hero-photo{min-height:570px;overflow:hidden}
 .cr-about-hero-photo img{width:100%;height:100%;object-fit:cover}
@@ -2581,23 +2581,23 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 
-.crainbow-home .cr-button-outline{background:transparent!important;color:#fff!important}
-.crainbow-home .cr-button-outline:hover{background:#fff!important;color:#08294f!important}
+.legacy-site-home .cr-button-outline{background:transparent!important;color:#fff!important}
+.legacy-site-home .cr-button-outline:hover{background:#fff!important;color:#08294f!important}
 
 
-.crainbow-home .cr-button-outline,.crainbow-home .cr-button-outline:visited{background:transparent!important;color:#fff!important;text-shadow:none!important}
-.crainbow-home .cr-button-outline span{color:#fff!important}
-.crainbow-home .cr-button,
-.crainbow-home .cr-button:link,
-.crainbow-home .cr-button:visited,
-.crainbow-home .cr-button:hover,
-.crainbow-home .cr-button:focus{opacity:1!important;visibility:visible!important;text-shadow:none!important}
+.legacy-site-home .cr-button-outline,.legacy-site-home .cr-button-outline:visited{background:transparent!important;color:#fff!important;text-shadow:none!important}
+.legacy-site-home .cr-button-outline span{color:#fff!important}
+.legacy-site-home .cr-button,
+.legacy-site-home .cr-button:link,
+.legacy-site-home .cr-button:visited,
+.legacy-site-home .cr-button:hover,
+.legacy-site-home .cr-button:focus{opacity:1!important;visibility:visible!important;text-shadow:none!important}
 
 
-.crainbow-home .cr-button-outline,
-.crainbow-home .cr-button-outline:link,
-.crainbow-home .cr-button-outline:visited{background:transparent!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
-.crainbow-home .cr-button-outline span{color:#fff!important;-webkit-text-fill-color:#fff!important}
+.legacy-site-home .cr-button-outline,
+.legacy-site-home .cr-button-outline:link,
+.legacy-site-home .cr-button-outline:visited{background:transparent!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+.legacy-site-home .cr-button-outline span{color:#fff!important;-webkit-text-fill-color:#fff!important}
 
 /* Force every public page to use the same header geometry */
 .cr-header {
@@ -2706,10 +2706,10 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 /* Keep the header identical regardless of public page body class. */
-.crainbow-home .cr-header,
-.crainbow-about .cr-header,
-.crainbow-academics .cr-header,
-.crainbow-school-life .cr-header,
+.legacy-site-home .cr-header,
+.legacy-site-about .cr-header,
+.legacy-site-academics .cr-header,
+.legacy-site-school-life .cr-header,
 .premium-admissions-page .cr-header,
 .public-site-page .cr-header {
     margin-top: 0 !important;
@@ -2780,7 +2780,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 /* ============================================================
-   CRAINBOW PUBLIC SITE â€” AUTHORITATIVE SHARED HEADER
+   BRIGHTSTARS PUBLIC SITE â€” AUTHORITATIVE SHARED HEADER
    ============================================================
    The header owns its own typography and geometry.
    It must not inherit page-specific typography/layout rules.
@@ -3155,7 +3155,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 /* ============================================================
-   CRAINBOW PUBLIC MOBILE NAVIGATION
+   BRIGHTSTARS PUBLIC MOBILE NAVIGATION
    Authoritative responsive navigation for all public pages.
    Desktop header remains unchanged.
    ============================================================ */
@@ -3335,7 +3335,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 
 
 
-/* CRAINBOW PRACTICE ZONE V1 */
+/* BRIGHTSTARS PRACTICE ZONE V1 */
 
 .cr-practice-zone{
     width:100%;
@@ -3592,7 +3592,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
     }
 }
 
-/* CRAINBOW HOMEPAGE DISCOVER CTA V1 */
+/* BRIGHTSTARS HOMEPAGE DISCOVER CTA V1 */
 
 .cr-discover-cta{
     min-height:190px;
@@ -3662,7 +3662,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
     }
 }
 
-/* CRAINBOW FINAL CONTACT CTA V1 */
+/* BRIGHTSTARS FINAL CONTACT CTA V1 */
 
 .cr-final .cr-button-white{
     display:inline-flex;
@@ -3732,10 +3732,10 @@ a[href*="discover"] * {
    ========================================== */
 
 /* IMAGE 1: "Learn More About Us" (Dark Blue BG + White Text) */
-.crainbow-home a.cr-button-primary,
-.crainbow-home a.cr-button-primary:link,
-.crainbow-home a.cr-button-primary:visited,
-.crainbow-home a.cr-button-primary span {
+.legacy-site-home a.cr-button-primary,
+.legacy-site-home a.cr-button-primary:link,
+.legacy-site-home a.cr-button-primary:visited,
+.legacy-site-home a.cr-button-primary span {
     background: #08294f !important;
     background-color: #08294f !important;
     color: #ffffff !important;
@@ -3777,8 +3777,8 @@ a.cr-button-primary *,
 .cr-final a.cr-button-primary:link,
 .cr-final a.cr-button-primary:visited,
 .cr-final a.cr-button-primary *,
-.crainbow-home .cr-button-primary,
-.crainbow-home .cr-button-primary * {
+.legacy-site-home .cr-button-primary,
+.legacy-site-home .cr-button-primary * {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     opacity: 1 !important;
@@ -3787,7 +3787,7 @@ a.cr-button-primary *,
 /* Ensure background remains solid dark blue */
 a.cr-button-primary,
 .cr-final a.cr-button-primary,
-.crainbow-home .cr-button-primary {
+.legacy-site-home .cr-button-primary {
     background-color: #08294f !important;
 }
 
@@ -3814,9 +3814,9 @@ a.cr-button-dark span {
 .cr-button-primary,
 .cr-button-white,
 .cr-button-dark,
-.crainbow-home .cr-button-primary,
-.crainbow-home .cr-button-white,
-.crainbow-home .cr-button-dark,
+.legacy-site-home .cr-button-primary,
+.legacy-site-home .cr-button-white,
+.legacy-site-home .cr-button-dark,
 a.cr-button-primary,
 a.cr-button-white,
 a.cr-button-dark {
@@ -3831,9 +3831,9 @@ a.cr-button-dark {
 .cr-button-primary *,
 .cr-button-white *,
 .cr-button-dark *,
-.crainbow-home .cr-button-primary *,
-.crainbow-home .cr-button-white *,
-.crainbow-home .cr-button-dark * {
+.legacy-site-home .cr-button-primary *,
+.legacy-site-home .cr-button-white *,
+.legacy-site-home .cr-button-dark * {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
 }
@@ -3842,9 +3842,9 @@ a.cr-button-dark {
 .cr-button-primary:hover,
 .cr-button-white:hover,
 .cr-button-dark:hover,
-.crainbow-home .cr-button-primary:hover,
-.crainbow-home .cr-button-white:hover,
-.crainbow-home .cr-button-dark:hover,
+.legacy-site-home .cr-button-primary:hover,
+.legacy-site-home .cr-button-white:hover,
+.legacy-site-home .cr-button-dark:hover,
 a.cr-button-primary:hover,
 a.cr-button-white:hover,
 a.cr-button-dark:hover {
@@ -3858,9 +3858,9 @@ a.cr-button-dark:hover {
 .cr-button-primary:hover *,
 .cr-button-white:hover *,
 .cr-button-dark:hover *,
-.crainbow-home .cr-button-primary:hover *,
-.crainbow-home .cr-button-white:hover *,
-.crainbow-home .cr-button-dark:hover * {
+.legacy-site-home .cr-button-primary:hover *,
+.legacy-site-home .cr-button-white:hover *,
+.legacy-site-home .cr-button-dark:hover * {
     color: #08294f !important;
     -webkit-text-fill-color: #08294f !important;
 }
@@ -4374,7 +4374,7 @@ a.cr-button-outline:hover * {
 }
 
 /* ============================================================
-   CRAINBOW PREMIUM ADMIN UI V1
+   BRIGHTSTARS PREMIUM ADMIN UI V1
    Visual refinement layer
    No Bootstrap dependency
    No application/data logic changes
@@ -4914,12 +4914,12 @@ a.cr-button-outline:hover * {
 }
 
 /* ============================================================
-   END CRAINBOW PREMIUM ADMIN UI V1
+   END BRIGHTSTARS PREMIUM ADMIN UI V1
    ============================================================ */
 
 
 /* =========================================================
-   CRAINBOW PREMIUM MESSAGING WORKSPACE
+   BRIGHTSTARS PREMIUM MESSAGING WORKSPACE
    ========================================================= */
 
 /* Main Chat Container Layout */
@@ -5141,7 +5141,7 @@ a.cr-button-outline:hover * {
 }
 
 /* =========================================================
-   CRAINBOW CHAT ATTACHMENTS & MEDIA STYLES
+   BRIGHTSTARS CHAT ATTACHMENTS & MEDIA STYLES
    ========================================================= */
 
 .chat-attach-btn {

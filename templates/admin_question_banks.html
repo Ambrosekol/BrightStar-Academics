@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Question Banks — Crainbow Administration{% endblock %}
+{% block title %}Question Banks — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">ENTRANCE EXAMINATION / ASSESSMENT</div><h1>Question Banks</h1><p class="hero-copy">Choose the entrance level first. Only question banks belonging to that examination set are then displayed.</p></div>{% if current_admin and admin_has_permission(current_admin['id'],'question_banks.create') %}<div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_new_bank') }}">+ New Question Bank</a></div>{% endif %}</div>
 <div class="segmentation-intro"><div><strong>Choose an entry level</strong><span>JSS 1 and SSS 1 question sets are deliberately separated. Shared General Knowledge banks remain available in the appropriate set.</span></div>{% if selected_group %}<a class="btn btn-light btn-small" href="{{url_for('admin_question_banks')}}">← All entry levels</a>{% endif %}</div>

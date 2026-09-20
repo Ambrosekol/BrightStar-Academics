@@ -1,7 +1,7 @@
 {% extends 'admin_base.html' %}
-{% block title %}Messages — Crainbow Administration{% endblock %}
+{% block title %}Messages — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrator Messages</h1><p class="hero-copy">Private direct messages between signed-in Crainbow administrators. Use this for operational communication without mixing staff messages into student records.</p></div></div>
+<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrator Messages</h1><p class="hero-copy">Private direct messages between signed-in {{ school_brand.name }} administrators. Use this for operational communication without mixing staff messages into student records.</p></div></div>
 {% if admin_unread_messages %}
 <div class="message-notification card" role="status" aria-live="polite">
   <div class="message-notification-icon">✉</div>

@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Edit Staff Role' if mode == 'edit' else 'Create Staff Role' }} — Crainbow Administration{% endblock %}
+{% block title %}{{ 'Edit Staff Role' if mode == 'edit' else 'Create Staff Role' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>{{ 'Edit staff role' if mode == 'edit' else 'Create custom staff role' }}</h1><p class="hero-copy">Build a role around a real school responsibility. Keep the role small, understandable and least-privilege by design.</p></div></div>
 {% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}

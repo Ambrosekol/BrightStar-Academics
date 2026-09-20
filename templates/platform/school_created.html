@@ -1,0 +1,64 @@
+{% extends "platform/base.html" %}
+{% block title %}{{ info.name }} created{% endblock %}
+{% block body %}
+<h1>{{ info.name }} is ready</h1>
+
+<div class="panel">
+  <h2 style="margin-top:0">The school's portal</h2>
+  <p class="muted">This address works now. Staff, parents and students sign in here.</p>
+  <span class="secret" id="portal-address">{{ portal }}</span>
+</div>
+
+{% if password %}
+  <div class="panel">
+    <h2 style="margin-top:0">Give these to the school, once</h2>
+    <p class="muted">This password is shown here and nowhere else. It cannot be retrieved later —
+      if it is lost, create another administrator for the school.</p>
+    <p>Username <code>{{ admin_username|lower }}</code></p>
+    <span class="secret" id="temp-password">{{ password }}</span>
+    <p class="muted">They must change it the first time they sign in.</p>
+  </div>
+{% else %}
+  <div class="panel">
+    <h2 style="margin-top:0">No administrator yet</h2>
+    <p class="muted">Nobody can sign in to this school until you add one, from the school's page.</p>
+  </div>
+{% endif %}
+
+<div class="panel">
+  <h2 style="margin-top:0">Using the school's own address</h2>
+  {% if customs %}
+    <p class="muted">These addresses are registered for the school. Each one reaches the portal as
+      soon as the school adds this DNS record on its own domain:</p>
+    <table>
+      <thead><tr><th>Type</th><th>Name</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for hostname in customs %}
+          <tr><td class="mono">CNAME</td><td class="mono">{{ hostname }}</td><td class="mono">{{ portal }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">Your reverse proxy also needs a certificate for each of them.</p>
+  {% else %}
+    <p class="muted">None yet. Add the school's own address on its page, then have the school point
+      a CNAME record at <code>{{ portal }}</code>.</p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">The school's files</h2>
+  <p class="muted">Everything belonging to this school lives in one folder. Archiving, moving or
+    handing over the school is a matter of copying it.</p>
+  <p class="mono">{{ folder.root }}</p>
+  <table>
+    <tbody>
+      {% for entry in folder.entries %}
+        <tr><td class="mono">{{ entry.name }}</td><td class="muted">{{ entry.detail }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p><a class="btn btn-primary" href="{{ url_for('platform_school', slug=info.slug) }}">Manage {{ info.name }}</a>
+   <a class="btn" href="{{ url_for('platform_dashboard') }}">All schools</a></p>
+{% endblock %}

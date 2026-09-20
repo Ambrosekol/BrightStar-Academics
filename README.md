@@ -1,14 +1,20 @@
-# Crainbow
+# Brightstars Academics
 
-Crainbow is the web platform used by Creative Rainbow Montessori School to run its entrance
-examinations and day-to-day school administration from one Flask application: a public
-marketing site, a computer-based entrance-examination engine, a full school portal (classes,
-subjects, assignments, tests, results, promotion), student/parent self-service portals,
-finance/receipting, a library catalogue, and role-based admin governance (accounts,
-permissions, audit log, messaging).
+Brightstars Academics is a multi-school platform. One deployment serves many schools; each
+school gets its own portal, its own PostgreSQL database and its own folder of files, and can
+never see another school's data. Creative Rainbow Montessori School ("crainbow") is a school on
+the platform, not the platform itself.
 
-It is a single-tenant, single-server deployment: one Flask process, one SQLite database, no
-external services required to run it locally.
+Each school's portal runs entrance examinations, day-to-day school administration (classes,
+subjects, assignments, tests, results, promotion), student and parent self-service, finance and
+receipting, a library catalogue, and role-based admin governance.
+
+**A school's address is a portal, not a website.** The only public website is the platform's own,
+served at `/` on the platform hostnames. The platform console lives at `/platform` on those same
+hostnames: sign in there to create a school, manage its addresses and administrators, suspend it,
+or enter it.
+
+Multi-tenancy is not optional and cannot be switched off — it is the architecture.
 
 ## Contents
 
@@ -18,14 +24,15 @@ external services required to run it locally.
 - [Getting started](#getting-started)
 - [Configuration](#configuration)
 - [Running the app](#running-the-app)
+- [Multi-tenancy](#multi-tenancy)
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Notes for contributors](#notes-for-contributors)
 
 ## Features
 
-**Public site** — marketing pages (home, about, academics, school life, admissions, news,
-contact) and a no-login practice-test gateway.
+**Platform website and console** — the platform's own public site at `/`, and the console at
+`/platform` where schools are created and managed.
 
 **Unified login** — one `/login` form for every account type. The identifier the visitor
 submits determines whether they're signed in as staff, a parent, a school student, or an
@@ -60,7 +67,8 @@ locking a question bank against edits during a live exam).
 
 - **Python 3** / **Flask** — web framework and routing
 - **Flask-SQLAlchemy** / **SQLAlchemy 2.x** — ORM and schema
-- **SQLite** — database (one file, `cbt.db`)
+- **PostgreSQL** — database; one for the platform registry, plus one per school
+- **psycopg 3** — PostgreSQL driver
 - **Jinja2** — server-rendered templates
 - **ReportLab** — PDF generation (receipts, result cards)
 - **python-dotenv** — `.env` configuration loading
@@ -90,6 +98,9 @@ crainbow/
 │   ├── tenancy.py             #   School, SchoolSetting, StudentNumberAllocation
 │   ├── presence.py            #   PresenceSession, SchoolNotification, PasswordResetToken
 │   └── governance.py          #   SchemaMigration (historical migration record)
+├── control_plane/            # Multi-tenancy: platform registry, hostname → school, per-school
+│                              #   database routing, provisioning, the platform console and
+│                              #   the platform's own website (off unless enabled)
 ├── core/                     # Cross-cutting helpers used by 2+ domains — no routes here
 │   ├── db_helpers.py           #   one/all_rows/tuples/obj — thin wrappers returning
 │   │                          #     sqlite3.Row-like mappings from SQLAlchemy queries
@@ -99,6 +110,8 @@ crainbow/
 │   ├── presence.py             #   "who's online" tracking
 │   ├── notifications.py        #   guardian email/WhatsApp senders
 │   ├── uploads.py              #   image upload validation and storage
+│   ├── storage.py              #   per-school data/ and uploads/ folders
+│   ├── branding.py             #   the school's own name/motto/logo for templates
 │   ├── public_settings.py      #   public-site settings/page lookup
 │   └── entrance.py             #   question-bank loading, candidate lookups, grading,
 │                              #     result-card rendering — shared by the entrance-admin
@@ -135,12 +148,22 @@ split into packages — nothing outside this repo needed to change because of th
 
 ## Getting started
 
-Requires Python 3.10 or newer (developed and tested on 3.13). No external database server,
-message queue, or build toolchain is needed.
+### Requirements
+
+| Requirement | Notes |
+|---|---|
+| **Python 3.10+** | Developed and tested on 3.13. |
+| **PostgreSQL 14+** | Required. Tested against PostgreSQL 18. Must be running and reachable on `localhost:5432` for local development. |
+| A PostgreSQL role that may `CREATE DATABASE` | The platform creates one database per school as schools are added. The `postgres` superuser is fine locally. |
+
+There is no build toolchain, message queue or other service to run. `psycopg[binary]` is
+installed from `requirements.txt`, so no PostgreSQL client libraries need to be on the PATH.
+
+### Install
 
 ```bash
 git clone <this-repo>
-cd crainbow
+cd Academics
 
 python -m venv venv
 venv\Scripts\activate        # Windows
@@ -152,9 +175,33 @@ copy .env.example .env       # Windows
 # cp .env.example .env       # macOS/Linux
 ```
 
-Then edit `.env` — at minimum set `CRAINBOW_SECRET` (a real random secret, not the
-placeholder) and `CRAINBOW_ADMIN_PASSWORD` (the initial Super Admin password). See
-[Configuration](#configuration) below.
+### Configure
+
+Edit `.env` and set at least:
+
+| Variable | What to put |
+|---|---|
+| `BRIGHTSTARS_SECRET` | A real random secret. `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `BRIGHTSTARS_PLATFORM_DB` | Your PostgreSQL URL, e.g. `postgresql+psycopg://postgres:yourpassword@localhost:5432/brightstars_platform` |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | `platform.localhost` for local development |
+| `BRIGHTSTARS_PORTAL_DOMAIN` | `localhost` for local development, so a school is reachable at `<code>.localhost` |
+
+You do **not** need to create any database by hand: `python -m control_plane init` creates the
+registry database, and each school's database is created when the school is created.
+
+### Set the platform up
+
+```bash
+python -m control_plane init                          # create the registry
+python -m control_plane create-platform-admin ops     # your own platform login (password prompted)
+python app.py                                         # http://platform.localhost:5000
+```
+
+Then open `http://platform.localhost:5000/platform`, sign in, and use **Create a school**. Each
+school you create is reachable immediately at `http://<school-code>.localhost:5000`.
+
+`*.localhost` resolves to the loopback address in current browsers, so no hosts-file editing is
+needed in development.
 
 ## Configuration
 
@@ -164,13 +211,13 @@ All configuration is read from environment variables, loaded from `.env` via
 
 | Variable | Purpose |
 |---|---|
-| `CRAINBOW_ENV` | `development` or `production`. In production, `CRAINBOW_SECRET` must be at least 32 characters or the app refuses to start. |
-| `CRAINBOW_SECRET` | Flask session-signing secret. Leaving it blank generates a new one on every restart, which logs everyone out. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
-| `CRAINBOW_SUPERADMIN_USERNAME` / `CRAINBOW_ADMIN_PASSWORD` | Read **only** the first time the app initializes a database with no Super Admin account yet. Once one exists, the database is authoritative and these are ignored on every later startup. |
-| `CRAINBOW_DB` / `CRAINBOW_DATA` | Override the database file / question-bank data folder. Leave unset for the normal layout (`cbt.db` and `data/` next to `app.py`). Tests and verification scripts set `CRAINBOW_DB` to a throwaway copy so they never touch the real database. |
-| `CRAINBOW_MAX_UPLOAD_BYTES` / `CRAINBOW_MAX_REQUEST_BYTES` | Upload and request size limits. |
-| `CRAINBOW_SMTP_*` | Outgoing mail for receipts and password resets. Leave `CRAINBOW_SMTP_HOST` blank to disable email delivery. |
-| `CRAINBOW_WHATSAPP_*` | WhatsApp Business Cloud API credentials for receipt delivery. Leave `CRAINBOW_WHATSAPP_TOKEN` blank to disable it. |
+| `BRIGHTSTARS_ENV` | `development` or `production`. In production, `BRIGHTSTARS_SECRET` must be at least 32 characters or the app refuses to start. |
+| `BRIGHTSTARS_SECRET` | Flask session-signing secret. Leaving it blank generates a new one on every restart, which logs everyone out. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
+| `BRIGHTSTARS_MAX_UPLOAD_BYTES` / `BRIGHTSTARS_MAX_REQUEST_BYTES` | Upload and request size limits. |
+| `BRIGHTSTARS_SMTP_*` | Outgoing mail for receipts and password resets. Leave `BRIGHTSTARS_SMTP_HOST` blank to disable email delivery. |
+| `BRIGHTSTARS_WHATSAPP_*` | WhatsApp Business Cloud API credentials for receipt delivery. Leave `BRIGHTSTARS_WHATSAPP_TOKEN` blank to disable it. |
+| `BRIGHTSTARS_PLATFORM_DB` / `BRIGHTSTARS_PLATFORM_HOSTS` / `BRIGHTSTARS_TENANTS_DIR` | Platform registry database (PostgreSQL in production), the hostnames that serve the platform console and the platform's own website, and the folder holding each school's files. |
+| `BRIGHTSTARS_PORTAL_DOMAIN` | The domain each school's portal address is issued under, e.g. `schools.brightstars.example`. |
 | `PORT` | Port for the built-in development server (default `5000`). |
 
 ## Running the app
@@ -179,8 +226,7 @@ All configuration is read from environment variables, loaded from `.env` via
 python app.py
 ```
 
-This creates/upgrades the SQLite schema, seeds reference data (class structure, permission
-catalogue, the bootstrap Super Admin) and starts the Flask development server on
+This brings every registered school's schema up to date and starts the Flask development server on
 `http://0.0.0.0:5000` (or `PORT`). On Windows, `run_windows.bat` does the same after
 installing dependencies.
 
@@ -191,6 +237,37 @@ installing dependencies.
 - `/health` — liveness check, returns `{"status": "ok"}`
 
 For a LAN/production-style deployment, see [Deployment](#deployment).
+
+## Multi-tenancy
+
+Each school is a *tenant*: its own portal address, its own PostgreSQL database
+(`brightstars_<code>`), its own folder of files, and no way to see another school's data. The
+platform registry (`brightstars_platform`) holds which schools exist, their addresses and the
+platform administrators.
+
+Every school is issued a portal address the moment it is created,
+`<code>.<BRIGHTSTARS_PORTAL_DOMAIN>`, which works immediately. A school that wants to use its own
+domain points a CNAME record at that address; the console shows the exact DNS record.
+
+Schools are normally created from the console. The CLI covers the same ground and a little more:
+
+```bash
+python -m control_plane init                                  # create the registry database
+python -m control_plane create-platform-admin ops             # a platform login
+python -m control_plane create-tenant demo "Demo School" --admin-username demo_admin
+python -m control_plane list
+python -m control_plane suspend demo --reason "invoice overdue"
+python -m control_plane upgrade                               # bring every school's schema up to date
+```
+
+To bring an existing single-school SQLite installation in as a school, including all its data:
+
+```bash
+python -m control_plane register-existing crainbow "Creative Rainbow Montessori School"     --from-db cbt.db --from-data data --from-uploads static/uploads
+python -m control_plane adopt-superadmin --from-db cbt.db     # its Super Admin becomes a platform admin
+```
+
+`docs/architecture/MULTI_TENANCY.md` has the design, the security model and the known gaps.
 
 ## Testing
 
@@ -205,6 +282,13 @@ RBAC/governance checks) and the one to run after any change.
 one script per feature area (`write_paths_*.py`), plus `smoke_entrypoint.py` (boots the real
 `python app.py` process and hits it over HTTP), `verify_admin_security.py`, `test_env_config.py`
 and `probe_rbac.py`. Run any of them directly with `python tests/verification/<script>.py`.
+
+`tests/verification/write_paths_multitenancy.py` proves school isolation end to end (hostname
+routing, per-school databases, session cookies copied between schools, uploads, question banks,
+suspension) against throwaway databases, and
+`tests/verification/write_paths_platform_console.py` drives the platform console the same way
+(creating a school with its branding, portal addresses and CNAMEs, entering a school, and the
+hostile cases around all of it).
 
 `tests/legacy/` holds retained historical scripts kept for reference; they are not part of
 the authoritative suite.
@@ -232,5 +316,6 @@ environment.
   are optional local-only scripts for populating sample banks; do not run
   `seed_demo_banks.py` against a real school database — its content is explicitly marked
   DEMO-only.
-- **`cbt.db` is the live database.** Never delete it or run destructive operations against it
-  without an explicit backup.
+- **Each school has its own PostgreSQL database**, named `brightstars_<code>`, plus one
+  `brightstars_platform` registry. Back them up per school; restoring one school never touches
+  another.

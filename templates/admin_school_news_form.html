@@ -1,5 +1,5 @@
 ﻿{% extends 'admin_base.html' %}
-{% block title %}{{'Edit News' if editing else 'New News'}} — CRAINBOW SCHOOLS Administration{% endblock %}
+{% block title %}{{'Edit News' if editing else 'New News'}} — {{ school_brand.name|upper }} Administration{% endblock %}
 
 {% block content %}
 <style>

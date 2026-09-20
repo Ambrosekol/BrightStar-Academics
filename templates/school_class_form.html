@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Edit Class — Crainbow Administration{% endblock %}
+{% block title %}Edit Class — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / CLASSES</div><h1>Edit class</h1><p class="hero-copy">Maintain the school's class catalogue. Changing a class name changes its master label; historical enrollment snapshots remain preserved.</p></div></div>
 <div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}

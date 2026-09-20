@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Workspace Home — Crainbow Admin</title>
+  <title>Workspace Home — {{ school_brand.name }} Admin</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   <style>
     body {
@@ -179,7 +179,7 @@
   <!-- Top Navigation Bar -->
   <nav class="top-nav">
     <div class="top-nav-left">
-      <span>CRAINBOW</span>
+      <span>{{ school_brand.name|upper }}</span>
       <span style="color: #cbd5e1;">›</span>
       <span style="color: #0f172a;">Workspace Home</span>
     </div>

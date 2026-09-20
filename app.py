@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request, redirect, url_for, session, jsonify,
-    flash, has_app_context,
+    flash, g, has_app_context, send_from_directory,
 )
 from datetime import datetime, timedelta, timezone
 import os
@@ -15,8 +15,11 @@ from dotenv import load_dotenv
 
 import sqlalchemy as sa
 from sqlalchemy import and_, or_, func, select, delete as sa_delete, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+from control_plane.config import platform_db_url
+from control_plane.routing import current_engine
+from core.branding import school_brand
+from core.storage import uploads_dir
 from services.date_format import format_display_date
 from services.student_number_generator import (
     allocate_student_number,
@@ -32,7 +35,7 @@ from models import (
     FinanceFeeAssessment,
     FinancePayment, FinancePaymentAllocation,
     ParentAccount, ParentFeedback, ParentFeedbackReply,
-    Permission, School,
+    Permission, SchemaMigration, School,
     SchoolAssessment, SchoolAssignment,
     SchoolClass,
     SchoolNotification, SchoolNumberingPolicy, SchoolProject,
@@ -43,13 +46,8 @@ from models import (
 
 BASE=os.path.dirname(os.path.abspath(__file__))
 # Load .env before anything below reads os.environ. A variable already set in
-# the real environment (as every test and verification script sets CRAINBOW_DB)
-# always wins over .env — load_dotenv() never overrides an existing variable.
+# the real environment always wins — load_dotenv() never overrides one.
 load_dotenv(os.path.join(BASE,'.env'))
-# CRAINBOW_DB lets a test or a side-by-side verification run point the app at a
-# throwaway copy of the database instead of the live cbt.db.
-DB=os.environ.get('CRAINBOW_DB','').strip() or os.path.join(BASE,'cbt.db')
-DATA=os.environ.get('CRAINBOW_DATA','').strip() or os.path.join(BASE,'data')
 app=Flask(__name__)
 app.jinja_env.filters.setdefault('display_date', format_display_date)
 # blueprints/*/routes.py do `from app import app` to register their routes on
@@ -62,22 +60,29 @@ app.jinja_env.filters.setdefault('display_date', format_display_date)
 # makes the later import resolve to this exact, already-running instance.
 sys.modules.setdefault('app', sys.modules[__name__])
 
-ENVIRONMENT=os.environ.get('CRAINBOW_ENV', os.environ.get('FLASK_ENV','development')).strip().lower()
-_config_secret=os.environ.get('CRAINBOW_SECRET','').strip()
+ENVIRONMENT=os.environ.get('BRIGHTSTARS_ENV', os.environ.get('FLASK_ENV','development')).strip().lower()
+_config_secret=os.environ.get('BRIGHTSTARS_SECRET','').strip()
 if ENVIRONMENT in ('production','prod') and len(_config_secret) < 32:
-    raise RuntimeError('CRAINBOW_SECRET must be set to a strong secret (at least 32 characters) in production.')
+    raise RuntimeError('BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.')
 app.secret_key=_config_secret or secrets.token_hex(32)
-ADMIN_PASSWORD=os.environ.get('CRAINBOW_ADMIN_PASSWORD','').strip()
 
 # ---------------- SQLAlchemy ----------------
-app.config['SQLALCHEMY_DATABASE_URI']=f'sqlite:///{DB}'
+# There is no single application database: every school has its own, and
+# TenantSession (models/base.py) picks it per request from the school the
+# hostname resolved to. Flask-SQLAlchemy still insists on a default bind, so it
+# is pointed at the platform registry — the one database that is not a
+# school's. Nothing reads school data through it; use current_engine() instead
+# of db.engine, and a query with no school selected raises rather than
+# silently landing here.
+app.config['SQLALCHEMY_DATABASE_URI']=platform_db_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
-app.config['SQLALCHEMY_ENGINE_OPTIONS']={
-    # Mirrors the previous sqlite3.connect(DB, timeout=10) behaviour so the
-    # existing single-file/LAN deployment keeps tolerating brief write locks.
-    'connect_args': {'timeout': 10, 'check_same_thread': False},
-}
 db.init_app(app)
+
+# Many schools, one deployment (see docs/architecture/MULTI_TENANCY.md). This
+# must be installed before any other before_request hook is registered below:
+# they all query the database and need the request's school selected first.
+from control_plane.resolver import install as _install_multitenancy  # noqa: E402
+_install_multitenancy(app)
 
 
 @sa.event.listens_for(sa.engine.Engine, 'connect')
@@ -99,7 +104,7 @@ def _sqlite_pragmas(dbapi_connection, connection_record):
 # read helpers return RowMapping objects, which still support row['column'].
 # Moved to core/db_helpers.py; imported back so every existing call site
 # (one(...), all_rows(...), etc.) keeps working unchanged.
-from core.db_helpers import one, one_scalar, all_rows, tuples, obj, _flatten, _ignore_insert  # noqa: E402
+from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert  # noqa: E402
 
 
 # ---------------- presence tracking ----------------
@@ -133,9 +138,10 @@ def _add_missing_columns():
     reported rather than attempted; in practice every one of ours carries a
     server default.
     """
-    inspector = sa.inspect(db.engine)
+    engine = current_engine()
+    inspector = sa.inspect(engine)
     existing = set(inspector.get_table_names())
-    with db.engine.begin() as connection:
+    with engine.begin() as connection:
         for table in db.metadata.sorted_tables:
             if table.name not in existing:
                 continue
@@ -143,7 +149,7 @@ def _add_missing_columns():
             for column in table.columns:
                 if column.name in have:
                     continue
-                spec = column.type.compile(db.engine.dialect)
+                spec = column.type.compile(engine.dialect)
                 default = column.server_default
                 if default is not None:
                     # SQLite accepts NOT NULL on an added column as long as a
@@ -170,15 +176,22 @@ def _widen_parent_feedback_reply_admin_id():
     rebuilds the table when needed: a fresh install already gets the relaxed
     shape straight from models.py via create_all(), so this is a no-op there.
     Idempotent and safe to run on every startup.
+
+    Only ever needed on a SQLite database carried over from before the column
+    was relaxed. PostgreSQL can simply DROP NOT NULL, and every PostgreSQL
+    database here was created from the current models, so it is already right.
     """
-    inspector = sa.inspect(db.engine)
+    engine = current_engine()
+    if engine.dialect.name != 'sqlite':
+        return
+    inspector = sa.inspect(engine)
     if 'parent_feedback_replies' not in inspector.get_table_names():
         return
     column = next((c for c in inspector.get_columns('parent_feedback_replies')
                    if c['name'] == 'admin_id'), None)
     if column is None or column['nullable']:
         return
-    with db.engine.begin() as connection:
+    with engine.begin() as connection:
         connection.execute(sa.text("""
             CREATE TABLE parent_feedback_replies_new (
                 id INTEGER NOT NULL,
@@ -234,38 +247,32 @@ def _record_schema_baseline():
     """
     from migrations.runner import MIGRATIONS
     now = datetime.now(timezone.utc).isoformat()
-    raw = db.engine.raw_connection()
-    try:
-        driver_con = raw.driver_connection
-        driver_con.execute(
-            'CREATE TABLE IF NOT EXISTS schema_migrations('
-            'version TEXT PRIMARY KEY, applied_at TEXT NOT NULL)')
-        driver_con.executemany(
-            'INSERT OR IGNORE INTO schema_migrations(version,applied_at) VALUES(?,?)',
-            [(version, now) for version, _ in MIGRATIONS])
-        driver_con.commit()
-    finally:
-        raw.close()
+    # The table is part of models/ and has already been created by create_all();
+    # this only records the historical versions, ignoring any already present.
+    _ignore_insert(SchemaMigration, [{'version': version, 'applied_at': now}
+                                     for version, _ in MIGRATIONS])
+    db.session.commit()
 
 
-# The school this installation serves. A tenant row has to exist before student
-# numbers can be allocated, and every school-scoped table keys off its id.
-DEFAULT_SCHOOL_CODE='CRMS'
-DEFAULT_SCHOOL_NAME='Creative Rainbow Montessori School'
-DEFAULT_SCHOOL_MOTTO='Growing in humility and fear of God'
-
-
-def _seed_school_tenant(now):
-    """Ensure the school tenant, its numbering policy and school_id are set.
+def _seed_school_tenant(now, code, name, motto=None, adopt_existing=False):
+    """Ensure the school row, its numbering policy and school_id are set.
 
     Idempotent: existing rows are left exactly as they are, so editing the
     school's details through the admin UI is never undone by a restart.
+
+    Every school has its own database holding exactly one school row, and its
+    identity comes from the platform registry — there is no default school name
+    here, because no school is more the "real" one than any other.
+    ``adopt_existing`` makes an already-populated database keep whatever school
+    row it has, rather than being given a second one under ``code``.
     """
     school=db.session.scalars(
-        select(School).where(School.code==DEFAULT_SCHOOL_CODE)).first()
+        select(School).where(School.code==code)).first()
+    if not school and adopt_existing:
+        school=db.session.scalars(select(School).order_by(School.id)).first()
     if not school:
-        school=School(code=DEFAULT_SCHOOL_CODE,name=DEFAULT_SCHOOL_NAME,
-                      motto=DEFAULT_SCHOOL_MOTTO,tagline=DEFAULT_SCHOOL_MOTTO,
+        school=School(code=code,name=name,
+                      motto=motto,tagline=motto,
                       active=1,created_at=now,updated_at=now)
         db.session.add(school)
         db.session.flush()
@@ -274,7 +281,7 @@ def _seed_school_tenant(now):
             .where(SchoolNumberingPolicy.school_id==school.id)).first():
         db.session.add(SchoolNumberingPolicy(
             school_id=school.id,label='Registration Number',
-            prefix=DEFAULT_SCHOOL_CODE,include_year=1,sequence_start=1,
+            prefix=school.code,include_year=1,sequence_start=1,
             next_sequence=1,padding=4,active=1,created_at=now,updated_at=now))
     # Attach any pre-tenancy rows to this school.
     for model in (Student, SchoolClass, AcademicSession, StudentEnrolment):
@@ -475,11 +482,11 @@ from core.entrance import (  # noqa: E402
 
 
 def init_admin_security():
-    """Seed the permission catalogue, system roles and bootstrap Super Admin.
+    """Seed a school's permission catalogue and system roles.
 
     The table definitions that used to live here as a CREATE TABLE script are now
-    declared once in models.py and created by db.create_all(); this function is
-    only responsible for seeding reference data.
+    declared once in models.py and created by create_all(); this function is
+    only responsible for seeding reference data. It creates no accounts.
     """
     now=datetime.now(timezone.utc).isoformat()
     _ignore_insert(Permission, [
@@ -519,23 +526,11 @@ def init_admin_security():
         for code in spec['permissions']
         if code in perm_ids
     ])
-    # CRAINBOW_SUPERADMIN_USERNAME / CRAINBOW_ADMIN_PASSWORD are read only to
-    # bootstrap the very first Super Admin. The check is "does a Super Admin
-    # already exist", not "does one exist under this exact username" - matching
-    # by username would let a later change to CRAINBOW_SUPERADMIN_USERNAME
-    # create a second Super Admin instead of being ignored, which is exactly
-    # the surprise this guards against. Once any Super Admin exists, the
-    # database is authoritative and both .env values are ignored on every
-    # subsequent startup, however they're set.
-    if not one(select(Admin.id).where(Admin.admin_type_id==super_role)):
-        username=os.environ.get('CRAINBOW_SUPERADMIN_USERNAME','superadmin').strip().lower() or 'superadmin'
-        bootstrap_password=ADMIN_PASSWORD or secrets.token_urlsafe(18)
-        if not ADMIN_PASSWORD:
-            print('CRAINBOW: generated a one-time Super Admin bootstrap password. Set CRAINBOW_ADMIN_PASSWORD before creating a fresh database.', file=sys.stderr)
-            print(f'CRAINBOW_BOOTSTRAP_PASSWORD={bootstrap_password}', file=sys.stderr)
-        db.session.add(Admin(username=username,display_name='Super Admin',
-                             password_hash=generate_password_hash(bootstrap_password),
-                             admin_type_id=super_role,active=1,created_at=now))
+    # No account is ever seeded into a school. The platform's own operators are
+    # the super admins (control_plane/), and a school's first administrator is
+    # created deliberately, from the platform console or the CLI, so that its
+    # one-time password is handed to a named person rather than sitting in a
+    # configuration file.
 
 
 def admin_role_names(admin_id):
@@ -584,7 +579,7 @@ def _resource_locked(resource_type, resource_id):
 
 def _lock_resource(resource_type, resource_id, reason, admin_id):
     now=datetime.now(timezone.utc).isoformat()
-    stmt=sqlite_insert(AdminResourceLock).values(
+    stmt=insert_stmt(AdminResourceLock).values(
         resource_type=resource_type,resource_id=str(resource_id),reason=reason,
         locked_by=admin_id,locked_at=now,unlocked_by=None,unlocked_at=None)
     db.session.execute(stmt.on_conflict_do_update(
@@ -649,7 +644,7 @@ from core.notifications import _notify_guardians_of_school_work  # noqa: E402
 
 
 
-def init_db():
+def init_db(school):
     """Create any missing tables and seed the reference data the app expects.
 
     The CREATE TABLE / ALTER TABLE script that used to live here is gone: the
@@ -660,15 +655,19 @@ def init_db():
     SQLAlchemy call below needs one, but `python app.py` and the verify_*.py
     scripts call this before any request exists, so it pushes its own when
     there is none rather than making each caller remember.
+
+    ``school`` is a dict of ``code``/``name``/``motto`` describing the school
+    this database belongs to; it comes from the platform registry, so there is
+    no default.
     """
     if has_app_context():
-        return _init_db()
+        return _init_db(school)
     with app.app_context():
-        return _init_db()
+        return _init_db(school)
 
 
-def _init_db():
-    db.create_all()
+def _init_db(school):
+    db.metadata.create_all(current_engine())
     _add_missing_columns()
     _widen_parent_feedback_reply_admin_id()
     now=datetime.now(timezone.utc).isoformat()
@@ -685,7 +684,7 @@ def _init_db():
     ])
     if not one(select(AcademicSession.id).order_by(AcademicSession.id).limit(1)):
         db.session.add(AcademicSession(name='2026/2027',is_current=1,active=1,created_at=now))
-    _seed_school_tenant(now)
+    _seed_school_tenant(now, **school)
     init_admin_security()
     sync_examinations()
     db.session.commit()
@@ -719,6 +718,8 @@ def inject_csrf_token():
         'entrance_subject_label': entrance_subject_label,
         'entrance_paper_label': entrance_paper_label,
         'entrance_bank_display_name': entrance_bank_display_name,
+        # The school's own name/motto/logo, so no template has to hard-code one.
+        'school_brand': school_brand(),
     }
 
 
@@ -787,46 +788,29 @@ def csrf_check_request():
 # Moved to core/public_settings.py.
 from core.public_settings import _public_settings  # noqa: E402
 
-# ---------------- public marketing site ----------------
-# Moved to blueprints/public/routes.py.
-import blueprints.public.routes  # noqa: F401,E402
-
 # ---------------- unified login/logout/password recovery ----------------
 # Moved to blueprints/auth/routes.py.
 import blueprints.auth.routes  # noqa: F401,E402
 
+def _portal_front_door():
+    """Where "/" sends a visitor on a school's portal."""
+    for key, endpoint in (('admin_id', 'admin_workspace_home'), ('parent_id', 'parent_dashboard'),
+                          ('student_id', 'student_dashboard'), ('candidate_id', 'candidate_dashboard')):
+        if session.get(key):
+            return url_for(endpoint)
+    return url_for('login')
+
+
 @app.route('/')
 def index():
-    # The public front door also tells an already signed-in visitor who they are
-    # and where to continue, without forcing them back through the login form.
-    signed_in_kind = None
-    signed_in_name = None
-    continue_url = url_for('login')
-    if session.get('admin_id'):
-        signed_in_kind = 'admin'
-        me = current_admin()
-        signed_in_name = me['display_name'] if me else None
-        continue_url = url_for('admin_workspace_home')
-    elif session.get('parent_id'):
-        signed_in_kind = 'parent'
-        row = obj(ParentAccount, session['parent_id'])
-        signed_in_name = row.display_name if row else None
-        continue_url = url_for('parent_dashboard')
-    elif session.get('student_id'):
-        signed_in_kind = 'student'
-        row = obj(Student, session['student_id'])
-        signed_in_name = f"{row.first_name} {row.last_name}" if row else None
-        continue_url = url_for('student_dashboard')
-    elif session.get('candidate_id'):
-        signed_in_kind = 'candidate'
-        row = obj(Candidate, session['candidate_id'])
-        signed_in_name = row.candidate_name if row else None
-        continue_url = url_for('candidate_dashboard')
-    public_settings=_public_settings()
-    news=db.session.scalars(select(SchoolPublicNews).where(SchoolPublicNews.published==1)
-        .order_by(func.coalesce(SchoolPublicNews.published_at,SchoolPublicNews.created_at).desc(),
-                  SchoolPublicNews.id.desc()).limit(6)).all()
-    return render_template('public_home.html', signed_in_kind=signed_in_kind, signed_in_name=signed_in_name, continue_url=continue_url, public_settings=public_settings, news=news)
+    # The only public website is the platform's own. A school's address is a
+    # portal: its front door is the sign-in page, or wherever the visitor was
+    # already signed in.
+    if g.get('on_platform_host'):
+        from control_plane.site import platform_home
+        return platform_home()
+    return redirect(_portal_front_door())
+
 
 @app.after_request
 def apply_security_headers(response):
@@ -849,7 +833,7 @@ def apply_security_headers(response):
 
 
 app.config.update(
-    MAX_CONTENT_LENGTH=int(os.environ.get('CRAINBOW_MAX_REQUEST_BYTES', 8 * 1024 * 1024)),
+    MAX_CONTENT_LENGTH=int(os.environ.get('BRIGHTSTARS_MAX_REQUEST_BYTES', 8 * 1024 * 1024)),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=(ENVIRONMENT in ('production','prod')),
@@ -1005,6 +989,11 @@ import blueprints.finance.routes  # noqa: F401,E402
 # Moved to blueprints/library/routes.py.
 import blueprints.library.routes  # noqa: F401,E402
 
+# ---------------- the Brightstars Academics platform console ----------------
+# Served only on the platform hostnames. Imported here, at the end, because its
+# routes are registered on this module's `app` and it uses names defined above.
+import control_plane.console  # noqa: F401,E402
+
 def _error_page_context():
     """Whether the visitor is signed in, and where their "back" should
     fall back to when there's no usable browser history (e.g. a bookmarked
@@ -1053,4 +1042,21 @@ def handle_unexpected_exception(e):
 def health(): return jsonify(status='ok')
 
 
-if __name__=='__main__': init_db(); app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False)
+@app.route('/static/uploads/<path:filename>')
+def uploaded_file(filename):
+    """Serve the current school's uploaded files.
+
+    Uploaded files are stored per school (core/storage.py) but keep the
+    /static/uploads/... URLs every template and stored path already uses. This
+    is a more specific rule than Flask's built-in static route, so it wins for
+    that prefix; everything else under /static/ is still the shared asset
+    folder. send_from_directory refuses any path that escapes the folder.
+    """
+    return send_from_directory(uploads_dir(),filename)
+
+
+if __name__=='__main__':
+    # Bring every registered school's schema up to date before serving.
+    from control_plane.provisioning import upgrade_all_tenants
+    upgrade_all_tenants()
+    app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False)

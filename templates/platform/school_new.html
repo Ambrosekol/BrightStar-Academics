@@ -1,0 +1,132 @@
+{% extends "platform/base.html" %}
+{% block title %}Create a school{% endblock %}
+{% block body %}
+<p class="muted"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
+<h1>Create a school</h1>
+<p class="muted">The school gets its own portal address, its own database and its own folder of
+  files, straight away. Nothing is shared with any other school.</p>
+
+{% if errors %}
+  <div class="errors"><strong>The school was not created.</strong>
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+  <div class="panel">
+    <h2 style="margin-top:0">The school</h2>
+    <label for="name">School name
+      <span class="hint">Shown across the school's portal, its result cards and its receipts.</span></label>
+    <input type="text" id="name" name="name" value="{{ form.name }}" required autofocus>
+
+    <label for="code">School code
+      <span class="hint">Lower-case letters, digits and hyphens. Permanent: it forms the portal
+        address and names the school's folder, so it cannot be changed later. Left blank, it is
+        taken from the name.</span></label>
+    <input type="text" id="code" name="code" value="{{ form.code }}" class="mono"
+           pattern="[a-z0-9]([a-z0-9-]*[a-z0-9])?">
+    <p class="muted" style="margin:.5rem 0 0">Portal address:
+      <code id="portal-preview">{{ form.code or 'code' }}.{{ portal_domain }}</code>
+      <span class="hint" style="display:block">Issued automatically and works immediately.</span></p>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Branding</h2>
+    <p class="muted" style="margin-top:0">How the school identifies itself to its own staff,
+      students and parents. Set it now so nobody ever sees the portal wearing the wrong name.</p>
+
+    <label for="logo">Logo
+      <span class="hint">PNG, JPG, GIF or WEBP. Stored in the school's own folder.</span></label>
+    <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+
+    <div class="inline">
+      <div>
+        <label for="school_motto">Motto</label>
+        <input type="text" id="school_motto" name="school_motto" value="{{ form.school_motto }}">
+      </div>
+      <div>
+        <label for="school_tagline">Tagline</label>
+        <input type="text" id="school_tagline" name="school_tagline" value="{{ form.school_tagline }}">
+      </div>
+    </div>
+    <div class="inline">
+      <div>
+        <label for="school_phone">Phone</label>
+        <input type="text" id="school_phone" name="school_phone" value="{{ form.school_phone }}">
+      </div>
+      <div>
+        <label for="school_email">Email</label>
+        <input type="text" id="school_email" name="school_email" value="{{ form.school_email }}">
+      </div>
+    </div>
+    <label for="school_address">Address</label>
+    <input type="text" id="school_address" name="school_address" value="{{ form.school_address }}">
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">The school's own domain <span class="muted" style="font-weight:400;font-size:.85rem">(optional)</span></h2>
+    <p class="muted" style="margin-top:0">The portal already works at the address above. To use the
+      school's own address instead, add it here and have the school point a CNAME record at the
+      portal address. You can also add it later.</p>
+    <label for="domains">Domains <span class="hint">One per line. Hostname only — no https:// and no path.</span></label>
+    <textarea id="domains" name="domains" placeholder="portal.theschool.example">{{ form.domains }}</textarea>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">First administrator <span class="muted" style="font-weight:400;font-size:.85rem">(optional)</span></h2>
+    <p class="muted" style="margin-top:0">This account manages the school's own staff, roles and
+      data. A one-time password is shown once, and they must change it when they first sign in.</p>
+    <div class="inline">
+      <div>
+        <label for="admin_username">Username</label>
+        <input type="text" id="admin_username" name="admin_username" value="{{ form.admin_username }}">
+      </div>
+      <div>
+        <label for="admin_display_name">Full name</label>
+        <input type="text" id="admin_display_name" name="admin_display_name" value="{{ form.admin_display_name }}">
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>Advanced: where the school's database lives</summary>
+    <div class="panel">
+      <p class="muted" style="margin-top:0">Leave both blank for the default: a SQLite file inside
+        the school's own folder. In production, give a PostgreSQL URL — or
+        <code>env:VARIABLE_NAME</code> to read it (and its password) from the environment instead
+        of storing a credential here.</p>
+      <label for="db_url">Database URL</label>
+      <input type="text" id="db_url" name="db_url" value="{{ form.db_url }}" class="mono"
+             placeholder="postgresql+psycopg://user:password@host/school_db">
+      <label for="db_schema">PostgreSQL schema
+        <span class="hint">Only when several schools share one PostgreSQL database.</span></label>
+      <input type="text" id="db_schema" name="db_schema" value="{{ form.db_schema }}" class="mono">
+    </div>
+  </details>
+
+  <p><button class="btn btn-primary" type="submit">Create school</button>
+     <a class="btn" href="{{ url_for('platform_dashboard') }}">Cancel</a></p>
+</form>
+
+<script>
+  // Suggest the code from the name until the operator types their own, and keep
+  // the portal address preview in step with it.
+  (function () {
+    var name = document.getElementById('name'), code = document.getElementById('code'),
+        preview = document.getElementById('portal-preview'), domain = {{ portal_domain|tojson }},
+        edited = code.value !== '';
+    function slugify(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    }
+    function refresh() { preview.textContent = (code.value || 'code') + '.' + domain; }
+    code.addEventListener('input', function () { edited = true; refresh(); });
+    name.addEventListener('input', function () {
+      if (!edited) { code.value = slugify(name.value); }
+      refresh();
+    });
+    refresh();
+  })();
+</script>
+{% endblock %}

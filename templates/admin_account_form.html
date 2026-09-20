@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Create Administrator' if mode == 'new' else 'Manage Administrator' }} — Crainbow Administration{% endblock %}
+{% block title %}{{ 'Create Administrator' if mode == 'new' else 'Manage Administrator' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>{{ 'Add staff administrator' if mode == 'new' else 'Manage staff administrator' }}</h1><p class="hero-copy">Create a staff identity, assign one or more job roles, and define the exact school work areas this person may manage.</p></div></div>
 <div class="card modern-form">

@@ -8,8 +8,9 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Secrets and local config
+# Secrets and local config (.env.example is deliberately tracked)
 .env
+.env.backup-*
 .claude/
 
 # Runtime databases (never diffed in git; the app's own safeguards protect them)
@@ -18,6 +19,13 @@ __pycache__/
 *.sqlite3
 instance/
 
+# Multi-tenant deployments: each school's database, question banks and uploads
+tenants/
+
 # OS/editor cruft
 .DS_Store
 Thumbs.db
+
+# Pre-PostgreSQL database backups (contain real student data)
+cbt.db.backup-*
+*.db.backup-*

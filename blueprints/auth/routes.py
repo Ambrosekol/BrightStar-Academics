@@ -14,13 +14,21 @@ from sqlalchemy import func, or_, select, update as sa_update
 from werkzeug.security import generate_password_hash
 
 from app import app, csrf_check_request
+from control_plane.context import current_tenant
 from models import Admin, ParentAccount, PasswordResetToken, Student, db
 from core.accounts import _authenticate_unified, _clear_identity_sessions, _rate_limit
+from core.branding import school_name
 from core.db_helpers import one
 from core.notifications import _smtp_send
 from core.presence import _presence_identity, end_presence
 from core.public_settings import _public_settings
 from core.security import audit_log, current_admin
+
+
+def _rate_limit_scope():
+    """The school a login attempt belongs to, for keying the rate limiter."""
+    tenant=current_tenant(required=False)
+    return tenant.slug if tenant else '-'
 
 
 def _account_recovery_target(raw):
@@ -44,10 +52,11 @@ def _account_recovery_target(raw):
     return None
 
 def _send_recovery_email(recipient,name,reset_url):
-    host=os.environ.get('CRAINBOW_SMTP_HOST','').strip(); user=os.environ.get('CRAINBOW_SMTP_USER','').strip(); password=os.environ.get('CRAINBOW_SMTP_PASSWORD',''); sender=os.environ.get('CRAINBOW_SMTP_FROM',user).strip(); port=int(os.environ.get('CRAINBOW_SMTP_PORT','587') or 587)
+    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
     if not host or not sender: return False,'Email recovery is not configured by the school yet.'
     from email.message import EmailMessage
-    msg=EmailMessage(); msg['Subject']='Creative Rainbow Schools — Password reset'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear {name},\n\nA password reset was requested for your Creative Rainbow Schools account. Use this link within 30 minutes:\n\n{reset_url}\n\nIf you did not request this, you can ignore this message.\n\nCreative Rainbow Schools')
+    school=school_name()
+    msg=EmailMessage(); msg['Subject']=f'{school} — Password reset'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear {name},\n\nA password reset was requested for your {school} account. Use this link within 30 minutes:\n\n{reset_url}\n\nIf you did not request this, you can ignore this message.\n\n{school}')
     try:
         _smtp_send(host,port,user,password,msg)
         return True,'sent'
@@ -56,7 +65,7 @@ def _send_recovery_email(recipient,name,reset_url):
 @app.route('/forgot-password',methods=['GET','POST'])
 def forgot_password():
     if request.method=='POST':
-        if not _rate_limit(f'forgot-password:{request.remote_addr or "unknown"}', limit=5, window=900):
+        if not _rate_limit(f'forgot-password:{_rate_limit_scope()}:{request.remote_addr or "unknown"}', limit=5, window=900):
             flash('Too many password-recovery requests. Please wait a few minutes and try again.','error')
             return redirect(url_for('forgot_password'))
         raw=request.form.get('identifier','').strip(); target=_account_recovery_target(raw)
@@ -115,7 +124,10 @@ def login():
     if request.method=='POST':
         identifier=request.form.get('username','').strip()
         password=request.form.get('password','')
-        rate_key=f"login:{request.remote_addr or 'unknown'}:{identifier.lower()[:120]}"
+        # The bucket is per school as well as per IP/identifier: the counter is
+        # process-wide, so without the school in the key, failed sign-ins at one
+        # school would lock the same username out at every other school.
+        rate_key=f"login:{_rate_limit_scope()}:{request.remote_addr or 'unknown'}:{identifier.lower()[:120]}"
         if not _rate_limit(rate_key, limit=8, window=300):
             return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
         if not identifier or not password:

@@ -1,0 +1,62 @@
+{% extends "platform/base.html" %}
+{% block title %}Schools{% endblock %}
+{% block body %}
+<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+  <h1 style="margin-bottom:0">Schools</h1>
+  <a class="btn btn-primary" style="margin-left:auto" href="{{ url_for('platform_school_new') }}">Create a school</a>
+</div>
+<p class="muted">{{ schools|length }} school{{ '' if schools|length == 1 else 's' }} on this deployment.</p>
+
+{% if not schools %}
+  <div class="panel">
+    <h2 style="margin-top:0">No schools yet</h2>
+    <p class="muted">Create your first school to get started. Each one gets its own domain, its own
+      database and its own folder of files — nothing is shared between them.</p>
+    <p><a class="btn btn-primary" href="{{ url_for('platform_school_new') }}">Create a school</a></p>
+  </div>
+{% else %}
+  <div class="grid">
+    {% for school in schools %}
+      <div class="panel">
+        <div style="display:flex;align-items:start;gap:.5rem">
+          <div>
+            <a href="{{ url_for('platform_school', slug=school.info.slug) }}"
+               style="font-size:1.05rem;font-weight:600">{{ school.info.name }}</a>
+            <div class="muted mono" style="font-size:.82rem">{{ school.info.slug }}</div>
+          </div>
+          <span style="margin-left:auto" class="pill pill-{{ school.info.status }}">{{ school.info.status }}</span>
+        </div>
+
+        <p class="muted" style="margin:.7rem 0 .2rem;font-size:.85rem">
+          <div class="mono">{{ school.portal }}</div>
+          {% for domain in school.customs %}<div class="mono">{{ domain }}</div>{% endfor %}
+        </p>
+
+        {% if school.stats %}
+          <p style="margin:.9rem 0 .2rem">
+            <span class="stat"><b>{{ school.stats.students if school.stats.students is not none else '—' }}</b><span>Students</span></span>
+            <span class="stat"><b>{{ school.stats.classes if school.stats.classes is not none else '—' }}</b><span>Classes</span></span>
+            <span class="stat"><b>{{ school.stats.admins if school.stats.admins is not none else '—' }}</b><span>Staff</span></span>
+          </p>
+        {% else %}
+          <p class="muted" style="font-size:.85rem">Database could not be read.</p>
+        {% endif %}
+
+        {% if school.suspended_reason %}
+          <p class="muted" style="font-size:.85rem">Suspended: {{ school.suspended_reason }}</p>
+        {% endif %}
+
+        <p style="margin:.9rem 0 0;display:flex;gap:.5rem;flex-wrap:wrap">
+          <a class="btn btn-sm" href="{{ url_for('platform_school', slug=school.info.slug) }}">Manage</a>
+          {% if school.info.is_active and school.portal %}
+            <form method="post" action="{{ url_for('platform_school_enter', slug=school.info.slug) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm" type="submit">Enter school</button>
+            </form>
+          {% endif %}
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Access Restricted — Crainbow Administration{% endblock %}
+{% block title %}Access Restricted — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">ACCESS CONTROL</div><h1>This action is not available to you</h1><p class="hero-copy">Your staff role does not currently include access to this area.</p></div></div>
 <div class="card" style="max-width:760px"><h2>Access needed</h2><p class="muted">{{ item }}</p><p class="muted">If this is part of your job, ask the Super Admin to review your staff role or access boundary. Nothing has been changed.</p><a class="btn btn-light" href="{{ url_for('admin_workspace_home') }}">← Return to Workspace Home</a></div>

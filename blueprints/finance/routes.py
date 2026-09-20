@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import and_, func, select, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app import app, FINANCE_FEE_APPLICABILITY, FINANCE_FEE_CATEGORIES, _active_sessions, _school_current_session
 from models import (
@@ -17,7 +16,7 @@ from models import (
     FinancePayment, FinancePaymentAllocation, SchoolClass, Student,
     StudentEnrolment, db,
 )
-from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
+from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
 from core.uploads import _save_image_upload
@@ -594,7 +593,7 @@ def admin_finance_fee_item_edit(item_id):
             db.session.execute(sa_update(FinanceFeeItemClass)
                 .where(FinanceFeeItemClass.fee_item_id==item_id).values(active=0))
             for cid in selected_class_ids:
-                stmt=sqlite_insert(FinanceFeeItemClass).values(
+                stmt=insert_stmt(FinanceFeeItemClass).values(
                     fee_item_id=item_id,class_id=cid,active=1,created_at=now,created_by=me['id'])
                 db.session.execute(stmt.on_conflict_do_update(
                     index_elements=['fee_item_id','class_id'],

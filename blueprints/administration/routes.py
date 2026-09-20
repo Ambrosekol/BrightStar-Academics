@@ -38,12 +38,13 @@ from models import (
     AdminTypePermission, AcademicSession, AuditLog, ClassSubject, Permission,
     SchoolClass, SchoolStudentResult, SchoolSubject, db,
 )
-from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten, _ignore_insert
+from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.security import (
     admin_access_error, admin_has_permission, admin_required, admin_scope_allows,
     audit_display_detail, audit_log, current_admin, csrf_protect, is_super_admin,
     _notify_super_admins,
 )
+from core.storage import uploads_dir
 from core.uploads import _save_image_upload
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
@@ -212,7 +213,7 @@ def admin_accounts():
     direct_permission_count=(select(func.count()).select_from(AdminPermission)
         .where(AdminPermission.admin_id==Admin.id).scalar_subquery()
         .label('direct_permission_count'))
-    role_names=(select(func.group_concat(AdminType.name,'|'))
+    role_names=(select(group_concat(AdminType.name,'|'))
         .select_from(AdminRoleAssignment)
         .join(AdminType,AdminType.id==AdminRoleAssignment.admin_type_id)
         .where(AdminRoleAssignment.admin_id==Admin.id,AdminType.active==1)
@@ -582,7 +583,7 @@ def admin_message_send():
             attachment_type='file'
 
         uname=f"{uuid.uuid4().hex}{fext}"
-        udir=os.path.join(app.static_folder,'uploads','messages')
+        udir=os.path.join(uploads_dir(),'messages')
         os.makedirs(udir,exist_ok=True)
 
         saved_file=os.path.join(udir,uname)
@@ -653,7 +654,7 @@ def admin_message_attachment(message_id):
         abort(403)
 
     filename=os.path.basename(row['attachment_path'])
-    directory=os.path.join(app.static_folder,'uploads','messages')
+    directory=os.path.join(uploads_dir(),'messages')
     full_path=os.path.join(directory,filename)
 
     if not filename or not os.path.isfile(full_path):

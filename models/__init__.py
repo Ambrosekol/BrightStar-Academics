@@ -1,4 +1,4 @@
-"""SQLAlchemy models for Crainbow CBT, split by domain.
+"""SQLAlchemy models for one school's database, split by domain.
 
 This package replaces the old single-file ``models.py``. Every model class
 is re-exported here so existing code — ``from models import db, Student,

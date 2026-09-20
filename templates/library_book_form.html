@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Edit Library Book — Crainbow Administration{% endblock %}
+{% block title %}Edit Library Book — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY / CATALOGUE</div><h1>Edit library book</h1><p class="hero-copy">Correct catalogue details or adjust the number of copies. Copies currently on loan cannot be removed from inventory.</p></div></div>
 <div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}

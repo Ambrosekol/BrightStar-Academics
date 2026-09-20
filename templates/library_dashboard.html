@@ -1,5 +1,5 @@
 ﻿{% extends 'admin_base.html' %}
-{% block title %}Library — Crainbow Administration{% endblock %}
+{% block title %}Library — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY</div><h1>Library Management</h1><p class="hero-copy">Manage the catalogue, copies, borrowing and returns. Catalogue details are editable; loan history is retained.</p></div></div>
 <div class="metric-grid"><div class="metric-card"><span>Books in catalogue</span><strong>{{ books|length }}</strong></div><div class="metric-card"><span>Currently borrowed</span><strong>{{ borrowed }}</strong></div><div class="metric-card"><span>Overdue</span><strong>{{ overdue }}</strong></div></div>

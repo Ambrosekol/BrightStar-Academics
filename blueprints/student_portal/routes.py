@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 import sqlalchemy as sa
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_, func, select, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import app, csrf_token, _release_due_school_results, _student_with_enrolment
@@ -21,7 +20,7 @@ from models import (
     SchoolSubject, Student, db,
 )
 from core.accounts import _clear_identity_sessions
-from core.db_helpers import all_rows, one, one_scalar, tuples, _flatten
+from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _flatten
 from core.security import audit_log, csrf_protect
 from blueprints.student_portal.helpers import (
     _student_assessment_context, student_assessment_grade, student_required,
@@ -227,7 +226,7 @@ def student_assignment_take(assignment_id):
             try: option=int(request.form.get('option_index')) if request.form.get('option_index') not in (None,'') else None
             except (TypeError,ValueError): option=None
             if option not in (0,1,2,3): option=None
-            stmt=sqlite_insert(SchoolAssignmentAnswer).values(
+            stmt=insert_stmt(SchoolAssignmentAnswer).values(
                 attempt_id=attempt.id,question_id=qid,option_index=option,
                 answered_at=now.isoformat())
             db.session.execute(stmt.on_conflict_do_update(
@@ -393,7 +392,7 @@ def student_assessment_answer(assessment_id):
     option_count=sum(1 for x in (q['option_a'],q['option_b'],q['option_c'],q['option_d']) if x is not None)
     if opt<0 or opt>=option_count:
         abort(400)
-    answer_stmt=sqlite_insert(SchoolAssessmentAnswer).values(
+    answer_stmt=insert_stmt(SchoolAssessmentAnswer).values(
         attempt_id=attempt['id'],question_id=qid,option_index=opt,
         answered_at=datetime.now(timezone.utc).isoformat())
     db.session.execute(answer_stmt.on_conflict_do_update(

@@ -20,12 +20,14 @@ from sqlalchemy import and_, func, select
 from models import (
     AcademicSession, FinanceDeliveryLog, FinanceFeeAssessment,
     FinancePayment, FinancePaymentAllocation, School, SchoolClass,
-    SchoolSetting, Student, StudentEnrolment, db,
+    SchoolPublicSetting, SchoolSetting, Student, StudentEnrolment, db,
 )
+from core.branding import receipt_prefix, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
 from core.notifications import _ng_phone, _smtp_send
 from core.security import admin_has_permission, current_admin, is_super_admin
-from core.uploads import STATIC, UPLOADS
+from core.storage import stored_upload_path, uploads_dir
+from core.uploads import STATIC
 
 
 def _finance_can_view_all(admin=None):
@@ -34,7 +36,7 @@ def _finance_can_view_all(admin=None):
 
 def _next_receipt_no():
     """Next sequential receipt number for the current year."""
-    prefix=f'CRS-{datetime.now().year}-'
+    prefix=f'{receipt_prefix()}-{datetime.now().year}-'
     last=one_scalar(select(FinancePayment.receipt_no)
                     .where(FinancePayment.receipt_no.like(prefix+'%'))
                     .order_by(FinancePayment.id.desc()).limit(1))
@@ -106,6 +108,17 @@ def _receipt_signature_setting_row():
         SchoolSetting.school_id==school_id,
         SchoolSetting.setting_key==RECEIPT_SIGNATURE_SETTING_KEY)).first()
 
+def _school_logo_path():
+    """The school's own logo, stored when the school was created, or None."""
+    try:
+        stored=one_scalar(select(SchoolPublicSetting.setting_value)
+                          .where(SchoolPublicSetting.setting_key=='school_logo'))
+    except Exception:
+        db.session.rollback(); return None
+    path=stored_upload_path(stored) if stored else None
+    return path if path and os.path.exists(path) else None
+
+
 def _receipt_signature_relpath():
     row=_receipt_signature_setting_row()
     return (row.setting_value or '').strip() if row and row.setting_value else ''
@@ -114,8 +127,8 @@ def _receipt_signature_abspath():
     """Filesystem path to the configured authorised-signature image, or None."""
     rel=_receipt_signature_relpath()
     if not rel: return None
-    path=os.path.join(STATIC,rel)
-    return path if os.path.exists(path) else None
+    path=stored_upload_path(rel)
+    return path if path and os.path.exists(path) else None
 
 def _set_receipt_signature(rel_path, admin_id):
     school_id=_primary_school_id()
@@ -135,11 +148,11 @@ def _save_signature_data_url(data_url):
         raise ValueError('The drawn signature could not be read. Please try drawing it again.')
     try: raw=base64.b64decode(data_url.split(',',1)[1])
     except Exception: raise ValueError('The drawn signature could not be read. Please try drawing it again.')
-    max_bytes=int(os.environ.get('CRAINBOW_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
+    max_bytes=int(os.environ.get('BRIGHTSTARS_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
     if len(raw) > max_bytes: raise ValueError('Signature image is too large.')
     if not raw.startswith(b'\x89PNG\r\n\x1a\n'):
         raise ValueError('The drawn signature could not be read. Please try drawing it again.')
-    folder=os.path.join(UPLOADS,'signatures'); os.makedirs(folder,exist_ok=True)
+    folder=os.path.join(uploads_dir(),'signatures'); os.makedirs(folder,exist_ok=True)
     filename=f"authorised_{secrets.token_hex(10)}.png"; path=os.path.join(folder,filename)
     with open(path,'wb') as fh: fh.write(raw)
     return f"uploads/signatures/{filename}"
@@ -156,9 +169,9 @@ def _receipt_pdf(payment_id):
     import io
     font_regular=os.path.join(STATIC,'fonts','DejaVuSans.ttf'); font_bold=os.path.join(STATIC,'fonts','DejaVuSans-Bold.ttf')
     if os.path.exists(font_regular):
-        try: pdfmetrics.registerFont(TTFont('CrainbowReceipt',font_regular)); pdfmetrics.registerFont(TTFont('CrainbowReceiptBold',font_bold))
+        try: pdfmetrics.registerFont(TTFont('ReceiptBody',font_regular)); pdfmetrics.registerFont(TTFont('ReceiptBold',font_bold))
         except Exception: pass
-    regular='CrainbowReceipt' if 'CrainbowReceipt' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'; bold='CrainbowReceiptBold' if 'CrainbowReceiptBold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
+    regular='ReceiptBody' if 'ReceiptBody' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'; bold='ReceiptBold' if 'ReceiptBold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
     W,H=landscape(A5); buf=io.BytesIO(); c=canvas.Canvas(buf,pagesize=(W,H))
 
     # Whole sheet: white, with a smooth blue wave and a gold trim line tracing
@@ -183,7 +196,7 @@ def _receipt_pdf(payment_id):
     for x,y in wave_pts[1:]: trim.lineTo(x,y)
     c.drawPath(trim,stroke=1,fill=0)
 
-    logo=os.path.join(STATIC,'images','school_logo.png')
+    logo=_school_logo_path() or os.path.join(STATIC,'images','school_logo.png')
     if os.path.exists(logo):
         try: c.drawImage(ImageReader(logo),8*mm,H-42*mm,width=88*mm,height=36*mm,preserveAspectRatio=True,mask='auto')
         except Exception: pass
@@ -236,7 +249,7 @@ def _receipt_pdf(payment_id):
     c.setFillColorRGB(0.12,0.12,0.12); c.setFont(regular,6.5); c.drawCentredString((sig_line_x1+sig_line_x2)/2,sig_line_y-3.2*mm,'Authorised Signature')
 
     c.setFillColorRGB(1,1,1); c.setFont(bold,7.4)
-    c.drawString(left,band_h*0.32,'For: CREATIVE RAINBOW MONTESSORI SCHOOLS & KIDS PARK')
+    c.drawString(left,band_h*0.32,f'For: {school_name().upper()}')
 
     c.showPage(); c.save(); buf.seek(0); return buf.getvalue(),row
 
@@ -244,13 +257,14 @@ def _receipt_pdf(payment_id):
 def _send_email_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
-    host=os.environ.get('CRAINBOW_SMTP_HOST','').strip(); user=os.environ.get('CRAINBOW_SMTP_USER','').strip(); password=os.environ.get('CRAINBOW_SMTP_PASSWORD',''); sender=os.environ.get('CRAINBOW_SMTP_FROM',user).strip(); port=int(os.environ.get('CRAINBOW_SMTP_PORT','587') or 587)
-    if not host or not sender: return False,'Email delivery is not configured. Set CRAINBOW_SMTP_HOST and CRAINBOW_SMTP_FROM.'
+    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
+    if not host or not sender: return False,'Email delivery is not configured. Set BRIGHTSTARS_SMTP_HOST and BRIGHTSTARS_SMTP_FROM.'
     recipient=(row['guardian_email'] or '').strip()
     if not recipient: return False,'This student has no parent/guardian email address.'
     pdf,_=_receipt_pdf(payment_id)
     from email.message import EmailMessage
-    msg=EmailMessage(); msg['Subject']=f'Crainbow School Payment Receipt {row["receipt_no"]}'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear Parent/Guardian,\n\nPlease find attached the official payment receipt {row["receipt_no"]} for {_student_display(row)}.\n\nAmount paid: {_format_money(row["amount"])}\nPurpose: {row["category"]}\n\nCreative Rainbow Montessori School'); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
+    school=school_name()
+    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear Parent/Guardian,\n\nPlease find attached the official payment receipt {row["receipt_no"]} for {_student_display(row)}.\n\nAmount paid: {_format_money(row["amount"])}\nPurpose: {row["category"]}\n\n{school}'); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
     try:
         _smtp_send(host,port,user,password,msg)
         return True,recipient
@@ -259,10 +273,10 @@ def _send_email_receipt(payment_id):
 def _send_whatsapp_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
-    token=os.environ.get('CRAINBOW_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('CRAINBOW_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('CRAINBOW_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(row['guardian_phone'])
-    if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured. Set CRAINBOW_WHATSAPP_TOKEN and CRAINBOW_WHATSAPP_PHONE_NUMBER_ID.'
+    token=os.environ.get('BRIGHTSTARS_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('BRIGHTSTARS_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(row['guardian_phone'])
+    if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured. Set BRIGHTSTARS_WHATSAPP_TOKEN and BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID.'
     if not recipient: return False,'This student has no valid parent/guardian WhatsApp number.'
-    pdf,_=_receipt_pdf(payment_id); boundary='----CrainbowBoundary'+secrets.token_hex(8); url=f'https://graph.facebook.com/{version}/{phone_id}/media'
+    pdf,_=_receipt_pdf(payment_id); boundary='----BrightstarsBoundary'+secrets.token_hex(8); url=f'https://graph.facebook.com/{version}/{phone_id}/media'
     body=(f'--{boundary}\r\nContent-Disposition: form-data; name="messaging_product"\r\n\r\nwhatsapp\r\n--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{row["receipt_no"]}.pdf"\r\nContent-Type: application/pdf\r\n\r\n').encode()+pdf+(f'\r\n--{boundary}--\r\n').encode()
     try:
         req=urllib.request.Request(url,data=body,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':f'multipart/form-data; boundary={boundary}'})

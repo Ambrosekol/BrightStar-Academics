@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Staff Roles — Crainbow Administration{% endblock %}
+{% block title %}Staff Roles — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Staff roles</h1><p class="hero-copy">A role is a job description translated into safe system access. Assign the role instead of building access one permission at a time.</p></div>{% if is_super_admin_ui %}<div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_role_new') }}">+ Create custom role</a></div>{% endif %}</div>
 <div class="role-library">{% for r in roles %}<div class="card role-card-modern"><div class="role-card-head"><div class="role-mark">{{ r.name[:1]|upper }}</div><div><h2>{{ r.name }}</h2><p>{{ r.description }}</p></div>{% if is_super_admin_ui %}<a class="btn btn-light btn-small" href="{{ url_for('admin_role_edit',rid=r.id) }}">Edit</a>{% endif %}</div><div class="role-capabilities"><span class="capability-count">{{ role_perms[r.id]|length }} capabilities</span>{% for p in role_perms[r.id][:6] %}<span class="capability">{{ p.name }}</span>{% endfor %}{% if role_perms[r.id]|length > 6 %}<span class="capability more">+{{ role_perms[r.id]|length - 6 }} more</span>{% endif %}</div></div>{% endfor %}</div>

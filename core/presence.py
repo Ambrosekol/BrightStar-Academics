@@ -8,14 +8,13 @@ from datetime import datetime, timedelta, timezone
 
 import sqlalchemy as sa
 from sqlalchemy import and_, func, select, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from flask import request, session
 
 from models import (
     Admin, ParentAccount, PresenceSession, SchoolClass, Student,
     StudentEnrolment, db,
 )
-from core.db_helpers import all_rows, one_scalar
+from core.db_helpers import all_rows, insert_stmt, one_scalar
 
 PRESENCE_TIMEOUT_SECONDS=90
 
@@ -43,7 +42,7 @@ def touch_presence():
         return
     now=datetime.now(timezone.utc).isoformat()
     token_hash=hashlib.sha256(_presence_token().encode()).hexdigest()
-    stmt=sqlite_insert(PresenceSession).values(
+    stmt=insert_stmt(PresenceSession).values(
         account_type=account_type,account_id=account_id,session_key_hash=token_hash,
         first_seen=now,last_seen=now,active=1,
         user_agent=request.headers.get('User-Agent','')[:500])

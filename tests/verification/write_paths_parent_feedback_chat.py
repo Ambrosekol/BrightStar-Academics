@@ -29,7 +29,7 @@ load_dotenv(os.path.join(ROOT, ".env"))
 con = sqlite3.connect(DB)
 con.row_factory = sqlite3.Row
 now = datetime.now(timezone.utc).isoformat()
-sender_addr = os.environ.get("CRAINBOW_SMTP_FROM") or os.environ.get("CRAINBOW_SMTP_USER", "")
+sender_addr = os.environ.get("BRIGHTSTARS_SMTP_FROM") or os.environ.get("BRIGHTSTARS_SMTP_USER", "")
 
 tid = con.execute("SELECT id FROM admin_types WHERE is_system=1 ORDER BY id LIMIT 1").fetchone()["id"]
 admin_id = con.execute(

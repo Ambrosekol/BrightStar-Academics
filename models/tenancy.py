@@ -66,7 +66,9 @@ class StudentNumberAllocation(db.Model):
         Index('idx_student_number_allocations_sequence', 'school_id', 'sequence_number'),
         Index('idx_student_number_allocations_student', 'student_id'),
         Index('idx_student_number_allocations_school', 'school_id'),
-        Index('uq_student_number_allocations_school_number', 'school_id', 'student_number', unique=True, sqlite_where=text("TRIM(student_number) <> ''")),
+        Index('uq_student_number_allocations_school_number', 'school_id', 'student_number', unique=True,
+              sqlite_where=text("TRIM(student_number) <> ''"),
+              postgresql_where=text("TRIM(student_number) <> ''")),
     )
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)

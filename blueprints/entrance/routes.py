@@ -18,6 +18,15 @@ from app import (
     _resource_locked, _school_current_session,
     _entrance_config_select,
 )
+from core.branding import school_name
+from control_plane.context import current_tenant
+
+
+def export_slug():
+    """A filename-safe stem for this school's exports."""
+    tenant = current_tenant(required=False)
+    return tenant.slug if tenant else 'export'
+
 from core.entrance import (
     ENTRANCE_SUBJECT_LABELS, _answers_for_attempt, _candidate_papers,
     _chrome_result_png, _entrance_config_row,
@@ -410,13 +419,13 @@ def admin_candidate_result_email(cid):
     rows,total_score,total_max,pct,completed=candidate_cumulative(cid)
     score_line=f'{total_score}/{total_max} ({pct:.1f}%)' if completed else 'Not yet completed'
     subject=f'Entrance Examination Result — {c["candidate_name"]}'
-    body=(f'Creative Rainbow Schools — Entrance Examination Result\n\n'
+    body=(f'{school_name()} — Entrance Examination Result\n\n'
           f'Candidate: {c["candidate_name"]}\n'
           f'Candidate ID: {c["candidate_code"]}\n'
           f'Target class: {c["target_class"]}\n'
           f'Cumulative result: {score_line}\n'
           f'Overall grade: {_grade_label(pct) if completed else "Pending"}\n\n'
-          f'This result was prepared by Creative Rainbow Schools.')
+          f'This result was prepared by {school_name()}.')
     return redirect('mailto:'+quote(email,safe='@.')+'?subject='+quote(subject)+'&body='+quote(body))
 
 @app.route('/admin/candidates/<int:cid>/result/whatsapp')
@@ -432,13 +441,13 @@ def admin_candidate_result_whatsapp(cid):
         return redirect(url_for('admin_candidate_detail',cid=cid))
     rows,total_score,total_max,pct,completed=candidate_cumulative(cid)
     score_line=f'{total_score}/{total_max} ({pct:.1f}%)' if completed else 'Not yet completed'
-    message=(f"Creative Rainbow Schools — Entrance Examination Result\n\n"
+    message=(f"{school_name()} — Entrance Examination Result\n\n"
              f"Candidate: {c['candidate_name']}\n"
              f"Candidate ID: {c['candidate_code']}\n"
              f"Target class: {c['target_class']}\n"
              f"Cumulative result: {score_line}\n"
              f"Overall grade: {_grade_label(pct) if completed else 'Pending'}\n\n"
-             f"Thank you for choosing Creative Rainbow Schools.")
+             f"Thank you for choosing {school_name()}.")
     return redirect('https://wa.me/'+digits+'?text='+quote(message))
 
 @app.post('/admin/candidates/<int:cid>/delete')
@@ -918,7 +927,7 @@ def export_results_csv():
         stmt=stmt.where(Attempt.bank_id==bid)
     rows=[_flatten(r,'Attempt','exam_name') for r in all_rows(
         stmt.order_by(Attempt.percentage.desc(),Attempt.id.asc()))]
-    return _csv_response(rows,'crainbow-results.csv')
+    return _csv_response(rows,f'{export_slug()}-results.csv')
 
 @app.route('/admin/export/rankings.csv')
 @admin_required
@@ -931,14 +940,14 @@ def export_rankings_csv():
         key=(r['percentage'],r['score'])
         if key!=last: rank=i; last=key
         w.writerow([rank,r['candidate'],r['bank_id'],r['score'],r['max_score'],f"{r['percentage']:.1f}",_grade_label(r['percentage']),r['status']])
-    return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':'attachment; filename=crainbow-rankings.csv'})
+    return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename={export_slug()}-rankings.csv'})
 
 @app.route('/admin/export/results.json')
 @admin_required
 def export_results_json():
     bid=request.args.get('bank_id','').strip() or None; rows=_result_rows(bid)
     payload=[{'rank':i,'candidate':r['candidate'],'bank_id':r['bank_id'],'status':r['status'],'score':r['score'],'max_score':r['max_score'],'percentage':r['percentage'],'grade':_grade_label(r['percentage']),'started_at':r['started_at'],'submitted_at':r['submitted_at']} for i,r in enumerate(rows,1)]
-    return Response(json.dumps(payload,ensure_ascii=False,indent=2),mimetype='application/json',headers={'Content-Disposition':'attachment; filename=crainbow-results.json'})
+    return Response(json.dumps(payload,ensure_ascii=False,indent=2),mimetype='application/json',headers={'Content-Disposition':f'attachment; filename={export_slug()}-results.json'})
 
 @app.post('/admin/examinations/<bid>/toggle')
 @admin_required

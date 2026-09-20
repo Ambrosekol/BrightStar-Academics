@@ -1,4 +1,4 @@
-{% extends 'admin_base.html' %}{% block title %}Enter Offline Result — Crainbow Administration{% endblock %}{% block content %}
+{% extends 'admin_base.html' %}{% block title %}Enter Offline Result — {{ school_brand.name }}{% endblock %}{% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / RESULTS</div><h1>Enter offline result</h1><p class="hero-copy">Select the academic context first. The form then shows the selected student's existing record and asks only for the Test and Exam information needed.</p></div></div>
 {% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
 <div class="card modern-form academic-work-form">

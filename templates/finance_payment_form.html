@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Record Payment — Crainbow Administration{% endblock %}
+{% block title %}Record Payment — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">FINANCE &amp; BURSARY</div><h1>Record Payment</h1><p class="hero-copy">Record the actual payment received. A unique official receipt will be generated automatically.</p></div></div>
 <div class="card form-card"><form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% if errors %}<div class="alert error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}

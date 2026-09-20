@@ -87,13 +87,13 @@ parent/guardian timed out in production: the code always did a plaintext
 port 465, which is implicit-TLS-only (SMTPS) and never answers a plaintext
 EHLO — the connection just hangs until the socket times out. The fix
 auto-detects port 465 and uses `SMTP_SSL` from the first byte instead (with a
-`CRAINBOW_SMTP_SSL` override for servers that don't follow the convention).
+`BRIGHTSTARS_SMTP_SSL` override for servers that don't follow the convention).
 This test drives the real `/admin/finance/receipts/<id>/email` route — PDF
 generation, attachment, delivery-log write, and the actual SMTP send — against
 whatever server `.env` configures, addressed only to the school's own
 no-reply address, so it proves the fix through the full stack without ever
 emailing a real parent/guardian. It requires network access and real SMTP
-credentials to mean anything; if `CRAINBOW_SMTP_HOST` isn't set, the
+credentials to mean anything; if `BRIGHTSTARS_SMTP_HOST` isn't set, the
 configuration check at the top fails loudly rather than silently no-op'ing.
 
 `write_paths_receipt_settings.py` exists because the printed/PDF/emailed

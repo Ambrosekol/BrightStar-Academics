@@ -46,7 +46,7 @@
     {% if signature_path %}<img src="{{ url_for('static',filename=signature_path,_external=True) }}" alt="Authorised signature">{% endif %}
     <div class="line"></div><small>Authorised Signature</small>
   </div>
-  <div class="receipt-forline">For: CREATIVE RAINBOW MONTESSORI SCHOOLS &amp; KIDS PARK</div>
+  <div class="receipt-forline">For: {{ school_brand.name|upper }}</div>
   {% if payment.status == 'voided' %}<div class="receipt-void">VOIDED</div>{% endif %}
 </div>
 <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));</script>

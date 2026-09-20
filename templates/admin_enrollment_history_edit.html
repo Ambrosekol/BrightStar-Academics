@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Correct Enrollment History — Crainbow Administration{% endblock %}
+{% block title %}Correct Enrollment History — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / RECORDS</div><h1>Correct enrollment history</h1><p class="hero-copy">Historical corrections require a reason and are written to the audit trail.</p></div></div>
 <div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}

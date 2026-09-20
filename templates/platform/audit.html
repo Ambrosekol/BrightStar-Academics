@@ -1,0 +1,7 @@
+{% extends "platform/base.html" %}
+{% block title %}Activity{% endblock %}
+{% block body %}
+<h1>Platform activity</h1>
+<p class="muted">Every school created, suspended or entered, and every platform account change.</p>
+<div class="panel">{% include "platform/_audit_table.html" %}</div>
+{% endblock %}

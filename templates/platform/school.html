@@ -1,0 +1,154 @@
+{% extends "platform/base.html" %}
+{% block title %}{{ info.name }}{% endblock %}
+{% block body %}
+<p class="muted"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
+<div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+  <h1 style="margin-bottom:0">{{ info.name }}</h1>
+  <span class="pill pill-{{ info.status }}">{{ info.status }}</span>
+  {% if info.is_active and portal %}
+    <form method="post" action="{{ url_for('platform_school_enter', slug=info.slug) }}" style="margin-left:auto">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Enter school</button>
+    </form>
+  {% endif %}
+</div>
+<p class="muted mono">{{ info.slug }}</p>
+{% if suspended_reason %}<div class="flash flash-error">Suspended: {{ suspended_reason }}</div>{% endif %}
+
+{% if stats %}
+  <div class="panel">
+    <span class="stat"><b>{{ stats.students if stats.students is not none else '—' }}</b><span>Students</span></span>
+    <span class="stat"><b>{{ stats.classes if stats.classes is not none else '—' }}</b><span>Classes</span></span>
+    <span class="stat"><b>{{ stats.admins if stats.admins is not none else '—' }}</b><span>Staff accounts</span></span>
+  </div>
+{% endif %}
+
+<h2>Addresses</h2>
+<div class="panel">
+  <table>
+    <thead><tr><th>Hostname</th><th>Kind</th><th>Primary</th><th></th></tr></thead>
+    <tbody>
+      {% for domain in domains %}
+        <tr>
+          <td class="mono">{{ domain.hostname }}</td>
+          <td class="muted">{{ 'Portal (issued by the platform)' if domain.portal else "The school's own" }}</td>
+          <td>{{ 'Yes' if domain.primary else '' }}</td>
+          <td style="text-align:right">
+            {% if not domain.portal %}
+              <form method="post" action="{{ url_for('platform_school_domains', slug=info.slug) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="remove">
+                <input type="hidden" name="hostname" value="{{ domain.hostname }}">
+                <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted" style="margin-top:1rem">For the school to use its own address, it adds a CNAME
+    record on its domain pointing at <code>{{ portal }}</code>, and your reverse proxy needs a
+    certificate for that address.</p>
+
+  <form method="post" action="{{ url_for('platform_school_domains', slug=info.slug) }}" class="inline" style="margin-top:1rem">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label for="hostname">Add the school's own address
+        <span class="hint">Hostname only — no https:// and no path.</span></label>
+      <input type="text" id="hostname" name="hostname" class="mono" placeholder="portal.theschool.example" required>
+    </div>
+    <div style="flex:0">
+      <label style="white-space:nowrap"><input type="checkbox" name="primary" value="1" style="width:auto"> Make primary</label>
+      <button class="btn" type="submit">Add</button>
+    </div>
+  </form>
+</div>
+
+<h2>Branding</h2>
+<div class="panel">
+  <p class="muted" style="margin-top:0">Captured when the school was created; the school's own
+    administrators can change it from their portal.</p>
+  <table>
+    <tbody>
+      {% for key, label in [('school_name','Name'),('school_motto','Motto'),('school_tagline','Tagline'),
+                            ('school_phone','Phone'),('school_email','Email'),('school_address','Address'),
+                            ('school_logo','Logo')] %}
+        <tr><td class="muted" style="width:10rem">{{ label }}</td>
+            <td class="mono">{{ branding.get(key) or '—' }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Administrators</h2>
+<div class="panel">
+  <table>
+    <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Last signed in</th></tr></thead>
+    <tbody>
+      {% for admin in admins %}
+        <tr>
+          <td class="mono">{{ admin.username }}</td>
+          <td>{{ admin.display_name }}{% if not admin.active %} <span class="muted">(suspended)</span>{% endif %}</td>
+          <td class="muted">{{ admin.role or '' }}</td>
+          <td class="muted">{{ (admin.last_login_at or '')[:16].replace('T', ' ') }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">Nobody can sign in to this school yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <form method="post" action="{{ url_for('platform_school_admin_new', slug=info.slug) }}" class="inline" style="margin-top:1rem">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label for="username">Add an administrator
+        <span class="hint">They manage this school's own staff, roles and data.</span></label>
+      <input type="text" id="username" name="username" placeholder="username" required>
+    </div>
+    <div><label for="display_name">Full name</label><input type="text" id="display_name" name="display_name"></div>
+    <div style="flex:0"><button class="btn" type="submit">Create</button></div>
+  </form>
+</div>
+
+<h2>Files</h2>
+<div class="panel">
+  <p class="muted" style="margin-top:0">Everything belonging to this school lives in one folder.</p>
+  <p class="mono">{{ folder.root }}</p>
+  <table>
+    <tbody>
+      {% for entry in folder.entries %}
+        <tr><td class="mono">{{ entry.name }}</td><td class="muted">{{ entry.detail }}</td></tr>
+      {% else %}
+        <tr><td class="muted">The folder does not exist yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Service</h2>
+<div class="panel">
+  {% if info.is_active %}
+    <p class="muted" style="margin-top:0">Suspending takes the school's portal offline for everyone —
+      staff, parents and students. Its data is untouched and comes back on reactivation.</p>
+    <form method="post" action="{{ url_for('platform_school_status', slug=info.slug) }}" class="inline">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="status" value="suspended">
+      <div><label for="reason">Reason</label><input type="text" id="reason" name="reason" placeholder="e.g. invoice overdue"></div>
+      <div style="flex:0"><button class="btn btn-danger" type="submit">Suspend school</button></div>
+    </form>
+  {% else %}
+    <form method="post" action="{{ url_for('platform_school_status', slug=info.slug) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="status" value="active">
+      <button class="btn btn-primary" type="submit">Reactivate school</button>
+    </form>
+  {% endif %}
+</div>
+
+<h2>Recent activity</h2>
+<div class="panel">
+  {% include "platform/_audit_table.html" %}
+</div>
+{% endblock %}

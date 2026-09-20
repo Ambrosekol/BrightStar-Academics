@@ -3,11 +3,45 @@
 The application and its templates were written against ``sqlite3.Row``, so
 the read helpers here return ``RowMapping`` objects, which still support
 ``row['column']`` access.
+
+This module also holds the few constructs that SQLAlchemy does not spell the
+same way on every backend — upserts and string aggregation. They pick their
+form from the database the current school actually lives on, so the same code
+runs on PostgreSQL (production) and on SQLite.
 """
 
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import insert as _pg_insert
+from sqlalchemy.dialects.sqlite import insert as _sqlite_insert
 
 from models import db
+
+
+def dialect_name():
+    """The backend the current school's database is on."""
+    return db.session.get_bind().dialect.name
+
+
+def insert_stmt(model):
+    """An INSERT that supports ``.on_conflict_do_nothing()`` and
+    ``.on_conflict_do_update()``.
+
+    PostgreSQL and SQLite both offer ON CONFLICT with the same SQLAlchemy API,
+    but each lives in its own dialect module, so the construct has to be chosen
+    for the database actually in use.
+    """
+    return _pg_insert(model) if dialect_name() == 'postgresql' else _sqlite_insert(model)
+
+
+def group_concat(column, separator=','):
+    """Join a column's values across a GROUP BY into one delimited string.
+
+    SQLite spells this ``group_concat``; PostgreSQL spells it ``string_agg`` and
+    insists on text, so the column is cast for it.
+    """
+    if dialect_name() == 'postgresql':
+        return sa.func.string_agg(sa.cast(column, sa.Text), separator)
+    return sa.func.group_concat(column, separator)
 
 
 def one(stmt):
@@ -58,4 +92,4 @@ def _ignore_insert(model, rows):
     """INSERT ... ON CONFLICT DO NOTHING, the SQLAlchemy form of INSERT OR IGNORE."""
     if not rows:
         return
-    db.session.execute(sqlite_insert(model).on_conflict_do_nothing(), rows)
+    db.session.execute(insert_stmt(model).on_conflict_do_nothing(), rows)

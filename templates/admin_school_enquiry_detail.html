@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Website Enquiry — Crainbow Administration{% endblock %}
+{% block title %}Website Enquiry — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">PUBLIC WEBSITE / CONTACT</div><h1>Website enquiry</h1><p class="hero-copy">Review the exact message submitted through the public school website.</p></div></div>
 <div class="card modern-form"><div class="form-section"><div class="form-grid two"><div><strong>From</strong><p>{{enquiry.name}}</p></div><div><strong>Email</strong><p>{{enquiry.email or '—'}}</p></div><div><strong>Phone</strong><p>{{enquiry.phone or '—'}}</p></div><div><strong>Subject</strong><p>{{enquiry.subject or 'General enquiry'}}</p></div><div><strong>Status</strong><p>{{enquiry.status}}</p></div><div><strong>Received</strong><p>{{enquiry.created_at[:19].replace('T',' ')}} UTC</p></div></div><hr><strong>Message</strong><p style="white-space:pre-wrap">{{enquiry.message}}</p></div>

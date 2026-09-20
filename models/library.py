@@ -37,7 +37,7 @@ class LibraryLoan(db.Model):
     borrowed_at = db.Column(Text, nullable=False)
     due_at = db.Column(Text)
     returned_at = db.Column(Text)
-    status = db.Column(Text, nullable=False, server_default=text('"borrowed"'))
+    status = db.Column(Text, nullable=False, default='borrowed', server_default=text("'borrowed'"))
     notes = db.Column(Text)
     issued_by = db.Column(Integer, ForeignKey('admins.id'))
     received_by = db.Column(Integer, ForeignKey('admins.id'))

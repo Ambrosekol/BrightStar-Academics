@@ -8,7 +8,7 @@ STUDENT_PORTAL_HELPERS=(ROOT/"blueprints"/"student_portal"/"helpers.py").read_te
 CANDIDATE_PORTAL_ROUTES=(ROOT/"blueprints"/"candidate_portal"/"routes.py").read_text(encoding="utf-8")
 
 def test_production_secret_has_no_known_fallback():
-    assert "CRAINBOW_SECRET" in APP
+    assert "BRIGHTSTARS_SECRET" in APP
     assert "phase6d-change-me" not in APP
 
 def test_default_admin_password_is_removed():
@@ -43,7 +43,7 @@ def test_csrf_is_applied_to_candidate_state_changes():
 def test_security_headers_and_upload_limits_exist():
     assert "apply_security_headers" in APP
     assert "MAX_CONTENT_LENGTH" in APP
-    assert "CRAINBOW_MAX_UPLOAD_BYTES" in UPLOADS
+    assert "BRIGHTSTARS_MAX_UPLOAD_BYTES" in UPLOADS
 
 def test_sqlite_foreign_keys_are_enabled_per_connection():
     assert "PRAGMA foreign_keys=ON" in APP

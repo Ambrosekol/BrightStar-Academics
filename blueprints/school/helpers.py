@@ -18,8 +18,9 @@ from models import (
     SchoolSetting, SchoolStudentResult, SchoolSubject, Student,
     StudentEnrolment, StudentEnrollmentHistory, db,
 )
-from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
+from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_scope_allows, audit_log, current_admin, is_super_admin
+from core.storage import uploads_dir
 from blueprints.finance.helpers import _primary_school_id
 
 # _school_current_session/_students_with_class still live in app.py.
@@ -126,7 +127,7 @@ def _assignment_form_data(admin_id):
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     subjects=[_flatten(r,'SchoolSubject','class_ids') for r in all_rows(
-        select(SchoolSubject,func.group_concat(ClassSubject.class_id).label('class_ids'))
+        select(SchoolSubject,group_concat(ClassSubject.class_id).label('class_ids'))
         .join(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
         .where(SchoolSubject.active==1)
         .group_by(SchoolSubject.id).order_by(SchoolSubject.name))]
@@ -403,9 +404,10 @@ def handle_news_image_upload(req_file):
     allowed = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']
     if ext not in allowed:
         return False
-    os.makedirs('static/uploads/news', exist_ok=True)
+    news_dir = os.path.join(uploads_dir(), 'news')
+    os.makedirs(news_dir, exist_ok=True)
     filename = f"{uuid.uuid4().hex[:12]}_{secure_filename(req_file.filename)}"
-    save_path = os.path.join('static', 'uploads', 'news', filename)
+    save_path = os.path.join(news_dir, filename)
     req_file.save(save_path)
     return f"/static/uploads/news/{filename}"
 

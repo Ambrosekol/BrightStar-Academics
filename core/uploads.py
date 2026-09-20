@@ -1,6 +1,8 @@
-"""Static/uploads paths and the hardened image-upload saver used across
-signatures, school branding, library covers and any other admin-uploaded
-image.
+"""The hardened image-upload saver used across signatures, school branding,
+library covers and any other admin-uploaded image.
+
+Files are written under the current school's uploads folder (core/storage.py),
+not a shared one.
 """
 
 import os
@@ -8,9 +10,10 @@ import secrets
 
 from werkzeug.utils import secure_filename
 
+from core.storage import uploads_dir
+
 BASE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC=os.path.join(BASE,'static')
-UPLOADS=os.path.join(STATIC,'uploads')
 IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
 
 
@@ -23,7 +26,7 @@ def _save_image_upload(file_obj, subdir, prefix='image'):
         raise ValueError('Please upload a PNG, JPG, JPEG, GIF or WEBP image.')
     # Defense in depth: enforce a conservative upload limit and validate the
     # actual image signature before persisting the file.
-    max_bytes=int(os.environ.get('CRAINBOW_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
+    max_bytes=int(os.environ.get('BRIGHTSTARS_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
     stream=getattr(file_obj,'stream',None)
     if stream is None:
         raise ValueError('Invalid upload.')
@@ -44,7 +47,7 @@ def _save_image_upload(file_obj, subdir, prefix='image'):
     }
     if not signatures.get(ext,False):
         raise ValueError('The uploaded file does not appear to be a valid image.')
-    folder=os.path.join(UPLOADS,subdir)
+    folder=os.path.join(uploads_dir(),subdir)
     os.makedirs(folder,exist_ok=True)
     safe_prefix=secure_filename(str(prefix))[:80] or 'image'
     filename=f"{safe_prefix}_{secrets.token_hex(10)}.{ext}"

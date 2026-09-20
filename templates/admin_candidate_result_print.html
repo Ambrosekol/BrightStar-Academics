@@ -596,23 +596,23 @@ body{
 
       <div class="school-logo">
         <img
-          src="{{ url_for('static', filename='images/school_logo.png') }}"
-          alt="Creative Rainbow Schools"
+          src="{{ school_brand.logo_url }}"
+          alt="{{ school_brand.name }} logo"
         >
       </div>
 
       <div class="school-brand">
 
         <h1 class="school-name">
-          CREATIVE RAINBOW MONTESSORI SCHOOL
+          {{ school_brand.name|upper }}
         </h1>
 
         <div class="college-name">
-          CREATIVE RAINBOW COLLEGE
+          {{ school_brand.tagline|upper }}
         </div>
 
         <div class="motto">
-          Growing in humility and fear of God
+          {{ school_brand.motto }}
         </div>
 
       </div>
@@ -980,7 +980,7 @@ body{
     <div class="official-note">
 
       This document represents the official entrance examination
-      result recorded by Creative Rainbow Schools. Results are
+      result recorded by {{ school_brand.name }}. Results are
       generated from the candidate's examination record.
 
     </div>
@@ -995,12 +995,12 @@ body{
       <div>
 
         <strong>
-          Creative Rainbow Schools
+          {{ school_brand.name }}
         </strong>
 
         <br>
 
-        Growing in humility and fear of God
+        {{ school_brand.motto }}
 
       </div>
 

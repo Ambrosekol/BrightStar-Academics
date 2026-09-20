@@ -41,6 +41,7 @@ class Student(db.Model):
             'login_username',
             unique=True,
             sqlite_where=text('login_username IS NOT NULL'),
+            postgresql_where=text('login_username IS NOT NULL'),
         ),
     )
 

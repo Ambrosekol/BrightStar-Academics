@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Parent Portal — Creative Rainbow Schools</title>
+<title>Parent Portal — {{ school_brand.name }}</title>
 <link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
 <style>
 .pd-outstanding-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px;padding:18px 22px;border-radius:16px;background:linear-gradient(135deg,#fff4e8,#fff9f0);border:1px solid #f2d9b0}
@@ -49,8 +49,8 @@
 <body class="student-portal-page">
 <header class="student-topbar">
   <div class="student-brand">
-    <img src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools">
-    <div><strong>CREATIVE RAINBOW SCHOOLS</strong><span>Parent Portal</span></div>
+    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
+    <div><strong>{{ school_brand.name|upper }}</strong><span>Parent Portal</span></div>
   </div>
   <div class="student-top-actions">
     <span>{{parent.display_name}}</span>

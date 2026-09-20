@@ -10,6 +10,8 @@ time, not by Python import order) to see every table.
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
+from control_plane.routing import TenantSession
+
 
 class Base(DeclarativeBase):
     """Declarative base that keeps ``sqlite3.Row``-compatible access.
@@ -38,4 +40,6 @@ class Base(DeclarativeBase):
         return getattr(self, key, default)
 
 
-db = SQLAlchemy(model_class=Base)
+# TenantSession binds each query to the current school's database when
+# multi-tenancy is on, and behaves exactly like the stock session when it is off.
+db = SQLAlchemy(model_class=Base, session_options={'class_': TenantSession})

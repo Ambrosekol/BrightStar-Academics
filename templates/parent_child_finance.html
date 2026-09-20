@@ -35,8 +35,8 @@
 <body class="student-portal-page">
 <header class="student-topbar">
   <div class="student-brand">
-    <img src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools">
-    <div><strong>CREATIVE RAINBOW SCHOOLS</strong><span>Parent Portal</span></div>
+    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
+    <div><strong>{{ school_brand.name|upper }}</strong><span>Parent Portal</span></div>
   </div>
   <div class="student-top-actions">
     <a href="{{url_for('parent_dashboard')}}">Dashboard</a>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-{% set school_title = (public_settings.get('school_name') if public_settings else None) or 'Creative Rainbow Montessori School' %}
+{% set school_title = (public_settings.get('school_name') if public_settings else None) or school_brand.name %}
 <title>{{code or 500}} Server Error — {{school_title}}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 <style>
@@ -32,7 +32,7 @@
 </head>
 <body>
   <div class="err-card">
-    <img class="err-logo" src="{{ url_for('static', filename='images/school_logo.png') }}" alt="{{school_title}}">
+    <img class="err-logo" src="{{ school_brand.logo_url }}" alt="{{school_title}}">
     <div class="err-icon" aria-hidden="true">!</div>
     <div class="err-code">{{code or 500}}</div>
     <h1 class="err-name">Something Went Wrong</h1>
@@ -47,7 +47,7 @@
       {% else %}
       <a class="err-btn err-btn-light" href="{{ url_for('index') }}">← Back to Homepage</a>
       {% endif %}
-      <a class="err-btn err-btn-light" href="{{ url_for('public_school_contact') }}">Contact the School</a>
+      <a class="err-btn err-btn-light" href="mailto:{{ school_brand.email }}">Contact the School</a>
     </div>
     <div class="err-footer">{{school_title}}</div>
   </div>

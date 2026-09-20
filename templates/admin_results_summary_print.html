@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Crainbow CBT — Results Summary</title>
+<title>{{ school_brand.name }} CBT — Results Summary</title>
 <style>
   @page { size: A4 portrait; margin: 10mm; }
 
@@ -85,8 +85,8 @@
 </head>
 <body>
   <div class="header">
-    <h1>Creative Rainbow Montessori School</h1>
-    <h2>Creative Rainbow College — Entrance Examination</h2>
+    <h1>{{ school_brand.name }}</h1>
+    <h2>{{ school_brand.name }} — Entrance Examination</h2>
     <p><strong>RESULTS SUMMARY / CUMULATIVE RESULTS</strong></p>
     <p>Administrative report — questions and answers excluded</p>
   </div>
@@ -129,7 +129,7 @@
   </table>
   <div class="footer">
     <span>Official administrative results summary</span>
-    <span>Creative Rainbow CBT</span>
+    <span>{{ school_brand.name }}</span>
   </div>
 </body>
 </html>

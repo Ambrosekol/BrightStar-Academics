@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{title}} — Crainbow Administration{% endblock %}
+{% block title %}{{title}} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / {{title|upper}}</div><h1>{{title}}</h1><p class="hero-copy">{{description}} Choose a class first so assessments stay inside the correct academic boundary.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{% if assessment_type=='test' %}{{url_for('admin_school_test_new')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_new')}}{% else %}{{url_for('admin_school_examination_new')}}{% endif %}">+ Create {{'test' if assessment_type=='test' else ('practice test' if assessment_type=='practice' else 'examination')}}</a></div></div>
 <div class="segmentation-intro"><div><strong>Choose a class</strong><span>{{title}} are separated by the class they belong to.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">← All classes</a>{% endif %}</div>

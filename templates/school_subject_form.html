@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{'Create Subject' if mode=='new' else 'Edit Subject'}} — Crainbow Administration{% endblock %}
+{% block title %}{{'Create Subject' if mode=='new' else 'Edit Subject'}} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / SUBJECTS</div><h1>{{'Create a subject' if mode=='new' else 'Edit subject'}}</h1><p class="hero-copy">Create a subject for the class where it is taught. You can correct spelling before the Super Admin final lock.</p></div></div>
 {% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}

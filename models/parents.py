@@ -9,7 +9,9 @@ from .base import db
 class ParentAccount(_LegacyAttachmentColumns, db.Model):
     __tablename__ = 'parent_accounts'
     __table_args__ = (
-        Index('idx_parent_email', 'email', unique=True, sqlite_where=text("email IS NOT NULL AND email <> ''")),
+        Index('idx_parent_email', 'email', unique=True,
+              sqlite_where=text("email IS NOT NULL AND email <> ''"),
+              postgresql_where=text("email IS NOT NULL AND email <> ''")),
         UniqueConstraint('username'),
     )
 

@@ -1,13 +1,14 @@
-"""Guard against drift between models.py and the real cbt.db schema.
+"""Guard against drift between the models and a real school's schema.
 
-The SQLAlchemy migration keeps the models as a faithful mirror of the database
-that ``init_db()`` and the ``migrations`` package produced. If someone adds a
-column to one side only, every query touching that table starts failing at
-runtime, so this contract is checked explicitly rather than discovered in
-production.
+Every school's database is built from the models, so this checks a live one
+still matches them: if someone edits a model without upgrading the schools, or
+changes a schema by hand, every query touching that table starts failing at
+runtime.
+
+It runs against the first school in the platform registry. With no PostgreSQL
+server or no school yet, there is nothing to compare and the checks are skipped.
 """
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -15,24 +16,42 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-DB_PATH = ROOT / "cbt.db"
+
+def _school_engine():
+    """An engine for the first registered school, or None."""
+    try:
+        import sqlalchemy as sa
+
+        from control_plane.registry import platform_session, to_info
+        from control_plane.models import Tenant
+        from control_plane.routing import engine_for
+
+        with platform_session() as session:
+            tenant = session.scalars(sa.select(Tenant).order_by(Tenant.id)).first()
+            if tenant is None:
+                return None
+            info = to_info(tenant)
+        engine = engine_for(info)
+        with engine.connect():
+            pass
+        return engine
+    except Exception:
+        return None
 
 # SQLite spells some types differently from SQLAlchemy's generic types.
+# PostgreSQL and SQLAlchemy spell some types differently.
 TYPE_EQUIV = {
     "INTEGER": {"INTEGER"},
     "TEXT": {"TEXT", "VARCHAR"},
+    "VARCHAR": {"TEXT", "VARCHAR"},
     "REAL": {"REAL", "FLOAT"},
+    "DOUBLE PRECISION": {"FLOAT", "REAL", "DOUBLE PRECISION"},
     "": {"TEXT", "VARCHAR"},
 }
 
 
-def _live_tables(con):
-    return {
-        r[0]
-        for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        )
-    }
+def _live_tables(inspector):
+    return set(inspector.get_table_names())
 
 
 def _metadata():
@@ -42,28 +61,29 @@ def _metadata():
 
 
 def test_every_live_table_is_modelled():
-    if not DB_PATH.exists():
-        return  # A fresh checkout has no database yet; create_all() defines it.
-    con = sqlite3.connect(DB_PATH)
-    try:
-        live = _live_tables(con)
-    finally:
-        con.close()
+    import sqlalchemy as sa
+
+    engine = _school_engine()
+    if engine is None:
+        return  # No PostgreSQL server or no school yet; nothing to compare.
+    live = _live_tables(sa.inspect(engine))
     modelled = set(_metadata().tables)
     assert not (live - modelled), f"tables in DB but not modelled: {sorted(live - modelled)}"
     assert not (modelled - live), f"tables modelled but not in DB: {sorted(modelled - live)}"
 
 
 def test_columns_types_and_constraints_match():
-    if not DB_PATH.exists():
+    import sqlalchemy as sa
+
+    engine = _school_engine()
+    if engine is None:
         return
-    con = sqlite3.connect(DB_PATH)
-    con.row_factory = sqlite3.Row
+    inspector = sa.inspect(engine)
     meta = _metadata()
     problems = []
-    try:
-        for tname in sorted(_live_tables(con) & set(meta.tables)):
-            live_cols = {c["name"]: c for c in con.execute(f'PRAGMA table_info("{tname}")')}
+    if True:
+        for tname in sorted(_live_tables(inspector) & set(meta.tables)):
+            live_cols = {c["name"]: c for c in inspector.get_columns(tname)}
             model_cols = {c.name: c for c in meta.tables[tname].columns}
 
             missing = set(live_cols) - set(model_cols)
@@ -73,29 +93,27 @@ def test_columns_types_and_constraints_match():
             if extra:
                 problems.append(f"{tname}: modelled but not in DB: {sorted(extra)}")
 
+            pk_names = set(inspector.get_pk_constraint(tname).get("constrained_columns") or [])
             for cname in sorted(set(live_cols) & set(model_cols)):
                 lc, mc = live_cols[cname], model_cols[cname]
 
-                live_type = (lc["type"] or "").upper()
+                live_type = str(lc["type"]).upper().split("(")[0]
                 model_type = str(mc.type).upper().split("(")[0]
                 if model_type not in TYPE_EQUIV.get(live_type, {live_type}):
                     problems.append(f"{tname}.{cname}: type DB={live_type} model={model_type}")
 
-                live_pk, model_pk = bool(lc["pk"]), mc.primary_key
+                live_pk, model_pk = cname in pk_names, mc.primary_key
                 if live_pk != model_pk:
                     problems.append(f"{tname}.{cname}: PK DB={live_pk} model={model_pk}")
 
-                # SQLite reports PRIMARY KEY columns as notnull=0 (an INTEGER
-                # PRIMARY KEY is a rowid alias and implicitly NOT NULL), so
-                # nullability is only comparable on non-PK columns.
+                # A primary key is implicitly NOT NULL, so nullability is only
+                # meaningfully comparable on the other columns.
                 if not live_pk and not model_pk:
-                    if bool(lc["notnull"]) != (not mc.nullable):
+                    if bool(lc["nullable"]) != bool(mc.nullable):
                         problems.append(
-                            f"{tname}.{cname}: NOT NULL DB={bool(lc['notnull'])} "
-                            f"model={not mc.nullable}"
+                            f"{tname}.{cname}: nullable DB={bool(lc['nullable'])} "
+                            f"model={bool(mc.nullable)}"
                         )
-    finally:
-        con.close()
 
     assert not problems, "model/schema drift:\n  " + "\n  ".join(problems)
 

@@ -44,7 +44,7 @@ for p in con.execute("SELECT id FROM permissions"):
 
 school_id = con.execute("SELECT id FROM schools WHERE active=1 LIMIT 1").fetchone()["id"]
 session_id = con.execute("SELECT id FROM academic_sessions WHERE is_current=1 AND active=1 LIMIT 1").fetchone()["id"]
-sender_addr = os.environ.get("CRAINBOW_SMTP_FROM") or os.environ.get("CRAINBOW_SMTP_USER", "")
+sender_addr = os.environ.get("BRIGHTSTARS_SMTP_FROM") or os.environ.get("BRIGHTSTARS_SMTP_USER", "")
 student_id = con.execute(
     "INSERT INTO students(admission_no,first_name,last_name,guardian_email,created_at,active,"
     "school_id,student_number,student_number_source) VALUES(?,?,?,?,?,1,?,?,?)",
@@ -83,8 +83,8 @@ def q(sql, *params):
         c.close()
 
 
-check("SMTP is configured for this run", bool(os.environ.get("CRAINBOW_SMTP_HOST")),
-      "no CRAINBOW_SMTP_HOST set - this run cannot exercise real delivery")
+check("SMTP is configured for this run", bool(os.environ.get("BRIGHTSTARS_SMTP_HOST")),
+      "no BRIGHTSTARS_SMTP_HOST set - this run cannot exercise real delivery")
 
 with A.app.test_client() as c:
     c.post("/login", data={"username": "zz_receipt_email", "password": "ReceiptEmail!23"})

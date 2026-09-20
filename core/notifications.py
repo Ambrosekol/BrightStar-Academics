@@ -17,6 +17,7 @@ from flask import current_app, url_for
 from sqlalchemy import select
 import os
 
+from core.branding import school_name
 from models import ParentStudentLink, SchoolNotification, Student, db
 from core.db_helpers import all_rows, one, tuples
 
@@ -44,10 +45,10 @@ def _smtp_use_ssl(port):
     the initial handshake. Connecting to port 465 with plain SMTP()+starttls()
     sends a plaintext EHLO a TLS-only server never answers, which is exactly
     what previously made receipt/recovery emails hang until they timed out.
-    CRAINBOW_SMTP_SSL overrides the auto-detection when a host doesn't follow
+    BRIGHTSTARS_SMTP_SSL overrides the auto-detection when a host doesn't follow
     the convention.
     """
-    override=os.environ.get('CRAINBOW_SMTP_SSL','').strip()
+    override=os.environ.get('BRIGHTSTARS_SMTP_SSL','').strip()
     if override:
         return override != '0'
     return port == 465
@@ -61,7 +62,7 @@ def _smtp_send(host, port, user, password, msg):
             smtp.send_message(msg)
     else:
         with smtplib.SMTP(host, port, timeout=20) as smtp:
-            if os.environ.get('CRAINBOW_SMTP_STARTTLS','1') != '0':
+            if os.environ.get('BRIGHTSTARS_SMTP_STARTTLS','1') != '0':
                 smtp.starttls()
             if user: smtp.login(user, password)
             smtp.send_message(msg)
@@ -69,7 +70,7 @@ def _smtp_send(host, port, user, password, msg):
 
 def _notify_guardian_email(guardian_email, subject, body):
     """Best-effort plain-text email to a parent/guardian. Never raises."""
-    host=os.environ.get('CRAINBOW_SMTP_HOST','').strip(); user=os.environ.get('CRAINBOW_SMTP_USER','').strip(); password=os.environ.get('CRAINBOW_SMTP_PASSWORD',''); sender=os.environ.get('CRAINBOW_SMTP_FROM',user).strip(); port=int(os.environ.get('CRAINBOW_SMTP_PORT','587') or 587)
+    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
     if not host or not sender: return False,'Email delivery is not configured.'
     recipient=(guardian_email or '').strip()
     if not recipient: return False,'No guardian email address on file.'
@@ -83,7 +84,7 @@ def _notify_guardian_email(guardian_email, subject, body):
 
 def _notify_guardian_whatsapp(guardian_phone, text):
     """Best-effort plain-text WhatsApp message to a parent/guardian. Never raises."""
-    token=os.environ.get('CRAINBOW_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('CRAINBOW_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('CRAINBOW_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(guardian_phone)
+    token=os.environ.get('BRIGHTSTARS_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('BRIGHTSTARS_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(guardian_phone)
     if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured.'
     if not recipient: return False,'No valid guardian WhatsApp number on file.'
     payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'text','text':{'body':text}}).encode()
@@ -115,8 +116,8 @@ def _notify_guardians_of_school_work(student_ids, kind, title, due_date):
         subject=f'New {kind} for {child}'
         body=(f'Dear Parent/Guardian,\n\n{child} has been given a new {kind}: "{title}".\n'
               f'Due: {due_text}.\n\nPlease check the student/parent portal for details.\n\n'
-              'Creative Rainbow Montessori School')
-        text=f'Crainbow School: {child} has a new {kind} - "{title}". Due: {due_text}.'
+              f'{school_name()}')
+        text=f'{school_name()}: {child} has a new {kind} - "{title}". Due: {due_text}.'
         try: _notify_guardian_email(r['guardian_email'],subject,body)
         except Exception: current_app.logger.exception('Guardian email notification failed for student %s',r['id'])
         try: _notify_guardian_whatsapp(r['guardian_phone'],text)
@@ -154,8 +155,8 @@ def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, sess
     body=(f'Dear Parent/Guardian,\n\n{child} has been charged a new fee: {items_text}.\n'
           f'Amount: ₦{total_amount:,.2f} — {term} ({session_name}).\n\n'
           'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          'Creative Rainbow Montessori School')
-    text=f'Crainbow School: {child} has been charged {items_text} — ₦{total_amount:,.2f} for {term}. Check the parent portal for details.'
+          f'{school_name()}')
+    text=f'{school_name()}: {child} has been charged {items_text} — ₦{total_amount:,.2f} for {term}. Check the parent portal for details.'
     try: _notify_guardian_email(student['guardian_email'],subject,body)
     except Exception: current_app.logger.exception('Guardian email (fee assessed) failed for student %s',student_id)
     try: _notify_guardian_whatsapp(student['guardian_phone'],text)
@@ -190,8 +191,8 @@ def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, a
     body=(f'Dear Parent/Guardian,\n\nWe have received a payment of ₦{amount:,.2f} for {category} '
           f'on behalf of {child}. Receipt number: {receipt_no}.\n\n'
           'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          'Thank you,\nCreative Rainbow Montessori School')
-    text=f'Crainbow School: payment of ₦{amount:,.2f} received for {child} ({category}). Receipt {receipt_no}.'
+          f'Thank you,\n{school_name()}')
+    text=f'{school_name()}: payment of ₦{amount:,.2f} received for {child} ({category}). Receipt {receipt_no}.'
     try: _notify_guardian_email(student['guardian_email'],subject,body)
     except Exception: current_app.logger.exception('Guardian email (payment recorded) failed for student %s',student_id)
     try: _notify_guardian_whatsapp(student['guardian_phone'],text)

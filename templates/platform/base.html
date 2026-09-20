@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Platform{% endblock %} &middot; Brightstars Academics</title>
+  <style>
+    :root{
+      --bg:#0f1729; --panel:#172136; --panel-2:#1e2a44; --line:#2b3a5c;
+      --text:#e6ecf5; --muted:#9babc7; --accent:#4f8cff; --accent-ink:#fff;
+      --ok:#2ea16d; --warn:#c9a227; --bad:#d4553f; --radius:10px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+         font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+    header.topbar{display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;
+                  background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+    .brand{font-weight:700;letter-spacing:.2px;color:#fff}
+    .brand small{display:block;font-weight:400;font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    .topbar nav{display:flex;gap:1rem;margin-left:auto;align-items:center;flex-wrap:wrap}
+    .wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+    h1{font-size:1.5rem;margin:.2rem 0 1.2rem}
+    h2{font-size:1.05rem;margin:2rem 0 .75rem;color:#fff}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.1rem}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+    table{width:100%;border-collapse:collapse;font-size:.92rem}
+    th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+    th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+    label{display:block;margin:.9rem 0 .3rem;font-weight:600;font-size:.88rem}
+    label .hint{display:block;font-weight:400;color:var(--muted);font-size:.82rem;margin-top:.15rem}
+    input[type=text],input[type=password],input[type=email],textarea,select{
+      width:100%;padding:.55rem .65rem;background:var(--panel-2);color:var(--text);
+      border:1px solid var(--line);border-radius:7px;font:inherit}
+    input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+    textarea{min-height:5.5rem;resize:vertical}
+    .btn{display:inline-block;padding:.5rem .95rem;border-radius:7px;border:1px solid var(--line);
+         background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer}
+    .btn:hover{border-color:var(--accent);text-decoration:none}
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+    .btn-danger{border-color:var(--bad);color:#ffb4a2}
+    .btn-sm{padding:.3rem .6rem;font-size:.85rem}
+    .pill{display:inline-block;padding:.12rem .55rem;border-radius:999px;font-size:.75rem;font-weight:600}
+    .pill-active{background:rgba(46,161,109,.18);color:#6ee7b7}
+    .pill-suspended{background:rgba(212,85,63,.18);color:#ffb4a2}
+    .flash{padding:.7rem .9rem;border-radius:7px;margin-bottom:.8rem;border:1px solid}
+    .flash-success{background:rgba(46,161,109,.12);border-color:var(--ok);color:#9df0c8}
+    .flash-error{background:rgba(212,85,63,.12);border-color:var(--bad);color:#ffc0b0}
+    .errors{background:rgba(212,85,63,.12);border:1px solid var(--bad);border-radius:7px;padding:.7rem .9rem;margin-bottom:1rem}
+    .errors ul{margin:.3rem 0 0 1rem;padding:0}
+    code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em}
+    .secret{display:block;background:#0b1220;border:1px dashed var(--accent);border-radius:8px;
+            padding:.8rem;margin:.6rem 0;font-family:ui-monospace,Consolas,monospace;
+            font-size:1.05rem;word-break:break-all;color:#fff}
+    .stat{display:inline-block;margin-right:1.2rem}
+    .stat b{display:block;font-size:1.3rem;color:#fff}
+    .stat span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+    details summary{cursor:pointer;color:var(--muted);margin:.6rem 0}
+    .inline{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap}
+    .inline > div{flex:1;min-width:200px}
+    @media (max-width:640px){ .wrap{padding:1rem .8rem 3rem} h1{font-size:1.25rem} }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Brightstars Academics<small>Platform console</small></div>
+    <nav>
+      {% if session.get('platform_admin_id') %}
+        <a href="{{ url_for('platform_dashboard') }}">Schools</a>
+        <a href="{{ url_for('platform_audit') }}">Activity</a>
+        <a href="{{ url_for('platform_password') }}">Password</a>
+        <form method="post" action="{{ url_for('platform_logout') }}" style="display:inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm" type="submit">Sign out</button>
+        </form>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </main>
+</body>
+</html>

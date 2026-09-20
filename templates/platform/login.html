@@ -1,0 +1,17 @@
+{% extends "platform/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<div style="max-width:24rem;margin:6vh auto">
+  <h1>Platform sign-in</h1>
+  <p class="muted">This console manages every school on Brightstars Academics. School staff sign in on their own school's website.</p>
+  {% if error %}<div class="errors">{{ error }}</div>{% endif %}
+  <form method="post" class="panel">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+    <p><button class="btn btn-primary" type="submit" style="width:100%">Sign in</button></p>
+  </form>
+</div>
+{% endblock %}

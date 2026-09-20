@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Dashboard — Crainbow CBT{% endblock %}
+{% block title %}Dashboard — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="dashboard-page">
   <div class="topbar dashboard-topbar">
@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <!-- Preserve the original Crainbow metric-card layout; Phase 6K.3 only adds colour and polish. -->
+  <!-- Preserve the original {{ school_brand.name }} metric-card layout; Phase 6K.3 only adds colour and polish. -->
   <section class="grid dashboard-metric-grid">
     {% for key,label,abbr,desc in [('banks','Question Banks','QB','Available question banks'),('questions','Questions','Q','Questions across all banks'),('attempts','Attempts','AT','Candidate examination attempts'),('completed','Completed','✓','Completed examinations'),('candidates','Candidates','C','Registered candidates')] %}
     <article class="card dashboard-metric-card metric-card-{{key}}">

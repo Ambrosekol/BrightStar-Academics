@@ -17,7 +17,7 @@
 
 
 
-window.crainbowGoBack = function(fallback) {
+window.portalGoBack = function(fallback) {
     try {
         if (window.history.length > 1) { window.history.back(); return; }
     } catch (e) {}
@@ -558,7 +558,7 @@ const decimalPlaces = decimalPart.length;
         threadEl.innerHTML = messages.map(m => {
             const mine =
                 String(m.sender_admin_id) ===
-                String(window.CRAINBOW_CURRENT_ADMIN_ID || '');
+                String(window.BRIGHTSTARS_CURRENT_ADMIN_ID || '');
 
             const body = escapeHtml(m.body || '').replace(/\n/g, '<br>');
             let attachment = '';

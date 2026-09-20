@@ -368,7 +368,7 @@ button:disabled{
 
 <img
     src="{{ logo_data }}"
-    alt="Creative Rainbow Schools logo">
+    alt="{{ school_brand.name }} logo">
 
 {% endif %}
 
@@ -379,7 +379,7 @@ Official Result
 </h1>
 
 <p>
-Creative Rainbow Schools ? Entrance Examination
+{{ school_brand.name }} ? Entrance Examination
 </p>
 
 </div>
@@ -696,7 +696,7 @@ async function shareActualImage(){
             await navigator.share({
 
                 title:
-                    "Creative Rainbow Schools ? Examination Result",
+                    "{{ school_brand.name }} ? Examination Result",
 
                 text:
                     "Official examination result",

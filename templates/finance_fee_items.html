@@ -1,11 +1,11 @@
 {% extends 'admin_base.html' %}
-{% block title %}Fee Structure — Crainbow Administration
+{% block title %}Fee Structure — {{ school_brand.name }}
 
 {% endblock %}
 {% block content %}
 <style id="cr-finance-v7-1-styles">
 /* ============================================================
-   CRAINBOW FINANCE FEE STRUCTURE V7.1
+   {{ school_brand.name|upper }} FEE STRUCTURE V7.1
    Workspace Tabs
    ============================================================ */
 
@@ -175,7 +175,7 @@
   </div>
 
   <!-- ============================================================
-     CRAINBOW FINANCE FEE STRUCTURE V7.1
+     {{ school_brand.name|upper }} FEE STRUCTURE V7.1
      WORKSPACE TAB NAVIGATION
      ============================================================ -->
 
@@ -578,7 +578,7 @@
 
 <script id="cr-finance-v7-1-controller">
 /* ============================================================
-   CRAINBOW FINANCE FEE STRUCTURE V7.1
+   {{ school_brand.name|upper }} FEE STRUCTURE V7.1
    TAB CONTROLLER
    ============================================================ */
 (function () {

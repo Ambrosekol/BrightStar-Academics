@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{assessment.title}} — Crainbow CBT</title>
+<title>{{assessment.title}} — {{ school_brand.name }}</title>
 <link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
 </head>
 <body class="exam-page student-assessment-page">
 <header class="top exam-top student-exam-top">
   <div class="portal-brand">
-    <img src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools">
-    <div><strong>CRAINBOW CBT</strong><span>{{assessment.assessment_type|replace('_',' ')|title}} · {{assessment.subject_name}}</span></div>
+    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
+    <div><strong>{{ school_brand.name|upper }}</strong><span>{{assessment.assessment_type|replace('_',' ')|title}} · {{assessment.subject_name}}</span></div>
   </div>
   <div class="timer student-assessment-timer" id="studentTimer">--:--</div>
 </header>

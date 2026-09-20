@@ -18,14 +18,14 @@ from pathlib import Path
 
 import sqlalchemy as sa
 from sqlalchemy import and_, func, select
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
-from app import DATA, _school_current_session
+from app import _school_current_session
 from models import (
     Answer, Attempt, AttemptQuestion, Candidate, CandidatePaper,
     EntranceBankConfig, Examination, RetakeGrant, db,
 )
-from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
+from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
+from core.storage import data_dir
 
 
 def _answers_for_attempt(aid):
@@ -51,11 +51,11 @@ def _candidate_papers(candidate_id):
 
 def load_banks():
     banks={}
-    os.makedirs(DATA, exist_ok=True)
-    for fn in os.listdir(DATA):
+    folder=data_dir()
+    for fn in os.listdir(folder):
         if fn.endswith('.json') and fn!='manifest.json':
             try:
-                with open(os.path.join(DATA,fn),encoding='utf-8') as f:
+                with open(os.path.join(folder,fn),encoding='utf-8') as f:
                     b=json.load(f)
                 if isinstance(b,dict) and b.get('id') and isinstance(b.get('questions'),list):
                     banks[b['id']]=b
@@ -176,7 +176,7 @@ def sync_examinations():
     """Mirror the JSON question banks into the examinations table."""
     now=datetime.now(timezone.utc).isoformat()
     for b in load_banks().values():
-        stmt=sqlite_insert(Examination).values(
+        stmt=insert_stmt(Examination).values(
             bank_id=b['id'],name=b.get('name',b['id']),
             duration_seconds=int(b.get('duration_seconds',3600)),
             version=b.get('version','1.0'),question_count=len(b['questions']),created_at=now)

@@ -1,5 +1,5 @@
 from pathlib import Path
-import ast, sqlite3
+import ast
 import jinja2
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -50,21 +50,44 @@ def test_messaging_retry_and_notification_actor_are_fixed():
 
 
 def test_db_schema_and_composite_scope_data():
-    db=ROOT/'cbt.db'
-    con=sqlite3.connect(db)
-    con.row_factory=sqlite3.Row
-    con.execute('PRAGMA foreign_keys=ON')
-    cols={r['name'] for r in con.execute('PRAGMA table_info(admins)')}
-    assert 'password_must_change' in cols
-    for table in ('admin_messages','admin_role_assignments','admin_scopes','admin_notifications'):
-        assert con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",(table,)).fetchone()
-    # Exercise the exact data shape used by the new multi-boundary model.
-    con.execute("INSERT OR IGNORE INTO admin_scopes(admin_id,scope_type,scope_value,created_at) VALUES(?,?,?,datetime('now'))",(1,'subject','Mathematics'))
-    con.execute("INSERT OR IGNORE INTO admin_scopes(admin_id,scope_type,scope_value,created_at) VALUES(?,?,?,datetime('now'))",(1,'class','SSS 1'))
-    con.commit()
-    rows=con.execute("SELECT scope_type,scope_value FROM admin_scopes WHERE admin_id=1 AND scope_type IN ('subject','class')").fetchall()
-    assert {(r['scope_type'],r['scope_value']) for r in rows} >= {('subject','Mathematics'),('class','SSS 1')}
-    con.close()
+    """The governance tables and the multi-boundary scope shape.
+
+    Built from the models into a throwaway database rather than read out of a
+    live one: this test used to INSERT into the real school database, which is
+    both a side effect on production data and a reason the test could not run
+    on a fresh checkout.
+    """
+    import tempfile
+    import sqlalchemy as sa
+
+    from models import db as _db
+
+    with tempfile.TemporaryDirectory() as tmp:
+        engine = sa.create_engine(f'sqlite:///{Path(tmp).as_posix()}/schema_check.db')
+        _db.metadata.create_all(engine)
+        inspector = sa.inspect(engine)
+
+        cols = {c['name'] for c in inspector.get_columns('admins')}
+        assert 'password_must_change' in cols
+        tables = set(inspector.get_table_names())
+        for table in ('admin_messages', 'admin_role_assignments', 'admin_scopes',
+                      'admin_notifications'):
+            assert table in tables, table
+
+        # Exercise the exact data shape the multi-boundary model relies on.
+        scopes = _db.metadata.tables['admin_scopes']
+        with engine.begin() as con:
+            con.execute(scopes.insert(), [
+                {'admin_id': 1, 'scope_type': 'subject', 'scope_value': 'Mathematics',
+                 'created_at': '2026-01-01T00:00:00+00:00'},
+                {'admin_id': 1, 'scope_type': 'class', 'scope_value': 'SSS 1',
+                 'created_at': '2026-01-01T00:00:00+00:00'},
+            ])
+            rows = con.execute(sa.select(scopes.c.scope_type, scopes.c.scope_value).where(
+                scopes.c.admin_id == 1,
+                scopes.c.scope_type.in_(('subject', 'class')))).all()
+        assert set(rows) >= {('subject', 'Mathematics'), ('class', 'SSS 1')}
+        engine.dispose()
 
 
 def test_all_modified_templates_have_valid_jinja_syntax():

@@ -15,7 +15,8 @@ from models import AcademicSession, Attempt, Candidate, CandidatePaper, Examinat
 from core.db_helpers import all_rows, _flatten
 from core.security import admin_scope_allows
 from app import _entrance_config_select
-from core.entrance import DATA, bank, bank_subject, load_banks, sync_examinations
+from core.entrance import bank, bank_subject, load_banks, sync_examinations
+from core.storage import data_dir
 
 
 def _generate_bank_id(name, level=''):
@@ -40,7 +41,7 @@ def validate_bank_payload(data, existing_id=None):
     return errors
 
 def save_bank(b):
-    path=os.path.join(DATA,b['id']+'.json')
+    path=os.path.join(data_dir(),b['id']+'.json')
     tmp=path+'.tmp'
     with open(tmp,'w',encoding='utf-8') as f: json.dump(b,f,ensure_ascii=False,indent=2)
     os.replace(tmp,path)

@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import select, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app import (
     app, ENTRANCE_CONFIG_EXTRA, _entrance_config_select,
@@ -27,7 +26,7 @@ from models import (
     EntranceBankConfig, Examination, RetakeGrant, SchoolAssessment,
     SchoolClass, SchoolQuestion, SchoolSubject, db,
 )
-from core.db_helpers import all_rows, one, one_scalar, _flatten
+from core.db_helpers import all_rows, insert_stmt, one, one_scalar, _flatten
 from core.security import csrf_protect
 
 
@@ -298,7 +297,7 @@ def answer():
     if not q: return jsonify(ok=False,error='Invalid question.'),400
     options=json.loads(q['options_json'] or '[]')
     if opt<0 or opt>=len(options): return jsonify(ok=False,error='Invalid answer.'),400
-    answer_stmt=sqlite_insert(Answer).values(attempt_id=a['id'],question_id=qid,option_index=opt,
+    answer_stmt=insert_stmt(Answer).values(attempt_id=a['id'],question_id=qid,option_index=opt,
                                              answered_at=datetime.now(timezone.utc).isoformat())
     db.session.execute(answer_stmt.on_conflict_do_update(
         index_elements=['attempt_id','question_id'],

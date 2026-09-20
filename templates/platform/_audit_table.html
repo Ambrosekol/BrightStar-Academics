@@ -1,0 +1,16 @@
+<table>
+  <thead><tr><th>When</th><th>Who</th><th>Action</th><th>School</th><th>Detail</th></tr></thead>
+  <tbody>
+    {% for row in audit %}
+      <tr>
+        <td class="muted mono" style="white-space:nowrap">{{ (row.created_at or '')[:16].replace('T', ' ') }}</td>
+        <td>{{ row.actor or '' }}</td>
+        <td class="mono">{{ row.action }}</td>
+        <td class="mono muted">{{ row.slug or '' }}</td>
+        <td class="muted">{{ row.detail or '' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Nothing recorded yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

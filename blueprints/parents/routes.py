@@ -27,6 +27,7 @@ from models import (
     ParentAccount, ParentFeedback, ParentFeedbackReply, ParentStudentLink,
     SchoolClass, SchoolNotification, Student, StudentEnrolment, db,
 )
+from core.branding import school_name
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_super_admin
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
@@ -380,11 +381,11 @@ def admin_school_parent_feedback_reply(feedback_id):
                 f"The school has replied to your message"
                 f"{f' ({row.subject})' if row.subject else ''}:\n\n{body}\n\n"
                 "Sign in to the parent portal to continue the conversation.\n\n"
-                "Creative Rainbow Montessori School")
+                f"{school_name()}")
         except Exception: app.logger.exception('Parent feedback email notification failed for feedback %s',feedback_id)
         try:
             _notify_guardian_whatsapp(parent_contact['phone'],
-                "Crainbow School: You have a reply to your message"
+                f"{school_name()}: You have a reply to your message"
                 f"{f' ({row.subject})' if row.subject else ''}. "
                 "Sign in to the parent portal to view it.")
         except Exception: app.logger.exception('Parent feedback WhatsApp notification failed for feedback %s',feedback_id)

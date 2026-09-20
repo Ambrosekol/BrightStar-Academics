@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{'Create Assignment' if mode=='new' else 'Edit Assignment'}} — Crainbow Administration{% endblock %}
+{% block title %}{{'Create Assignment' if mode=='new' else 'Edit Assignment'}} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ASSIGNMENTS</div><h1>{{'Create assignment' if mode=='new' else 'Edit assignment'}}</h1><p class="hero-copy">Choose the class and subject first, then decide whether this is a normal written task or a CBT-style assignment.</p></div></div>
 {% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}

@@ -1,0 +1,13 @@
+{% extends "platform/base.html" %}
+{% block title %}Administrator created{% endblock %}
+{% block body %}
+<h1>Administrator created for {{ info.name }}</h1>
+<div class="panel">
+  <p class="muted" style="margin-top:0">This password is shown here and nowhere else. It cannot be
+    retrieved later — if it is lost, create another administrator.</p>
+  <p>Username <code>{{ username }}</code></p>
+  <span class="secret" id="temp-password">{{ password }}</span>
+  <p class="muted">They must change it the first time they sign in.</p>
+</div>
+<p><a class="btn btn-primary" href="{{ url_for('platform_school', slug=info.slug) }}">Back to {{ info.name }}</a></p>
+{% endblock %}

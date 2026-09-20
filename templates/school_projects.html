@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Projects — Crainbow Administration{% endblock %}
+{% block title %}Projects — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Create practical classroom projects, give them a required date, and record completion and scores.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
 <div class="segmentation-intro"><div><strong>Choose a class</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_projects')}}">← All classes</a>{% endif %}</div>

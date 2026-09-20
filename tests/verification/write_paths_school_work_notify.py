@@ -45,7 +45,7 @@ class_id = con.execute("SELECT id FROM school_classes WHERE active=1 ORDER BY id
 subject_id = con.execute(
     "SELECT s.id FROM school_subjects s JOIN class_subjects cs ON cs.subject_id=s.id "
     "WHERE cs.class_id=? AND s.active=1 LIMIT 1", (class_id,)).fetchone()["id"]
-sender_addr = os.environ.get("CRAINBOW_SMTP_FROM") or os.environ.get("CRAINBOW_SMTP_USER", "")
+sender_addr = os.environ.get("BRIGHTSTARS_SMTP_FROM") or os.environ.get("BRIGHTSTARS_SMTP_USER", "")
 
 with_contact = con.execute(
     "INSERT INTO students(admission_no,first_name,last_name,guardian_email,guardian_phone,created_at,"
@@ -89,7 +89,7 @@ def csrf_from(html):
 
 # --- Unit-level check of the notification helpers themselves -------------
 with A.app.app_context():
-    check("SMTP is configured for this run", bool(os.environ.get("CRAINBOW_SMTP_HOST")))
+    check("SMTP is configured for this run", bool(os.environ.get("BRIGHTSTARS_SMTP_HOST")))
     ok, detail = CN._notify_guardian_email(sender_addr, "Crainbow CBT test: new assignment alert",
                                            "This is an automated check for the assignment/project "
                                            "guardian-notification feature. Safe to ignore.")

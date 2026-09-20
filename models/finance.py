@@ -84,7 +84,7 @@ class FinancePayment(db.Model):
     reference = db.Column(Text)
     paid_at = db.Column(Text, nullable=False)
     recorded_by = db.Column(Integer, ForeignKey('admins.id'), nullable=False)
-    status = db.Column(Text, nullable=False, server_default=text('"posted"'))
+    status = db.Column(Text, nullable=False, default='posted', server_default=text("'posted'"))
     notes = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
     voided_at = db.Column(Text)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Crainbow Administration{% endblock %}</title>
+    <title>{% block title %}{{ school_brand.name }} Administration{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender') }}">
 </head>
 <body data-current-admin-id="{{ current_admin.id if current_admin else '' }}">
@@ -13,7 +13,7 @@
 <div class="admin-shell {% if on_workspace_home %}workspace-selection-shell{% endif %}">
     {% if not on_workspace_home and workspace_selected %}<aside class="sidebar" aria-label="Administration navigation">
         <div class="brand-block">
-            <a class="brand-logo-link" href="{{url_for('admin_workspace_home')}}" aria-label="Crainbow School Administration"><img class="brand-logo" src="{{url_for('static',filename='images/school_logo.png')}}" alt="Creative Rainbow Schools"></a>
+            <a class="brand-logo-link" href="{{url_for('admin_workspace_home')}}" aria-label="{{ school_brand.name }} School Administration"><img class="brand-logo" src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"></a>
             <div class="brand-subtitle">School Administration</div>
         </div>
         {% if current_admin %}
@@ -79,7 +79,7 @@
 
     <main class="main {% if on_workspace_home %}workspace-selection-main{% endif %}">
         <header class="global-header">
-            <div class="breadcrumbs">CRAINBOW <span>›</span> {{ self.title()|striptags|replace(' — Crainbow Administration','') }}</div>
+            <div class="breadcrumbs">{{ school_brand.name|upper }} <span>›</span> {{ self.title()|striptags|replace(' — ' ~ school_brand.name, '') }}</div>
             <div class="global-actions">
                 {% if current_admin %}
                 <a class="notification-button" href="{{ url_for('admin_notifications') }}" title="Notifications" aria-label="Notifications"><span class="bell">◔</span>{% if admin_unread_notifications %}<span class="notification-count">{{ admin_unread_notifications }}</span>{% endif %}</a>
@@ -95,7 +95,7 @@
         {% endwith %}
         {% if request.endpoint != 'admin_workspace_home' %}
         <div class="workspace-backbar" aria-label="Page navigation">
-            <button class="workspace-back-button" type="button" onclick="crainbowGoBack('{{ url_for('admin_school_home') if active_workspace == 'school' else url_for('admin_dashboard') }}')" title="Go back one step">
+            <button class="workspace-back-button" type="button" onclick="portalGoBack('{{ url_for('admin_school_home') if active_workspace == 'school' else url_for('admin_dashboard') }}')" title="Go back one step">
                 <span aria-hidden="true">←</span>
                 <span>Back</span>
             </button>
@@ -105,7 +105,7 @@
     </main>
 </div>
 <div id="live-message-toast" class="live-message-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-<script>window.CRAINBOW_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
+<script>window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
 <script src="{{ url_for('static', filename='admin.js', v='6K-live-messages') }}"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Administrators — Crainbow Administration{% endblock %}
+{% block title %}Administrators — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrators</h1><p class="hero-copy">Manage staff identities, multiple job roles, contact details and access boundaries from one controlled directory.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_account_new') }}">+ Add staff administrator</a></div></div>
 <div class="card table-card"><div class="table-toolbar"><div><strong>{{ admins|length }} administrator{{ 's' if admins|length != 1 else '' }}</strong><span class="muted">Role capabilities are cumulative; boundaries narrow what each person can reach.</span></div><a class="btn btn-light btn-small" href="{{ url_for('admin_messages') }}">Messages{% if admin_unread_messages %} ({{ admin_unread_messages }}){% endif %}</a></div><div class="table-scroll"><table><thead><tr><th>Staff member</th><th>Job roles</th><th>Contact</th><th>Status</th><th>Access boundary</th><th>Last sign-in</th><th></th></tr></thead><tbody>

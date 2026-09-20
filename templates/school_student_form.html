@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Complete Student Admission' if mode == 'new' else 'Edit Student Record' }} — Crainbow Administration{% endblock %}
+{% block title %}{{ 'Complete Student Admission' if mode == 'new' else 'Edit Student Record' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 {% set ns = namespace(step=0) %}
 <div class="page-hero">

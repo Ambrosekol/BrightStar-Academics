@@ -32,18 +32,18 @@ def run(code, env_overrides=None):
     return p
 
 
-# ---- 1. .env is actually loaded: CRAINBOW_SECRET from .env reaches app.secret_key
+# ---- 1. .env is actually loaded: BRIGHTSTARS_SECRET from .env reaches app.secret_key
 r = run(
     "import app; print('SECRET_LEN=' + str(len(app.app.secret_key)))",
     {"CRAINBOW_DB": DB1},
 )
-check(".env loads (CRAINBOW_SECRET applied)", "SECRET_LEN=32" in r.stdout or "SECRET_LEN=64" in r.stdout,
+check(".env loads (BRIGHTSTARS_SECRET applied)", "SECRET_LEN=32" in r.stdout or "SECRET_LEN=64" in r.stdout,
       r.stdout.strip() + " " + r.stderr[-300:])
 
 # ---- 2. An env var already set beats .env (load_dotenv must not override=True)
 r = run(
     "import app; print('ENV=' + app.ENVIRONMENT)",
-    {"CRAINBOW_DB": DB1, "CRAINBOW_ENV": "production_probe"},
+    {"CRAINBOW_DB": DB1, "BRIGHTSTARS_ENV": "production_probe"},
 )
 check("existing env var overrides .env", "ENV=production_probe" in r.stdout, r.stdout + r.stderr[-300:])
 

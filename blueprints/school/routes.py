@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 import sqlalchemy as sa
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import and_, or_, func, select, delete as sa_delete, update as sa_update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from werkzeug.security import generate_password_hash
 
 from app import (
@@ -32,7 +31,7 @@ from models import (
     StudentAdmissionProfile, StudentEnrolment, StudentEnrollmentHistory,
     StudentNumberAllocation, ResultWorkflowEvent, db,
 )
-from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten, _ignore_insert
+from core.db_helpers import all_rows, group_concat, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.security import (
     admin_access_error, admin_has_permission, admin_required, admin_scope_allows,
     audit_log, current_admin, csrf_protect, is_super_admin,
@@ -450,7 +449,7 @@ def admin_school_student_new():
             for contact_role,parent_id,contact_name,address,office_phone,mobile,contact_email,occupation in contacts_to_save:
                 if not any([parent_id,contact_name,address,office_phone,mobile,contact_email,occupation]):
                     continue
-                stmt=sqlite_insert(StudentAdmissionContact).values(
+                stmt=insert_stmt(StudentAdmissionContact).values(
                     student_id=sid,parent_id=parent_id,role=contact_role,
                     name=contact_name or None,address=address or None,
                     office_phone=office_phone or None,mobile=mobile or None,
@@ -680,7 +679,7 @@ def admin_school_class_toggle(class_id):
 def admin_school_subjects():
     rows=all_rows(
         select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,SchoolSubject.active,
-               func.group_concat(SchoolClass.name,', ').label('classes'),
+               group_concat(SchoolClass.name,', ').label('classes'),
                func.sum(sa.case((ClassSubject.locked==1,1),else_=0)).label('locked_count'),
                func.sum(sa.case((ClassSubject.final_locked==1,1),else_=0)).label('final_locked_count'))
         .select_from(SchoolSubject)
@@ -1464,7 +1463,7 @@ def admin_school_result_manual_new():
     if not me['admin_type_system']: classes=[c for c in classes if _school_class_allowed(me['id'],c.id)]
     current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=request.values.get('term','Full Session').strip() or 'Full Session'; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
     subjects=all_rows(select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,
-                             func.group_concat(ClassSubject.class_id).label('class_ids'))
+                             group_concat(ClassSubject.class_id).label('class_ids'))
         .join(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
         .where(SchoolSubject.active==1)
         .group_by(SchoolSubject.id).order_by(SchoolSubject.name))
@@ -1712,7 +1711,7 @@ def admin_school_website_save():
     now=datetime.now(timezone.utc).isoformat()
     keys=['school_name','school_motto','school_tagline','school_phone','school_email','school_address','homepage_headline','homepage_intro','homepage_cta']
     for key in keys:
-        stmt=sqlite_insert(SchoolPublicSetting).values(
+        stmt=insert_stmt(SchoolPublicSetting).values(
             setting_key=key,setting_value=request.form.get(key,'').strip(),
             updated_at=now,updated_by=me['id'])
         db.session.execute(stmt.on_conflict_do_update(

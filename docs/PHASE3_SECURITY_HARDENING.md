@@ -5,7 +5,7 @@ Status: **Implemented in the development working copy; not yet production-certif
 ## Implemented now
 
 1. **Production secret handling**
-   - Production refuses to start without `CRAINBOW_SECRET` of at least 32 characters.
+   - Production refuses to start without `BRIGHTSTARS_SECRET` of at least 32 characters.
    - Development generates a per-process secret when none is supplied.
 2. **Default credentials**
    - Removed the known `admin123` fallback.
