@@ -1,150 +1,106 @@
 # Brightstars Academics
 
-Brightstars Academics is a multi-school platform. One deployment serves many schools; each
-school gets its own portal, its own PostgreSQL database and its own folder of files, and can
-never see another school's data. Creative Rainbow Montessori School ("crainbow") is a school on
-the platform, not the platform itself.
+Brightstars Academics is a school platform. One deployment serves many schools, and each school
+gets a portal of its own: its own web address, its own PostgreSQL database and its own folder of
+files. No school can see, reach or affect another's data.
 
-Each school's portal runs entrance examinations, day-to-day school administration (classes,
-subjects, assignments, tests, results, promotion), student and parent self-service, finance and
-receipting, a library catalogue, and role-based admin governance.
+A school's portal runs entrance examinations, day-to-day administration (classes, subjects,
+assignments, tests, results, promotion), student and parent self-service, finance and receipting,
+a library catalogue, and role-based staff governance.
 
-**A school's address is a portal, not a website.** The only public website is the platform's own,
-served at `/` on the platform hostnames. The platform console lives at `/platform` on those same
-hostnames: sign in there to create a school, manage its addresses and administrators, suspend it,
-or enter it.
+Two ideas shape everything here:
 
-Multi-tenancy is not optional and cannot be switched off — it is the architecture.
+- **A school gets a portal, not a website.** A school's address serves sign-in and the staff,
+  student, parent and candidate areas — nothing else. The only public website on the deployment
+  is the platform's own.
+- **The platform issues the address.** Creating a school immediately gives it a working address
+  at `<school-code>.<portal-domain>`. A school that wants to use its own domain points a CNAME
+  record at that address.
+
+Multi-tenancy is the architecture, not a setting. There is no switch to turn it off.
 
 ## Contents
 
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Project layout](#project-layout)
+- [How it is arranged](#how-it-is-arranged)
+- [What a school gets](#what-a-school-gets)
 - [Getting started](#getting-started)
+- [Creating a school](#creating-a-school)
+- [Giving a school its own domain](#giving-a-school-its-own-domain)
+- [Command line](#command-line)
 - [Configuration](#configuration)
-- [Running the app](#running-the-app)
-- [Multi-tenancy](#multi-tenancy)
+- [Project layout](#project-layout)
 - [Testing](#testing)
-- [Deployment](#deployment)
+- [Operating](#operating)
+- [Importing an existing single-school installation](#importing-an-existing-single-school-installation)
 - [Notes for contributors](#notes-for-contributors)
+- [Known gaps](#known-gaps)
 
-## Features
+## How it is arranged
 
-**Platform website and console** — the platform's own public site at `/`, and the console at
-`/platform` where schools are created and managed.
+There are two kinds of hostname, and they never overlap.
 
-**Unified login** — one `/login` form for every account type. The identifier the visitor
-submits determines whether they're signed in as staff, a parent, a school student, or an
-entrance-exam candidate; each lands on its own dashboard.
+| Hostname | Serves |
+|---|---|
+| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform's own website at `/`, and the platform console at `/platform` |
+| `<school-code>.<BRIGHTSTARS_PORTAL_DOMAIN>` | That school's portal — issued when the school is created, and permanent |
+| A school's own domain, CNAME'd to the above | The same portal |
+| Anything else | `404`, before any application code runs |
 
-**Entrance examinations** — question-bank management, candidate registration/credentialing,
-per-paper timed attempts with server-side timing and scoring, a frozen per-attempt question
-snapshot (so a later bank edit never changes an already-taken paper), retake grants,
-rankings, and CSV/JSON export of results.
+Every request is resolved to a school by its `Host` header alone — never by a URL, form field or
+cookie:
 
-**School portal** — academic sessions, classes, subjects, student enrolment and promotion
-between sessions, assignments and projects (with written and CBT-style quiz variants), school
-tests/practice/examinations sharing the same attempt/grading model as the entrance exam,
-term results with a staged verify → approve → release governance workflow, and admissions
-history.
+```
+https://portal.theschool.example/login      (CNAME → theschool.<portal domain>)
+        │
+        ▼
+control_plane.resolver     hostname → registry → school "theschool"
+        │                  unknown host → 404 · suspended school → 503
+        │                  a session issued for another school → discarded
+        ▼
+the selected school (a ContextVar, for this request only)
+        │
+        ├─ db.session ─────► that school's own PostgreSQL database
+        ├─ core/storage ───► tenants/theschool/data     (question banks)
+        ├─ core/branding ──► that school's name, motto and logo
+        └─ /static/uploads ► tenants/theschool/uploads
+```
 
-**Student & parent portals** — students take assignments and school assessments, track
-results once released, and manage their password; parents view their children's results,
-attendance/fee status, and exchange messages with the school.
+**It fails closed.** A query made with no school selected raises rather than falling back to a
+default database, because guessing a school could show one school's data to another.
+
+**Who is in charge.** Platform operators are the only super admins: they create and suspend
+schools, manage addresses, and can enter any school. Each school has its own administrators who
+manage that school's staff, roles and data, and can see nothing outside it. No account is ever
+seeded into a school — its first administrator is created deliberately, so the one-time password
+reaches a named person.
+
+## What a school gets
+
+**Entrance examinations** — question banks, candidate registration and credentials, timed
+computer-based papers with server-side timing and scoring, a frozen per-attempt question snapshot
+(so editing a bank never changes an exam already taken), retake grants, rankings, and CSV/JSON
+export.
+
+**School administration** — academic sessions, classes, subjects, student enrolment and
+promotion between sessions, assignments and projects (written and quiz variants), tests, practice
+and examinations sharing the exam engine's attempt and grading model, and term results with a
+staged verify → approve → release workflow.
+
+**Students and parents** — students sit assignments and assessments and track results once
+released; parents follow their children's results, attendance and fee status, and exchange
+messages with the school.
 
 **Finance** — fee items and per-student assessments, payment recording and allocation,
-outstanding-balance tracking, and PDF/emailed/WhatsApp receipt delivery.
+outstanding balances, and receipts delivered as PDF, email or WhatsApp.
 
-**Library** — a simple book/loan catalogue for admin use.
+**Library** — a book and loan catalogue.
 
-**Administration & governance** — staff accounts, custom roles built from a fine-grained
-permission catalogue, scope-limited access (e.g. a class teacher restricted to their own
-classes), an audit log, an internal notification/messaging system, and resource locks (e.g.
-locking a question bank against edits during a live exam).
+**Governance** — staff accounts, custom roles built from a fine-grained permission catalogue,
+scope-limited access (a class teacher restricted to their own classes), an audit log, internal
+messaging, and resource locks such as freezing a question bank during a live exam.
 
-## Tech stack
-
-- **Python 3** / **Flask** — web framework and routing
-- **Flask-SQLAlchemy** / **SQLAlchemy 2.x** — ORM and schema
-- **PostgreSQL** — database; one for the platform registry, plus one per school
-- **psycopg 3** — PostgreSQL driver
-- **Jinja2** — server-rendered templates
-- **ReportLab** — PDF generation (receipts, result cards)
-- **python-dotenv** — `.env` configuration loading
-
-There is no separate frontend build step — templates, CSS and JS are served directly by
-Flask from `templates/` and `static/`.
-
-## Project layout
-
-```
-crainbow/
-├── app.py                    # Flask/DB setup, error handlers, request hooks, context
-│                              #   processor, blueprint registration, a handful of helpers
-│                              #   shared across 3+ domains with no single owner
-├── models/                   # SQLAlchemy models, one module per domain
-│   ├── base.py                #   declarative Base + db = SQLAlchemy(...)
-│   ├── auth.py                #   Admin, AdminType, Permission, AuditLog, AdminMessage,
-│   │                          #     AdminControlItem, AdminResourceLock, ...
-│   ├── school.py              #   AcademicSession, SchoolClass, Student, assignments/
-│   │                          #     assessments/results/promotion
-│   ├── entrance.py            #   Examination, Attempt, Answer, Candidate, EntranceBankConfig
-│   ├── finance.py             #   FinanceFeeItem, FinancePayment, FinancePaymentAllocation, ...
-│   ├── library.py             #   LibraryBook, LibraryLoan
-│   ├── parents.py             #   ParentAccount, ParentStudentLink, ParentFeedback(Reply)
-│   ├── public.py              #   SchoolPublicPage/News/Setting/Enquiry
-│   ├── admissions.py          #   StudentAdmissionProfile/Contact, StudentEnrollmentHistory
-│   ├── tenancy.py             #   School, SchoolSetting, StudentNumberAllocation
-│   ├── presence.py            #   PresenceSession, SchoolNotification, PasswordResetToken
-│   └── governance.py          #   SchemaMigration (historical migration record)
-├── control_plane/            # Multi-tenancy: platform registry, hostname → school, per-school
-│                              #   database routing, provisioning, the platform console and
-│                              #   the platform's own website (off unless enabled)
-├── core/                     # Cross-cutting helpers used by 2+ domains — no routes here
-│   ├── db_helpers.py           #   one/all_rows/tuples/obj — thin wrappers returning
-│   │                          #     sqlite3.Row-like mappings from SQLAlchemy queries
-│   ├── security.py             #   RBAC (permissions/roles/scopes), admin_required,
-│   │                          #     csrf_protect, audit_log
-│   ├── accounts.py             #   shared login/logout/session-clearing helpers
-│   ├── presence.py             #   "who's online" tracking
-│   ├── notifications.py        #   guardian email/WhatsApp senders
-│   ├── uploads.py              #   image upload validation and storage
-│   ├── storage.py              #   per-school data/ and uploads/ folders
-│   ├── branding.py             #   the school's own name/motto/logo for templates
-│   ├── public_settings.py      #   public-site settings/page lookup
-│   └── entrance.py             #   question-bank loading, candidate lookups, grading,
-│                              #     result-card rendering — shared by the entrance-admin
-│                              #     and candidate-portal blueprints below
-├── blueprints/                # One package per route domain (plain @app.route, not
-│   ├── public/                  #   Flask Blueprint objects — see "Notes for contributors")
-│   ├── auth/                    #   login/logout/password recovery
-│   ├── school/                  #   the school portal (see Features above)
-│   ├── entrance/                #   entrance-exam admin: config, banks, candidates, results
-│   ├── candidate_portal/        #   the entrance-candidate self-service side
-│   ├── student_portal/          #   the student self-service side
-│   ├── parents/                 #   parent portal + admin parent management
-│   ├── finance/                 #   fees, payments, receipts
-│   ├── library/                 #   library admin
-│   └── administration/          #   accounts/roles/permissions, messaging, notifications
-├── services/                  # Small, dependency-free utilities (date formatting,
-│                              #   student-number allocation)
-├── migrations/                # Historical schema-change record (see Notes below)
-├── templates/                 # Jinja templates, one subtree per portal/section
-├── static/                    # CSS/JS/images; static/uploads/ holds user-uploaded files
-├── data/                      # Entrance question banks, stored as JSON files
-├── tests/
-│   ├── current/                 #   the authoritative contract/regression suite
-│   ├── verification/            #   end-to-end write-path and security probes
-│   └── legacy/                  #   retained historical scripts, not authoritative
-├── security/                  # Standalone security checks and the manual QA test plan
-├── deployment/                 # LAN/Windows deployment guide and helper scripts
-└── docs/                      # Architecture notes and phase history
-```
-
-Every blueprint's `routes.py` registers routes on the single shared Flask `app` object
-(`from app import app`), so route/endpoint names are unchanged from before the codebase was
-split into packages — nothing outside this repo needed to change because of the reorganization.
+**Its own identity** — name, motto, tagline, contact details and logo, captured when the school
+is created and shown across its portal, result cards and receipts.
 
 ## Getting started
 
@@ -153,11 +109,12 @@ split into packages — nothing outside this repo needed to change because of th
 | Requirement | Notes |
 |---|---|
 | **Python 3.10+** | Developed and tested on 3.13. |
-| **PostgreSQL 14+** | Required. Tested against PostgreSQL 18. Must be running and reachable on `localhost:5432` for local development. |
-| A PostgreSQL role that may `CREATE DATABASE` | The platform creates one database per school as schools are added. The `postgres` superuser is fine locally. |
+| **PostgreSQL 14+** | Required, in development as well as production. Tested against PostgreSQL 18. |
+| A role that may `CREATE DATABASE` | Schools' databases are created on demand. Locally, the `postgres` superuser is fine. |
 
-There is no build toolchain, message queue or other service to run. `psycopg[binary]` is
-installed from `requirements.txt`, so no PostgreSQL client libraries need to be on the PATH.
+No build toolchain, message queue or other service is needed. The PostgreSQL driver
+(`psycopg[binary]`) installs from `requirements.txt`, so no client libraries need to be on the
+`PATH`.
 
 ### Install
 
@@ -177,97 +134,164 @@ copy .env.example .env       # Windows
 
 ### Configure
 
-Edit `.env` and set at least:
+Edit `.env`. Four values matter to get running; `.env.example` documents the rest.
 
 | Variable | What to put |
 |---|---|
-| `BRIGHTSTARS_SECRET` | A real random secret. `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `BRIGHTSTARS_PLATFORM_DB` | Your PostgreSQL URL, e.g. `postgresql+psycopg://postgres:yourpassword@localhost:5432/brightstars_platform` |
-| `BRIGHTSTARS_PLATFORM_HOSTS` | `platform.localhost` for local development |
-| `BRIGHTSTARS_PORTAL_DOMAIN` | `localhost` for local development, so a school is reachable at `<code>.localhost` |
+| `BRIGHTSTARS_SECRET` | A real random secret — `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | `platform.localhost` for development |
+| `BRIGHTSTARS_PORTAL_DOMAIN` | `localhost` for development |
 
-You do **not** need to create any database by hand: `python -m control_plane init` creates the
-registry database, and each school's database is created when the school is created.
+You do not need to create any database by hand. `python -m control_plane init` creates the
+registry, and each school's database is created with the school.
 
-### Set the platform up
-
-```bash
-python -m control_plane init                          # create the registry
-python -m control_plane create-platform-admin ops     # your own platform login (password prompted)
-python app.py                                         # http://platform.localhost:5000
-```
-
-Then open `http://platform.localhost:5000/platform`, sign in, and use **Create a school**. Each
-school you create is reachable immediately at `http://<school-code>.localhost:5000`.
-
-`*.localhost` resolves to the loopback address in current browsers, so no hosts-file editing is
-needed in development.
-
-## Configuration
-
-All configuration is read from environment variables, loaded from `.env` via
-`python-dotenv` (a variable already set in the real environment always wins over `.env`).
-`.env.example` documents every supported variable in full; the highlights:
-
-| Variable | Purpose |
-|---|---|
-| `BRIGHTSTARS_ENV` | `development` or `production`. In production, `BRIGHTSTARS_SECRET` must be at least 32 characters or the app refuses to start. |
-| `BRIGHTSTARS_SECRET` | Flask session-signing secret. Leaving it blank generates a new one on every restart, which logs everyone out. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
-| `BRIGHTSTARS_MAX_UPLOAD_BYTES` / `BRIGHTSTARS_MAX_REQUEST_BYTES` | Upload and request size limits. |
-| `BRIGHTSTARS_SMTP_*` | Outgoing mail for receipts and password resets. Leave `BRIGHTSTARS_SMTP_HOST` blank to disable email delivery. |
-| `BRIGHTSTARS_WHATSAPP_*` | WhatsApp Business Cloud API credentials for receipt delivery. Leave `BRIGHTSTARS_WHATSAPP_TOKEN` blank to disable it. |
-| `BRIGHTSTARS_PLATFORM_DB` / `BRIGHTSTARS_PLATFORM_HOSTS` / `BRIGHTSTARS_TENANTS_DIR` | Platform registry database (PostgreSQL in production), the hostnames that serve the platform console and the platform's own website, and the folder holding each school's files. |
-| `BRIGHTSTARS_PORTAL_DOMAIN` | The domain each school's portal address is issued under, e.g. `schools.brightstars.example`. |
-| `PORT` | Port for the built-in development server (default `5000`). |
-
-## Running the app
+### First run
 
 ```bash
+python -m control_plane init                       # create the registry database
+python -m control_plane create-platform-admin ops  # your own platform login (password prompted)
 python app.py
 ```
 
-This brings every registered school's schema up to date and starts the Flask development server on
-`http://0.0.0.0:5000` (or `PORT`). On Windows, `run_windows.bat` does the same after
-installing dependencies.
+Open `http://platform.localhost:5000/platform` and sign in. Browsers resolve `*.localhost` to the
+loopback address, so no hosts-file editing is needed in development.
 
-- `/` — public site
-- `/login` — unified login (staff, parents, students, candidates)
-- `/admin` — staff entry point (redirects to the neutral Workspace Home)
-- `/practice` — no-login practice-test gateway
-- `/health` — liveness check, returns `{"status": "ok"}`
+## Creating a school
 
-For a LAN/production-style deployment, see [Deployment](#deployment).
+From the console — **Create a school** — which is the normal path, because that form also captures
+the school's branding and logo:
 
-## Multi-tenancy
+- **Name and code.** The code is permanent: it forms the portal address and names the school's
+  database and folder.
+- **Branding.** Name, motto, tagline, phone, email, address and a logo. Set now so nobody ever
+  sees the portal wearing the wrong name.
+- **Its own domain** (optional, addable later).
+- **First administrator** (optional). A one-time password is shown once and must be changed at
+  first sign-in.
 
-Each school is a *tenant*: its own portal address, its own PostgreSQL database
-(`brightstars_<code>`), its own folder of files, and no way to see another school's data. The
-platform registry (`brightstars_platform`) holds which schools exist, their addresses and the
-platform administrators.
+The school is reachable the moment it is created, at `http://<code>.localhost:5000` in
+development.
 
-Every school is issued a portal address the moment it is created,
-`<code>.<BRIGHTSTARS_PORTAL_DOMAIN>`, which works immediately. A school that wants to use its own
-domain points a CNAME record at that address; the console shows the exact DNS record.
-
-Schools are normally created from the console. The CLI covers the same ground and a little more:
+The CLI can do the same without branding:
 
 ```bash
-python -m control_plane init                                  # create the registry database
-python -m control_plane create-platform-admin ops             # a platform login
 python -m control_plane create-tenant demo "Demo School" --admin-username demo_admin
-python -m control_plane list
-python -m control_plane suspend demo --reason "invoice overdue"
-python -m control_plane upgrade                               # bring every school's schema up to date
 ```
 
-To bring an existing single-school SQLite installation in as a school, including all its data:
+## Giving a school its own domain
 
-```bash
-python -m control_plane register-existing crainbow "Creative Rainbow Montessori School"     --from-db cbt.db --from-data data --from-uploads static/uploads
-python -m control_plane adopt-superadmin --from-db cbt.db     # its Super Admin becomes a platform admin
+The issued portal address always works and cannot be removed. To use the school's own address as
+well, add it in the console (or with `add-domain`), then have the school create one DNS record:
+
+```
+portal.theschool.example.   CNAME   theschool.schools.brightstars.example.
 ```
 
-`docs/architecture/MULTI_TENANCY.md` has the design, the security model and the known gaps.
+The console shows the exact record on the school's page. Your reverse proxy needs a certificate
+for each hostname it serves — a wildcard for the portal domain, plus one per school domain — and
+must pass the original `Host` header through unchanged, because that is what selects the school.
+
+## Command line
+
+```
+python -m control_plane <command>
+
+  init                          create the platform registry database and tables
+  create-platform-admin USER    add a platform operator
+  create-tenant CODE "Name"     create a school (portal address issued automatically)
+  register-existing CODE "Name" --from-db FILE    import a single-school SQLite installation
+  adopt-superadmin --from-db FILE                 make its Super Admin a platform operator
+  list                          every school, its addresses and its database
+  upgrade [CODE]                bring school database(s) up to the current schema
+  add-domain CODE HOST [--primary] / remove-domain HOST
+  suspend CODE [--reason TEXT] / activate CODE
+```
+
+## Configuration
+
+Everything is read from the environment, loaded from `.env`. `.env.example` documents every
+variable; the ones that shape the deployment:
+
+| Variable | Purpose |
+|---|---|
+| `BRIGHTSTARS_PLATFORM_DB` | PostgreSQL URL of the platform registry. Required — there is no default, because a wrong guess would silently create an empty registry and make every school look as though it did not exist. |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | Hostnames serving the platform website and console. |
+| `BRIGHTSTARS_PORTAL_DOMAIN` | Domain each school's portal address is issued under. |
+| `BRIGHTSTARS_TENANTS_DIR` | Folder holding each school's files. |
+| `BRIGHTSTARS_SECRET` | Session-signing secret. In production it must be at least 32 characters or the app refuses to start. |
+| `BRIGHTSTARS_ENV` | `development` or `production`. |
+| `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` | Optional: place schools' databases on another server. |
+| `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
+| `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | Receipt and password-reset delivery. |
+
+## Project layout
+
+```
+Academics/
+├── app.py                    # Flask/SQLAlchemy setup, request hooks, error handlers,
+│                             #   context processor, blueprint registration, shared helpers
+├── control_plane/            # The platform itself
+│   ├── models.py             #   registry tables: Tenant, TenantDomain, PlatformAdmin,
+│   │                         #     PlatformEntryToken, PlatformAuditLog (own database)
+│   ├── registry.py           #   registry engine/session, hostname → school, validation
+│   ├── resolver.py           #   the before_request hook; binds sessions to their school
+│   ├── routing.py            #   TenantSession, per-school engines, database creation
+│   ├── context.py            #   the current school for this request
+│   ├── provisioning.py       #   create/import/upgrade schools, branding, domains, suspend
+│   ├── entry.py              #   platform sign-in, entry tickets, "Enter school"
+│   ├── console.py            #   the platform console
+│   ├── site.py               #   the platform's own public website
+│   └── cli.py                #   python -m control_plane …
+├── models/                   # One school's schema, one module per domain
+│   ├── base.py               #   the shared db, built on TenantSession
+│   ├── auth.py               #   Admin, AdminType, Permission, AuditLog, messaging, locks
+│   ├── school.py             #   sessions, classes, students, assignments, results, promotion
+│   ├── entrance.py           #   Examination, Attempt, Answer, Candidate
+│   ├── finance.py            #   fee items, payments, allocations
+│   ├── library.py            #   books and loans
+│   ├── parents.py            #   parent accounts, links, feedback
+│   ├── public.py             #   the school's settings, pages and news
+│   ├── admissions.py         #   admission profiles and enrolment history
+│   ├── tenancy.py            #   the school's own row, settings and number allocations
+│   ├── presence.py           #   presence, notifications, password-reset tokens
+│   └── governance.py         #   SchemaMigration (historical record)
+├── core/                     # Cross-cutting helpers — no routes
+│   ├── db_helpers.py         #   query helpers, and the dialect-neutral upsert/aggregate
+│   ├── security.py           #   RBAC, admin_required, csrf_protect, audit_log
+│   ├── branding.py           #   the school's own name, motto, logo, receipt prefix
+│   ├── storage.py            #   the school's data/ and uploads/ folders
+│   ├── accounts.py           #   shared sign-in/out helpers
+│   ├── entrance.py           #   question banks, grading, result rendering
+│   ├── notifications.py      #   guardian email/WhatsApp
+│   ├── presence.py           #   who is online
+│   ├── public_settings.py    #   the school's settings lookup
+│   └── uploads.py            #   image upload validation
+├── blueprints/               # One package per route domain
+│   ├── auth/                 #   sign-in, sign-out, password recovery
+│   ├── school/               #   the school portal
+│   ├── entrance/             #   entrance-exam administration
+│   ├── candidate_portal/     #   candidates' own side
+│   ├── student_portal/       #   students' own side
+│   ├── parents/              #   parent portal and parent administration
+│   ├── finance/              #   fees, payments, receipts
+│   ├── library/              #   library administration
+│   └── administration/       #   accounts, roles, permissions, messaging
+├── services/                 # Small dependency-free utilities
+├── templates/                # Jinja templates; templates/platform/ is the console and site
+├── static/                   # CSS/JS/images shared by every school
+├── tenants/                  # Per school: <code>/data and <code>/uploads (gitignored)
+├── migrations/               # Historical schema-change record (see Notes)
+├── tests/
+│   ├── current/              #   the authoritative contract suite
+│   ├── verification/         #   end-to-end scripts against real databases
+│   └── legacy/               #   retained historical scripts, not authoritative
+├── deployment/               # Deployment notes and helper scripts
+└── docs/architecture/        # Design notes, including MULTI_TENANCY.md
+```
+
+Blueprints register routes on the shared Flask `app` with plain `@app.route` rather than
+`Blueprint` objects — see [Notes for contributors](#notes-for-contributors).
 
 ## Testing
 
@@ -275,47 +299,90 @@ python -m control_plane adopt-superadmin --from-db cbt.db     # its Super Admin 
 python tests/current/run_current.py
 ```
 
-This is the authoritative contract suite (architecture, security, assessment-flow, and
-RBAC/governance checks) and the one to run after any change.
+The authoritative contract suite: architecture, security, assessment flow, RBAC and
+multi-tenancy invariants. Run it after any change. It needs no database, except that the
+schema-drift check compares the models against the first registered school when one is reachable.
 
-`tests/verification/` holds deeper, end-to-end scripts against a real (throwaway) database —
-one script per feature area (`write_paths_*.py`), plus `smoke_entrypoint.py` (boots the real
-`python app.py` process and hits it over HTTP), `verify_admin_security.py`, `test_env_config.py`
-and `probe_rbac.py`. Run any of them directly with `python tests/verification/<script>.py`.
+Two end-to-end suites drive the real application over HTTP against PostgreSQL. Each creates its
+own throwaway databases (`bs_test_*`), drops them afterwards, and clears any left behind by a
+crashed run — they never touch real data.
 
-`tests/verification/write_paths_multitenancy.py` proves school isolation end to end (hostname
-routing, per-school databases, session cookies copied between schools, uploads, question banks,
-suspension) against throwaway databases, and
-`tests/verification/write_paths_platform_console.py` drives the platform console the same way
-(creating a school with its branding, portal addresses and CNAMEs, entering a school, and the
-hostile cases around all of it).
+```bash
+python tests/verification/write_paths_multitenancy.py      # isolation between schools
+python tests/verification/write_paths_platform_console.py  # the console, end to end
+```
 
-`tests/legacy/` holds retained historical scripts kept for reference; they are not part of
-the authoritative suite.
+Between them they cover hostname routing, per-school databases, session cookies copied between
+schools, path traversal, uploads, question banks, suspension, creating a school with its branding
+and logo, portal addresses and CNAMEs, and entering a school. `tests/verification/` also holds
+per-feature write-path scripts, and `tests/legacy/` retained historical ones.
 
-## Deployment
+## Operating
 
-`deployment/` contains the LAN deployment guide (`PHASE6G_DEPLOYMENT_GUIDE.md`), an exam-day
-checklist, and Windows helper scripts for finding the server's LAN IP, opening the firewall
-port, and starting the server. Inspect any `.bat` script before running it in your own
-environment.
+**Backups are per school.** Each school is a separate PostgreSQL database (`brightstars_<code>`)
+plus a folder under `tenants/<code>/`. Restoring one school never touches another.
+
+**Suspending** a school takes its portal offline for everyone — staff, parents and students —
+within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` on each worker. Its data is untouched and returns on
+reactivation.
+
+**Upgrades.** `python app.py` brings every registered school's schema up to date before serving.
+With many schools, run `python -m control_plane upgrade` as a deploy step instead.
+
+**Connections.** Each school has its own connection pool, so total connections scale with
+schools × pool size × workers. Size PostgreSQL's `max_connections` accordingly, or put a pooler
+in front. With PgBouncer in transaction mode, use a database per school rather than a schema per
+school.
+
+**More than one application server** needs `BRIGHTSTARS_TENANTS_DIR` on shared storage, or an
+object-store backend behind `core/storage.py`.
+
+## Importing an existing single-school installation
+
+One command creates the school and imports a SQLite database into it, table by table in
+dependency order, resetting identity sequences afterwards:
+
+```bash
+python -m control_plane register-existing theschool "The School" \
+    --from-db old.db --from-data data --from-uploads static/uploads
+python -m control_plane adopt-superadmin --from-db old.db
+```
+
+The source is opened read-only and never modified, so it remains a rollback until you retire it.
+Check student, result and payment counts against the old database before doing so.
 
 ## Notes for contributors
 
 - **Blueprints use plain `@app.route`, not `Blueprint` objects.** Every `blueprints/*/routes.py`
-  does `from app import app` and decorates routes directly on that shared instance. This was a
-  deliberate choice when the codebase was split out of a single `app.py`: it keeps every
-  endpoint name (and therefore every `url_for(...)` call and every raw permission-mapping
-  entry) exactly as it was, at the cost of not getting Blueprint features like URL prefixes.
-- **`migrations/` is a historical record, not a live migration runner.** The schema is
-  declared once in `models/` and created/upgraded automatically at startup
-  (`db.create_all()` plus a column-diffing helper); the SQL bodies under `migrations/` no
-  longer execute — they're kept so `schema_migrations` stays an accurate record of which
-  upgrades a given database has passed.
-- **Question banks are JSON files under `data/`.** `seed_banks.py` and `seed_demo_banks.py`
-  are optional local-only scripts for populating sample banks; do not run
-  `seed_demo_banks.py` against a real school database — its content is explicitly marked
-  DEMO-only.
-- **Each school has its own PostgreSQL database**, named `brightstars_<code>`, plus one
-  `brightstars_platform` registry. Back them up per school; restoring one school never touches
-  another.
+  does `from app import app` and decorates that shared instance. This keeps every endpoint name —
+  and therefore every `url_for(...)` and every permission-mapping entry — stable, at the cost of
+  Blueprint features like URL prefixes.
+- **Never use `db.engine`.** It names the default bind, which is the registry and holds no school
+  data. Use `control_plane.routing.current_engine()`.
+- **Never reach for a SQLite-only construct.** Upserts go through `core.db_helpers.insert_stmt()`
+  and string aggregation through `group_concat()`; partial indexes declare `postgresql_where`
+  alongside `sqlite_where`. A contract test enforces this.
+- **Never hard-code a school's name, motto or logo.** Use `school_brand` in templates and
+  `core.branding.school_name()` in code. A contract test fails the build on any occurrence.
+- **`migrations/` is a historical record, not a runner.** The schema is declared in `models/` and
+  realised by `create_all()` plus a column-diffing helper at startup; the SQL bodies no longer
+  execute and are kept so `schema_migrations` stays an accurate record.
+- **Question banks are JSON files** under `tenants/<code>/data/`. A new school starts with none.
+
+## Known gaps
+
+- **A school's top-level role is still called "Super Admin" internally.** It behaves as a school
+  administrator and platform operators outrank it, but the rename has not been done.
+- **Delivery settings are deployment-wide.** Every school sends receipts and password resets
+  through the same SMTP and WhatsApp accounts; per-school settings are not built.
+- **`LIKE` searches are now case-sensitive.** PostgreSQL is stricter than SQLite here, and around
+  21 name and username search call sites in `blueprints/` have not been reviewed or converted to
+  `ilike`. The test suites do not cover those paths.
+- **The school website editor edits pages nobody can see.** `/admin/school/website` still offers
+  page and news editing, and an enquiry inbox fed by a contact page that no longer exists. Its
+  branding fields are still used and should stay.
+- **Message attachments are reachable without authentication** at their `/static/uploads/…` URL
+  if the exact file name is known, alongside the permission-checked download route for the same
+  files.
+- **A failed sign-in shows no explanation** — the login template renders only flashed messages,
+  not the `error` value the view passes it.
