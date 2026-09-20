@@ -6,7 +6,7 @@ cookie. A hostname that no school owns is refused before any application code
 runs.
 """
 
-from flask import Response, current_app, g, request, session
+from flask import Response, g, request, session
 
 from . import config
 from .context import reset_current_tenant, set_current_tenant
@@ -47,17 +47,7 @@ def resolve_tenant():
 
     tenant = tenant_for_host(host)
     if tenant is None:
-        # Say which hostname was refused. Reaching a deployment on an address
-        # nobody registered is the single most common way to arrive at a 404
-        # here — behind a proxy or a tunnel that rewrites Host, above all — and
-        # without this the server logs give no way to tell what actually
-        # arrived. The hostname is echoed to its own sender, so it reveals
-        # nothing they did not already send.
-        current_app.logger.warning(
-            'Refused a request for an unregistered hostname: %r. Register it to a school, '
-            'or add it to BRIGHTSTARS_PLATFORM_HOSTS to serve the platform console there.', host)
-        return _plain(404, 'Site not found',
-                      f'{host} is not registered with Brightstars Academics.')
+        return _plain(404, 'Site not found', 'This address is not registered with Brightstars Academics.')
     if not tenant.is_active:
         return _plain(503, 'Temporarily unavailable',
                       'This school portal is currently unavailable. Please contact the school.')

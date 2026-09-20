@@ -19,7 +19,6 @@ from flask import (
 )
 
 from app import app
-from core.accounts import _rate_limit
 from core.security import csrf_protect
 
 from . import provisioning as pv
@@ -94,14 +93,6 @@ def _safe_next(target, fallback):
 def platform_login():
     if request.method == 'POST':
         username = request.form.get('username', '')
-        # This console creates and suspends schools and can enter any of them,
-        # so its sign-in is at least as worth guessing at as a school's. The
-        # same guard the school login uses applies here.
-        if not _rate_limit(f'platform-login:{request.remote_addr or "unknown"}:{username.lower()[:120]}',
-                           limit=8, window=300):
-            return render_template(
-                'platform/login.html',
-                error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
         admin = authenticate_platform_admin(username, request.form.get('password', ''))
         if not admin:
             return render_template('platform/login.html',
