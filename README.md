@@ -38,7 +38,6 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Project layout](#project-layout)
 - [Testing](#testing)
 - [Operating](#operating)
-- [Importing an existing single-school installation](#importing-an-existing-single-school-installation)
 - [Notes for contributors](#notes-for-contributors)
 - [Known gaps](#known-gaps)
 
@@ -337,7 +336,7 @@ moves them and no school can read another's.
 - **A new school is not empty.** Creating a school copies the standard entrance banks from
   `starter_banks/` into it and fills its examinations list. The files use neutral names and ids
   (`starter_year7_mathematics` and so on) and name no school. Nothing is ever overwritten, and the
-  repository's own `data/` folder and every existing school's banks are left as they are.
+  platform's own starter files are never changed by making a school or by a school's own import.
 - **A school can bring its own.** *Question Banks → Import from file* takes a JSON file. It needs
   the `question_banks.create` permission (replacing a bank also needs `question_banks.edit`). The
   file is checked strictly: at most 2 MB, a safe bank id, a name, 1 to 500 questions, each with
@@ -374,8 +373,6 @@ python -m control_plane <command>
   init                          create the platform registry database and tables
   create-platform-admin USER [--super]   add a platform admin (the first is the super admin)
   create-tenant CODE "Name"     create a school (portal address issued automatically)
-  register-existing CODE "Name" --from-db FILE    import a single-school SQLite installation
-  adopt-superadmin --from-db FILE                 make its Super Admin a platform operator
   list                          every school, its addresses and its database
   upgrade [CODE]                bring school database(s) up to the current schema
   drop-retired-tables [CODE] [--yes]   show, or with --yes drop, tables left by the removed website editor
@@ -432,7 +429,6 @@ Academics/
 │   ├── admissions.py         #   admission profiles and enrolment history
 │   ├── tenancy.py            #   the school's own row, settings and number allocations
 │   ├── presence.py           #   presence, notifications, password-reset tokens
-│   └── governance.py         #   SchemaMigration (historical record)
 ├── core/                     # Cross-cutting helpers — no routes
 │   ├── db_helpers.py         #   query helpers, and the dialect-neutral upsert/aggregate
 │   ├── security.py           #   RBAC, admin_required, csrf_protect, audit_log
@@ -466,13 +462,10 @@ Academics/
 ├── templates/                # Jinja templates; templates/platform/ is the console and site
 ├── static/                   # CSS/JS/images shared by every school
 ├── tenants/                  # Per school: <code>/data and <code>/uploads (gitignored)
-├── migrations/               # Historical schema-change record (see Notes)
 ├── tests/
 │   ├── current/              #   the authoritative contract suite
 │   ├── verification/         #   end-to-end scripts against real databases
-│   └── legacy/               #   retained historical scripts, not authoritative
-├── deployment/               # Deployment notes and helper scripts
-└── docs/architecture/        # Design notes, including MULTI_TENANCY.md
+└── docs/architecture/        # MULTI_TENANCY.md, and two product requirements the tests enforce
 ```
 
 Blueprints register routes on the shared Flask `app` with plain `@app.route` rather than
@@ -488,7 +481,7 @@ The authoritative contract suite: architecture, security, assessment flow, RBAC 
 multi-tenancy invariants. Run it after any change. It needs no database, except that the
 schema-drift check compares the models against the first registered school when one is reachable.
 
-Two end-to-end suites drive the real application over HTTP against PostgreSQL. Each creates its
+The end-to-end suites drive the real application over HTTP against PostgreSQL. Each creates its
 own throwaway databases (`bs_test_*`), drops them afterwards, and clears any left behind by a
 crashed run — they never touch real data.
 
@@ -511,8 +504,7 @@ python tests/verification/write_paths_rate_limits.py       # limits shared by ev
 Between them they cover hostname routing, per-school databases, session cookies copied between
 schools, path traversal, uploads, question banks, suspension, creating a school with its branding
 and logo, colours and photographs (including hostile input), portal addresses and CNAMEs, and
-entering a school. `tests/verification/` also holds
-per-feature write-path scripts, and `tests/legacy/` retained historical ones.
+entering a school.
 
 ### Every write is tested on PostgreSQL
 
@@ -567,20 +559,6 @@ school.
 **More than one application server** needs `BRIGHTSTARS_TENANTS_DIR` on shared storage, or an
 object-store backend behind `core/storage.py`.
 
-## Importing an existing single-school installation
-
-One command creates the school and imports a SQLite database into it, table by table in
-dependency order, resetting identity sequences afterwards:
-
-```bash
-python -m control_plane register-existing theschool "The School" \
-    --from-db old.db --from-data data --from-uploads static/uploads
-python -m control_plane adopt-superadmin --from-db old.db
-```
-
-The source is opened read-only and never modified, so it remains a rollback until you retire it.
-Check student, result and payment counts against the old database before doing so.
-
 ## Notes for contributors
 
 - **Blueprints use plain `@app.route`, not `Blueprint` objects.** Every `blueprints/*/routes.py`
@@ -594,9 +572,9 @@ Check student, result and payment counts against the old database before doing s
   alongside `sqlite_where`. A contract test enforces this.
 - **Never hard-code a school's name, motto or logo.** Use `school_brand` in templates and
   `core.branding.school_name()` in code. A contract test fails the build on any occurrence.
-- **`migrations/` is a historical record, not a runner.** The schema is declared in `models/` and
-  realised by `create_all()` plus a column-diffing helper at startup; the SQL bodies no longer
-  execute and are kept so `schema_migrations` stays an accurate record.
+- **The schema is declared in `models/` alone.** `create_all()` builds a school's tables and a
+  column-diffing helper at start-up adds any column an older database lacks; there are no migration
+  scripts to keep in step.
 - **Question banks are JSON files** under `tenants/<code>/data/`, owned by the school. A new school is
   given the platform's standard set, and can import its own (see *Question banks* below).
 

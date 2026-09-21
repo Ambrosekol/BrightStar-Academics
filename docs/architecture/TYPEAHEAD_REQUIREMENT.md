@@ -1,6 +1,6 @@
-# Crainbow — Type-Ahead/Suggestions Requirement
+# Type-Ahead/Suggestions Requirement
 
-A previous Crainbow build contains platform-wide typing suggestions/type-ahead behavior that makes data entry fast. This behavior is a retained product requirement.
+An earlier build of this platform contains platform-wide typing suggestions/type-ahead behavior that makes data entry fast. This behavior is a retained product requirement.
 
 During architectural refactoring:
 - identify the existing implementation and source of suggestions;

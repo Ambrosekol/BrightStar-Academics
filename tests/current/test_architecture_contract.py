@@ -48,11 +48,9 @@ def test_app_parses():
     ast.parse(APP.read_text(encoding="utf-8"))
 
 
-def test_baseline_documents_exist():
+def test_requirement_documents_exist():
     for rel in (
-        "docs/BASELINE_SHA256.txt",
-        "docs/architecture/CURRENT_ARCHITECTURE_MAP.md",
-        "docs/architecture/TARGET_ARCHITECTURE.md",
+        "docs/architecture/MULTI_TENANCY.md",
         "docs/architecture/ASSESSMENT_UX_REQUIREMENTS.md",
         "docs/architecture/TYPEAHEAD_REQUIREMENT.md",
     ):

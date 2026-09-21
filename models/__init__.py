@@ -5,8 +5,8 @@ is re-exported here so existing code — ``from models import db, Student,
 FinancePayment, ...`` — keeps working completely unchanged, whether that
 import lives in app.py, a services/ module, or a test script.
 
-These models mirror the schema that already exists in ``cbt.db`` exactly, as
-it was accreted by ``init_db()`` and the (now-inert) ``migrations`` package.
+These models are the single description of a school's schema: ``create_all()`` builds it and
+a column-diffing helper adds anything an older database lacks.
 They are deliberately NOT an idealised redesign:
 
 * Timestamps stay ``Text``. The application stores and compares ISO-8601
@@ -124,8 +124,6 @@ from .tenancy import (
 
 from .presence import PasswordResetToken, PresenceSession, SchoolNotification
 
-from .governance import SchemaMigration
-
 __all__ = [
     'Base', 'db',
     # entrance
@@ -164,6 +162,4 @@ __all__ = [
     'StudentNumberAllocation',
     # presence / notifications / password recovery
     'PasswordResetToken', 'PresenceSession', 'SchoolNotification',
-    # schema bookkeeping
-    'SchemaMigration',
 ]

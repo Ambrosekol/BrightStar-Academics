@@ -7,7 +7,6 @@ ADMIN_HELPERS=(ROOT/'blueprints'/'administration'/'helpers.py').read_text(encodi
 FORM=(ROOT/'templates/admin_account_form.html').read_text(encoding='utf-8')
 BASE=(ROOT/'templates/admin_base.html').read_text(encoding='utf-8')
 MSG=(ROOT/'templates/admin_messages.html').read_text(encoding='utf-8')
-MIG=(ROOT/'migrations/0003_admin_people_messaging.py').read_text(encoding='utf-8')
 
 def test_multi_role_model_and_ui():
     # The join table is declared under models/ (a package split by domain);
@@ -37,6 +36,3 @@ def test_admin_messaging_is_available_and_csrf_protected():
     assert 'admin_messages' in BASE
     assert 'admin_message_send' in MSG
 
-def test_migration_backfills_roles():
-    assert 'admin_role_assignments' in MIG
-    assert 'INSERT OR IGNORE INTO admin_role_assignments' in MIG

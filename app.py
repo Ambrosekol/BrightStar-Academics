@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 import os
 import posixpath
 import secrets
-import sqlite3
 import sys
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -36,7 +35,7 @@ from models import (
     FinanceFeeAssessment,
     FinancePayment, FinancePaymentAllocation,
     ParentAccount, ParentFeedback, ParentFeedbackReply,
-    AdminPermission, Permission, SchemaMigration, School,
+    AdminPermission, Permission, School,
     SchoolAssessment, SchoolAssignment,
     SchoolClass,
     SchoolNotification, SchoolNumberingPolicy, SchoolProject,
@@ -59,7 +58,7 @@ app.jinja_env.finalize = lambda value: int(value) if isinstance(value, float) an
 # "app" — so without this alias, that import would find no cached "app"
 # module and re-execute this entire file a second time under a separate
 # identity, creating a second Flask/SQLAlchemy setup that contends with the
-# first for the same SQLite file. Registering this module under both names
+# first for the same databases. Registering this module under both names
 # makes the later import resolve to this exact, already-running instance.
 sys.modules.setdefault('app', sys.modules[__name__])
 
@@ -86,20 +85,6 @@ db.init_app(app)
 # they all query the database and need the request's school selected first.
 from control_plane.resolver import install as _install_multitenancy  # noqa: E402
 _install_multitenancy(app)
-
-
-@sa.event.listens_for(sa.engine.Engine, 'connect')
-def _sqlite_pragmas(dbapi_connection, connection_record):
-    """Preserve the per-connection PRAGMAs the raw sqlite3 layer used to set.
-
-    Foreign keys are OFF by default in SQLite and must be enabled per
-    connection; the ON DELETE CASCADE rules in the schema are inert without it.
-    """
-    if isinstance(dbapi_connection, sqlite3.Connection):
-        cur = dbapi_connection.cursor()
-        cur.execute('PRAGMA foreign_keys=ON')
-        cur.execute('PRAGMA busy_timeout=10000')
-        cur.close()
 
 
 # ---------------- query helpers ----------------
@@ -138,9 +123,9 @@ def _add_missing_columns():
     closes that gap directly from the model metadata, which means there is no
     separate hand-written ALTER script to keep in step with the models.
 
-    SQLite cannot add a NOT NULL column without a default, so such a column is
-    reported rather than attempted; in practice every one of ours carries a
-    server default.
+    A NOT NULL column with no default cannot be added to a table that already has
+    rows, so such a column is reported rather than attempted; in practice every
+    one of ours carries a server default.
     """
     engine = current_engine()
     inspector = sa.inspect(engine)
@@ -156,9 +141,9 @@ def _add_missing_columns():
                 spec = column.type.compile(engine.dialect)
                 default = column.server_default
                 if default is not None:
-                    # SQLite accepts NOT NULL on an added column as long as a
-                    # default is supplied. Carrying the constraint across keeps
-                    # an upgraded database identical to a freshly created one.
+                    # A NOT NULL column can be added when a default is supplied. Carrying
+                    # the constraint across keeps an upgraded database identical to a
+                    # freshly created one.
                     if not column.nullable:
                         spec += ' NOT NULL'
                     spec += f' DEFAULT {default.arg.text}'
@@ -191,93 +176,6 @@ def _allow_fractional_marks():
         if found is not None and isinstance(found['type'],sa.Integer):
             with engine.begin() as connection:
                 connection.execute(sa.text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE double precision'))
-
-
-def _widen_parent_feedback_reply_admin_id():
-    """Let a parent reply into their own feedback thread, on an upgraded database.
-
-    parent_feedback_replies.admin_id used to be NOT NULL, so only staff could
-    ever post into a thread; NULL now means the parent who owns the thread
-    wrote it. SQLite cannot ALTER COLUMN a NOT NULL constraint away, so this
-    rebuilds the table when needed: a fresh install already gets the relaxed
-    shape straight from models.py via create_all(), so this is a no-op there.
-    Idempotent and safe to run on every startup.
-
-    Only ever needed on a SQLite database carried over from before the column
-    was relaxed. PostgreSQL can simply DROP NOT NULL, and every PostgreSQL
-    database here was created from the current models, so it is already right.
-    """
-    engine = current_engine()
-    if engine.dialect.name != 'sqlite':
-        return
-    inspector = sa.inspect(engine)
-    if 'parent_feedback_replies' not in inspector.get_table_names():
-        return
-    column = next((c for c in inspector.get_columns('parent_feedback_replies')
-                   if c['name'] == 'admin_id'), None)
-    if column is None or column['nullable']:
-        return
-    with engine.begin() as connection:
-        connection.execute(sa.text("""
-            CREATE TABLE parent_feedback_replies_new (
-                id INTEGER NOT NULL,
-                feedback_id INTEGER NOT NULL,
-                admin_id INTEGER,
-                body TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                file_type TEXT,
-                attachment_path TEXT,
-                PRIMARY KEY (id),
-                FOREIGN KEY(feedback_id) REFERENCES parent_feedback (id) ON DELETE CASCADE,
-                FOREIGN KEY(admin_id) REFERENCES admins (id)
-            )
-        """))
-        connection.execute(sa.text("""
-            INSERT INTO parent_feedback_replies_new
-                (id, feedback_id, admin_id, body, created_at, file_type, attachment_path)
-            SELECT id, feedback_id, admin_id, body, created_at, file_type, attachment_path
-            FROM parent_feedback_replies
-        """))
-        old_count=connection.execute(sa.text("SELECT COUNT(*) FROM parent_feedback_replies")).scalar()
-        new_count=connection.execute(sa.text("SELECT COUNT(*) FROM parent_feedback_replies_new")).scalar()
-        if old_count != new_count:
-            connection.execute(sa.text("DROP TABLE parent_feedback_replies_new"))
-            raise RuntimeError(
-                f"Widening parent_feedback_replies.admin_id would lose rows: "
-                f"expected {old_count}, copied {new_count}.")
-        connection.execute(sa.text("DROP TABLE parent_feedback_replies"))
-        connection.execute(sa.text("ALTER TABLE parent_feedback_replies_new RENAME TO parent_feedback_replies"))
-        connection.execute(sa.text(
-            "CREATE INDEX IF NOT EXISTS idx_parent_feedback_replies_feedback "
-            "ON parent_feedback_replies (feedback_id, created_at)"))
-
-def _record_schema_baseline():
-    """Record the historical migrations as applied without replaying them.
-
-    models.py is now the single description of the schema: create_all() builds
-    every table and _add_missing_columns() adds any column an older database
-    lacks. That makes the migrations under migrations/ redundant for schema
-    purposes, and replaying them is actively unsafe:
-
-    * 0003-0011 have empty bodies, so they would do nothing anyway.
-    * 0012-0019 are one-shot data repairs written against one specific
-      database. 0012 aborts with "expected 5 students; found N" on any other,
-      because it asserts a row count rather than a schema shape.
-
-    The seed data 0012 was responsible for (the initial school tenant, its
-    numbering policy, and the school_id backfill) is created idempotently by
-    _seed_school_tenant() instead, so it works on any database.
-
-    The versions are still written to schema_migrations so the table remains an
-    accurate record of which upgrades a database has passed.
-    """
-    from migrations.runner import MIGRATIONS
-    now = datetime.now(timezone.utc).isoformat()
-    # The table is part of models/ and has already been created by create_all();
-    # this only records the historical versions, ignoring any already present.
-    _ignore_insert(SchemaMigration, [{'version': version, 'applied_at': now}
-                                     for version, _ in MIGRATIONS])
-    db.session.commit()
 
 
 def _seed_school_tenant(now, code, name, motto=None, adopt_existing=False):
@@ -714,8 +612,7 @@ def init_db(school):
     """Create any missing tables and seed the reference data the app expects.
 
     The CREATE TABLE / ALTER TABLE script that used to live here is gone: the
-    schema is declared once in models.py and realised by create_all(), while
-    historical upgrades stay in migrations/.
+    schema is declared once in models/ and realised by create_all().
 
     Callable with or without an active Flask application context. Every
     SQLAlchemy call below needs one, but `python app.py` and the verify_*.py
@@ -738,7 +635,6 @@ def _init_db(school):
     _allow_fractional_marks()
     from core.retired_tables import drop_empty  # deferred: it imports the models
     drop_empty()
-    _widen_parent_feedback_reply_admin_id()
     now=datetime.now(timezone.utc).isoformat()
     # Seed the supported class structure. Primary 5 is deliberately optional.
     class_seed=[
@@ -757,7 +653,6 @@ def _init_db(school):
     init_admin_security()
     sync_examinations()
     db.session.commit()
-    _record_schema_baseline()
 
 
 def csrf_token():

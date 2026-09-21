@@ -121,7 +121,7 @@ def tree_fingerprint(path):
     return out
 
 
-REPO_DATA_BEFORE = tree_fingerprint(os.path.join(ROOT, "data"))
+STARTER_BEFORE = tree_fingerprint(B.STARTER_DIR)
 
 
 def good_bank(bank_id="alpha_extra", name="Extra Practice Bank", n=3, **over):
@@ -266,8 +266,8 @@ check("the school that unticked the box has no bank files at all",
       bank_files("beta") == [] and exam_rows("beta") == {}, str(bank_files("beta")))
 check("the standard banks were copied, not moved: the platform's own copy is intact",
       len(entries) == 6 and all(os.path.isfile(os.path.join(B.STARTER_DIR, e["file"])) for e in entries))
-check("the repository's own data/ folder was not touched",
-      tree_fingerprint(os.path.join(ROOT, "data")) == REPO_DATA_BEFORE)
+check("the platform's own starter files were not touched by making schools",
+      tree_fingerprint(B.STARTER_DIR) == STARTER_BEFORE)
 
 visible = {}
 for slug in ("alpha", "gamma"):
@@ -297,8 +297,6 @@ check("a file that is already there is never overwritten; the rest are added",
       open(os.path.join(delta_folder, "starter_year7_english.json"), encoding="utf-8").read()
       == "the school's own file, which must survive"
       and "starter_year7_english" in result["skipped"] and len(result["created"]) == 5, str(result))
-check("a school imported from an old installation is not given the standard banks on top of its own",
-      "starter_banks=False" in inspect.getsource(pv.register_existing_tenant))
 
 # ================================================================== the admin area, as each school
 c_a, u_a, r = sign_in("alpha", "alpha_admin", "Alpha-admin-pass-1")
@@ -751,8 +749,8 @@ check("every bank file is directly inside the school's own data folder, so copyi
 listing = pv.tenant_folder_listing(info_for("alpha"))
 check("the platform console shows the school's data folder holding the banks",
       any(e["name"] == "data/" and not e["detail"].startswith("0 ") for e in listing["entries"]), str(listing["entries"]))
-check("the repository's own data/ folder is still exactly as it was",
-      tree_fingerprint(os.path.join(ROOT, "data")) == REPO_DATA_BEFORE)
+check("the platform's own starter files are still exactly as they were",
+      tree_fingerprint(B.STARTER_DIR) == STARTER_BEFORE)
 
 dispose_engines()
 DROP_TEST_DATABASES()

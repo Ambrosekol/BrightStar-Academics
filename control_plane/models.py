@@ -7,7 +7,7 @@ Nothing here is ever created inside a school's database, and a school's
 database never contains a row describing another school.
 
 Column conventions match ``models/``: ISO-8601 UTC text timestamps and 0/1
-integer flags, so the registry is portable between SQLite and PostgreSQL.
+integer flags.
 """
 
 from sqlalchemy import Float, ForeignKey, Index, Integer, Text, UniqueConstraint, text
@@ -39,7 +39,7 @@ class Tenant(PlatformBase):
     # credential in the registry.
     db_url = mapped_column(Text, nullable=False)
     # PostgreSQL only: the schema that holds this school's tables when several
-    # schools share one database. Ignored for SQLite.
+    # schools share one database.
     db_schema = mapped_column(Text)
     storage_key = mapped_column(Text, nullable=False)
     plan = mapped_column(Text)

@@ -2,9 +2,7 @@
 
     init                          create the platform registry tables
     create-platform-admin USER [--super]   add a platform admin (password prompted)
-    adopt-superadmin --from-db F  copy an existing installation's Super Admin(s) into the platform
     create-tenant CODE "Name" [--domain HOST ...]   (the portal address is issued automatically)
-    register-existing CODE "Name" --from-db cbt.db [--domain HOST --from-data data --from-uploads static/uploads]
     upgrade [CODE]                bring school database(s) up to the current schema
     drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
     add-domain CODE HOST [--primary] / remove-domain HOST
@@ -12,8 +10,8 @@
     list
 
 Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the
-registry and, per school, ``--db-url`` (PostgreSQL in production; SQLite files
-under BRIGHTSTARS_TENANTS_DIR when omitted). See docs/architecture/MULTI_TENANCY.md.
+registry and, per school, ``--db-url`` (a PostgreSQL URL; when omitted the school gets a database
+of its own on the platform's server). See docs/architecture/MULTI_TENANCY.md.
 """
 
 import argparse
@@ -35,10 +33,6 @@ def _parser():
     s.add_argument('--super', dest='superadmin', action='store_true',
                    help='make this the (or another) super admin; the first admin is one automatically')
 
-    s = sub.add_parser('adopt-superadmin')
-    s.add_argument('--from-db', required=True)
-    s.add_argument('--username')
-
     s = sub.add_parser('create-tenant')
     s.add_argument('code')
     s.add_argument('name')
@@ -46,20 +40,12 @@ def _parser():
                    help="A domain of the school's own, which reaches the portal once its DNS "
                         "points a CNAME at the portal address. The portal address itself is "
                         "always issued automatically.")
-    s.add_argument('--db-url', help='SQLAlchemy URL, or env:VARIABLE_NAME. Default: a SQLite file under the tenants folder.')
+    s.add_argument('--db-url', help="PostgreSQL URL, or env:VARIABLE_NAME. Default: a database of the school's own on the platform's server.")
     s.add_argument('--db-schema', help='PostgreSQL schema for this school inside a shared database.')
     s.add_argument('--admin-username', help="Create the school's first admin; a temporary password is printed once.")
     s.add_argument('--admin-display-name')
     s.add_argument('--no-starter-banks', action='store_true',
                    help="Do not copy the platform's standard entrance question banks into the school.")
-
-    s = sub.add_parser('register-existing')
-    s.add_argument('code')
-    s.add_argument('name')
-    s.add_argument('--domain', action='append', default=[])
-    s.add_argument('--from-db', required=True)
-    s.add_argument('--from-data')
-    s.add_argument('--from-uploads')
 
     s = sub.add_parser('upgrade')
     s.add_argument('code', nargs='?')
@@ -103,9 +89,6 @@ def main(argv=None):
                                             superadmin=args.superadmin)
             print(f'Platform admin {args.username} created as '
                   f'{"the super admin" if role == "superadmin" else "a platform admin"}.')
-        elif args.command == 'adopt-superadmin':
-            adopted = pv.adopt_superadmins(args.from_db, args.username)
-            print('Adopted: ' + (', '.join(adopted) if adopted else 'nothing new (already present)'))
         elif args.command == 'create-tenant':
             info, password = pv.create_tenant(
                 args.code, args.name, args.domain, db_url=args.db_url, db_schema=args.db_schema,
@@ -117,12 +100,6 @@ def main(argv=None):
                 print(f'  {hostname} reaches it once a CNAME points it at {portal}')
             if password:
                 print(f'First admin: {args.admin_username}   temporary password (shown once): {password}')
-        elif args.command == 'register-existing':
-            info = pv.register_existing_tenant(args.code, args.name, args.domain, args.from_db,
-                                               args.from_data, args.from_uploads)
-            portal, _ = pv.domains_of(info.slug)
-            print(f'School {info.slug} registered from {args.from_db} (originals untouched).')
-            print(f'  portal: {portal}')
         elif args.command == 'upgrade':
             if args.code:
                 with platform_session() as session:

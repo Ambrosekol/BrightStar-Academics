@@ -139,10 +139,10 @@
   <details>
     <summary>Advanced: where the school's database lives</summary>
     <div class="panel">
-      <p class="muted" style="margin-top:0">Leave both blank for the default: a SQLite file inside
-        the school's own folder. In production, give a PostgreSQL URL — or
-        <code>env:VARIABLE_NAME</code> to read it (and its password) from the environment instead
-        of storing a credential here.</p>
+      <p class="muted" style="margin-top:0">Leave both blank for the default: the school gets a
+        PostgreSQL database of its own on this platform's server, named after its code. To put it
+        somewhere else, give a PostgreSQL URL — or <code>env:VARIABLE_NAME</code> to read it (and
+        its password) from the environment instead of storing a credential here.</p>
       <label for="db_url">Database URL</label>
       <input type="text" id="db_url" name="db_url" value="{{ form.db_url }}" class="mono"
              placeholder="postgresql+psycopg://user:password@host/school_db">

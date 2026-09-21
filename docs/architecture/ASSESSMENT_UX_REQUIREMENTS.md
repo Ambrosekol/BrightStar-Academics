@@ -1,4 +1,4 @@
-# Crainbow — Student Assessment UX Contract
+# Student Assessment UX Contract
 
 This is a locked acceptance requirement for the final web build.
 

@@ -7,7 +7,6 @@ CTRL=(ROOT/'templates/admin_controls.html').read_text(encoding='utf-8')
 SUB=(ROOT/'templates/school_subject_form.html').read_text(encoding='utf-8')
 RES=(ROOT/'templates/student_assessment_result.html').read_text(encoding='utf-8')
 SCHRES=(ROOT/'templates/school_results.html').read_text(encoding='utf-8')
-MIG=(ROOT/'migrations/0004_governance_result_release.py').read_text(encoding='utf-8')
 SCHOOL_ROUTES=(ROOT/'blueprints'/'school'/'routes.py').read_text(encoding='utf-8')
 STUDENT_PORTAL_HELPERS=(ROOT/'blueprints'/'student_portal'/'helpers.py').read_text(encoding='utf-8')
 def test_scope_defaults_to_whole_area():
@@ -39,7 +38,7 @@ def test_result_release_governance():
     asserted here is 'entered'.
     """
     assert "result_status='released' if assessment_meta and assessment_meta['assessment_type']=='practice' else 'entered'" in STUDENT_PORTAL_HELPERS
-    assert 'result_release_at' in MIG
+    assert 'result_release_at' in "\n".join(p.read_text(encoding='utf-8') for p in sorted((ROOT/'models').glob('*.py')))
     assert "visible_to_student" in RES and "school.results.release" in SCHOOL_ROUTES and "result_release_at" in SCHRES
 
 def test_result_workflow_stages_are_ordered():

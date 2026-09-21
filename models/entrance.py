@@ -1,8 +1,7 @@
 """Entrance examination: banks, attempts, candidates and their papers.
 
-These models mirror the schema that already exists in ``cbt.db`` exactly, as
-it was accreted by ``init_db()`` and the (now-inert) ``migrations`` package —
-deliberately NOT an idealised redesign. See ``models/__init__.py`` for the
+These models are the single description of a school's schema, deliberately NOT an idealised
+redesign. See ``models/__init__.py`` for the
 column-convention notes that apply across every model in this package.
 """
 

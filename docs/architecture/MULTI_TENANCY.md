@@ -1,8 +1,7 @@
 # Brightstars Academics — Multi-Tenancy
 
-Brightstars Academics is the platform. Each school it serves (Creative Rainbow,
-"Crainbow", is the first) is a **tenant**: it has its own portal address, its
-own database, and its own folder of files. The platform operators are the only
+Brightstars Academics is the platform. Each school it serves is a **tenant**: it has its
+own portal address, its own database, and its own folder of files. The platform operators are the only
 super admins; a school manages its own staff and roles.
 
 Two rules shape everything below:
@@ -35,17 +34,13 @@ Two rules shape everything below:
 | **Platform console**: sign-in, dashboard, create school, addresses, administrators, suspend, activity | Built |
 | **Create-school form captures branding** (name, motto, contact, logo) and applies it at creation | Built |
 | **"Enter school"** — single-use, expiring, school-bound ticket | Built |
-| CLI: create / register / upgrade / suspend / domains / platform admins | Built |
-| Existing Crainbow installation → first tenant (copy, originals untouched) | Built |
-| Existing Super Admin → platform admin | Built |
+| CLI: create / upgrade / suspend / domains / platform admins | Built |
 | **School Admin role** (a school's top role is "School Admin"; existing schools are renamed in place at start-up) | Built |
 | **Branding sweep**: no school's name or code appears in shared code (enforced by a contract test) | Built |
 | **Per-school email and WhatsApp**, secrets encrypted at rest, with the platform's account as the fallback | Built |
 | **Uploads are access-controlled** per folder: branding public, messages only via their own route, the rest for signed-in accounts | Built |
 | PostgreSQL everywhere; a database per school, created on demand | Built |
-| Importing an existing SQLite installation into a school's PostgreSQL database | Built |
-| Crainbow reduced to an ordinary tenant; no school name anywhere in shared code | Built |
-| **Verified against a live PostgreSQL server** | **Not yet** — see [Status of the PostgreSQL work](#status-of-the-postgresql-work) |
+| **Verified against a live PostgreSQL server**: every page opened and every form submitted | Built — see [Status of the PostgreSQL work](#status-of-the-postgresql-work) |
 
 Multi-tenancy **cannot be switched off**. There is no flag: a request without a
 school resolves to nothing and any query it makes raises. A toggle would mean a
@@ -55,21 +50,21 @@ data leak would hide.
 ## How a request is served
 
 ```
-https://portal.creativerainbow.example/login      (CNAME → crainbow.<portal domain>)
+https://portal.theschool.example/login      (CNAME → theschool.<portal domain>)
         │  Host header only (never a URL parameter, form field or cookie)
         ▼
-control_plane.resolver     host → platform registry → school "crainbow"
+control_plane.resolver     host → platform registry → school "theschool"
         │                   platform hostname → the platform site and console
         │                   unknown host → 404, suspended school → 503
         │                   /school/… on a school → 404 (a portal has no website)
         │                   session from another school → discarded
         ▼
-current school = crainbow  (a ContextVar for the request)
+current school = theschool  (a ContextVar for the request)
         │
-        ├─ db.session ──► TenantSession picks crainbow's engine (its own database)
-        ├─ core/storage ► tenants/crainbow/data     (question banks)
+        ├─ db.session ──► TenantSession picks theschool's engine (its own database)
+        ├─ core/storage ► tenants/theschool/data     (question banks)
         ├─ core/branding ► the school's own name, motto and logo
-        └─ /static/uploads/… ► tenants/crainbow/uploads
+        └─ /static/uploads/… ► tenants/theschool/uploads
 ```
 
 ### What each hostname serves
@@ -100,7 +95,7 @@ uploads are never served there either.
 | `control_plane/context.py` | `TenantInfo` (immutable snapshot), the per-request current school, `tenant_context()` |
 | `control_plane/routing.py` | `TenantSession`, per-school engine cache, `build_engine()` (SQLite and PostgreSQL) |
 | `control_plane/resolver.py` | `before_request` hook + session-to-school binding; `install(app)` |
-| `control_plane/provisioning.py` | Create / register-existing / upgrade schools, first admin, adopt Super Admin, suspend, domains |
+| `control_plane/provisioning.py` | Create / upgrade schools, first admin, suspend, domains |
 | `control_plane/console.py` | The platform console: sign-in, dashboard, create school, addresses, administrators, suspend, activity, "Enter school" |
 | `control_plane/entry.py` | Platform-admin sign-in, entry tickets, the reserved operator account inside a school |
 | `control_plane/cli.py` | `python -m control_plane …` |
@@ -117,7 +112,7 @@ blueprints changed for routing: every query already went through `db.session`.
 
 ## Local development
 
-1. Set in `.env` (see `.env.example`): `BRIGHTSTARS_MULTITENANT=1`, a strong
+1. Set in `.env` (see `.env.example`): `BRIGHTSTARS_PLATFORM_DB` and a strong
    `BRIGHTSTARS_SECRET`.
 2. Create the registry and yourself:
 
@@ -125,17 +120,10 @@ blueprints changed for routing: every query already went through `db.session`.
    python -m control_plane init
    python -m control_plane create-platform-admin ops --display-name "Ops"
    ```
-3. Bring Crainbow in as the first school (copies; nothing is moved or deleted):
-
-   ```bash
-   python -m control_plane register-existing crainbow "Creative Rainbow Montessori School" \
-       --from-db cbt.db --from-data data --from-uploads static/uploads
-   python -m control_plane adopt-superadmin --from-db cbt.db
-   ```
-4. `python app.py`, then open the console at
-   `http://platform.localhost:5000/platform` and create any further schools
-   there — that form captures each school's branding and logo, which the CLI
-   does not. Crainbow's own portal is at `http://crainbow.localhost:5000`.
+3. `python app.py`, then open the console at
+   `http://platform.localhost:5000/platform` and create your schools there — that form
+   captures each school's branding and logo, which the CLI does not. A school's portal is at
+   `http://<school-code>.localhost:5000`.
 
 `*.localhost` resolves to the loopback address in current browsers, so no
 hosts-file edit is needed in development.
@@ -244,9 +232,9 @@ The platform registry (`BRIGHTSTARS_PLATFORM_DB`) is its own database, e.g.
 
 ```bash
 pip install "psycopg[binary]>=3.1"
-python -m control_plane create-tenant crainbow "Creative Rainbow" \
-    --domain portal.creativerainbow.example \
-    --db-url "env:CRAINBOW_TENANT_DB_URL"           # or a literal URL
+python -m control_plane create-tenant theschool "The School" \
+    --domain portal.theschool.example \
+    --db-url "env:THESCHOOL_TENANT_DB_URL"           # or a literal URL
 python -m control_plane create-tenant demo "Demo" --domain demo.example \
     --db-url "env:SHARED_TENANT_DB_URL" --db-schema school_demo
 ```
@@ -260,51 +248,15 @@ Every SQLite-only construct has been replaced:
 | `sqlalchemy.dialects.sqlite.insert(...)` upserts in 8 modules | `core.db_helpers.insert_stmt()`, which picks the dialect from the school's own database |
 | `func.group_concat` | `core.db_helpers.group_concat()` (`string_agg` on PostgreSQL, with a cast) |
 | Partial indexes declared only with `sqlite_where=` | `postgresql_where=` declared alongside, and a contract test keeps the two counts equal |
-| `INSERT OR IGNORE` through the raw driver in `_record_schema_baseline` | the `SchemaMigration` model and a dialect-neutral insert |
 | A SQLite table rebuild in `_widen_parent_feedback_reply_admin_id` | returns immediately on PostgreSQL, where the column is already nullable |
 
-**What has not happened yet:** none of this has been exercised against a
-running PostgreSQL server, because the work was done before the connection
-details were available. Until `tests/verification/write_paths_multitenancy.py`
-and `write_paths_platform_console.py` have been run against a live server, treat
-PostgreSQL support as written-but-unproven. Both scripts create their own
-throwaway databases (`bs_test_*`) and drop them afterwards, so running them is
-safe.
-
-Two things are worth watching for on the first real run:
-
-* **Case sensitivity.** `LIKE` is case-insensitive on SQLite and case-sensitive
-  on PostgreSQL. Around 21 call sites in `blueprints/` use `like`/`startswith`
-  for name and username searches; each needs judging on its merits, and the
-  search-box ones should become `ilike`.
-* **Type strictness.** SQLite accepts any value in any column; PostgreSQL does
-  not. An import from an old SQLite database can therefore fail on a row that
-  the old database was happy to store.
-
-### Moving an existing SQLite installation into a school
-
-One command does the whole thing:
-
-```bash
-python -m control_plane register-existing crainbow "Creative Rainbow Montessori School" \
-    --from-db cbt.db --from-data data --from-uploads static/uploads
-```
-
-It creates the school like any other (PostgreSQL database, portal address,
-folder), then imports every row of the SQLite database into it table by table in
-dependency order, resets each identity sequence past the imported ids, and copies
-the question banks and uploads into the school's own folder. The source database
-is opened **read-only** and is never modified, so it remains a rollback until you
-choose to delete it.
-
-Afterwards, bring the old Super Admin across as a platform operator:
-
-```bash
-python -m control_plane adopt-superadmin --from-db cbt.db
-```
-
-Check the result before retiring the old file — student, result and payment
-counts in the school should match the old database.
+**Verified.** `tests/verification/write_paths_pg_smoke.py` opens every page and
+`write_paths_pg_posts.py` submits every form, on a real PostgreSQL server; the other suites in
+`tests/verification/` cover isolation between schools and the platform console. Each creates its
+own throwaway databases (`bs_test_*`) and drops them afterwards, so running them is safe. The two
+things that most often differ from SQLite are dealt with: `LIKE` is case-sensitive on PostgreSQL,
+so searches use `icontains(..., autoescape=True)`; and PostgreSQL refuses a value that does not fit
+its column, which the form-submission suite provokes on every route.
 
 ### Operating notes
 
@@ -328,9 +280,6 @@ counts in the school should match the old database.
 | **Platform admin** | platform registry | Create/suspend schools, manage domains, enter any school, and — like a school admin — manage that school's staff and roles. Cannot touch the team or read anyone else's log |
 | **School admin** | the school's own database | Manage their school's staff, roles, permissions and data. Cannot see or affect other schools |
 | Staff / parent / student / candidate | the school's own database | As today |
-
-The existing Super Admin (`adopt-superadmin`) becomes a platform admin: same
-username, same password hash, no reset.
 
 A platform admin inside a school acts through the reserved `platform@<username>`
 account described above, which holds that school's system role — so they can do

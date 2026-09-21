@@ -92,8 +92,8 @@ def portal_hostname(slug):
 
 
 def tenants_dir():
-    """Root folder holding each school's own files (question banks, uploads and,
-    for SQLite deployments, the database file)."""
+    """Root folder holding each school's own files (question banks, uploads and
+    its numbering rules)."""
     return os.environ.get('BRIGHTSTARS_TENANTS_DIR', '').strip() or os.path.join(BASE, 'tenants')
 
 

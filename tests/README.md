@@ -1,31 +1,19 @@
-# Crainbow Test Structure
+# Tests
 
-There are three subdirectories here, each with a different job. Run `tests/current/`
-after every change; reach for `tests/verification/` when a change touches something
-`tests/current/` can't see from source alone; leave `tests/legacy/` alone.
+Two folders, each with a different job. Run `tests/current/` after every change; reach for
+`tests/verification/` when a change touches something the contract tests cannot see from source.
 
-## `tests/current/` — the authoritative contract suite
+## `tests/current/` — the contract suite
 
-Fast, source-level architecture/security/assessment/governance contract checks. These are
-the tests that evolve with the production system, and the ones to run after any change.
-
-Run from the `crainbow` directory:
+Fast, source-level checks of the architecture, security, assessment flow, roles and multi-tenancy
+rules. It needs no database. Run it from the project folder:
 
 ```text
 python tests/current/run_current.py
 ```
 
-## `tests/verification/` — end-to-end checks against a real running app
+## `tests/verification/` — end-to-end checks against a real PostgreSQL server
 
-Deeper scripts that actually drive the application (a real Flask test client or, for
-`smoke_entrypoint.py`, a real `python app.py` process) against a throwaway copy of the
-database, rather than reading source text. Each answers a question `tests/current/` can't:
-does this route actually behave correctly when called, not just does the right code exist.
-Each script is run by hand and prints its own report. See `tests/verification/README.md`
-for what each one covers and why it exists.
-
-## `tests/legacy/` — retained historical scripts
-
-Historical phase-specific verification scripts kept for forensic/reference purposes. They
-are **not** part of the authoritative suite and are not run as part of normal development —
-leave them as-is unless you are specifically investigating project history.
+Scripts that drive the real application over HTTP against throwaway databases (`bs_test_*`, dropped
+afterwards) and check what actually happens, not just what the source says. Each is run by hand and
+prints its own report. The project README's *Testing* section lists them and what each covers.

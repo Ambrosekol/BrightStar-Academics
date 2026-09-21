@@ -254,9 +254,6 @@ def test_each_school_gets_its_own_postgresql_database():
     assert config.school_db_name("st-marys") == "brightstars_st_marys"
     routing = (ROOT / "control_plane" / "routing.py").read_text(encoding="utf-8")
     assert "CREATE DATABASE" in routing and "AUTOCOMMIT" in routing
-    provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
-    # Imported rows must not collide with ids handed out afterwards.
-    assert "def _reset_sequences" in provisioning and "pg_get_serial_sequence" in provisioning
 
 
 def test_postgresql_is_documented_as_the_only_database():
@@ -607,28 +604,16 @@ print(json.dumps({"unaccounted": sorted(map(str, coverage.unaccounted(app.url_ma
     assert answer["stale"] == [[], []], answer["stale"]
 
 
-def test_the_standard_question_set_is_the_platforms_own_and_shares_nothing_with_a_school():
-    """The starter banks were written for the platform. None of their questions may be one of the
-    first school's (the repository's data/ folder), and each must serve a paper whose marks are
-    whole hundredths (a count that splits 100 marks exactly)."""
+def test_the_standard_question_set_is_the_platforms_own_and_names_no_school():
+    """The starter banks were written for the platform, so nothing in them may name a school, and each
+    must serve a paper whose marks are whole hundredths (a count that splits 100 marks exactly)."""
     import json
     import re
 
-    def norm(text):
-        return re.sub(r"[^a-z0-9]+", " ", str(text).lower()).strip()
-
-    def stems(folder, prefix):
-        found = set()
-        for path in (ROOT / folder).glob(prefix + "*.json"):
-            if path.name == "manifest.json":
-                continue
-            for question in json.loads(path.read_text(encoding="utf-8"))["questions"]:
-                found.add(norm(question["text"]))
-        return found
-
-    starter, first_school = stems("starter_banks", "starter_"), stems("data", "")
-    assert len(starter) >= 200
-    assert not (starter & first_school), sorted(starter & first_school)[:3]
+    text = "".join(path.read_text(encoding="utf-8") for path in (ROOT / "starter_banks").glob("*.json"))
+    assert len(re.findall(r'"answer":', text)) >= 200
+    assert not re.search(r"creative rainbow|crainbow|montessori|crms", text, re.I)
+    assert not (ROOT / "data").exists(), "the platform ships no school's questions; schools get theirs from starter_banks/ or an import"
     manifest = json.loads((ROOT / "starter_banks" / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["version"] == "2.0" and len(manifest["banks"]) == 6
     for entry in manifest["banks"]:
@@ -650,3 +635,4 @@ def test_marks_are_decimals_and_read_as_whole_numbers_when_they_are_whole():
     assert "int(points" not in entrance[entrance.index("def grade"):entrance.index("def candidate_record")]
     assert "_allow_fractional_marks()" in APP[APP.index("def _init_db"):APP.index("def csrf_token")]
     assert "app.jinja_env.finalize" in APP
+
