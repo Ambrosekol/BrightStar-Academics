@@ -29,6 +29,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Getting started](#getting-started)
 - [Creating a school](#creating-a-school)
 - [Giving a school its own domain](#giving-a-school-its-own-domain)
+- [The platform team and its activity log](#the-platform-team-and-its-activity-log)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -159,8 +160,13 @@ python -m control_plane create-platform-admin ops  # your own platform login (pa
 python app.py
 ```
 
-Open `http://platform.localhost:5000/platform` and sign in. Browsers resolve `*.localhost` to the
-loopback address, so no hosts-file editing is needed in development.
+Open `http://platform.localhost:5000/` and sign in. Browsers resolve `*.localhost` to the
+loopback address, so no hosts-file editing is needed in development. The first platform admin you
+create is the platform's **super admin** (see below).
+
+Plain `http://localhost:5000/` belongs to no school and no console, so it shows an "address not
+found" page. In development that page also prints the console's address and the shape of a
+school's, which is the usual thing you were looking for.
 
 ## Creating a school
 
@@ -215,13 +221,53 @@ The console shows the exact record on the school's page. Your reverse proxy need
 for each hostname it serves — a wildcard for the portal domain, plus one per school domain — and
 must pass the original `Host` header through unchanged, because that is what selects the school.
 
+## The platform team and its activity log
+
+There are two kinds of platform admin, and both have **full control over every school** — create,
+brand, suspend, and enter any of them.
+
+| | Platform admin | Super admin |
+|---|---|---|
+| Create, brand, suspend and enter schools | yes | yes |
+| Add, remove, restore and reset other admins | no | **yes** |
+| Read what each admin has done | only their own log | **everyone's** |
+| Can be removed | by the super admin | **never** |
+
+The super admin is the overall admin who can always look over and protect the system. The first
+admin created becomes one; the console can never create another (do that deliberately from the
+command line with `--super`). A platform that already had admins before roles existed promotes
+its earliest admin automatically, so upgrading needs no manual step.
+
+**Adding an admin** (Team page, super admin only) generates a one-time password that is shown once.
+The new admin must replace it the first time they sign in, and nothing else in the console opens
+until they have.
+
+**Removing an admin** never deletes the account. It switches their access off everywhere at once:
+their console session ends, tickets they had not yet used die, and their reserved account inside
+every school is switched off, so a session they already had open *inside a school* stops at the
+next click. The account and its whole log are kept, and the super admin can restore them (with a
+new temporary password) or reset any admin's password. If a school cannot be reached while
+removing someone, the console says which, so it is never silently missed.
+
+**The activity log** is arranged as *choose an admin, then read their log*: the super admin picks
+anyone (or Everyone, or a removed admin) and reads their entries, filtered by Schools, Accounts &
+team, or Sign-ins. It records what each admin did to schools (create, suspend, reactivate, addresses,
+branding, first administrators, every entry into a school) and within the platform itself (adding,
+removing, restoring and resetting admins, password changes, and every sign-in, sign-out and
+failed or refused attempt on a real account, with the address it came from). It also shows what
+each admin did **inside schools** (the *Inside schools* view, and merged into *Everything*). That is
+read, read-only, from each school's own audit trail, where an admin's actions are recorded under
+their reserved `platform@<username>` account. Only schools the admin has entered are opened, and a
+school that cannot be reached is named on the page rather than silently leaving entries out. Any
+other admin sees only their own log.
+
 ## Command line
 
 ```
 python -m control_plane <command>
 
   init                          create the platform registry database and tables
-  create-platform-admin USER    add a platform operator
+  create-platform-admin USER [--super]   add a platform admin (the first is the super admin)
   create-tenant CODE "Name"     create a school (portal address issued automatically)
   register-existing CODE "Name" --from-db FILE    import a single-school SQLite installation
   adopt-superadmin --from-db FILE                 make its Super Admin a platform operator
@@ -263,6 +309,7 @@ Academics/
 │   ├── context.py            #   the current school for this request
 │   ├── provisioning.py       #   create/import/upgrade schools, branding, domains, suspend
 │   ├── entry.py              #   platform sign-in, entry tickets, "Enter school"
+│   ├── team.py               #   platform admins: add/remove/restore/reset, and the activity log
 │   ├── console.py            #   the platform console
 │   └── cli.py                #   python -m control_plane …
 ├── models/                   # One school's schema, one module per domain
@@ -334,6 +381,7 @@ crashed run — they never touch real data.
 python tests/verification/write_paths_multitenancy.py      # isolation between schools
 python tests/verification/write_paths_platform_console.py  # the console, end to end
 python tests/verification/write_paths_portal_branding.py   # colours, logo and sign-in photographs
+python tests/verification/write_paths_platform_team.py     # the team, roles, removal, activity logs
 ```
 
 Between them they cover hostname routing, per-school databases, session cookies copied between

@@ -1,0 +1,100 @@
+{% extends "platform/base.html" %}
+{% block title %}Team{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Platform team</div>
+    <h1>Team</h1>
+    <p class="lede">Everyone who can run the platform. Every admin has full control over every school; only you can add or
+      remove admins, and only you can read what each of them has done.</p>
+  </div>
+</div>
+
+<div class="dash">
+  <section aria-label="Admins">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Admin</th><th>Role</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
+        <tbody>
+          {% for a in admins if a.active %}
+            <tr>
+              <td>
+                <div style="font-weight:600">{{ a.display_name }}</div>
+                <div class="muted mono" style="font-size:.78rem">{{ a.username }}{% if a.email %} &middot; {{ a.email }}{% endif %}</div>
+                {% if a.must_change %}<div class="pill pill-quiet" style="margin-top:4px">Has not chosen a password yet</div>{% endif %}
+              </td>
+              <td>{% if a.is_super %}<span class="tag tag-super">Super admin</span>{% else %}<span class="tag tag-quiet">Platform admin</span>{% endif %}</td>
+              <td class="muted">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>
+              <td class="num"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
+              <td>
+                <div class="row-actions">
+                  {% if not a.is_super %}
+                    <form method="post" action="{{ url_for('platform_team_reset', admin_id=a.id) }}"
+                          data-confirm="Give {{ a.display_name }} a new temporary password? Their current password stops working." onsubmit="return confirm(this.dataset.confirm);">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm" type="submit">Reset password</button>
+                    </form>
+                    <form method="post" action="{{ url_for('platform_team_remove', admin_id=a.id) }}"
+                          data-confirm="Remove {{ a.display_name }}? They are signed out everywhere, including inside schools, straight away. Their activity log is kept." onsubmit="return confirm(this.dataset.confirm);">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+                    </form>
+                  {% else %}
+                    <span class="muted" style="font-size:.8rem">Cannot be removed</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% set removed = admins|selectattr('active', 'equalto', false)|list %}
+    {% if removed %}
+      <h2>Removed</h2>
+      <p class="muted" style="margin-top:-.4rem">Their access is switched off, but the account and its activity log are kept.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Admin</th><th>Removed</th><th class="num">Entries</th><th></th></tr></thead>
+          <tbody>
+            {% for a in removed %}
+              <tr>
+                <td><div style="font-weight:600">{{ a.display_name }}</div><div class="muted mono" style="font-size:.78rem">{{ a.username }}</div></td>
+                <td class="muted">{{ a.removed_at|platform_time if a.removed_at else '' }}{% if a.removed_by %}<div style="font-size:.78rem">by {{ a.removed_by }}</div>{% endif %}</td>
+                <td class="num"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
+                <td>
+                  <div class="row-actions">
+                    <form method="post" action="{{ url_for('platform_team_restore', admin_id=a.id) }}"
+                          data-confirm="Restore {{ a.display_name }}? They get a new temporary password and must choose their own." onsubmit="return confirm(this.dataset.confirm);">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm" type="submit">Restore</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="side" aria-label="Add an admin">
+    <h2>Add a platform admin</h2>
+    <p class="muted" style="font-size:.88rem;margin:4px 0 0">You get a one-time password to pass to them. They must replace it the first time they sign in.</p>
+    {% if error %}<div class="errors" role="alert" style="margin-top:14px">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('platform_team_new') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label for="display_name">Full name</label>
+      <input type="text" id="display_name" name="display_name" value="{{ form.display_name }}" autocomplete="off">
+      <label for="username">Username
+        <span class="hint">3&ndash;40 letters, digits, dots, hyphens or underscores.</span></label>
+      <input type="text" id="username" name="username" value="{{ form.username }}" class="mono" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+      <label for="email">Email <span class="hint">Optional.</span></label>
+      <input type="email" id="email" name="email" value="{{ form.email }}" autocomplete="off">
+      <p style="margin-top:20px"><button class="btn btn-primary" type="submit">Add admin</button></p>
+    </form>
+  </aside>
+</div>
+{% endblock %}

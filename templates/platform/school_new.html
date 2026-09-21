@@ -1,10 +1,15 @@
 {% extends "platform/base.html" %}
 {% block title %}Create a school{% endblock %}
 {% block body %}
-<p class="muted"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
-<h1>Create a school</h1>
-<p class="muted">The school gets its own portal address, its own database and its own folder of
-  files, straight away. Nothing is shared with any other school.</p>
+<p class="crumb"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">New school</div>
+    <h1>Create a school</h1>
+    <p class="lede">The school gets its own portal address, its own database and its own folder of
+      files, straight away. Nothing is shared with any other school.</p>
+  </div>
+</div>
 
 {% if errors %}
   <div class="errors"><strong>The school was not created.</strong>
@@ -68,7 +73,7 @@
       <div class="bar" id="preview-bar"><span id="preview-name">Your school</span></div>
       <div class="body"><span id="preview-button">Sign in</span></div>
     </div>
-    <p id="colour-warning" class="hint" style="color:#ffb4a2" hidden></p>
+    <p id="colour-warning" class="hint" style="color:var(--bad)" hidden></p>
 
     <div class="inline">
       <div>

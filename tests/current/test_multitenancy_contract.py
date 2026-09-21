@@ -340,3 +340,85 @@ def test_a_schools_own_branding_page_is_guarded_and_shares_the_platforms_rules()
     provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
     assert "branding_core.store_branding(" in provisioning and "check_branding_inputs" in route
     assert "SchoolPublicSetting(" not in provisioning, "the storage rules must not be written twice"
+
+
+def test_only_the_super_admin_manages_the_team_and_reads_its_logs():
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    team = (ROOT / "control_plane" / "team.py").read_text(encoding="utf-8")
+    for route in ("platform_team", "platform_team_new", "platform_team_remove",
+                  "platform_team_restore", "platform_team_reset"):
+        head = console[:console.index(f"def {route}(")]
+        decorators = head[head.rindex("@app."):]
+        assert "@platform_required" in decorators and "@superadmin_required" in decorators, route
+        assert decorators.index("@platform_required") < decorators.index("@superadmin_required"), route
+        if route != "platform_team":
+            assert "@csrf_protect" in decorators, f"{route} changes the team and needs a form token"
+    # The activity page is open to every admin, but must scope what it shows to the viewer.
+    activity = console[console.index("def platform_activity("):console.index("def platform_team(")]
+    assert "me['is_super']" in activity and "me['id']" in activity
+    # The console can only ever create ordinary admins, and the super admin can never be removed.
+    create = team[team.index("def create_admin"):team.index("def _target")]
+    assert "role=ROLE_ADMIN" in create and "ROLE_SUPER" not in create
+    remove = team[team.index("def remove_admin"):team.index("def revoke_school_access")]
+    assert "ROLE_SUPER" in remove and "cannot be removed" in remove
+    # Removing an admin keeps the account (so its log survives) and cuts access inside schools.
+    assert "sa.delete(PlatformAdmin" not in team and "session.delete(" not in team
+    assert "revoke_school_access(username)" in remove
+    # "@" is the reserved namespace for operators' accounts inside schools.
+    assert "@" not in team[team.index("USERNAME_RE"):team.index("USERNAME_RE") + 60]
+
+
+def test_a_temporary_password_must_be_replaced_before_the_console_opens():
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    guard = console[console.index("def platform_required"):console.index("def superadmin_required")]
+    assert "password_must_change" in guard and "platform_password" in guard and "platform_logout" in guard
+
+
+def test_every_sign_in_outcome_on_a_real_account_is_logged():
+    entry = (ROOT / "control_plane" / "entry.py").read_text(encoding="utf-8")
+    auth = entry[entry.index("def authenticate_platform_admin"):entry.index("def platform_admin_by_id")]
+    for action in ("platform_admin.login'", "platform_admin.login_failed", "platform_admin.login_refused"):
+        assert action in auth, action
+    # An unknown username costs as much time as a wrong password.
+    assert "_DUMMY_HASH" in auth
+
+
+def test_the_no_such_address_page_is_standalone_and_safe():
+    resolver = RESOLVER
+    notice = resolver[resolver.index("def _notice"):resolver.index("def _discard_school_identity")
+                      if "_discard_school_identity" in resolver else resolver.index("def resolve_tenant")]
+    # It must not go through render_template: context processors look up the signed-in
+    # user in a school database, which does not exist on this kind of request.
+    assert "render_template(" not in notice and "jinja_env.get_template" in notice
+    assert "is_production()" in notice, "the development hint must never be shown in production"
+    page = (ROOT / "templates" / "platform" / "notice.html").read_text(encoding="utf-8")
+    assert "{% extends" not in page and "<script" not in page and 'rel="stylesheet"' not in page
+    assert "|safe" not in page
+    assert "/static/brand/" in resolver, "the logo must be servable on an address that belongs to no school"
+
+
+def test_console_templates_never_put_user_text_inside_javascript():
+    for path in (ROOT / "templates" / "platform").glob("*.html"):
+        body = path.read_text(encoding="utf-8")
+        assert "|safe" not in body, path.name
+        assert "confirm('" not in body, f"{path.name}: pass text through a data attribute, not a JS string"
+
+
+def test_reading_what_admins_did_inside_schools_is_read_only_and_bounded():
+    team = (ROOT / "control_plane" / "team.py").read_text(encoding="utf-8")
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    reader = team[team.index("class _InsideSchools"):team.index("def activity(")]
+    # It only ever reads a school's audit trail.
+    for verb in ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER"):
+        assert verb not in reader.upper().replace("UPDATED", ""), verb
+    # The account name is a bound value, never formatted into the SQL.
+    assert ":who" in reader and "username_snapshot = :who" in reader
+    assert "{self.username" not in reader.split("def _who")[1].split("def _count")[0].split("return")[0]
+    # Only schools the admin actually entered are opened, not every school on the platform.
+    assert "tenant.enter" in reader
+    # Both sources are cut by the key the merged log is sorted on, or pages would repeat entries.
+    assert "ORDER BY created_at DESC" in reader
+    activity = team[team.index("def activity("):]
+    assert "created_at.desc()" in activity
+    # The dashboard's feed must not open school databases.
+    assert "inside=False" in console[console.index("def platform_dashboard"):console.index("def platform_school_new")]

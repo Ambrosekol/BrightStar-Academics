@@ -1,20 +1,37 @@
 {% extends "platform/base.html" %}
 {% block title %}Sign in{% endblock %}
-{% block body %}
-<div style="max-width:24rem;margin:6vh auto">
-  <div style="text-align:center;margin-bottom:1.6rem">
-    <span class="logo-chip logo-chip-lg"><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></span>
-  </div>
-  <h1>Platform sign-in</h1>
-  <p class="muted">This console manages every school on Brightstars Academics. School staff sign in on their own school's website.</p>
-  {% if error %}<div class="errors">{{ error }}</div>{% endif %}
-  <form method="post" class="panel">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" autocomplete="username" required autofocus>
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" autocomplete="current-password" required>
-    <p><button class="btn btn-primary" type="submit" style="width:100%">Sign in</button></p>
-  </form>
+{% block shell %}
+<div class="auth">
+  <section class="auth-art" aria-hidden="false">
+    <svg class="auth-star" viewBox="-10 -10 220 220" aria-hidden="true" focusable="false">
+      <polygon points="100,0 124.69,66.02 195.11,69.10 139.94,112.98 158.78,180.90 100,142 41.22,180.90 60.06,112.98 4.89,69.10 75.31,66.02"/>
+      <polygon class="inner" points="100,34 112.4,67 147.6,68.5 120,90.5 129.4,124.5 100,105 70.6,124.5 80,90.5 52.4,68.5 87.6,67"/>
+      <circle cx="100" cy="0" r="2.4"/>
+    </svg>
+    <div class="kicker">Brightstars Academics</div>
+    <div>
+      <h2>The desk behind every school.</h2>
+      <p>Create schools, look after their portals, and keep watch over the platform. Every entry is recorded.</p>
+    </div>
+    <small>Authorised staff only.</small>
+  </section>
+
+  <section class="auth-form">
+    <div class="inner">
+      <img class="logo" src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics">
+      <h1>Sign in</h1>
+      <p class="lede">Platform console</p>
+      {% if error %}<div class="errors" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" autocomplete="on">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label for="username" style="margin-top:0">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+        <button class="btn btn-primary" type="submit"><span>Sign in</span><span aria-hidden="true">&rarr;</span></button>
+      </form>
+      <p class="foot">Looking for your school's portal? Use the address your school gave you &mdash; each school signs in on its own.</p>
+    </div>
+  </section>
 </div>
 {% endblock %}

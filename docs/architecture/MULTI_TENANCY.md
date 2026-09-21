@@ -191,7 +191,15 @@ header gets a 404, not a school.
 * **No credential in the registry (optional).** A school's `db_url` may be
   `env:VARIABLE_NAME`, resolved from the environment at connect time.
 * **Platform actions are audited** in `platform_audit_log`, including every
-  entry into a school.
+  entry into a school, every sign-in and failed or refused attempt on a real
+  account, and every change to the team. Each entry carries the admin's id (and
+  a username snapshot), so it stays readable, and attributable, after that admin
+  is removed. Removing an admin switches the account off and switches off their
+  reserved `platform@<username>` account in every school; nothing is deleted.
+  What an admin does *inside* a school is recorded in that school's own
+  `audit_logs`, under that reserved account; the platform's activity log reads
+  it from there, read-only and only from schools the admin has entered, so one
+  log shows an admin's whole footprint.
 * **The console is invisible from a school.** `/platform…` 404s on a school's
   address, and a school's portal 404s on the platform host. A platform session
   (`platform_admin_id`) is never a school session (`admin_id`).
@@ -314,7 +322,8 @@ counts in the school should match the old database.
 
 | Who | Lives in | Can |
 |---|---|---|
-| **Platform admin** | platform registry | Create/suspend schools, manage domains, enter any school, and — like a school admin — manage that school's staff and roles |
+| **Super admin** | platform registry | Everything a platform admin can do, plus adding, removing, restoring and resetting platform admins and reading every admin's activity log. There is always one; it cannot be removed, and the console cannot create another |
+| **Platform admin** | platform registry | Create/suspend schools, manage domains, enter any school, and — like a school admin — manage that school's staff and roles. Cannot touch the team or read anyone else's log |
 | **School admin** | the school's own database | Manage their school's staff, roles, permissions and data. Cannot see or affect other schools |
 | Staff / parent / student / candidate | the school's own database | As today |
 

@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .context import tenant_context
-from .models import PlatformAdmin, PlatformEntryToken, Tenant
+from .models import PlatformAdmin, PlatformEntryToken, ROLE_SUPER, Tenant
 from .provisioning import audit
 from .registry import now_iso, platform_session
 
@@ -30,6 +30,10 @@ PLATFORM_ADMIN_USERNAME_PREFIX = 'platform@'
 
 TOKEN_LIFETIME_SECONDS = 120
 
+# Checked when a username matches nobody, so an unknown name takes as long to refuse
+# as a wrong password does and response time cannot be used to find real usernames.
+_DUMMY_HASH = generate_password_hash(secrets.token_urlsafe(16))
+
 
 def _hash_token(raw):
     return hashlib.sha256(raw.encode()).hexdigest()
@@ -37,20 +41,38 @@ def _hash_token(raw):
 
 def _as_dict(row):
     return {'id': row.id, 'username': row.username, 'display_name': row.display_name,
-            'email': row.email, 'password_must_change': row.password_must_change}
+            'email': row.email, 'password_must_change': row.password_must_change,
+            'role': row.role, 'is_super': row.role == ROLE_SUPER}
 
 
-def authenticate_platform_admin(username, password):
-    """Return the platform admin for these credentials, or None."""
+def authenticate_platform_admin(username, password, ip=None):
+    """Return the platform admin for these credentials, or None.
+
+    Every outcome that concerns a real account is written to the audit trail,
+    against that account: a successful sign-in, a wrong password, and an attempt
+    on an account that has been removed. A username that matches nobody is not
+    recorded, since there is no admin to attribute it to.
+    """
     username = (username or '').strip().lower()
     if not username or not password:
         return None
     with platform_session() as session:
-        admin = session.scalars(sa.select(PlatformAdmin).where(
-            PlatformAdmin.username == username, PlatformAdmin.active == 1)).first()
-        if not admin or not check_password_hash(admin.password_hash or '', password):
+        admin = session.scalars(sa.select(PlatformAdmin).where(PlatformAdmin.username == username)).first()
+        if admin is None:
+            check_password_hash(_DUMMY_HASH, password)
+            return None
+        if not admin.active:
+            check_password_hash(_DUMMY_HASH, password)
+            audit(session, 'platform_admin.login_refused', 'the account has been removed', None,
+                  admin.username, admin.id, ip)
+            session.commit()
+            return None
+        if not check_password_hash(admin.password_hash or '', password):
+            audit(session, 'platform_admin.login_failed', 'wrong password', None, admin.username, admin.id, ip)
+            session.commit()
             return None
         admin.last_login_at = now_iso()
+        audit(session, 'platform_admin.login', None, None, admin.username, admin.id, ip)
         result = _as_dict(admin)
         session.commit()
         return result
@@ -195,6 +217,31 @@ def tenant_stats(info):
             }
     except Exception:
         return None
+
+
+def tenant_glance(info):
+    """What the dashboard shows of one school: headline counts, its main colour
+    and its logo file. Read-only and defensive, like ``tenant_stats``."""
+    from core import theme
+
+    from .routing import engine_for
+
+    stats = tenant_stats(info)
+    colour, logo = '', ''
+    try:
+        with engine_for(info).connect() as conn:
+            settings = dict(conn.execute(sa.text(
+                'SELECT setting_key, setting_value FROM school_public_settings '
+                'WHERE setting_key IN (:p, :l)'), {'p': theme.PRIMARY_KEY, 'l': 'school_logo'}).all())
+        try:
+            colour = theme.normalise_hex(settings.get(theme.PRIMARY_KEY))
+        except ValueError:
+            colour = ''
+        path = settings.get('school_logo') or ''
+        logo = path.rsplit('/', 1)[-1] if path.startswith(theme.GALLERY_FOLDER) else ''
+    except Exception:
+        pass
+    return {'stats': stats, 'colour': colour, 'logo': logo}
 
 
 def school_admins(info):

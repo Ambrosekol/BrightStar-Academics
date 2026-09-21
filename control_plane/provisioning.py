@@ -23,8 +23,8 @@ from core import branding as branding_core
 from . import config
 from .context import tenant_context
 from .models import (
-    DOMAIN_CUSTOM, DOMAIN_PORTAL, PlatformAdmin, PlatformAuditLog, Tenant, TenantDomain,
-    TENANT_ACTIVE, TENANT_SUSPENDED,
+    DOMAIN_CUSTOM, DOMAIN_PORTAL, PlatformAdmin, PlatformAuditLog, ROLE_ADMIN, ROLE_SUPER, Tenant,
+    TenantDomain, TENANT_ACTIVE, TENANT_SUSPENDED,
 )
 from .registry import (
     clear_cache, get_tenant, init_platform_db, now_iso, platform_session, to_info,
@@ -42,9 +42,17 @@ def _app_module():
     return A
 
 
-def audit(session, action, detail=None, tenant_id=None, actor='cli', admin_id=None):
+def audit(session, action, detail=None, tenant_id=None, actor='cli', admin_id=None, ip=None):
+    """Add one entry to the platform audit trail.
+
+    Most callers know only the actor's username, so the admin's id is looked up
+    here: an entry that names an admin must always be attributable to that
+    admin's account, or their activity log would silently miss it.
+    """
+    if admin_id is None and actor not in (None, 'cli', 'system'):
+        admin_id = session.scalars(sa.select(PlatformAdmin.id).where(PlatformAdmin.username == actor)).first()
     session.add(PlatformAuditLog(platform_admin_id=admin_id, actor_username=actor, tenant_id=tenant_id,
-                                 action=action, detail=detail, created_at=now_iso()))
+                                 action=action, detail=detail, ip_address=ip, created_at=now_iso()))
 
 
 def suggest_slug(name):
@@ -430,7 +438,13 @@ def adopt_superadmins(source_db, username=None, actor='cli'):
     return adopted
 
 
-def create_platform_admin(username, display_name, password, actor='cli'):
+def create_platform_admin(username, display_name, password, actor='cli', superadmin=False):
+    """Create a platform admin from the command line.
+
+    The first admin on a platform becomes its super admin automatically; after
+    that, pass ``superadmin=True`` to add another. The console only ever creates
+    ordinary platform admins (see team.py).
+    """
     username = (username or '').strip().lower()
     if not username or len(password or '') < 10:
         raise ProvisioningError('A username and a password of at least 10 characters are required.')
@@ -438,11 +452,15 @@ def create_platform_admin(username, display_name, password, actor='cli'):
     with platform_session() as session:
         if session.scalars(sa.select(PlatformAdmin).where(PlatformAdmin.username == username)).first():
             raise ProvisioningError(f'Platform admin {username} already exists.')
+        has_super = session.scalars(sa.select(PlatformAdmin.id).where(
+            PlatformAdmin.role == ROLE_SUPER, PlatformAdmin.active == 1)).first() is not None
+        role = ROLE_SUPER if (superadmin or not has_super) else ROLE_ADMIN
         session.add(PlatformAdmin(username=username, display_name=display_name or username,
-                                  password_hash=generate_password_hash(password), active=1,
+                                  password_hash=generate_password_hash(password), active=1, role=role,
                                   password_must_change=0, created_at=now_iso()))
-        audit(session, 'platform_admin.create', username, None, actor)
+        audit(session, 'platform_admin.create', f'{username} ({role})', None, actor)
         session.commit()
+    return role
 
 
 def set_status(slug, status, reason=None, actor='cli'):

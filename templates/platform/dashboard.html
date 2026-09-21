@@ -1,62 +1,111 @@
 {% extends "platform/base.html" %}
 {% block title %}Schools{% endblock %}
 {% block body %}
-<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-  <h1 style="margin-bottom:0">Schools</h1>
-  <a class="btn btn-primary" style="margin-left:auto" href="{{ url_for('platform_school_new') }}">Create a school</a>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Platform overview</div>
+    <h1>Schools</h1>
+    <p class="lede">Every school on this deployment: where it lives, how big it is, and whether its portal is switched on.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('platform_school_new') }}">Create a school</a>
 </div>
-<p class="muted">{{ schools|length }} school{{ '' if schools|length == 1 else 's' }} on this deployment.</p>
+
+<div class="figures">
+  <div class="figure"><b>{{ totals.schools }}</b><span>Schools</span></div>
+  <div class="figure"><b>{{ totals.active }}</b><span>Portals live</span></div>
+  <div class="figure"><b>{{ totals.suspended }}</b><span>Suspended</span></div>
+  <div class="figure"><b>{{ '{:,}'.format(totals.students) }}</b><span>Students enrolled{% if totals.unreadable %} &middot; <em>{{ totals.unreadable }} unreadable</em>{% endif %}</span></div>
+</div>
 
 {% if not schools %}
   <div class="panel">
-    <h2 style="margin-top:0">No schools yet</h2>
-    <p class="muted">Create your first school to get started. Each one gets its own domain, its own
-      database and its own folder of files — nothing is shared between them.</p>
+    <h2>No schools yet</h2>
+    <p class="muted">Create your first school to begin. Each one gets its own address, its own database and its own
+      folder of files &mdash; nothing is shared between schools.</p>
     <p><a class="btn btn-primary" href="{{ url_for('platform_school_new') }}">Create a school</a></p>
   </div>
 {% else %}
-  <div class="grid">
-    {% for school in schools %}
-      <div class="panel">
-        <div style="display:flex;align-items:start;gap:.5rem">
-          <div>
-            <a href="{{ url_for('platform_school', slug=school.info.slug) }}"
-               style="font-size:1.05rem;font-weight:600">{{ school.info.name }}</a>
-            <div class="muted mono" style="font-size:.82rem">{{ school.info.slug }}</div>
-          </div>
-          <span style="margin-left:auto" class="pill pill-{{ school.info.status }}">{{ school.info.status }}</span>
-        </div>
-
-        <p class="muted" style="margin:.7rem 0 .2rem;font-size:.85rem">
-          <div class="mono">{{ school.portal }}</div>
-          {% for domain in school.customs %}<div class="mono">{{ domain }}</div>{% endfor %}
-        </p>
-
-        {% if school.stats %}
-          <p style="margin:.9rem 0 .2rem">
-            <span class="stat"><b>{{ school.stats.students if school.stats.students is not none else '—' }}</b><span>Students</span></span>
-            <span class="stat"><b>{{ school.stats.classes if school.stats.classes is not none else '—' }}</b><span>Classes</span></span>
-            <span class="stat"><b>{{ school.stats.admins if school.stats.admins is not none else '—' }}</b><span>Staff</span></span>
-          </p>
-        {% else %}
-          <p class="muted" style="font-size:.85rem">Database could not be read.</p>
-        {% endif %}
-
-        {% if school.suspended_reason %}
-          <p class="muted" style="font-size:.85rem">Suspended: {{ school.suspended_reason }}</p>
-        {% endif %}
-
-        <p style="margin:.9rem 0 0;display:flex;gap:.5rem;flex-wrap:wrap">
-          <a class="btn btn-sm" href="{{ url_for('platform_school', slug=school.info.slug) }}">Manage</a>
-          {% if school.info.is_active and school.portal %}
-            <form method="post" action="{{ url_for('platform_school_enter', slug=school.info.slug) }}">
-              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-sm" type="submit">Enter school</button>
-            </form>
-          {% endif %}
-        </p>
+<section aria-label="Schools">
+    <div class="toolbar">
+      <input type="search" id="school-search" placeholder="Search by name, code or address" aria-label="Search schools" autocomplete="off">
+      <div class="chips" role="group" aria-label="Filter by status">
+        <button type="button" class="chip" data-status="all" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-status="active" aria-pressed="false">Live</button>
+        <button type="button" class="chip" data-status="suspended" aria-pressed="false">Suspended</button>
       </div>
-    {% endfor %}
-  </div>
+    </div>
+    <div class="table-wrap">
+      <table class="schools" id="schools">
+        <thead><tr>
+          <th>School</th><th>Portal address</th>
+          <th class="num">Students</th><th class="num">Classes</th><th class="num">Staff</th>
+          <th>Status</th><th></th>
+        </tr></thead>
+        <tbody>
+          {% for school in schools %}
+          {% set info = school.info %}
+          <tr data-status="{{ info.status }}" data-search="{{ (info.name ~ ' ' ~ info.slug ~ ' ' ~ (school.portal or '') ~ ' ' ~ (school.customs|join(' ')))|lower }}">
+            <td>
+              <div class="school-cell">
+                <span class="tile" {% if school.colour and not school.logo %}style="background:{{ school.colour }}"{% endif %}>
+                  {%- if school.logo -%}
+                    <img src="{{ url_for('platform_school_photo', slug=info.slug, filename=school.logo) }}" alt="">
+                  {%- else -%}{{ (info.name.split()|map('first')|list)[:2]|join|upper }}{%- endif -%}
+                </span>
+                <div>
+                  <a class="school-name" href="{{ url_for('platform_school', slug=info.slug) }}">{{ info.name }}</a>
+                  <div class="school-code mono">{{ info.slug }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="addr">{{ school.portal }}</div>
+              {% for domain in school.customs %}<div class="addr muted">{{ domain }}</div>{% endfor %}
+            </td>
+            {% if school.stats %}
+              <td class="num">{{ school.stats.students if school.stats.students is not none else '—' }}</td>
+              <td class="num">{{ school.stats.classes if school.stats.classes is not none else '—' }}</td>
+              <td class="num">{{ school.stats.admins if school.stats.admins is not none else '—' }}</td>
+            {% else %}
+              <td colspan="3" class="muted">Database could not be read</td>
+            {% endif %}
+            <td>
+              <span class="pill pill-{{ info.status }}">{{ 'Live' if info.is_active else 'Suspended' }}</span>
+              {% if school.suspended_reason %}<div class="muted" style="font-size:.78rem;margin-top:2px">{{ school.suspended_reason }}</div>{% endif %}
+            </td>
+            <td>
+              <div class="row-actions">
+                <a class="btn btn-sm" href="{{ url_for('platform_school', slug=info.slug) }}">Manage</a>
+                {% if info.is_active and school.portal %}
+                  <form method="post" action="{{ url_for('platform_school_enter', slug=info.slug) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-primary" type="submit">Enter</button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="empty" id="no-match" hidden>No school matches that.</p>
+    </div>
+</section>
+
+<section class="side" aria-label="Latest activity">
+    <h2>{{ 'Latest activity' if g.platform_admin.is_super else 'Your latest activity' }}</h2>
+    <ul class="feed feed-wide">
+      {% for row in recent %}
+        <li>
+          <span class="what {{ 'alert' if row.alert }}">{{ row.label }}{% if row.school %} &mdash; {{ row.school }}{% endif %}</span>
+          <span class="meta">{% if g.platform_admin.is_super %}{{ row.actor }} &middot; {% endif %}{{ row.created_at|platform_time }}</span>
+        </li>
+      {% else %}
+        <li class="muted">Nothing recorded yet.</li>
+      {% endfor %}
+    </ul>
+    <p style="margin-top:12px"><a href="{{ url_for('platform_activity') }}">{{ 'All activity' if g.platform_admin.is_super else 'Everything you have done' }} &rarr;</a></p>
+</section>
+<script src="{{ url_for('static', filename='platform-dashboard.js') }}"></script>
 {% endif %}
 {% endblock %}

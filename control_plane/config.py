@@ -58,6 +58,11 @@ def school_db_name(slug):
     return 'brightstars_' + slug.replace('-', '_')
 
 
+def is_production():
+    return os.environ.get('BRIGHTSTARS_ENV',
+                          os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')
+
+
 def platform_hosts():
     """Hostnames that serve the platform console instead of a school.
 

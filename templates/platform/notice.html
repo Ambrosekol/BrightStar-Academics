@@ -1,0 +1,78 @@
+<!doctype html>
+{# Shown when a request cannot be served before any school is chosen: an address nobody
+   owns, a school whose portal is paused, a page that is not there. Standalone on
+   purpose — inline styles, no context processors — because it must render on an
+   address that has no school, and no stylesheet is served there. #}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ title }} &middot; Brightstars Academics</title>
+  <link rel="icon" type="image/png" href="/static/brand/favicon-32.png">
+  <style>
+    :root { --paper:#f4f1ea; --surface:#fffefb; --ink:#0d1440; --muted:#666a86; --rule:#dcd7ca; --blue:#0a1a8f; --red:#d8261d;
+            --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+            --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+            --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:flex; flex-direction:column; background:var(--paper); color:var(--ink);
+           font:16px/1.6 var(--sans); -webkit-font-smoothing:antialiased; }
+    header { padding:26px clamp(20px,6vw,80px); }
+    header img { display:block; height:38px; width:auto; }
+    main { position:relative; flex:1; overflow:hidden; padding:5vh clamp(20px,6vw,80px) 8vh; }
+    .star { position:absolute; right:-6%; top:50%; width:min(46vw,560px); transform:translateY(-46%); opacity:.9; pointer-events:none; }
+    .star polygon { fill:none; stroke:var(--ink); stroke-opacity:.16; stroke-width:.5; stroke-linejoin:round; }
+    .star circle { fill:var(--red); }
+    .col { position:relative; max-width:40rem; }
+    .eyebrow { display:flex; align-items:center; gap:12px; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--red); font-weight:700; }
+    .eyebrow::before { content:""; width:34px; height:1px; background:var(--red); }
+    h1 { font:400 clamp(2.3rem,5.4vw,3.9rem)/1.06 var(--serif); letter-spacing:-.022em; margin:18px 0 0; }
+    .lead { color:var(--muted); font-size:1.12rem; margin:20px 0 0; }
+    .host { display:inline-block; margin:14px 0 0; padding:6px 12px; background:var(--surface); border:1px solid var(--ink);
+            border-radius:3px; font:.92rem var(--mono); word-break:break-all; }
+    ol { list-style:none; counter-reset:step; margin:42px 0 0; padding:0; border-top:1px solid var(--ink); }
+    ol li { counter-increment:step; display:grid; grid-template-columns:2.6rem 1fr; padding:16px 0; border-bottom:1px solid var(--rule); }
+    ol li::before { content:"0" counter(step); font:400 1.3rem/1.3 var(--serif); color:var(--red); }
+    ol b { display:block; }
+    ol span { color:var(--muted); font-size:.94rem; }
+    .dev { margin-top:34px; padding:16px 18px; border:1px dashed var(--ink); background:rgba(255,254,251,.7); font-size:.9rem; }
+    .dev strong { display:block; font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px; }
+    .dev code { font-family:var(--mono); font-size:.86rem; color:var(--blue); word-break:break-all; }
+    .dev p { margin:0 0 6px; }
+    footer { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:20px clamp(20px,6vw,80px);
+             border-top:1px solid var(--rule); color:var(--muted); font-size:.8rem; }
+    footer .mono { font-family:var(--mono); }
+    @media (max-width:720px) { .star { opacity:.5; width:90vw; right:-30%; } }
+  </style>
+</head>
+<body>
+  <header><img src="/static/brand/brightstars-logo.png" alt="Brightstars Academics"></header>
+  <main>
+    <svg class="star" viewBox="-10 -10 220 220" aria-hidden="true" focusable="false">
+      <polygon points="100,0 124.69,66.02 195.11,69.10 139.94,112.98 158.78,180.90 100,142 41.22,180.90 60.06,112.98 4.89,69.10 75.31,66.02"/>
+      <polygon points="100,34 112.4,67 147.6,68.5 120,90.5 129.4,124.5 100,105 70.6,124.5 80,90.5 52.4,68.5 87.6,67" style="stroke-opacity:.09"/>
+      <circle cx="195.11" cy="69.1" r="2.4"/>
+    </svg>
+    <div class="col">
+      <div class="eyebrow">{{ eyebrow }}</div>
+      <h1>{{ title }}</h1>
+      {% if lead %}<p class="lead">{{ lead }}</p>{% endif %}
+      {% if host %}<div class="host">{{ host }}</div>{% endif %}
+      <ol>
+        {% for heading, text in steps %}
+          <li><div><b>{{ heading }}</b><span>{{ text }}</span></div></li>
+        {% endfor %}
+      </ol>
+      {% if dev %}
+        <div class="dev">
+          <strong>Development</strong>
+          <p>The platform console is at <code>{{ dev.console }}</code></p>
+          <p>A school's portal is at <code>{{ dev.school }}</code></p>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+  <footer><span>Brightstars Academics</span><span class="mono">{{ status }}</span></footer>
+</body>
+</html>

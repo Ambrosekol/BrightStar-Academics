@@ -1,7 +1,7 @@
 """Command-line management of the platform: ``python -m control_plane <command>``.
 
     init                          create the platform registry tables
-    create-platform-admin USER    add a platform admin (password prompted)
+    create-platform-admin USER [--super]   add a platform admin (password prompted)
     adopt-superadmin --from-db F  copy an existing installation's Super Admin(s) into the platform
     create-tenant CODE "Name" [--domain HOST ...]   (the portal address is issued automatically)
     register-existing CODE "Name" --from-db cbt.db [--domain HOST --from-data data --from-uploads static/uploads]
@@ -31,6 +31,8 @@ def _parser():
     s = sub.add_parser('create-platform-admin')
     s.add_argument('username')
     s.add_argument('--display-name')
+    s.add_argument('--super', dest='superadmin', action='store_true',
+                   help='make this the (or another) super admin; the first admin is one automatically')
 
     s = sub.add_parser('adopt-superadmin')
     s.add_argument('--from-db', required=True)
@@ -89,8 +91,10 @@ def main(argv=None):
             print('Platform registry ready.')
         elif args.command == 'create-platform-admin':
             password = os.environ.get('BRIGHTSTARS_NEW_ADMIN_PASSWORD') or getpass.getpass('Password (min 10 chars): ')
-            pv.create_platform_admin(args.username, args.display_name, password)
-            print(f'Platform admin {args.username} created.')
+            role = pv.create_platform_admin(args.username, args.display_name, password,
+                                            superadmin=args.superadmin)
+            print(f'Platform admin {args.username} created as '
+                  f'{"the super admin" if role == "superadmin" else "a platform admin"}.')
         elif args.command == 'adopt-superadmin':
             adopted = pv.adopt_superadmins(args.from_db, args.username)
             print('Adopted: ' + (', '.join(adopted) if adopted else 'nothing new (already present)'))

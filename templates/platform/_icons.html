@@ -1,0 +1,10 @@
+{# Small line icons for the console's navigation. #}
+{% macro icon(name) -%}
+<svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+  {%- if name == 'school' %}<path d="M3 21h18M5 21V9.5l7-5.5 7 5.5V21M9.5 21v-6h5v6"/>
+  {%- elif name == 'team' %}<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3.2-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.2.2 3.8 1.6 4.2 4"/>
+  {%- elif name == 'activity' %}<path d="M4 6h16M4 12h16M4 18h9"/>
+  {%- elif name == 'key' %}<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>
+  {%- endif -%}
+</svg>
+{%- endmacro %}

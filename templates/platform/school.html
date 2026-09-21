@@ -1,18 +1,20 @@
 {% extends "platform/base.html" %}
 {% block title %}{{ info.name }}{% endblock %}
 {% block body %}
-<p class="muted"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
-<div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
-  <h1 style="margin-bottom:0">{{ info.name }}</h1>
-  <span class="pill pill-{{ info.status }}">{{ info.status }}</span>
+<p class="crumb"><a href="{{ url_for('platform_dashboard') }}">&larr; Schools</a></p>
+<div class="page-head">
+  <div>
+    <div class="eyebrow mono">{{ info.slug }}</div>
+    <h1>{{ info.name }}</h1>
+    <p class="lede"><span class="pill pill-{{ info.status }}">{{ 'Live' if info.is_active else 'Suspended' }}</span></p>
+  </div>
   {% if info.is_active and portal %}
-    <form method="post" action="{{ url_for('platform_school_enter', slug=info.slug) }}" style="margin-left:auto">
+    <form method="post" action="{{ url_for('platform_school_enter', slug=info.slug) }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-primary" type="submit">Enter school</button>
     </form>
   {% endif %}
 </div>
-<p class="muted mono">{{ info.slug }}</p>
 {% if suspended_reason %}<div class="flash flash-error">Suspended: {{ suspended_reason }}</div>{% endif %}
 
 {% if stats %}
@@ -75,7 +77,7 @@
       {% for key, label in [('school_name','Name'),('school_motto','Motto'),('school_tagline','Tagline'),
                             ('school_phone','Phone'),('school_email','Email'),('school_address','Address')] %}
         <tr><td class="muted" style="width:10rem">{{ label }}</td>
-            <td class="mono">{{ branding.get(key) or '—' }}</td></tr>
+            <td>{{ branding.get(key) or '—' }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -104,12 +106,12 @@
     <div class="bar" id="preview-bar"><span id="preview-name">{{ info.name }}</span></div>
     <div class="body"><span id="preview-button">Sign in</span></div>
   </div>
-  <p id="colour-warning" class="hint" style="color:#ffb4a2" hidden></p>
+  <p id="colour-warning" class="hint" style="color:var(--bad)" hidden></p>
 
   <label for="logo">Logo
     <span class="hint">Choosing a file replaces the current logo.</span></label>
   {% if logo_file %}
-    <p><span style="display:inline-block;background:#fff;border-radius:8px;padding:.4rem .7rem">
+    <p><span style="display:inline-block;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:.4rem .7rem">
       <img src="{{ url_for('platform_school_photo', slug=info.slug, filename=logo_file) }}"
            alt="Current logo" style="display:block;max-height:60px;max-width:220px"></span></p>
   {% endif %}

@@ -84,9 +84,18 @@ class TenantDomain(PlatformBase):
         return self.kind == DOMAIN_PORTAL
 
 
+# The two kinds of platform admin. Both have full control over every school; only
+# the super admin manages the platform's own team and reads its activity logs.
+ROLE_SUPER = 'superadmin'
+ROLE_ADMIN = 'admin'
+
+
 class PlatformAdmin(PlatformBase):
     """A Brightstars Academics operator. Not a school account: a platform admin
-    exists once, here, and may enter any school."""
+    exists once, here, and may enter any school.
+
+    Removing an admin only ever switches ``active`` off. The row stays, so the
+    audit trail keeps pointing at a real account and the admin can be restored."""
 
     __tablename__ = 'platform_admins'
     __table_args__ = (UniqueConstraint('username'),)
@@ -97,10 +106,13 @@ class PlatformAdmin(PlatformBase):
     password_hash = mapped_column(Text, nullable=False)
     email = mapped_column(Text)
     phone = mapped_column(Text)
+    role = mapped_column(Text, nullable=False, default=ROLE_ADMIN, server_default=text("'admin'"))
     active = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     password_must_change = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     created_at = mapped_column(Text, nullable=False)
     last_login_at = mapped_column(Text)
+    removed_at = mapped_column(Text)
+    removed_by = mapped_column(Text)
 
 
 class PlatformEntryToken(PlatformBase):

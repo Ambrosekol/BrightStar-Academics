@@ -370,16 +370,24 @@ check("its stored password is not the platform password",
 
 # --------------------------------------- the console is invisible to schools
 for path in ("/platform", "/platform/login", "/platform/schools/new", "/platform/audit",
-             "/platform/schools/alpha"):
+             "/platform/activity", "/platform/team", "/platform/schools/alpha"):
     check(f"a school's address does not expose {path}",
           c_school.get(path, base_url=u_school).status_code == 404)
 check("a platform session is not a school session",
       c_pl.get("/admin/home", base_url=u_pl).status_code == 404)
 
 # ------------------------------------------------------------- platform audit
-audit_page = c_pl.get("/platform/audit", base_url=u_pl).get_data(as_text=True)
+from control_plane import team  # noqa: E402
+
+recorded = {row["action"] for row in team.activity(None, "all", 1, per_page=1000)["rows"]}
 for action in ("tenant.create", "tenant.enter", "tenant.suspended", "tenant.domain_add"):
-    check(f"the activity log records {action}", action in audit_page)
+    check(f"the activity log records {action}", action in recorded)
+check("…and the activity page shows them in words",
+      team.describe("tenant.create") in c_pl.get("/platform/activity?admin=all&category=schools",
+                                                 base_url=u_pl).get_data(as_text=True))
+r = c_pl.get("/platform/audit", base_url=u_pl)
+check("the old activity address still leads to the activity log",
+      r.status_code == 302 and r.headers["Location"].endswith("/platform/activity"))
 
 # ------------------------------------------------------- platform password
 token = csrf(c_pl, u_pl, "/platform/password")

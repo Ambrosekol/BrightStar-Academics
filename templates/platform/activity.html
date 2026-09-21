@@ -1,0 +1,113 @@
+{% extends "platform/base.html" %}
+{% block title %}Activity{% endblock %}
+{% block body %}
+{% macro log_url(page, cat) -%}
+  {{ url_for('platform_activity', admin=(selected.id if selected and selected != 'all' else ('all' if selected == 'all' else none)), category=(cat if cat != 'all' else none), page=(page if page > 1 else none)) }}
+{%- endmacro %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Accountability</div>
+    <h1>Activity</h1>
+    <p class="lede">
+      {% if is_super %}Choose an admin to read everything they have done &mdash; on schools, and within the platform itself.
+      {% else %}Everything you have done on the platform.{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="{{ 'split' if is_super else '' }}">
+  {% if is_super %}
+  <nav class="picker-col" aria-label="Choose an admin">
+    <div class="picker">
+      <a href="{{ url_for('platform_activity', admin='all') }}" {% if selected == 'all' %}aria-current="true"{% endif %}>
+        <span class="who">Everyone</span><span class="sub">All admins, newest first</span>
+      </a>
+    </div>
+    <div class="picker-h">Admins</div>
+    <div class="picker">
+      {% for a in admins if a.active %}
+        <a href="{{ url_for('platform_activity', admin=a.id) }}" {% if selected and selected != 'all' and selected.id == a.id %}aria-current="true"{% endif %}>
+          <span class="who">{{ a.display_name }}{% if a.is_super %} <span class="tag tag-super">Super</span>{% endif %}</span>
+          <span class="sub">{{ a.username }} &middot; {{ a.entries }} entr{{ 'y' if a.entries == 1 else 'ies' }}</span>
+        </a>
+      {% endfor %}
+    </div>
+    {% if admins|selectattr('active', 'equalto', false)|list %}
+      <div class="picker-h">Removed</div>
+      <div class="picker">
+        {% for a in admins if not a.active %}
+          <a class="removed" href="{{ url_for('platform_activity', admin=a.id) }}" {% if selected and selected != 'all' and selected.id == a.id %}aria-current="true"{% endif %}>
+            <span class="who">{{ a.display_name }}</span>
+            <span class="sub">{{ a.username }} &middot; {{ a.entries }} entr{{ 'y' if a.entries == 1 else 'ies' }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  <section aria-label="Log">
+    <div class="log-head">
+      <div>
+        <h2>{% if selected == 'all' %}Everyone{% else %}{{ selected.display_name }}{% endif %}</h2>
+        <div class="muted" style="font-size:.86rem;margin-top:2px">
+          {% if selected == 'all' %}Every recorded action, including those made from the command line.
+          {% else %}<span class="mono">{{ selected.username }}</span> &middot;
+            {{ 'Super admin' if selected.is_super else 'Platform admin' }}{% if not selected.active %} &middot; <span class="pill pill-bad">Removed</span>{% endif %}
+            &middot; {% if selected.last_login_at %}last signed in {{ selected.last_login_at|platform_time }}{% else %}has not signed in yet{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <div class="muted num" style="font-size:.86rem">{{ log.total }} entr{{ 'y' if log.total == 1 else 'ies' }}</div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Kind of activity">
+      {% for key, label in categories %}
+        <a href="{{ log_url(1, key) }}" {% if category == key %}aria-current="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    {% if log.unreadable %}
+      <div class="flash flash-error" role="status" style="margin-top:14px">
+        Some of what {{ 'these admins' if selected == 'all' else 'this admin' }} did inside schools could not be shown, because
+        {{ 'these schools' if log.unreadable|length > 1 else 'this school' }} could not be reached:
+        <strong>{{ log.unreadable|join(', ') }}</strong>.
+      </div>
+    {% endif %}
+    {% if category == 'inside' %}
+      <p class="muted" style="font-size:.86rem;margin:12px 0 0">What they did while signed in to a school, read from that school's own
+        audit trail. Only schools they have entered are shown.</p>
+    {% endif %}
+
+    <div class="table-wrap">
+      <table class="log">
+        <thead><tr><th>When</th><th>Action</th><th>School</th><th>Details</th></tr></thead>
+        <tbody>
+          {% for row in log.rows %}
+            <tr class="{{ 'alert' if row.alert }}">
+              <td class="when">{{ row.created_at|platform_time }}{% if is_super and row.ip %}<div>from {{ row.ip }}</div>{% endif %}</td>
+              <td><span class="what">{{ row.label }}</span>{% if selected == 'all' %}<div class="detail">{{ row.actor }}</div>{% endif %}</td>
+              <td>{% if row.slug %}<a href="{{ url_for('platform_school', slug=row.slug) }}">{{ row.school }}</a>{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+              <td class="detail">{{ row.detail or '' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="empty">Nothing recorded {% if category != 'all' %}in this category {% endif %}yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if log.pages > 1 %}
+      <div class="pager">
+        <span>Page {{ log.page }} of {{ log.pages }}</span>
+        <span>
+          {% if log.page > 1 %}<a href="{{ log_url(log.page - 1, category) }}">&larr; Newer</a>{% endif %}
+          {% if log.page > 1 and log.page < log.pages %} &nbsp;&middot;&nbsp; {% endif %}
+          {% if log.page < log.pages %}<a href="{{ log_url(log.page + 1, category) }}">Older &rarr;</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

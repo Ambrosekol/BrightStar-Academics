@@ -6,7 +6,9 @@ cookie. A hostname that no school owns is refused before any application code
 runs.
 """
 
-from flask import Response, g, request, session
+from urllib.parse import urlsplit
+
+from flask import Response, current_app, g, request, session
 
 from . import config
 from .context import reset_current_tenant, set_current_tenant
@@ -15,20 +17,59 @@ from .registry import init_platform_db, normalise_host, tenant_for_host
 # Health checks come from load balancers that address the server by IP or an
 # internal name, and the handler touches no database.
 _ANYWHERE = ('/health',)
+# The brand images are public and touch no school, so the "no such address" page
+# can show the logo on an address that belongs to nobody.
+_ANYWHERE_PREFIXES = ('/static/brand/',)
 
 # On a platform hostname "/" only redirects into the console; there is no page.
 PLATFORM_ROOT_PATHS = ('/',)
 
 
-def _plain(status, title, message):
-    body = (f'<!doctype html><meta charset="utf-8"><title>{title}</title>'
-            f'<body style="font-family:system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 1rem">'
-            f'<h1>{title}</h1><p>{message}</p></body>')
-    return Response(body, status=status, mimetype='text/html')
+# What to say when a request cannot be served, and why. Each becomes a designed
+# page (templates/platform/notice.html) instead of a bare line of text.
+_NOTICES = {
+    'unknown_host': (404, 'Address not found', "We couldn't find that address.",
+                     [('Check the spelling', 'A single wrong letter is enough to land somewhere else.'),
+                      ('Use the address your school gave you',
+                       'Every school has its own portal address. It is the only place its people sign in.'),
+                      ('Still stuck?', 'Ask your school office, or the person who runs Brightstars Academics for you.')]),
+    'suspended': (503, 'Portal paused', 'This portal is temporarily unavailable.',
+                  [('Nothing has been lost', "The school's records are safe and untouched."),
+                   ('Contact the school office', 'They can tell you when the portal will be back.')]),
+    'not_found': (404, 'Page not found', "There's nothing at this address.",
+                  [('Check the address', 'The page may have moved, or the link may be mistyped.'),
+                   ('Start again', 'Go back to the start and follow the links from there.')]),
+}
+
+
+def _notice(kind, host=None):
+    """A designed page for a request that can be refused before any school is chosen.
+
+    Rendered straight from the template, deliberately bypassing ``render_template``:
+    that runs every context processor, and those look up the signed-in user in a
+    school database — which is exactly what does not exist on this kind of request.
+    """
+    status, eyebrow, title, steps = _NOTICES[kind]
+    lead = None
+    if kind == 'unknown_host' and host:
+        lead = 'The address you asked for is not registered with Brightstars Academics.'
+    elif kind == 'suspended':
+        lead = "This school's portal has been switched off for the moment."
+    dev = None
+    if not config.is_production():
+        # On a developer's machine the usual cause is typing plain "localhost".
+        port = urlsplit(f'//{request.host}').port
+        console = sorted(config.platform_hosts())[0] + (f':{port}' if port else '')
+        dev = {'console': f'{request.scheme}://{console}/',
+               'school': f'{request.scheme}://<school-code>.{config.portal_domain()}' + (f':{port}' if port else '') + '/'}
+    html = current_app.jinja_env.get_template('platform/notice.html').render(
+        status=status, eyebrow=eyebrow, title=title, lead=lead, host=host if kind == 'unknown_host' else None,
+        steps=steps, dev=dev)
+    return Response(html, status=status, mimetype='text/html')
 
 
 def resolve_tenant():
-    if request.path in _ANYWHERE:
+    if request.path in _ANYWHERE or request.path.startswith(_ANYWHERE_PREFIXES):
         return None
     host = normalise_host(request.host)
 
@@ -43,19 +84,18 @@ def resolve_tenant():
             return None
         if request.path.startswith('/static/') and not request.path.startswith('/static/uploads/'):
             return None
-        return _plain(404, 'Not found', 'The requested page does not exist.')
+        return _notice('not_found')
 
     tenant = tenant_for_host(host)
     if tenant is None:
-        return _plain(404, 'Site not found', 'This address is not registered with Brightstars Academics.')
+        return _notice('unknown_host', host)
     if not tenant.is_active:
-        return _plain(503, 'Temporarily unavailable',
-                      'This school portal is currently unavailable. Please contact the school.')
+        return _notice('suspended')
 
     # A school's address is a portal, not a website: no public pages are served
     # for any school.
     if request.path == '/school' or request.path.startswith('/school/'):
-        return _plain(404, 'Not found', 'The requested page does not exist.')
+        return _notice('not_found')
 
     g._tenant_token = set_current_tenant(tenant)
     g.tenant = tenant

@@ -25,15 +25,30 @@ from core.security import csrf_protect
 from core.uploads import IMAGE_EXTENSIONS
 
 from . import provisioning as pv
+from . import team
 from .entry import (
     authenticate_platform_admin, enter_school, mint_entry_token,
     platform_admin_by_id, purge_expired_entry_tokens, school_admins,
-    set_platform_password, tenant_stats,
+    set_platform_password, tenant_glance, tenant_stats,
 )
 from .models import Tenant, TENANT_ACTIVE, TENANT_SUSPENDED
 from .registry import get_tenant, platform_session, to_info
 
 SESSION_KEY = 'platform_admin_id'
+
+
+app.add_template_filter(team.describe, 'describe_action')
+
+
+@app.template_filter('platform_time')
+def _platform_time(value):
+    """An ISO-8601 UTC timestamp as "21 Sep 2026, 14:05 UTC" for the console."""
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat(value).strftime('%d %b %Y, %H:%M').lstrip('0') + ' UTC'
+    except (TypeError, ValueError):
+        return value or ''
 
 
 # ---------------- guards ----------------
@@ -67,6 +82,25 @@ def platform_required(fn):
             session.pop(SESSION_KEY, None)
             return redirect(url_for('platform_login', next=request.path))
         g.platform_admin = admin
+        # An account created or reset by the super admin starts on a temporary
+        # password, which must be replaced before the console can be used.
+        if admin['password_must_change'] and request.endpoint not in ('platform_password', 'platform_logout'):
+            flash('Choose your own password to continue.', 'error')
+            return redirect(url_for('platform_password'))
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def superadmin_required(fn):
+    """Only the super admin. Use after ``platform_required``.
+
+    Platform admins are trusted with every school, but the team itself — who is
+    an admin, and what each has done — is the super admin's alone.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not g.platform_admin['is_super']:
+            abort(403)
         return fn(*args, **kwargs)
     return wrapper
 
@@ -109,7 +143,8 @@ def _safe_next(target, fallback):
 def platform_login():
     if request.method == 'POST':
         username = request.form.get('username', '')
-        admin = authenticate_platform_admin(username, request.form.get('password', ''))
+        admin = authenticate_platform_admin(username, request.form.get('password', ''),
+                                            request.remote_addr)
         if not admin:
             return render_template('platform/login.html',
                                    error='Those platform credentials were not recognised.'), 401
@@ -124,6 +159,9 @@ def platform_login():
 @platform_host_only
 @csrf_protect
 def platform_logout():
+    admin = current_platform_admin()
+    if admin:
+        pv.record('platform_admin.logout', None, None, admin['username'], admin['id'])
     session.clear()
     return redirect(url_for('platform_login'))
 
@@ -144,7 +182,8 @@ def platform_password():
         if not error:
             flash('Your platform password has been changed.', 'success')
             return redirect(url_for('platform_dashboard'))
-    return render_template('platform/password.html', error=error)
+    return render_template('platform/password.html', error=error,
+                           forced=bool(g.platform_admin['password_must_change']))
 
 
 # ---------------- schools ----------------
@@ -172,8 +211,21 @@ def platform_dashboard():
                 'created_at': tenant.created_at,
             })
     for school in schools:
-        school['stats'] = tenant_stats(school['info'])
-    return render_template('platform/dashboard.html', schools=schools)
+        glance = tenant_glance(school['info'])
+        school.update(stats=glance['stats'], colour=glance['colour'], logo=glance['logo'])
+    known = [s['stats']['students'] for s in schools if s['stats'] and s['stats']['students'] is not None]
+    totals = {
+        'schools': len(schools),
+        'active': sum(1 for s in schools if s['info'].is_active),
+        'suspended': sum(1 for s in schools if not s['info'].is_active),
+        'students': sum(known),
+        'unreadable': sum(1 for s in schools if not s['stats']),
+    }
+    # The super admin sees the whole platform's latest movements; anyone else, their own.
+    me = g.platform_admin
+    # The platform's own log only: the dashboard should not open school databases to draw a feed.
+    recent = team.activity(None if me['is_super'] else me['id'], per_page=8, inside=False)['rows']
+    return render_template('platform/dashboard.html', schools=schools, totals=totals, recent=recent)
 
 
 @app.route('/platform/schools/new', methods=['GET', 'POST'])
@@ -362,11 +414,135 @@ def platform_school_enter(slug):
     return redirect(_school_url(primary, url_for('platform_entry', token=token)))
 
 
+# ---------------- the team, and its activity ----------------
+
 @app.route('/platform/audit')
 @platform_host_only
+def platform_audit_legacy():
+    """The activity log used to live here."""
+    return redirect(url_for('platform_activity'))
+
+
+def _int_arg(name, default=None):
+    try:
+        return int(request.args.get(name, ''))
+    except ValueError:
+        return default
+
+
+@app.route('/platform/activity')
+@platform_host_only
 @platform_required
-def platform_audit():
-    return render_template('platform/audit.html', audit=pv.recent_audit(limit=200))
+def platform_activity():
+    """Activity logs, arranged as: choose an admin, then read their log.
+
+    The super admin picks any admin (or everyone) from the list; any other
+    platform admin sees only their own log, with no list to pick from.
+    """
+    me = g.platform_admin
+    category = request.args.get('category', 'all')
+    page = _int_arg('page', 1)
+    if me['is_super']:
+        admins = team.list_admins()
+        if request.args.get('admin') == 'all':
+            selected, admin_id = 'all', None
+        else:
+            admin_id = _int_arg('admin', me['id'])
+            selected = next((a for a in admins if a['id'] == admin_id), None)
+            if selected is None:
+                abort(404)
+    else:
+        admins, selected, admin_id = [], next(a for a in team.list_admins() if a['id'] == me['id']), me['id']
+    log = team.activity(admin_id, category, page)
+    return render_template('platform/activity.html', admins=admins, selected=selected, log=log,
+                           category=category if category in dict(team.CATEGORIES) else 'all',
+                           categories=team.CATEGORIES, is_super=me['is_super'])
+
+
+@app.route('/platform/team')
+@platform_host_only
+@platform_required
+@superadmin_required
+def platform_team():
+    return render_template('platform/team.html', admins=team.list_admins(), form={'username': '', 'display_name': '', 'email': ''})
+
+
+def _credentials_page(username, password, heading, lead):
+    return render_template('platform/admin_credentials.html', username=username, password=password,
+                           heading=heading, lead=lead)
+
+
+@app.post('/platform/team/new')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_new():
+    me = g.platform_admin
+    form = {k: request.form.get(k, '').strip() for k in ('username', 'display_name', 'email')}
+    try:
+        password = team.create_admin(form['username'], form['display_name'], form['email'],
+                                     me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        return render_template('platform/team.html', admins=team.list_admins(), form=form,
+                               error=str(exc)), 400
+    return _credentials_page(
+        form['username'].lower(), password, 'Platform admin added',
+        'They can manage every school, but not the team or its logs. They must choose their own '
+        'password the first time they sign in.')
+
+
+@app.post('/platform/team/<int:admin_id>/remove')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_remove(admin_id):
+    me = g.platform_admin
+    try:
+        result = team.remove_admin(admin_id, me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+    else:
+        message = f'Access removed. Their reserved account was switched off in {result["schools"]} school(s).'
+        if result['failed']:
+            flash(message + ' These schools could not be reached and need attention: '
+                  + ', '.join(result['failed']) + '.', 'error')
+        else:
+            flash(message, 'success')
+    return redirect(url_for('platform_team'))
+
+
+@app.post('/platform/team/<int:admin_id>/restore')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_restore(admin_id):
+    me = g.platform_admin
+    try:
+        username, password = team.restore_admin(admin_id, me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('platform_team'))
+    return _credentials_page(username, password, 'Platform admin restored',
+                             'Their old password was discarded. They must choose a new one when they sign in.')
+
+
+@app.post('/platform/team/<int:admin_id>/reset-password')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_reset(admin_id):
+    me = g.platform_admin
+    try:
+        username, password = team.reset_password(admin_id, me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('platform_team'))
+    return _credentials_page(username, password, 'Password reset',
+                             'Their old password no longer works. They must choose a new one when they sign in.')
 
 
 def _school_url(hostname, path):

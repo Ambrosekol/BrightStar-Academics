@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 
 from . import config
 from .context import TenantInfo
-from .models import PlatformBase, Tenant, TenantDomain
+from .models import (
+    PlatformAdmin, PlatformAuditLog, PlatformBase, ROLE_SUPER, Tenant, TenantDomain,
+)
 from .routing import build_engine, ensure_database_exists
 
 SLUG_RE = re.compile(r'^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$')
@@ -58,7 +60,64 @@ def init_platform_db():
     except Exception as exc:  # a clear message beats a driver stack trace
         raise RuntimeError(
             f'Could not reach PostgreSQL to create the platform registry: {exc}') from exc
-    PlatformBase.metadata.create_all(platform_engine())
+    engine = platform_engine()
+    PlatformBase.metadata.create_all(engine)
+    _add_missing_columns(engine)
+    ensure_superadmin()
+
+
+def _add_missing_columns(engine):
+    """Add columns the models declare but an older registry lacks.
+
+    ``create_all()`` creates missing tables and never alters existing ones, so a
+    registry created by an earlier release keeps its old columns. Every column
+    added here carries a default, so existing rows are valid straight away.
+    """
+    inspector = sa.inspect(engine)
+    existing = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table in PlatformBase.metadata.sorted_tables:
+            if table.name not in existing:
+                continue
+            have = {c['name'] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in have:
+                    continue
+                spec = column.type.compile(engine.dialect)
+                default = column.server_default
+                if default is not None:
+                    if not column.nullable:
+                        spec += ' NOT NULL'
+                    spec += f' DEFAULT {default.arg.text}'
+                elif not column.nullable:
+                    raise RuntimeError(f'Cannot add NOT NULL column {table.name}.{column.name} '
+                                       f'without a default to an existing registry.')
+                conn.execute(sa.text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {spec}'))
+
+
+def ensure_superadmin():
+    """Make sure that, once any platform admin exists, one of them is the super admin.
+
+    A registry from before roles existed has admins and no super admin; the
+    earliest active admin — the person who set the platform up — becomes it.
+    Everyone else stays an ordinary platform admin. Does nothing when a super
+    admin already exists or there are no admins yet.
+    """
+    with platform_session() as session:
+        if session.scalars(sa.select(PlatformAdmin.id).where(
+                PlatformAdmin.role == ROLE_SUPER, PlatformAdmin.active == 1)).first():
+            return None
+        first = session.scalars(sa.select(PlatformAdmin).where(PlatformAdmin.active == 1)
+                                .order_by(PlatformAdmin.id)).first()
+        if first is None:
+            return None
+        first.role = ROLE_SUPER
+        session.add(PlatformAuditLog(
+            platform_admin_id=first.id, actor_username='system', action='platform_admin.promote',
+            detail=f'{first.username} became the super admin: the platform had none.',
+            created_at=now_iso()))
+        session.commit()
+        return first.username
 
 
 @contextmanager

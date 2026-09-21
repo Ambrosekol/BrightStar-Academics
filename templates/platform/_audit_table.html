@@ -1,16 +1,17 @@
-<table>
-  <thead><tr><th>When</th><th>Who</th><th>Action</th><th>School</th><th>Detail</th></tr></thead>
-  <tbody>
-    {% for row in audit %}
-      <tr>
-        <td class="muted mono" style="white-space:nowrap">{{ (row.created_at or '')[:16].replace('T', ' ') }}</td>
-        <td>{{ row.actor or '' }}</td>
-        <td class="mono">{{ row.action }}</td>
-        <td class="mono muted">{{ row.slug or '' }}</td>
-        <td class="muted">{{ row.detail or '' }}</td>
-      </tr>
-    {% else %}
-      <tr><td colspan="5" class="muted">Nothing recorded yet.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-wrap">
+  <table class="log">
+    <thead><tr><th>When</th><th>Action</th><th>By</th><th>Details</th></tr></thead>
+    <tbody>
+      {% for row in audit %}
+        <tr>
+          <td class="when">{{ row.created_at|platform_time }}</td>
+          <td><span class="what">{{ row.action|describe_action }}</span></td>
+          <td>{{ row.actor or 'command line' }}</td>
+          <td class="detail">{{ row.detail or '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty">Nothing recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
