@@ -282,6 +282,24 @@ def apply_branding(info, branding=None, logo=None, gallery=(), remove_gallery=()
             raise ProvisioningError(str(exc)) from None
 
 
+def set_display_name(slug, name):
+    """Make the platform's own record of a school carry the name the school now uses.
+
+    The console lists schools by the registry's name, so when a school renames itself the two
+    must not drift apart. The school's code (its address and folder) never changes.
+    """
+    name = (name or '').strip()
+    if not name:
+        return
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if tenant is not None and tenant.name != name:
+            tenant.name = name
+            tenant.updated_at = now_iso()
+            session.commit()
+    clear_cache()
+
+
 def update_branding(info, branding=None, logo=None, gallery=(), remove_gallery=()):
     """Change an existing school's colours, logo and sign-in photographs.
 

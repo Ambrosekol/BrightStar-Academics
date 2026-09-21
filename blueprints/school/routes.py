@@ -1,6 +1,6 @@
 """The school portal: students, classes, subjects, assignments, projects,
-tests/practice/examinations, results (entry/verify/approve/release), the
-public website/news/enquiries admin, enrollment history, class promotion,
+tests/practice/examinations, results (entry/verify/approve/release),
+enrollment history, class promotion,
 and academic sessions.
 """
 
@@ -25,8 +25,7 @@ from models import (
     AssignmentQuestion, AssignmentStudent, ClassSubject, ParentAccount,
     ParentStudentLink, ProjectStudent, School, SchoolAssessment,
     SchoolAssignment, SchoolAssignmentAttempt, SchoolClass,
-    SchoolClassProgression, SchoolPublicEnquiry, SchoolPublicNews,
-    SchoolPublicPage, SchoolPublicSetting, SchoolProject, SchoolQuestion,
+    SchoolClassProgression, SchoolPublicSetting, SchoolProject, SchoolQuestion,
     SchoolStudentResult, SchoolSubject, Student, StudentAdmissionContact,
     StudentAdmissionProfile, StudentEnrolment, StudentEnrollmentHistory,
     StudentNumberAllocation, ResultWorkflowEvent, db,
@@ -34,7 +33,7 @@ from models import (
 from core.db_helpers import all_rows, group_concat, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.security import (
     admin_access_error, admin_has_permission, admin_required, admin_scope_allows,
-    audit_log, current_admin, csrf_protect, is_super_admin,
+    audit_log, current_admin, csrf_protect, is_school_admin,
 )
 from core.uploads import _save_image_upload
 from core.notifications import _notify_guardians_of_school_work
@@ -53,7 +52,7 @@ from blueprints.school.helpers import (
     _school_pair_allowed, _school_sessions, _school_student_visible,
     _school_subject_allowed, _set_ca_weights, _student_term_periods,
     _student_term_subjects, _sync_enrolment_for_history, _term_subject_report,
-    _work_with_class_subject, handle_news_image_upload,
+    _work_with_class_subject,
 )
 
 
@@ -637,7 +636,7 @@ def admin_school_classes():
 @admin_required
 @csrf_protect
 def admin_school_class_edit(class_id):
-    if not is_super_admin(): return admin_access_error('Super Admin control')
+    if not is_school_admin(): return admin_access_error('School Admin control')
     row=obj(SchoolClass,class_id)
     if not row: abort(404)
     errors=[]
@@ -667,7 +666,7 @@ def admin_school_class_edit(class_id):
 @admin_required
 @csrf_protect
 def admin_school_class_toggle(class_id):
-    if not is_super_admin(): return admin_access_error('Super Admin control')
+    if not is_school_admin(): return admin_access_error('School Admin control')
     row=obj(SchoolClass, class_id)
     if not row: abort(404)
     new=0 if row['active'] else 1
@@ -786,14 +785,14 @@ def admin_school_subject_edit(subject_id):
                           ClassSubject.final_locked_by,ClassSubject.final_locked_at)
                    .where(ClassSubject.subject_id==subject_id))
     if not subject: abort(404)
-    if not is_super_admin() and not any(_school_class_allowed(current_admin()['id'],x['class_id']) for x in links): return admin_access_error('school.subjects.edit')
+    if not is_school_admin() and not any(_school_class_allowed(current_admin()['id'],x['class_id']) for x in links): return admin_access_error('school.subjects.edit')
     classes,_,_,_= _school_form_context(); selected=[x['class_id'] for x in links]; has_final=any(x['final_locked'] for x in links)
     subject_dict={c.key:getattr(subject,c.key) for c in subject.__mapper__.column_attrs}
     locked_map={r['class_id']:bool(r['locked']) for r in links}
     final_map={r['class_id']:bool(r['final_locked']) for r in links}
     if request.method=='POST':
         if has_final:
-            flash('This subject has been permanently locked by Super Admin and can no longer be edited.','error'); return redirect(url_for('admin_school_subjects'))
+            flash('This subject has been permanently locked by School Admin and can no longer be edited.','error'); return redirect(url_for('admin_school_subjects'))
         if any(x['locked'] for x in links):
             flash('Unlock the affected class-subject connection before editing this subject.','error'); return redirect(url_for('admin_school_subject_edit',subject_id=subject_id))
         name=request.form.get('name','').strip(); code=request.form.get('code','').strip(); new_selected=[]
@@ -805,7 +804,7 @@ def admin_school_subject_edit(subject_id):
         if not new_selected: errors.append('Select at least one class.')
         if any(not _school_class_allowed(current_admin()['id'],cid) for cid in new_selected): errors.append('One or more selected classes are outside your authorised scope.')
         locked_class_ids={x['class_id'] for x in links if x['locked']}
-        if locked_class_ids and not is_super_admin() and not locked_class_ids.issubset(set(new_selected)): errors.append('A locked class-subject connection cannot be removed by an ordinary administrator.')
+        if locked_class_ids and not is_school_admin() and not locked_class_ids.issubset(set(new_selected)): errors.append('A locked class-subject connection cannot be removed by an ordinary administrator.')
         if errors: return render_template('school_subject_form.html',mode='edit',subject={**subject_dict,**request.form},classes=classes,selected=new_selected or selected,locked_map=locked_map,final_map=final_map,errors=errors)
         try:
             existing={x['class_id']:x for x in links}
@@ -821,9 +820,9 @@ def admin_school_subject_edit(subject_id):
                                                 final_locked=0,created_by=current_admin()['id'],
                                                 created_at=now))
             for cid,row in existing.items():
-                # A locked link is only removable by a Super Admin; a finally
+                # A locked link is only removable by a School Admin; a finally
                 # locked one is never removable.
-                if cid not in new_selected and (not row['locked'] or is_super_admin()) and not row['final_locked']:
+                if cid not in new_selected and (not row['locked'] or is_school_admin()) and not row['final_locked']:
                     db.session.execute(sa_delete(ClassSubject).where(
                         ClassSubject.class_id==cid,ClassSubject.subject_id==subject_id))
             db.session.commit()
@@ -841,9 +840,9 @@ def admin_school_subject_delete(subject_id):
     links=all_rows(select(ClassSubject.locked,ClassSubject.final_locked)
                    .where(ClassSubject.subject_id==subject_id))
     if not subject: abort(404)
-    if any(x['final_locked'] for x in links): flash('This subject has been permanently locked by Super Admin and cannot be deleted.','error'); return redirect(url_for('admin_school_subjects'))
-    if any(x['locked'] for x in links) and not is_super_admin(): flash('This subject has a locked class assignment. An authorized administrator must resolve the lock before it can be removed.','error'); return redirect(url_for('admin_school_subjects'))
-    if not is_super_admin() and not _school_subject_allowed(current_admin()['id'],subject_id): return admin_access_error('school.subjects.delete')
+    if any(x['final_locked'] for x in links): flash('This subject has been permanently locked by School Admin and cannot be deleted.','error'); return redirect(url_for('admin_school_subjects'))
+    if any(x['locked'] for x in links) and not is_school_admin(): flash('This subject has a locked class assignment. An authorized administrator must resolve the lock before it can be removed.','error'); return redirect(url_for('admin_school_subjects'))
+    if not is_school_admin() and not _school_subject_allowed(current_admin()['id'],subject_id): return admin_access_error('school.subjects.delete')
     subject.active=0
     db.session.commit()
     audit_log('school_subject_deactivated','school','subject',subject_id); flash('Subject deactivated.','success'); return redirect(url_for('admin_school_subjects'))
@@ -858,7 +857,7 @@ def admin_school_subject_lock(subject_id,class_id):
         ClassSubject.subject_id==subject_id,ClassSubject.class_id==class_id)).first()
     if not row: abort(404)
     if row.final_locked:
-        flash('This class-subject connection is permanently locked by Super Admin.','error'); return redirect(url_for('admin_school_subject_edit',subject_id=subject_id))
+        flash('This class-subject connection is permanently locked by School Admin.','error'); return redirect(url_for('admin_school_subject_edit',subject_id=subject_id))
     new=0 if row.locked else 1
     row.locked=new
     db.session.commit()
@@ -869,7 +868,7 @@ def admin_school_subject_lock(subject_id,class_id):
 @csrf_protect
 def admin_school_subject_final_lock(subject_id,class_id):
     me=current_admin()
-    if not is_super_admin(me): return admin_access_error('Super Admin control')
+    if not is_school_admin(me): return admin_access_error('School Admin control')
     row=db.session.scalars(select(ClassSubject).where(
         ClassSubject.subject_id==subject_id,ClassSubject.class_id==class_id)).first()
     if not row: abort(404)
@@ -897,7 +896,8 @@ def admin_school_assignments():
         .join(SchoolSubject,SchoolSubject.id==SchoolAssignment.subject_id)
         .outerjoin(AssignmentStudent,AssignmentStudent.assignment_id==SchoolAssignment.id)
         .where(SchoolAssignment.active==1)
-        .group_by(SchoolAssignment.id).order_by(SchoolAssignment.id.desc()))]
+        .group_by(SchoolAssignment.id,SchoolClass.id,SchoolSubject.id)
+        .order_by(SchoolAssignment.id.desc()))]
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     admin=current_admin()
@@ -1095,7 +1095,8 @@ def admin_school_projects():
         .join(SchoolSubject,SchoolSubject.id==SchoolProject.subject_id)
         .outerjoin(ProjectStudent,ProjectStudent.project_id==SchoolProject.id)
         .where(SchoolProject.active==1)
-        .group_by(SchoolProject.id).order_by(SchoolProject.id.desc()))]
+        .group_by(SchoolProject.id,SchoolClass.id,SchoolSubject.id)
+        .order_by(SchoolProject.id.desc()))]
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     me=current_admin()
@@ -1688,168 +1689,6 @@ def admin_school_results_release():
     audit_log('school_results_release_schedule_changed','school','academic_session',current['id'],{'release_at':release},True,me)
     flash('Result release schedule updated.','success'); return redirect(url_for('admin_school_results'))
 
-@app.route('/admin/school/website')
-@admin_required
-def admin_school_website():
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.view'): return admin_access_error('website.view')
-    settings={key:(value or '') for key,value in tuples(
-        select(SchoolPublicSetting.setting_key,SchoolPublicSetting.setting_value))}
-    pages=db.session.scalars(select(SchoolPublicPage).order_by(SchoolPublicPage.slug)).all()
-    news=db.session.scalars(select(SchoolPublicNews)
-        .order_by(SchoolPublicNews.id.desc()).limit(50)).all()
-    enquiries=db.session.scalars(select(SchoolPublicEnquiry)
-        .order_by(SchoolPublicEnquiry.id.desc()).limit(50)).all()
-    return render_template('admin_school_website.html',settings=settings,pages=pages,news=news,enquiries=enquiries)
-
-@app.post('/admin/school/website/save')
-@admin_required
-@csrf_protect
-def admin_school_website_save():
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.manage'): return admin_access_error('website.manage')
-    now=datetime.now(timezone.utc).isoformat()
-    keys=['school_name','school_motto','school_tagline','school_phone','school_email','school_address','homepage_headline','homepage_intro','homepage_cta']
-    for key in keys:
-        stmt=insert_stmt(SchoolPublicSetting).values(
-            setting_key=key,setting_value=request.form.get(key,'').strip(),
-            updated_at=now,updated_by=me['id'])
-        db.session.execute(stmt.on_conflict_do_update(
-            index_elements=['setting_key'],
-            set_={'setting_value':stmt.excluded.setting_value,
-                  'updated_at':stmt.excluded.updated_at,
-                  'updated_by':stmt.excluded.updated_by}))
-    for page in db.session.scalars(select(SchoolPublicPage)).all():
-        slug=page.slug
-        title=request.form.get(f'page_title_{slug}','').strip()
-        content=request.form.get(f'page_content_{slug}','').strip()
-        published=1 if request.form.get(f'page_published_{slug}')=='1' else 0
-        if title:
-            page.title=title; page.content=content; page.published=published
-            page.updated_at=now; page.updated_by=me['id']
-    db.session.commit()
-    audit_log('public_website_updated','website','settings',None,{'keys':keys}); flash('Public school website settings saved.','success'); return redirect(url_for('admin_school_website'))
-
-@app.route('/admin/school/website/news/new',methods=['GET','POST'])
-@admin_required
-@csrf_protect
-def admin_school_news_new():
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.manage'): return admin_access_error('website.manage')
-    if request.method=='POST':
-        title=request.form.get('title','').strip()
-        slug=re.sub(r'[^a-z0-9]+','-',title.lower()).strip('-')
-        excerpt=request.form.get('excerpt','').strip()
-        body=request.form.get('body','').strip()
-        published=1 if request.form.get('published')=='1' else 0
-        errors=[]
-        if not title: errors.append('News title is required.')
-        if not body: errors.append('News body is required.')
-
-        img_file = request.files.get('featured_image')
-        image_url = None
-        if img_file and img_file.filename:
-            uploaded = handle_news_image_upload(img_file)
-            if uploaded is False:
-                errors.append('Invalid image format. Allowed formats: PNG, JPG, JPEG, WEBP, GIF, SVG.')
-            else:
-                image_url = uploaded
-
-        if not errors:
-            now=datetime.now(timezone.utc).isoformat(); base=slug or 'news'; n=1
-            while one_scalar(select(SchoolPublicNews.id).where(SchoolPublicNews.slug==slug)):
-                slug=f'{base}-{n}'; n+=1
-            db.session.add(SchoolPublicNews(slug=slug,title=title,excerpt=excerpt,body=body,
-                published=published,published_at=now if published else None,
-                created_at=now,updated_at=now,created_by=me['id'],updated_by=me['id'],
-                image_url=image_url))
-            db.session.commit()
-            audit_log('public_news_created','website','news',slug,{'published':published})
-            flash('News article saved.','success')
-            return redirect(url_for('admin_school_website'))
-        return render_template('admin_school_news_form.html',errors=errors,form=request.form)
-    return render_template('admin_school_news_form.html',errors=[],form={})
-
-@app.route('/admin/school/website/news/<int:news_id>/edit',methods=['GET','POST'])
-@admin_required
-@csrf_protect
-def admin_school_news_edit(news_id):
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.manage'): return admin_access_error('website.manage')
-    row=obj(SchoolPublicNews,news_id)
-    if not row: abort(404)
-    if request.method=='POST':
-        title=request.form.get('title','').strip()
-        excerpt=request.form.get('excerpt','').strip()
-        body=request.form.get('body','').strip()
-        published=1 if request.form.get('published')=='1' else 0
-        errors=[]
-        if not title: errors.append('News title is required.')
-        if not body: errors.append('News body is required.')
-
-        img_file = request.files.get('featured_image')
-        image_url = row.image_url
-        if img_file and img_file.filename:
-            uploaded = handle_news_image_upload(img_file)
-            if uploaded is False:
-                errors.append('Invalid image format. Allowed formats: PNG, JPG, JPEG, WEBP, GIF, SVG.')
-            else:
-                image_url = uploaded
-
-        if not errors:
-            now=datetime.now(timezone.utc).isoformat()
-            row.title=title; row.excerpt=excerpt; row.body=body; row.published=published
-            # Stamp the publication date the first time it goes live; clear it
-            # when it is withdrawn; otherwise leave the original date alone.
-            if published and row.published_at is None: row.published_at=now
-            elif not published: row.published_at=None
-            row.updated_at=now; row.updated_by=me['id']; row.image_url=image_url
-            db.session.commit()
-            audit_log('public_news_updated','website','news',news_id,{'published':published})
-            flash('News article updated.','success')
-            return redirect(url_for('admin_school_website'))
-        return render_template('admin_school_news_form.html',errors=errors,form=request.form,editing=row)
-    return render_template('admin_school_news_form.html',errors=[],
-                           form={c.key:getattr(row,c.key) for c in row.__mapper__.column_attrs},
-                           editing=row)
-
-@app.route('/admin/school/website/enquiries')
-@admin_required
-def admin_school_enquiries():
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.view'): return admin_access_error('website.view')
-    return redirect(url_for('admin_school_website'))
-
-@app.route('/admin/school/website/enquiries/<int:eid>')
-@admin_required
-def admin_school_enquiry_detail(eid):
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.view'): return admin_access_error('website.view')
-    enquiry=obj(SchoolPublicEnquiry,eid)
-    if not enquiry: abort(404)
-    # Opening a notification also acknowledges the enquiry.
-    if enquiry.status=='new':
-        enquiry.status='in_progress'; enquiry.handled_by=me['id']
-        enquiry.handled_at=datetime.now(timezone.utc).isoformat()
-        db.session.commit()
-    row={c.key:getattr(enquiry,c.key) for c in enquiry.__mapper__.column_attrs}
-    row['handled_by_name']=one_scalar(select(Admin.display_name)
-                                      .where(Admin.id==enquiry.handled_by))
-    return render_template('admin_school_enquiry_detail.html',enquiry=row)
-
-@app.post('/admin/school/website/enquiries/<int:eid>/status')
-@admin_required
-@csrf_protect
-def admin_school_enquiry_status(eid):
-    me=current_admin()
-    if not admin_has_permission(me['id'],'website.manage'): return admin_access_error('website.manage')
-    status=request.form.get('status','new'); status=status if status in ('new','in_progress','resolved') else 'new'
-    db.session.execute(sa_update(SchoolPublicEnquiry).where(SchoolPublicEnquiry.id==eid)
-        .values(status=status,handled_by=me['id'],
-                handled_at=datetime.now(timezone.utc).isoformat()))
-    db.session.commit()
-    audit_log('public_enquiry_status_changed','website','enquiry',eid,{'status':status}); return redirect(url_for('admin_school_website'))
-
 @app.post('/admin/school/students/<int:sid>/history')
 @admin_required
 @csrf_protect
@@ -2262,7 +2101,7 @@ def admin_school_promotion_run(run_id):
 def admin_school_promotion_progressions():
     me=current_admin()
 
-    if not is_super_admin():
+    if not is_school_admin():
         return admin_access_error('Promotion progression configuration')
 
     if request.method=='POST':
@@ -2327,7 +2166,7 @@ def admin_school_promotion_progressions():
 @csrf_protect
 def admin_school_sessions():
     me=current_admin()
-    if not is_super_admin():
+    if not is_school_admin():
         return admin_access_error('Academic session management')
 
     if request.method=='POST':

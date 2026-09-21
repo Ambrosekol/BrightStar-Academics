@@ -239,7 +239,7 @@ with A.app.test_client() as super_c:
     super_c.post("/login", data={"username": "zz_term_super", "password": "TermSuper!123"})
     super_c.get("/admin/workspace/school")
     page = super_c.get("/admin/school/sessions").get_data(as_text=True)
-    check("Super Admin sees the CA weighting form", "Continuous assessment weighting" in page)
+    check("School Admin sees the CA weighting form", "Continuous assessment weighting" in page)
     token = csrf_from(page)
 
     bad = super_c.post("/admin/school/sessions", data={

@@ -17,18 +17,24 @@ def admin_library():
     q=request.args.get('q','').strip(); status=request.args.get('status','all')
     stmt=select(LibraryBook).where(LibraryBook.active==1)
     if q:
-        like=f'%{q}%'
-        stmt=stmt.where(or_(LibraryBook.title.like(like),LibraryBook.author.like(like),
-                            LibraryBook.isbn.like(like),LibraryBook.category.like(like)))
+        # icontains, not LIKE: PostgreSQL's LIKE is case-sensitive, so "bible" would not find
+        # "Bible". autoescape makes a "%" or "_" in the typed text be searched for, not treated
+        # as a wildcard.
+        stmt=stmt.where(or_(*(col.icontains(q,autoescape=True) for col in
+                              (LibraryBook.title,LibraryBook.author,LibraryBook.isbn,LibraryBook.category))))
     if status=='available':
         stmt=stmt.where(LibraryBook.available_copies>0)
     books=db.session.scalars(stmt.order_by(LibraryBook.title)).all()
     borrowed=one_scalar(select(func.count()).select_from(LibraryLoan)
                         .where(LibraryLoan.status=='borrowed'),0)
+    # Due dates are stored as ISO text, so "before today" is a text comparison with today's
+    # ISO date (UTC). It is computed here rather than by the database's own date function,
+    # which differs between SQLite and PostgreSQL.
+    today=datetime.now(timezone.utc).date().isoformat()
     overdue=one_scalar(select(func.count()).select_from(LibraryLoan)
                        .where(LibraryLoan.status=='borrowed',
                               LibraryLoan.due_at.is_not(None),
-                              LibraryLoan.due_at<func.date('now')),0)
+                              LibraryLoan.due_at<today),0)
     students=all_rows(select(Student.id,Student.admission_no,Student.first_name,
                              Student.middle_name,Student.last_name)
                       .where(Student.active==1)

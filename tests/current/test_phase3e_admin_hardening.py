@@ -42,7 +42,7 @@ def test_messaging_retry_and_notification_actor_are_fixed():
     # is gone since the SQLAlchemy migration: the session owns the transaction.
     assert "if 'locked' not in str(exc).lower() or attempt_no==3" in ADMIN_ROUTES
     assert 'sa.exc.OperationalError' in ADMIN_ROUTES
-    block=SECURITY[SECURITY.index('def _notify_super_admins'):SECURITY.index('def admin_has_permission')]
+    block=SECURITY[SECURITY.index('def _notify_school_admins'):SECURITY.index('def admin_has_permission')]
     assert 'me=current_admin()' in block
     # The notification records who caused it, resolved before the exclusion rule.
     assert "actor_admin_id=me['id'] if me else None" in block

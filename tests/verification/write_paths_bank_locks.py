@@ -91,7 +91,7 @@ with A.app.test_client() as c:
     page = c.get(CONTROLS).get_data()
     check("controls page renders", len(page) > 1000, str(len(page)))
     check("lock panel present", b"Protected examination resources" in page)
-    check("lock form present for Super Admin",
+    check("lock form present for School Admin",
           b"/lock" in page and b'name="reason"' in page)
     m = CSRF.search(page)
     check("panel carries a CSRF token", m is not None)
@@ -106,7 +106,7 @@ with A.app.test_client() as c:
             "AND unlocked_at IS NULL", BANK_ID)
     check("lock reason stored", bool(row) and row[0]["reason"] == "probe freeze",
           str([dict(x) for x in row]))
-    check("lock attributed to the Super Admin", bool(row) and row[0]["locked_by"] == SUPER_ID)
+    check("lock attributed to the School Admin", bool(row) and row[0]["locked_by"] == SUPER_ID)
     check("a governance review item was raised",
           bool(q("SELECT 1 FROM admin_control_items WHERE target_type='bank' AND target_id=? "
                  "AND status='open' AND category='governance'", str(BANK_ID))))

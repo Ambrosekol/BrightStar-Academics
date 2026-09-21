@@ -1,11 +1,11 @@
-"""The public school website's settings and page lookups — read from many
-places (the public site itself, the admin website editor, error pages,
-context processors) so kept out of any single domain.
+"""A school's settings (name, contact details, colours, logo) — read from many
+places (the sign-in page, error pages, context processors) so kept out of any
+single domain.
 """
 
 from sqlalchemy import select
 
-from models import SchoolPublicPage, SchoolPublicSetting, db
+from models import SchoolPublicSetting, db
 from core.db_helpers import tuples
 
 
@@ -18,8 +18,3 @@ def _public_settings():
     except Exception:
         db.session.rollback()
         return {}
-
-
-def _public_page(slug):
-    return db.session.scalars(select(SchoolPublicPage).where(
-        SchoolPublicPage.slug==slug, SchoolPublicPage.published==1)).first()

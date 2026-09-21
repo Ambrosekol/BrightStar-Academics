@@ -30,6 +30,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Creating a school](#creating-a-school)
 - [Giving a school its own domain](#giving-a-school-its-own-domain)
 - [The platform team and its activity log](#the-platform-team-and-its-activity-log)
+- [Email and WhatsApp](#email-and-whatsapp)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -261,6 +262,36 @@ their reserved `platform@<username>` account. Only schools the admin has entered
 school that cannot be reached is named on the page rather than silently leaving entries out. Any
 other admin sees only their own log.
 
+## Email and WhatsApp
+
+What parents receive — payment receipts, password-recovery emails, alerts about school work — is
+sent from **the school's own accounts**. A school's administrators set them up under **Email &
+WhatsApp** in their admin area (guarded by the `delivery.manage` permission, which the school's
+top-level administrator holds and can grant to a role): a mail server, or a WhatsApp Business
+(Cloud API) account, each with a button to test it before relying on it.
+
+- **The platform's shared account is the fallback.** A school that has set up nothing sends through
+  the `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` account, if the deployment has one, and its
+  page says so, showing the sender address. A school that has set up nothing and has no shared
+  account to fall back on simply cannot send, and says so.
+- **A half-set-up school never borrows the platform's account.** Once a school enters a mail host,
+  its own settings are used exclusively, even if incomplete, rather than quietly sending its
+  parents' mail from the platform's address.
+- **Secrets are encrypted at rest.** A saved password or token is encrypted (Fernet) in the
+  school's own database, under a key derived from the application secret and the school's code:
+  a copy of a school's database is not a copy of its mail credentials, and one school's stored
+  token means nothing in another. They are never shown again, are absent from the audit log
+  (which records only *which* fields changed), and a blank field on save means "keep what is
+  saved". Rotating `BRIGHTSTARS_SECRET` would strand them, so set `BRIGHTSTARS_DELIVERY_KEY` to keep
+  them independent of it; an unreadable secret is reported as not saved and re-entered.
+- **The server cannot be aimed at its own network.** A school chooses the host that *the server*
+  connects to, which is a way to probe internal services, so in production a school's mail host
+  must resolve only to public internet addresses (checked when saved and again just before every
+  connection, and the connection goes to the very address that was checked, not a name looked up
+  again), and only the standard mail ports (25, 465, 587, 2525) are allowed. In development a
+  local mail catcher is accepted. The platform's own configured server is trusted and unrestricted.
+  Certificates are verified.
+
 ## Command line
 
 ```
@@ -285,14 +316,15 @@ variable; the ones that shape the deployment:
 | Variable | Purpose |
 |---|---|
 | `BRIGHTSTARS_PLATFORM_DB` | PostgreSQL URL of the platform registry. Required — there is no default, because a wrong guess would silently create an empty registry and make every school look as though it did not exist. |
-| `BRIGHTSTARS_PLATFORM_HOSTS` | Hostnames serving the platform website and console. |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | Hostnames serving the platform console (`/` there opens its sign-in page). |
 | `BRIGHTSTARS_PORTAL_DOMAIN` | Domain each school's portal address is issued under. |
 | `BRIGHTSTARS_TENANTS_DIR` | Folder holding each school's files. |
 | `BRIGHTSTARS_SECRET` | Session-signing secret. In production it must be at least 32 characters or the app refuses to start. |
 | `BRIGHTSTARS_ENV` | `development` or `production`. |
 | `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` | Optional: place schools' databases on another server. |
 | `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
-| `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | Receipt and password-reset delivery. |
+| `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
+| `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and WhatsApp secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
 
 ## Project layout
 
@@ -333,7 +365,8 @@ Academics/
 │   ├── storage.py            #   the school's data/ and uploads/ folders
 │   ├── accounts.py           #   shared sign-in/out helpers
 │   ├── entrance.py           #   question banks, grading, result rendering
-│   ├── notifications.py      #   guardian email/WhatsApp
+│   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
+│   ├── notifications.py      #   guardian email/WhatsApp alerts
 │   ├── presence.py           #   who is online
 │   ├── public_settings.py    #   the school's settings lookup
 │   └── uploads.py            #   image upload validation
@@ -382,6 +415,9 @@ python tests/verification/write_paths_multitenancy.py      # isolation between s
 python tests/verification/write_paths_platform_console.py  # the console, end to end
 python tests/verification/write_paths_portal_branding.py   # colours, logo and sign-in photographs
 python tests/verification/write_paths_platform_team.py     # the team, roles, removal, activity logs
+python tests/verification/write_paths_delivery.py          # a school's own email and WhatsApp
+python tests/verification/write_paths_known_gaps.py        # roles, profile page, uploads, search, sign-in errors
+python tests/verification/write_paths_pg_smoke.py          # every page, opened on PostgreSQL
 ```
 
 Between them they cover hostname routing, per-school databases, session cookies copied between
@@ -444,18 +480,14 @@ Check student, result and payment counts against the old database before doing s
 
 ## Known gaps
 
-- **A school's top-level role is still called "Super Admin" internally.** It behaves as a school
-  administrator and platform operators outrank it, but the rename has not been done.
-- **Delivery settings are deployment-wide.** Every school sends receipts and password resets
-  through the same SMTP and WhatsApp accounts; per-school settings are not built.
-- **`LIKE` searches are now case-sensitive.** PostgreSQL is stricter than SQLite here, and around
-  21 name and username search call sites in `blueprints/` have not been reviewed or converted to
-  `ilike`. The test suites do not cover those paths.
-- **The school website editor edits pages nobody can see.** `/admin/school/website` still offers
-  page and news editing, and an enquiry inbox fed by a contact page that no longer exists. Its
-  branding fields are still used and should stay.
-- **Message attachments are reachable without authentication** at their `/static/uploads/…` URL
-  if the exact file name is known, alongside the permission-checked download route for the same
-  files.
-- **A failed sign-in shows no explanation** — the login template renders only flashed messages,
-  not the `error` value the view passes it.
+- **Only pages are exercised on PostgreSQL, not every write.** `tests/verification/write_paths_pg_smoke.py`
+  opens every admin, student, parent and candidate page with data behind it, which is how a whole
+  class of SQLite-era queries that PostgreSQL rejects was found and fixed. Form submissions
+  (the POST paths) are covered by the feature suites but not exhaustively.
+- **Rate limits are per process.** Sign-in, password-recovery and test-message limits live in one
+  worker's memory, so several workers multiply them. Put a limit at the reverse proxy too.
+- **Databases that predate the website editor's removal keep its tables** (`school_public_pages`,
+  `school_public_news`, `school_public_enquiries`). Nothing reads or writes them any more; drop
+  them by hand if you want the space.
+- **Question banks are still per-school JSON files** under `tenants/<code>/data/`, so a new school
+  starts with none and its entrance examinations cannot run until banks are imported.

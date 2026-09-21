@@ -613,9 +613,11 @@ def premium_result_metrics(papers):
     )
 
 def _new_candidate_code():
-    year=datetime.now().year; prefix=f'CRMS-{year}-'
+    from core.branding import code_prefix  # deferred: core.branding imports the app
+
+    year=datetime.now().year; prefix=f'{code_prefix()}-{year}-'
     latest=one_scalar(select(Candidate.candidate_code)
-                      .where(Candidate.candidate_code.like(prefix+'%'))
+                      .where(Candidate.candidate_code.startswith(prefix,autoescape=True))
                       .order_by(Candidate.id.desc()).limit(1))
     if latest:
         try: n=int(latest.rsplit('-',1)[1])+1

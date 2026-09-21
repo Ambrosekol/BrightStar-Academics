@@ -91,8 +91,11 @@ def online_presence():
         (PresenceSession.account_type=='parent', ParentAccount.username))
     stmt=(select(PresenceSession.account_type,PresenceSession.account_id,
                  func.max(PresenceSession.last_seen).label('last_seen'),
-                 display.label('display_name'),identifier.label('identifier'),
-                 SchoolClass.name.label('class_name'))
+                 # One row per account: PostgreSQL requires every other column to be an
+                 # aggregate. They are the same for every session of one account (a student
+                 # with two enrolments shows one of their classes), so max() loses nothing.
+                 func.max(display).label('display_name'),func.max(identifier).label('identifier'),
+                 func.max(SchoolClass.name).label('class_name'))
           .select_from(PresenceSession)
           .outerjoin(Admin,and_(Admin.id==PresenceSession.account_id,
                                 PresenceSession.account_type=='admin'))

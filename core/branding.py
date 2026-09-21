@@ -76,6 +76,19 @@ def receipt_prefix():
             or (current_tenant(required=False).slug.upper() if current_tenant(required=False) else 'RCPT'))
 
 
+def code_prefix():
+    """The school's own code, upper-case, for numbering things that belong to it.
+
+    Candidate numbers begin with it. It is the school's code (which names its portal
+    address and its folder), never a fixed string, so no school's numbers carry another
+    school's prefix.
+    """
+    from models import School
+
+    tenant = current_tenant(required=False)
+    return (_school_row(School.code) or (tenant.slug if tenant else 'SCH')).upper()
+
+
 def _brand_colour(key, label):
     """A stored brand colour, or '' if none was chosen or the stored value is not
     one — a bad value must never reach a page, only fall back to the default."""
@@ -99,7 +112,7 @@ def school_brand():
     if current_tenant(required=False) is None:
         # The platform host: no school, so nothing to brand.
         return {'name': PLATFORM_NAME, 'motto': '', 'tagline': '',
-                'email': '', 'phone': '', 'logo_url': None,
+                'email': '', 'phone': '', 'logo_url': None, 'logo_path': '',
                 'primary': '', 'accent': '', 'primary_dark': '', 'gallery': [], 'theme_css': ''}
 
     if has_request_context() and '_school_brand' in g:
@@ -116,6 +129,7 @@ def school_brand():
         'phone': _setting('school_phone') or _school_row(School.phone),
         # A school's own logo is served out of its own uploads folder.
         'logo_url': url_for('static', filename=logo or PLACEHOLDER_LOGO) if has_request_context() else None,
+        'logo_path': logo,
         'primary': primary,
         'accent': accent,
         'primary_dark': theme.shade(primary, -0.35) if primary else '',
@@ -147,6 +161,17 @@ LOGO_SETTING_KEY = 'school_logo'
 COLOUR_KEYS = ((theme.PRIMARY_KEY, 'main', theme.DEFAULT_PRIMARY),
                (theme.ACCENT_KEY, 'accent', theme.DEFAULT_ACCENT))
 
+# The school's identity and contact details: setting key, column on the school's own row, label,
+# and the longest value accepted. Only the name is required.
+IDENTITY_FIELDS = (
+    ('school_name', 'name', 'The school name', 150),
+    ('school_motto', 'motto', 'The motto', 200),
+    ('school_tagline', 'tagline', 'The tagline', 200),
+    ('school_phone', 'phone', 'The phone number', 40),
+    ('school_email', 'email', 'The email address', 200),
+    ('school_address', 'address', 'The address', 300),
+)
+
 
 def _uploaded(files):
     """The files that were actually chosen; an empty file input still submits one."""
@@ -163,6 +188,17 @@ def check_branding_inputs(branding, logo=None, gallery=()):
     from core.uploads import validate_image_upload
 
     branding = dict(branding or {})
+    for key, _, label, longest in IDENTITY_FIELDS:
+        if key not in branding:
+            continue
+        value = ' '.join((branding[key] or '').split())  # trimmed, and no stray line breaks
+        if len(value) > longest:
+            raise ValueError(f'{label} can be at most {longest} characters.')
+        if key == 'school_name' and not value:
+            raise ValueError('A school must have a name.')
+        if key == 'school_email' and value and ('@' not in value or ' ' in value):
+            raise ValueError('The email address does not look like an email address.')
+        branding[key] = value
     for key, label, default in COLOUR_KEYS:
         if key in branding:
             colour = theme.check_colour(branding[key], label)
@@ -207,9 +243,9 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
 
     Runs in the current school's context (its database and its uploads folder), and
     expects ``branding`` and the files to have passed :func:`check_branding_inputs`.
-    ``remove_gallery`` lists photographs (by stored path) to take away. An empty
-    colour clears the school's choice, returning it to the portal's own colour. A
-    field that is not passed is left exactly as it is.
+    ``remove_gallery`` lists photographs (by stored path) to take away. A field that
+    is not passed is left exactly as it is; one that is passed blank is cleared — a colour
+    returns to the portal's own, a contact detail is removed. The name cannot be blank.
     """
     from datetime import datetime, timezone
 
@@ -225,12 +261,11 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
 
     school = db.session.scalars(select(School).order_by(School.id)).first()
     if school is not None:
-        school.name = branding.get('school_name') or school.name
-        school.motto = branding.get('school_motto') or school.motto
-        school.tagline = branding.get('school_tagline') or school.tagline
-        school.address = branding.get('school_address') or school.address
-        school.phone = branding.get('school_phone') or school.phone
-        school.email = branding.get('school_email') or school.email
+        for key, column, _, _ in IDENTITY_FIELDS:
+            if key in branding and (branding[key] or column != 'name'):
+                # A field that is passed is set, and a blank one clears it. Only the name can
+                # never be blank: a school always has one.
+                setattr(school, column, branding[key] or None)
         school.updated_at = now()
 
     values = dict(branding)
@@ -250,10 +285,11 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
         added = [_save_image_upload(f, 'branding', f'{slug}_photo') for f in gallery]
         values[theme.GALLERY_KEY] = theme.dump_gallery(kept + added)
 
+    clearable = {theme.PRIMARY_KEY, theme.ACCENT_KEY} | {k for k, _, _, _ in IDENTITY_FIELDS if k != 'school_name'}
     for key, value in values.items():
         if not value:
-            if key in (theme.PRIMARY_KEY, theme.ACCENT_KEY):
-                # Back to the portal's own colour.
+            if key in clearable:
+                # A colour goes back to the portal's own; a blank contact detail is simply absent.
                 db.session.execute(delete(SchoolPublicSetting).where(
                     SchoolPublicSetting.setting_key == key))
             continue

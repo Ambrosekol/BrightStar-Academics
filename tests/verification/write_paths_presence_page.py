@@ -2,7 +2,7 @@
 
 templates/admin_presence.html previously ignored the `counts`/`rows` the route
 passed in entirely and always rendered "1 admin, 0 students, 0 parents" plus
-one fake "Super Admin" row, using Bootstrap classes that render unstyled since
+one fake "School Admin" row, using Bootstrap classes that render unstyled since
 this app doesn't load Bootstrap. This drives a real login, sends a real
 heartbeat, and checks the page reflects it.
 """

@@ -19,7 +19,7 @@ from models import (
     StudentEnrolment, StudentEnrollmentHistory, db,
 )
 from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten
-from core.security import admin_scope_allows, audit_log, current_admin, is_super_admin
+from core.security import admin_scope_allows, audit_log, current_admin, is_school_admin
 from core.storage import uploads_dir
 from blueprints.finance.helpers import _primary_school_id
 
@@ -164,7 +164,8 @@ def _school_assessments(kind):
             .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
             .outerjoin(SchoolQuestion,SchoolQuestion.assessment_id==SchoolAssessment.id)
             .where(SchoolAssessment.assessment_type==kind)
-            .group_by(SchoolAssessment.id).order_by(SchoolAssessment.id.desc()))]
+            .group_by(SchoolAssessment.id,SchoolClass.id,SchoolSubject.id)
+            .order_by(SchoolAssessment.id.desc()))]
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
                                .order_by(SchoolClass.level_order)).all()
     admin=current_admin()
@@ -249,7 +250,7 @@ def _term_subject_report(student_id, session_id, term, subject_id):
                SchoolStudentResult.score.is_not(None),
                or_(SchoolAssessment.assessment_type=='examination',
                    and_(SchoolStudentResult.assessment_id.is_(None),
-                        SchoolStudentResult.component_name.like('Exam%')))))[0]
+                        SchoolStudentResult.component_name.startswith('Exam')))))[0]
     test_raw=tuples(select(func.coalesce(func.sum(SchoolStudentResult.score),0),
                         func.coalesce(func.sum(SchoolStudentResult.max_score),0))
         .select_from(SchoolStudentResult)
@@ -260,7 +261,7 @@ def _term_subject_report(student_id, session_id, term, subject_id):
                SchoolStudentResult.score.is_not(None),
                or_(SchoolAssessment.assessment_type=='test',
                    and_(SchoolStudentResult.assessment_id.is_(None),
-                        SchoolStudentResult.component_name.like('Test%')))))[0]
+                        SchoolStudentResult.component_name.startswith('Test')))))[0]
     assignment_raw=tuples(select(func.coalesce(func.sum(AssignmentStudent.score),0),
                               func.coalesce(func.sum(func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)),0))
         .select_from(AssignmentStudent)
@@ -394,22 +395,6 @@ def _result_with_context(result_id, with_subject=True):
               .where(SchoolStudentResult.id==result_id))
     row=one(stmt)
     return _flatten(row,'SchoolStudentResult',*extra) if row else None
-
-def handle_news_image_upload(req_file):
-    if not req_file or not req_file.filename:
-        return None
-    import os, uuid
-    from werkzeug.utils import secure_filename
-    ext = os.path.splitext(req_file.filename)[1].lower()
-    allowed = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']
-    if ext not in allowed:
-        return False
-    news_dir = os.path.join(uploads_dir(), 'news')
-    os.makedirs(news_dir, exist_ok=True)
-    filename = f"{uuid.uuid4().hex[:12]}_{secure_filename(req_file.filename)}"
-    save_path = os.path.join(news_dir, filename)
-    req_file.save(save_path)
-    return f"/static/uploads/news/{filename}"
 
 ACADEMIC_HISTORY_LEVELS={'Primary 1','Primary 2','Primary 3','Primary 4','Primary 5',
                          'Primary 6','JSS 1','JSS 2','JSS 3','SSS 1','SSS 2','SSS 3'}

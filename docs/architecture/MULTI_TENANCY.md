@@ -38,8 +38,10 @@ Two rules shape everything below:
 | CLI: create / register / upgrade / suspend / domains / platform admins | Built |
 | Existing Crainbow installation → first tenant (copy, originals untouched) | Built |
 | Existing Super Admin → platform admin | Built |
-| **School Admin role** (renaming a school's top role away from "Super Admin") | **Not yet** |
-| **Branding sweep** through the remaining templates, result cards and emails | **Partly** — see [Known gaps](#known-gaps) |
+| **School Admin role** (a school's top role is "School Admin"; existing schools are renamed in place at start-up) | Built |
+| **Branding sweep**: no school's name or code appears in shared code (enforced by a contract test) | Built |
+| **Per-school email and WhatsApp**, secrets encrypted at rest, with the platform's account as the fallback | Built |
+| **Uploads are access-controlled** per folder: branding public, messages only via their own route, the rest for signed-in accounts | Built |
 | PostgreSQL everywhere; a database per school, created on demand | Built |
 | Importing an existing SQLite installation into a school's PostgreSQL database | Built |
 | Crainbow reduced to an ordinary tenant; no school name anywhere in shared code | Built |
@@ -217,8 +219,8 @@ header gets a 404, not a school.
 
 * One `BRIGHTSTARS_SECRET` signs every school's sessions (fine for now; a per-school
   key derived from it is a possible later hardening).
-* SMTP and WhatsApp credentials (`BRIGHTSTARS_SMTP_*`, `BRIGHTSTARS_WHATSAPP_*`) are
-  still global environment settings; per-school delivery settings are a follow-up.
+* `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` are the platform's *shared* account, the
+  fallback for a school that has set up none of its own (core/delivery.py).
 * Login rate limiting and presence caches are in process memory (already
   documented as single-worker-only in `core/accounts.py`).
 
@@ -339,40 +341,14 @@ Accounts page. That grants them nothing: it is an account in their own school
 only, carrying authority they already hold there, and the next platform entry
 re-activates it and re-randomises its password.
 
-## Next steps
-
-1. **Finish the branding sweep** (below) — the one thing standing between a
-   newly created school and real users.
-2. **School Admin role.** Inside a school the top-level system role (today named
-   "Super Admin", referred to in ~5 places by name and ~89 by its `is_system`
-   flag) should become "School Admin". Crainbow needs its own school-admin
-   account before its current Super Admin is retired from the school.
-3. **Per-school delivery settings**, so each school sends receipts and password
-   resets from its own SMTP/WhatsApp account rather than the global one.
-4. **Retire the school-website features that now have no audience**: the public
-   page and news editors under `/admin/school/website`, and the enquiry inbox
-   the removed contact page fed. The branding fields on that page are still
-   used and should stay.
-5. **PostgreSQL milestone** (above).
-
 ## Known gaps
 
-* **The branding sweep is unfinished.** A school's name, motto, contact details
-  and logo are captured when it is created and stored in its own database, and
-  `core/branding.py` exposes them to every template as `school_brand`. The
-  sign-in page — a school's front door — uses them, and receipt PDFs use the
-  school's own logo. But around 250 mentions of "Crainbow" / "Creative Rainbow"
-  remain across roughly 100 templates and several Python modules (result cards,
-  email subjects and bodies, CSV file names, page titles). **Until those are
-  swept, a newly created school is not ready to show to real users.** The fix is
-  mechanical: replace each hard-coded name with `school_brand.name`, and each
-  `images/school_logo.png` with `school_brand.logo_url`.
-* `static/uploads/messages/…` is reachable without authentication at its
-  `/static/uploads/…` URL (unguessable file names, but not access-controlled),
-  alongside the permission-checked download route that exists for the same files.
-  This predates multi-tenancy and behaves identically now; it is worth closing.
-* The login page never displays its `error` message (the template only renders
-  flashed messages), so a failed sign-in shows no explanation. Also pre-existing.
+* **Only pages are exercised on PostgreSQL, not every write.** `tests/verification/write_paths_pg_smoke.py`
+  opens every admin, student, parent and candidate page with data behind it and fails on any
+  database error; it found and fixed queries SQLite accepted and PostgreSQL rejects (`GROUP BY`
+  strictness, `date('now')`). Form submissions are covered by the feature suites, not exhaustively.
+* Rate limiting and presence caches are per process; put a limit at the reverse proxy as well.
+* Databases that predate the retirement of the school website editor keep its three tables, unused.
 * Question banks are still per-school JSON files under `tenants/<code>/data/`.
   A new school starts with none, so its entrance examinations cannot run until
   banks are imported for it.

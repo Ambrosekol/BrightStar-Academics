@@ -47,7 +47,7 @@ r = run(
 )
 check("existing env var overrides .env", "ENV=production_probe" in r.stdout, r.stdout + r.stderr[-300:])
 
-# ---- 3. Fresh database: .env's Super Admin username/password are used
+# ---- 3. Fresh database: .env's School Admin username/password are used
 r = run(
     "import app\n"
     "with app.app.app_context(): app.init_db()\n"
@@ -83,9 +83,9 @@ r = run(
      "CRAINBOW_ADMIN_PASSWORD": "DifferentPass!999"},
 )
 check("second init_db() creates no 2nd admin", "TOTAL=1" in r.stdout, r.stdout + r.stderr[-500:])
-check("second init_db() creates no 2nd Super Admin", "SUPERS=1" in r.stdout, r.stdout + r.stderr[-500:])
-check("existing Super Admin username unchanged", "USERNAME=customroot" in r.stdout, r.stdout + r.stderr[-500:])
-check("existing Super Admin password unchanged", "OLD_PW_STILL_MATCHES=True" in r.stdout, r.stdout + r.stderr[-500:])
+check("second init_db() creates no 2nd School Admin", "SUPERS=1" in r.stdout, r.stdout + r.stderr[-500:])
+check("existing School Admin username unchanged", "USERNAME=customroot" in r.stdout, r.stdout + r.stderr[-500:])
+check("existing School Admin password unchanged", "OLD_PW_STILL_MATCHES=True" in r.stdout, r.stdout + r.stderr[-500:])
 check("new .env password was NOT applied", "NEW_PW_DOES_NOT_MATCH=True" in r.stdout, r.stdout + r.stderr[-500:])
 
 # ---- 5. A second, independent fresh database still honours its own .env values

@@ -5,3 +5,5 @@ reportlab>=4.0,<5
 python-dotenv>=1.0,<2
 # PostgreSQL driver. Required: PostgreSQL is the only supported database.
 psycopg[binary]>=3.1,<4
+# Encrypts a school's own mail and WhatsApp credentials at rest.
+cryptography>=42,<47

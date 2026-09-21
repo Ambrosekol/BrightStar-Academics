@@ -19,7 +19,7 @@ from models import Admin, ParentAccount, PasswordResetToken, Student, db
 from core.accounts import _authenticate_unified, _clear_identity_sessions, _rate_limit
 from core.branding import school_name
 from core.db_helpers import one
-from core.notifications import _smtp_send
+from core.delivery import email_settings, send_email
 from core.presence import _presence_identity, end_presence
 from core.public_settings import _public_settings
 from core.security import audit_log, current_admin
@@ -52,13 +52,13 @@ def _account_recovery_target(raw):
     return None
 
 def _send_recovery_email(recipient,name,reset_url):
-    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
-    if not host or not sender: return False,'Email recovery is not configured by the school yet.'
+    settings=email_settings()
+    if settings is None: return False,'Email recovery is not configured by the school yet.'
     from email.message import EmailMessage
     school=school_name()
-    msg=EmailMessage(); msg['Subject']=f'{school} — Password reset'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear {name},\n\nA password reset was requested for your {school} account. Use this link within 30 minutes:\n\n{reset_url}\n\nIf you did not request this, you can ignore this message.\n\n{school}')
+    msg=EmailMessage(); msg['Subject']=f'{school} — Password reset'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(f'Dear {name},\n\nA password reset was requested for your {school} account. Use this link within 30 minutes:\n\n{reset_url}\n\nIf you did not request this, you can ignore this message.\n\n{school}')
     try:
-        _smtp_send(host,port,user,password,msg)
+        send_email(settings,msg)
         return True,'sent'
     except Exception as exc: return False,f'Password recovery email could not be sent: {exc}'
 
@@ -129,12 +129,12 @@ def login():
         # school would lock the same username out at every other school.
         rate_key=f"login:{_rate_limit_scope()}:{request.remote_addr or 'unknown'}:{identifier.lower()[:120]}"
         if not _rate_limit(rate_key, limit=8, window=300):
-            return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
+            return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.',identifier=identifier), 429
         if not identifier or not password:
-            return render_template('login.html',error='Enter your username, Student ID or Candidate ID and password.')
+            return render_template('login.html',error='Enter your username, Student ID or Candidate ID and password.',identifier=identifier)
         kind, account=_authenticate_unified(identifier,password)
         if not account:
-            return render_template('login.html',error='We could not verify those login details. Please check your ID/username and password.')
+            return render_template('login.html',error='We could not verify those login details. Please check your ID/username and password.',identifier=identifier)
         _clear_identity_sessions()
         if kind=='admin':
             session['admin_id']=account['id']; session['admin_logged_in']=True

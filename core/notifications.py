@@ -8,7 +8,6 @@ payment). Callers invoke these only after their own commit has succeeded.
 """
 
 import json
-import smtplib
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -18,6 +17,7 @@ from sqlalchemy import select
 import os
 
 from core.branding import school_name
+from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
 from models import ParentStudentLink, SchoolNotification, Student, db
 from core.db_helpers import all_rows, one, tuples
 
@@ -36,59 +36,27 @@ def _parent_ids_for_student(student_id):
         .where(ParentStudentLink.student_id==student_id,ParentStudentLink.active==1))]
 
 
-def _smtp_use_ssl(port):
-    """Should the connection start TLS immediately, rather than upgrade via STARTTLS?
-
-    Port 465 is the long-standing convention for implicit TLS/SSL (SMTPS): the
-    server expects a TLS handshake as the very first bytes on the connection.
-    Port 587 (and 25) are plaintext-first, upgrading to TLS via STARTTLS after
-    the initial handshake. Connecting to port 465 with plain SMTP()+starttls()
-    sends a plaintext EHLO a TLS-only server never answers, which is exactly
-    what previously made receipt/recovery emails hang until they timed out.
-    BRIGHTSTARS_SMTP_SSL overrides the auto-detection when a host doesn't follow
-    the convention.
-    """
-    override=os.environ.get('BRIGHTSTARS_SMTP_SSL','').strip()
-    if override:
-        return override != '0'
-    return port == 465
-
-
-def _smtp_send(host, port, user, password, msg):
-    """Connect to the configured SMTP server and send a prepared message."""
-    if _smtp_use_ssl(port):
-        with smtplib.SMTP_SSL(host, port, timeout=20) as smtp:
-            if user: smtp.login(user, password)
-            smtp.send_message(msg)
-    else:
-        with smtplib.SMTP(host, port, timeout=20) as smtp:
-            if os.environ.get('BRIGHTSTARS_SMTP_STARTTLS','1') != '0':
-                smtp.starttls()
-            if user: smtp.login(user, password)
-            smtp.send_message(msg)
-
-
 def _notify_guardian_email(guardian_email, subject, body):
     """Best-effort plain-text email to a parent/guardian. Never raises."""
-    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
-    if not host or not sender: return False,'Email delivery is not configured.'
+    settings=email_settings()
+    if settings is None: return False,'Email delivery is not configured.'
     recipient=(guardian_email or '').strip()
     if not recipient: return False,'No guardian email address on file.'
     from email.message import EmailMessage
-    msg=EmailMessage(); msg['Subject']=subject; msg['From']=sender; msg['To']=recipient; msg.set_content(body)
+    msg=EmailMessage(); msg['Subject']=subject; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(body)
     try:
-        _smtp_send(host,port,user,password,msg)
+        send_email(settings,msg)
         return True,recipient
     except Exception as exc: return False,f'Email delivery failed: {exc}'
 
 
 def _notify_guardian_whatsapp(guardian_phone, text):
     """Best-effort plain-text WhatsApp message to a parent/guardian. Never raises."""
-    token=os.environ.get('BRIGHTSTARS_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('BRIGHTSTARS_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(guardian_phone)
-    if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured.'
+    settings=whatsapp_settings(); token,phone_id,version=((settings.token,settings.phone_id,settings.version) if settings else ('','','')); recipient=_ng_phone(guardian_phone)
+    if settings is None: return False,'WhatsApp Business Cloud API is not configured.'
     if not recipient: return False,'No valid guardian WhatsApp number on file.'
     payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'text','text':{'body':text}}).encode()
-    req=urllib.request.Request(f'https://graph.facebook.com/{version}/{phone_id}/messages',data=payload,method='POST',
+    req=urllib.request.Request(f'{GRAPH_URL}/{version}/{phone_id}/messages',data=payload,method='POST',
         headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
     try:
         with urllib.request.urlopen(req,timeout=8) as resp: result=json.loads(resp.read().decode())

@@ -1,5 +1,5 @@
 """Academic session management: create, switch the current session, archive
-and reactivate — and that only a Super Admin can reach any of it.
+and reactivate — and that only a School Admin can reach any of it.
 
 Until now there was no admin UI at all to create a new academic session or
 change which one is current; is_current was only ever set once, by the
@@ -95,7 +95,7 @@ with A.app.test_client() as c:
     c.get("/admin/workspace/school")
 
     page = c.get("/admin/school/sessions").get_data(as_text=True)
-    check("Super Admin can open the page", "Academic Sessions" in page)
+    check("School Admin can open the page", "Academic Sessions" in page)
     token = csrf_from(page)
 
     r1 = c.post("/admin/school/sessions", data={

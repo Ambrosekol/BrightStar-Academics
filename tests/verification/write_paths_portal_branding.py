@@ -346,11 +346,11 @@ c_s.get("/admin/workspace/school", base_url=u_s)
 
 home = c_s.get("/admin/school", base_url=u_s).get_data(as_text=True)
 check("the school's admin area offers a Branding page in its menu",
-      "/admin/school/branding" in home and "<span>Branding</span>" in home)
+      "/admin/school/branding" in home and "<span>School profile</span>" in home)
 page = c_s.get("/admin/school/branding", base_url=u_s)
 html = page.get_data(as_text=True)
 check("the Branding page loads with colours, logo and photographs to manage",
-      page.status_code == 200 and "Save branding" in html and 'name="school_brand_primary"' in html
+      page.status_code == 200 and "Save changes" in html and 'name="school_brand_primary"' in html
       and 'name="gallery"' in html and 'name="logo"' in html, str(page.status_code))
 
 
@@ -438,13 +438,13 @@ with c_clerk.session_transaction(base_url=u_clerk) as sess:
     sess["_csrf_token"] = "t" * 32
 r = c_clerk.get("/admin/school/branding", base_url=u_clerk)
 check("an administrator without the permission cannot open the page",
-      r.status_code != 200 and "Save branding" not in r.get_data(as_text=True), str(r.status_code))
+      r.status_code != 200 and "Save changes" not in r.get_data(as_text=True), str(r.status_code))
 r = c_clerk.post("/admin/school/branding/save", data={"_csrf_token": "t" * 32,
                  "school_brand_primary": "#123456"}, base_url=u_clerk, content_type="multipart/form-data")
 check("…nor change the branding, even with a valid form token",
       r.status_code != 302 and setting("selfserve", theme.PRIMARY_KEY) is None, str(r.status_code))
 check("…and the menu does not offer it to them",
-      "<span>Branding</span>" not in c_clerk.get("/admin/school", base_url=u_clerk).get_data(as_text=True))
+      "<span>School profile</span>" not in c_clerk.get("/admin/school", base_url=u_clerk).get_data(as_text=True))
 
 with A.app.app_context(), tenant_context(info_for("selfserve")):
     A.db.session.add(A.AdminTypePermission(admin_type_id=ordinary_id, permission_id=permission_id,
@@ -452,7 +452,7 @@ with A.app.app_context(), tenant_context(info_for("selfserve")):
     A.db.session.commit()
 r = c_clerk.get("/admin/school/branding", base_url=u_clerk)
 check("once a role is granted branding.manage, its holders can use the page",
-      r.status_code == 200 and "Save branding" in r.get_data(as_text=True), str(r.status_code))
+      r.status_code == 200 and "Save changes" in r.get_data(as_text=True), str(r.status_code))
 r = c_clerk.post("/admin/school/branding/save", data={"_csrf_token": "t" * 32,
                  "school_brand_primary": "#123456", "school_brand_accent": theme.DEFAULT_ACCENT},
                  base_url=u_clerk, content_type="multipart/form-data")
@@ -471,12 +471,15 @@ with A.app.app_context(), tenant_context(info_for("selfserve")):
     held = restored is not None and A.db.session.scalars(sa.select(A.AdminTypePermission).where(
         A.AdminTypePermission.admin_type_id == top,
         A.AdminTypePermission.permission_id == restored.id)).first() is not None
-    # Nobody else is silently given it: only what an administrator grants.
-    spread = restored is not None and A.db.session.scalars(sa.select(sa.func.count()).select_from(
-        A.AdminTypePermission).where(A.AdminTypePermission.permission_id == restored.id)).first()
+    # Nobody else is silently given it: only the top-level role, and the preset role that exists
+    # for exactly this (which starts with no members).
+    spread = restored is not None and sorted(A.db.session.scalars(sa.select(A.AdminType.name).where(
+        A.AdminType.id.in_(sa.select(A.AdminTypePermission.admin_type_id).where(
+            A.AdminTypePermission.permission_id == restored.id)))).all())
 check("an existing school gains the permission on upgrade, held by its top-level administrator",
       held)
-check("…and the upgrade grants it to no other role", spread == 1, str(spread))
+check("…and the upgrade grants it to no other role than the profile-manager preset",
+      spread == sorted([A.SCHOOL_ADMIN_ROLE, "School Profile Manager"]), str(spread))
 
 anon, u_anon = client("selfserve.portal.test")
 check("signed-out visitors cannot reach the page or save",

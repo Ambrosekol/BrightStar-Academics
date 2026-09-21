@@ -1,4 +1,5 @@
-"""A school changing its own look: brand colours, logo and sign-in photographs.
+"""A school changing its own profile and look: its name and contact details, brand colours,
+logo and sign-in photographs.
 
 The same choices a platform operator makes when creating a school, available to
 the school's own administrators from their admin area. The rules (which colours
@@ -17,11 +18,12 @@ from app import app
 from control_plane.context import current_tenant
 from core import theme
 from core.branding import (
-    branding_settings, check_branding_inputs, max_branding_request_bytes, school_brand,
-    store_branding,
+    IDENTITY_FIELDS, branding_settings, check_branding_inputs, max_branding_request_bytes,
+    school_brand, store_branding,
 )
 from core.security import admin_required, audit_log, csrf_protect
-from models import db
+from models import School, db
+from sqlalchemy import select
 
 
 def _allow_branding_upload(fn):
@@ -41,9 +43,17 @@ def _allow_branding_upload(fn):
 @admin_required
 def admin_school_branding():
     brand = school_brand()
-    gallery = theme.parse_gallery(branding_settings().get(theme.GALLERY_KEY))
+    settings = branding_settings()
+    gallery = theme.parse_gallery(settings.get(theme.GALLERY_KEY))
+    # What the school shows is its setting, falling back to its own record for a school
+    # created before settings held these.
+    row = db.session.scalars(select(School).order_by(School.id)).first()
+    identity = {key: settings.get(key) or (getattr(row, column, '') if row else '') or ''
+                for key, column, _, _ in IDENTITY_FIELDS}
     return render_template(
         'admin_school_branding.html',
+        identity=identity,
+        limits={key: longest for key, _, _, longest in IDENTITY_FIELDS},
         primary=brand['primary'] or theme.DEFAULT_PRIMARY,
         accent=brand['accent'] or theme.DEFAULT_ACCENT,
         logo_url=brand['logo_url'],
@@ -59,17 +69,24 @@ def admin_school_branding():
 @csrf_protect
 def admin_school_branding_save():
     colours = {key: request.form.get(key, '') for key in (theme.PRIMARY_KEY, theme.ACCENT_KEY)}
+    # Only what the form actually sent: a field that is missing is left as it is, not blanked.
+    colours.update({key: request.form[key] for key, _, _, _ in IDENTITY_FIELDS if key in request.form})
     remove = [f'{theme.GALLERY_FOLDER}{name}' for name in request.form.getlist('remove_photo')]
     logo = request.files.get('logo')
     try:
         branding, gallery = check_branding_inputs(colours, logo, request.files.getlist('gallery'))
         store_branding(current_tenant().slug, branding, logo, gallery, remove)
+        if branding.get('school_name'):
+            from control_plane.provisioning import set_display_name
+
+            set_display_name(current_tenant().slug, branding['school_name'])
     except ValueError as exc:
         db.session.rollback()
         flash(str(exc), 'error')
     else:
         audit_log('school_branding_updated', 'school', 'settings', None,
-                  {'colours': {k: v or 'default' for k, v in branding.items()},
+                  {'fields': sorted(branding), 'colours': {k: v or 'default' for k, v in branding.items()
+                                                          if k in (theme.PRIMARY_KEY, theme.ACCENT_KEY)},
                    'photos_added': len(gallery), 'photos_removed': len(remove),
                    'logo_replaced': bool(getattr(logo, 'filename', ''))})
         flash('Your school branding has been saved.', 'success')

@@ -44,7 +44,7 @@ from models import (
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import (
     admin_access_error, admin_has_permission, admin_required, admin_scope_allows,
-    audit_log, current_admin, csrf_protect, is_super_admin, _notify_super_admins,
+    audit_log, current_admin, csrf_protect, is_school_admin, _notify_school_admins,
 )
 from core.uploads import _save_image_upload
 from core.presence import online_presence
@@ -357,7 +357,7 @@ def admin_new_candidate():
             db.session.commit()
         except Exception:
             db.session.rollback(); raise
-        _notify_super_admins('New student registered',f'{name} was registered for the {target} entrance examination.','info',url_for('admin_controls'))
+        _notify_school_admins('New student registered',f'{name} was registered for the {target} entrance examination.','info',url_for('admin_controls'))
         return render_template('candidate_registered.html',candidate={'id':cid,'candidate_code':code,'candidate_name':name,'target_class':target},password=password,papers=papers)
     return render_template('candidate_form.html',errors=[],form={},available_papers=[],missing=[])
 
@@ -454,7 +454,7 @@ def admin_candidate_result_whatsapp(cid):
 @admin_required
 @csrf_protect
 def admin_candidate_delete(cid):
-    if not is_super_admin(current_admin()): return admin_access_error('Super Admin approval')
+    if not is_school_admin(current_admin()): return admin_access_error('School Admin approval')
     try:
         if not one_scalar(select(Candidate.id).where(Candidate.id==cid)):
             abort(404)
@@ -470,7 +470,7 @@ def admin_candidate_delete(cid):
         db.session.rollback()
         raise
 
-    _notify_super_admins('Student record deleted',f'Student record #{cid} was deleted by a staff administrator.','warning',url_for('admin_controls')); flash('Student deleted successfully. Super Admin has been notified.','success')
+    _notify_school_admins('Student record deleted',f'Student record #{cid} was deleted by a staff administrator.','warning',url_for('admin_controls')); flash('Student deleted successfully. School Admin has been notified.','success')
     return redirect(url_for('admin_candidates'))
 
 @app.route('/admin/candidates/<int:cid>/result/image')
@@ -618,7 +618,7 @@ def admin_candidate_credentials_reset(cid):
     db.session.execute(sa_update(Candidate).where(Candidate.id==cid)
                        .values(password_hash=generate_password_hash(password)))
     db.session.commit()
-    _notify_super_admins('Student credentials reset',f'Login credentials for {c["candidate_name"]} were reset.','info',url_for('admin_controls'))
+    _notify_school_admins('Student credentials reset',f'Login credentials for {c["candidate_name"]} were reset.','info',url_for('admin_controls'))
     return render_template('candidate_credentials_reset.html',candidate=c,password=password)
 
 @app.route('/admin/candidates/<int:cid>/credentials/print')
@@ -673,7 +673,7 @@ def admin_new_bank():
         db.session.execute(sa_update(Examination)
             .where(Examination.bank_id==b['id']).values(active=0))
         db.session.commit()
-        audit_log('question_bank_created','assessment','bank',b['id'],{'name':b['name']}); _create_control_item('New question bank requires review',f'{b["name"]} was created by a staff administrator. Review it before it is used for an important examination.','question_bank_review','bank',b['id'],current_admin()['id']); _notify_super_admins('New question bank created',f'{b["name"]} was created by a staff administrator.','warning',url_for('admin_controls')); flash('Question bank created. Super Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=b['id']))
+        audit_log('question_bank_created','assessment','bank',b['id'],{'name':b['name']}); _create_control_item('New question bank requires review',f'{b["name"]} was created by a staff administrator. Review it before it is used for an important examination.','question_bank_review','bank',b['id'],current_admin()['id']); _notify_school_admins('New question bank created',f'{b["name"]} was created by a staff administrator.','warning',url_for('admin_controls')); flash('Question bank created. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=b['id']))
     return render_template('bank_form.html',mode='new',bank=None,errors=[])
 
 @app.route('/admin/banks/<bid>')
@@ -689,7 +689,7 @@ def admin_bank(bid):
 def admin_edit_bank(bid):
     b=bank(bid)
     if not b: abort(404)
-    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by Super Admin. Unlock it from Administration → Controls before making changes.','error'); return redirect(url_for('admin_bank',bid=bid))
+    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it from Administration → Controls before making changes.','error'); return redirect(url_for('admin_bank',bid=bid))
     if request.method=='POST':
         name=request.form.get('name','').strip(); level=request.form.get('level','').strip(); version=request.form.get('version','1.0').strip()
         try: duration=int(request.form.get('duration_minutes',0))*60 if request.form.get('duration_minutes') not in (None,'') else int(request.form.get('duration_seconds',3600))
@@ -699,7 +699,7 @@ def admin_edit_bank(bid):
         if duration<60: errors.append('Duration must be at least 60 seconds.')
         if errors: return render_template('bank_form.html',mode='edit',bank={**b,'name':name,'level':level,'version':version,'duration_seconds':duration},errors=errors)
         b.update(name=name,level=level,version=version,duration_seconds=duration)
-        save_bank(b); audit_log('question_bank_updated','assessment','bank',bid,{'name':name,'level':level,'version':version}); _create_control_item('Question bank changed',f'{name} was updated by a staff administrator. Review the change if required.','question_bank_review','bank',bid,current_admin()['id']); _notify_super_admins('Question bank changed',f'{name} was updated by a staff administrator.','warning',url_for('admin_controls')); flash('Bank settings updated. Super Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
+        save_bank(b); audit_log('question_bank_updated','assessment','bank',bid,{'name':name,'level':level,'version':version}); _create_control_item('Question bank changed',f'{name} was updated by a staff administrator. Review the change if required.','question_bank_review','bank',bid,current_admin()['id']); _notify_school_admins('Question bank changed',f'{name} was updated by a staff administrator.','warning',url_for('admin_controls')); flash('Bank settings updated. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
     return render_template('bank_form.html',mode='edit',bank=b,errors=[])
 
 @app.route('/admin/banks/<bid>/questions/new',methods=['GET','POST'])
@@ -708,7 +708,7 @@ def admin_edit_bank(bid):
 def admin_new_question(bid):
     b=bank(bid)
     if not b: abort(404)
-    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by Super Admin. Unlock it before adding questions.','error'); return redirect(url_for('admin_bank',bid=bid))
+    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it before adding questions.','error'); return redirect(url_for('admin_bank',bid=bid))
     if request.method=='POST':
         text=request.form.get('text','').strip(); instruction=request.form.get('instruction','').strip(); opts=[request.form.get(f'option{i}','').strip() for i in range(4)]
         try: ans=int(request.form.get('answer','-1')); points=int(request.form.get('points','1'))
@@ -726,7 +726,7 @@ def admin_new_question(bid):
         if errors: return render_template('question_form.html',bank=b,question={'text':text,'instruction':instruction,'image_path':image_path,'options':opts,'answer':ans,'points':points},errors=errors)
         item={'id':next_qid(b),'text':text,'options':opts,'answer':ans,'points':points,'instruction':instruction}
         if image_path: item['image_path']=image_path
-        b['questions'].append(item); save_bank(b); audit_log('question_added','assessment','bank',bid,{'question_id':b['questions'][-1]['id']}); _notify_super_admins('Question added to bank',f'A question was added to {b.get("name",bid)}.','info',url_for('admin_controls')); flash('Question added. Super Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
+        b['questions'].append(item); save_bank(b); audit_log('question_added','assessment','bank',bid,{'question_id':b['questions'][-1]['id']}); _notify_school_admins('Question added to bank',f'A question was added to {b.get("name",bid)}.','info',url_for('admin_controls')); flash('Question added. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
     return render_template('question_form.html',bank=b,question=None,errors=[])
 
 @app.route('/admin/banks/<bid>/questions/<int:qid>/edit',methods=['GET','POST'])
@@ -735,7 +735,7 @@ def admin_new_question(bid):
 def admin_edit_question(bid,qid):
     b=bank(bid)
     if not b: abort(404)
-    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by Super Admin. Unlock it before editing questions.','error'); return redirect(url_for('admin_bank',bid=bid))
+    if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it before editing questions.','error'); return redirect(url_for('admin_bank',bid=bid))
     q=next((x for x in b['questions'] if int(x['id'])==qid),None)
     if not q: abort(404)
     if request.method=='POST':
@@ -757,7 +757,7 @@ def admin_edit_question(bid,qid):
         q.update(text=text,options=opts,answer=ans,points=points,instruction=instruction)
         if image_path: q['image_path']=image_path
         else: q.pop('image_path',None)
-        save_bank(b); audit_log('question_updated','assessment','bank',bid,{'question_id':qid}); _notify_super_admins('Question updated',f'Question {qid} in {b.get("name",bid)} was updated.','info',url_for('admin_controls')); flash(f'Question {qid} updated. Super Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
+        save_bank(b); audit_log('question_updated','assessment','bank',bid,{'question_id':qid}); _notify_school_admins('Question updated',f'Question {qid} in {b.get("name",bid)} was updated.','info',url_for('admin_controls')); flash(f'Question {qid} updated. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
     return render_template('question_form.html',bank=b,question=q,errors=[])
 
 @app.post('/admin/banks/<bid>/questions/<int:qid>/delete')
@@ -766,7 +766,7 @@ def admin_edit_question(bid,qid):
 def admin_delete_question(bid,qid):
     b=bank(bid)
     if not b: abort(404)
-    if _resource_locked('bank',bid): flash('This question bank is locked by Super Admin. Unlock it before deleting questions.','error'); return redirect(url_for('admin_bank',bid=bid))
+    if _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it before deleting questions.','error'); return redirect(url_for('admin_bank',bid=bid))
     before=len(b['questions']); b['questions']=[q for q in b['questions'] if int(q['id'])!=qid]
     if len(b['questions'])==before: abort(404)
     # Deleting a question must not leave an active configuration asking for
@@ -778,7 +778,7 @@ def admin_delete_question(bid,qid):
         b['questions'].append(next(q for q in bank(bid)['questions'] if int(q['id'])==qid))
         flash('This question cannot be deleted because an active entrance configuration requires the configured number of questions. Change the configuration first.','error')
         return redirect(url_for('admin_bank',bid=bid))
-    save_bank(b); audit_log('question_deleted','assessment','bank',bid,{'question_id':qid}); _create_control_item('Question deleted',f'Question {qid} was deleted from {b.get("name",bid)}.','question_review','bank',bid,current_admin()['id']); _notify_super_admins('Question deleted',f'Question {qid} was deleted from {b.get("name",bid)}.','warning',url_for('admin_controls')); flash(f'Question {qid} deleted. Super Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
+    save_bank(b); audit_log('question_deleted','assessment','bank',bid,{'question_id':qid}); _create_control_item('Question deleted',f'Question {qid} was deleted from {b.get("name",bid)}.','question_review','bank',bid,current_admin()['id']); _notify_school_admins('Question deleted',f'Question {qid} was deleted from {b.get("name",bid)}.','warning',url_for('admin_controls')); flash(f'Question {qid} deleted. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
 
 @app.post('/admin/banks/<bid>/questions/reorder')
 @admin_required
@@ -786,13 +786,13 @@ def admin_delete_question(bid,qid):
 def admin_reorder(bid):
     b=bank(bid)
     if not b: abort(404)
-    if _resource_locked('bank',bid): flash('This question bank is locked by Super Admin. Unlock it before reordering questions.','error'); return redirect(url_for('admin_bank',bid=bid))
+    if _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it before reordering questions.','error'); return redirect(url_for('admin_bank',bid=bid))
     try: ids=[int(x) for x in request.form.get('order','').split(',') if x.strip()]
     except: ids=[]
     by={int(q['id']):q for q in b['questions']}
     if set(ids)!=set(by): return jsonify(ok=False,error='Order must contain every question exactly once.'),400
     b['questions']=[by[i] for i in ids]
-    save_bank(b); audit_log('questions_reordered','assessment','bank',bid,{}); _notify_super_admins('Question order changed',f'The question order in {b.get("name",bid)} was changed.','info',url_for('admin_controls')); return jsonify(ok=True)
+    save_bank(b); audit_log('questions_reordered','assessment','bank',bid,{}); _notify_school_admins('Question order changed',f'The question order in {b.get("name",bid)} was changed.','info',url_for('admin_controls')); return jsonify(ok=True)
 
 @app.route('/admin/attempts')
 @admin_required
@@ -963,7 +963,7 @@ def toggle_exam(bid):
 @admin_required
 @csrf_protect
 def admin_grant_retake(aid):
-    if not is_super_admin(current_admin()): return admin_access_error('Super Admin approval')
+    if not is_school_admin(current_admin()): return admin_access_error('School Admin approval')
     a=get_attempt(aid)
     if not a: abort(404)
     if a['status'] not in ('submitted','expired'):
@@ -985,17 +985,17 @@ def admin_grant_retake(aid):
         candidate_id=a['candidate_id'],bank_id=a['bank_id'],
         granted_at=datetime.now(timezone.utc).isoformat(),granted_by='admin'))
     db.session.commit()
-    _create_control_item('Retake access granted',f'A one-time retake was granted for {a["candidate"]}.','retake_review','attempt',aid,current_admin()['id']); _notify_super_admins('Retake access granted',f'A one-time retake was granted for {a["candidate"]}.','warning',url_for('admin_controls'))
-    flash('One-time retake access granted. Super Admin has been notified. The candidate may now log in and take this examination once more.','success')
+    _create_control_item('Retake access granted',f'A one-time retake was granted for {a["candidate"]}.','retake_review','attempt',aid,current_admin()['id']); _notify_school_admins('Retake access granted',f'A one-time retake was granted for {a["candidate"]}.','warning',url_for('admin_controls'))
+    flash('One-time retake access granted. School Admin has been notified. The candidate may now log in and take this examination once more.','success')
     return redirect(url_for('admin_result_detail',aid=aid))
 
 @app.post('/admin/results/<int:aid>/regrade')
 @admin_required
 @csrf_protect
 def admin_regrade(aid):
-    if not is_super_admin(current_admin()): return admin_access_error('Super Admin approval')
+    if not is_school_admin(current_admin()): return admin_access_error('School Admin approval')
     a=get_attempt(aid)
     if not a: abort(404)
     if a['status'] not in ('submitted','expired'):
         flash('Only completed attempts can be regraded.','error'); return redirect(url_for('admin_result_detail',aid=aid))
-    grade(aid,force=True); _create_control_item('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','regrade_review','attempt',aid,current_admin()['id']); _notify_super_admins('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','warning',url_for('admin_controls')); flash('Attempt regraded using the current verified answer key. Super Admin has been notified.','success'); return redirect(url_for('admin_result_detail',aid=aid))
+    grade(aid,force=True); _create_control_item('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','regrade_review','attempt',aid,current_admin()['id']); _notify_school_admins('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','warning',url_for('admin_controls')); flash('Attempt regraded using the current verified answer key. School Admin has been notified.','success'); return redirect(url_for('admin_result_detail',aid=aid))

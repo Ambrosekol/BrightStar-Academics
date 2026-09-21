@@ -29,7 +29,7 @@ from models import (
 )
 from core.branding import school_name
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
-from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_super_admin
+from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_school_admin
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
 from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
@@ -238,7 +238,7 @@ def parent_feedback():
         for (aid,) in tuples(select(Admin.id).where(Admin.active==1)):
             if not admin_has_permission(aid,'parent.feedback.manage'):
                 continue
-            if target_class and not is_super_admin({'id':aid,'admin_type_system':0}):
+            if target_class and not is_school_admin({'id':aid,'admin_type_system':0}):
                 # Class-bound staff must cover this class; unscoped staff still qualify.
                 if aid in scoped and not _school_class_allowed(aid,target_class['id']):
                     continue

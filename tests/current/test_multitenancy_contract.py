@@ -115,6 +115,12 @@ def test_the_code_base_carries_no_school_name_of_its_own():
                 continue
             assert not re.search(r"crainbow|creative rainbow", path.read_text(encoding="utf-8"), re.I), path
     assert not re.search(r"crainbow|creative rainbow", APP, re.I)
+    # A school's short code is as much its identity as its name: "CRMS-" once prefixed every
+    # school's candidate numbers.
+    for folder in ("core", "blueprints", "models", "services", "templates"):
+        for path in (ROOT / folder).rglob("*"):
+            if path.suffix in (".py", ".html") and "__pycache__" not in str(path):
+                assert not re.search(r"\bcrms\b", path.read_text(encoding="utf-8"), re.I), path
 
 
 def test_sql_is_written_for_postgresql_not_just_sqlite():
@@ -422,3 +428,92 @@ def test_reading_what_admins_did_inside_schools_is_read_only_and_bounded():
     assert "created_at.desc()" in activity
     # The dashboard's feed must not open school databases.
     assert "inside=False" in console[console.index("def platform_dashboard"):console.index("def platform_school_new")]
+
+def _shared_code():
+    """Every file of school-level code: not the platform (control_plane), not history."""
+    for folder in ("blueprints", "core", "services", "models"):
+        for path in (ROOT / folder).rglob("*.py"):
+            if "__pycache__" not in str(path):
+                yield path
+    yield ROOT / "app.py"
+
+
+def test_no_query_relies_on_a_sqlite_only_or_case_sensitive_construct():
+    """PostgreSQL's LIKE is case-sensitive and it has no date('now'); a query written against
+    SQLite's leniency fails, or quietly finds less, once a school is on PostgreSQL. These were
+    all found in real pages. tests/verification/write_paths_pg_smoke.py opens every page to
+    catch what a pattern cannot (such as a GROUP BY PostgreSQL rejects)."""
+    banned = (".like(", ".notlike(", "func.date('now')", "func.datetime(", "func.strftime(", "julianday",
+              "func.group_concat", "INSERT OR", "OR IGNORE")
+    for path in _shared_code():
+        body = path.read_text(encoding="utf-8")
+        for pattern in banned:
+            assert pattern not in body or path.name == "db_helpers.py", f"{path.name} uses {pattern}"
+
+
+def test_the_top_level_role_is_found_by_its_flag_never_by_its_name():
+    """A custom role that happens to be called "School Admin" must not be mistaken for the
+    top-level role and be handed every permission."""
+    app = (ROOT / "app.py").read_text(encoding="utf-8")
+    init = app[app.index("def init_admin_security"):app.index("def admin_role_names")]
+    assert "super_role=one_scalar(select(AdminType.id).where(AdminType.is_system==1)" in init
+    assert "AdminType.name==SCHOOL_ADMIN_ROLE))" not in init.split("_ignore_insert(AdminType")[1].split("db.session.flush()")[1]
+    from core.security import SCHOOL_ADMIN_ROLE, LEGACY_TOP_ROLE_NAMES
+    assert SCHOOL_ADMIN_ROLE == "School Admin" and "Super Admin" in LEGACY_TOP_ROLE_NAMES
+    for path in _shared_code():
+        assert "Super Admin" not in path.read_text(encoding="utf-8") or path.name == "security.py", path.name
+    for path in (ROOT / "templates").glob("*.html"):
+        assert "Super Admin" not in path.read_text(encoding="utf-8", errors="ignore"), path.name
+
+
+def test_the_public_website_editor_is_gone():
+    from core.security import ADMIN_PERMISSION_DEFS, ADMIN_ENDPOINT_PERMISSIONS, ADMIN_ROLE_PRESETS
+
+    assert not [c for c, *_ in ADMIN_PERMISSION_DEFS if c.startswith("website.")]
+    assert not [e for e in ADMIN_ENDPOINT_PERMISSIONS if "website" in e or "enquir" in e or "news" in e]
+    assert "Website & Content Manager" not in ADMIN_ROLE_PRESETS and "School Profile Manager" in ADMIN_ROLE_PRESETS
+    routes = (ROOT / "blueprints" / "school" / "routes.py").read_text(encoding="utf-8")
+    for name in ("admin_school_website", "admin_school_news", "admin_school_enquir", "SchoolPublicPage",
+                 "SchoolPublicNews", "SchoolPublicEnquiry"):
+        assert name not in routes, name
+    for template in ("admin_school_website.html", "admin_school_news_form.html", "admin_school_enquiry_detail.html"):
+        assert not (ROOT / "templates" / template).exists(), template
+
+
+def test_a_school_delivery_secret_is_encrypted_isolated_and_never_returned():
+    import inspect
+
+    from core import delivery
+
+    assert {"smtp_password", "whatsapp_token"} <= delivery.SECRET_KEYS
+    save = inspect.getsource(delivery.save_email)
+    assert "encrypt(password)" in save and "resolve_public(host)" in save
+    # The connection goes to the address that was checked, and again checked at send time.
+    opened = inspect.getsource(delivery._open_smtp)
+    assert "resolve_public(settings.host)" in opened and "client.connect(target" in opened
+    assert delivery.ALLOWED_SMTP_PORTS == (25, 465, 587, 2525)
+    # What the page is given carries facts about the secrets, never the secrets.
+    status = inspect.getsource(delivery.status)
+    assert "bool(own.get('smtp_password'))" in status and "bool(own.get('whatsapp_token'))" in status
+    assert "'password'" not in status and "'token'" not in status
+    # A half-set-up school never borrows the platform's account.
+    assert inspect.getsource(delivery.email_settings).count("half set up") == 1
+    # Nothing else reads the delivery environment: every sender goes through this module.
+    for path in _shared_code():
+        if path.name == "delivery.py":
+            continue
+        body = path.read_text(encoding="utf-8")
+        assert "BRIGHTSTARS_SMTP" not in body and "BRIGHTSTARS_WHATSAPP" not in body, path.name
+
+
+def test_the_uploads_route_decides_on_the_path_it_will_actually_serve():
+    app = (ROOT / "app.py").read_text(encoding="utf-8")
+    route = app[app.index("def uploaded_file"):app.index("if __name__=='__main__'")]
+    assert "PRIVATE_UPLOAD_FOLDERS=frozenset({'messages'})" in app
+    assert "PUBLIC_UPLOAD_FOLDERS=frozenset({'branding'})" in app
+    # Normalised first, judged second, and the normalised path is what is served: otherwise
+    # "students/../messages/x" is judged as a student photo and served as a message.
+    assert route.index("posixpath.normpath") < route.index("PRIVATE_UPLOAD_FOLDERS") < route.index("return send_from_directory")
+    assert "send_from_directory(uploads_dir(),clean)" in route
+    assert "send_from_directory(uploads_dir(),filename)" not in route
+

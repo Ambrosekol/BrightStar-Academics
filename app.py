@@ -1,9 +1,10 @@
 from flask import (
-    Flask, render_template, request, redirect, url_for, session, jsonify,
+    Flask, abort, render_template, request, redirect, url_for, session, jsonify,
     flash, g, has_app_context, send_from_directory,
 )
 from datetime import datetime, timedelta, timezone
 import os
+import posixpath
 import secrets
 import sqlite3
 import sys
@@ -35,11 +36,10 @@ from models import (
     FinanceFeeAssessment,
     FinancePayment, FinancePaymentAllocation,
     ParentAccount, ParentFeedback, ParentFeedbackReply,
-    Permission, SchemaMigration, School,
+    AdminPermission, Permission, SchemaMigration, School,
     SchoolAssessment, SchoolAssignment,
     SchoolClass,
     SchoolNotification, SchoolNumberingPolicy, SchoolProject,
-    SchoolPublicNews,
     SchoolQuestion, SchoolStudentResult,
     Student, StudentEnrolment,
 )
@@ -117,7 +117,8 @@ from core.presence import _presence_identity, touch_presence, online_presence  #
 # audit_log and friends moved to core/security.py.
 from core.security import (  # noqa: E402
     ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
-    admin_required, current_admin, is_super_admin, admin_has_permission,
+    admin_required, current_admin, is_school_admin, admin_has_permission,
+    SCHOOL_ADMIN_ROLE, LEGACY_TOP_ROLE_NAMES, RETIRED_PERMISSIONS, RENAMED_PRESET_ROLES,
     admin_permission_codes, admin_scope_allows,
     audit_log, admin_access_error, csrf_protect,
 )
@@ -481,6 +482,35 @@ from core.entrance import (  # noqa: E402
 
 
 
+def _retire_permissions():
+    """Carry a school over from permissions that no longer exist, without anyone losing access.
+
+    Whoever held a retired permission (through a role, or directly) is given its replacement,
+    then the old grants and the permission itself are removed so it stops appearing in the roles
+    screen. A preset role that was renamed is renamed in place, keeping its members. Idempotent:
+    once nothing is left to retire this does nothing.
+    """
+    ids={code:pid for pid,code in tuples(select(Permission.id,Permission.code))}
+    for old,new in RETIRED_PERMISSIONS.items():
+        old_id=ids.get(old)
+        if old_id is None:
+            continue
+        new_id=ids.get(new) if new else None
+        if new_id is not None:
+            for model,owner in ((AdminTypePermission,'admin_type_id'),(AdminPermission,'admin_id')):
+                held=db.session.execute(select(getattr(model,owner),model.granted_at)
+                                        .where(model.permission_id==old_id)).all()
+                _ignore_insert(model,[{owner:who,'permission_id':new_id,'granted_at':when} for who,when in held])
+        db.session.execute(sa_delete(AdminTypePermission).where(AdminTypePermission.permission_id==old_id))
+        db.session.execute(sa_delete(AdminPermission).where(AdminPermission.permission_id==old_id))
+        db.session.execute(sa_delete(Permission).where(Permission.id==old_id))
+    for old_name,new_name in RENAMED_PRESET_ROLES.items():
+        if not one_scalar(select(AdminType.id).where(AdminType.name==new_name)):
+            db.session.execute(sa_update(AdminType).where(AdminType.name==old_name,AdminType.is_system==0)
+                               .values(name=new_name,description=ADMIN_ROLE_PRESETS[new_name]['description']))
+    db.session.flush()
+
+
 def init_admin_security():
     """Seed a school's permission catalogue and system roles.
 
@@ -493,15 +523,26 @@ def init_admin_security():
         {'code':code,'name':name,'module':module,'description':description}
         for code,name,module,description in ADMIN_PERMISSION_DEFS
     ])
+    _retire_permissions()
+    # An existing school's top-level role is renamed in place, keeping its id, so every account
+    # and grant that points at it is untouched. If something already has the new name, leave
+    # the old row alone rather than fail to start.
+    if not one_scalar(select(AdminType.id).where(AdminType.name==SCHOOL_ADMIN_ROLE)):
+        db.session.execute(sa_update(AdminType)
+            .where(AdminType.is_system==1,AdminType.name.in_(LEGACY_TOP_ROLE_NAMES))
+            .values(name=SCHOOL_ADMIN_ROLE))
+        db.session.flush()
     _ignore_insert(AdminType, [
-        {'name':'Super Admin','description':'Full system authority. Unrestricted by ordinary permission or scope checks.','is_system':1,'created_at':now},
+        {'name':SCHOOL_ADMIN_ROLE,'description':'Full system authority. Unrestricted by ordinary permission or scope checks.','is_system':1,'created_at':now},
         {'name':'Ordinary Admin','description':'Administrator whose access is controlled by assigned permissions and scopes.','is_system':0,'created_at':now},
     ])
     db.session.flush()
-    super_role=one_scalar(select(AdminType.id).where(AdminType.name=='Super Admin'))
-    # System Super Admin accounts are intrinsically unrestricted. Remove any
+    # By the system flag, never by name: a custom role that happens to be called "School Admin"
+    # must not be mistaken for the top-level role and handed every permission.
+    super_role=one_scalar(select(AdminType.id).where(AdminType.is_system==1).order_by(AdminType.id))
+    # System School Admin accounts are intrinsically unrestricted. Remove any
     # stale boundaries that may have been created by earlier UI versions so
-    # the directory cannot misleadingly report a scoped Super Admin.
+    # the directory cannot misleadingly report a scoped School Admin.
     db.session.execute(
         sa_delete(AdminScope).where(
             AdminScope.admin_id.in_(select(Admin.id).where(Admin.admin_type_id==super_role))
@@ -527,7 +568,7 @@ def init_admin_security():
         if code in perm_ids
     ])
     # No account is ever seeded into a school. The platform's own operators are
-    # the super admins (control_plane/), and a school's first administrator is
+    # the school admins (control_plane/), and a school's first administrator is
     # created deliberately, from the platform console or the CLI, so that its
     # one-time password is handed to a named person rather than sitting in a
     # configuration file.
@@ -713,7 +754,7 @@ def inject_csrf_token():
         'admin_unread_messages': _unread_admin_messages(admin['id']) if admin else 0,
         'admin_unread_message_summaries': _unread_admin_message_summaries(admin['id']) if admin else [],
         'admin_role_names': admin_role_names(admin['id']) if admin else [],
-        'is_super_admin_ui': is_super_admin(admin),
+        'is_school_admin_ui': is_school_admin(admin),
         'admin_has_permission': admin_has_permission,
         'entrance_subject_label': entrance_subject_label,
         'entrance_paper_label': entrance_paper_label,
@@ -936,7 +977,7 @@ def admin_password_change():
 from blueprints.school.helpers import _school_class_allowed  # noqa: E402
 
 def admin_has_workspace_access(admin_id, workspace):
-    if is_super_admin(): return True
+    if is_school_admin(): return True
     if workspace=='school':
         return any(admin_has_permission(admin_id,c) for c,_,_,_ in ADMIN_PERMISSION_DEFS if c.startswith('school.'))
     return any(admin_has_permission(admin_id,c) for c,_,_,_ in ADMIN_PERMISSION_DEFS if c in {'dashboard.view','candidates.view','question_banks.view','attempts.view','results.view'})
@@ -997,6 +1038,7 @@ import blueprints.entrance.routes  # noqa: F401,E402
 # Moved to blueprints/school/routes.py.
 import blueprints.school.routes  # noqa: F401,E402
 import blueprints.school.branding  # noqa: F401,E402
+import blueprints.school.delivery  # noqa: F401,E402
 
 
 
@@ -1067,6 +1109,30 @@ def handle_unexpected_exception(e):
 def health(): return jsonify(status='ok')
 
 
+# Who may fetch what from a school's uploads folder.
+#  * branding/  — the school's logo and sign-in photographs, which the sign-in page shows to
+#    people who are not signed in yet, so they are public.
+#  * messages/  — staff message attachments. Never served here: the only way to open one is
+#    the permission-checked download route, which lets just the sender and the recipient in.
+#  * everything else (student and candidate photos, signatures, question images, assignment
+#    work) is a child's or a member of staff's file: served only to someone signed in to
+#    this school, so a file name that leaks in a link or a referrer opens nothing.
+PUBLIC_UPLOAD_FOLDERS=frozenset({'branding'})
+PRIVATE_UPLOAD_FOLDERS=frozenset({'messages'})
+
+
+def signed_in_to_school():
+    """Whether this request belongs to a signed-in account of the current school.
+
+    Sessions are bound to their school by the resolver, so a sign-in at another school
+    never counts. An administrator must still be active; the other accounts are
+    identified by the session they were given at sign-in.
+    """
+    if session.get('admin_id'):
+        return current_admin() is not None
+    return any(session.get(key) for key in ('parent_id','student_id','candidate_id'))
+
+
 @app.route('/static/uploads/<path:filename>')
 def uploaded_file(filename):
     """Serve the current school's uploaded files.
@@ -1076,8 +1142,24 @@ def uploaded_file(filename):
     is a more specific rule than Flask's built-in static route, so it wins for
     that prefix; everything else under /static/ is still the shared asset
     folder. send_from_directory refuses any path that escapes the folder.
+
+    Which folders are public, private or for signed-in accounts is decided above.
+    A refusal is a 404 either way, so it does not confirm that a file exists.
     """
-    return send_from_directory(uploads_dir(),filename)
+    # Decide on the path the file server will actually open. "students/../messages/x.pdf" must
+    # be judged as messages/x.pdf, not as being in students/, so it is normalised first, and that
+    # normalised path is what is served.
+    clean=posixpath.normpath(filename.replace('\\','/')).lstrip('/')
+    if clean in ('','.') or clean=='..' or clean.startswith('../'):
+        abort(404)
+    folder=clean.split('/',1)[0].lower()
+    if folder in PRIVATE_UPLOAD_FOLDERS:
+        abort(404)
+    if folder not in PUBLIC_UPLOAD_FOLDERS and not signed_in_to_school():
+        # A school whose logo predates the branding folder still has to show it on its sign-in page.
+        if f'uploads/{clean}'!=school_brand().get('logo_path'):
+            abort(404)
+    return send_from_directory(uploads_dir(),clean)
 
 
 if __name__=='__main__':

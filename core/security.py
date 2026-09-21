@@ -5,7 +5,7 @@ endpoint-to-permission map, every permission/scope check, the
 These pieces are grouped in one module rather than split into separate
 "security" and "audit" files because they're mutually dependent:
 ``admin_required`` calls ``audit_log`` on every denied or state-changing
-request, and ``audit_log`` calls ``_notify_super_admins`` (also here, since
+request, and ``audit_log`` calls ``_notify_school_admins`` (also here, since
 its only caller is ``audit_log``) — splitting them would just move the
 circular reference into two files importing each other.
 """
@@ -115,9 +115,8 @@ ADMIN_PERMISSION_DEFS = [
     ('library.view','View library','library','View library books, members, loans and availability.'),
     ('library.manage','Manage library','library','Add books, issue/return books and manage library records.'),
     ('student.history.manage','Manage enrollment history','school','Record and review a student historical enrollment including Daycare, Crèche and Nursery.'),
-    ('website.view','View public website management','website','View school public website content and enquiries.'),
-    ('website.manage','Manage public website','website','Edit school public pages, news, contact information and public settings.'),
-    ('branding.manage','Manage school branding','school','Change the school colours, logo and sign-in photographs.'),
+    ('branding.manage','Manage school profile and branding','school','Change the school name, contact details, colours, logo and sign-in photographs.'),
+    ('delivery.manage','Manage email and WhatsApp delivery','school','Set up the mail server and WhatsApp account the school sends receipts, recovery emails and alerts from.'),
     ('entrance.config.view','View entrance configurations','assessment','View entrance bank academic-period configurations.'),
     ('entrance.config.create','Create entrance configurations','assessment','Create entrance bank configurations.'),
     ('entrance.config.edit','Edit entrance configurations','assessment','Edit entrance bank configuration settings.'),
@@ -183,9 +182,9 @@ ADMIN_ROLE_PRESETS = {
         'description': 'Manages books, loans, returns and library records.',
         'permissions': ['dashboard.view','school.view','school.students.view','library.view','library.manage']
     },
-    'Website & Content Manager': {
-        'description': 'Maintains the public school website, pages, news and contact information.',
-        'permissions': ['school.view','website.view','website.manage']
+    'School Profile Manager': {
+        'description': "Maintains the school's name, contact details, colours, logo and sign-in photographs.",
+        'permissions': ['school.view','branding.manage']
     },
     'Parents\' Feedback Officer': {
         'description': 'Receives and manages parent feedback submitted through the Parent Portal.',
@@ -196,6 +195,10 @@ ADMIN_ROLE_PRESETS = {
 
 ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_branding':'branding.manage','admin_school_branding_save':'branding.manage',
+    'admin_school_delivery':'delivery.manage','admin_school_delivery_email_save':'delivery.manage',
+    'admin_school_delivery_email_clear':'delivery.manage','admin_school_delivery_email_test':'delivery.manage',
+    'admin_school_delivery_whatsapp_save':'delivery.manage','admin_school_delivery_whatsapp_clear':'delivery.manage',
+    'admin_school_delivery_whatsapp_check':'delivery.manage',
     'admin_dashboard':'dashboard.view','admin_candidates':'candidates.view','admin_new_candidate':'candidates.create',
     'admin_candidate_detail':'candidates.view','admin_candidate_delete':'candidates.delete',
     'admin_candidate_result_print':'results.print','admin_candidate_credentials_reset':'candidates.credentials_reset',
@@ -210,8 +213,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_grant_retake':'results.retake','admin_regrade':'results.regrade',
     'admin_workspace_home':'admin.access','admin_controls':'audit.view',
     'admin_notification_read':'admin.access','admin_lock_resource':'audit.view','admin_unlock_resource':'audit.view','admin_control_resolve':'audit.view',
-    'admin_notification_open':'admin.access','admin_notifications':'admin.access','admin_school_enquiry_detail':'website.view','admin_school_parent_edit':'parent.manage','admin_school_parent_credentials_reset':'parent.manage','admin_school_parent_feedback_detail':'parent.feedback.view',
-    'admin_school_website':'website.view','admin_school_website_save':'website.manage','admin_school_news_new':'website.manage','admin_school_news_edit':'website.manage','admin_school_enquiries':'website.view','admin_school_enquiry_status':'website.manage',
+    'admin_notification_open':'admin.access','admin_notifications':'admin.access','admin_school_parent_edit':'parent.manage','admin_school_parent_credentials_reset':'parent.manage','admin_school_parent_feedback_detail':'parent.feedback.view',
+    
     'admin_account_edit':'admins.edit',
     'admin_school_student_history_add':'student.history.manage','admin_school_student_history_edit':'student.history.manage',
     'admin_finance_dashboard':'finance.view_own',
@@ -263,12 +266,27 @@ def current_admin():
     ).first()
 
 
-def is_super_admin(admin=None):
+# A school's top-level role: unrestricted inside its own school and the only one that can
+# manage other roles. It was called "Super Admin" until the platform gained a super admin
+# of its own (control_plane/team.py); an existing school's role is renamed in place at start-up.
+SCHOOL_ADMIN_ROLE = 'School Admin'
+LEGACY_TOP_ROLE_NAMES = ('Super Admin',)
+
+# The public-website permissions went with the website editor. What they let a person edit — the
+# school's name and contact details — now lives on the Branding page, so anyone who held
+# website.manage keeps that ability as branding.manage; website.view had nothing left to view.
+RETIRED_PERMISSIONS = {'website.manage': 'branding.manage', 'website.view': None}
+# A preset role that was renamed, so an existing school's copy is renamed in place rather than
+# left behind next to a new one.
+RENAMED_PRESET_ROLES = {'Website & Content Manager': 'School Profile Manager'}
+
+
+def is_school_admin(admin=None):
     admin=admin or current_admin()
     return bool(admin and admin['admin_type_system'])
 
 
-def _notify_super_admins(title, message, severity='info', action_url=None, exclude_admin_id=None):
+def _notify_school_admins(title, message, severity='info', action_url=None, exclude_admin_id=None):
     try:
         # Resolve the actor before applying the exclusion rule. The previous
         # implementation only populated `me` when no exclusion was supplied,
@@ -390,10 +408,10 @@ def admin_access_error(item):
         'admins.view':'Manage administrators',
         'admins.create':'Create administrators',
         'admins.edit':'Edit administrator access',
-        'Super Admin control':'Super Admin control',
-        'Super Admin role management':'Super Admin role management',
-        'Super Admin approval':'Super Admin approval',
-        'Protected Super Admin account':'Protected Super Admin account',
+        'School Admin control':'School Admin control',
+        'School Admin role management':'School Admin role management',
+        'School Admin approval':'School Admin approval',
+        'Protected School Admin account':'Protected School Admin account',
     }
     return render_template('admin_forbidden.html',item=friendly.get(item,item.replace('_',' ').replace('.',' — ').title() if isinstance(item,str) else item),),403
 
@@ -495,7 +513,7 @@ def audit_log(action,module,target_type=None,target_id=None,details=None,success
         db.session.commit()
         if success and action in {'admin_created','admin_status_changed','role_created'}:
             labels={'admin_created':'A new administrator account was created.','admin_status_changed':'An administrator account status changed.','role_created':'A new staff role was created.'}
-            _notify_super_admins('Administrative change', labels.get(action,'A significant administrative change was recorded.'), 'warning', url_for('admin_controls') if request else None, admin['id'] if admin else None)
+            _notify_school_admins('Administrative change', labels.get(action,'A significant administrative change was recorded.'), 'warning', url_for('admin_controls') if request else None, admin['id'] if admin else None)
     except Exception:
         db.session.rollback()
 

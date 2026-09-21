@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}Branding — {{ school_brand.name }}{% endblock %}
+{% block title %}School profile — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <style>
   .brand-swatches { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-end; }
@@ -21,8 +21,8 @@
 
 <div class="page-hero"><div>
   <div class="eyebrow">SCHOOL PORTAL / IDENTITY</div>
-  <h1>Branding</h1>
-  <p class="hero-copy">Choose how your portal looks: your colours, your logo and the photographs shown beside the sign-in form. Everyone who signs in to your school sees them.</p>
+  <h1>School profile</h1>
+  <p class="hero-copy">Your school's name and contact details, and how your portal looks: your colours, your logo and the photographs shown beside the sign-in form. Everyone who signs in to your school sees them.</p>
 </div></div>
 
 <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_school_branding_save') }}" class="card modern-form">
@@ -30,6 +30,27 @@
 
   <div class="form-section">
     <div class="form-section-title"><span class="step">1</span><div>
+      <h2>School details</h2>
+      <p>Shown on your sign-in page, result cards and receipts.</p>
+    </div></div>
+    <div class="form-grid">
+      <div class="field field-wide"><label for="school_name">School name</label>
+        <input id="school_name" name="school_name" value="{{ identity.school_name }}" maxlength="{{ limits.school_name }}" required></div>
+      <div class="field"><label for="school_motto">Motto <span class="optional">Optional</span></label>
+        <input id="school_motto" name="school_motto" value="{{ identity.school_motto }}" maxlength="{{ limits.school_motto }}"></div>
+      <div class="field"><label for="school_tagline">Tagline <span class="optional">Optional</span></label>
+        <input id="school_tagline" name="school_tagline" value="{{ identity.school_tagline }}" maxlength="{{ limits.school_tagline }}"></div>
+      <div class="field"><label for="school_phone">Phone <span class="optional">Optional</span></label>
+        <input id="school_phone" name="school_phone" value="{{ identity.school_phone }}" maxlength="{{ limits.school_phone }}"></div>
+      <div class="field"><label for="school_email">Email <span class="optional">Optional</span></label>
+        <input type="email" id="school_email" name="school_email" value="{{ identity.school_email }}" maxlength="{{ limits.school_email }}"></div>
+      <div class="field field-wide"><label for="school_address">Address <span class="optional">Optional</span></label>
+        <input id="school_address" name="school_address" value="{{ identity.school_address }}" maxlength="{{ limits.school_address }}"></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">2</span><div>
       <h2>Colours</h2>
       <p>Your menus, headers, buttons and sign-in page follow these. Both sit behind white text, so choose fairly dark shades. Choosing the portal's own colours removes your choice.</p>
     </div></div>
@@ -47,7 +68,7 @@
   </div>
 
   <div class="form-section">
-    <div class="form-section-title"><span class="step">2</span><div>
+    <div class="form-section-title"><span class="step">3</span><div>
       <h2>Logo</h2>
       <p>PNG, JPG, GIF or WEBP. Choosing a file replaces the current logo.</p>
     </div></div>
@@ -56,7 +77,7 @@
   </div>
 
   <div class="form-section">
-    <div class="form-section-title"><span class="step">3</span><div>
+    <div class="form-section-title"><span class="step">4</span><div>
       <h2>Sign-in photographs</h2>
       <p>Up to {{ max_gallery }} pictures of your school. They fade one after another beside the sign-in form. {{ photos|length }} of {{ max_gallery }} in use; tick a picture to remove it when you save.</p>
     </div></div>
@@ -79,7 +100,7 @@
   </div>
 
   <div class="form-actions">
-    <button class="btn btn-primary" type="submit">Save branding</button>
+    <button class="btn btn-primary" type="submit">Save changes</button>
     <a class="btn btn-light" href="{{ url_for('admin_school_home') }}">Cancel</a>
   </div>
 </form>

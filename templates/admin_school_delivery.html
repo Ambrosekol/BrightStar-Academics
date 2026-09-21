@@ -1,0 +1,129 @@
+{% extends 'admin_base.html' %}
+{% block title %}Email &amp; WhatsApp — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{% set email = state.email %}
+{% set wa = state.whatsapp %}
+<style>
+  .delivery-state { display: flex; gap: 12px; align-items: flex-start; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #f8fbfe; margin-bottom: 18px; font-size: 13px; line-height: 1.5; }
+  .delivery-state strong { display: block; margin-bottom: 2px; }
+  .delivery-state.ok { background: #effaf4; border-color: #c8ead7; }
+  .delivery-state.warn { background: #fffaf0; border-color: #f1dfb6; }
+  .delivery-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 5px; background: #98a2b3; }
+  .delivery-state.ok .delivery-dot { background: #067647; }
+  .delivery-state.warn .delivery-dot { background: #b7791f; }
+  .inline-actions { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .inline-actions form { margin: 0; }
+  .secret-note { color: #067647; font-size: 11px; margin-top: 4px; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / COMMUNICATION</div>
+  <h1>Email &amp; WhatsApp</h1>
+  <p class="hero-copy">Payment receipts, password-recovery emails and alerts about school work are sent to parents from these accounts. Use your school's own so that messages come from the school. Passwords and tokens are stored encrypted and are never shown again.</p>
+</div></div>
+
+<section class="card modern-form">
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">1</span><div>
+      <h2>Email</h2>
+      <p>The mail server your school sends from.</p>
+    </div></div>
+
+    {% if email.mode == 'school' %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Sending from your school's own account</strong>Messages come from {{ email.sender }}.</div></div>
+    {% elif email.mode == 'platform' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Using the platform's shared account</strong>You have not set up your own, so parents receive email from {{ email.sender }}. Add your own below to send from your school.</div></div>
+    {% elif email.mode == 'incomplete' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Your settings are incomplete</strong>Email will not be sent until they are. Enter the address the emails are sent from and save again.</div></div>
+    {% else %}
+      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>Email is not set up</strong>Receipts and password-recovery emails cannot be sent until you add a mail server.</div></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin_school_delivery_email_save') }}" autocomplete="off">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="field"><label for="smtp_host">Mail server</label>
+          <input id="smtp_host" name="smtp_host" value="{{ email.host }}" placeholder="smtp.yourschool.org" required autocomplete="off" spellcheck="false">
+          {% if not production %}<small>In development a local mail server (such as localhost) is accepted; in production it must be a public address.</small>{% endif %}</div>
+        <div class="field"><label for="smtp_port">Port</label>
+          <select id="smtp_port" name="smtp_port">{% for p in ports %}<option value="{{ p }}" {% if p == email.port %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="smtp_security">Security</label>
+          <select id="smtp_security" name="smtp_security">{% for value, label in security_choices %}<option value="{{ value }}" {% if value == email.security %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="smtp_user">Username <span class="optional">Usually your email address</span></label>
+          <input id="smtp_user" name="smtp_user" value="{{ email.user }}" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="smtp_password">Password</label>
+          <input type="password" id="smtp_password" name="smtp_password" autocomplete="new-password" placeholder="{{ 'Saved — leave blank to keep it' if email.has_password else '' }}">
+          {% if email.has_password %}<div class="secret-note">A password is saved. It is not shown again.</div>{% endif %}</div>
+        <div class="field"><label for="smtp_from">Send from <span class="optional">Defaults to the username</span></label>
+          <input type="email" id="smtp_from" name="smtp_from" value="{{ email.from }}" placeholder="office@yourschool.org"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save email settings</button></div>
+    </form>
+
+    <div class="inline-actions" style="margin-top:18px">
+      {% if email.mode in ('school', 'platform') %}
+      <form method="post" action="{{ url_for('admin_school_delivery_email_test') }}" class="inline-actions">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="field" style="min-width:260px"><label for="to">Send a test message to</label>
+          <input type="email" id="to" name="to" placeholder="you@example.org" required></div>
+        <button class="btn btn-light" type="submit">Send test</button>
+      </form>
+      {% endif %}
+      {% if email.own_set %}
+      <form method="post" action="{{ url_for('admin_school_delivery_email_clear') }}"
+            data-confirm="Remove your school's own email settings? The school will use the platform's shared account, if there is one." onsubmit="return confirm(this.dataset.confirm);">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light" type="submit">Remove my settings</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">2</span><div>
+      <h2>WhatsApp</h2>
+      <p>Your school's WhatsApp Business (Cloud API) account, for receipts and alerts.</p>
+    </div></div>
+
+    {% if wa.mode == 'school' %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Sending from your school's own WhatsApp account</strong>Phone number ID {{ wa.phone_id }}.</div></div>
+    {% elif wa.mode == 'platform' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Using the platform's shared WhatsApp account</strong>You have not set up your own. Add yours below to send from your school.</div></div>
+    {% elif wa.mode == 'incomplete' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Your settings are incomplete</strong>WhatsApp will not be used until they are. Enter both the phone number ID and the access token, and save again.</div></div>
+    {% else %}
+      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>WhatsApp is not set up</strong>Receipts and alerts will not be sent by WhatsApp.</div></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_save') }}" autocomplete="off">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="field"><label for="whatsapp_phone_number_id">Phone number ID</label>
+          <input id="whatsapp_phone_number_id" name="whatsapp_phone_number_id" value="{{ wa.phone_id }}" inputmode="numeric" autocomplete="off" required></div>
+        <div class="field"><label for="whatsapp_graph_version">API version</label>
+          <input id="whatsapp_graph_version" name="whatsapp_graph_version" value="{{ wa.version }}" placeholder="{{ default_version }}"></div>
+        <div class="field field-wide"><label for="whatsapp_token">Access token</label>
+          <input type="password" id="whatsapp_token" name="whatsapp_token" autocomplete="new-password" placeholder="{{ 'Saved — leave blank to keep it' if wa.has_token else '' }}">
+          {% if wa.has_token %}<div class="secret-note">A token is saved. It is not shown again.</div>{% endif %}</div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save WhatsApp settings</button></div>
+    </form>
+
+    <div class="inline-actions" style="margin-top:18px">
+      {% if wa.mode in ('school', 'platform') %}
+      <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_check') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light" type="submit">Check the connection</button>
+      </form>
+      {% endif %}
+      {% if wa.own_set %}
+      <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_clear') }}"
+            data-confirm="Remove your school's own WhatsApp settings? The school will use the platform's shared account, if there is one." onsubmit="return confirm(this.dataset.confirm);">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light" type="submit">Remove my settings</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

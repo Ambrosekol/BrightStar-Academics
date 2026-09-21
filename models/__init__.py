@@ -112,15 +112,11 @@ from .parents import (
     ParentStudentLink,
 )
 
-from .public import (
-    SchoolPublicEnquiry,
-    SchoolPublicNews,
-    SchoolPublicPage,
-    SchoolPublicSetting,
-)
+from .public import SchoolPublicSetting
 
 from .tenancy import (
     School,
+    SchoolDeliverySetting,
     SchoolNumberingPolicy,
     SchoolSetting,
     StudentNumberAllocation,
@@ -161,11 +157,10 @@ __all__ = [
     # parents
     'ParentAccount', 'ParentFeedback', 'ParentFeedbackReply',
     'ParentStudentLink',
-    # public website
-    'SchoolPublicEnquiry', 'SchoolPublicNews', 'SchoolPublicPage',
+    # settings
     'SchoolPublicSetting',
     # tenancy
-    'School', 'SchoolNumberingPolicy', 'SchoolSetting',
+    'School', 'SchoolDeliverySetting', 'SchoolNumberingPolicy', 'SchoolSetting',
     'StudentNumberAllocation',
     # presence / notifications / password recovery
     'PasswordResetToken', 'PresenceSession', 'SchoolNotification',

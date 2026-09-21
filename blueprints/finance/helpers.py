@@ -24,21 +24,22 @@ from models import (
 )
 from core.branding import receipt_prefix, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
-from core.notifications import _ng_phone, _smtp_send
-from core.security import admin_has_permission, current_admin, is_super_admin
+from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
+from core.notifications import _ng_phone
+from core.security import admin_has_permission, current_admin, is_school_admin
 from core.storage import stored_upload_path, uploads_dir
 from core.uploads import STATIC
 
 
 def _finance_can_view_all(admin=None):
     admin=admin or current_admin()
-    return bool(admin and (is_super_admin(admin) or admin_has_permission(admin['id'],'finance.view_all')))
+    return bool(admin and (is_school_admin(admin) or admin_has_permission(admin['id'],'finance.view_all')))
 
 def _next_receipt_no():
     """Next sequential receipt number for the current year."""
     prefix=f'{receipt_prefix()}-{datetime.now().year}-'
     last=one_scalar(select(FinancePayment.receipt_no)
-                    .where(FinancePayment.receipt_no.like(prefix+'%'))
+                    .where(FinancePayment.receipt_no.startswith(prefix,autoescape=True))
                     .order_by(FinancePayment.id.desc()).limit(1))
     n=1
     if last:
@@ -257,33 +258,33 @@ def _receipt_pdf(payment_id):
 def _send_email_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
-    host=os.environ.get('BRIGHTSTARS_SMTP_HOST','').strip(); user=os.environ.get('BRIGHTSTARS_SMTP_USER','').strip(); password=os.environ.get('BRIGHTSTARS_SMTP_PASSWORD',''); sender=os.environ.get('BRIGHTSTARS_SMTP_FROM',user).strip(); port=int(os.environ.get('BRIGHTSTARS_SMTP_PORT','587') or 587)
-    if not host or not sender: return False,'Email delivery is not configured. Set BRIGHTSTARS_SMTP_HOST and BRIGHTSTARS_SMTP_FROM.'
+    settings=email_settings()
+    if settings is None: return False,'Email delivery is not set up for this school. A school administrator can add it under Email & WhatsApp.'
     recipient=(row['guardian_email'] or '').strip()
     if not recipient: return False,'This student has no parent/guardian email address.'
     pdf,_=_receipt_pdf(payment_id)
     from email.message import EmailMessage
     school=school_name()
-    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=sender; msg['To']=recipient; msg.set_content(f'Dear Parent/Guardian,\n\nPlease find attached the official payment receipt {row["receipt_no"]} for {_student_display(row)}.\n\nAmount paid: {_format_money(row["amount"])}\nPurpose: {row["category"]}\n\n{school}'); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
+    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(f'Dear Parent/Guardian,\n\nPlease find attached the official payment receipt {row["receipt_no"]} for {_student_display(row)}.\n\nAmount paid: {_format_money(row["amount"])}\nPurpose: {row["category"]}\n\n{school}'); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
     try:
-        _smtp_send(host,port,user,password,msg)
+        send_email(settings,msg)
         return True,recipient
     except Exception as exc: return False,f'Email delivery failed: {exc}'
 
 def _send_whatsapp_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
-    token=os.environ.get('BRIGHTSTARS_WHATSAPP_TOKEN','').strip(); phone_id=os.environ.get('BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID','').strip(); version=os.environ.get('BRIGHTSTARS_WHATSAPP_GRAPH_VERSION','v23.0').strip(); recipient=_ng_phone(row['guardian_phone'])
-    if not token or not phone_id: return False,'WhatsApp Business Cloud API is not configured. Set BRIGHTSTARS_WHATSAPP_TOKEN and BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID.'
+    settings=whatsapp_settings(); token,phone_id,version=((settings.token,settings.phone_id,settings.version) if settings else ('','','')); recipient=_ng_phone(row['guardian_phone'])
+    if settings is None: return False,'WhatsApp is not set up for this school. A school administrator can add it under Email & WhatsApp.'
     if not recipient: return False,'This student has no valid parent/guardian WhatsApp number.'
-    pdf,_=_receipt_pdf(payment_id); boundary='----BrightstarsBoundary'+secrets.token_hex(8); url=f'https://graph.facebook.com/{version}/{phone_id}/media'
+    pdf,_=_receipt_pdf(payment_id); boundary='----BrightstarsBoundary'+secrets.token_hex(8); url=f'{GRAPH_URL}/{version}/{phone_id}/media'
     body=(f'--{boundary}\r\nContent-Disposition: form-data; name="messaging_product"\r\n\r\nwhatsapp\r\n--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{row["receipt_no"]}.pdf"\r\nContent-Type: application/pdf\r\n\r\n').encode()+pdf+(f'\r\n--{boundary}--\r\n').encode()
     try:
         req=urllib.request.Request(url,data=body,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':f'multipart/form-data; boundary={boundary}'})
         with urllib.request.urlopen(req,timeout=30) as resp: media=json.loads(resp.read().decode())
         media_id=media.get('id')
         if not media_id: return False,'WhatsApp media upload returned no media ID.'
-        payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'document','document':{'id':media_id,'caption':f'Official payment receipt {row["receipt_no"]} — {_student_display(row)}','filename':f'{row["receipt_no"]}.pdf'}}).encode(); req2=urllib.request.Request(f'https://graph.facebook.com/{version}/{phone_id}/messages',data=payload,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
+        payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'document','document':{'id':media_id,'caption':f'Official payment receipt {row["receipt_no"]} — {_student_display(row)}','filename':f'{row["receipt_no"]}.pdf'}}).encode(); req2=urllib.request.Request(f'{GRAPH_URL}/{version}/{phone_id}/messages',data=payload,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
         with urllib.request.urlopen(req2,timeout=30) as resp: result=json.loads(resp.read().decode())
         return True,result.get('messages',[{}])[0].get('id',recipient)
     except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'

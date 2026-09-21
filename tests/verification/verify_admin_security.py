@@ -1,7 +1,7 @@
 """One-shot verification for the administrator security foundation.
 
 Reports the state of the administrator, role, permission and scope tables, and
-confirms the Super Admin holds every permission and bypasses scope limits.
+confirms the School Admin holds every permission and bypasses scope limits.
 
 Run it against a throwaway copy rather than the live database:
 
@@ -51,7 +51,7 @@ with app.app.app_context():
     super_admin_id = db.session.execute(
         select(Admin.id)
         .join(AdminType, AdminType.id == Admin.admin_type_id)
-        .where(AdminType.name == 'Super Admin', Admin.active == 1)
+        .where(AdminType.is_system == 1, Admin.active == 1)
         .limit(1)).scalar()
 
     if super_admin_id:

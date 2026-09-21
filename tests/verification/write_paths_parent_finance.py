@@ -3,7 +3,7 @@ what they still owed anywhere in the parent portal - the dashboard only ever
 showed academic activity. This adds a fee summary to /parent/dashboard, a
 full per-child fee account page (/parent/children/<id>/finance) with a
 Paid/Part Paid/Unpaid breakdown and downloadable receipts, and an automatic
-email + WhatsApp + in-app alert whenever finance/a Super Admin assesses a new
+email + WhatsApp + in-app alert whenever finance/a School Admin assesses a new
 fee to a student or records a payment against one - previously a parent only
 ever found out about either by asking the school office.
 

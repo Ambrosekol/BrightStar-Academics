@@ -43,7 +43,7 @@ def seed():
     now = datetime.now(timezone.utc).isoformat()
     ids = {}
 
-    # --- a Super Admin holding every permission ---
+    # --- a School Admin holding every permission ---
     tid = con.execute("SELECT id FROM admin_types WHERE is_system=1 ORDER BY id LIMIT 1").fetchone()["id"]
     con.execute("DELETE FROM admins WHERE username=?", (ADMIN_USER,))
     aid = con.execute(
