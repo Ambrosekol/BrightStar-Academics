@@ -349,9 +349,22 @@ moves them and no school can read another's.
   standard banks (a school that has set up some papers itself keeps them); the same page adds or
   changes a paper by hand and makes one live.
 
-The standard questions came from the first school's production banks. Questions that refer to a
-passage or diagram that is not in the data, or that had no valid answer key, were left out. Have
-the platform's academic owner review the set before relying on it.
+**The standard questions are the platform's own.** They were written for the platform (40 to 45 for
+each class and subject, 255 in all, including short reading passages for the English papers) and
+are not any school's questions; nothing in the set matches the first school's banks, and a contract
+test keeps it that way. Each paper serves 25 of its questions to a candidate at random, and the
+right answer is spread evenly over A to D in every bank. The Mathematics answers are computed, not
+typed, and an independent reviewer answered every question without seeing the key: every key
+matched, and the questions they found arguable or badly worded were fixed. Even so, have someone
+who teaches the subject review the set before a school relies on it, exactly as with any bank a
+school imports. Each paper is timed at one hour, which is generous for 25 questions; a school can
+change that by editing the bank's duration.
+
+**Marks.** A paper is always out of 100, so a paper of 40 questions gives 2.5 marks a question, and
+a school may serve any number of questions that splits 100 into whole hundredths (20, 25, 40, 50 …).
+Marks are stored as decimals, so a candidate's raw score is exact, and a whole mark reads as a whole
+number everywhere ("75 / 100", not "75.0 / 100.0"). A school database made before this is upgraded
+in place on the next start, and no stored mark changes.
 
 ## Command line
 
@@ -431,6 +444,7 @@ Academics/
 │   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
 │   ├── banks.py              #   question-bank validation, safe writing, the standard set
 │   ├── numbering.py          #   runs each school's own numbering rules (tenants/<code>/numbering.py)
+│   ├── marks.py              #   marks are decimals: exact totals, whole marks shown as whole numbers
 │   ├── retired_tables.py     #   drops the removed website editor's tables when they are empty
 │   ├── notifications.py      #   guardian email/WhatsApp alerts
 │   ├── presence.py           #   who is online
@@ -489,6 +503,7 @@ python tests/verification/write_paths_pg_smoke.py          # every page, opened 
 python tests/verification/write_paths_pg_posts.py          # every form submission, sent on PostgreSQL
 python tests/verification/write_paths_numbering.py         # each school's own candidate and student numbering
 python tests/verification/write_paths_question_banks.py    # the standard banks, importing banks, a new school's first exam
+python tests/verification/write_paths_fractional_marks.py  # a 40-question paper is 100 marks; older schools upgraded
 python tests/verification/write_paths_retired_tables.py    # clearing the removed editor's leftover tables
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 ```
@@ -587,10 +602,5 @@ Check student, result and payment counts against the old database before doing s
 
 ## Known gaps
 
-- **Marks per question must be whole numbers.** `attempt_questions.points` is an integer column, but
-  an entrance paper of, say, 40 questions is 2.5 marks each and is stored as 2, so the raw marks
-  add up to 80 rather than 100 (the percentage is still right). Serve a count that divides 100
-  evenly (20, 25 or 50); the standard banks serve 25.
-- **The standard question set is one school's content.** Its questions have been cleaned of that
-  school's name and of items that could not work anywhere, but they are still the first school's
-  questions. A school that wants its own content imports it.
+None that are currently known. When one is found it is listed here, with what it affects and what
+to do about it.

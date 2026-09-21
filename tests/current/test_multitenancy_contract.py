@@ -605,3 +605,48 @@ print(json.dumps({"unaccounted": sorted(map(str, coverage.unaccounted(app.url_ma
         return
     assert not answer["unaccounted"], answer["unaccounted"]
     assert answer["stale"] == [[], []], answer["stale"]
+
+
+def test_the_standard_question_set_is_the_platforms_own_and_shares_nothing_with_a_school():
+    """The starter banks were written for the platform. None of their questions may be one of the
+    first school's (the repository's data/ folder), and each must serve a paper whose marks are
+    whole hundredths (a count that splits 100 marks exactly)."""
+    import json
+    import re
+
+    def norm(text):
+        return re.sub(r"[^a-z0-9]+", " ", str(text).lower()).strip()
+
+    def stems(folder, prefix):
+        found = set()
+        for path in (ROOT / folder).glob(prefix + "*.json"):
+            if path.name == "manifest.json":
+                continue
+            for question in json.loads(path.read_text(encoding="utf-8"))["questions"]:
+                found.add(norm(question["text"]))
+        return found
+
+    starter, first_school = stems("starter_banks", "starter_"), stems("data", "")
+    assert len(starter) >= 200
+    assert not (starter & first_school), sorted(starter & first_school)[:3]
+    manifest = json.loads((ROOT / "starter_banks" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["version"] == "2.0" and len(manifest["banks"]) == 6
+    for entry in manifest["banks"]:
+        served = entry["questions_to_serve"]
+        assert abs(round(100.0 / served, 2) * served - 100.0) < 1e-9, entry
+        assert entry["question_count"] >= served, entry
+
+
+def test_marks_are_decimals_and_read_as_whole_numbers_when_they_are_whole():
+    from core import marks
+    from models import Attempt, AttemptQuestion
+
+    for column in (AttemptQuestion.__table__.c.points, Attempt.__table__.c.score, Attempt.__table__.c.max_score):
+        assert column.type.__class__.__name__ == "Float", column
+    assert marks.total([2.5] * 40) == 100 and marks.tidy(100.0) == 100 and marks.tidy(62.5) == 62.5
+    # Grading never rounds a mark to a whole number, and the upgrade for older schools exists.
+    # (read as text: importing core.entrance would start the whole application inside this suite)
+    entrance = (ROOT / "core" / "entrance.py").read_text(encoding="utf-8")
+    assert "int(points" not in entrance[entrance.index("def grade"):entrance.index("def candidate_record")]
+    assert "_allow_fractional_marks()" in APP[APP.index("def _init_db"):APP.index("def csrf_token")]
+    assert "app.jinja_env.finalize" in APP

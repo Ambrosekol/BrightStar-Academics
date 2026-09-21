@@ -1,15 +1,15 @@
 {
   "format": 1,
   "name": "Standard entrance question banks",
-  "version": "1.0",
-  "description": "The question banks a new school starts with: Mathematics, English and General Knowledge for entry into Year 7 and into SSS 1. Owned by the platform, copied into each new school's own data folder, and free for the school to edit afterwards. questions_to_serve is how many questions one candidate is given; it must make every question worth a whole number of marks out of 100 (20, 25 or 50, for example).",
+  "version": "2.0",
+  "description": "The question banks a new school starts with: Mathematics, English and General Knowledge for entry into Year 7 and into SSS 1. Written for the platform (no school's questions), owned by the platform, copied into each new school's own data folder, and free for the school to edit afterwards. questions_to_serve is how many questions one candidate is given; it must split 100 marks into whole hundredths (20, 25, 40 or 50, for example).",
   "banks": [
     {
       "file": "starter_year7_mathematics.json",
       "id": "starter_year7_mathematics",
       "entry_group": "year7",
       "subject": "mathematics",
-      "question_count": 44,
+      "question_count": 45,
       "questions_to_serve": 25
     },
     {
@@ -17,7 +17,7 @@
       "id": "starter_year7_english",
       "entry_group": "year7",
       "subject": "english",
-      "question_count": 45,
+      "question_count": 41,
       "questions_to_serve": 25
     },
     {
@@ -25,7 +25,7 @@
       "id": "starter_year7_general_knowledge",
       "entry_group": "year7",
       "subject": "general_knowledge",
-      "question_count": 25,
+      "question_count": 40,
       "questions_to_serve": 25
     },
     {
@@ -33,7 +33,7 @@
       "id": "starter_sss1_mathematics",
       "entry_group": "year10",
       "subject": "mathematics",
-      "question_count": 40,
+      "question_count": 45,
       "questions_to_serve": 25
     },
     {
@@ -49,7 +49,7 @@
       "id": "starter_sss1_general_knowledge",
       "entry_group": "year10",
       "subject": "general_knowledge",
-      "question_count": 25,
+      "question_count": 44,
       "questions_to_serve": 25
     }
   ]

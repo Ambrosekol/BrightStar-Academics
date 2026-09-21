@@ -1,492 +1,501 @@
 {
-  "id": "starter_sss1_english",
-  "name": "English - Entrance Examination into SSS 1",
-  "level": "SSS 1",
-  "entry_group": "year10",
-  "subject": "English Language",
-  "duration_seconds": 3600,
-  "version": "1.0",
-  "source_status": "platform_starter",
-  "questions": [
-    {
-      "id": 1,
-      "text": "The professor gave a lucid explanation of the theory.",
-      "options": [
-        "obscure",
-        "clear",
-        "lengthy",
-        "doubtful"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 2,
-      "text": "His decision was considered arbitrary by many.",
-      "options": [
-        "random",
-        "fair",
-        "deliberate",
-        "wise"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 3,
-      "text": "The student gave a plausible excuse for his lateness.",
-      "options": [
-        "believable",
-        "false",
-        "weak",
-        "doubtful"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 4,
-      "text": "Her response was rather evasive.",
-      "options": [
-        "direct",
-        "avoiding",
-        "rude",
-        "polite"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 5,
-      "text": "The student was reluctant to answer the question.",
-      "options": [
-        "eager",
-        "unwilling",
-        "ready",
-        "bold"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 6,
-      "text": "The manager tried to mitigate the problem.",
-      "options": [
-        "worsen",
-        "control",
-        "reduce",
-        "ignore"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 7,
-      "text": "The situation became critical within minutes.",
-      "options": [
-        "dangerous",
-        "calm",
-        "simple",
-        "funny"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 8,
-      "text": "The boy's behaviour was erratic.",
-      "options": [
-        "steady",
-        "unpredictable",
-        "calm",
-        "polite"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 9,
-      "text": "The teacher was adamant about the rules.",
-      "options": [
-        "flexible",
-        "stubborn",
-        "unsure",
-        "gentle"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 10,
-      "text": "The man gave a vague explanation of the incident.",
-      "options": [
-        "clear",
-        "detailed",
-        "unclear",
-        "honest"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 11,
-      "text": "The judge's decision was impartial.",
-      "options": [
-        "equitable",
-        "prejudiced",
-        "objective",
-        "neutral"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 12,
-      "text": "The hall was spacious enough to accommodate everyone.",
-      "options": [
-        "extensive",
-        "confined",
-        "airy",
-        "broad"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 13,
-      "text": "His argument was highly convincing.",
-      "options": [
-        "persuasive",
-        "credible",
-        "dubious",
-        "logical"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 14,
-      "text": "She remained optimistic despite the setback.",
-      "options": [
-        "enthusiastic",
-        "hopeful",
-        "despondent",
-        "confident"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 15,
-      "text": "The glass was completely transparent.",
-      "options": [
-        "visible",
-        "translucent",
-        "obscure",
-        "opaque"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 16,
-      "text": "The child was obedient to all instructions.",
-      "options": [
-        "compliant",
-        "defiant",
-        "respectful",
-        "attentive"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 17,
-      "text": "The lecture was rather tedious.",
-      "options": [
-        "engaging",
-        "lengthy",
-        "exhausting",
-        "repetitive"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 18,
-      "text": "He is widely known for being generous.",
-      "options": [
-        "charitable",
-        "benevolent",
-        "miserly",
-        "kind"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 19,
-      "text": "Her answer was accurate.",
-      "options": [
-        "precise",
-        "exact",
-        "erroneous",
-        "correct"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 20,
-      "text": "The environment was extremely hostile.",
-      "options": [
-        "aggressive",
-        "amicable",
-        "unfriendly",
-        "tense"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 21,
-      "text": "Neither the teacher nor the students ______ present at the meeting.",
-      "options": [
-        "was",
-        "were",
-        "is",
-        "be"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 22,
-      "text": "Hardly had she arrived ______ the rain started.",
-      "options": [
-        "than",
-        "when",
-        "then",
-        "that"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 23,
-      "text": "If I ______ you, I would apologize immediately.",
-      "options": [
-        "am",
-        "was",
-        "were",
-        "be"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 24,
-      "text": "He insisted that she ______ the truth.",
-      "options": [
-        "tells",
-        "told",
-        "tell",
-        "telling"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 25,
-      "text": "The book, along with the pens, ______ missing.",
-      "options": [
-        "are",
-        "were",
-        "is",
-        "be"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 26,
-      "text": "By this time next year, she ______ her degree.",
-      "options": [
-        "completes",
-        "will complete",
-        "will have completed",
-        "completed"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 27,
-      "text": "No sooner had he finished speaking ______ the audience applauded.",
-      "options": [
-        "when",
-        "than",
-        "then",
-        "that"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 28,
-      "text": "She is one of the students who ______ always punctual.",
-      "options": [
-        "is",
-        "was",
-        "are",
-        "be"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 29,
-      "text": "The news ______ shocking to everyone.",
-      "options": [
-        "were",
-        "are",
-        "is",
-        "be"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 30,
-      "text": "I would rather you ______ the truth.",
-      "options": [
-        "tell",
-        "told",
-        "telling",
-        "tells"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 31,
-      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ʃ/.",
-      "options": [
-        "Measure",
-        "Ship",
-        "Vision",
-        "Garage"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 32,
-      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /eɪ/.",
-      "options": [
-        "Bed",
-        "Make",
-        "Sit",
-        "Pot"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 33,
-      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ɔː/.",
-      "options": [
-        "Cut",
-        "Saw",
-        "Cat",
-        "Pen"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 34,
-      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /ɪ/.",
-      "options": [
-        "Seat",
-        "Sit",
-        "Site",
-        "Suit"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 35,
-      "text": "Choose the option that has the same vowel or consonant sound as the phonetic symbol /tʃ/.",
-      "options": [
-        "Church",
-        "Judge",
-        "Pleasure",
-        "Vision"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 36,
-      "text": "A poem of six lines is called a/an ______.",
-      "options": [
-        "couplet",
-        "triplet",
-        "sestet",
-        "octave"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 37,
-      "text": "A figure of speech that compares two things using “like” or “as” is a/an ______.",
-      "options": [
-        "metaphor",
-        "simile",
-        "irony",
-        "hyperbole"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 38,
-      "text": "A story with a moral lesson is called a ______.",
-      "options": [
-        "fable",
-        "novel",
-        "play",
-        "poem"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 39,
-      "text": "The main character in a literary work is the ______.",
-      "options": [
-        "antagonist",
-        "protagonist",
-        "narrator",
-        "poet"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 40,
-      "text": "A humorous play is known as a/an ______.",
-      "options": [
-        "tragedy",
-        "comedy",
-        "epic",
-        "satire"
-      ],
-      "answer": 1,
-      "points": 1
-    }
-  ]
+ "id": "starter_sss1_english",
+ "name": "English - Entrance Examination into SSS 1",
+ "level": "SSS 1",
+ "entry_group": "year10",
+ "subject": "English Language",
+ "duration_seconds": 3600,
+ "version": "2.0",
+ "source_status": "platform_starter",
+ "questions": [
+  {
+   "id": 1,
+   "text": "If I ___ you, I would apologise.",
+   "options": [
+    "was",
+    "be",
+    "were",
+    "am"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "By the time we arrived, the film ___.",
+   "options": [
+    "started",
+    "was starting",
+    "has started",
+    "had started"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "The committee ___ its report yesterday.",
+   "options": [
+    "have submitted",
+    "submitted",
+    "submitting",
+    "submit"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "Neither of the answers ___ correct.",
+   "options": [
+    "is",
+    "are",
+    "have been",
+    "were"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "She asked me where ___.",
+   "options": [
+    "do I live",
+    "did I live",
+    "I lived",
+    "I do live"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "He said, \"I am tired.\" In reported speech: He said that he ___ tired.",
+   "options": [
+    "were",
+    "was",
+    "is",
+    "had"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "The children, together with their teacher, ___ visited the museum.",
+   "options": [
+    "was",
+    "have",
+    "is",
+    "has"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "I look forward ___ you soon.",
+   "options": [
+    "in seeing",
+    "to seeing",
+    "at seeing",
+    "to see"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "The manager insisted ___ paying the bill.",
+   "options": [
+    "for",
+    "at",
+    "to",
+    "on"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "She is very good ___ mathematics.",
+   "options": [
+    "with",
+    "on",
+    "in",
+    "at"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "Hardly had he sat down ___ the phone rang.",
+   "options": [
+    "than",
+    "then",
+    "when",
+    "while"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "The news ___ good.",
+   "options": [
+    "were",
+    "is",
+    "have been",
+    "are"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "One of my friends ___ a doctor.",
+   "options": [
+    "is",
+    "have",
+    "were",
+    "are"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "Which sentence is correct?",
+   "options": [
+    "She lives here since 2019.",
+    "She is living here since 2019.",
+    "She has been living here since 2019.",
+    "She lived here since 2019."
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "Choose the word closest in meaning to \"reluctant\".",
+   "options": [
+    "unwilling",
+    "eager",
+    "ready",
+    "careless"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "Choose the word opposite in meaning to \"scarce\".",
+   "options": [
+    "limited",
+    "rare",
+    "costly",
+    "plentiful"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "Choose the word closest in meaning to \"diligent\".",
+   "options": [
+    "hardworking",
+    "lazy",
+    "clever",
+    "quiet"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Choose the word opposite in meaning to \"expand\".",
+   "options": [
+    "grow",
+    "contract",
+    "widen",
+    "stretch"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "Choose the word closest in meaning to \"benevolent\".",
+   "options": [
+    "wealthy",
+    "cruel",
+    "careless",
+    "kind"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "What does the idiom \"to spill the beans\" mean?",
+   "options": [
+    "to reveal a secret",
+    "to waste food",
+    "to make a mess",
+    "to cook a meal"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "What does the idiom \"a piece of cake\" mean?",
+   "options": [
+    "a difficult task",
+    "a small gift",
+    "something very easy",
+    "something sweet"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "What does \"It is raining cats and dogs\" mean?",
+   "options": [
+    "It is raining lightly.",
+    "It is raining very heavily.",
+    "Animals are falling from the sky.",
+    "It has just stopped raining."
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "\"The wind whispered through the trees.\" This is an example of",
+   "options": [
+    "personification",
+    "hyperbole",
+    "simile",
+    "metaphor"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "\"He is as brave as a lion.\" This is an example of",
+   "options": [
+    "a pun",
+    "irony",
+    "a metaphor",
+    "a simile"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "The loud noise had a bad ___ on the baby.",
+   "options": [
+    "affecting",
+    "affected",
+    "effect",
+    "affect"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "I need to buy some ___ for my letters.",
+   "options": [
+    "stationairy",
+    "stationary",
+    "stationery",
+    "stationeries"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Which of these words is spelt correctly?",
+   "options": [
+    "accommodasion",
+    "accommodation",
+    "accomodation",
+    "acommodation"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "Which of these words is spelt correctly?",
+   "options": [
+    "embarass",
+    "embaras",
+    "embarras",
+    "embarrass"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "Which of these words is spelt correctly?",
+   "options": [
+    "consciense",
+    "concience",
+    "conscence",
+    "conscience"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "Choose the best ending: \"Although it was raining, ...\"",
+   "options": [
+    "and therefore we were dry.",
+    "we went out anyway.",
+    "because we stayed at home.",
+    "so we did not go."
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Which of these is a complex sentence?",
+   "options": [
+    "When the bell rang, the pupils left.",
+    "Pupils left quickly.",
+    "The bell rang and the pupils left.",
+    "The pupils left."
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "What does Mrs Bello do for a living?",
+   "options": [
+    "She sells thread on the street.",
+    "She is a tailor.",
+    "She is a bus driver.",
+    "She is a ferry driver."
+   ],
+   "answer": 1,
+   "points": 1,
+   "instruction": "Lagos wakes early. Long before the sun is high, street sellers set up their stalls, buses queue at the junctions, and workers hurry towards the ferry. Mrs Bello, a tailor, has run her small shop on the same street for twenty years. She says the noise no longer troubles her; she treats it as the city's heartbeat. What worries her more is the rising price of thread and cloth, which has forced her to raise her charges twice this year."
+  },
+  {
+   "id": 33,
+   "text": "How does Mrs Bello feel about the noise of the city?",
+   "options": [
+    "She is planning to move away from it.",
+    "She has never once noticed it.",
+    "She has grown used to it.",
+    "It troubles her more each year."
+   ],
+   "answer": 2,
+   "points": 1,
+   "instruction": "Lagos wakes early. Long before the sun is high, street sellers set up their stalls, buses queue at the junctions, and workers hurry towards the ferry. Mrs Bello, a tailor, has run her small shop on the same street for twenty years. She says the noise no longer troubles her; she treats it as the city's heartbeat. What worries her more is the rising price of thread and cloth, which has forced her to raise her charges twice this year."
+  },
+  {
+   "id": 34,
+   "text": "What worries Mrs Bello most?",
+   "options": [
+    "The rising price of thread and cloth.",
+    "The number of street sellers.",
+    "The length of her working day.",
+    "The noise of the buses."
+   ],
+   "answer": 0,
+   "points": 1,
+   "instruction": "Lagos wakes early. Long before the sun is high, street sellers set up their stalls, buses queue at the junctions, and workers hurry towards the ferry. Mrs Bello, a tailor, has run her small shop on the same street for twenty years. She says the noise no longer troubles her; she treats it as the city's heartbeat. What worries her more is the rising price of thread and cloth, which has forced her to raise her charges twice this year."
+  },
+  {
+   "id": 35,
+   "text": "In the passage, the word \"forced\" means",
+   "options": [
+    "compelled",
+    "invited",
+    "tricked",
+    "allowed"
+   ],
+   "answer": 0,
+   "points": 1,
+   "instruction": "Lagos wakes early. Long before the sun is high, street sellers set up their stalls, buses queue at the junctions, and workers hurry towards the ferry. Mrs Bello, a tailor, has run her small shop on the same street for twenty years. She says the noise no longer troubles her; she treats it as the city's heartbeat. What worries her more is the rising price of thread and cloth, which has forced her to raise her charges twice this year."
+  },
+  {
+   "id": 36,
+   "text": "What did Efe do when the power failed?",
+   "options": [
+    "She sat quietly in the dark.",
+    "She called the principal.",
+    "She asked everyone to hold up their torches.",
+    "She sent everyone home."
+   ],
+   "answer": 2,
+   "points": 1,
+   "instruction": "When the power failed in the school hall, the students sat in darkness. Rather than panic, the head girl, Efe, asked everyone to switch on their torches and hold them up. Within seconds the hall glowed like a field of stars, and the assembly carried on. The principal later praised her calm thinking."
+  },
+  {
+   "id": 37,
+   "text": "Which word best describes Efe?",
+   "options": [
+    "resourceful",
+    "fearful",
+    "careless",
+    "rude"
+   ],
+   "answer": 0,
+   "points": 1,
+   "instruction": "When the power failed in the school hall, the students sat in darkness. Rather than panic, the head girl, Efe, asked everyone to switch on their torches and hold them up. Within seconds the hall glowed like a field of stars, and the assembly carried on. The principal later praised her calm thinking."
+  },
+  {
+   "id": 38,
+   "text": "\"The hall glowed like a field of stars.\" This is an example of",
+   "options": [
+    "irony",
+    "a metaphor",
+    "a simile",
+    "personification"
+   ],
+   "answer": 2,
+   "points": 1,
+   "instruction": "When the power failed in the school hall, the students sat in darkness. Rather than panic, the head girl, Efe, asked everyone to switch on their torches and hold them up. Within seconds the hall glowed like a field of stars, and the assembly carried on. The principal later praised her calm thinking."
+  },
+  {
+   "id": 39,
+   "text": "Who praised Efe afterwards?",
+   "options": [
+    "Her classmates only.",
+    "The electrician.",
+    "The head girl.",
+    "The principal."
+   ],
+   "answer": 3,
+   "points": 1,
+   "instruction": "When the power failed in the school hall, the students sat in darkness. Rather than panic, the head girl, Efe, asked everyone to switch on their torches and hold them up. Within seconds the hall glowed like a field of stars, and the assembly carried on. The principal later praised her calm thinking."
+  },
+  {
+   "id": 40,
+   "text": "The best title for this passage is",
+   "options": [
+    "A Lost Assembly",
+    "The Broken Generator",
+    "A Day at the Market",
+    "Light in the Darkness"
+   ],
+   "answer": 3,
+   "points": 1,
+   "instruction": "When the power failed in the school hall, the students sat in darkness. Rather than panic, the head girl, Efe, asked everyone to switch on their torches and hold them up. Within seconds the hall glowed like a field of stars, and the assembly carried on. The principal later praised her calm thinking."
+  }
+ ]
 }

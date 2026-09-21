@@ -37,6 +37,7 @@ from core.entrance import (
     get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
 )
+from core.marks import tidy as tidy_mark
 from core.numbering import NumberingRuleError
 from models import (
     AcademicSession, AdminResourceLock, Answer, Attempt, Candidate,
@@ -944,14 +945,14 @@ def export_rankings_csv():
     for i,r in enumerate(rows,1):
         key=(r['percentage'],r['score'])
         if key!=last: rank=i; last=key
-        w.writerow([rank,r['candidate'],r['bank_id'],r['score'],r['max_score'],f"{r['percentage']:.1f}",_grade_label(r['percentage']),r['status']])
+        w.writerow([rank,r['candidate'],r['bank_id'],tidy_mark(r['score']),tidy_mark(r['max_score']),f"{r['percentage']:.1f}",_grade_label(r['percentage']),r['status']])
     return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename={export_slug()}-rankings.csv'})
 
 @app.route('/admin/export/results.json')
 @admin_required
 def export_results_json():
     bid=request.args.get('bank_id','').strip() or None; rows=_result_rows(bid)
-    payload=[{'rank':i,'candidate':r['candidate'],'bank_id':r['bank_id'],'status':r['status'],'score':r['score'],'max_score':r['max_score'],'percentage':r['percentage'],'grade':_grade_label(r['percentage']),'started_at':r['started_at'],'submitted_at':r['submitted_at']} for i,r in enumerate(rows,1)]
+    payload=[{'rank':i,'candidate':r['candidate'],'bank_id':r['bank_id'],'status':r['status'],'score':tidy_mark(r['score']),'max_score':tidy_mark(r['max_score']),'percentage':r['percentage'],'grade':_grade_label(r['percentage']),'started_at':r['started_at'],'submitted_at':r['submitted_at']} for i,r in enumerate(rows,1)]
     return Response(json.dumps(payload,ensure_ascii=False,indent=2),mimetype='application/json',headers={'Content-Disposition':f'attachment; filename={export_slug()}-results.json'})
 
 @app.post('/admin/examinations/<bid>/toggle')

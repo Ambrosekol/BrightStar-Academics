@@ -50,6 +50,9 @@ BASE=os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE,'.env'))
 app=Flask(__name__)
 app.jinja_env.filters.setdefault('display_date', format_display_date)
+# Marks are decimals (a 40-question paper gives 2.5 a question), so a page would print a mark
+# of 100 as "100.0". A float with nothing after the point is shown as a whole number.
+app.jinja_env.finalize = lambda value: int(value) if isinstance(value, float) and value.is_integer() else value
 # blueprints/*/routes.py do `from app import app` to register their routes on
 # this same Flask instance. When this file is run directly (`python app.py`,
 # the real entrypoint), it executes as __main__, not as a module named
@@ -166,6 +169,28 @@ def _add_missing_columns():
                     continue
                 connection.execute(sa.text(
                     f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {spec}'))
+
+
+# Entrance marks that were whole-number columns. A paper of 40 questions gives 2.5 marks a
+# question, which a whole-number column silently cut to 2, so a school's 100-mark paper added up
+# to 80. Changing the type keeps every stored value exactly (80 becomes 80.0).
+_FRACTIONAL_MARK_COLUMNS=(('attempt_questions','points'),('attempts','score'),('attempts','max_score'))
+
+
+def _allow_fractional_marks():
+    """Turn the entrance mark columns of an older school database into decimals. Idempotent."""
+    engine=current_engine()
+    if engine.dialect.name!='postgresql':
+        return
+    inspector=sa.inspect(engine)
+    tables=set(inspector.get_table_names())
+    for table,column in _FRACTIONAL_MARK_COLUMNS:
+        if table not in tables:
+            continue
+        found=next((c for c in inspector.get_columns(table) if c['name']==column),None)
+        if found is not None and isinstance(found['type'],sa.Integer):
+            with engine.begin() as connection:
+                connection.execute(sa.text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE double precision'))
 
 
 def _widen_parent_feedback_reply_admin_id():
@@ -710,6 +735,7 @@ def init_db(school):
 def _init_db(school):
     db.metadata.create_all(current_engine())
     _add_missing_columns()
+    _allow_fractional_marks()
     from core.retired_tables import drop_empty  # deferred: it imports the models
     drop_empty()
     _widen_parent_feedback_reply_admin_id()

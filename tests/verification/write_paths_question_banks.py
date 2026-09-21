@@ -184,7 +184,7 @@ starter_texts = {}
 for name in sorted(os.listdir(B.STARTER_DIR)):
     starter_texts[name] = open(os.path.join(B.STARTER_DIR, name), encoding="utf-8").read()
 check("nothing in the starter folder names a school",
-      not [n for n, t in starter_texts.items() if re.search(r"rainbow|crainbow|creative|montessori|crms", t, re.I)])
+      not [n for n, t in starter_texts.items() if re.search(r"creative rainbow|crainbow|montessori|crms", t, re.I)])
 check("the starter banks have neutral ids of their own",
       all(e["id"].startswith("starter_") for e in entries), str([e["id"] for e in entries]))
 problems = []

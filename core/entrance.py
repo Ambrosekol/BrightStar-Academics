@@ -25,6 +25,7 @@ from models import (
     EntranceBankConfig, Examination, RetakeGrant, db,
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
+from core.marks import total as total_marks
 from core.storage import data_dir
 
 
@@ -199,14 +200,16 @@ def grade(aid, auto=False, force=False):
                            AttemptQuestion.points).where(AttemptQuestion.attempt_id==aid))
     answers=_answers_for_attempt(aid)
     if snapshot:
-        score=sum(int(points or 1) for qid,correct,points in snapshot if answers.get(qid)==correct)
-        max_score=sum(int(points or 1) for _,_,points in snapshot)
+        # Marks can be fractions (40 questions of 2.5 marks each make 100), so they are never
+        # rounded to whole numbers here.
+        score=total_marks((points or 1) for qid,correct,points in snapshot if answers.get(qid)==correct)
+        max_score=total_marks((points or 1) for _,_,points in snapshot)
     else:
         # Legacy attempts are graded from the legacy bank only until they are archived;
         # all new attempts are snapshotted at start.
         b=bank(a.bank_id)
-        score=sum(q.get('points',1) for q in (b or {}).get('questions',[]) if answers.get(q['id'])==q['answer'])
-        max_score=sum(q.get('points',1) for q in (b or {}).get('questions',[]))
+        score=total_marks(q.get('points',1) for q in (b or {}).get('questions',[]) if answers.get(q['id'])==q['answer'])
+        max_score=total_marks(q.get('points',1) for q in (b or {}).get('questions',[]))
     pct=(score/max_score*100) if max_score else 0
     if not force:
         a.submitted_at=datetime.now(timezone.utc).isoformat()

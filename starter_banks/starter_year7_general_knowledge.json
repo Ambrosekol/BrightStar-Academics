@@ -1,312 +1,492 @@
 {
-  "id": "starter_year7_general_knowledge",
-  "name": "General Knowledge - Entrance Examination into Year 7",
-  "level": "Year 7",
-  "entry_group": "year7",
-  "subject": "General Knowledge",
-  "duration_seconds": 3600,
-  "version": "1.0",
-  "source_status": "platform_starter",
-  "questions": [
-    {
-      "id": 1,
-      "text": "Right and certain privileges enjoyed by the citizens of a country is called",
-      "options": [
-        "Original human rights",
-        "First human rights",
-        "Fundamental human rights",
-        "Deserved human rights"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 2,
-      "text": "Duties a citizen must carry out for his country is known as",
-      "options": [
-        "Obligation",
-        "Labour",
-        "Home-work",
-        "Assignment"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 3,
-      "text": "A sense of belonging to one or more nations is called",
-      "options": [
-        "National belonging",
-        "National co-operation",
-        "National unity",
-        "National identity"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 4,
-      "text": "The highest honor award a citizen can receive from his country for service to the country is called",
-      "options": [
-        "National Appreciation",
-        "National Applaud",
-        "National Honor Award",
-        "National Salute"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 5,
-      "text": "The love for one's nation is called",
-      "options": [
-        "Feeling",
-        "Passion",
-        "Compassion",
-        "Patriotism"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 6,
-      "text": "UBE in full means",
-      "options": [
-        "United Bible Education",
-        "Universal Basic Education",
-        "United Basic Education",
-        "Universal Boys Educations"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 7,
-      "text": "Social studies is the study of man and his",
-      "options": [
-        "Family",
-        "Environment",
-        "Community",
-        "Life"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 8,
-      "text": "Man uses science and __________ to control and make his environment suitable to live in",
-      "options": [
-        "Agriculture",
-        "Family",
-        "Knowledge",
-        "Technology"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 9,
-      "text": "__________ can be defined as the state of having a job that pays you an income",
-      "options": [
-        "Business",
-        "Trading",
-        "Employment",
-        "Job"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 10,
-      "text": "__________ is a legal/lawful agreement between a man and a woman to be joined together as husband and wife",
-      "options": [
-        "Friendship",
-        "Dating",
-        "Crush",
-        "Marriage"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 11,
-      "text": "Which of the following is an example of an inclined plane?",
-      "options": [
-        "Ramp",
-        "Staircase",
-        "Ladder",
-        "All of the above"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 12,
-      "text": "What is the term for the movement of water from the Earth's surface to the atmosphere?",
-      "options": [
-        "Evaporation",
-        "Condensation",
-        "Transpiration",
-        "Precipitation"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 13,
-      "text": "Which organ pumps blood throughout the body?",
-      "options": [
-        "Brain",
-        "Heart",
-        "Lungs",
-        "Liver"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 14,
-      "text": "Which blood vessels exchange oxygen and carbon dioxide",
-      "options": [
-        "Arteries",
-        "Vein",
-        "Capillaries",
-        "Lungs"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 15,
-      "text": "Which organ filters waste from the blood",
-      "options": [
-        "Kidneys",
-        "Liver",
-        "Lungs",
-        "Heart"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 16,
-      "text": "The growing and rearing of animals is called",
-      "options": [
-        "Engineering",
-        "Agriculture",
-        "Biology",
-        "Farming"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 17,
-      "text": "A person who specializes in Agriculture is called a/an",
-      "options": [
-        "Biologist",
-        "Zoologist",
-        "Fisherman",
-        "Agriculturist"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 18,
-      "text": "Which of this is not a farm animal",
-      "options": [
-        "Rabbit",
-        "Goat",
-        "Tiger",
-        "Pig"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 19,
-      "text": "The practice of growing enough food for one's personal use is known as",
-      "options": [
-        "Subsistence farming",
-        "Farm settlement",
-        "Fish farming",
-        "Commercial farming"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 20,
-      "text": "Which of the following is not a Food crop",
-      "options": [
-        "Cocoa",
-        "Yam",
-        "Millet",
-        "Cocoyam"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 21,
-      "text": "Which part of the mouse is used to select the Start button",
-      "options": [
-        "Left click",
-        "Right Click",
-        "Double Click",
-        "Key Button"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 22,
-      "text": "To turn off the computer means",
-      "options": [
-        "Shut up",
-        "Put off",
-        "Shut down",
-        "Log off"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 23,
-      "text": "What is data",
-      "options": [
-        "Word",
-        "Sentence",
-        "Raw fact",
-        "Process fact"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 24,
-      "text": "What is information",
-      "options": [
-        "Word",
-        "Sentence",
-        "Raw fact",
-        "Process fact"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 25,
-      "text": "A printer is used to produce __________",
-      "options": [
-        "Soft copy",
-        "Hard copy",
-        "Store copy",
-        "Screen copy"
-      ],
-      "answer": 1,
-      "points": 1
-    }
-  ]
+ "id": "starter_year7_general_knowledge",
+ "name": "General Knowledge - Entrance Examination into Year 7",
+ "level": "Year 7",
+ "entry_group": "year7",
+ "subject": "General Knowledge",
+ "duration_seconds": 3600,
+ "version": "2.0",
+ "source_status": "platform_starter",
+ "questions": [
+  {
+   "id": 1,
+   "text": "What is the capital city of Nigeria?",
+   "options": [
+    "Kano",
+    "Ibadan",
+    "Abuja",
+    "Lagos"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "In which year did Nigeria become independent?",
+   "options": [
+    "1966",
+    "1963",
+    "1957",
+    "1960"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "What are the two colours on the Nigerian flag?",
+   "options": [
+    "Green and red",
+    "White and blue",
+    "Green and white",
+    "Red and white"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "What is the name of Nigeria's money?",
+   "options": [
+    "Cedi",
+    "Naira",
+    "Shilling",
+    "Rand"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "Which river gives Nigeria its name?",
+   "options": [
+    "River Nile",
+    "River Niger",
+    "River Congo",
+    "River Benue"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "How many states are there in Nigeria (not counting the Federal Capital Territory)?",
+   "options": [
+    "36",
+    "37",
+    "33",
+    "30"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "Who wrote the novel \"Things Fall Apart\"?",
+   "options": [
+    "Ben Okri",
+    "Chinua Achebe",
+    "Wole Soyinka",
+    "Chimamanda Adichie"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "Which Nigerian writer won the Nobel Prize in Literature in 1986?",
+   "options": [
+    "Chinua Achebe",
+    "Cyprian Ekwensi",
+    "Ben Okri",
+    "Wole Soyinka"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "Which organ of the body pumps blood around it?",
+   "options": [
+    "The heart",
+    "The kidney",
+    "The lungs",
+    "The liver"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "Which organ do we use to breathe?",
+   "options": [
+    "The heart",
+    "The brain",
+    "The stomach",
+    "The lungs"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "Which planet is nearest to the Sun?",
+   "options": [
+    "Earth",
+    "Mars",
+    "Venus",
+    "Mercury"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "What is the largest ocean in the world?",
+   "options": [
+    "The Indian Ocean",
+    "The Pacific Ocean",
+    "The Atlantic Ocean",
+    "The Arctic Ocean"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "Which gas do plants take in from the air to make their food?",
+   "options": [
+    "Carbon dioxide",
+    "Nitrogen",
+    "Oxygen",
+    "Hydrogen"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "At what temperature does pure water boil at sea level?",
+   "options": [
+    "90 °C",
+    "212 °C",
+    "50 °C",
+    "100 °C"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "How many days are there in a leap year?",
+   "options": [
+    "364",
+    "365",
+    "367",
+    "366"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "On which continent is Nigeria?",
+   "options": [
+    "Asia",
+    "Africa",
+    "Europe",
+    "South America"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "What is the biggest animal in the world?",
+   "options": [
+    "The giraffe",
+    "The blue whale",
+    "The shark",
+    "The elephant"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Who was the first person to walk on the Moon?",
+   "options": [
+    "Neil Armstrong",
+    "Buzz Aldrin",
+    "Isaac Newton",
+    "Yuri Gagarin"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "What is the highest mountain in the world?",
+   "options": [
+    "Mount Everest",
+    "Mount Cameroon",
+    "Mont Blanc",
+    "Mount Kilimanjaro"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "What is the largest hot desert in the world?",
+   "options": [
+    "The Kalahari",
+    "The Gobi",
+    "The Sahara",
+    "The Namib"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "Which instrument measures temperature?",
+   "options": [
+    "A clock",
+    "A thermometer",
+    "A barometer",
+    "A ruler"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "How many days are there in a week?",
+   "options": [
+    "7",
+    "5",
+    "8",
+    "6"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "Which of these animals is a mammal?",
+   "options": [
+    "A shark",
+    "A frog",
+    "A crocodile",
+    "A whale"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "What gives the Earth most of its light and heat?",
+   "options": [
+    "The Moon",
+    "The stars",
+    "The Sun",
+    "The clouds"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "How many colours are traditionally named in a rainbow?",
+   "options": [
+    "5",
+    "6",
+    "7",
+    "8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "Which food class helps the body to grow and repair itself?",
+   "options": [
+    "Water",
+    "Fats and oils",
+    "Proteins",
+    "Carbohydrates"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Which vitamin does the body make when the skin is in sunlight?",
+   "options": [
+    "Vitamin D",
+    "Vitamin A",
+    "Vitamin C",
+    "Vitamin K"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "What was the capital city of Nigeria before Abuja?",
+   "options": [
+    "Kaduna",
+    "Enugu",
+    "Port Harcourt",
+    "Lagos"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "Which of these is a renewable source of energy?",
+   "options": [
+    "Coal",
+    "Petrol",
+    "The Sun",
+    "Natural gas"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "What do we call a person who flies an aeroplane?",
+   "options": [
+    "A porter",
+    "A sailor",
+    "A pilot",
+    "A conductor"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Which is the longest river in Africa?",
+   "options": [
+    "The Congo",
+    "The Zambezi",
+    "The Niger",
+    "The Nile"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "What do bees make?",
+   "options": [
+    "Honey",
+    "Butter",
+    "Sugar",
+    "Milk"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Which sense organ do we use to see?",
+   "options": [
+    "The ear",
+    "The eye",
+    "The nose",
+    "The tongue"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "How many continents are usually named on a world map?",
+   "options": [
+    "8",
+    "5",
+    "7",
+    "6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Which of these is a fruit?",
+   "options": [
+    "A carrot",
+    "A pawpaw",
+    "A cassava tuber",
+    "A yam"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "What is the name of the line that divides the Earth into the northern and southern halves?",
+   "options": [
+    "The Tropic of Cancer",
+    "The Date Line",
+    "The Equator",
+    "The Prime Meridian"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Which of these is used to find direction?",
+   "options": [
+    "A compass",
+    "A calendar",
+    "A thermometer",
+    "A stopwatch"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Which festival do Muslims celebrate at the end of the month of Ramadan?",
+   "options": [
+    "Eid al-Fitr",
+    "Easter",
+    "Diwali",
+    "Christmas"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "What is the name of the country to the west of Nigeria?",
+   "options": [
+    "Cameroon",
+    "Benin",
+    "Chad",
+    "Niger"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "What do we call frozen water?",
+   "options": [
+    "Steam",
+    "Dew",
+    "Vapour",
+    "Ice"
+   ],
+   "answer": 3,
+   "points": 1
+  }
+ ]
 }

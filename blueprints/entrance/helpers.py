@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 
 from models import AcademicSession, Attempt, Candidate, CandidatePaper, Examination, EntranceBankConfig, db
 from core.db_helpers import all_rows, _flatten
+from core.marks import tidy as tidy_mark
 from core.security import admin_scope_allows
 from app import _entrance_config_select
 from core.entrance import bank, bank_subject, load_banks, sync_examinations
@@ -149,5 +150,5 @@ def _csv_response(rows, filename):
     w.writerow(['Rank','Candidate','Examination','Bank ID','Status','Score','Max Score','Percentage','Grade','Started At','Submitted At'])
     for i,r in enumerate(rows,1):
         exam_name=r['exam_name'] if ('exam_name' in r.keys() and r['exam_name']) else None
-        w.writerow([i,r['candidate'],exam_name or r['bank_id'],r['bank_id'],r['status'],r['score'] if r['score'] is not None else '',r['max_score'] if r['max_score'] is not None else '',f"{r['percentage']:.1f}" if r['percentage'] is not None else '',_grade_label(r['percentage']),r['started_at'],r['submitted_at'] or ''])
+        w.writerow([i,r['candidate'],exam_name or r['bank_id'],r['bank_id'],r['status'],tidy_mark(r['score']) if r['score'] is not None else '',tidy_mark(r['max_score']) if r['max_score'] is not None else '',f"{r['percentage']:.1f}" if r['percentage'] is not None else '',_grade_label(r['percentage']),r['started_at'],r['submitted_at'] or ''])
     return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename={filename}'})

@@ -38,8 +38,9 @@ class Attempt(db.Model):
     started_at = db.Column(Text, nullable=False)
     expires_at = db.Column(Text, nullable=False)
     submitted_at = db.Column(Text)
-    score = db.Column(Integer)
-    max_score = db.Column(Integer)
+    # Decimals: a 40-question paper is 100 marks, so a question is worth 2.5.
+    score = db.Column(Float)
+    max_score = db.Column(Float)
     percentage = db.Column(Float)
     status = db.Column(Text, nullable=False)
     candidate_id = db.Column(Integer)
@@ -74,7 +75,7 @@ class AttemptQuestion(db.Model):
     instruction = db.Column(Text)
     image_path = db.Column(Text)
     correct_option = db.Column(Integer, nullable=False)
-    points = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    points = db.Column(Float, nullable=False, default=1, server_default=text('1'))
 
 
 class RetakeGrant(db.Model):

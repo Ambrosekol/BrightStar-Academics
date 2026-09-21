@@ -1,312 +1,540 @@
 {
-  "id": "starter_sss1_general_knowledge",
-  "name": "General Knowledge - Entrance Examination into SSS 1",
-  "level": "SSS 1",
-  "entry_group": "year10",
-  "subject": "General Knowledge",
-  "duration_seconds": 3600,
-  "version": "1.0",
-  "source_status": "platform_starter",
-  "questions": [
-    {
-      "id": 1,
-      "text": "Right and certain privileges enjoyed by the citizens of a country is called",
-      "options": [
-        "Original human rights",
-        "First human rights",
-        "Fundamental human rights",
-        "Deserved human rights"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 2,
-      "text": "Duties a citizen must carry out for his country is known as",
-      "options": [
-        "Obligation",
-        "Labour",
-        "Home-work",
-        "Assignment"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 3,
-      "text": "A sense of belonging to one or more nations is called",
-      "options": [
-        "National belonging",
-        "National co-operation",
-        "National unity",
-        "National identity"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 4,
-      "text": "The highest honor award a citizen can receive from his country for service to the country is called",
-      "options": [
-        "National Appreciation",
-        "National Applaud",
-        "National Honor Award",
-        "National Salute"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 5,
-      "text": "The love for one's nation is called",
-      "options": [
-        "Feeling",
-        "Passion",
-        "Compassion",
-        "Patriotism"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 6,
-      "text": "UBE in full means",
-      "options": [
-        "United Bible Education",
-        "Universal Basic Education",
-        "United Basic Education",
-        "Universal Boys Educations"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 7,
-      "text": "Social studies is the study of man and his",
-      "options": [
-        "Family",
-        "Environment",
-        "Community",
-        "Life"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 8,
-      "text": "Man uses science and __________ to control and make his environment suitable to live in",
-      "options": [
-        "Agriculture",
-        "Family",
-        "Knowledge",
-        "Technology"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 9,
-      "text": "__________ can be defined as the state of having a job that pays you an income",
-      "options": [
-        "Business",
-        "Trading",
-        "Employment",
-        "Job"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 10,
-      "text": "__________ is a legal/lawful agreement between a man and a woman to be joined together as husband and wife",
-      "options": [
-        "Friendship",
-        "Dating",
-        "Crush",
-        "Marriage"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 11,
-      "text": "Which of the following is an example of an inclined plane?",
-      "options": [
-        "Ramp",
-        "Staircase",
-        "Ladder",
-        "All of the above"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 12,
-      "text": "What is the term for the movement of water from the Earth's surface to the atmosphere?",
-      "options": [
-        "Evaporation",
-        "Condensation",
-        "Transpiration",
-        "Precipitation"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 13,
-      "text": "Which organ pumps blood throughout the body?",
-      "options": [
-        "Brain",
-        "Heart",
-        "Lungs",
-        "Liver"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 14,
-      "text": "Which blood vessels exchange oxygen and carbon dioxide",
-      "options": [
-        "Arteries",
-        "Vein",
-        "Capillaries",
-        "Lungs"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 15,
-      "text": "Which organ filters waste from the blood",
-      "options": [
-        "Kidneys",
-        "Liver",
-        "Lungs",
-        "Heart"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 16,
-      "text": "The growing and rearing of animals is called",
-      "options": [
-        "Engineering",
-        "Agriculture",
-        "Biology",
-        "Farming"
-      ],
-      "answer": 1,
-      "points": 1
-    },
-    {
-      "id": 17,
-      "text": "A person who specializes in Agriculture is called a/an",
-      "options": [
-        "Biologist",
-        "Zoologist",
-        "Fisherman",
-        "Agriculturist"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 18,
-      "text": "Which of this is not a farm animal",
-      "options": [
-        "Rabbit",
-        "Goat",
-        "Tiger",
-        "Pig"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 19,
-      "text": "The practice of growing enough food for one's personal use is known as",
-      "options": [
-        "Subsistence farming",
-        "Farm settlement",
-        "Fish farming",
-        "Commercial farming"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 20,
-      "text": "Which of the following is not a Food crop",
-      "options": [
-        "Cocoa",
-        "Yam",
-        "Millet",
-        "Cocoyam"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 21,
-      "text": "Which part of the mouse is used to select the Start button",
-      "options": [
-        "Left click",
-        "Right Click",
-        "Double Click",
-        "Key Button"
-      ],
-      "answer": 0,
-      "points": 1
-    },
-    {
-      "id": 22,
-      "text": "To turn off the computer means",
-      "options": [
-        "Shut up",
-        "Put off",
-        "Shut down",
-        "Log off"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 23,
-      "text": "What is data",
-      "options": [
-        "Word",
-        "Sentence",
-        "Raw fact",
-        "Process fact"
-      ],
-      "answer": 2,
-      "points": 1
-    },
-    {
-      "id": 24,
-      "text": "What is information",
-      "options": [
-        "Word",
-        "Sentence",
-        "Raw fact",
-        "Process fact"
-      ],
-      "answer": 3,
-      "points": 1
-    },
-    {
-      "id": 25,
-      "text": "A printer is used to produce __________",
-      "options": [
-        "Soft copy",
-        "Hard copy",
-        "Store copy",
-        "Screen copy"
-      ],
-      "answer": 1,
-      "points": 1
-    }
-  ]
+ "id": "starter_sss1_general_knowledge",
+ "name": "General Knowledge - Entrance Examination into SSS 1",
+ "level": "SSS 1",
+ "entry_group": "year10",
+ "subject": "General Knowledge",
+ "duration_seconds": 3600,
+ "version": "2.0",
+ "source_status": "platform_starter",
+ "questions": [
+  {
+   "id": 1,
+   "text": "Which body has its headquarters in Abuja and serves the countries of West Africa?",
+   "options": [
+    "The African Union",
+    "ECOWAS",
+    "OPEC",
+    "The United Nations"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "Where are the headquarters of the African Union?",
+   "options": [
+    "Nairobi",
+    "Abuja",
+    "Addis Ababa",
+    "Accra"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "Where are the headquarters of the United Nations?",
+   "options": [
+    "London",
+    "Geneva",
+    "New York",
+    "Paris"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "Which two chambers make up Nigeria's National Assembly?",
+   "options": [
+    "The House of Assembly and the Cabinet",
+    "The Senate and the Supreme Court",
+    "The Council of State and the Senate",
+    "The Senate and the House of Representatives"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "Who was the first Prime Minister of Nigeria?",
+   "options": [
+    "Obafemi Awolowo",
+    "Ahmadu Bello",
+    "Nnamdi Azikiwe",
+    "Abubakar Tafawa Balewa"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "Who was the first President of Nigeria?",
+   "options": [
+    "Yakubu Gowon",
+    "Abubakar Tafawa Balewa",
+    "Nnamdi Azikiwe",
+    "Olusegun Obasanjo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "In which year did Nigeria become a republic?",
+   "options": [
+    "1979",
+    "1966",
+    "1960",
+    "1963"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "Which two protectorates were joined together in 1914 to form Nigeria?",
+   "options": [
+    "The Northern and Southern Protectorates",
+    "The Hausa and Yoruba Kingdoms",
+    "The Lagos and Calabar Colonies",
+    "The Eastern and Western Regions"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "Which Nigerian dam is built on the River Niger?",
+   "options": [
+    "Kainji Dam",
+    "Oyan Dam",
+    "Shiroro Dam",
+    "Bakolori Dam"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "What does OPEC stand for?",
+   "options": [
+    "Order of Petrol Exporting Cities",
+    "Organization of Producers of Energy and Coal",
+    "Organization of the Petroleum Exporting Countries",
+    "Organization of Pacific Energy Companies"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "What is the chemical symbol for gold?",
+   "options": [
+    "Go",
+    "Gd",
+    "Ag",
+    "Au"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "What is the chemical formula of water?",
+   "options": [
+    "O₂",
+    "H₂O₂",
+    "H₂O",
+    "CO₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "Common table salt is the chemical compound called",
+   "options": [
+    "sodium hydroxide",
+    "sodium chloride",
+    "calcium carbonate",
+    "potassium nitrate"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "Which part of the cell is called its \"powerhouse\"?",
+   "options": [
+    "The cell wall",
+    "The mitochondrion",
+    "The vacuole",
+    "The nucleus"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "Which green substance in leaves absorbs sunlight for photosynthesis?",
+   "options": [
+    "Keratin",
+    "Chlorophyll",
+    "Melanin",
+    "Haemoglobin"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "What is the basic unit of heredity?",
+   "options": [
+    "The enzyme",
+    "The cell",
+    "The tissue",
+    "The gene"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "Which is the largest planet in our solar system?",
+   "options": [
+    "Saturn",
+    "Neptune",
+    "Earth",
+    "Jupiter"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Which lake in Africa has the largest surface area?",
+   "options": [
+    "Lake Victoria",
+    "Lake Chad",
+    "Lake Malawi",
+    "Lake Tanganyika"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "The line of longitude that passes through Greenwich, in London, is called",
+   "options": [
+    "the Tropic of Capricorn",
+    "the International Date Line",
+    "the Prime Meridian",
+    "the Equator"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "What is the currency of Ghana?",
+   "options": [
+    "The rand",
+    "The cedi",
+    "The shilling",
+    "The naira"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "What is the capital city of Kenya?",
+   "options": [
+    "Nairobi",
+    "Kampala",
+    "Dodoma",
+    "Addis Ababa"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "Which of these countries shares a border with Nigeria?",
+   "options": [
+    "Cameroon",
+    "Togo",
+    "Ghana",
+    "Gabon"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "What is the SI unit of force?",
+   "options": [
+    "The joule",
+    "The newton",
+    "The watt",
+    "The pascal"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "What is the pH value of a neutral solution such as pure water?",
+   "options": [
+    "0",
+    "7",
+    "1",
+    "14"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "An acid turns blue litmus paper",
+   "options": [
+    "red",
+    "green",
+    "yellow",
+    "black"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "Which is the most abundant gas in the Earth's atmosphere?",
+   "options": [
+    "Nitrogen",
+    "Carbon dioxide",
+    "Hydrogen",
+    "Oxygen"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Which of these is the longest bone in the human body?",
+   "options": [
+    "The tibia",
+    "The femur",
+    "The humerus",
+    "The skull"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "Which of these is a sedimentary rock?",
+   "options": [
+    "Sandstone",
+    "Marble",
+    "Granite",
+    "Basalt"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "What does CPU stand for in computing?",
+   "options": [
+    "Central Program Utility",
+    "Computer Power Unit",
+    "Central Processing Unit",
+    "Control Panel Update"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "What does the abbreviation \"INEC\" stand for in Nigeria?",
+   "options": [
+    "Independent National Economic Council",
+    "Institute of National Education and Culture",
+    "Inter-State Electoral Council",
+    "Independent National Electoral Commission"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "The blood groups of humans are classified as",
+   "options": [
+    "A, B, AB and O",
+    "A, C, D and E",
+    "W, X, Y and Z",
+    "P, Q, R and S"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "What is the speed of light in a vacuum, approximately?",
+   "options": [
+    "3 million kilometres every second",
+    "30,000 kilometres every second",
+    "300,000 kilometres every second",
+    "3,000 kilometres every second"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Which ocean lies to the south of Nigeria's coast?",
+   "options": [
+    "The Arctic Ocean",
+    "The Pacific Ocean",
+    "The Indian Ocean",
+    "The Atlantic Ocean"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "Which of these is a non-renewable source of energy?",
+   "options": [
+    "Sunlight",
+    "Crude oil",
+    "Moving water",
+    "Wind"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Who invented the World Wide Web?",
+   "options": [
+    "Bill Gates",
+    "Thomas Edison",
+    "Alexander Graham Bell",
+    "Tim Berners-Lee"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "What is the process by which water vapour changes into liquid water?",
+   "options": [
+    "Melting",
+    "Evaporation",
+    "Condensation",
+    "Sublimation"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "What is the name for a scientist who studies rocks?",
+   "options": [
+    "A botanist",
+    "A meteorologist",
+    "A geologist",
+    "A biologist"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "How many players are there in a football (soccer) team on the pitch?",
+   "options": [
+    "10",
+    "11",
+    "9",
+    "12"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Which of these is the national motto of Nigeria?",
+   "options": [
+    "Peace, Love and Light",
+    "Strength in Diversity",
+    "Freedom and Justice for All",
+    "Unity and Faith, Peace and Progress"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Which natural resource earns Nigeria most of its export income?",
+   "options": [
+    "Copper",
+    "Gold",
+    "Crude oil",
+    "Diamonds"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Which gas do humans breathe out in larger amounts than they breathe in?",
+   "options": [
+    "Helium",
+    "Carbon dioxide",
+    "Nitrogen",
+    "Oxygen"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Which arm of government is responsible for interpreting the law in Nigeria?",
+   "options": [
+    "The judiciary",
+    "The legislature",
+    "The civil service",
+    "The executive"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Which is the highest court in Nigeria?",
+   "options": [
+    "The High Court",
+    "The Court of Appeal",
+    "The Magistrate's Court",
+    "The Supreme Court"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Who is the head of the executive arm of government in Nigeria?",
+   "options": [
+    "The President",
+    "The Senate President",
+    "The Chief Justice",
+    "The Speaker of the House"
+   ],
+   "answer": 0,
+   "points": 1
+  }
+ ]
 }
