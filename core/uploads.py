@@ -17,9 +17,12 @@ STATIC=os.path.join(BASE,'static')
 IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
 
 
-def _save_image_upload(file_obj, subdir, prefix='image'):
-    if not file_obj or not getattr(file_obj, 'filename', ''):
-        return None
+def validate_image_upload(file_obj):
+    """Check an uploaded image without saving it; returns its extension.
+
+    Raises ValueError with a message safe to show. The stream is left where it
+    was, so the same file can be validated first and saved afterwards.
+    """
     original=secure_filename(file_obj.filename)
     ext=original.rsplit('.',1)[-1].lower() if '.' in original else ''
     if ext not in IMAGE_EXTENSIONS:
@@ -47,6 +50,13 @@ def _save_image_upload(file_obj, subdir, prefix='image'):
     }
     if not signatures.get(ext,False):
         raise ValueError('The uploaded file does not appear to be a valid image.')
+    return ext
+
+
+def _save_image_upload(file_obj, subdir, prefix='image'):
+    if not file_obj or not getattr(file_obj, 'filename', ''):
+        return None
+    ext=validate_image_upload(file_obj)
     folder=os.path.join(uploads_dir(),subdir)
     os.makedirs(folder,exist_ok=True)
     safe_prefix=secure_filename(str(prefix))[:80] or 'image'

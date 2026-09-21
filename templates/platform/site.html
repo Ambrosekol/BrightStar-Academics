@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brightstars Academics</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
   <meta name="description" content="Brightstars Academics runs entrance examinations, school administration, results and finance for schools — each school on its own secure portal.">
   <style>
     :root{--bg:#0f1729;--panel:#172136;--line:#2b3a5c;--text:#e6ecf5;--muted:#9babc7;
@@ -15,7 +16,10 @@
     .wrap{max-width:980px;margin:0 auto;padding:0 1.25rem}
     header{border-bottom:1px solid var(--line);background:var(--panel)}
     header .wrap{display:flex;align-items:center;gap:1rem;padding-block:1rem;flex-wrap:wrap}
-    .brand{font-weight:700;color:#fff;font-size:1.05rem}
+    .brand{display:flex;align-items:center;gap:.8rem;font-weight:700;color:#fff;font-size:1.05rem;text-decoration:none}
+    .brand small{margin:0}
+    .logo-chip{display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:.3rem .75rem}
+    .logo-chip img{display:block;height:38px;width:auto}
     .brand small{display:block;font-weight:400;font-size:.7rem;color:var(--muted);
                  letter-spacing:.1em;text-transform:uppercase}
     header nav{margin-left:auto}
@@ -40,7 +44,10 @@
 <body>
   <header>
     <div class="wrap">
-      <div class="brand">Brightstars Academics<small>School platform</small></div>
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="logo-chip"><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></span>
+        <small>School platform</small>
+      </a>
       <nav>
         <a class="btn" href="{{ url_for('platform_login') }}">{{ 'Platform console' if signed_in else 'Staff sign-in' }}</a>
       </nav>

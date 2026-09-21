@@ -257,3 +257,67 @@ def test_postgresql_is_documented_as_the_only_database():
     # Local development needs PostgreSQL, so the requirement is stated up front.
     assert "PostgreSQL" in readme and "### Requirements" in readme
     assert "psycopg[binary]" in (ROOT / "requirements.txt").read_text(encoding="utf-8")
+
+
+def test_a_brand_colour_is_only_ever_a_plain_hex_value():
+    """A colour is written into a <style> block on every page of a school's
+    portal, so anything else must be refused, not escaped."""
+    from core import theme
+
+    for hostile in ("red;}body{display:none", "#12345", "#gggggg", "url(x)", "#fff;}", "expression(1)"):
+        try:
+            theme.normalise_hex(hostile)
+        except ValueError:
+            continue
+        raise AssertionError(f"{hostile!r} was accepted as a colour")
+    assert theme.normalise_hex(" #ABC ") == "#aabbcc" and theme.normalise_hex("") == ""
+    # Both colours sit behind white text, so a light one is refused.
+    for light in ("#ffffff", "#ffee88", "#cccccc"):
+        try:
+            theme.check_colour(light, "main")
+        except ValueError:
+            continue
+        raise AssertionError(f"{light} was accepted although white text is unreadable on it")
+    assert theme.check_colour(theme.DEFAULT_PRIMARY, "main") == theme.DEFAULT_PRIMARY
+    css = theme.theme_css("#7a1f3d", "#0b6e4f")
+    assert re.fullmatch(r"[A-Za-z0-9#:;,.()\-{}! %]+", css), css
+    assert theme.theme_css("", "") == ""
+
+
+def test_the_portal_only_prints_colours_it_has_validated():
+    branding = (ROOT / "core" / "branding.py").read_text(encoding="utf-8")
+    assert "theme.check_colour(" in branding, "stored colours must be re-validated before use"
+    # Only valid colours may reach a template: no raw setting is passed through.
+    assert "'primary': primary" in branding and "'theme_css': theme.theme_css(primary, accent)" in branding
+
+
+def test_the_gallery_only_serves_files_from_the_schools_own_branding_folder():
+    from core import theme
+
+    assert theme.parse_gallery('["uploads/branding/a.png"]') == ["uploads/branding/a.png"]
+    for hostile in ('["uploads/../../etc/passwd"]', '["uploads/branding/../x.png"]', '["/etc/passwd"]',
+                    '["static/x.png"]', '["uploads\\branding\\x.png"]', "not json", '{"a": 1}', "[1, null]"):
+        assert theme.parse_gallery(hostile) == [], hostile
+
+
+def test_the_brightstars_logo_belongs_to_the_platform_and_never_to_a_school():
+    logo = "brand/brightstars-logo.png"
+    assert (ROOT / "static" / "brand" / "brightstars-logo.png").is_file()
+    for page in ("base.html", "site.html", "login.html"):
+        assert logo in (ROOT / "templates" / "platform" / page).read_text(encoding="utf-8"), page
+    # A school's portal must look like the school's own, not like the platform's.
+    for template in (ROOT / "templates").glob("*.html"):
+        assert "brightstars-logo" not in template.read_text(encoding="utf-8", errors="ignore"), template.name
+
+
+def test_creating_a_school_checks_its_images_and_colours_before_building_anything():
+    provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
+    create = provisioning[provisioning.index("def create_tenant"):provisioning.index("BRANDING_FIELDS")]
+    assert create.index("check_branding_inputs(") < create.index("init_platform_db()") < create.index("upgrade_tenant(info)")
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    # The form takes a logo and photographs, so it needs its own request limit,
+    # and that limit must be raised before the CSRF check reads the form.
+    for route in ("platform_school_new", "platform_school_branding"):
+        head = console[:console.index(f"def {route}")]
+        decorators = head[head.rindex("@app."):]
+        assert decorators.index("@allow_branding_upload") < decorators.index("@csrf_protect"), route

@@ -9,6 +9,8 @@
 {% if errors %}
   <div class="errors"><strong>The school was not created.</strong>
     <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    <span class="muted">Your browser cannot keep files across a failed submit, so please choose the
+      logo and photographs again.</span>
   </div>
 {% endif %}
 
@@ -40,6 +42,33 @@
     <label for="logo">Logo
       <span class="hint">PNG, JPG, GIF or WEBP. Stored in the school's own folder.</span></label>
     <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+
+    <label for="gallery">Photographs for the sign-in page
+      <span class="hint">Up to {{ max_gallery }} pictures of the school. Hold Ctrl (or Cmd) to choose
+        several at once. They fade one after another beside the sign-in form.</span></label>
+    <input type="file" id="gallery" name="gallery" multiple
+           accept="image/png,image/jpeg,image/gif,image/webp">
+
+    <label>Brand colours
+      <span class="hint">The school's portal — its menus, headers, buttons and sign-in page — is
+        coloured with these. Both are used behind white text, so choose fairly dark shades.</span></label>
+    <div class="swatches">
+      <div>
+        <label for="school_brand_primary" style="margin-top:0">Main colour</label>
+        <input type="color" id="school_brand_primary" name="school_brand_primary"
+               value="{{ form.school_brand_primary }}">
+      </div>
+      <div>
+        <label for="school_brand_accent" style="margin-top:0">Accent colour</label>
+        <input type="color" id="school_brand_accent" name="school_brand_accent"
+               value="{{ form.school_brand_accent }}">
+      </div>
+    </div>
+    <div class="preview" aria-hidden="true" data-min-contrast="{{ min_contrast }}">
+      <div class="bar" id="preview-bar"><span id="preview-name">Your school</span></div>
+      <div class="body"><span id="preview-button">Sign in</span></div>
+    </div>
+    <p id="colour-warning" class="hint" style="color:#ffb4a2" hidden></p>
 
     <div class="inline">
       <div>
@@ -128,5 +157,7 @@
     });
     refresh();
   })();
+
 </script>
+<script src="{{ url_for('static', filename='platform-brand-form.js') }}"></script>
 {% endblock %}

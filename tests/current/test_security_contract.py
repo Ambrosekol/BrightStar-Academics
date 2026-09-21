@@ -54,7 +54,9 @@ def test_login_rate_limiting_exists():
 
 
 def test_upload_signature_validation_accepts_common_image_formats():
-    route=UPLOADS[UPLOADS.index("def _save_image_upload"):]
+    route=UPLOADS[UPLOADS.index("def validate_image_upload"):UPLOADS.index("def _save_image_upload")]
+    # Saving an upload must never bypass that validation.
+    assert "validate_image_upload(file_obj)" in UPLOADS[UPLOADS.index("def _save_image_upload"):]
     assert "'jpg': header.startswith(b'\\xff\\xd8\\xff')" in route
     assert "'jpeg': header.startswith(b'\\xff\\xd8\\xff')" in route
     assert "'gif': header.startswith((b'GIF87a',b'GIF89a'))" in route

@@ -1,3 +1,5 @@
+<p align="center"><img src="static/brand/brightstars-logo.png" alt="Brightstars Academics" width="360"></p>
+
 # Brightstars Academics
 
 Brightstars Academics is a school platform. One deployment serves many schools, and each school
@@ -100,7 +102,9 @@ scope-limited access (a class teacher restricted to their own classes), an audit
 messaging, and resource locks such as freezing a question bank during a live exam.
 
 **Its own identity** — name, motto, tagline, contact details and logo, captured when the school
-is created and shown across its portal, result cards and receipts.
+is created and shown across its portal, result cards and receipts. A school also gets its own
+**brand colours** (its menus, headers, buttons and sign-in page follow them) and up to eight
+**photographs** that fade one into the next beside its sign-in form.
 
 ## Getting started
 
@@ -166,6 +170,16 @@ the school's branding and logo:
   database and folder.
 - **Branding.** Name, motto, tagline, phone, email, address and a logo. Set now so nobody ever
   sees the portal wearing the wrong name.
+- **Sign-in photographs.** Up to eight pictures of the school, chosen together in one go. They are
+  stored in the school's own folder and shown on its sign-in page.
+- **Brand colours.** A main and an accent colour, with a live preview. Both sit behind white text,
+  so a colour too light to read it is refused (WCAG AA contrast, 4.5:1) — the form warns as you
+  pick, and the server enforces it. Choosing the portal's own colours means "no choice".
+
+Colours, logo and photographs can all be changed afterwards from the school's page in the console
+(**Look of the portal**). Images must be PNG, JPG, GIF or WEBP, each up to
+`BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by default). Creating or editing a school raises the request
+limit to fit a logo plus a full gallery; every other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
 - **Its own domain** (optional, addable later).
 - **First administrator** (optional). A one-time password is shown once and must be changed at
   first sign-in.
@@ -259,7 +273,8 @@ Academics/
 ├── core/                     # Cross-cutting helpers — no routes
 │   ├── db_helpers.py         #   query helpers, and the dialect-neutral upsert/aggregate
 │   ├── security.py           #   RBAC, admin_required, csrf_protect, audit_log
-│   ├── branding.py           #   the school's own name, motto, logo, receipt prefix
+│   ├── branding.py           #   the school's own name, motto, logo, colours, gallery, receipt prefix
+│   ├── theme.py              #   brand-colour and gallery rules: validation, contrast, theme CSS
 │   ├── storage.py            #   the school's data/ and uploads/ folders
 │   ├── accounts.py           #   shared sign-in/out helpers
 │   ├── entrance.py           #   question banks, grading, result rendering
@@ -310,11 +325,13 @@ crashed run — they never touch real data.
 ```bash
 python tests/verification/write_paths_multitenancy.py      # isolation between schools
 python tests/verification/write_paths_platform_console.py  # the console, end to end
+python tests/verification/write_paths_portal_branding.py   # colours, logo and sign-in photographs
 ```
 
 Between them they cover hostname routing, per-school databases, session cookies copied between
 schools, path traversal, uploads, question banks, suspension, creating a school with its branding
-and logo, portal addresses and CNAMEs, and entering a school. `tests/verification/` also holds
+and logo, colours and photographs (including hostile input), portal addresses and CNAMEs, and
+entering a school. `tests/verification/` also holds
 per-feature write-path scripts, and `tests/legacy/` retained historical ones.
 
 ## Operating
@@ -378,6 +395,8 @@ Check student, result and payment counts against the old database before doing s
 - **`LIKE` searches are now case-sensitive.** PostgreSQL is stricter than SQLite here, and around
   21 name and username search call sites in `blueprints/` have not been reviewed or converted to
   `ilike`. The test suites do not cover those paths.
+- **A school cannot change its own colours or photographs.** Only platform operators can, from the
+  console. The school's own admin area has no page for them yet.
 - **The school website editor edits pages nobody can see.** `/admin/school/website` still offers
   page and news editing, and an enquiry inbox fed by a contact page that no longer exists. Its
   branding fields are still used and should stay.

@@ -15,11 +15,14 @@ from urllib.parse import urlsplit
 
 import sqlalchemy as sa
 from flask import (
-    abort, flash, g, redirect, render_template, request, session, url_for,
+    abort, flash, g, redirect, render_template, request, send_from_directory, session, url_for,
 )
+from werkzeug.utils import secure_filename
 
 from app import app
+from core import theme
 from core.security import csrf_protect
+from core.uploads import IMAGE_EXTENSIONS
 
 from . import provisioning as pv
 from .entry import (
@@ -64,6 +67,19 @@ def platform_required(fn):
             session.pop(SESSION_KEY, None)
             return redirect(url_for('platform_login', next=request.path))
         g.platform_admin = admin
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def allow_branding_upload(fn):
+    """Raise the request-size limit for a view that takes a logo and photographs.
+
+    Must sit outside ``csrf_protect``, which reads the form, and with it the
+    limit is enforced, before the view itself runs.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        request.max_content_length = pv.max_branding_request_bytes()
         return fn(*args, **kwargs)
     return wrapper
 
@@ -163,12 +179,14 @@ def platform_dashboard():
 @app.route('/platform/schools/new', methods=['GET', 'POST'])
 @platform_host_only
 @platform_required
+@allow_branding_upload
 @csrf_protect
 def platform_school_new():
     form = {'name': '', 'code': '', 'domains': '', 'admin_username': '',
             'admin_display_name': '', 'db_url': '', 'db_schema': '',
             'school_motto': '', 'school_tagline': '', 'school_phone': '',
-            'school_email': '', 'school_address': ''}
+            'school_email': '', 'school_address': '',
+            theme.PRIMARY_KEY: theme.DEFAULT_PRIMARY, theme.ACCENT_KEY: theme.DEFAULT_ACCENT}
     errors = []
     if request.method == 'POST':
         form = {k: request.form.get(k, '').strip() for k in form}
@@ -180,6 +198,7 @@ def platform_school_new():
         branding = {key: form[key] for key in pv.BRANDING_FIELDS if key in form}
         branding['school_name'] = form['name']
         logo = request.files.get('logo')
+        gallery = request.files.getlist('gallery')
         if not errors:
             try:
                 info, password = pv.create_tenant(
@@ -187,7 +206,7 @@ def platform_school_new():
                     db_url=form['db_url'] or None, db_schema=form['db_schema'] or None,
                     admin_username=form['admin_username'] or None,
                     admin_display_name=form['admin_display_name'] or None,
-                    branding=branding, logo=logo,
+                    branding=branding, logo=logo, gallery=gallery,
                     actor=g.platform_admin['username'])
             except (pv.ProvisioningError, ValueError) as exc:
                 errors.append(str(exc))
@@ -200,7 +219,9 @@ def platform_school_new():
                                        password=password,
                                        folder=pv.tenant_folder_listing(info))
     return render_template('platform/school_new.html', form=form, errors=errors,
-                           portal_domain=pv.config.portal_domain())
+                           portal_domain=pv.config.portal_domain(),
+                           max_gallery=theme.MAX_GALLERY_IMAGES,
+                           min_contrast=theme.MIN_CONTRAST_WITH_WHITE)
 
 
 @app.route('/platform/schools/<slug>')
@@ -209,11 +230,60 @@ def platform_school_new():
 def platform_school(slug):
     info, domains, suspended_reason = _tenant_or_404(slug)
     portal = next((d['hostname'] for d in domains if d['portal']), None)
+    branding = pv.branding_of(info)
+    logo_path = branding.get(pv.LOGO_SETTING_KEY) or ''
     return render_template('platform/school.html', info=info, domains=domains, portal=portal,
                            suspended_reason=suspended_reason, stats=tenant_stats(info),
                            admins=school_admins(info), folder=pv.tenant_folder_listing(info),
-                           branding=pv.branding_of(info),
+                           branding=branding,
+                           gallery=[p.rsplit('/', 1)[-1] for p in
+                                    theme.parse_gallery(branding.get(theme.GALLERY_KEY))],
+                           logo_file=(logo_path.rsplit('/', 1)[-1]
+                                      if logo_path.startswith(theme.GALLERY_FOLDER) else ''),
+                           primary=branding.get(theme.PRIMARY_KEY) or theme.DEFAULT_PRIMARY,
+                           accent=branding.get(theme.ACCENT_KEY) or theme.DEFAULT_ACCENT,
+                           max_gallery=theme.MAX_GALLERY_IMAGES,
                            audit=pv.recent_audit(tenant_id=info.id, limit=15))
+
+
+@app.post('/platform/schools/<slug>/branding')
+@platform_host_only
+@platform_required
+@allow_branding_upload
+@csrf_protect
+def platform_school_branding(slug):
+    """Change a school's colours, logo and sign-in photographs."""
+    info, _, _ = _tenant_or_404(slug)
+    colours = {key: request.form.get(key, '') for key in (theme.PRIMARY_KEY, theme.ACCENT_KEY)}
+    remove = [f'{theme.GALLERY_FOLDER}{name}' for name in request.form.getlist('remove_photo')]
+    try:
+        pv.update_branding(info, colours, logo=request.files.get('logo'),
+                           gallery=request.files.getlist('gallery'), remove_gallery=remove)
+    except (pv.ProvisioningError, ValueError) as exc:
+        flash(str(exc), 'error')
+    else:
+        pv.record('tenant.branding_update', slug, info.id, g.platform_admin['username'],
+                  g.platform_admin['id'])
+        flash("The school's branding has been updated.", 'success')
+    return redirect(url_for('platform_school', slug=slug))
+
+
+@app.route('/platform/schools/<slug>/branding/<filename>')
+@platform_host_only
+@platform_required
+def platform_school_photo(slug, filename):
+    """Show a platform admin a logo or photograph a school uploaded.
+
+    A school's uploads are never served from the platform host, so this is the
+    one way to look at them from the console: signed-in platform admins only,
+    one folder, image files only.
+    """
+    info, _, _ = _tenant_or_404(slug)
+    folder = pv.tenant_folder(info) / 'uploads' / 'branding'
+    if (filename != secure_filename(filename)
+            or filename.rsplit('.', 1)[-1].lower() not in IMAGE_EXTENSIONS):
+        abort(404)
+    return send_from_directory(folder, filename)
 
 
 @app.post('/platform/schools/<slug>/status')

@@ -2,6 +2,9 @@
 {% block title %}Sign in{% endblock %}
 {% block body %}
 <div style="max-width:24rem;margin:6vh auto">
+  <div style="text-align:center;margin-bottom:1.6rem">
+    <span class="logo-chip logo-chip-lg"><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></span>
+  </div>
   <h1>Platform sign-in</h1>
   <p class="muted">This console manages every school on Brightstars Academics. School staff sign in on their own school's website.</p>
   {% if error %}<div class="errors">{{ error }}</div>{% endif %}

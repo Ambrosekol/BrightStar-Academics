@@ -68,19 +68,74 @@
 
 <h2>Branding</h2>
 <div class="panel">
-  <p class="muted" style="margin-top:0">Captured when the school was created; the school's own
-    administrators can change it from their portal.</p>
+  <p class="muted" style="margin-top:0">Captured when the school was created. The colours, logo and
+    photographs can be changed below.</p>
   <table>
     <tbody>
       {% for key, label in [('school_name','Name'),('school_motto','Motto'),('school_tagline','Tagline'),
-                            ('school_phone','Phone'),('school_email','Email'),('school_address','Address'),
-                            ('school_logo','Logo')] %}
+                            ('school_phone','Phone'),('school_email','Email'),('school_address','Address')] %}
         <tr><td class="muted" style="width:10rem">{{ label }}</td>
             <td class="mono">{{ branding.get(key) or '—' }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+<h2>Look of the portal</h2>
+<form method="post" enctype="multipart/form-data" class="panel"
+      action="{{ url_for('platform_school_branding', slug=info.slug) }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+  <label>Brand colours
+    <span class="hint">Used for the school's menus, headers, buttons and sign-in page. Both sit behind
+      white text, so they must be fairly dark. Choosing the portal's own colours removes the school's
+      choice.</span></label>
+  <div class="swatches">
+    <div>
+      <label for="school_brand_primary" style="margin-top:0">Main colour</label>
+      <input type="color" id="school_brand_primary" name="school_brand_primary" value="{{ primary }}">
+    </div>
+    <div>
+      <label for="school_brand_accent" style="margin-top:0">Accent colour</label>
+      <input type="color" id="school_brand_accent" name="school_brand_accent" value="{{ accent }}">
+    </div>
+  </div>
+  <div class="preview" aria-hidden="true" data-min-contrast="{{ min_contrast }}" data-name="{{ info.name }}">
+    <div class="bar" id="preview-bar"><span id="preview-name">{{ info.name }}</span></div>
+    <div class="body"><span id="preview-button">Sign in</span></div>
+  </div>
+  <p id="colour-warning" class="hint" style="color:#ffb4a2" hidden></p>
+
+  <label for="logo">Logo
+    <span class="hint">Choosing a file replaces the current logo.</span></label>
+  {% if logo_file %}
+    <p><span style="display:inline-block;background:#fff;border-radius:8px;padding:.4rem .7rem">
+      <img src="{{ url_for('platform_school_photo', slug=info.slug, filename=logo_file) }}"
+           alt="Current logo" style="display:block;max-height:60px;max-width:220px"></span></p>
+  {% endif %}
+  <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+
+  <label for="gallery">Photographs on the sign-in page
+    <span class="hint">{{ gallery|length }} of {{ max_gallery }} in use. Tick a picture to remove it
+      when you save.</span></label>
+  {% if gallery %}
+    <div class="thumbs">
+      {% for name in gallery %}
+        <figure>
+          <img src="{{ url_for('platform_school_photo', slug=info.slug, filename=name) }}" alt="Sign-in photograph {{ loop.index }}">
+          <figcaption><label><input type="checkbox" name="remove_photo" value="{{ name }}"> Remove</label></figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if gallery|length < max_gallery %}
+    <input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp">
+  {% else %}
+    <p class="muted">The gallery is full. Remove a photograph to add another.</p>
+  {% endif %}
+
+  <p style="margin-bottom:0"><button class="btn btn-primary" type="submit">Save branding</button></p>
+</form>
 
 <h2>Administrators</h2>
 <div class="panel">
@@ -151,4 +206,5 @@
 <div class="panel">
   {% include "platform/_audit_table.html" %}
 </div>
+<script src="{{ url_for('static', filename='platform-brand-form.js') }}"></script>
 {% endblock %}

@@ -832,6 +832,29 @@ def apply_security_headers(response):
     return response
 
 
+@app.after_request
+def apply_school_theme(response):
+    """Give every page of a school's portal that school's own colours.
+
+    The portal's stylesheets read their colours from CSS variables, and many
+    templates are standalone pages with their own <head>, so the chosen colours
+    are added once here rather than in each template. A school that chose
+    nothing gets no extra CSS at all.
+    """
+    if (g.get('tenant') is None or response.mimetype != 'text/html'
+            or response.direct_passthrough or response.status_code >= 500):
+        return response
+    try:
+        css = school_brand().get('theme_css')
+        if css:
+            body = response.get_data(as_text=True)
+            if '</head>' in body:
+                response.set_data(body.replace('</head>', f'<style id="school-theme">{css}</style></head>', 1))
+    except Exception:
+        app.logger.exception('Could not apply the school theme')
+    return response
+
+
 app.config.update(
     MAX_CONTENT_LENGTH=int(os.environ.get('BRIGHTSTARS_MAX_REQUEST_BYTES', 8 * 1024 * 1024)),
     SESSION_COOKIE_HTTPONLY=True,
