@@ -69,7 +69,7 @@ from .school import (
     AssignmentStudent,
     ClassSubject,
     ProjectStudent,
-    ResultWorkflowEvent,
+    ReportCardComment, ResultWorkflowEvent,
     SchoolAssessment,
     SchoolAssessmentAnswer,
     SchoolAssessmentAttempt,
@@ -137,7 +137,7 @@ __all__ = [
     # school
     'AcademicPromotionItem', 'AcademicPromotionRun', 'AcademicSession',
     'AssignmentQuestion', 'AssignmentStudent', 'ClassSubject',
-    'ProjectStudent', 'ResultWorkflowEvent', 'SchoolAssessment',
+    'ProjectStudent', 'ReportCardComment', 'ResultWorkflowEvent', 'SchoolAssessment',
     'SchoolAssessmentAnswer', 'SchoolAssessmentAttempt',
     'SchoolAssessmentAttemptQuestion', 'SchoolAssignment',
     'SchoolAssignmentAnswer', 'SchoolAssignmentAttempt',

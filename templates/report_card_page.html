@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ card.title }} — {{ card.student.name }} — {{ card.school.name }}</title>
+<style>
+  :root { --rc-primary: {{ card.school.primary or '#0d2b52' }}; --rc-accent: {{ card.school.accent or '#1674b9' }}; --rc-ink: #15202b; --rc-line: #cfd8e3; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9eef4; color: var(--rc-ink); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; }
+  .rc-toolbar { max-width: 210mm; margin: 0 auto; padding: 14px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .rc-toolbar .grow { flex: 1; }
+  .rc-toolbar a, .rc-toolbar button { font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--rc-line); background: #fff; color: var(--rc-ink); text-decoration: none; cursor: pointer; }
+  .rc-toolbar .primary { background: var(--rc-primary); border-color: var(--rc-primary); color: #fff; }
+  .rc-sheet { max-width: 210mm; margin: 0 auto 32px; background: #fff; padding: 12mm 12mm 10mm; border: 1px solid var(--rc-line); box-shadow: 0 8px 30px rgba(20, 40, 80, .08); }
+  .rc-head { display: flex; gap: 16px; align-items: center; padding-bottom: 10px; border-bottom: 4px solid var(--rc-primary); }
+  .rc-logo { max-height: 22mm; max-width: 38mm; object-fit: contain; }
+  .rc-school { flex: 1; }
+  .rc-school h1 { margin: 0; font-size: 22px; color: var(--rc-primary); letter-spacing: .3px; }
+  .rc-school .motto { font-style: italic; color: #4d5b69; margin: 2px 0; }
+  .rc-school .contact { font-size: 12px; color: #4d5b69; line-height: 1.45; }
+  .rc-title { text-align: center; margin: 12px 0 8px; }
+  .rc-title h2 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; color: var(--rc-primary); }
+  .rc-title p { margin: 2px 0 0; color: #4d5b69; }
+  .rc-student { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--rc-line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .rc-student dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; flex: 1; }
+  .rc-student dt { color: #4d5b69; }
+  .rc-student dd { margin: 0; font-weight: 600; }
+  .rc-photo { width: 26mm; height: 32mm; object-fit: cover; border: 1px solid var(--rc-line); border-radius: 4px; }
+  table.rc-results { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .rc-results th { background: var(--rc-primary); color: #fff; padding: 6px 5px; font-size: 12px; text-align: center; border: 1px solid var(--rc-primary); }
+  .rc-results th.left, .rc-results td.left { text-align: left; }
+  .rc-results td { padding: 5px; border: 1px solid var(--rc-line); text-align: center; font-size: 13px; }
+  .rc-results tr:nth-child(even) td { background: #f6f9fc; }
+  .rc-results td.subject { font-weight: 600; }
+  .rc-results th small { display: block; font-weight: 400; opacity: .85; }
+  .rc-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .rc-summary div { border: 1px solid var(--rc-line); border-top: 3px solid var(--rc-accent); border-radius: 6px; padding: 7px 9px; }
+  .rc-summary span { display: block; font-size: 11px; color: #4d5b69; text-transform: uppercase; letter-spacing: .4px; }
+  .rc-summary strong { font-size: 17px; color: var(--rc-primary); }
+  .rc-comment { border: 1px solid var(--rc-line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .rc-comment h3, .rc-grading h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--rc-primary); }
+  .rc-comment p { margin: 0; min-height: 16mm; white-space: pre-line; line-height: 1.5; }
+  .rc-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 14px 0 12px; }
+  .rc-sign { text-align: center; }
+  .rc-sign .line { height: 16mm; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid #4d5b69; }
+  .rc-sign img { max-height: 15mm; max-width: 55mm; }
+  .rc-sign .who { margin-top: 3px; font-weight: 600; }
+  .rc-sign .role { color: #4d5b69; font-size: 12px; }
+  .rc-grading { font-size: 12px; }
+  .rc-grading table { border-collapse: collapse; }
+  .rc-grading td { padding: 2px 10px 2px 0; }
+  .rc-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rc-line); font-size: 12px; color: #4d5b69; }
+  @media (max-width: 720px) { .rc-sheet { padding: 12px; } .rc-results { font-size: 11px; } .rc-results th, .rc-results td { padding: 4px 3px; } .rc-signs { grid-template-columns: 1fr; } }
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .rc-sheet { box-shadow: none; border: 0; margin: 0; max-width: none; padding: 0; }
+    @page { size: A4; margin: 10mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="rc-toolbar no-print">
+  <a href="{{ back_url }}">← {{ back_label }}</a>
+  <span class="grow"></span>
+  <a class="primary" href="{{ pdf_url }}">Download PDF</a>
+  <button type="button" onclick="window.print()">Print</button>
+</div>
+
+<main class="rc-sheet">
+  <header class="rc-head">
+    {% if card.web.logo %}<img class="rc-logo" src="{{ card.web.logo }}" alt="{{ card.school.name }} logo">{% endif %}
+    <div class="rc-school">
+      <h1>{{ card.school.name }}</h1>
+      {% if card.school.motto %}<div class="motto">{{ card.school.motto }}</div>{% endif %}
+      <div class="contact">
+        {% if card.school.address %}{{ card.school.address }}<br>{% endif %}
+        {% if card.school.phone %}Tel: {{ card.school.phone }}{% endif %}{% if card.school.phone and card.school.email %} · {% endif %}{% if card.school.email %}{{ card.school.email }}{% endif %}
+      </div>
+    </div>
+  </header>
+
+  <div class="rc-title">
+    <h2>{{ card.title }}</h2>
+    <p>{{ card.term }} · {{ card.session }} session</p>
+  </div>
+
+  <section class="rc-student">
+    <dl>
+      <dt>Name</dt><dd>{{ card.student.name }}</dd>
+      {% if card.student.admission_no %}<dt>Admission no.</dt><dd>{{ card.student.admission_no }}</dd>{% endif %}
+      {% if card.student.class_name %}<dt>Class</dt><dd>{{ card.student.class_name }}</dd>{% endif %}
+      {% if card.student.gender %}<dt>Gender</dt><dd>{{ card.student.gender }}</dd>{% endif %}
+    </dl>
+    {% if card.web.photo %}<img class="rc-photo" src="{{ card.web.photo }}" alt="{{ card.student.name }}">{% endif %}
+  </section>
+
+  {% set has_avg = card.subjects | selectattr('class_average') | list | length > 0 %}
+  <table class="rc-results">
+    <thead>
+      <tr>
+        <th class="left">Subject</th><th>Test</th><th>Assignment</th><th>Project</th>
+        <th>CA<small>out of {{ card.subjects[0].ca_max if card.subjects else 40 }}</small></th>
+        <th>Exam<small>out of {{ card.subjects[0].exam_max if card.subjects else 60 }}</small></th>
+        <th>Total<small>out of {{ card.subjects[0].total_max if card.subjects else 100 }}</small></th>
+        {% if has_avg %}<th>Class avg</th>{% endif %}
+        <th>Grade</th><th class="left">Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in card.subjects %}
+      <tr>
+        <td class="left subject">{{ s.name }}</td><td>{{ s.test }}</td><td>{{ s.assignment }}</td><td>{{ s.project }}</td>
+        <td>{{ s.ca }}</td><td>{{ s.exam }}</td><td><strong>{{ s.total }}</strong></td>
+        {% if has_avg %}<td>{{ s.class_average if s.class_average is not none else '—' }}</td>{% endif %}
+        <td><strong>{{ s.grade }}</strong></td><td class="left">{{ s.remark }}</td>
+      </tr>
+      {% else %}
+      <tr><td class="left" colspan="10">No results recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <section class="rc-summary">
+    <div><span>Total</span><strong>{{ card.summary.total }} / {{ card.summary.total_max }}</strong></div>
+    <div><span>Percentage</span><strong>{{ '%.1f'|format(card.summary.percentage) }}%</strong></div>
+    <div><span>Overall grade</span><strong>{{ card.summary.grade }} — {{ card.summary.remark }}</strong></div>
+    {% if card.summary.class_average_percentage is not none %}
+    <div><span>Class average{% if card.summary.class_size %} ({{ card.summary.class_size }} students){% endif %}</span><strong>{{ '%.1f'|format(card.summary.class_average_percentage) }}%</strong></div>
+    {% endif %}
+    <div><span>Subjects</span><strong>{{ card.summary.subjects_count }}</strong></div>
+  </section>
+
+  <section class="rc-comment">
+    <h3>Class Teacher's Comment</h3>
+    <p>{{ card.comment.text if card.comment else '' }}</p>
+  </section>
+
+  <section class="rc-signs">
+    <div class="rc-sign">
+      <div class="line">{% if card.web.teacher_signature %}<img src="{{ card.web.teacher_signature }}" alt="Class teacher's signature">{% endif %}</div>
+      <div class="who">{{ card.comment.teacher_name if card.comment and card.comment.teacher_name else 'Class Teacher' }}</div>
+      <div class="role">{% if card.comment and card.comment.teacher_name %}Class Teacher{% endif %}</div>
+    </div>
+    <div class="rc-sign">
+      <div class="line">{% if card.web.head_signature %}<img src="{{ card.web.head_signature }}" alt="Signature of the {{ card.head.title or 'head of school' }}">{% endif %}</div>
+      <div class="who">{{ card.head.name or '' }}</div>
+      <div class="role">{{ card.head.title or 'Head of School' }}</div>
+    </div>
+  </section>
+
+  <section class="rc-grading">
+    <h3>Grading key</h3>
+    <table>
+      {% for g in card.grading_key %}<tr><td>{{ g.range }}</td><td><strong>{{ g.grade }}</strong></td><td>{{ g.remark }}</td></tr>{% endfor %}
+    </table>
+  </section>
+
+  <footer class="rc-foot">
+    <span>Issued: {{ card.issued_on }}</span>
+    {% if card.next_term_begins %}<span>Next term begins: {{ card.next_term_begins }}</span>{% endif %}
+  </footer>
+</main>
+</body>
+</html>

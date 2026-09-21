@@ -1,0 +1,41 @@
+{% extends 'admin_base.html' %}
+{% block title %}Report card settings — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / RESULTS</div>
+  <h1>Report card settings</h1>
+  <p class="hero-copy">The head's title, name and signature appear at the bottom of every report card, whichever class or term. The school's logo, address and colours come from the school profile.</p>
+</div></div>
+
+<section class="card modern-form" style="max-width:760px">
+  {% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+  <form method="post" action="{{ url_for('admin_school_report_card_settings_save') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="field"><label for="head_title">Title</label>
+        {% set known = settings.head_title in titles %}
+        <select id="head_title" name="head_title" onchange="document.getElementById('customTitle').hidden = this.value !== '__other__'">
+          <option value="">Head of School (default)</option>
+          {% for t in titles %}<option value="{{ t }}" {% if settings.head_title == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+          <option value="__other__" {% if settings.head_title and not known %}selected{% endif %}>Another title…</option>
+        </select>
+        <input id="customTitle" name="head_title_custom" maxlength="40" placeholder="For example, Chairman" value="{{ settings.head_title if settings.head_title and not known else '' }}" {% if known or not settings.head_title %}hidden{% endif %}>
+      </div>
+      <div class="field"><label for="head_name">Name</label>
+        <input id="head_name" name="head_name" maxlength="80" value="{{ settings.head_name }}" placeholder="Mrs A. B. Okoye"></div>
+      <div class="field field-wide"><label for="next_term_begins">Next term begins <span class="optional">Optional — change it each term</span></label>
+        <input id="next_term_begins" name="next_term_begins" maxlength="80" value="{{ settings.next_term_begins }}" placeholder="Monday, 6 January 2027"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save</button></div>
+  </form>
+
+  <hr style="margin:26px 0;border:0;border-top:1px solid #e4ebf2">
+  <h2 style="margin-top:0">Head's signature</h2>
+  {% set sig_action = url_for('admin_school_report_card_settings_save') %}
+  {% set sig_subject = "The head's signature" %}
+  {% set sig_empty = "No signature yet: report cards show a blank signature line for the head." %}
+  {% include '_signature_editor.html' %}
+  <p><a href="{{ url_for('admin_school_report_cards') }}">← Back to report cards</a></p>
+</section>
+{% endblock %}

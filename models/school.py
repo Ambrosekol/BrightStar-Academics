@@ -496,3 +496,26 @@ class ResultWorkflowEvent(db.Model):
     actor_admin_id = db.Column(Integer, ForeignKey('admins.id'))
     reason = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
+
+
+class ReportCardComment(db.Model):
+    """The class teacher's comment on one student's report card for one term.
+
+    One row per student, session and term. The author is the staff member who wrote it: their
+    name and their own signature are what the report card shows beside the comment.
+    """
+
+    __tablename__ = 'report_card_comments'
+    __table_args__ = (
+        UniqueConstraint('student_id', 'session_id', 'term'),
+        Index('idx_report_card_comments_session', 'session_id', 'term'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id'), nullable=False)
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    term = db.Column(Text, nullable=False)
+    comment = db.Column(Text, nullable=False)
+    author_admin_id = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    updated_at = db.Column(Text)

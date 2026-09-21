@@ -10,6 +10,7 @@ from sqlalchemy import or_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import app, csrf_token, _release_due_school_results, _student_with_enrolment
+from blueprints.school.report_card_data import student_periods
 from core.entrance import remaining
 from models import (
     AssignmentQuestion, AssignmentStudent, ProjectStudent,
@@ -119,7 +120,7 @@ def student_dashboard():
                        SchoolAssessment.session_id.is_(None)))
             .order_by(kind,SchoolAssessment.id.desc()).limit(12))
     counts={k:sum(1 for a in assessments if a['assessment_type']==k) for k in ('practice','test','examination')}
-    return render_template('student_dashboard.html',student=student,assignments=assignments,projects=projects,notifications=notifications,results=results,assessments=assessments,assessment_counts=counts)
+    return render_template('student_dashboard.html',student=student,report_periods=student_periods(sid),assignments=assignments,projects=projects,notifications=notifications,results=results,assessments=assessments,assessment_counts=counts)
 
 @app.route('/student/assignments/<int:assignment_id>',methods=['GET','POST'])
 @student_required

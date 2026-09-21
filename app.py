@@ -967,6 +967,9 @@ import blueprints.entrance.routes  # noqa: F401,E402
 import blueprints.school.routes  # noqa: F401,E402
 import blueprints.school.branding  # noqa: F401,E402
 import blueprints.school.delivery  # noqa: F401,E402
+import blueprints.school.report_cards  # noqa: F401,E402
+import blueprints.student_portal.report_cards  # noqa: F401,E402
+import blueprints.parents.report_cards  # noqa: F401,E402
 
 
 

@@ -669,6 +669,30 @@ op.post(SIGN, {"action": "upload"}, files={"signature_file": png("sig.png")})
 op.post(SIGN, {"action": "remove"})
 check("a signature can be uploaded and removed", one("SELECT setting_value FROM school_settings WHERE setting_key = 'receipt_authorised_signature'") == "")
 
+# ================================================================ 7b. report cards: the teacher's comment, signatures and the head's details
+RC = "/admin/school/report-cards"
+DRAWN = "data:image/png;base64," + base64.b64encode(PNG).decode()
+op.post(f"{RC}/my-signature", {"action": "draw", "signature_data_url": DRAWN})
+check("a staff member's own signature was stored", one("SELECT COUNT(*) FROM admins WHERE signature_path LIKE 'uploads/signatures/%'") == 1)
+op.post(f"{RC}/my-signature", {"action": "upload"}, files={"signature_file": png("teacher.png")})
+op.post(f"{RC}/my-signature", {"action": "remove"})
+check("a staff signature can be replaced and removed", one("SELECT COUNT(*) FROM admins WHERE signature_path IS NOT NULL AND signature_path <> ''") == 0)
+ADA_CLASS = one("SELECT class_id FROM student_enrolments WHERE student_id = :s AND session_id = :c", s=ADA, c=CURRENT)
+op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": "A hardworking and polite pupil."})
+check("the class teacher's comment on a student's report card was saved",
+      one("SELECT comment FROM report_card_comments WHERE student_id = :s AND term = 'First Term'", s=ADA) == "A hardworking and polite pupil.")
+op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": ""})
+check("clearing the box removes the comment", one("SELECT COUNT(*) FROM report_card_comments WHERE student_id = :s", s=ADA) == 0)
+op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": "Shows great promise."})
+r = op.post(f"{RC}/settings", {"head_title": "Proprietress", "head_name": "Mrs A. B. Okoye", "next_term_begins": "Monday, 4 January"})
+check("the head's title, name and next-term date were saved", one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_name'") == "Mrs A. B. Okoye"
+      and one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_title'") == "Proprietress")
+op.post(f"{RC}/settings", {"action": "draw", "signature_data_url": DRAWN})
+check("the head's signature was stored", (one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_signature'") or "").startswith("uploads/signatures/"))
+op.post(f"{RC}/settings", {"action": "upload"}, files={"signature_file": png("head.png")})
+op.post(f"{RC}/settings", {"action": "remove"})
+check("the head's signature can be replaced and removed", not one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_signature'"))
+
 # ================================================================ 8. the library
 LIB = "/admin/library"
 op.post(f"{LIB}/books/new", {"title": "Things Fall Apart", "author": "Chinua Achebe", "isbn": "9780385474542",

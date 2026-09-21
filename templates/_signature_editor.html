@@ -1,0 +1,73 @@
+{# Draw, upload or remove a signature. The page including this sets:
+   sig_action (the address the forms post to), signature_path (the stored file, or empty),
+   sig_subject (whose signature it is, in words) and sig_empty (what to say when there is none). #}
+<style>
+  .sig-current { display: flex; align-items: center; gap: 18px; padding: 16px; background: #f5f8fb; border: 1px solid #dce6ee; border-radius: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+  .sig-current img { max-height: 60px; max-width: 220px; background: #fff; border: 1px solid #dce6ee; border-radius: 6px; padding: 6px; }
+  .sig-current .sig-empty { color: #637b91; font-style: italic; }
+  .sig-pad-wrap { background: #fff; border: 2px dashed #b8c6d4; border-radius: 10px; padding: 10px; display: inline-block; max-width: 100%; }
+  #sigPad { display: block; background: #fff; border-radius: 6px; touch-action: none; cursor: crosshair; max-width: 100%; }
+  .sig-pad-actions { margin-top: 10px; display: flex; gap: 10px; }
+  .sig-section { margin-bottom: 26px; }
+  .sig-section-title { font-weight: 800; margin-bottom: 10px; color: #102f3e; }
+</style>
+
+<div class="sig-section">
+  <div class="sig-section-title">Current signature</div>
+  <div class="sig-current">
+    {% if signature_path %}
+      <img src="{{ url_for('static', filename=signature_path) }}" alt="{{ sig_subject }}">
+      <form method="post" action="{{ sig_action }}" onsubmit="return confirm('Remove this signature? Report cards will show a blank signature line until a new one is added.');">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="remove">
+        <button class="btn btn-light" type="submit">Remove signature</button>
+      </form>
+    {% else %}
+      <span class="sig-empty">{{ sig_empty }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="sig-section">
+  <div class="sig-section-title">Draw a signature</div>
+  <p class="muted">Sign with a mouse, stylus or finger, then save.</p>
+  <form method="post" action="{{ sig_action }}" id="drawForm">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="draw">
+    <input type="hidden" name="signature_data_url" id="signatureDataUrl">
+    <div class="sig-pad-wrap"><canvas id="sigPad" width="560" height="180"></canvas></div>
+    <div class="sig-pad-actions">
+      <button type="button" class="btn btn-light" id="sigClear">Clear</button>
+      <button type="submit" class="btn btn-primary" id="sigSave">Save drawn signature</button>
+    </div>
+  </form>
+</div>
+
+<div class="sig-section">
+  <div class="sig-section-title">Or upload a signature image</div>
+  <p class="muted">A scanned or photographed signature on a plain background works best (PNG, JPG, GIF or WEBP).</p>
+  <form method="post" action="{{ sig_action }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="upload">
+    <div class="field"><input type="file" name="signature_file" accept="image/png,image/jpeg,image/gif,image/webp" required></div>
+    <button type="submit" class="btn btn-primary">Upload signature</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  var canvas = document.getElementById('sigPad'), ctx = canvas.getContext('2d'), drawing = false, hasDrawn = false;
+  ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12233a';
+  function pos(e) { var r = canvas.getBoundingClientRect(), p = (e.touches && e.touches[0]) || e;
+    return [(p.clientX - r.left) * canvas.width / r.width, (p.clientY - r.top) * canvas.height / r.height]; }
+  function start(e) { drawing = true; hasDrawn = true; var xy = pos(e); ctx.beginPath(); ctx.moveTo(xy[0], xy[1]); e.preventDefault(); }
+  function move(e) { if (!drawing) return; var xy = pos(e); ctx.lineTo(xy[0], xy[1]); ctx.stroke(); e.preventDefault(); }
+  function end() { drawing = false; }
+  canvas.addEventListener('pointerdown', start); canvas.addEventListener('pointermove', move); window.addEventListener('pointerup', end);
+  document.getElementById('sigClear').addEventListener('click', function () { ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; });
+  document.getElementById('drawForm').addEventListener('submit', function (e) {
+    if (!hasDrawn) { e.preventDefault(); alert('Draw a signature on the pad before saving.'); return; }
+    document.getElementById('signatureDataUrl').value = canvas.toDataURL('image/png');
+  });
+})();
+</script>

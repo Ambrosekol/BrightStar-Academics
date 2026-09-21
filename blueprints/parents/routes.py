@@ -36,6 +36,7 @@ from blueprints.finance.helpers import (
     _finance_student_sessions_with_balance, _receipt_pdf,
 )
 from blueprints.school.helpers import _school_class_allowed
+from blueprints.school.report_card_data import student_periods
 from blueprints.parents.helpers import (
     _assignment_metrics, _feedback_replies, _new_parent_password,
     _parent_children, _parent_form_context, _parent_owns_student,
@@ -145,7 +146,7 @@ def parent_child_detail(student_id):
             .where(SchoolNotification.id.in_(unread_ids)).values(read_at=now))
         db.session.commit()
 
-    return render_template('parent_child_detail.html',child=child,assignments=assignments,
+    return render_template('parent_child_detail.html',child=child,report_periods=student_periods(student_id),assignments=assignments,
         projects=projects,results=results,feedback=feedback,replies=replies,avg=avg,
         completion=completion,trend=trend,fee_summary=fee_summary,notifications=notifications)
 

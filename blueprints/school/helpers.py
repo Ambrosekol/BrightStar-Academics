@@ -250,64 +250,79 @@ def _result_term(raw):
         aliases[name.casefold()]=name
     return aliases.get(text.casefold())
 
-def _term_subject_report(student_id, session_id, term, subject_id):
-    """A student's Exam(60) + CA(40) = 100 breakdown for one subject in one term.
+def _term_raw_sums(student_ids, session_id, term, subject_id=None):
+    """The raw marks, added up, for each student and subject in one term and one session.
 
-    Practice tests never contribute (they're a self-study tool, not part of
-    the official record). Multiple items in the same category (e.g. two
-    tests) are combined by summing their raw score and raw max together, then
-    scaling the combined total to that category's share of CA_MAX_SCORE -
-    never simply added on top of each other, so one extra test never lets a
-    subject exceed its 100-mark ceiling.
+    Returns ``{'exam': {...}, 'test': {...}, 'assignment': {...}, 'project': {...}}`` where each
+    inner dict maps ``(student_id, subject_id)`` to ``(marks scored, marks available)``. A pair
+    with nothing of that kind recorded is simply absent. This is the ONE place the rules for what
+    counts are written:
+
+    * practice tests never contribute (a self-study tool, not part of the official record);
+    * work that was removed does not count, and neither does a mark on work with no maximum:
+      there is nothing to scale it against, and adding it to the top of the fraction without
+      adding to the bottom would inflate the whole share;
+    * a mark that was never entered (blank) does not count.
+
+    One query for each kind of work, for however many students are asked about: a class of forty
+    costs the same handful of queries as one student.
     """
-    weights=_ca_weights()
+    student_ids=list(student_ids)
+    if not student_ids: return {'exam':{},'test':{},'assignment':{},'project':{}}
 
-    def scaled(raw_score, raw_max, cap):
-        if not raw_max: return 0.0
-        return min(cap, round(raw_score/raw_max*cap,2))
+    def result_sums(kind, component_prefix):
+        stmt=(select(SchoolStudentResult.student_id,SchoolStudentResult.subject_id,
+                     func.coalesce(func.sum(SchoolStudentResult.score),0),
+                     func.coalesce(func.sum(SchoolStudentResult.max_score),0))
+            .select_from(SchoolStudentResult)
+            .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
+            .where(SchoolStudentResult.student_id.in_(student_ids),
+                   SchoolStudentResult.session_id==session_id,
+                   func.coalesce(SchoolStudentResult.term,'Full Session')==term,
+                   SchoolStudentResult.score.is_not(None),
+                   or_(SchoolAssessment.assessment_type==kind,
+                       and_(SchoolStudentResult.assessment_id.is_(None),
+                            SchoolStudentResult.component_name.startswith(component_prefix))))
+            .group_by(SchoolStudentResult.student_id,SchoolStudentResult.subject_id))
+        if subject_id is not None: stmt=stmt.where(SchoolStudentResult.subject_id==subject_id)
+        return {(sid,subj):(score,available) for sid,subj,score,available in tuples(stmt)}
 
-    exam_raw=tuples(select(func.coalesce(func.sum(SchoolStudentResult.score),0),
-                        func.coalesce(func.sum(SchoolStudentResult.max_score),0))
-        .select_from(SchoolStudentResult)
-        .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
-        .where(SchoolStudentResult.student_id==student_id,SchoolStudentResult.subject_id==subject_id,
-               SchoolStudentResult.session_id==session_id,
-               func.coalesce(SchoolStudentResult.term,'Full Session')==term,
-               SchoolStudentResult.score.is_not(None),
-               or_(SchoolAssessment.assessment_type=='examination',
-                   and_(SchoolStudentResult.assessment_id.is_(None),
-                        SchoolStudentResult.component_name.startswith('Exam')))))[0]
-    test_raw=tuples(select(func.coalesce(func.sum(SchoolStudentResult.score),0),
-                        func.coalesce(func.sum(SchoolStudentResult.max_score),0))
-        .select_from(SchoolStudentResult)
-        .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
-        .where(SchoolStudentResult.student_id==student_id,SchoolStudentResult.subject_id==subject_id,
-               SchoolStudentResult.session_id==session_id,
-               func.coalesce(SchoolStudentResult.term,'Full Session')==term,
-               SchoolStudentResult.score.is_not(None),
-               or_(SchoolAssessment.assessment_type=='test',
-                   and_(SchoolStudentResult.assessment_id.is_(None),
-                        SchoolStudentResult.component_name.startswith('Test')))))[0]
-    assignment_raw=tuples(select(func.coalesce(func.sum(AssignmentStudent.score),0),
-                              func.coalesce(func.sum(func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)),0))
+    assignment_stmt=(select(AssignmentStudent.student_id,SchoolAssignment.subject_id,
+                            func.coalesce(func.sum(AssignmentStudent.score),0),
+                            func.coalesce(func.sum(func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)),0))
         .select_from(AssignmentStudent)
         .join(SchoolAssignment,SchoolAssignment.id==AssignmentStudent.assignment_id)
-        .where(AssignmentStudent.student_id==student_id,SchoolAssignment.subject_id==subject_id,
+        .where(AssignmentStudent.student_id.in_(student_ids),
                SchoolAssignment.session_id==session_id,SchoolAssignment.term==term,
-               # Work that was removed does not count, and neither does a mark on work with no
-               # maximum: there is nothing to scale it against, and adding it to the top of the
-               # fraction without adding to the bottom would inflate the whole share.
                SchoolAssignment.active==1,
                func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)>0,
-               AssignmentStudent.score.is_not(None)))[0]
-    project_raw=tuples(select(func.coalesce(func.sum(ProjectStudent.score),0),
-                           func.coalesce(func.sum(SchoolProject.max_score),0))
+               AssignmentStudent.score.is_not(None))
+        .group_by(AssignmentStudent.student_id,SchoolAssignment.subject_id))
+    project_stmt=(select(ProjectStudent.student_id,SchoolProject.subject_id,
+                         func.coalesce(func.sum(ProjectStudent.score),0),
+                         func.coalesce(func.sum(SchoolProject.max_score),0))
         .select_from(ProjectStudent)
         .join(SchoolProject,SchoolProject.id==ProjectStudent.project_id)
-        .where(ProjectStudent.student_id==student_id,SchoolProject.subject_id==subject_id,
+        .where(ProjectStudent.student_id.in_(student_ids),
                SchoolProject.session_id==session_id,SchoolProject.term==term,
                SchoolProject.active==1,SchoolProject.max_score>0,
-               ProjectStudent.score.is_not(None)))[0]
+               ProjectStudent.score.is_not(None))
+        .group_by(ProjectStudent.student_id,SchoolProject.subject_id))
+    if subject_id is not None:
+        assignment_stmt=assignment_stmt.where(SchoolAssignment.subject_id==subject_id)
+        project_stmt=project_stmt.where(SchoolProject.subject_id==subject_id)
+    return {
+        'exam':result_sums('examination','Exam'),
+        'test':result_sums('test','Test'),
+        'assignment':{(sid,subj):(score,available) for sid,subj,score,available in tuples(assignment_stmt)},
+        'project':{(sid,subj):(score,available) for sid,subj,score,available in tuples(project_stmt)},
+    }
+
+def _assemble_term_report(weights, exam_raw, test_raw, assignment_raw, project_raw):
+    """Turn the four raw (scored, available) pairs of one student's subject into Exam(60) + CA(40)."""
+    def scaled(raw_score, raw_max, cap):
+        if not raw_max: return 0.0
+        return min(cap,round(raw_score/raw_max*cap,2))
 
     exam_score=scaled(exam_raw[0],exam_raw[1],EXAM_MAX_SCORE)
     test_score=scaled(test_raw[0],test_raw[1],weights['test'])
@@ -323,6 +338,33 @@ def _term_subject_report(student_id, session_id, term, subject_id):
         'total_score':round(exam_score+ca_score,2),'total_max':EXAM_MAX_SCORE+CA_MAX_SCORE,
         'has_data':bool(exam_raw[1] or test_raw[1] or assignment_raw[1] or project_raw[1]),
     }
+
+def _term_reports_bulk(student_ids, session_id, term, subject_id=None):
+    """Exam(60) + CA(40) = 100 for every student and subject that has anything recorded.
+
+    ``{(student_id, subject_id): report}``. Multiple items in the same category (two tests, say)
+    are combined by summing their raw score and raw maximum together, then scaling the combined
+    total to that category's share of CA_MAX_SCORE - never simply added on top of each other, so
+    one extra test never lets a subject exceed its 100-mark ceiling.
+    """
+    weights=_ca_weights()
+    sums=_term_raw_sums(student_ids,session_id,term,subject_id)
+    none=(0,0)
+    keys=set().union(*(set(v) for v in sums.values()))
+    return {key:_assemble_term_report(weights,sums['exam'].get(key,none),sums['test'].get(key,none),
+                                      sums['assignment'].get(key,none),sums['project'].get(key,none))
+            for key in keys}
+
+def _term_subject_report(student_id, session_id, term, subject_id):
+    """A student's Exam(60) + CA(40) = 100 breakdown for one subject in one term.
+
+    The same arithmetic as ``_term_reports_bulk``, for one student and one subject. A subject with
+    nothing recorded gives all zeros and ``has_data`` False.
+    """
+    found=_term_reports_bulk([student_id],session_id,term,subject_id).get((student_id,subject_id))
+    if found is not None: return found
+    none=(0,0)
+    return _assemble_term_report(_ca_weights(),none,none,none,none)
 
 def _student_term_subjects(student_id, session_id, term):
     """Every subject this student has any exam/test/assignment/project record

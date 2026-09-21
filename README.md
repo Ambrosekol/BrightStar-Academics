@@ -33,6 +33,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Email and WhatsApp](#email-and-whatsapp)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
+- [Report cards](#report-cards)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -365,6 +366,39 @@ Marks are stored as decimals, so a candidate's raw score is exact, and a whole m
 number everywhere ("75 / 100", not "75.0 / 100.0"). A school database made before this is upgraded
 in place on the next start, and no stored mark changes.
 
+## Report cards
+
+Every school gives each student a **report card for each term**, as a page and as a PDF.
+
+- **When it appears.** A student's card for a term is ready the moment **every one** of their results
+  for that term has been released (by hand, or by the session's release date). From then on it shows
+  by itself in the student's portal and in the parent's portal, on the dashboard under *Report cards*.
+  If one result is still waiting (entered, verified or approved) the card is held back, so a card is
+  always complete and never shows a mark the student has not been given. Practice tests are not part
+  of the official record and neither count nor hold a card back.
+- **What is on it.** The school's own logo (its name stands in the logo's place if it has none),
+  name, motto, address, phone, email and brand colour; the student's name, admission number, class and
+  photograph; each subject as CA out of 40 plus Exam out of 60, with the total, a grade and a remark;
+  the overall percentage and grade; the **class average percentage** (and each subject's class
+  average); the **class teacher's comment with that teacher's own signature**; the **head's title,
+  name and signature** (Head Teacher, Headmistress, Proprietress, Proprietor and so on); the grading
+  key; the date it was issued and, if set, when the next term begins.
+- **Same numbers as everywhere else.** A card is worked out when it is asked for, from the term result
+  the school already has (the same arithmetic the admin's Term Results uses), so it can never disagree
+  with the results. Grades: A 70-100 Excellent, B 60-69 Very Good, C 50-59 Good, D 45-49 Fair,
+  E 40-44 Pass, F below 40 Fail. The class average counts only classmates whose own card is ready.
+- **Who does what.** Under *Report cards* in the school menu, staff choose a class, session and term and
+  see which cards are ready (and which are waiting on how many results), open a card, download its
+  PDF, or download every ready card in the class as one PDF. Three permissions: `report_cards.view`
+  (see and download, limited to the classes the staff member may access), `report_cards.comment`
+  (write the class teacher's comment, and keep **your own signature** under *My signature*) and
+  `report_cards.manage` (set the head's title, name and signature, and when the next term begins). The
+  *Primary Class Teacher* and *School Academic Administrator* roles have them, and there is a
+  *Report Card Officer* role. A comment can be written before results are released; a card with no
+  comment still appears on release, with an empty comment box. Whoever last changes a comment is its
+  author: their name and their signature are printed beside it, and saving the page without changing a
+  comment never takes it over.
+
 ## Command line
 
 ```
@@ -441,6 +475,7 @@ Academics/
 │   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
 │   ├── banks.py              #   question-bank validation, safe writing, the standard set
 │   ├── numbering.py          #   runs each school's own numbering rules (tenants/<code>/numbering.py)
+│   ├── report_card_pdf.py    #   draws report cards as a PDF (one page per student)
 │   ├── marks.py              #   marks are decimals: exact totals, whole marks shown as whole numbers
 │   ├── retired_tables.py     #   drops the removed website editor's tables when they are empty
 │   ├── notifications.py      #   guardian email/WhatsApp alerts
@@ -505,6 +540,8 @@ python tests/verification/write_paths_bank_locks.py        # locking a question 
 python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts
 python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and WhatsApp, the signature
 python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
+python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, signatures, portals
+python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 ```
 

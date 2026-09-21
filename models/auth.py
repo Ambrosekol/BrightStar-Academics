@@ -60,6 +60,9 @@ class Admin(_LegacyAttachmentColumns, db.Model):
     phone = db.Column(Text)
     whatsapp = db.Column(Text)
     photo_path = db.Column(Text)
+    # The staff member's own signature (a file under uploads/signatures/), drawn or uploaded by them.
+    # It goes on a report card beside the comment they wrote.
+    signature_path = db.Column(Text)
     password_must_change = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
 
     admin_type = db.relationship('AdminType', lazy='joined')

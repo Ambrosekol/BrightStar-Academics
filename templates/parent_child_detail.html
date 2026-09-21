@@ -94,6 +94,13 @@
 
   </div>
 
+  {% if report_periods %}
+  <section id="report-cards" class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">TERM RESULTS</p><h2>Report cards</h2></div><span class="student-count">{{report_periods|length}}</span></div>
+    {% for p in report_periods %}<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-top:1px solid #e7edf3"><div><strong>{{p.term}}</strong><br><small>{{p.session_name}} session</small></div><div style="display:flex;gap:8px"><a class="btn btn-primary" href="{{url_for('parent_report_card_view',student_id=child.id,session_id=p.session_id,slug=p.slug)}}">View</a><a class="btn btn-light" href="{{url_for('parent_report_card_pdf',student_id=child.id,session_id=p.session_id,slug=p.slug)}}">PDF</a></div></div>{% endfor %}
+  </section>
+  {% endif %}
+
   <section id="assignments" class="student-panel" style="margin-top:20px">
     <div class="student-panel-head"><div><p class="student-eyebrow">ASSIGNMENTS</p><h2>Assignment performance</h2></div></div>
     {% for a in assignments %}
