@@ -224,7 +224,7 @@ def test_branding_is_captured_when_a_school_is_created():
     provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
     assert "def apply_branding" in provisioning
     # Branding is applied as part of creating the school, not as a later step.
-    create = provisioning[provisioning.index("def create_tenant"):provisioning.index("BRANDING_FIELDS = (")]
+    create = provisioning[provisioning.index("def create_tenant"):provisioning.index("BRANDING_FIELDS = ")]
     assert "apply_branding(info," in create
     # A school always carries its own name, even created from the command line
     # with no branding at all, so it never shows another school's name.
@@ -324,3 +324,19 @@ def test_creating_a_school_checks_its_images_and_colours_before_building_anythin
         head = console[:console.index(f"def {route}")]
         decorators = head[head.rindex("@app."):]
         assert decorators.index("@allow_branding_upload") < decorators.index("@csrf_protect"), route
+
+
+def test_a_schools_own_branding_page_is_guarded_and_shares_the_platforms_rules():
+    from core.security import ADMIN_ENDPOINT_PERMISSIONS, ADMIN_PERMISSION_DEFS
+
+    assert "branding.manage" in {code for code, *_ in ADMIN_PERMISSION_DEFS}
+    for endpoint in ("admin_school_branding", "admin_school_branding_save"):
+        assert ADMIN_ENDPOINT_PERMISSIONS.get(endpoint) == "branding.manage", endpoint
+    route = (ROOT / "blueprints" / "school" / "branding.py").read_text(encoding="utf-8")
+    save = route[route.index("@app.post('/admin/school/branding/save')"):route.index("def admin_school_branding_save")]
+    # The limit must be raised before anything reads the form, so it goes outermost.
+    assert save.index("@_allow_branding_upload") < save.index("@admin_required") < save.index("@csrf_protect")
+    # One implementation, used by both the console and the school's own admin area.
+    provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
+    assert "branding_core.store_branding(" in provisioning and "check_branding_inputs" in route
+    assert "SchoolPublicSetting(" not in provisioning, "the storage rules must not be written twice"

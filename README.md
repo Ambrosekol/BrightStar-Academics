@@ -177,10 +177,18 @@ the school's branding and logo:
   so a colour too light to read it is refused (WCAG AA contrast, 4.5:1) — the form warns as you
   pick, and the server enforces it. Choosing the portal's own colours means "no choice".
 
-Colours, logo and photographs can all be changed afterwards from the school's page in the console
-(**Look of the portal**). Images must be PNG, JPG, GIF or WEBP, each up to
-`BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by default). Creating or editing a school raises the request
-limit to fit a logo plus a full gallery; every other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
+Colours, logo and photographs can all be changed afterwards, by either side:
+
+- **Platform operators**, from the school's page in the console (**Look of the portal**).
+- **The school's own administrators**, from **Branding** in their admin area's menu. It is
+  guarded by the `branding.manage` permission, which the school's top-level administrator holds
+  and can grant to any role. A school that existed before the permission was introduced gains it
+  on the next start; no other role is given it automatically.
+
+Both use the same rules (`core/branding.py`), so they cannot disagree about what is allowed.
+Images must be PNG, JPG, GIF or WEBP, each up to `BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by
+default). The pages that take a logo plus a full gallery raise the request limit to fit it; every
+other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
 - **Its own domain** (optional, addable later).
 - **First administrator** (optional). A one-time password is shown once and must be changed at
   first sign-in.
@@ -395,8 +403,6 @@ Check student, result and payment counts against the old database before doing s
 - **`LIKE` searches are now case-sensitive.** PostgreSQL is stricter than SQLite here, and around
   21 name and username search call sites in `blueprints/` have not been reviewed or converted to
   `ilike`. The test suites do not cover those paths.
-- **A school cannot change its own colours or photographs.** Only platform operators can, from the
-  console. The school's own admin area has no page for them yet.
 - **The school website editor edits pages nobody can see.** `/admin/school/website` still offers
   page and news editing, and an enquiry inbox fed by a contact page that no longer exists. Its
   branding fields are still used and should stay.

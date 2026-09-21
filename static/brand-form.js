@@ -1,4 +1,5 @@
-// Live preview for the platform console's brand-colour pickers.
+// Live preview for the brand-colour pickers, in the platform console and in a
+// school's own admin area.
 //
 // Shows the chosen colours on a miniature of a school's portal, and warns when a
 // colour is too light for the white text that sits on it. The rule is the same

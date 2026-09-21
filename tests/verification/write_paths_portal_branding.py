@@ -11,7 +11,9 @@ may be left half-created when an image is rejected. And a school's uploaded file
 must stay unreachable from the platform host except through the console's own
 signed-in preview.
 
-Also checks that the Brightstars logo appears on the console's pages and
+It also covers a school's own administrators making the same changes from their admin
+area — the permission that guards it, the audit trail, and that one school's change can
+never reach another's. And that the Brightstars logo appears on the console's pages and
 never on a school's portal.
 
 Run:  python tests/verification/write_paths_portal_branding.py
@@ -43,6 +45,7 @@ os.chdir(ROOT)
 
 import sqlalchemy as sa  # noqa: E402
 from werkzeug.datastructures import FileStorage  # noqa: E402
+from werkzeug.security import generate_password_hash  # noqa: E402
 
 import app as A  # noqa: E402
 from control_plane import provisioning as pv  # noqa: E402
@@ -50,7 +53,7 @@ from control_plane.context import tenant_context  # noqa: E402
 from control_plane.registry import get_tenant, platform_session, to_info  # noqa: E402
 from control_plane.routing import dispose_engines  # noqa: E402
 from core import theme  # noqa: E402
-from models import SchoolPublicSetting  # noqa: E402
+from models import AuditLog, SchoolPublicSetting  # noqa: E402
 
 results = []
 
@@ -332,6 +335,156 @@ check("the preview of an unknown school is a 404",
       c_pl.get(f"/platform/schools/ghost/branding/{name}", base_url=u_pl).status_code == 404)
 check("one school cannot be shown another's photograph through its own name",
       c_pl.get(f"/platform/schools/plain/branding/{name}", base_url=u_pl).status_code == 404)
+
+# ======================================= a school changing its own look (school admin area)
+create(c_pl, u_pl, name="Self Serve", code="selfserve")
+token = csrf(c_pl, u_pl, "/platform/schools/selfserve")
+r = c_pl.post("/platform/schools/selfserve/enter", data={"_csrf_token": token}, base_url=u_pl)
+c_s, u_s = client("selfserve.portal.test")
+c_s.get(r.headers["Location"][len("http://selfserve.portal.test"):], base_url=u_s)
+c_s.get("/admin/workspace/school", base_url=u_s)
+
+home = c_s.get("/admin/school", base_url=u_s).get_data(as_text=True)
+check("the school's admin area offers a Branding page in its menu",
+      "/admin/school/branding" in home and "<span>Branding</span>" in home)
+page = c_s.get("/admin/school/branding", base_url=u_s)
+html = page.get_data(as_text=True)
+check("the Branding page loads with colours, logo and photographs to manage",
+      page.status_code == 200 and "Save branding" in html and 'name="school_brand_primary"' in html
+      and 'name="gallery"' in html and 'name="logo"' in html, str(page.status_code))
+
+
+def save_branding(client_, url, **fields):
+    data = {"_csrf_token": csrf(client_, url, "/admin/school/branding"),
+            "school_brand_primary": theme.DEFAULT_PRIMARY, "school_brand_accent": theme.DEFAULT_ACCENT}
+    data.update(fields)
+    return client_.post("/admin/school/branding/save", data=data, base_url=url,
+                        content_type="multipart/form-data", follow_redirects=True)
+
+
+# Together larger than the ordinary request limit: this only works if the limit is raised
+# before any request hook reads the form.
+r = save_branding(c_s, u_s, school_brand_primary="#7A1F3D", school_brand_accent="#0b6e4f",
+                  logo=upload("logo.png", pad=1_000_000, marker=5),
+                  gallery=[upload(f"s{i}.jpg", kind="jpg", pad=2_900_000, marker=40 + i) for i in range(3)])
+check("a school admin can save colours, a logo and photographs together, even above the ordinary limit",
+      r.status_code == 200 and "Your school branding has been saved" in r.get_data(as_text=True),
+      str(r.status_code))
+mine = theme.parse_gallery(setting("selfserve", theme.GALLERY_KEY))
+check("…they are stored in that school's own folder",
+      len(mine) == 3 and len(files_in("selfserve")) == 4 and setting("selfserve", theme.PRIMARY_KEY) == "#7a1f3d",
+      str(files_in("selfserve")))
+page = client("selfserve.portal.test")
+login_html = page[0].get("/login", base_url=page[1]).get_data(as_text=True)
+check("…and its sign-in page immediately shows them",
+      len(re.findall(r'class="login-slide"', login_html)) == 3 and "--brand: #7a1f3d" in login_html)
+check("…without touching any other school",
+      setting("maroon", theme.PRIMARY_KEY) is None and setting("plain", theme.GALLERY_KEY) is None
+      and files_in("plain") == [])
+
+r = save_branding(c_s, u_s, school_brand_primary="#f0f0f0")
+check("a colour that is too light is refused with a message",
+      "too light" in r.get_data(as_text=True) and setting("selfserve", theme.PRIMARY_KEY) == "#7a1f3d")
+r = save_branding(c_s, u_s, school_brand_primary="red;}body{display:none")
+check("a value that is not a colour is refused", "is not a colour" in r.get_data(as_text=True)
+      and setting("selfserve", theme.PRIMARY_KEY) == "#7a1f3d")
+before = files_in("selfserve")
+r = save_branding(c_s, u_s, school_brand_primary="#7a1f3d",
+                  gallery=[upload("real.png", marker=60), upload("fake.png", data=b"<html>not an image")])
+check("a file that is not an image is refused, naming the file, and nothing is saved",
+      "fake.png" in r.get_data(as_text=True) and files_in("selfserve") == before)
+r = save_branding(c_s, u_s, school_brand_primary="#7a1f3d",
+                  gallery=[upload(f"z{i}.png", marker=70 + i) for i in range(6)])
+check("more photographs than the gallery holds are refused, and nothing is saved",
+      "at most 8" in r.get_data(as_text=True) and files_in("selfserve") == before
+      and len(theme.parse_gallery(setting("selfserve", theme.GALLERY_KEY))) == 3)
+
+gone = mine[0].rsplit("/", 1)[-1]
+r = save_branding(c_s, u_s, school_brand_primary="#7a1f3d", school_brand_accent="#0b6e4f", remove_photo=gone)
+check("a school admin can remove a photograph, which is deleted from its folder",
+      gone not in files_in("selfserve") and len(theme.parse_gallery(setting("selfserve", theme.GALLERY_KEY))) == 2)
+r = save_branding(c_s, u_s, remove_photo="../../../plain/uploads/branding/anything.png")
+check("a removal can only name one of the school's own photographs",
+      len(theme.parse_gallery(setting("selfserve", theme.GALLERY_KEY))) == 2)
+r = save_branding(c_s, u_s)
+check("choosing the portal's own colours clears the school's choice, keeping its photographs",
+      setting("selfserve", theme.PRIMARY_KEY) is None
+      and len(theme.parse_gallery(setting("selfserve", theme.GALLERY_KEY))) == 2)
+check("no CSRF token, no change",
+      c_s.post("/admin/school/branding/save", data={"school_brand_primary": "#7a1f3d"},
+               base_url=u_s).status_code == 403 and setting("selfserve", theme.PRIMARY_KEY) is None)
+
+with A.app.app_context(), tenant_context(info_for("selfserve")):
+    recorded = A.db.session.scalars(sa.select(AuditLog).where(
+        AuditLog.action == "school_branding_updated")).all()
+check("every branding change is recorded in the school's audit log", len(recorded) >= 3, str(len(recorded)))
+
+# --- who may do it: the branding.manage permission, not just being an administrator
+with A.app.app_context(), tenant_context(info_for("selfserve")):
+    ordinary = A.db.session.scalars(sa.select(A.AdminType).where(A.AdminType.name == "Ordinary Admin")).first()
+    A.db.session.add(A.Admin(username="clerk", display_name="Clerk",
+                             password_hash=generate_password_hash("clerk-password-123"),
+                             admin_type_id=ordinary.id, active=1, password_must_change=0,
+                             created_at="2026-01-01T00:00:00+00:00"))
+    permission = A.db.session.scalars(sa.select(A.Permission).where(A.Permission.code == "branding.manage")).first()
+    permission_id, ordinary_id = permission.id if permission else None, ordinary.id
+    A.db.session.commit()
+check("the branding.manage permission exists in every school", permission_id is not None)
+
+c_clerk, u_clerk = client("selfserve.portal.test")
+c_clerk.post("/login", data={"username": "clerk", "password": "clerk-password-123"}, base_url=u_clerk)
+c_clerk.get("/admin/workspace/school", base_url=u_clerk)
+with c_clerk.session_transaction(base_url=u_clerk) as sess:
+    sess["_csrf_token"] = "t" * 32
+r = c_clerk.get("/admin/school/branding", base_url=u_clerk)
+check("an administrator without the permission cannot open the page",
+      r.status_code != 200 and "Save branding" not in r.get_data(as_text=True), str(r.status_code))
+r = c_clerk.post("/admin/school/branding/save", data={"_csrf_token": "t" * 32,
+                 "school_brand_primary": "#123456"}, base_url=u_clerk, content_type="multipart/form-data")
+check("…nor change the branding, even with a valid form token",
+      r.status_code != 302 and setting("selfserve", theme.PRIMARY_KEY) is None, str(r.status_code))
+check("…and the menu does not offer it to them",
+      "<span>Branding</span>" not in c_clerk.get("/admin/school", base_url=u_clerk).get_data(as_text=True))
+
+with A.app.app_context(), tenant_context(info_for("selfserve")):
+    A.db.session.add(A.AdminTypePermission(admin_type_id=ordinary_id, permission_id=permission_id,
+                                           granted_at="2026-01-01T00:00:00+00:00"))
+    A.db.session.commit()
+r = c_clerk.get("/admin/school/branding", base_url=u_clerk)
+check("once a role is granted branding.manage, its holders can use the page",
+      r.status_code == 200 and "Save branding" in r.get_data(as_text=True), str(r.status_code))
+r = c_clerk.post("/admin/school/branding/save", data={"_csrf_token": "t" * 32,
+                 "school_brand_primary": "#123456", "school_brand_accent": theme.DEFAULT_ACCENT},
+                 base_url=u_clerk, content_type="multipart/form-data")
+check("…and change the branding", r.status_code == 302 and setting("selfserve", theme.PRIMARY_KEY) == "#123456")
+
+# A school that existed before this permission was introduced picks it up when the application
+# next starts (the same upgrade runs for every school), and its top-level admin holds it.
+with A.app.app_context(), tenant_context(info_for("selfserve")):
+    A.db.session.execute(sa.delete(A.AdminTypePermission).where(A.AdminTypePermission.permission_id == permission_id))
+    A.db.session.execute(sa.delete(A.Permission).where(A.Permission.id == permission_id))
+    A.db.session.commit()
+pv.upgrade_tenant(info_for("selfserve"))
+with A.app.app_context(), tenant_context(info_for("selfserve")):
+    restored = A.db.session.scalars(sa.select(A.Permission).where(A.Permission.code == "branding.manage")).first()
+    top = A.db.session.scalars(sa.select(A.AdminType.id).where(A.AdminType.is_system == 1)).first()
+    held = restored is not None and A.db.session.scalars(sa.select(A.AdminTypePermission).where(
+        A.AdminTypePermission.admin_type_id == top,
+        A.AdminTypePermission.permission_id == restored.id)).first() is not None
+    # Nobody else is silently given it: only what an administrator grants.
+    spread = restored is not None and A.db.session.scalars(sa.select(sa.func.count()).select_from(
+        A.AdminTypePermission).where(A.AdminTypePermission.permission_id == restored.id)).first()
+check("an existing school gains the permission on upgrade, held by its top-level administrator",
+      held)
+check("…and the upgrade grants it to no other role", spread == 1, str(spread))
+
+anon, u_anon = client("selfserve.portal.test")
+check("signed-out visitors cannot reach the page or save",
+      anon.get("/admin/school/branding", base_url=u_anon).status_code == 302
+      and anon.post("/admin/school/branding/save", data={"school_brand_primary": "#123456"},
+                    base_url=u_anon).status_code in (302, 403))
+check("the page does not exist on the platform host",
+      c_pl.get("/admin/school/branding", base_url=u_pl).status_code == 404)
 
 dispose_engines()
 DROP_TEST_DATABASES()

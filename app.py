@@ -996,6 +996,7 @@ import blueprints.entrance.routes  # noqa: F401,E402
 # ---------------- school portal ----------------
 # Moved to blueprints/school/routes.py.
 import blueprints.school.routes  # noqa: F401,E402
+import blueprints.school.branding  # noqa: F401,E402
 
 
 

@@ -117,6 +117,7 @@ ADMIN_PERMISSION_DEFS = [
     ('student.history.manage','Manage enrollment history','school','Record and review a student historical enrollment including Daycare, Crèche and Nursery.'),
     ('website.view','View public website management','website','View school public website content and enquiries.'),
     ('website.manage','Manage public website','website','Edit school public pages, news, contact information and public settings.'),
+    ('branding.manage','Manage school branding','school','Change the school colours, logo and sign-in photographs.'),
     ('entrance.config.view','View entrance configurations','assessment','View entrance bank academic-period configurations.'),
     ('entrance.config.create','Create entrance configurations','assessment','Create entrance bank configurations.'),
     ('entrance.config.edit','Edit entrance configurations','assessment','Edit entrance bank configuration settings.'),
@@ -194,6 +195,7 @@ ADMIN_ROLE_PRESETS = {
 
 
 ADMIN_ENDPOINT_PERMISSIONS = {
+    'admin_school_branding':'branding.manage','admin_school_branding_save':'branding.manage',
     'admin_dashboard':'dashboard.view','admin_candidates':'candidates.view','admin_new_candidate':'candidates.create',
     'admin_candidate_detail':'candidates.view','admin_candidate_delete':'candidates.delete',
     'admin_candidate_result_print':'results.print','admin_candidate_credentials_reset':'candidates.credentials_reset',

@@ -15,12 +15,17 @@ Deliberately defensive: these run on every page render, including on the
 platform host where there is no school at all, and on a database mid-upgrade.
 """
 
+import logging
+import os
+
 from flask import g, has_request_context, url_for
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from control_plane.context import current_tenant
 from core import theme
 from core.public_settings import _public_settings
+
+logger = logging.getLogger(__name__)
 
 PLATFORM_NAME = 'Brightstars Academics'
 # Used only until a school uploads its own logo.
@@ -122,3 +127,155 @@ def school_brand():
     if has_request_context():
         g._school_brand = brand
     return brand
+
+
+# ---------------------------------------------------------------------------
+# Changing a school's look
+#
+# Used by both the platform console (creating a school, or changing one) and the
+# school's own admin area, so the two can never disagree about what is allowed.
+# Every function here raises ValueError with a message that is safe to show.
+# ---------------------------------------------------------------------------
+
+# The school's own identity, captured when it is created so its portal is never
+# shown to anyone wearing another school's name. These are the keys the school
+# portal and its documents already read.
+BRANDING_FIELDS = ('school_name', 'school_motto', 'school_tagline',
+                   'school_phone', 'school_email', 'school_address',
+                   theme.PRIMARY_KEY, theme.ACCENT_KEY)
+LOGO_SETTING_KEY = 'school_logo'
+COLOUR_KEYS = ((theme.PRIMARY_KEY, 'main', theme.DEFAULT_PRIMARY),
+               (theme.ACCENT_KEY, 'accent', theme.DEFAULT_ACCENT))
+
+
+def _uploaded(files):
+    """The files that were actually chosen; an empty file input still submits one."""
+    return [f for f in (files or ()) if f is not None and getattr(f, 'filename', '')]
+
+
+def check_branding_inputs(branding, logo=None, gallery=()):
+    """Validate a school's colours and images without touching any school.
+
+    Returns ``(branding, gallery)`` cleaned: colours normalised, a colour equal to
+    the portal's own default turned into "not chosen", and empty file inputs
+    dropped.
+    """
+    from core.uploads import validate_image_upload
+
+    branding = dict(branding or {})
+    for key, label, default in COLOUR_KEYS:
+        if key in branding:
+            colour = theme.check_colour(branding[key], label)
+            branding[key] = '' if colour == default else colour
+    gallery = _uploaded(gallery)
+    if len(gallery) > theme.MAX_GALLERY_IMAGES:
+        raise ValueError(f'A school can have at most {theme.MAX_GALLERY_IMAGES} sign-in photos.')
+    for label, upload in [('The logo', logo)] + [(f'"{f.filename}"', f) for f in gallery]:
+        if _uploaded([upload]):
+            try:
+                validate_image_upload(upload)
+            except ValueError as exc:
+                raise ValueError(f'{label}: {exc}') from None
+    return branding, gallery
+
+
+def max_branding_request_bytes():
+    """How large a request that carries a logo and a full gallery may be.
+
+    The application-wide limit is sized for a single photo. The pages that take a
+    logo and up to ``theme.MAX_GALLERY_IMAGES`` photographs at once raise their
+    own limit to fit them.
+    """
+    one = int(os.environ.get('BRIGHTSTARS_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
+    default = int(os.environ.get('BRIGHTSTARS_MAX_REQUEST_BYTES', 8 * 1024 * 1024))
+    return max(default, one * (theme.MAX_GALLERY_IMAGES + 1) + 1024 * 1024)
+
+
+def branding_settings():
+    """Every branding-related setting of the current school, as a dict."""
+    from models import SchoolPublicSetting, db
+
+    keys = set(BRANDING_FIELDS) | {LOGO_SETTING_KEY, theme.GALLERY_KEY}
+    rows = db.session.execute(select(SchoolPublicSetting.setting_key,
+                                     SchoolPublicSetting.setting_value)).all()
+    return {key: value for key, value in rows if key in keys}
+
+
+def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()):
+    """Write the current school's name, colours and contact details, and store its
+    logo and sign-in photographs inside its own folder.
+
+    Runs in the current school's context (its database and its uploads folder), and
+    expects ``branding`` and the files to have passed :func:`check_branding_inputs`.
+    ``remove_gallery`` lists photographs (by stored path) to take away. An empty
+    colour clears the school's choice, returning it to the portal's own colour. A
+    field that is not passed is left exactly as it is.
+    """
+    from datetime import datetime, timezone
+
+    from core.storage import stored_upload_path
+    from core.uploads import _save_image_upload
+    from models import School, SchoolPublicSetting, db
+
+    def now():
+        return datetime.now(timezone.utc).isoformat()
+
+    branding = {k: (v or '').strip() for k, v in (branding or {}).items() if k in BRANDING_FIELDS}
+    gallery = _uploaded(gallery)
+
+    school = db.session.scalars(select(School).order_by(School.id)).first()
+    if school is not None:
+        school.name = branding.get('school_name') or school.name
+        school.motto = branding.get('school_motto') or school.motto
+        school.tagline = branding.get('school_tagline') or school.tagline
+        school.address = branding.get('school_address') or school.address
+        school.phone = branding.get('school_phone') or school.phone
+        school.email = branding.get('school_email') or school.email
+        school.updated_at = now()
+
+    values = dict(branding)
+    if _uploaded([logo]):
+        values[LOGO_SETTING_KEY] = _save_image_upload(logo, 'branding', f'{slug}_logo')
+
+    removed = []
+    if gallery or remove_gallery:
+        current_row = db.session.scalars(select(SchoolPublicSetting).where(
+            SchoolPublicSetting.setting_key == theme.GALLERY_KEY)).first()
+        current = theme.parse_gallery(current_row.setting_value if current_row else '')
+        removed = [p for p in current if p in set(remove_gallery)]
+        kept = [p for p in current if p not in removed]
+        if len(kept) + len(gallery) > theme.MAX_GALLERY_IMAGES:
+            raise ValueError(f'A school can have at most {theme.MAX_GALLERY_IMAGES} sign-in photos; '
+                             f'this one already has {len(kept)}.')
+        added = [_save_image_upload(f, 'branding', f'{slug}_photo') for f in gallery]
+        values[theme.GALLERY_KEY] = theme.dump_gallery(kept + added)
+
+    for key, value in values.items():
+        if not value:
+            if key in (theme.PRIMARY_KEY, theme.ACCENT_KEY):
+                # Back to the portal's own colour.
+                db.session.execute(delete(SchoolPublicSetting).where(
+                    SchoolPublicSetting.setting_key == key))
+            continue
+        row = db.session.scalars(select(SchoolPublicSetting).where(
+            SchoolPublicSetting.setting_key == key)).first()
+        if row is None:
+            db.session.add(SchoolPublicSetting(setting_key=key, setting_value=value, updated_at=now()))
+        else:
+            row.setting_value = value
+            row.updated_at = now()
+    db.session.commit()
+
+    # Only once the new list is safely stored: a failure above must not have
+    # already deleted a photograph the school still shows.
+    for path in removed:
+        target = stored_upload_path(path)
+        try:
+            if target and os.path.isfile(target):
+                os.remove(target)
+        except OSError:
+            # The change is already saved and the school no longer shows the
+            # picture. A file still open elsewhere (Windows will not delete one
+            # that is being served) must not turn that into an error; the orphan
+            # is harmless and is logged for clean-up.
+            logger.warning('Could not delete the removed photograph %s of %s', path, slug)

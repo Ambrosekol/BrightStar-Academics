@@ -1,0 +1,87 @@
+{% extends 'admin_base.html' %}
+{% block title %}Branding — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .brand-swatches { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-end; }
+  .brand-swatches input[type=color] { width: 58px; height: 42px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #fff; cursor: pointer; }
+  .brand-preview { max-width: 420px; margin-top: 16px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .brand-preview .bar { padding: 12px 16px; color: #fff; font-weight: 700; font-size: 13px; }
+  .brand-preview .body { padding: 14px 16px; background: #fff; }
+  .brand-preview .body span { display: inline-block; padding: 7px 14px; border-radius: 8px; color: #fff; font-size: 12px; font-weight: 700; }
+  .brand-warning { color: #b42318; font-size: 12px; margin: 8px 0 0; }
+  .brand-logo-box { display: inline-block; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-bottom: 12px; }
+  .brand-logo-box img { display: block; max-height: 64px; max-width: 240px; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 12px 0 16px; }
+  .photo-grid figure { margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .photo-grid img { display: block; width: 100%; height: 100px; object-fit: cover; }
+  .photo-grid figcaption { padding: 8px 10px; font-size: 12px; }
+  .photo-grid label { display: flex; gap: 6px; align-items: center; margin: 0; font-weight: 500; color: var(--muted); }
+  .photo-grid input[type=checkbox] { width: auto; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / IDENTITY</div>
+  <h1>Branding</h1>
+  <p class="hero-copy">Choose how your portal looks: your colours, your logo and the photographs shown beside the sign-in form. Everyone who signs in to your school sees them.</p>
+</div></div>
+
+<form method="post" enctype="multipart/form-data" action="{{ url_for('admin_school_branding_save') }}" class="card modern-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">1</span><div>
+      <h2>Colours</h2>
+      <p>Your menus, headers, buttons and sign-in page follow these. Both sit behind white text, so choose fairly dark shades. Choosing the portal's own colours removes your choice.</p>
+    </div></div>
+    <div class="brand-swatches">
+      <div class="field"><label for="school_brand_primary">Main colour</label>
+        <input type="color" id="school_brand_primary" name="school_brand_primary" value="{{ primary }}"></div>
+      <div class="field"><label for="school_brand_accent">Accent colour</label>
+        <input type="color" id="school_brand_accent" name="school_brand_accent" value="{{ accent }}"></div>
+    </div>
+    <div class="brand-preview preview" aria-hidden="true" data-min-contrast="{{ min_contrast }}" data-name="{{ school_brand.name }}">
+      <div class="bar" id="preview-bar"><span id="preview-name">{{ school_brand.name }}</span></div>
+      <div class="body"><span id="preview-button">Sign in</span></div>
+    </div>
+    <p id="colour-warning" class="brand-warning" hidden></p>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">2</span><div>
+      <h2>Logo</h2>
+      <p>PNG, JPG, GIF or WEBP. Choosing a file replaces the current logo.</p>
+    </div></div>
+    {% if logo_url %}<div class="brand-logo-box"><img src="{{ logo_url }}" alt="Current logo"></div>{% endif %}
+    <div class="field"><input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp"></div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">3</span><div>
+      <h2>Sign-in photographs</h2>
+      <p>Up to {{ max_gallery }} pictures of your school. They fade one after another beside the sign-in form. {{ photos|length }} of {{ max_gallery }} in use; tick a picture to remove it when you save.</p>
+    </div></div>
+    {% if photos %}
+      <div class="photo-grid">
+        {% for photo in photos %}
+          <figure>
+            <img src="{{ photo.url }}" alt="Sign-in photograph {{ loop.index }}">
+            <figcaption><label><input type="checkbox" name="remove_photo" value="{{ photo.name }}"> Remove</label></figcaption>
+          </figure>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if photos|length < max_gallery %}
+      <div class="field"><input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp">
+        <small>Hold Ctrl (or Cmd) to choose several at once.</small></div>
+    {% else %}
+      <p class="muted">Your gallery is full. Remove a photograph to add another.</p>
+    {% endif %}
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">Save branding</button>
+    <a class="btn btn-light" href="{{ url_for('admin_school_home') }}">Cancel</a>
+  </div>
+</form>
+<script src="{{ url_for('static', filename='brand-form.js') }}"></script>
+{% endblock %}
