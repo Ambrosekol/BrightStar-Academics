@@ -6,7 +6,7 @@ import secrets
 from functools import wraps
 
 from flask import redirect, request, session, url_for
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 
 from models import (
     Admin, AcademicSession, AssignmentStudent, ParentAccount,
@@ -40,22 +40,32 @@ def _parent_owns_student(pid, student_id):
         ParentStudentLink.active==1)))
 
 def _parent_children(pid, with_session=False):
-    """Active children linked to a parent, with their current class."""
-    cols=[Student,ParentStudentLink.relationship,SchoolClass.name.label('class_name')]
-    if with_session:
-        cols.append(AcademicSession.name.label('session_name'))
+    """Active children linked to a parent, each once, with their current class.
+
+    A student who has been enrolled in more than one session (every promoted student)
+    has more than one active enrolment row. The child is listed once, in the class of
+    the current session or else their latest one: listed once per enrolment, the
+    dashboard showed the child twice and added their unpaid fees up twice.
+    """
+    cols=[Student,ParentStudentLink.relationship,SchoolClass.name.label('class_name'),
+          AcademicSession.name.label('session_name')]
     stmt=(select(*cols)
           .select_from(ParentStudentLink)
           .join(Student,and_(Student.id==ParentStudentLink.student_id,Student.active==1))
           .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
                                            StudentEnrolment.active==1))
-          .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id))
-    if with_session:
-        stmt=stmt.outerjoin(AcademicSession,AcademicSession.id==StudentEnrolment.session_id)
+          .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
+          .outerjoin(AcademicSession,AcademicSession.id==StudentEnrolment.session_id))
     stmt=stmt.where(ParentStudentLink.parent_id==pid,ParentStudentLink.active==1)
-    stmt=stmt.order_by(Student.first_name,Student.last_name)
+    stmt=stmt.order_by(Student.first_name,Student.last_name,Student.id,
+                       case((AcademicSession.is_current==1,0),else_=1),StudentEnrolment.id.desc())
     extra=('relationship','class_name')+(('session_name',) if with_session else ())
-    return [_flatten(r,'Student',*extra) for r in all_rows(stmt)]
+    children,seen=[],set()
+    for r in all_rows(stmt):
+        child=_flatten(r,'Student',*extra)
+        if child['id'] in seen: continue
+        seen.add(child['id']); children.append(child)
+    return children
 
 
 def _released_results(student_id, limit=None):

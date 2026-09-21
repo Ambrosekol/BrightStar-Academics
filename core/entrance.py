@@ -26,7 +26,7 @@ from models import (
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.marks import total as total_marks
-from core.storage import data_dir
+from core.storage import data_dir, generated_dir, stored_upload_path
 
 
 def _answers_for_attempt(aid):
@@ -309,38 +309,46 @@ def _result_file_data_uri(path):
         return ''
 
 def _candidate_photo_filesystem_path(candidate):
-    """Resolve the candidate's stored photo path without changing database data."""
+    """The candidate's stored photograph, or None. Only ever a file inside the current school's own
+    uploads folder: a path that leads anywhere else resolves to nothing."""
     keys=list(candidate.keys())
-
-    raw=''
     for key in ('photo_path','photo','candidate_photo','passport_photo','image_path'):
         if key in keys and candidate[key]:
-            raw=str(candidate[key]).strip()
-            break
+            found=stored_upload_path(str(candidate[key]).strip())
+            if found and os.path.isfile(found):
+                return Path(found)
+    return None
 
-    if not raw:
-        return None
+def _school_logo_data_uri():
+    """The current school's own logo as a data URI, or '' if it has not uploaded one.
 
-    raw=raw.replace('\\','/')
+    Never another school's, and never a file shipped with the platform: a school without a logo
+    gets its own name in that place on a result, not somebody else's picture.
+    """
+    from core.branding import school_brand  # deferred: core.branding imports the app
 
-    candidates=[]
+    found=stored_upload_path(school_brand().get('logo_path') or '')
+    return _result_file_data_uri(found) if found else ''
 
-    if raw.startswith('/static/'):
-        candidates.append(Path(__file__).resolve().parent / raw.lstrip('/'))
-    elif raw.startswith('static/'):
-        candidates.append(Path(__file__).resolve().parent / raw)
-    else:
-        p=Path(raw)
-        if p.is_absolute():
-            candidates.append(p)
-        else:
-            candidates.append(Path(__file__).resolve().parent / raw)
-            candidates.append((Path(__file__).resolve().parent / 'static' / raw.lstrip('/')))
+def _find_chrome():
+    """The Chrome or Chromium program that draws result images, or None.
 
-    for p in candidates:
-        if p.exists() and p.is_file():
-            return p
+    ``BRIGHTSTARS_CHROME`` names it outright; otherwise the usual Windows install folders and then
+    the names a Linux or macOS server would have it under are tried.
+    """
+    import shutil
 
+    named=os.environ.get('BRIGHTSTARS_CHROME','').strip()
+    if named:
+        return Path(named) if Path(named).is_file() else None
+    for path in (r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                 r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"):
+        if Path(path).exists():
+            return Path(path)
+    for name in ('google-chrome','google-chrome-stable','chromium','chromium-browser','chrome'):
+        found=shutil.which(name)
+        if found:
+            return Path(found)
     return None
 
 def _chrome_result_png(candidate, papers, total_score, total_max, pct,
@@ -359,29 +367,16 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
         current_app,
     )
 
-    project_root = Path(__file__).resolve().parent
-
-    chrome_paths = [
-        Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
-        Path(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
-    ]
-
-    chrome = next(
-        (p for p in chrome_paths if p.exists()),
-        None
-    )
+    chrome = _find_chrome()
 
     if chrome is None:
         raise RuntimeError(
-            "Google Chrome was not found."
+            "Google Chrome was not found. Install it, or set BRIGHTSTARS_CHROME to its full path."
         )
 
-    output_dir = (
-        project_root /
-        "static" /
-        "generated" /
-        "results"
-    )
+    # In the school's own folder, which nothing serves: the route that asks for the image reads
+    # it, sends it and deletes it, so it can never be fetched by another school or by anyone else.
+    output_dir = Path(generated_dir()) / "results"
 
     output_dir.mkdir(
         parents=True,
@@ -402,34 +397,17 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
         f"result_{candidate['id']}_{token}.html"
     )
 
-    logo_path = (
-        project_root /
-        "static" /
-        "images" /
-        "school_logo.png"
-    )
-
     photo_path = _candidate_photo_filesystem_path(
         candidate
     )
 
-    if not logo_path.is_file():
-        raise RuntimeError(
-            f"School logo not found: {logo_path}"
-        )
-
-    if photo_path is None:
-        raise RuntimeError(
-            "Candidate photograph could not be resolved."
-        )
-
-    logo_data = _result_file_data_uri(
-        logo_path
-    )
+    # A school with no logo, or a candidate with no photograph, still gets a result: the page shows
+    # the school's name where the logo would be, and leaves the photograph out.
+    logo_data = _school_logo_data_uri()
 
     photo_data = _result_file_data_uri(
         photo_path
-    )
+    ) if photo_path else ""
 
     render_kwargs = {
         "candidate": candidate,

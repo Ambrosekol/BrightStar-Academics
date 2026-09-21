@@ -3,6 +3,7 @@ access-scope checks, form-context builders, the CA-weighted term report,
 receipt-free assessment listing, and the class-promotion workflow.
 """
 
+import math
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
@@ -224,6 +225,31 @@ def _set_ca_weights(weights, admin_id):
                                           setting_value=str(value),updated_at=now,updated_by=admin_id))
     db.session.commit()
 
+def _finite(value):
+    """A number typed into a form, refused (ValueError) unless it is an ordinary number.
+
+    Python reads "nan" and "inf" as numbers. NaN passes every "is it above the maximum?" test
+    (nothing is greater or smaller than NaN), so without this it would be saved and turn a whole
+    term result into NaN.
+    """
+    if not math.isfinite(value):
+        raise ValueError('not a finite number')
+    return value
+
+def _result_term(raw):
+    """The term a hand-entered result belongs to, written the way the term report reads it.
+
+    Blank means the whole session. The older "1st Term" style is accepted and converted, because a
+    result filed under a name the report never asks for would silently fall out of the term result.
+    Returns None if it is not a term at all.
+    """
+    text=' '.join(str(raw or '').split())
+    if not text: return 'Full Session'
+    aliases={'1st term':'First Term','2nd term':'Second Term','3rd term':'Third Term'}
+    for name in [*ACADEMIC_TERMS,'Full Session']:
+        aliases[name.casefold()]=name
+    return aliases.get(text.casefold())
+
 def _term_subject_report(student_id, session_id, term, subject_id):
     """A student's Exam(60) + CA(40) = 100 breakdown for one subject in one term.
 
@@ -268,6 +294,11 @@ def _term_subject_report(student_id, session_id, term, subject_id):
         .join(SchoolAssignment,SchoolAssignment.id==AssignmentStudent.assignment_id)
         .where(AssignmentStudent.student_id==student_id,SchoolAssignment.subject_id==subject_id,
                SchoolAssignment.session_id==session_id,SchoolAssignment.term==term,
+               # Work that was removed does not count, and neither does a mark on work with no
+               # maximum: there is nothing to scale it against, and adding it to the top of the
+               # fraction without adding to the bottom would inflate the whole share.
+               SchoolAssignment.active==1,
+               func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)>0,
                AssignmentStudent.score.is_not(None)))[0]
     project_raw=tuples(select(func.coalesce(func.sum(ProjectStudent.score),0),
                            func.coalesce(func.sum(SchoolProject.max_score),0))
@@ -275,6 +306,7 @@ def _term_subject_report(student_id, session_id, term, subject_id):
         .join(SchoolProject,SchoolProject.id==ProjectStudent.project_id)
         .where(ProjectStudent.student_id==student_id,SchoolProject.subject_id==subject_id,
                SchoolProject.session_id==session_id,SchoolProject.term==term,
+               SchoolProject.active==1,SchoolProject.max_score>0,
                ProjectStudent.score.is_not(None)))[0]
 
     exam_score=scaled(exam_raw[0],exam_raw[1],EXAM_MAX_SCORE)

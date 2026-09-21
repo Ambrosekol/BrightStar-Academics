@@ -40,7 +40,7 @@ from core.notifications import _notify_guardians_of_school_work
 from blueprints.parents.helpers import _new_parent_password
 from blueprints.school.helpers import (
     ACADEMIC_HISTORY_LEVELS, PROMOTION_ACTIONS, PROMOTION_DECISIONS,
-    _assignment_form_data, _assignment_students, _ca_weights,
+    _assignment_form_data, _assignment_students, _ca_weights, _finite, _result_term,
     _mark_latest_history_current, _notify_school_work, _promotion_audit,
     _promotion_classes, _promotion_current_enrolments,
     _promotion_existing_target_enrolment, _promotion_next_class,
@@ -920,7 +920,7 @@ def admin_school_assignment_new():
         title=request.form.get('title','').strip(); instructions=request.form.get('instructions','').strip(); due=request.form.get('due_date','').strip(); date_given=request.form.get('date_given','').strip() or datetime.now(timezone.utc).date().isoformat()
         assignment_type=request.form.get('assignment_type','written').strip().lower(); timing_mode=request.form.get('timing_mode','untimed').strip().lower()
         term=request.form.get('term','').strip() or None
-        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); time_limit=int(request.form.get('time_limit_minutes','0') or 0)*60; per_q=int(request.form.get('per_question_seconds','0') or 0); max_score=float(request.form.get('max_score','0') or 0)
+        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); time_limit=int(request.form.get('time_limit_minutes','0') or 0)*60; per_q=int(request.form.get('per_question_seconds','0') or 0); max_score=_finite(float(request.form.get('max_score','0') or 0))
         except (TypeError,ValueError): cid=sid=session_id=time_limit=per_q=0; max_score=0
         student_ids=[int(v) for v in request.form.getlist('student_ids') if v.isdigit()]; errors=[]
         if not title: errors.append('Assignment title is required.')
@@ -1005,8 +1005,9 @@ def admin_school_assignment_question_new(assignment_id):
 @csrf_protect
 def admin_school_assignment_student_update(assignment_id,student_id):
     me=current_admin(); status=request.form.get('status','undone').strip().lower(); remark=request.form.get('remark','').strip()
-    try: score=float(request.form.get('score','')) if request.form.get('score','').strip() else None
-    except (TypeError,ValueError): score=None
+    try: score=_finite(float(request.form.get('score',''))) if request.form.get('score','').strip() else None
+    except (TypeError,ValueError):
+        flash('Enter the score as an ordinary number.','error'); return redirect(url_for('admin_school_assignment_detail',assignment_id=assignment_id))
     if status not in ('done','undone','in_progress','overdue'): status='undone'
     a=obj(SchoolAssignment,assignment_id)
     row=db.session.scalars(select(AssignmentStudent).where(
@@ -1036,7 +1037,7 @@ def admin_school_assignment_edit(assignment_id):
     if request.method=='POST':
         title=request.form.get('title','').strip(); instructions=request.form.get('instructions','').strip(); due=request.form.get('due_date','').strip(); date_given=request.form.get('date_given','').strip() or a.date_given; assignment_type=request.form.get('assignment_type',a.assignment_type).strip().lower(); timing_mode=request.form.get('timing_mode',a.timing_mode).strip().lower()
         term=request.form.get('term','').strip() or None
-        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); time_limit=int(request.form.get('time_limit_minutes','0') or 0)*60; per_q=int(request.form.get('per_question_seconds','0') or 0); max_score=float(request.form.get('max_score','0') or 0)
+        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); time_limit=int(request.form.get('time_limit_minutes','0') or 0)*60; per_q=int(request.form.get('per_question_seconds','0') or 0); max_score=_finite(float(request.form.get('max_score','0') or 0))
         except (TypeError,ValueError): cid=sid=session_id=time_limit=per_q=0; max_score=0
         student_ids=[int(v) for v in request.form.getlist('student_ids') if v.isdigit()]; errors=[]
         if not title: errors.append('Assignment title is required.')
@@ -1118,7 +1119,7 @@ def admin_school_project_new():
     if request.method=='POST':
         title=request.form.get('title','').strip(); instructions=request.form.get('instructions','').strip(); date_given=request.form.get('date_given','').strip() or datetime.now(timezone.utc).date().isoformat(); due=request.form.get('due_date','').strip()
         term=request.form.get('term','').strip() or None
-        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); max_score=float(request.form.get('max_score','0') or 0)
+        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); max_score=_finite(float(request.form.get('max_score','0') or 0))
         except (TypeError,ValueError): cid=sid=session_id=0; max_score=0
         student_ids=[int(v) for v in request.form.getlist('student_ids') if v.isdigit()]; errors=[]
         if not title: errors.append('Project title is required.')
@@ -1163,8 +1164,9 @@ def admin_school_project_detail(project_id):
 @csrf_protect
 def admin_school_project_student_update(project_id,student_id):
     me=current_admin(); status=request.form.get('status','not_done'); remark=request.form.get('remark','').strip()
-    try: score=float(request.form.get('score','')) if request.form.get('score','').strip() else None
-    except (TypeError,ValueError): score=None
+    try: score=_finite(float(request.form.get('score',''))) if request.form.get('score','').strip() else None
+    except (TypeError,ValueError):
+        flash('Enter the score as an ordinary number.','error'); return redirect(url_for('admin_school_project_detail',project_id=project_id))
     if status not in ('done','not_done'): status='not_done'
     p=obj(SchoolProject,project_id)
     row=db.session.scalars(select(ProjectStudent).where(
@@ -1193,7 +1195,7 @@ def admin_school_project_edit(project_id):
     if request.method=='POST':
         title=request.form.get('title','').strip(); instructions=request.form.get('instructions','').strip(); date_given=request.form.get('date_given','').strip() or p.date_given; due=request.form.get('due_date','').strip()
         term=request.form.get('term','').strip() or None
-        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); max_score=float(request.form.get('max_score','0') or 0)
+        try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); session_id=int(request.form.get('session_id') or 0); max_score=_finite(float(request.form.get('max_score','0') or 0))
         except (TypeError,ValueError): cid=sid=session_id=0; max_score=0
         student_ids=[int(v) for v in request.form.getlist('student_ids') if v.isdigit()]; errors=[]
         if not title: errors.append('Project title is required.')
@@ -1448,6 +1450,11 @@ def admin_school_assessment_delete(assessment_id):
     if not admin_has_permission(current_admin()['id'],perm): return admin_access_error(perm)
     if not _school_pair_allowed(current_admin()['id'],a.class_id,a.subject_id): return admin_access_error(perm)
     assessment_type=a.assessment_type
+    # Marks already recorded for it belong to the students' academic record; the database would refuse
+    # the delete (they point at this row), so say why instead of failing.
+    if one_scalar(select(func.count()).select_from(SchoolStudentResult).where(SchoolStudentResult.assessment_id==assessment_id),0):
+        flash(f'This {assessment_type} already has student results recorded, so it cannot be deleted. Close it instead.','error')
+        return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     db.session.delete(a)
     db.session.commit()
     audit_log('school_assessment_deleted','school',assessment_type,assessment_id); flash('Assessment deleted.','success'); return redirect(url_for('admin_school_home'))
@@ -1462,7 +1469,7 @@ def admin_school_result_manual_new():
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     if not me['admin_type_system']: classes=[c for c in classes if _school_class_allowed(me['id'],c.id)]
-    current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=request.values.get('term','Full Session').strip() or 'Full Session'; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
+    current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=_result_term(request.values.get('term','')) or 'Full Session'; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
     subjects=all_rows(select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,
                              group_concat(ClassSubject.class_id).label('class_ids'))
         .join(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
@@ -1503,12 +1510,13 @@ def admin_school_result_manual_new():
     if request.method=='POST':
         try: class_id=int(request.form.get('class_id')); session_id=int(request.form.get('session_id')); student_id=int(request.form.get('student_id')); subject_id=int(request.form.get('subject_id'))
         except (TypeError,ValueError): class_id=session_id=student_id=subject_id=0
-        term=request.form.get('term','Full Session').strip() or 'Full Session'; took=request.form.get('took_test','yes').lower()=='yes'; absence=request.form.get('absence_reason','').strip()
+        term=_result_term(request.form.get('term','')); took=request.form.get('took_test','yes').lower()=='yes'; absence=request.form.get('absence_reason','').strip()
         def num(name):
-            raw=request.form.get(name,'').strip(); return float(raw) if raw else None
+            raw=request.form.get(name,'').strip(); return _finite(float(raw)) if raw else None
         try: test_score=num('test_score'); test_max=num('test_max'); exam_score=num('exam_score'); exam_max=num('exam_max')
         except (TypeError,ValueError): test_score=test_max=exam_score=exam_max=None
         student=next((x for x in students if x['id']==student_id),None); subject=next((x for x in subjects if x['id']==subject_id),None)
+        if term is None: errors.append('Select a valid term.')
         if not student: errors.append('Select a student from the selected class.')
         if not subject: errors.append('Select a subject that has been created for the selected class.')
         if not _school_class_allowed(me['id'],class_id): errors.append('The selected class is outside your authorised scope.')
@@ -1574,12 +1582,13 @@ def admin_school_result_edit(result_id):
     if row['status'] in ('approved','released'):
         flash('Approved or released results cannot be edited here. Use the authorised correction process.','error'); return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
     if request.method=='POST':
-        try: score=float(request.form.get('score','')); max_score=float(request.form.get('max_score',''))
+        try: score=_finite(float(request.form.get('score',''))); max_score=_finite(float(request.form.get('max_score','')))
         except (TypeError,ValueError): score=max_score=-1
         component=request.form.get('component_name','').strip() or row['component_name'] or row.get('assessment_title') or 'Academic Assessment'
-        term=request.form.get('term','').strip() or row['term'] or 'Full Session'
+        term=_result_term(request.form.get('term','').strip() or row['term'])
         reason=request.form.get('reason','').strip()
         errors=[]
+        if term is None: errors.append('Select a valid term.')
         if max_score<=0: errors.append('Maximum score must be greater than zero.')
         if score<0: errors.append('Score cannot be negative.')
         if score>max_score and not reason: errors.append('A score above the selected maximum requires an authorised exception reason.')
@@ -2200,9 +2209,9 @@ def admin_school_sessions():
 
         if action=='set_ca_weights':
             try:
-                test_w=float(request.form.get('ca_weight_test','0') or 0)
-                assignment_w=float(request.form.get('ca_weight_assignment','0') or 0)
-                project_w=float(request.form.get('ca_weight_project','0') or 0)
+                test_w=_finite(float(request.form.get('ca_weight_test','0') or 0))
+                assignment_w=_finite(float(request.form.get('ca_weight_assignment','0') or 0))
+                project_w=_finite(float(request.form.get('ca_weight_project','0') or 0))
             except (TypeError,ValueError):
                 flash('Enter valid numbers for each weight.','error'); return redirect(url_for('admin_school_sessions'))
             total=test_w+assignment_w+project_w

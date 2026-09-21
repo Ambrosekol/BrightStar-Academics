@@ -24,11 +24,14 @@ from blueprints.finance.helpers import (
     _active_classes, _class_group, _finance_assessment_allocated,
     _finance_can_view_all, _finance_payment_allocated,
     _finance_student_lifetime_totals, _finance_student_outstanding,
-    _legacy_stage_for, _log_receipt_delivery, _next_receipt_no,
+    _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
     _receipt_payload, _receipt_pdf, _receipt_signature_abspath,
     _receipt_signature_relpath, _save_signature_data_url, _send_email_receipt,
     _send_whatsapp_receipt, _set_receipt_signature, RECEIPT_SIGNATURE_SETTING_KEY,
 )
+
+# The billing periods a charge can be raised for: the fee-picker's choices.
+ASSESSMENT_TERMS=('Full Session','First Term','Second Term','Third Term')
 
 
 @app.route('/admin/finance/payments/<int:payment_id>/allocate',methods=['GET','POST'])
@@ -63,9 +66,9 @@ def admin_finance_payment_allocate(payment_id):
         if not isinstance(submitted,dict):
             flash('The allocation data is invalid.','error'); return back
 
-        payment_amount=float(payment['amount'] or 0)
+        payment_amount=round(float(payment['amount'] or 0),2)
         existing_allocated=_finance_payment_allocated(payment_id)
-        available_payment=payment_amount-existing_allocated
+        available_payment=round(payment_amount-existing_allocated,2)
 
         if available_payment<0:
             flash('This payment already contains invalid allocations.','error'); return back
@@ -75,8 +78,11 @@ def admin_finance_payment_allocate(payment_id):
 
         for raw_assessment_id,raw_amount in submitted.items():
             try:
-                assessment_id=int(raw_assessment_id); amount=float(raw_amount)
+                assessment_id=int(raw_assessment_id)
             except (TypeError,ValueError):
+                flash('One or more allocation amounts are invalid.','error'); return back
+            amount=_money(raw_amount)
+            if amount is None:
                 flash('One or more allocation amounts are invalid.','error'); return back
 
             if amount<=0:
@@ -92,7 +98,7 @@ def admin_finance_payment_allocate(payment_id):
                 flash('A payment can only be allocated to assessments belonging to the same student.','error'); return back
 
             already_allocated=_finance_assessment_allocated(assessment_id)
-            assessment_balance=max(0.0, float(assessment.amount or 0)-already_allocated)
+            assessment_balance=round(max(0.0, round(float(assessment.amount or 0),2)-already_allocated),2)
 
             if assessment_balance<=0.000001:
                 flash(f'{assessment.category} has already been fully paid and cannot receive a further allocation.','error'); return back
@@ -253,11 +259,13 @@ def admin_finance_record():
                                 .order_by(AcademicSession.id.desc())).all()
     current=_school_current_session()
     if request.method=='POST':
-        try: student_id=int(request.form.get('student_id','')); session_id=int(request.form.get('session_id','')); amount=float(request.form.get('amount','0'))
-        except (TypeError,ValueError): student_id=session_id=0; amount=0
+        try: student_id=int(request.form.get('student_id','')); session_id=int(request.form.get('session_id',''))
+        except (TypeError,ValueError): student_id=session_id=0
+        amount=_money(request.form.get('amount','0'))
         category=request.form.get('category','School Fees').strip() or 'School Fees'; method=request.form.get('method','Bank Transfer').strip(); reference=request.form.get('reference','').strip(); paid_at=request.form.get('paid_at','').strip() or datetime.now().strftime('%Y-%m-%d %H:%M'); notes=request.form.get('notes','').strip(); errors=[]
         if not student_id: errors.append('Select a student.')
-        if amount<=0: errors.append('Payment amount must be greater than zero.')
+        if amount is None: errors.append('Enter the payment amount as a number of naira, for example 12500.50.')
+        elif amount<=0: errors.append('Payment amount must be greater than zero.')
         if not session_id: errors.append('Select an academic session.')
         if errors: return render_template('finance_payment_form.html',students=students,sessions=sessions,form=request.form,errors=errors)
         student=db.session.scalars(select(Student).where(
@@ -415,6 +423,7 @@ def admin_finance_fee_items():
                   .select_from(FinancePaymentAllocation)
                   .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
                   .where(FinancePaymentAllocation.assessment_id==FinanceFeeAssessment.id,
+                         FinancePaymentAllocation.voided_at.is_(None),
                          FinancePayment.status=='posted')
                   .correlate(FinanceFeeAssessment).scalar_subquery())
     assessed_rows=[]
@@ -432,11 +441,7 @@ def admin_finance_fee_items():
         .limit(2000)):
         row=_flatten(r,'FinanceFeeAssessment','admission_no','first_name','last_name',
                      'session_name','fee_name','allocated')
-        assessed_amount=float(row['amount'] or 0)
-        paid=float(row['allocated'] or 0)
-        if paid>=assessed_amount and assessed_amount>0: row['payment_status']='Paid'
-        elif paid>0: row['payment_status']='Part Paid'
-        else: row['payment_status']='Unpaid'
+        row['payment_status']=_payment_status(row['amount'],row['allocated'])
         assessed_rows.append(row)
 
     # Student -> Session -> Term -> items, so a large assessment history can
@@ -491,10 +496,7 @@ def admin_finance_fee_item_new():
                     selected_class_ids.append(cid)
             except (TypeError,ValueError):
                 pass
-        try:
-            amount=float(request.form.get('amount','0'))
-        except (TypeError,ValueError):
-            amount=-1
+        amount=_money(request.form.get('amount','0'))
 
         if not name:
             errors.append('Fee item name is required.')
@@ -502,7 +504,9 @@ def admin_finance_fee_item_new():
             errors.append('Select a valid fee category.')
         if applicability not in FINANCE_FEE_APPLICABILITY:
             errors.append('Select a valid billing rule.')
-        if amount < 0:
+        if amount is None:
+            errors.append('Enter the fee amount as a number of naira, for example 12500.50.')
+        elif amount < 0:
             errors.append('Fee amount cannot be negative.')
         if not selected_class_ids:
             errors.append('Select at least one active class this fee applies to.')
@@ -564,10 +568,7 @@ def admin_finance_fee_item_edit(item_id):
                     selected_class_ids.append(cid)
             except (TypeError,ValueError):
                 pass
-        try:
-            amount=float(request.form.get('amount','0'))
-        except (TypeError,ValueError):
-            amount=-1
+        amount=_money(request.form.get('amount','0'))
 
         if not name:
             errors.append('Fee item name is required.')
@@ -575,7 +576,9 @@ def admin_finance_fee_item_edit(item_id):
             errors.append('Select a valid fee category.')
         if applicability not in FINANCE_FEE_APPLICABILITY:
             errors.append('Select a valid billing rule.')
-        if amount < 0:
+        if amount is None:
+            errors.append('Enter the fee amount as a number of naira, for example 12500.50.')
+        elif amount < 0:
             errors.append('Fee amount cannot be negative.')
         if not selected_class_ids:
             errors.append('Select at least one active class this fee applies to.')
@@ -680,6 +683,9 @@ def admin_finance_assessment_new():
             pass
 
     term=request.form.get('term','Full Session').strip() or 'Full Session'
+    if term not in ASSESSMENT_TERMS:
+        flash('Select a valid billing period for the assessment.','error')
+        return redirect(url_for('admin_finance_fee_items'))
     due_date=request.form.get('due_date','').strip() or None
     notes=request.form.get('notes','').strip()
 

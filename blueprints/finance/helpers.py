@@ -8,8 +8,10 @@ repo) and were dropped rather than moved.
 
 import base64
 import json
+import math
 import os
 import secrets
+import textwrap
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -22,7 +24,7 @@ from models import (
     FinancePayment, FinancePaymentAllocation, School, SchoolClass,
     SchoolPublicSetting, SchoolSetting, Student, StudentEnrolment, db,
 )
-from core.branding import receipt_prefix, school_name
+from core.branding import receipt_prefix, school_brand, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
 from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
 from core.notifications import _ng_phone
@@ -53,6 +55,30 @@ def _next_receipt_no():
 def _student_display(row): return ' '.join(x for x in [row['first_name'],row['middle_name'],row['last_name']] if x).strip()
 
 def _format_money(value): return f'₦{float(value or 0):,.2f}'
+
+# No payment or fee is ever this large; the receipt's amount in words stops at the billions.
+MAX_MONEY=10**12
+
+def _money(value):
+    """An amount of naira as submitted, kept to the kobo, or None when it is not usable.
+
+    NaN, infinity and absurdly large figures are refused: NaN would poison every
+    total it was added to, and a figure past the billions breaks the receipt.
+    """
+    try: amount=float(value)
+    except (TypeError,ValueError): return None
+    if not math.isfinite(amount) or abs(amount)>=MAX_MONEY: return None
+    return round(amount,2)
+
+def _payment_status(assessed, paid):
+    """Paid, Part Paid or Unpaid, worked out to the kobo so a floating-point crumb never flips it."""
+    assessed=round(float(assessed or 0),2); paid=round(float(paid or 0),2)
+    if paid>=assessed and assessed>0: return 'Paid'
+    return 'Part Paid' if paid>0 else 'Unpaid'
+
+def _wrap_text(text, width, max_lines):
+    """A few short lines of ``text`` for a fixed-size block on the receipt."""
+    return textwrap.wrap(' '.join(str(text or '').split()),width)[:max_lines]
 
 def _num_words_under_1000(n):
     ones=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen']
@@ -92,6 +118,9 @@ def _receipt_payload(payment_id):
                  'class_name','session_name')
     amount=float(row.get('amount') or 0)
     row['payer_name']=(row.get('payer_name') or row.get('guardian_name') or _student_display(row)).strip()
+    # What the payment was for, and whose it was: the student is named on the receipt itself.
+    row['purpose']=(f"{row.get('category') or 'School Fees'} — {_student_display(row)}"
+                    + (f" ({row['class_name']})" if row.get('class_name') else ''))
     row['amount_words']=_amount_in_words(amount)
     row['amount_naira']=int(amount)
     row['amount_kobo']=int(round((amount-row['amount_naira'])*100))
@@ -197,20 +226,21 @@ def _receipt_pdf(payment_id):
     for x,y in wave_pts[1:]: trim.lineTo(x,y)
     c.drawPath(trim,stroke=1,fill=0)
 
-    logo=_school_logo_path() or os.path.join(STATIC,'images','school_logo.png')
-    if os.path.exists(logo):
-        try: c.drawImage(ImageReader(logo),8*mm,H-42*mm,width=88*mm,height=36*mm,preserveAspectRatio=True,mask='auto')
+    # The school's own logo, or, when it has none, its own name in the logo's place. Never another school's mark.
+    logo=_school_logo_path(); drawn=False
+    if logo:
+        try: c.drawImage(ImageReader(logo),8*mm,H-42*mm,width=88*mm,height=36*mm,preserveAspectRatio=True,mask='auto'); drawn=True
         except Exception: pass
-    else:
-        c.setFillColorRGB(0.02,0.28,0.55); c.setFont(bold,16); c.drawString(9*mm,H-19*mm,'CREATIVE')
-        c.setFont(bold,12); c.drawString(9*mm,H-27*mm,'RAINBOW MONTESSORI SCHOOLS'); c.setFont(bold,7); c.drawString(31*mm,H-34*mm,'NURSERY  |  PRIMARY  |  COLLEGE')
+    if not drawn:
+        c.setFillColorRGB(0.02,0.28,0.55); c.setFont(bold,14)
+        for i,line in enumerate(_wrap_text(school_name(),26,3)): c.drawString(9*mm,H-19*mm-i*7*mm,line)
 
+    # The school's own address and contact details, as it entered them; a block it left blank stays blank.
+    brand=school_brand(); y=H-10*mm
     c.setFillColorRGB(0.12,0.12,0.12); c.setFont(regular,7.2)
-    c.drawString(140*mm,H-10*mm,'20/21 Charles Okeke Street,')
-    c.drawString(140*mm,H-15*mm,'Alahun-Ozumba,')
-    c.drawString(140*mm,H-20*mm,'Off Benster Close,')
-    c.drawString(140*mm,H-25*mm,'Maza-Maza, Lagos.')
-    c.setFont(bold,7.2); c.drawString(140*mm,H-30*mm,'Tel: 0803 123 4567, 0810 987 6543')
+    for line in _wrap_text(brand.get('address'),36,3): c.drawString(140*mm,y,line); y-=5*mm
+    if brand.get('phone'): c.setFont(bold,7.2); c.drawString(140*mm,y,f"Tel: {brand['phone']}"[:44]); y-=5*mm
+    if brand.get('email'): c.setFont(regular,7.2); c.drawString(140*mm,y,str(brand['email'])[:44])
 
     c.setFillColorRGB(0.78,0.10,0.08); c.roundRect(72*mm,H-59*mm,66*mm,11*mm,2.5*mm,fill=1,stroke=0)
     c.setFillColorRGB(1,1,1); c.setFont(bold,11); c.drawCentredString(105*mm,H-55.5*mm,'OFFICIAL RECEIPT')
@@ -226,7 +256,7 @@ def _receipt_pdf(payment_id):
     labels=[
         ('Received from:',row.get('payer_name') or _student_display(row)),
         ('the sum of:',row.get('amount_words','')),
-        ('Being payment for:',row.get('category') or 'School Fees'),
+        ('Being payment for:',row['purpose']),
         ('Cash/Cheque No.:',row.get('reference') or ('Cash' if method.lower()=='cash' else '—')),
         ('Bank:',method or '—'),
     ]
@@ -252,12 +282,19 @@ def _receipt_pdf(payment_id):
     c.setFillColorRGB(1,1,1); c.setFont(bold,7.4)
     c.drawString(left,band_h*0.32,f'For: {school_name().upper()}')
 
+    if row.get('status')=='voided':
+        # A voided payment's receipt must never pass for a valid one, on paper, by email or in the parent portal.
+        c.saveState(); c.translate(W/2,H/2-5*mm); c.rotate(18)
+        c.setStrokeColorRGB(0.69,0.09,0.09); c.setFillColorRGB(0.69,0.09,0.09); c.setLineWidth(1*mm)
+        c.rect(-42*mm,-8*mm,84*mm,20*mm,fill=0,stroke=1); c.setFont(bold,40); c.drawCentredString(0,-3*mm,'VOIDED'); c.restoreState()
+
     c.showPage(); c.save(); buf.seek(0); return buf.getvalue(),row
 
 
 def _send_email_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
+    if row['status']=='voided': return False,'This payment has been voided, so its receipt is not sent.'
     settings=email_settings()
     if settings is None: return False,'Email delivery is not set up for this school. A school administrator can add it under Email & WhatsApp.'
     recipient=(row['guardian_email'] or '').strip()
@@ -274,6 +311,7 @@ def _send_email_receipt(payment_id):
 def _send_whatsapp_receipt(payment_id):
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
+    if row['status']=='voided': return False,'This payment has been voided, so its receipt is not sent.'
     settings=whatsapp_settings(); token,phone_id,version=((settings.token,settings.phone_id,settings.version) if settings else ('','','')); recipient=_ng_phone(row['guardian_phone'])
     if settings is None: return False,'WhatsApp is not set up for this school. A school administrator can add it under Email & WhatsApp.'
     if not recipient: return False,'This student has no valid parent/guardian WhatsApp number.'
@@ -302,17 +340,24 @@ def _log_receipt_delivery(payment_id, channel, recipient, ok, msg, actor_id):
 
 def _finance_payment_allocated(payment_id):
     """How much of one payment has been applied to fee assessments."""
-    return float(one_scalar(
+    return round(float(one_scalar(
         select(func.coalesce(func.sum(FinancePaymentAllocation.amount),0))
         .where(FinancePaymentAllocation.payment_id==payment_id,
-               FinancePaymentAllocation.voided_at.is_(None)), 0))
+               FinancePaymentAllocation.voided_at.is_(None)), 0)),2)
 
 def _finance_assessment_allocated(assessment_id):
-    """Total still-standing allocations against one fee assessment."""
-    return float(one_scalar(
+    """Total still-standing allocations against one fee assessment.
+
+    Only money from payments that still stand counts: the allocations of a voided
+    payment are not money this fee has received, exactly as the fee's balance shows.
+    """
+    return round(float(one_scalar(
         select(func.coalesce(func.sum(FinancePaymentAllocation.amount),0))
+        .select_from(FinancePaymentAllocation)
+        .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
         .where(FinancePaymentAllocation.assessment_id==assessment_id,
-               FinancePaymentAllocation.voided_at.is_(None)), 0))
+               FinancePaymentAllocation.voided_at.is_(None),
+               FinancePayment.status=='posted'), 0)),2)
 
 def _finance_student_outstanding(student_id, session_id=None):
     """Each fee charged to a student, with what is still owed.
@@ -331,6 +376,7 @@ def _finance_student_outstanding(student_id, session_id=None):
                .select_from(FinancePaymentAllocation)
                .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
                .where(FinancePaymentAllocation.assessment_id==FinanceFeeAssessment.id,
+                      FinancePaymentAllocation.voided_at.is_(None),
                       FinancePayment.status=='posted')
                .correlate(FinanceFeeAssessment).scalar_subquery())
     scope=[FinanceFeeAssessment.student_id==student_id,FinanceFeeAssessment.active==1]
@@ -346,15 +392,14 @@ def _finance_student_outstanding(student_id, session_id=None):
                   .order_by(FinanceFeeAssessment.id))
     result=[]
     for row in rows:
-        assessed=float(row['amount'] or 0)
-        paid=float(row['allocated'] or 0)
+        # Kept to the kobo: three instalments of a fee must not read "part paid" by a floating-point crumb.
+        assessed=round(float(row['amount'] or 0),2)
+        paid=round(float(row['allocated'] or 0),2)
         item=dict(row)
         item['assessed']=assessed
         item['paid']=paid
-        item['outstanding']=max(0.0, assessed-paid)
-        if paid>=assessed and assessed>0: item['status']='Paid'
-        elif paid>0: item['status']='Part Paid'
-        else: item['status']='Unpaid'
+        item['outstanding']=round(max(0.0, assessed-paid),2)
+        item['status']=_payment_status(assessed,paid)
         result.append(item)
     return result
 
@@ -372,15 +417,15 @@ def _finance_student_lifetime_totals(student_id, session_id=None):
     letting it mask real debt on an unrelated fee.
     """
     rows=_finance_student_outstanding(student_id,session_id)
-    assessed=sum(r['assessed'] for r in rows)
-    paid=sum(r['paid'] for r in rows)
-    outstanding=sum(r['outstanding'] for r in rows)
+    assessed=round(sum(r['assessed'] for r in rows),2)
+    paid=round(sum(r['paid'] for r in rows),2)
+    outstanding=round(sum(r['outstanding'] for r in rows),2)
     paid_scope=[FinancePayment.student_id==student_id,FinancePayment.status=='posted']
     if session_id is not None:
         paid_scope.append(FinancePayment.session_id==session_id)
-    raw_paid=float(one_scalar(
-        select(func.coalesce(func.sum(FinancePayment.amount),0)).where(*paid_scope), 0))
-    unallocated=max(0.0, raw_paid-paid)
+    raw_paid=round(float(one_scalar(
+        select(func.coalesce(func.sum(FinancePayment.amount),0)).where(*paid_scope), 0)),2)
+    unallocated=round(max(0.0, raw_paid-paid),2)
     return {'assessed':assessed,'paid':paid,'outstanding':outstanding,'unallocated':unallocated}
 
 def _finance_student_sessions_with_balance(student_id, exclude_session_id=None):

@@ -155,8 +155,9 @@ def admin_control_resolve(cid):
 def admin_lock_resource(resource_type,resource_id):
     me=current_admin()
     if not is_school_admin(me): return admin_access_error('School Admin control')
-    if resource_type not in ('bank','examination'): abort(404)
-    if resource_type=='bank' and not bank(resource_id): abort(404)
+    # Only a question bank can be locked: nothing else checks for a lock, so a lock on anything
+    # else would say "changes are blocked" while blocking nothing.
+    if resource_type!='bank' or not bank(resource_id): abort(404)
     reason=request.form.get('reason','Locked by School Admin pending review.').strip() or 'Locked by School Admin pending review.'
     _lock_resource(resource_type,resource_id,reason,me['id'])
     _create_control_item('Resource locked',reason,'governance',resource_type,resource_id,me['id'])

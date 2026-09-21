@@ -3,6 +3,7 @@ configuration, candidate registration/records, question-bank management,
 attempts, results/rankings/exports, and retake/regrade controls.
 """
 
+import io
 import json
 import os
 from datetime import datetime, timezone
@@ -31,7 +32,7 @@ from core.entrance import (
     ENTRANCE_SUBJECT_LABELS, _answers_for_attempt, _candidate_papers,
     _chrome_result_png, _entrance_config_row,
     _new_candidate_code, _new_candidate_password,
-    _result_file_data_uri,
+    _result_file_data_uri, _school_logo_data_uri,
     _valid_question_configuration, bank, bank_entry_group, bank_subject,
     candidate_cumulative, entrance_paper_label, entrance_subject_label,
     get_attempt, grade, load_banks, normalize_entry_group,
@@ -535,8 +536,12 @@ def admin_candidate_result_image(cid):
         grade
     )
 
+    # Read it, delete it, then send the bytes: the file was only ever a step in making the answer.
+    with open(image_path,'rb') as handle: png=handle.read()
+    try: os.remove(image_path)
+    except OSError: pass
     return send_file(
-        image_path,
+        io.BytesIO(png),
         mimetype='image/png',
         as_attachment=False,
         download_name=f"{candidate['candidate_code']}_Official_Result.png"
@@ -563,14 +568,7 @@ def admin_candidate_result_share(cid):
 
     filename=f"{candidate['candidate_code']}_Official_Result.png"
 
-    logo_path=os.path.join(
-        BASE,
-        'static',
-        'images',
-        'school_logo.png'
-    )
-
-    logo_data=_result_file_data_uri(logo_path)
+    logo_data=_school_logo_data_uri()
 
     return render_template(
         'admin_candidate_result_share.html',

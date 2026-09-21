@@ -63,6 +63,12 @@ def data_dir():
     return _folder('data')
 
 
+def generated_dir():
+    """Folder of the current school's generated files (result images). Not served to anyone: a file
+    here is read by the route that made it, which sends it and deletes it."""
+    return _folder('generated')
+
+
 def uploads_dir():
     """Folder of the current school's uploaded files; served at /static/uploads/."""
     return _folder('uploads')

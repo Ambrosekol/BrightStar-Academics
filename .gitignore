@@ -29,3 +29,7 @@ Thumbs.db
 # Pre-PostgreSQL database backups (contain real student data)
 cbt.db.backup-*
 *.db.backup-*
+
+# Uploads and generated files live in each school's own folder under tenants/, never here
+static/uploads/
+static/generated/

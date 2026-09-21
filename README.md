@@ -396,6 +396,7 @@ variable; the ones that shape the deployment:
 | `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` | Optional: place schools' databases on another server. |
 | `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
 | `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
+| `BRIGHTSTARS_CHROME` | Optional. The Chrome or Chromium program that draws a candidate's result image; found automatically on Windows and under the usual names on Linux and macOS. |
 | `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and WhatsApp secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
 
 ## Project layout
@@ -498,6 +499,12 @@ python tests/verification/write_paths_numbering.py         # each school's own c
 python tests/verification/write_paths_question_banks.py    # the standard banks, importing banks, a new school's first exam
 python tests/verification/write_paths_fractional_marks.py  # a 40-question paper is 100 marks; older schools upgraded
 python tests/verification/write_paths_retired_tables.py    # clearing the removed editor's leftover tables
+python tests/verification/write_paths_error_pages.py       # the 404, 403 and 500 pages: branded, per school, and never leaking
+python tests/verification/write_paths_term_grading.py      # Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility
+python tests/verification/write_paths_bank_locks.py        # locking a question bank, and what a lock blocks
+python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts
+python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and WhatsApp, the signature
+python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 ```
 

@@ -636,3 +636,23 @@ def test_marks_are_decimals_and_read_as_whole_numbers_when_they_are_whole():
     assert "_allow_fractional_marks()" in APP[APP.index("def _init_db"):APP.index("def csrf_token")]
     assert "app.jinja_env.finalize" in APP
 
+
+def test_the_platform_ships_no_schools_logo_photos_or_uploads_and_serves_no_generated_files():
+    """Everything a school owns lives in its own folder under tenants/. The platform's own static
+    folder holds no school's logo, photographs or uploads, a school without a logo gets a neutral
+    placeholder that really exists, and a candidate's result image is made in the school's private
+    folder (never a public one) and deleted after it is sent."""
+    static = ROOT / "static"
+    for name in ("uploads", "generated"):
+        assert not (static / name).exists(), name
+    assert not (static / "images" / "school").exists() and not (static / "images" / "school_logo.png").exists()
+    branding = (ROOT / "core" / "branding.py").read_text(encoding="utf-8")
+    placeholder = re.search(r"PLACEHOLDER_LOGO = '([^']+)'", branding).group(1)
+    assert (static / placeholder).is_file(), placeholder
+    entrance = (ROOT / "core" / "entrance.py").read_text(encoding="utf-8")
+    routes = (ROOT / "blueprints" / "entrance" / "routes.py").read_text(encoding="utf-8")
+    for body in (entrance, routes):
+        assert "school_logo.png" not in body and '"static" /' not in body and "'static'," not in body
+    assert "generated_dir()" in entrance and "os.remove(image_path)" in routes
+    storage = (ROOT / "core" / "storage.py").read_text(encoding="utf-8")
+    assert "return _folder('generated')" in storage

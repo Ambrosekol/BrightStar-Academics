@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 PLATFORM_NAME = 'Brightstars Academics'
 # Used only until a school uploads its own logo.
-PLACEHOLDER_LOGO = 'images/school_placeholder_logo.png'
+PLACEHOLDER_LOGO = 'images/school_placeholder_logo.svg'
 RECEIPT_PREFIX_KEY = 'receipt_prefix'
 
 
@@ -112,7 +112,7 @@ def school_brand():
     if current_tenant(required=False) is None:
         # The platform host: no school, so nothing to brand.
         return {'name': PLATFORM_NAME, 'motto': '', 'tagline': '',
-                'email': '', 'phone': '', 'logo_url': None, 'logo_path': '',
+                'email': '', 'phone': '', 'address': '', 'logo_url': None, 'logo_path': '',
                 'primary': '', 'accent': '', 'primary_dark': '', 'gallery': [], 'theme_css': ''}
 
     if has_request_context() and '_school_brand' in g:
@@ -127,6 +127,7 @@ def school_brand():
         'tagline': _setting('school_tagline') or _school_row(School.tagline),
         'email': _setting('school_email') or _school_row(School.email),
         'phone': _setting('school_phone') or _school_row(School.phone),
+        'address': _setting('school_address') or _school_row(School.address),
         # A school's own logo is served out of its own uploads folder.
         'logo_url': url_for('static', filename=logo or PLACEHOLDER_LOGO) if has_request_context() else None,
         'logo_path': logo,
