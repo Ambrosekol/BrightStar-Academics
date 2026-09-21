@@ -11,7 +11,7 @@ may be left half-created when an image is rejected. And a school's uploaded file
 must stay unreachable from the platform host except through the console's own
 signed-in preview.
 
-Also checks that the Brightstars logo appears on the platform's own pages and
+Also checks that the Brightstars logo appears on the console's pages and
 never on a school's portal.
 
 Run:  python tests/verification/write_paths_portal_branding.py
@@ -119,11 +119,9 @@ pv.create_platform_admin("ops", "Ops Team", "a-long-platform-password")
 c_pl, u_pl = client("platform.test")
 
 # ------------------------------------------- the Brightstars logo, platform pages
-site = c_pl.get("/", base_url=u_pl).get_data(as_text=True)
-check("the platform's own website shows the Brightstars logo", "brand/brightstars-logo.png" in site)
-check("…and the star as its browser-tab icon", "brand/favicon-32.png" in site)
 login = c_pl.get("/platform/login", base_url=u_pl).get_data(as_text=True)
 check("the console sign-in page shows the Brightstars logo", "brand/brightstars-logo.png" in login)
+check("…and the star as its browser-tab icon", "brand/favicon-32.png" in login)
 r = c_pl.get("/static/brand/brightstars-logo.png", base_url=u_pl)
 check("the logo file is served on the platform host as a PNG",
       r.status_code == 200 and r.mimetype == "image/png" and r.data[:8] == b"\x89PNG\r\n\x1a\n")

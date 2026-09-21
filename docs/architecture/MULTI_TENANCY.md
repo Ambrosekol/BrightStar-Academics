@@ -8,9 +8,10 @@ super admins; a school manages its own staff and roles.
 Two rules shape everything below:
 
 * **A school gets a portal, not a website.** A school's address serves sign-in
-  and the admin, student, parent and candidate areas — nothing else. The only
-  public website on the deployment is the platform's own, at `/` on the
-  platform hostnames.
+  and the admin, student, parent and candidate areas — nothing else. The
+  deployment serves no public website at all: the platform's own marketing site
+  is hosted separately (for example `brightstars.com`), and `/` on a platform
+  hostname redirects to the console.
 * **The platform issues the address.** Every school is given
   `<code>.<portal domain>` when it is created, and it works immediately. A
   school that wants its own domain points a CNAME record at that address.
@@ -28,7 +29,7 @@ Two rules shape everything below:
 | School chosen from the request's hostname; unknown/suspended hosts refused | Built |
 | One database per school, chosen per request, fail-closed | Built |
 | Issued portal address per school, working immediately; CNAME for the school's own domain | Built |
-| Schools have no public website; the platform's own site is the only one | Built |
+| Schools have no public website; the deployment serves none, and `/` on a platform host opens the console | Built |
 | Everything a school owns in one `tenants/<code>/` folder | Built |
 | Session cookies bound to their school | Built |
 | **Platform console**: sign-in, dashboard, create school, addresses, administrators, suspend, activity | Built |
@@ -73,7 +74,7 @@ current school = crainbow  (a ContextVar for the request)
 
 | Hostname | Serves |
 |---|---|
-| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform's own website at `/`, and the console under `/platform` |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform console under `/platform`; `/` redirects to its sign-in page |
 | `<code>.<BRIGHTSTARS_PORTAL_DOMAIN>` | That school's portal (issued on creation, permanent) |
 | A school's own domain (CNAME → the above) | The same portal |
 | Anything else | 404, before any application code runs |
@@ -83,7 +84,7 @@ current school = crainbow  (a ContextVar for the request)
 guessing a school could show one school's data to another.
 
 **Platform host.** Hostnames in `BRIGHTSTARS_PLATFORM_HOSTS` belong to the
-platform, not to any school: they serve the platform's own website at `/`, the
+platform, not to any school: they redirect `/` to the console, serve the
 console under `/platform`, shared static assets and `/health`, and 404 for
 everything else. A school's portal is never served there, and a school's
 uploads are never served there either.
@@ -100,7 +101,6 @@ uploads are never served there either.
 | `control_plane/provisioning.py` | Create / register-existing / upgrade schools, first admin, adopt Super Admin, suspend, domains |
 | `control_plane/console.py` | The platform console: sign-in, dashboard, create school, addresses, administrators, suspend, activity, "Enter school" |
 | `control_plane/entry.py` | Platform-admin sign-in, entry tickets, the reserved operator account inside a school |
-| `control_plane/site.py` | The platform's own public website |
 | `control_plane/cli.py` | `python -m control_plane …` |
 | `core/storage.py` | `data_dir()`, `uploads_dir()`, `stored_upload_path()` — per school |
 | `core/branding.py` | The school's own name/motto/logo, exposed to every template as `school_brand` |

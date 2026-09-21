@@ -183,8 +183,9 @@ check("a school with two domains answers on both", c_be2.get("/login", base_url=
 r = c_un.get("/", base_url=u_un)
 check("an unregistered domain is refused before any application code runs",
       r.status_code == 404 and b"not registered" in r.data)
-check("the platform host serves the platform's own website, never a school's portal",
-      c_pl.get("/", base_url=u_pl).status_code == 200
+check("the platform host opens on the console, and never serves a school's portal",
+      c_pl.get("/", base_url=u_pl).status_code == 302
+      and c_pl.get("/", base_url=u_pl).headers["Location"].endswith("/platform/login")
       and c_pl.get("/login", base_url=u_pl).status_code == 404
       and c_pl.get("/admin/home", base_url=u_pl).status_code == 404)
 check("/health answers on any host (load balancers)", c_un.get("/health", base_url=u_un).status_code == 200)

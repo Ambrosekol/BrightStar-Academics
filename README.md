@@ -13,8 +13,9 @@ a library catalogue, and role-based staff governance.
 Two ideas shape everything here:
 
 - **A school gets a portal, not a website.** A school's address serves sign-in and the staff,
-  student, parent and candidate areas — nothing else. The only public website on the deployment
-  is the platform's own.
+  student, parent and candidate areas — nothing else. The deployment serves no public website
+  at all: the platform's own marketing site is hosted separately, and its console address opens
+  straight on the sign-in page.
 - **The platform issues the address.** Creating a school immediately gives it a working address
   at `<school-code>.<portal-domain>`. A school that wants to use its own domain points a CNAME
   record at that address.
@@ -43,7 +44,7 @@ There are two kinds of hostname, and they never overlap.
 
 | Hostname | Serves |
 |---|---|
-| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform's own website at `/`, and the platform console at `/platform` |
+| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform console (`/platform`); `/` on these hostnames goes to its sign-in page |
 | `<school-code>.<BRIGHTSTARS_PORTAL_DOMAIN>` | That school's portal — issued when the school is created, and permanent |
 | A school's own domain, CNAME'd to the above | The same portal |
 | Anything else | `404`, before any application code runs |
@@ -255,7 +256,6 @@ Academics/
 │   ├── provisioning.py       #   create/import/upgrade schools, branding, domains, suspend
 │   ├── entry.py              #   platform sign-in, entry tickets, "Enter school"
 │   ├── console.py            #   the platform console
-│   ├── site.py               #   the platform's own public website
 │   └── cli.py                #   python -m control_plane …
 ├── models/                   # One school's schema, one module per domain
 │   ├── base.py               #   the shared db, built on TenantSession

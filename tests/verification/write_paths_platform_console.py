@@ -4,9 +4,10 @@ Drives the real console through HTTP: signing in as a platform admin, creating
 a school (with its branding and logo) through the form, managing its portal and
 custom addresses, suspending it, and entering it on its own domain.
 
-It also checks the shape the platform is meant to have: a school's address is a
-portal and not a website, the only public website is the platform's own, and
-every school's files sit in one folder of their own.
+It also checks the shape the platform is meant to have: neither kind of address is
+a website (the platform's own site is hosted elsewhere, so its console address
+opens straight on the console), and every school's files sit in one folder of
+their own.
 
 The hostile cases matter as much as the happy path, so this also checks that
 the console is invisible from a school's domain, that a platform session is not
@@ -99,13 +100,14 @@ pv.create_platform_admin("ops", "Ops Team", "a-long-platform-password")
 
 c_pl, u_pl = client("platform.test")
 
-# ------------------------------------------------- the platform's own website
+# ---------------------------------------- the platform host opens on the console
 r = c_pl.get("/", base_url=u_pl)
-site = r.get_data(as_text=True)
-check("the platform's own public website is served at / on the platform host",
-      r.status_code == 200 and "Brightstars Academics" in site)
-check("the platform site explains the portal address and the CNAME step",
-      "portal.test" in site and "CNAME" in site)
+check("/ on the platform host goes straight to the console sign-in, not to a website",
+      r.status_code == 302 and r.headers["Location"].endswith("/platform/login"),
+      f'{r.status_code} {r.headers.get("Location")}')
+check("a second platform host does the same",
+      A.app.test_client().get("/", base_url="http://ops.test").headers.get("Location", "")
+      .endswith("/platform/login"))
 check("the console's sign-in page is served on the platform host",
       c_pl.get("/platform/login", base_url=u_pl).status_code == 200)
 check("a second configured platform host works too",
@@ -128,6 +130,10 @@ check("correct platform credentials sign in",
 dash = c_pl.get("/platform", base_url=u_pl)
 check("the dashboard loads and offers school creation",
       dash.status_code == 200 and "Create a school" in dash.get_data(as_text=True))
+r = c_pl.get("/", base_url=u_pl)
+check("once signed in, / goes to the dashboard instead of asking to sign in again",
+      r.status_code == 302 and r.headers["Location"].rstrip("/").endswith("/platform"),
+      r.headers.get("Location", ""))
 check("a POST without a CSRF token is refused",
       c_pl.post("/platform/schools/new", data={"name": "X"}, base_url=u_pl).status_code == 403)
 

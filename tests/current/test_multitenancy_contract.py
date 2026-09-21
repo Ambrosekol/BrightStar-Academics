@@ -189,13 +189,16 @@ def test_upload_paths_cannot_escape_the_schools_folder():
 
 
 def test_a_school_gets_a_portal_not_a_website():
-    """A school's address serves the portal only. The public marketing pages
-    belong to the platform's own site, which is the only website there is."""
+    """A school's address serves the portal only, and so does the platform's: its
+    marketing site is hosted elsewhere, so "/" there opens straight on the console."""
     fn = RESOLVER[RESOLVER.index("def resolve_tenant"):RESOLVER.index("def release_tenant")]
     assert "request.path.startswith('/school/')" in fn
     # "/" redirects into the portal instead of rendering a marketing homepage.
     index = APP[APP.index("def index():"):APP.index("@app.after_request")]
-    assert "_portal_front_door()" in index and "platform_home()" in index
+    assert "_portal_front_door()" in index
+    assert "platform_login" in index and "platform_dashboard" in index
+    assert not (ROOT / "control_plane" / "site.py").exists()
+    assert not (ROOT / "templates" / "platform" / "site.html").exists()
 
 
 def test_every_school_gets_an_issued_portal_hostname():
@@ -303,7 +306,7 @@ def test_the_gallery_only_serves_files_from_the_schools_own_branding_folder():
 def test_the_brightstars_logo_belongs_to_the_platform_and_never_to_a_school():
     logo = "brand/brightstars-logo.png"
     assert (ROOT / "static" / "brand" / "brightstars-logo.png").is_file()
-    for page in ("base.html", "site.html", "login.html"):
+    for page in ("base.html", "login.html"):
         assert logo in (ROOT / "templates" / "platform" / page).read_text(encoding="utf-8"), page
     # A school's portal must look like the school's own, not like the platform's.
     for template in (ROOT / "templates").glob("*.html"):

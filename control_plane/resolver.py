@@ -16,8 +16,8 @@ from .registry import init_platform_db, normalise_host, tenant_for_host
 # internal name, and the handler touches no database.
 _ANYWHERE = ('/health',)
 
-# The platform's own public website, served only on the platform hostnames.
-PLATFORM_SITE_PATHS = ('/',)
+# On a platform hostname "/" only redirects into the console; there is no page.
+PLATFORM_ROOT_PATHS = ('/',)
 
 
 def _plain(status, title, message):
@@ -39,7 +39,7 @@ def resolve_tenant():
         # never served from the platform host.
         if request.path == '/platform' or request.path.startswith('/platform/'):
             return None
-        if request.path in PLATFORM_SITE_PATHS:
+        if request.path in PLATFORM_ROOT_PATHS:
             return None
         if request.path.startswith('/static/') and not request.path.startswith('/static/uploads/'):
             return None
@@ -52,8 +52,8 @@ def resolve_tenant():
         return _plain(503, 'Temporarily unavailable',
                       'This school portal is currently unavailable. Please contact the school.')
 
-    # A school's address is a portal, not a website. The public marketing pages
-    # belong to the platform's own site and are not served for any school.
+    # A school's address is a portal, not a website: no public pages are served
+    # for any school.
     if request.path == '/school' or request.path.startswith('/school/'):
         return _plain(404, 'Not found', 'The requested page does not exist.')
 

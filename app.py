@@ -803,12 +803,13 @@ def _portal_front_door():
 
 @app.route('/')
 def index():
-    # The only public website is the platform's own. A school's address is a
-    # portal: its front door is the sign-in page, or wherever the visitor was
-    # already signed in.
+    # Neither kind of address is a website. The platform's own site (brightstars.com)
+    # is hosted elsewhere, so its console address opens straight on the console; a
+    # school's address is a portal, whose front door is the sign-in page, or
+    # wherever the visitor was already signed in.
     if g.get('on_platform_host'):
-        from control_plane.site import platform_home
-        return platform_home()
+        return redirect(url_for('platform_dashboard' if session.get('platform_admin_id')
+                                else 'platform_login'))
     return redirect(_portal_front_door())
 
 
