@@ -20,6 +20,10 @@ SLUG_RE = re.compile(r'^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$')
 _LABEL = r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?'
 HOSTNAME_RE = re.compile(rf'^(?=.{{1,253}}$){_LABEL}(?:\.{_LABEL})*$')
 
+# How long a connection to the registry may take before giving up. The registry is asked on
+# nearly every request, so a hung connection must not be allowed to hold a request for minutes.
+REGISTRY_CONNECT_TIMEOUT = 3
+
 _engine = None
 _engine_url = None
 _engine_lock = threading.Lock()
@@ -39,7 +43,7 @@ def platform_engine():
         if _engine is None or _engine_url != url:
             if _engine is not None:
                 _engine.dispose()
-            _engine = build_engine(url)
+            _engine = build_engine(url, connect_timeout=REGISTRY_CONNECT_TIMEOUT)
             _engine_url = url
         return _engine
 

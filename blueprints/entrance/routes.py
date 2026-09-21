@@ -37,6 +37,7 @@ from core.entrance import (
     get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
 )
+from core.numbering import NumberingRuleError
 from models import (
     AcademicSession, AdminResourceLock, Answer, Attempt, Candidate,
     CandidatePaper, EntranceBankConfig, Examination, RetakeGrant, db,
@@ -337,7 +338,11 @@ def admin_new_candidate():
             return render_template('candidate_form.html',errors=errors,form=request.form,available_papers=papers,missing=missing)
         now=datetime.now(timezone.utc).isoformat()
         try:
-            code=_new_candidate_code()
+            # The code follows this school's own rule; a rule that fails is shown, not a crash.
+            code=_new_candidate_code(candidate_name=name,target_class=target)
+        except NumberingRuleError as exc:
+            return render_template('candidate_form.html',errors=[str(exc)],form=request.form,available_papers=papers,missing=missing)
+        try:
             password=_new_candidate_password()
             candidate=Candidate(
                 candidate_code=code,candidate_name=name,target_class=target,
@@ -999,3 +1004,6 @@ def admin_regrade(aid):
     if a['status'] not in ('submitted','expired'):
         flash('Only completed attempts can be regraded.','error'); return redirect(url_for('admin_result_detail',aid=aid))
     grade(aid,force=True); _create_control_item('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','regrade_review','attempt',aid,current_admin()['id']); _notify_school_admins('Result regraded',f'Attempt #{aid} for {a["candidate"]} was regraded.','warning',url_for('admin_controls')); flash('Attempt regraded using the current verified answer key. School Admin has been notified.','success'); return redirect(url_for('admin_result_detail',aid=aid))
+
+# Importing question banks and setting up the standard entrance papers live in their own module.
+import blueprints.entrance.bank_import  # noqa: F401,E402

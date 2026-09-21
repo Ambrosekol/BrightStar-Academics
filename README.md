@@ -31,6 +31,8 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Giving a school its own domain](#giving-a-school-its-own-domain)
 - [The platform team and its activity log](#the-platform-team-and-its-activity-log)
 - [Email and WhatsApp](#email-and-whatsapp)
+- [How a school numbers its people](#how-a-school-numbers-its-people)
+- [Question banks](#question-banks)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -196,6 +198,12 @@ Both use the same rules (`core/branding.py`), so they cannot disagree about what
 Images must be PNG, JPG, GIF or WEBP, each up to `BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by
 default). The pages that take a logo plus a full gallery raise the request limit to fit it; every
 other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
+- **Question banks.** Ticked by default: *Start with the standard entrance question banks*. The
+  platform's standard set (`starter_banks/`, six banks: Mathematics, English and General Knowledge
+  for Year 7 and SSS 1) is copied into the school's own `data/` folder, so its entrance
+  examinations can run at once. Untick it, or pass `--no-starter-banks` on the command line, for a
+  school that will bring only its own. The starter files name no school, and copying never
+  overwrites a file the school already has.
 - **Its own domain** (optional, addable later).
 - **First administrator** (optional). A one-time password is shown once and must be changed at
   first sign-in.
@@ -292,6 +300,59 @@ top-level administrator holds and can grant to a role): a mail server, or a What
   local mail catcher is accepted. The platform's own configured server is trusted and unrestricted.
   Certificates are verified.
 
+## How a school numbers its people
+
+Schools do not all number their entrance candidates the same way, so the platform does not decide
+what a candidate code looks like. **Each school has its own rule, in a file in its own folder:**
+`tenants/<code>/numbering.py`.
+
+- A new school is given a copy of the starter (`tenant_starter/numbering.py`) when its folder is
+  made. The starter makes `CODE-2026-0001`, `CODE-2026-0002`, … and starts again each year, which
+  is what the platform always did. A school made before this existed gets the same file the first
+  time it needs a number, so nothing changes for it until someone edits the file.
+- Edit the file and save it. The next candidate is numbered by the new rule, with no restart.
+  Nothing else in the platform, and no other school, is affected.
+- The rule is an ordinary function, `candidate_code(ctx)`. It can look at the school's code and
+  name, the year, the candidate's name and the class applied for, and it has helpers to find the
+  next free number. A second, optional function, `student_number(ctx)`, changes how a student's
+  number is *written* (the running number and the ledger that stops one being issued twice stay
+  with the platform). The file explains each option in plain words.
+- Whatever the rule returns is checked: a candidate code is made capitals (that is how candidates
+  sign in), may use letters, digits and `.` `_` `-`, and is 3 to 40 characters. If it is already
+  taken the rule is asked again, so a counter can move on.
+- A rule with a mistake in it is **refused with a plain message on the form, and nothing is
+  saved.** It never falls back to another rule, so a school's codes always follow its own rule.
+
+The file is program code and runs with the application's own power, so **only the people who run
+the platform should edit it.** School staff cannot change it from the portal, on purpose: letting a
+school's administrators write code would let one school reach into all the others. The platform
+console's folder listing shows the file among the school's files, and copying the school's folder
+moves its rule with it. (`tests/verification/write_paths_numbering.py` proves all of this.)
+
+## Question banks
+
+Each school's banks are JSON files in its own folder, `tenants/<code>/data/`, so copying the folder
+moves them and no school can read another's.
+
+- **A new school is not empty.** Creating a school copies the standard entrance banks from
+  `starter_banks/` into it and fills its examinations list. The files use neutral names and ids
+  (`starter_year7_mathematics` and so on) and name no school. Nothing is ever overwritten, and the
+  repository's own `data/` folder and every existing school's banks are left as they are.
+- **A school can bring its own.** *Question Banks → Import from file* takes a JSON file. It needs
+  the `question_banks.create` permission (replacing a bank also needs `question_banks.edit`). The
+  file is checked strictly: at most 2 MB, a safe bank id, a name, 1 to 500 questions, each with
+  four different options and an answer, no picture paths. Everything wrong is listed at once. It is
+  written only inside the school's own folder; a bank whose id already exists is replaced only when
+  the administrator ticks *Replace it*; every import is recorded in the audit log.
+- **Live papers.** A bank is not an exam until it is configured for the current session.
+  *Exam Configuration → Set up the standard entrance papers* does that in one click for the
+  standard banks (a school that has set up some papers itself keeps them); the same page adds or
+  changes a paper by hand and makes one live.
+
+The standard questions came from the first school's production banks. Questions that refer to a
+passage or diagram that is not in the data, or that had no valid answer key, were left out. Have
+the platform's academic owner review the set before relying on it.
+
 ## Command line
 
 ```
@@ -304,6 +365,7 @@ python -m control_plane <command>
   adopt-superadmin --from-db FILE                 make its Super Admin a platform operator
   list                          every school, its addresses and its database
   upgrade [CODE]                bring school database(s) up to the current schema
+  drop-retired-tables [CODE] [--yes]   show, or with --yes drop, tables left by the removed website editor
   add-domain CODE HOST [--primary] / remove-domain HOST
   suspend CODE [--reason TEXT] / activate CODE
 ```
@@ -343,6 +405,7 @@ Academics/
 │   ├── entry.py              #   platform sign-in, entry tickets, "Enter school"
 │   ├── team.py               #   platform admins: add/remove/restore/reset, and the activity log
 │   ├── console.py            #   the platform console
+│   ├── ratelimit.py          #   sign-in and other limits, counted in the registry so workers share them
 │   └── cli.py                #   python -m control_plane …
 ├── models/                   # One school's schema, one module per domain
 │   ├── base.py               #   the shared db, built on TenantSession
@@ -366,6 +429,9 @@ Academics/
 │   ├── accounts.py           #   shared sign-in/out helpers
 │   ├── entrance.py           #   question banks, grading, result rendering
 │   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
+│   ├── banks.py              #   question-bank validation, safe writing, the standard set
+│   ├── numbering.py          #   runs each school's own numbering rules (tenants/<code>/numbering.py)
+│   ├── retired_tables.py     #   drops the removed website editor's tables when they are empty
 │   ├── notifications.py      #   guardian email/WhatsApp alerts
 │   ├── presence.py           #   who is online
 │   ├── public_settings.py    #   the school's settings lookup
@@ -381,6 +447,8 @@ Academics/
 │   ├── library/              #   library administration
 │   └── administration/       #   accounts, roles, permissions, messaging
 ├── services/                 # Small dependency-free utilities
+├── tenant_starter/           # Files every new school is given a copy of (its numbering rules)
+├── starter_banks/            # The standard entrance question banks copied into a new school
 ├── templates/                # Jinja templates; templates/platform/ is the console and site
 ├── static/                   # CSS/JS/images shared by every school
 ├── tenants/                  # Per school: <code>/data and <code>/uploads (gitignored)
@@ -418,6 +486,11 @@ python tests/verification/write_paths_platform_team.py     # the team, roles, re
 python tests/verification/write_paths_delivery.py          # a school's own email and WhatsApp
 python tests/verification/write_paths_known_gaps.py        # roles, profile page, uploads, search, sign-in errors
 python tests/verification/write_paths_pg_smoke.py          # every page, opened on PostgreSQL
+python tests/verification/write_paths_pg_posts.py          # every form submission, sent on PostgreSQL
+python tests/verification/write_paths_numbering.py         # each school's own candidate and student numbering
+python tests/verification/write_paths_question_banks.py    # the standard banks, importing banks, a new school's first exam
+python tests/verification/write_paths_retired_tables.py    # clearing the removed editor's leftover tables
+python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 ```
 
 Between them they cover hostname routing, per-school databases, session cookies copied between
@@ -425,6 +498,23 @@ schools, path traversal, uploads, question banks, suspension, creating a school 
 and logo, colours and photographs (including hostile input), portal addresses and CNAMEs, and
 entering a school. `tests/verification/` also holds
 per-feature write-path scripts, and `tests/legacy/` retained historical ones.
+
+### Every write is tested on PostgreSQL
+
+`write_paths_pg_smoke.py` opens every page; `write_paths_pg_posts.py` submits every form.
+It sends a real, valid submission to all 132 routes that accept a POST, as the right kind of
+signed-in person (platform operator, school administrator, staff, student, parent, candidate), and
+checks the row was written. Email and WhatsApp are caught at the last step, so the real sending
+code (including building a receipt PDF) still runs. It then sends each route an empty form,
+hostile text, huge and negative numbers, NUL bytes, no CSRF token and an id that does not exist,
+and fails on any 500 or database error. This is how nine more PostgreSQL-only failures were found
+and fixed (returning a library book, a parent's message, editing a parent, and forms that crashed
+when shown again after a mistake, among others). A number too big for a database column, or text
+containing a NUL byte, is answered with a plain 400 page (`core/request_errors.py`), not a 500.
+
+A route that accepts a POST but is neither submitted there nor listed with a reason in
+`tests/verification/pg_posts_coverage.py` fails the contract suite, so a new route cannot ship
+untested on PostgreSQL.
 
 ## Operating
 
@@ -437,6 +527,22 @@ reactivation.
 
 **Upgrades.** `python app.py` brings every registered school's schema up to date before serving.
 With many schools, run `python -m control_plane upgrade` as a deploy step instead.
+
+**Leftover tables.** A school database made before the website editor was removed still holds its
+three tables (`school_public_pages`, `school_public_news`, `school_public_enquiries`). Nothing uses
+them. An upgrade drops any that are empty, so nothing can be lost; one that still holds rows is kept
+and a warning says so. `python -m control_plane drop-retired-tables` shows what each school still
+holds, and adding `--yes` drops it for good.
+
+**Limits are shared by every worker.** Sign-in (schools and the console), password recovery and the
+email/WhatsApp test buttons are limited to a number of tries per stretch of time, for example
+8 sign-ins per 5 minutes per address and username. The counts live in the registry database (table
+`rate_limits`), so several workers, or a restart, cannot multiply or reset them. Each is a fixed
+window, and only a hash of the key is stored, never an address or a username. If the registry
+cannot be reached each worker counts in its own memory until it can again, and logs a warning at
+most once a minute; nobody is locked out. A limit at the reverse proxy in front is still worthwhile,
+and behind a proxy make sure the application sees the visitor's real address, or every visitor
+shares one count. The registry connection gives up after 3 seconds rather than holding a request.
 
 **Connections.** Each school has its own connection pool, so total connections scale with
 schools × pool size × workers. Size PostgreSQL's `max_connections` accordingly, or put a pooler
@@ -476,18 +582,15 @@ Check student, result and payment counts against the old database before doing s
 - **`migrations/` is a historical record, not a runner.** The schema is declared in `models/` and
   realised by `create_all()` plus a column-diffing helper at startup; the SQL bodies no longer
   execute and are kept so `schema_migrations` stays an accurate record.
-- **Question banks are JSON files** under `tenants/<code>/data/`. A new school starts with none.
+- **Question banks are JSON files** under `tenants/<code>/data/`, owned by the school. A new school is
+  given the platform's standard set, and can import its own (see *Question banks* below).
 
 ## Known gaps
 
-- **Only pages are exercised on PostgreSQL, not every write.** `tests/verification/write_paths_pg_smoke.py`
-  opens every admin, student, parent and candidate page with data behind it, which is how a whole
-  class of SQLite-era queries that PostgreSQL rejects was found and fixed. Form submissions
-  (the POST paths) are covered by the feature suites but not exhaustively.
-- **Rate limits are per process.** Sign-in, password-recovery and test-message limits live in one
-  worker's memory, so several workers multiply them. Put a limit at the reverse proxy too.
-- **Databases that predate the website editor's removal keep its tables** (`school_public_pages`,
-  `school_public_news`, `school_public_enquiries`). Nothing reads or writes them any more; drop
-  them by hand if you want the space.
-- **Question banks are still per-school JSON files** under `tenants/<code>/data/`, so a new school
-  starts with none and its entrance examinations cannot run until banks are imported.
+- **Marks per question must be whole numbers.** `attempt_questions.points` is an integer column, but
+  an entrance paper of, say, 40 questions is 2.5 marks each and is stored as 2, so the raw marks
+  add up to 80 rather than 100 (the percentage is still right). Serve a count that divides 100
+  evenly (20, 25 or 50); the standard banks serve 25.
+- **The standard question set is one school's content.** Its questions have been cleaned of that
+  school's name and of items that could not work anywhere, but they are still the first school's
+  questions. A school that wants its own content imports it.

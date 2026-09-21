@@ -12,6 +12,7 @@ whatever works for the application works here.
 import os
 import re
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -43,19 +44,31 @@ def _admin_engine(url):
     return sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
 
 
+# A run's databases are named ``bs_test_<tag>_<minutes since 1970, hex>_<random>``. The time
+# lets a later run tell a crashed run's leftovers from a run that is still going.
+STALE_AFTER_MINUTES = 60
+
+
 def _drop_stale(url):
-    """Remove test databases left behind by a run that crashed before teardown."""
+    """Remove test databases left behind by a run that crashed before teardown.
+
+    Several verification scripts may run at once, so a database is only removed when
+    nobody is connected to it AND it is old enough that its own run cannot still be
+    starting up (a run creates its databases before it opens its first connection).
+    """
     try:
         engine = _admin_engine(url)
     except Exception:
         return
+    now_minutes = int(time.time() // 60)
     try:
         with engine.connect() as conn:
             for name in [r[0] for r in conn.execute(sa.text(
-                    "SELECT datname FROM pg_database WHERE datname LIKE 'bs_test\_%'"))]:
-                conn.execute(sa.text(
-                    'SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
-                    'WHERE datname = :n AND pid <> pg_backend_pid()'), {'n': name})
+                    "SELECT datname FROM pg_database WHERE datname LIKE 'bs\\_test\\_%' "
+                    "AND NOT EXISTS (SELECT 1 FROM pg_stat_activity a WHERE a.datname = pg_database.datname)"))]:
+                stamp = re.match(r'bs_test_.+_([0-9a-f]{6,8})_[0-9a-f]{8}(_|$)', name)
+                if stamp and now_minutes - int(stamp.group(1), 16) < STALE_AFTER_MINUTES:
+                    continue
                 conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{name}"'))
     except Exception:
         pass
@@ -71,7 +84,7 @@ def setup(tag):
     """
     url = _configured_url()
     _drop_stale(url)
-    prefix = f'bs_test_{tag}_{uuid.uuid4().hex[:8]}'
+    prefix = f'bs_test_{tag}_{int(time.time() // 60):x}_{uuid.uuid4().hex[:8]}'
     try:
         engine = _admin_engine(url)
         with engine.connect() as conn:

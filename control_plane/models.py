@@ -10,7 +10,7 @@ Column conventions match ``models/``: ISO-8601 UTC text timestamps and 0/1
 integer flags, so the registry is portable between SQLite and PostgreSQL.
 """
 
-from sqlalchemy import ForeignKey, Index, Integer, Text, UniqueConstraint, text
+from sqlalchemy import Float, ForeignKey, Index, Integer, Text, UniqueConstraint, text
 from sqlalchemy.orm import DeclarativeBase, mapped_column, relationship
 
 TENANT_ACTIVE = 'active'
@@ -160,3 +160,21 @@ class PlatformAuditLog(PlatformBase):
     detail = mapped_column(Text)
     ip_address = mapped_column(Text)
     created_at = mapped_column(Text, nullable=False)
+
+
+class RateLimitCounter(PlatformBase):
+    """How many tries a key has made in its current window, shared by every worker.
+
+    One row per limited action (a sign-in from one address, a password-recovery
+    request, a school's test messages...). The key is stored only as its SHA-256,
+    since keys hold IP addresses and usernames. ``expires_at`` is when the window
+    ends, in seconds since 1970 on the database's own clock; a row past that time
+    means nothing and is deleted in passing. See ``control_plane/ratelimit.py``.
+    """
+
+    __tablename__ = 'rate_limits'
+    __table_args__ = (Index('ix_rate_limits_expires', 'expires_at'),)
+
+    key_hash = mapped_column(Text, primary_key=True)
+    hits = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    expires_at = mapped_column(Float, nullable=False)

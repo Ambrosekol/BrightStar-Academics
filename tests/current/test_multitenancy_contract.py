@@ -517,3 +517,91 @@ def test_the_uploads_route_decides_on_the_path_it_will_actually_serve():
     assert "send_from_directory(uploads_dir(),clean)" in route
     assert "send_from_directory(uploads_dir(),filename)" not in route
 
+
+def test_the_who_is_online_ping_only_exists_where_a_school_is_selected():
+    app = (ROOT / "app.py").read_text(encoding="utf-8")
+    hook = app[app.index("def track_live_presence"):app.index("def presence_heartbeat")]
+    assert "g.get('tenant') is None" in hook
+    headers = app[app.index("def apply_security_headers"):app.index("def apply_school_theme")]
+    # The script is added only on a school's portal, or a page on an address that belongs to no
+    # school (with a stale sign-in in the cookie) would keep pinging a route it does not serve.
+    assert "g.get('tenant') is not None and _presence_identity()[0]" in headers
+    assert "_discard_school_identity()" in RESOLVER[RESOLVER.index("if host in config.platform_hosts()"):]
+
+
+def test_each_school_numbers_its_people_by_a_file_in_its_own_folder():
+    import inspect
+
+    from core import numbering
+
+    assert numbering.RULES_FILE == "numbering.py" and numbering.STARTER_FILE.is_file()
+    starter = numbering.STARTER_FILE.read_text(encoding="utf-8")
+    assert "def candidate_code(ctx):" in starter and "\ndef student_number(ctx):" not in starter
+    # Made when the school's folder is made, and never overwritten afterwards.
+    provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
+    assert "numbering.install_rules_file(root)" in provisioning
+    assert "'x'" in inspect.getsource(numbering.install_rules_file)
+    # The platform decides nothing about what a candidate code looks like: the one place that
+    # used to build it now only asks the school's own rule.
+    entrance = (ROOT / "core" / "entrance.py").read_text(encoding="utf-8")
+    body = entrance[entrance.index("def _new_candidate_code"):entrance.index("def _new_candidate_password")]
+    assert "new_candidate_code(" in body and "code_prefix" not in body and "{year}" not in body
+    # What comes back is checked; a failing rule is refused and never replaced by another rule.
+    assert numbering.CANDIDATE_CODE.pattern.startswith("^[A-Z0-9]")
+    assert not numbering.CANDIDATE_CODE.match("../X1") and not numbering.CANDIDATE_CODE.match("AB/123")
+    assert not numbering.CANDIDATE_CODE.match("A B12") and not numbering.CANDIDATE_CODE.match("A" * 41)
+    source = inspect.getsource(numbering.new_candidate_code)
+    assert "except" not in source and "MAX_ATTEMPTS" in source
+    # The rules file is program code: the only way this module writes one is the exclusive create above.
+    assert inspect.getsource(numbering).count("open(") == 1
+    # A student number may be written the school's way, but the running number and the ledger
+    # that stops a number being issued twice stay the platform's.
+    generator = (ROOT / "services" / "student_number_generator.py").read_text(encoding="utf-8")
+    assert generator.index("numbering.student_number(") < generator.index("Collision check #1")
+
+
+def test_retired_tables_are_only_dropped_when_nothing_would_be_lost():
+    from core import retired_tables
+
+    assert set(retired_tables.RETIRED_TABLES) == {"school_public_pages", "school_public_news",
+                                                   "school_public_enquiries"}
+    upgrade = APP[APP.index("def _init_db"):APP.index("def csrf_token")]
+    assert "drop_empty()" in upgrade
+    import inspect
+    assert "rows == 0" in inspect.getsource(retired_tables.drop_empty)
+    cli = (ROOT / "control_plane" / "cli.py").read_text(encoding="utf-8")
+    assert "args.yes" in cli and "--yes" in cli
+
+
+def test_every_write_route_is_tested_on_postgres_or_exempt():
+    """A form submission that fails only on PostgreSQL is the bug SQLite-era code hides. Every route
+    that accepts a POST is submitted for real by tests/verification/write_paths_pg_posts.py; a new
+    one fails here until it is added there (or listed, with a reason, as exempt)."""
+    import json
+    import subprocess
+
+    # In a process of its own: importing the application switches on SQLite foreign keys for the
+    # whole process, which would change how the older tests after this one behave. It also needs the
+    # platform registry, so with no PostgreSQL server to reach there is nothing to check.
+    program = """
+import importlib.util, json, sys
+sys.path.insert(0, %r)
+try:
+    from app import app
+except Exception as exc:
+    import sqlalchemy
+    if isinstance(exc, (sqlalchemy.exc.SQLAlchemyError, RuntimeError)):
+        print(json.dumps({"skipped": str(exc)[:200]})); sys.exit(0)
+    raise
+spec = importlib.util.spec_from_file_location("pg_posts_coverage", %r)
+coverage = importlib.util.module_from_spec(spec); spec.loader.exec_module(coverage)
+print(json.dumps({"unaccounted": sorted(map(str, coverage.unaccounted(app.url_map))),
+                  "stale": [sorted(map(str, part)) for part in coverage.stale(app.url_map)]}))
+""" % (str(ROOT), str(ROOT / "tests" / "verification" / "pg_posts_coverage.py"))
+    done = subprocess.run([sys.executable, "-c", program], cwd=ROOT, capture_output=True, text=True, timeout=180)
+    assert done.returncode == 0, done.stderr[-1500:]
+    answer = json.loads(done.stdout.strip().splitlines()[-1])
+    if "skipped" in answer:
+        return
+    assert not answer["unaccounted"], answer["unaccounted"]
+    assert answer["stale"] == [[], []], answer["stale"]

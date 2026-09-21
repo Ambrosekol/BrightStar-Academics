@@ -211,7 +211,9 @@ def parent_feedback():
                                          StudentEnrolment.active==1))
         .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .where(ParentStudentLink.parent_id==pid,ParentStudentLink.active==1)
-        .group_by(Student.id).order_by(Student.first_name,Student.last_name))]
+        # PostgreSQL wants every selected column grouped: the student's columns follow from its id,
+        # but the class name is a different table's, so it is grouped too.
+        .group_by(Student.id,SchoolClass.name).order_by(Student.first_name,Student.last_name))]
     parent=obj(ParentAccount,pid)
     if request.method=='POST':
         try: student_id=int(request.form.get('student_id')) if request.form.get('student_id') else None
@@ -498,13 +500,20 @@ def admin_school_parent_edit(pid):
         if errors: return render_template('admin_parent_form.html',students=allowed_students,classes=classes,errors=errors,form=request.form,editing=parent,linked=linked)
         now=datetime.now(timezone.utc).isoformat()
         parent.display_name=display; parent.email=email or None; parent.phone=phone or None
-        # Retire every link, then re-create the selected ones, so an unlinked
-        # child stops being visible to this parent.
+        # Retire every link, then bring the selected ones back, so an unlinked child stops
+        # being visible to this parent. A parent and a child have one link row between them
+        # (a unique key), so an existing row is reactivated rather than inserted a second time.
         db.session.execute(sa_update(ParentStudentLink)
             .where(ParentStudentLink.parent_id==pid).values(active=0))
+        have={x.student_id:x for x in db.session.scalars(select(ParentStudentLink).where(
+            ParentStudentLink.parent_id==pid)).all()}
         for sid in selected:
-            db.session.add(ParentStudentLink(parent_id=pid,student_id=sid,
-                relationship=relationship or None,active=1,created_at=now,created_by=me['id']))
+            link=have.get(sid)
+            if link:
+                link.active=1; link.relationship=relationship or None
+            else:
+                db.session.add(ParentStudentLink(parent_id=pid,student_id=sid,
+                    relationship=relationship or None,active=1,created_at=now,created_by=me['id']))
         db.session.commit()
         audit_log('parent_account_updated','school','parent',pid,{'linked_students':len(selected)}); flash('Parent account updated.','success'); return redirect(url_for('admin_school_parents'))
     form={'display_name':parent.display_name,'email':parent.email or '','phone':parent.phone or '','relationship':next(iter(linked.values()),'')}

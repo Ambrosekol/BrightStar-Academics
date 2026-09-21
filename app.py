@@ -710,6 +710,8 @@ def init_db(school):
 def _init_db(school):
     db.metadata.create_all(current_engine())
     _add_missing_columns()
+    from core.retired_tables import drop_empty  # deferred: it imports the models
+    drop_empty()
     _widen_parent_feedback_reply_admin_id()
     now=datetime.now(timezone.utc).isoformat()
     # Seed the supported class structure. Primary 5 is deliberately optional.
@@ -807,7 +809,9 @@ def enforce_admin_workspace_boundary():
 
 @app.before_request
 def track_live_presence():
-    if request.path.startswith('/static/'):
+    # "Who is online" is kept in a school's own database, so there is nothing to record
+    # on an address that belongs to no school (the platform console, an unknown address).
+    if g.get('tenant') is None or request.path.startswith('/static/'):
         return
     if _presence_identity()[0]:
         try:
@@ -863,7 +867,10 @@ def apply_security_headers(response):
     response.headers.setdefault('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
     if ENVIRONMENT in ('production','prod'):
         response.headers.setdefault('Strict-Transport-Security','max-age=31536000; includeSubDomains')
-    if response.mimetype == 'text/html' and _presence_identity()[0]:
+    # The heartbeat only exists on a school's portal. A stale school sign-in can still be in
+    # the browser's cookie when the address no longer belongs to that school (or never did),
+    # and a page there must not start pinging a route that address does not serve.
+    if response.mimetype == 'text/html' and g.get('tenant') is not None and _presence_identity()[0]:
         try:
             body=response.get_data(as_text=True)
             if 'presence_heartbeat' not in body:

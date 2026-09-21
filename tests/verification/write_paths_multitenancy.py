@@ -123,7 +123,9 @@ crainbow = pv.register_existing_tenant(
     source_data=os.path.join(ROOT, "data"), source_uploads=os.path.join(ROOT, "static", "uploads"))
 alpha, alpha_password = pv.create_tenant("alpha", "Alpha Academy", ["alpha.test"],
                                         admin_username="alpha_admin", admin_display_name="Alpha Admin")
-beta, beta_password = pv.create_tenant("beta", "Beta College", ["beta.test", "www.beta.test"])
+# Beta is made without the platform's standard banks, to show a school can start with none.
+beta, beta_password = pv.create_tenant("beta", "Beta College", ["beta.test", "www.beta.test"],
+                                       starter_banks=False)
 
 check("the existing school keeps every student it had", count(crainbow, Student) == legacy_students,
       f"{count(crainbow, Student)} vs {legacy_students}")
@@ -247,13 +249,19 @@ with A.app.app_context(), tenant_context(alpha):
     open(os.path.join(up_alpha, "note.txt"), "w").write("alpha-only")
     data_alpha = data_dir()
     banks_alpha = load_banks()
+with A.app.app_context(), tenant_context(beta):
+    banks_beta = load_banks()
 with A.app.app_context(), tenant_context(crainbow):
     banks_cr = load_banks()
     up_cr = uploads_dir()
 check("each school has its own uploads and question-bank folders",
       len({up_alpha, up_cr, data_alpha}) == 3 and "alpha" in up_alpha and "crainbow" in up_cr)
-check("the existing school's question banks were copied over; a new school starts with none",
-      len(banks_cr) > 0 and len(banks_alpha) == 0, f"{len(banks_cr)} / {len(banks_alpha)}")
+check("the existing school's own question banks were copied over, and none of them reached another school",
+      len(banks_cr) > 0 and not (set(banks_cr) & (set(banks_alpha) | set(banks_beta))),
+      f"{len(banks_cr)} / {len(banks_alpha)} / {len(banks_beta)}")
+check("a new school starts with the platform's standard banks in its own folder; one made without them starts with none",
+      len(banks_alpha) == 6 and all(i.startswith("starter_") for i in banks_alpha) and len(banks_beta) == 0,
+      f"{sorted(banks_alpha)} / {len(banks_beta)}")
 check("an upload is served to its own school",
       c_al.get("/static/uploads/note.txt", base_url=u_al).get_data(as_text=True) == "alpha-only")
 check("…but is not reachable from another school's domain",

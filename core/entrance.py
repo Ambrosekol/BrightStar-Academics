@@ -612,21 +612,11 @@ def premium_result_metrics(papers):
         average_subject_percentage
     )
 
-def _new_candidate_code():
-    from core.branding import code_prefix  # deferred: core.branding imports the app
+def _new_candidate_code(candidate_name='',target_class=''):
+    """The next candidate code, made by the school's own rule (tenants/<code>/numbering.py)."""
+    from core.numbering import new_candidate_code  # deferred: it reads the school's database
 
-    year=datetime.now().year; prefix=f'{code_prefix()}-{year}-'
-    latest=one_scalar(select(Candidate.candidate_code)
-                      .where(Candidate.candidate_code.startswith(prefix,autoescape=True))
-                      .order_by(Candidate.id.desc()).limit(1))
-    if latest:
-        try: n=int(latest.rsplit('-',1)[1])+1
-        except (IndexError,ValueError): n=1
-    else: n=1
-    code=f'{prefix}{n:04d}'
-    while one(select(Candidate.id).where(Candidate.candidate_code==code)):
-        n+=1; code=f'{prefix}{n:04d}'
-    return code
+    return new_candidate_code(candidate_name=candidate_name,target_class=target_class)
 
 def _new_candidate_password():
     alphabet=string.ascii_uppercase+string.digits

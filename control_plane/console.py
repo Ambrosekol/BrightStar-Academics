@@ -32,6 +32,7 @@ from .entry import (
     set_platform_password, tenant_glance, tenant_stats,
 )
 from .models import Tenant, TENANT_ACTIVE, TENANT_SUSPENDED
+from .ratelimit import allow
 from .registry import get_tenant, platform_session, to_info
 
 SESSION_KEY = 'platform_admin_id'
@@ -143,6 +144,13 @@ def _safe_next(target, fallback):
 def platform_login():
     if request.method == 'POST':
         username = request.form.get('username', '')
+        # Platform accounts can enter every school, so guessing at them is limited the way a
+        # school's sign-in is: per address and username, counted in the registry so that
+        # every worker shares one count.
+        if not allow(f"platform-login:{request.remote_addr or 'unknown'}:{username.strip().lower()[:120]}",
+                     limit=8, window=300):
+            return render_template('platform/login.html',
+                                   error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
         admin = authenticate_platform_admin(username, request.form.get('password', ''),
                                             request.remote_addr)
         if not admin:
@@ -240,7 +248,9 @@ def platform_school_new():
             'school_email': '', 'school_address': '',
             theme.PRIMARY_KEY: theme.DEFAULT_PRIMARY, theme.ACCENT_KEY: theme.DEFAULT_ACCENT}
     errors = []
+    starter_banks = True  # ticked unless the operator unticks it
     if request.method == 'POST':
+        starter_banks = request.form.get('starter_banks') == '1'
         form = {k: request.form.get(k, '').strip() for k in form}
         domains = [line.strip() for line in form['domains'].replace(',', '\n').splitlines() if line.strip()]
         if not form['name']:
@@ -258,7 +268,7 @@ def platform_school_new():
                     db_url=form['db_url'] or None, db_schema=form['db_schema'] or None,
                     admin_username=form['admin_username'] or None,
                     admin_display_name=form['admin_display_name'] or None,
-                    branding=branding, logo=logo, gallery=gallery,
+                    branding=branding, logo=logo, gallery=gallery, starter_banks=starter_banks,
                     actor=g.platform_admin['username'])
             except (pv.ProvisioningError, ValueError) as exc:
                 errors.append(str(exc))
@@ -271,6 +281,7 @@ def platform_school_new():
                                        password=password,
                                        folder=pv.tenant_folder_listing(info))
     return render_template('platform/school_new.html', form=form, errors=errors,
+                           starter_banks=starter_banks,
                            portal_domain=pv.config.portal_domain(),
                            max_gallery=theme.MAX_GALLERY_IMAGES,
                            min_contrast=theme.MIN_CONTRAST_WITH_WHITE)

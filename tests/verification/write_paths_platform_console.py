@@ -112,6 +112,44 @@ check("the console's sign-in page is served on the platform host",
       c_pl.get("/platform/login", base_url=u_pl).status_code == 200)
 check("a second configured platform host works too",
       A.app.test_client().get("/platform/login", base_url="http://ops.test").status_code == 200)
+# A browser keeps one host's cookies across every port, so a school sign-in left by an earlier
+# run of the app can arrive on an address that belongs to no school, or on a platform address.
+# It must be ignored, never looked up (no school is selected to look it up in), and the page
+# must not start pinging "who is online", which only a school's own portal answers.
+for kind in ("admin_id", "student_id", "parent_id", "candidate_id"):
+    stale, _ = client("platform.test")
+    with stale.session_transaction(base_url=u_pl) as sess:
+        sess[kind] = 1
+        sess["admin_logged_in"] = True
+    r = stale.get("/", base_url=u_pl)
+    check(f"a stale school sign-in ({kind}) does not break the platform address",
+          r.status_code == 302 and r.headers["Location"].endswith("/platform/login"), str(r.status_code))
+    with stale.session_transaction(base_url=u_pl) as sess:
+        check(f"a stale school sign-in ({kind}) is dropped from the session", kind not in sess)
+    page = stale.get("/platform/login", base_url=u_pl)
+    check(f"a stale school sign-in ({kind}) does not break the console sign-in page",
+          page.status_code == 200 and "presence/heartbeat" not in page.get_data(as_text=True))
+stale_platform, _ = client("platform.test")
+with stale_platform.session_transaction(base_url=u_pl) as sess:
+    sess["admin_id"] = 1
+    sess["platform_admin_id"] = 7
+stale_platform.get("/platform/login", base_url=u_pl)
+with stale_platform.session_transaction(base_url=u_pl) as sess:
+    check("dropping a stale school sign-in keeps a console sign-in beside it",
+          sess.get("platform_admin_id") == 7 and "admin_id" not in sess)
+
+u_nobody = "http://nobody.example"
+stale_nobody = A.app.test_client()
+with stale_nobody.session_transaction(base_url=u_nobody) as sess:
+    sess["admin_id"] = 1
+r = stale_nobody.get("/login", base_url=u_nobody)
+check("an address no school owns still gets its designed page with a stale sign-in",
+      r.status_code == 404 and "not registered" in r.get_data(as_text=True), str(r.status_code))
+check("…and that page carries no heartbeat script (nothing there would answer it)",
+      "presence/heartbeat" not in r.get_data(as_text=True))
+check("…and asking for the heartbeat there is a clean not-found, not an error",
+      stale_nobody.get("/presence/heartbeat", base_url=u_nobody).status_code == 404)
+
 r = c_pl.get("/platform", base_url=u_pl)
 check("the console requires sign-in", r.status_code == 302 and "/platform/login" in r.headers["Location"])
 
@@ -327,6 +365,10 @@ check("redeeming the ticket signs the operator in on the school",
       f'{r.status_code} {r.headers.get("Location")}')
 check("the operator has full authority inside the school",
       c_enter.get("/admin/home", base_url=u_enter).status_code == 200)
+check("a signed-in page on a school's portal carries the heartbeat script",
+      "/presence/heartbeat" in c_enter.get("/admin/home", base_url=u_enter).get_data(as_text=True))
+check("…and on a school's portal the heartbeat is answered",
+      c_enter.get("/presence/heartbeat", base_url=u_enter).status_code == 200)
 
 with A.app.app_context(), tenant_context(alpha):
     operator = A.db.session.scalars(sa.select(Admin).where(

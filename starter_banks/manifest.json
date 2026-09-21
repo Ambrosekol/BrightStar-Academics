@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "name": "Standard entrance question banks",
+  "version": "1.0",
+  "description": "The question banks a new school starts with: Mathematics, English and General Knowledge for entry into Year 7 and into SSS 1. Owned by the platform, copied into each new school's own data folder, and free for the school to edit afterwards. questions_to_serve is how many questions one candidate is given; it must make every question worth a whole number of marks out of 100 (20, 25 or 50, for example).",
+  "banks": [
+    {
+      "file": "starter_year7_mathematics.json",
+      "id": "starter_year7_mathematics",
+      "entry_group": "year7",
+      "subject": "mathematics",
+      "question_count": 44,
+      "questions_to_serve": 25
+    },
+    {
+      "file": "starter_year7_english.json",
+      "id": "starter_year7_english",
+      "entry_group": "year7",
+      "subject": "english",
+      "question_count": 45,
+      "questions_to_serve": 25
+    },
+    {
+      "file": "starter_year7_general_knowledge.json",
+      "id": "starter_year7_general_knowledge",
+      "entry_group": "year7",
+      "subject": "general_knowledge",
+      "question_count": 25,
+      "questions_to_serve": 25
+    },
+    {
+      "file": "starter_sss1_mathematics.json",
+      "id": "starter_sss1_mathematics",
+      "entry_group": "year10",
+      "subject": "mathematics",
+      "question_count": 40,
+      "questions_to_serve": 25
+    },
+    {
+      "file": "starter_sss1_english.json",
+      "id": "starter_sss1_english",
+      "entry_group": "year10",
+      "subject": "english",
+      "question_count": 40,
+      "questions_to_serve": 25
+    },
+    {
+      "file": "starter_sss1_general_knowledge.json",
+      "id": "starter_sss1_general_knowledge",
+      "entry_group": "year10",
+      "subject": "general_knowledge",
+      "question_count": 25,
+      "questions_to_serve": 25
+    }
+  ]
+}

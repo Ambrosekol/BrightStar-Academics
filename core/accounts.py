@@ -4,28 +4,20 @@ resolution, session teardown, and login-attempt rate limiting behind it live
 here rather than in any single domain.
 """
 
-import time
-
 from flask import session
 from sqlalchemy import func, or_, select
 from werkzeug.security import check_password_hash
 
+from control_plane.ratelimit import allow
 from models import Admin, AdminType, Candidate, ParentAccount, Student, db
 
-_RATE_BUCKETS={}
-
 def _rate_limit(key, limit=10, window=300):
-    """Small single-process guard for development/single-worker deployments.
-    Production must place rate limiting at the reverse proxy/shared store layer.
+    """True if this try is allowed: at most `limit` tries per `window` seconds for `key`.
+    The count is kept in the registry database, so every worker process shares it
+    (see control_plane/ratelimit.py). If that database cannot be reached this worker
+    counts on its own for the moment, rather than locking everyone out.
     """
-    now=time.monotonic()
-    bucket=_RATE_BUCKETS.get(key,[])
-    bucket=[t for t in bucket if now-t < window]
-    if len(bucket) >= limit:
-        _RATE_BUCKETS[key]=bucket
-        return False
-    bucket.append(now); _RATE_BUCKETS[key]=bucket
-    return True
+    return allow(key, limit, window)
 
 def _clear_identity_sessions():
     for key in ('admin_id','admin_logged_in','admin_workspace','student_id','parent_id','candidate_id','attempt_id','_presence_token'):

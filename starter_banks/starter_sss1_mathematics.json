@@ -1,0 +1,492 @@
+{
+  "id": "starter_sss1_mathematics",
+  "name": "Mathematics - Entrance Examination into SSS 1",
+  "level": "SSS 1",
+  "entry_group": "year10",
+  "subject": "Mathematics",
+  "duration_seconds": 3600,
+  "version": "1.0",
+  "source_status": "platform_starter",
+  "questions": [
+    {
+      "id": 1,
+      "text": "Express 38 as a number in base two?",
+      "options": [
+        "10011₂",
+        "100101₂",
+        "100110₂",
+        "1110111₂"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 2,
+      "text": "Five tins of milk cost ₦250 and 15 tins of milk cost ₦750. Find the cost of 25 tins of milk?",
+      "options": [
+        "₦1750",
+        "₦12500",
+        "₦2500",
+        "₦1250"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 3,
+      "text": "If T = q + 273, find q if T = 400.",
+      "options": [
+        "127",
+        "237",
+        "37",
+        "273"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 4,
+      "text": "Find the product of −6, 0.7 and 6⅔.",
+      "options": [
+        "28",
+        "27",
+        "20",
+        "−28"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 5,
+      "text": "If P varies directly as the square of m and inversely proportional to the cube of n, then the formula connecting them is ________.",
+      "options": [
+        "P = km²/n²",
+        "P = kn²/m³",
+        "P = km²/n³",
+        "P = km³/n²"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 6,
+      "text": "The reciprocal of a certain number is 0.08. Find the number?",
+      "options": [
+        "8.5",
+        "20.5",
+        "15.2",
+        "12.5"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 7,
+      "text": "What number divided by −50 will give 12?",
+      "options": [
+        "−4",
+        "600",
+        "0.25",
+        "−600"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 8,
+      "text": "Evaluate 23² − 7².",
+      "options": [
+        "529",
+        "560",
+        "460",
+        "480"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 9,
+      "text": "Evaluate 2 − ⅔.",
+      "options": [
+        "4/3",
+        "2/3",
+        "3/4",
+        "5/3"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 10,
+      "text": "The product of (x + 3) and (x − 3) is?",
+      "options": [
+        "x² − 6",
+        "x² + 6x − 9",
+        "x² + 6",
+        "x² − 9"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 11,
+      "text": "The product of √16 and the square of 9 is?",
+      "options": [
+        "3240",
+        "324",
+        "1296",
+        "144"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 12,
+      "text": "Simplify 5(p − 3q) − 4(p − 2q).",
+      "options": [
+        "7q + p",
+        "−9 + 23q",
+        "p − 7q",
+        "p − 23q"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 13,
+      "text": "Factorize 9a² − 16.",
+      "options": [
+        "(3a + 4)(3a − 4)",
+        "(3a − 8)(3a − 8)",
+        "(4 − 3a)(4 + 3a)",
+        "(3a + 4)(3a + 4)"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 14,
+      "text": "Factorize completely pq − p − q + 1.",
+      "options": [
+        "(p − q)²",
+        "(1 − q)(1 + p)",
+        "(q − 1)(p − 1)",
+        "(q + 1)(p + 2q)"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 15,
+      "text": "A sequence is given by the formula 3n + 2. What term of the sequence is 62?",
+      "options": [
+        "15th",
+        "30th",
+        "20th",
+        "25th"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 16,
+      "text": "When 30 is added to a number, the result is −18. Find the number?",
+      "options": [
+        "−38",
+        "−20",
+        "−48",
+        "−60"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 17,
+      "text": "Correct 78532 to one significant figure?",
+      "options": [
+        "79000",
+        "78500",
+        "80,000",
+        "78000"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 18,
+      "text": "Any number which can be expressed as a ratio of two integers, a/b, where b ≠ 0, is called a ______ number.",
+      "options": [
+        "Prime",
+        "Rational",
+        "Natural",
+        "Composite"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 19,
+      "text": "15 cm³ of a metal weigh 127.5 g. What is the weight of 35 cm³ of the same metal if the mass for the metal is directly proportional to the volume?",
+      "options": [
+        "167.3 g",
+        "297.5 g",
+        "203.2 g",
+        "132 g"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 20,
+      "text": "The coefficient of x in the expression (x − 2)(x + 9) is?",
+      "options": [
+        "−18",
+        "18",
+        "7",
+        "−7"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 21,
+      "text": "If x² + 14x + k is a perfect square, then k is?",
+      "options": [
+        "4",
+        "8",
+        "49",
+        "7"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 22,
+      "text": "Find the value of x, if 9x² = 4.",
+      "options": [
+        "4",
+        "2/3",
+        "9/4",
+        "3/2"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 23,
+      "text": "Find the value of x, if x − 25 = 6x.",
+      "options": [
+        "−5",
+        "−4⅙",
+        "−3",
+        "5"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 24,
+      "text": "Which of the following is a rational number?",
+      "options": [
+        "√3",
+        "π",
+        "3.3",
+        "√7"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 25,
+      "text": "Factorize 2x² − 18xy.",
+      "options": [
+        "2x(x − 9y)",
+        "2x(x + 9y)",
+        "2x²(1 − 9y)",
+        "x(x − 9y)"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 26,
+      "text": "Which of the following is a factor of 3xw + 3xz + yw + yz?",
+      "options": [
+        "x + 3y",
+        "w + 3z",
+        "w + z",
+        "3x + 3z"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 27,
+      "text": "It takes 8 men 20 days to harvest a maize farm. How long would 32 men take if they work at the same rate?",
+      "options": [
+        "10 days",
+        "18 days",
+        "5 days",
+        "8 days"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 28,
+      "text": "When the sum of 28 and a certain number is divided by 5, the result is equal to thrice the original number. What is the number?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 29,
+      "text": "If p = 2(3q − 8), find q when p = 14.",
+      "options": [
+        "15",
+        "5",
+        "36",
+        "−5"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 30,
+      "text": "Solve the equation 15/(3x − 1) = 5.",
+      "options": [
+        "6",
+        "1⅓",
+        "1¾",
+        "−1.8"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 31,
+      "text": "Divide 100001₂ by 11₂.",
+      "options": [
+        "1110₂",
+        "1101₂",
+        "1001₂",
+        "1011₂"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 32,
+      "text": "Evaluate 165 − |140 − 125| − 80.",
+      "options": [
+        "60",
+        "70",
+        "80",
+        "90"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "id": 33,
+      "text": "Find the product of 10011₂ and 11₂?",
+      "options": [
+        "111111₂",
+        "10011₂",
+        "111001₂",
+        "110111₂"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 34,
+      "text": "Evaluate 1110₂ − 101₂.",
+      "options": [
+        "1011₂",
+        "10100₂",
+        "1001₂",
+        "10110₂"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 35,
+      "text": "The sum of four consecutive numbers is 58. Find the largest number.",
+      "options": [
+        "14",
+        "13",
+        "15",
+        "16"
+      ],
+      "answer": 3,
+      "points": 1
+    },
+    {
+      "id": 36,
+      "text": "Convert 110101₂ to base ten?",
+      "options": [
+        "53₁₀",
+        "43₁₀",
+        "45₁₀",
+        "60₁₀"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 37,
+      "text": "Evaluate (101₂)³ and express the answer in base two.",
+      "options": [
+        "1111101₂",
+        "1110101₂",
+        "1011101₂",
+        "1101101₂"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "id": 38,
+      "text": "What is the H.C.F. of ab² and a²b³?",
+      "options": [
+        "ab",
+        "a²b",
+        "ab²",
+        "a²b²"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 39,
+      "text": "What is the coefficient of y in the equation 5y² − (3/4)y + 7 = 0?",
+      "options": [
+        "5",
+        "6",
+        "−3/4",
+        "7"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "id": 40,
+      "text": "If p = 2(l + b), express b in terms of p and l.",
+      "options": [
+        "2(l + b)",
+        "p/2 − l",
+        "2p − l/2",
+        "p/2 − 2l"
+      ],
+      "answer": 1,
+      "points": 1
+    }
+  ]
+}

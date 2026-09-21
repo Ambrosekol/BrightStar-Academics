@@ -198,3 +198,6 @@ def admin_logout():
 @app.route('/candidate/logout')
 def candidate_logout():
     return redirect(url_for('logout'))
+
+# One answer, for the whole application, to a form value the database cannot hold (registers a handler).
+import core.request_errors  # noqa: F401,E402

@@ -291,7 +291,8 @@ def answer():
     if session.get('candidate_id') and (not a or a['candidate_id'] != session.get('candidate_id')): return jsonify(ok=False,error='Invalid candidate session.'),403
     if not a or a['status']!='active': return jsonify(ok=False,error='Session is no longer active.'),403
     if remaining(a)<=0: grade(a['id'],auto=True); return jsonify(ok=False,expired=True),410
-    qid=int(request.form.get('question_id',0)); opt=int(request.form.get('option_index',-1))
+    try: qid=int(request.form.get('question_id',0)); opt=int(request.form.get('option_index',-1))
+    except (TypeError,ValueError): return jsonify(ok=False,error='Invalid answer.'),400
     q=db.session.scalars(select(AttemptQuestion).where(
         AttemptQuestion.attempt_id==a['id'],AttemptQuestion.question_id==qid)).first()
     if not q: return jsonify(ok=False,error='Invalid question.'),400

@@ -1,0 +1,62 @@
+{% extends 'admin_base.html' %}
+{% block title %}Import a Question Bank — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .import-example { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 12px; line-height: 1.55; overflow-x: auto; white-space: pre; }
+  .import-rules { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .import-confirm { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid #f1dfb6; background: #fffaf0; border-radius: 10px; margin-top: 14px; }
+  .import-confirm input { width: auto; margin-top: 3px; }
+</style>
+<div class="page-hero"><div>
+  <div class="eyebrow">ENTRANCE EXAMINATION</div>
+  <h1>Import a question bank</h1>
+  <p class="hero-copy">Bring a bank you already have into this school from a JSON file. It is checked carefully before anything is saved, and is kept in this school's own folder, so no other school can see it.</p>
+</div></div>
+
+{% if bank_count == 0 %}
+<div class="info-banner"><strong>This school has no question banks yet.</strong><span>Import one here. Or ask the platform team to add the standard entrance banks to your school.</span></div>
+{% endif %}
+
+<div class="card modern-form" style="margin-top:18px">
+  {% for e in errors %}<div class="error">{{ e }}</div>{% endfor %}
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_bank_import') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="field field-wide">
+      <label for="bank_file">Bank file (.json, up to {{ limits.megabytes }} MB)</label>
+      <input type="file" id="bank_file" name="bank_file" accept=".json,application/json" required>
+    </div>
+    <div class="import-confirm">
+      <input type="checkbox" id="replace" name="replace" value="1">
+      <label for="replace" style="margin:0"><strong>Replace it if a bank with the same id is already here.</strong><br>
+        <span class="muted">Left unticked, a bank that already exists is never touched: the import is refused and nothing changes. Candidates who have already started a paper keep the questions they were given.</span></label>
+    </div>
+    <div class="form-actions" style="margin-top:18px">
+      <button class="btn btn-primary" type="submit">Import bank</button>
+      <a class="btn btn-light" href="{{ url_for('admin_question_banks') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<div class="card modern-form" style="margin-top:18px">
+  <h2 style="margin-top:0">What the file must look like</h2>
+  <div class="import-example">{% raw %}{
+  "id": "year7_mathematics_2027",
+  "name": "Mathematics - Entrance Examination into Year 7",
+  "level": "Year 7",
+  "entry_group": "year7",
+  "subject": "Mathematics",
+  "duration_seconds": 3600,
+  "questions": [
+    { "id": 1, "text": "What is 2 + 3?", "options": ["4", "5", "6", "7"], "answer": 1 },
+    { "id": 2, "text": "What is 10 - 4?", "options": ["4", "5", "6", "7"], "answer": 2 }
+  ]
+}{% endraw %}</div>
+  <ul class="import-rules">
+    <li><strong>id</strong> names the bank. Use lower-case letters, digits, hyphens and underscores only (for example <code>year7_maths_2027</code>).</li>
+    <li>Every question needs its own <strong>id</strong> (a number), its <strong>text</strong>, a list of exactly 4 <strong>options</strong> (A to D), and an <strong>answer</strong> that is the position of the right option, counting from 0 (so <code>1</code> is the second option).</li>
+    <li>A bank may hold up to {{ limits.questions }} questions. <strong>duration_seconds</strong> is how long a candidate has, from 60 seconds to 6 hours; it is one hour if left out.</li>
+    <li>To use the bank as an entrance paper, say which <strong>subject</strong> it is (Mathematics, English or General Knowledge) and which entry class it is for (<code>"entry_group": "year7"</code> for Year 7, <code>"year10"</code> for SSS 1). General Knowledge can be shared by both.</li>
+    <li>Pictures are not imported. You can add a picture to a question afterwards by editing it.</li>
+  </ul>
+</div>
+{% endblock %}

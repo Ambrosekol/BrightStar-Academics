@@ -6,6 +6,7 @@
     create-tenant CODE "Name" [--domain HOST ...]   (the portal address is issued automatically)
     register-existing CODE "Name" --from-db cbt.db [--domain HOST --from-data data --from-uploads static/uploads]
     upgrade [CODE]                bring school database(s) up to the current schema
+    drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
     list
@@ -49,6 +50,8 @@ def _parser():
     s.add_argument('--db-schema', help='PostgreSQL schema for this school inside a shared database.')
     s.add_argument('--admin-username', help="Create the school's first admin; a temporary password is printed once.")
     s.add_argument('--admin-display-name')
+    s.add_argument('--no-starter-banks', action='store_true',
+                   help="Do not copy the platform's standard entrance question banks into the school.")
 
     s = sub.add_parser('register-existing')
     s.add_argument('code')
@@ -60,6 +63,11 @@ def _parser():
 
     s = sub.add_parser('upgrade')
     s.add_argument('code', nargs='?')
+
+    s = sub.add_parser('drop-retired-tables')
+    s.add_argument('code', nargs='?')
+    s.add_argument('--yes', action='store_true',
+                   help='really drop them, including any that still hold rows. Without it nothing changes.')
 
     s = sub.add_parser('add-domain')
     s.add_argument('code')
@@ -101,7 +109,8 @@ def main(argv=None):
         elif args.command == 'create-tenant':
             info, password = pv.create_tenant(
                 args.code, args.name, args.domain, db_url=args.db_url, db_schema=args.db_schema,
-                admin_username=args.admin_username, admin_display_name=args.admin_display_name)
+                admin_username=args.admin_username, admin_display_name=args.admin_display_name,
+                starter_banks=not args.no_starter_banks)
             portal, customs = pv.domains_of(info.slug)
             print(f'School {info.slug} portal: {portal}')
             for hostname in customs:
@@ -126,6 +135,31 @@ def main(argv=None):
             else:
                 infos = pv.upgrade_all_tenants()
             print('Upgraded: ' + (', '.join(i.slug for i in infos) or 'nothing to upgrade'))
+        elif args.command == 'drop-retired-tables':
+            from core import retired_tables
+
+            with platform_session() as session:
+                if args.code:
+                    tenant = get_tenant(session, args.code)
+                    if not tenant:
+                        raise pv.ProvisioningError(f'No school with code "{args.code}".')
+                    infos = [to_info(tenant)]
+                else:
+                    infos = pv.list_tenant_infos()
+            leftovers = 0
+            if not infos:
+                print('No schools registered.')
+            for info in infos:
+                held = retired_tables.for_school(info, drop=args.yes)
+                leftovers += len(held)
+                if not held:
+                    print(f'{info.slug:<16} nothing left over')
+                for table, rows in held.items():
+                    print(f'{info.slug:<16} {table}: {rows} row(s)' + ('  -> dropped' if args.yes else ''))
+                if held and args.yes:
+                    pv.record('tenant.retired_tables_dropped', ', '.join(sorted(held)), tenant_id=info.id)
+            if leftovers and not args.yes:
+                print('Nothing was changed. Add --yes to drop these tables for good (their rows are lost).')
         elif args.command == 'add-domain':
             pv.add_domain(args.code, args.hostname, args.primary)
             print('Domain added.')

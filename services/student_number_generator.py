@@ -12,6 +12,7 @@ import re
 
 from sqlalchemy import select, update as sa_update
 
+from core import numbering
 from models import (
     SchoolNumberingPolicy,
     Student,
@@ -174,13 +175,27 @@ def allocate_student_number(
     if allocation_year is None:
         allocation_year = datetime.now(timezone.utc).year
 
-    candidate = _build_student_number(
-        prefix=policy.prefix,
-        include_year=policy.include_year,
-        allocation_year=allocation_year,
-        sequence_number=sequence,
-        padding=policy.padding,
-    )
+    # A school may write its numbers its own way (tenants/<code>/numbering.py). The running
+    # number, the ledger and the collision checks below stay the platform's, whatever the rule.
+    try:
+        candidate = numbering.student_number(
+            prefix=policy.prefix,
+            include_year=policy.include_year,
+            year=allocation_year,
+            sequence=sequence,
+            padding=policy.padding,
+        )
+    except numbering.NumberingRuleError as exc:
+        raise StudentNumberAllocationError(str(exc)) from exc
+
+    if candidate is None:
+        candidate = _build_student_number(
+            prefix=policy.prefix,
+            include_year=policy.include_year,
+            allocation_year=allocation_year,
+            sequence_number=sequence,
+            padding=policy.padding,
+        )
 
     # Collision check #1: the allocation ledger.
     ledger_collision = db.session.scalars(

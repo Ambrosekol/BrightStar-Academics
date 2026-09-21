@@ -68,6 +68,30 @@ def _notice(kind, host=None):
     return Response(html, status=status, mimetype='text/html')
 
 
+# Session keys that mean "signed in to a school" (or issued by one).
+_SCHOOL_SESSION_KEYS = ('tenant_id', 'admin_id', 'student_id', 'parent_id', 'candidate_id')
+
+
+def _discard_school_identity():
+    """Drop a school sign-in that arrived on a platform hostname.
+
+    No school is selected on a platform host, so nothing that belongs to a school can be
+    looked up there, yet code that asks "who is signed in?" would still try. Such a cookie
+    is always stale: signing in to the console starts a fresh session, and a school session
+    is only ever created on the school's own address. A browser shares one host's cookies
+    across every port, so an old sign-in can be left behind by an earlier run of the app.
+    Only the school identity goes; a platform sign-in in the same cookie is kept.
+    """
+    if not any(k in session for k in _SCHOOL_SESSION_KEYS):
+        return
+    from .console import SESSION_KEY  # deferred: console imports this package
+
+    platform_admin_id = session.get(SESSION_KEY)
+    session.clear()
+    if platform_admin_id:
+        session[SESSION_KEY] = platform_admin_id
+
+
 def resolve_tenant():
     if request.path in _ANYWHERE or request.path.startswith(_ANYWHERE_PREFIXES):
         return None
@@ -75,6 +99,7 @@ def resolve_tenant():
 
     if host in config.platform_hosts():
         g.on_platform_host = True
+        _discard_school_identity()
         # Only the platform console and the shared static assets live here. No
         # school page is ever served without a school, and school uploads are
         # never served from the platform host.

@@ -19,8 +19,10 @@ from sqlalchemy.engine import make_url
 from werkzeug.security import generate_password_hash
 
 from core import branding as branding_core
+from core import numbering
 
 from . import config
+from .banks import add_starter_banks
 from .context import tenant_context
 from .models import (
     DOMAIN_CUSTOM, DOMAIN_PORTAL, PlatformAdmin, PlatformAuditLog, ROLE_ADMIN, ROLE_SUPER, Tenant,
@@ -74,10 +76,11 @@ def tenant_folder(slug_or_info):
 
 
 def ensure_tenant_folders(slug_or_info):
-    """Create the school's container folder and its standard subfolders."""
+    """Create the school's container folder, its standard subfolders and its own numbering rules."""
     root = tenant_folder(slug_or_info)
     for sub in TENANT_SUBFOLDERS:
         (root / sub).mkdir(parents=True, exist_ok=True)
+    numbering.install_rules_file(root)
     return root
 
 
@@ -149,10 +152,15 @@ def upgrade_tenant(info):
                           'motto': None, 'adopt_existing': True})
 
 
+def list_tenant_infos():
+    """Every school, as the plain description the rest of the code works with."""
+    with platform_session() as session:
+        return [to_info(t) for t in session.scalars(sa.select(Tenant).order_by(Tenant.id))]
+
+
 def upgrade_all_tenants():
     """Bring every school's schema up to date (run at start-up)."""
-    with platform_session() as session:
-        infos = [to_info(t) for t in session.scalars(sa.select(Tenant).order_by(Tenant.id))]
+    infos = list_tenant_infos()
     for info in infos:
         upgrade_tenant(info)
     return infos
@@ -185,7 +193,8 @@ def create_school_admin(info, username, display_name=None):
 
 
 def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
-                  admin_display_name=None, branding=None, logo=None, gallery=(), actor='cli'):
+                  admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
+                  actor='cli'):
     """Register a new school and build its database.
 
     The school's portal hostname is generated here and works immediately; any
@@ -227,6 +236,8 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
     try:
         upgrade_tenant(info)
         apply_branding(info, branding or {'school_name': name}, logo, gallery)
+        if starter_banks:
+            add_starter_banks(info)  # the standard entrance banks, copied into the school's own folder
         password = create_school_admin(info, admin_username, admin_display_name) if admin_username else None
     except Exception:
         # Do not leave a registered school that has no usable database.
@@ -398,7 +409,8 @@ def register_existing_tenant(slug, name, hostnames=(), source_db=None, source_da
     if not source_db.is_file():
         raise ProvisioningError(f'Source database not found: {source_db}')
 
-    info, _ = create_tenant(slug, name, hostnames, actor=actor)
+    # The school brings its own question banks with it, so it is not given the standard ones.
+    info, _ = create_tenant(slug, name, hostnames, starter_banks=False, actor=actor)
     try:
         folder = tenant_folder(slug)
         for source, kind in ((source_data, 'data'), (source_uploads, 'uploads')):

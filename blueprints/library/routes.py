@@ -94,6 +94,8 @@ def admin_library_book_edit(book_id):
             flash('Library book details updated.','success'); return redirect(url_for('admin_library'))
     form={c.key:getattr(row,c.key) for c in row.__mapper__.column_attrs}
     if request.method=='POST': form.update(request.form)
+    # Worked out from the stored row, never from what was typed, so a bad number cannot break the page.
+    form['on_loan']=int(row.total_copies)-int(row.available_copies)
     return render_template('library_book_form.html',book=form,errors=errors)
 
 @app.post('/admin/library/books/<int:book_id>/toggle')
@@ -142,7 +144,8 @@ def admin_library_return(loan_id):
     now=datetime.now(timezone.utc).isoformat()
     loan.status='returned'; loan.returned_at=now; loan.received_by=current_admin()['id']
     db.session.execute(sa_update(LibraryBook).where(LibraryBook.id==loan.book_id)
-        .values(available_copies=func.min(LibraryBook.total_copies,
-                                          LibraryBook.available_copies+1)))
+        # least(), not min(): min() with two arguments is SQLite's; in PostgreSQL min() is an aggregate.
+        .values(available_copies=func.least(LibraryBook.total_copies,
+                                            LibraryBook.available_copies+1)))
     db.session.commit()
     audit_log('library_book_returned','library','loan',loan_id,{'book_id':loan.book_id}); flash('Book returned successfully.','success'); return redirect(url_for('admin_library'))

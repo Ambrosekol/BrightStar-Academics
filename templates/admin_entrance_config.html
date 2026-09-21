@@ -1,89 +1,115 @@
-﻿{% extends "admin_base.html" %}
-
+{% extends "admin_base.html" %}
+{% block title %}Exam Configuration — {{ school_brand.name }}{% endblock %}
 {% block content %}
+{% set can_create = current_admin and admin_has_permission(current_admin['id'],'entrance.config.create') %}
+{% set can_activate = current_admin and admin_has_permission(current_admin['id'],'entrance.config.activate') %}
+{% set standard = standard_paper_status() %}
 <style>
-  /* Forced Inline UI Overrides */
-  .config-wrapper { padding: 1.5rem; }
-  .config-card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; padding: 2rem; margin-top: 1rem; }
-  .form-label-custom { font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.5rem; display: block; }
-  .form-control-custom { width: 100%; padding: 0.65rem 0.85rem; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #f8fafc; transition: all 0.2s ease-in-out; display: block; }
-  .form-control-custom:focus { border-color: #0284c7; background-color: #fff; outline: none; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
-  .btn-submit-custom { background-color: #0284c7; color: #ffffff; font-weight: 600; border: none; padding: 0.75rem 1.75rem; border-radius: 6px; cursor: pointer; transition: background 0.2s ease; }
-  .btn-submit-custom:hover { background-color: #0369a1; }
-  
-  /* Sidebar Logo Fix */
-  .sidebar-brand img, .sidebar img, [class*="logo"] img { max-height: 40px !important; width: auto !important; object-fit: contain !important; margin: 0 auto !important; }
+  .cfg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cfg-table th { text-align: left; padding: 10px 12px; font-size: 11px; letter-spacing: .5px; color: #718096; border-bottom: 1px solid var(--line); }
+  .cfg-table td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .cfg-table form { display: flex; gap: 6px; align-items: center; margin: 0; }
+  .cfg-table input[type=text] { min-width: 140px; }
+  .cfg-steps { font-size: 14px; line-height: 1.8; margin: 8px 0 0; padding-left: 20px; }
 </style>
 
-<div class="config-wrapper">
-  <div class="mb-3">
-    <a href="{{ url_for('admin_examination') if 'admin_examination' in endpoints else '/admin/examination' }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">← Back</a>
-  </div>
+<div class="page-hero"><div>
+  <div class="eyebrow">ENTRANCE EXAMINATION</div>
+  <h1>Exam Configuration</h1>
+  <p class="hero-copy">Choose which question bank each entrance paper uses. A candidate is given three papers (Mathematics, English and General Knowledge) for the class they are entering, set from the banks that are live for the current academic session.</p>
+</div></div>
 
-  <div class="d-flex justify-content-between align-items-center">
-    <div>
-      <span class="text-uppercase text-primary font-weight-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Entrance Examination</span>
-      <h2 class="h3 font-weight-bold text-navy mb-1">Examination Configuration</h2>
-      <p class="text-muted small">Configure periodized banks, question serving limits, and activation status for entry classes.</p>
-    </div>
-  </div>
+{% for e in errors or [] %}<div class="flash error" role="alert">{{ e }}</div>{% endfor %}
 
-  <div class="config-card">
-    <h5 class="font-weight-bold text-navy mb-1">Create or Update Configuration</h5>
-    <p class="text-muted small mb-4">Saving a configuration sets the parameters. Activation controls when candidates see the exam.</p>
-
-    <form action="" method="POST">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="bank_id" class="form-label-custom">Question Bank</label>
-          <select name="bank_id" id="bank_id" class="form-control-custom" required>
-            <option value="">Select question bank...</option>
-            {% for bank in banks %}
-              <option value="{{ bank.id if bank.get else bank[0] }}">{{ bank.name if bank.get else bank[1] }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label for="entry_class" class="form-label-custom">Entry Class</label>
-          <select name="entry_class" id="entry_class" class="form-control-custom" required>
-            <option value="">Select entry class...</option>
-            <option value="JSS 1">JSS 1</option>
-            <option value="SSS 1">SSS 1</option>
-          </select>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label for="subject" class="form-label-custom">Subject</label>
-          <select name="subject" id="subject" class="form-control-custom" required>
-            <option value="">Select subject...</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="English">English</option>
-            <option value="General Knowledge">General Knowledge</option>
-          </select>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label for="session" class="form-label-custom">Academic Session</label>
-          <select name="session" id="session" class="form-control-custom">
-            <option value="2026/2027">2026/2027 (Current)</option>
-          </select>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label for="questions_to_serve" class="form-label-custom">Questions to Serve</label>
-          <input type="number" name="questions_to_serve" id="questions_to_serve" class="form-control-custom" placeholder="e.g. 40" required>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label for="reason" class="form-label-custom">Reason for Configuration Change</label>
-        <textarea name="reason" id="reason" class="form-control-custom" rows="2" placeholder="Required when assigning or updating active sets..."></textarea>
-      </div>
-
-      <button type="submit" class="btn-submit-custom">Save Configuration →</button>
-    </form>
-  </div>
+{% if not banks %}
+<div class="card empty-state" style="padding:28px 24px;text-align:left;margin-top:18px">
+  <h2 style="margin-top:0;color:#25344a">There are no question banks to set papers from</h2>
+  <p style="font-size:14px;line-height:1.6">Entrance examinations cannot run until this school has question banks. Do one of these:</p>
+  <ol class="cfg-steps">
+    <li>{% if current_admin and admin_has_permission(current_admin['id'],'question_banks.create') %}<a href="{{ url_for('admin_bank_import') }}"><strong>Import a question bank</strong></a> from a file you already have.{% else %}<strong>Import a question bank</strong> from a file you already have. Ask a colleague who can create question banks to do this for you.{% endif %}</li>
+    <li><strong>Ask the platform team</strong> to add the standard entrance question banks to your school.</li>
+  </ol>
+  <p class="muted" style="font-size:13px">Then come back here to choose the papers.</p>
 </div>
+{% else %}
+
+{% if standard.available and can_create and can_activate and standard.session %}
+<div class="card modern-form" style="margin-top:18px">
+  <h2 style="margin-top:0">Standard entrance papers</h2>
+  {% if standard.todo %}
+    <p>This school has the standard entrance question banks. One click makes them the live papers for <strong>{{ standard.session.name }}</strong> ({{ standard.todo }} of {{ standard.available }} still to set up): Mathematics, English and General Knowledge for Year 7 and for SSS 1. Any paper you have already configured yourself is left exactly as it is.</p>
+    <form method="post" action="{{ url_for('admin_entrance_config_standard') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Set up the standard entrance papers</button>
+    </form>
+  {% else %}
+    <p class="muted" style="margin:0">Every standard paper already has a configuration for {{ standard.session.name }}.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card table-card" style="margin-top:18px;padding:18px">
+  <h2 style="margin-top:0">Papers for each academic session</h2>
+  {% if configs %}
+  <table class="cfg-table">
+    <thead><tr><th>SESSION</th><th>ENTRY CLASS</th><th>SUBJECT</th><th>QUESTION BANK</th><th>QUESTIONS SERVED</th><th>STATUS</th><th></th></tr></thead>
+    <tbody>
+    {% for c in configs %}
+      <tr>
+        <td><strong>{{ c.session_name }}</strong>{% if c.is_current %}<br><small class="muted">Current session</small>{% endif %}</td>
+        <td>{{ 'JSS 1' if c.entry_group == 'year7' else 'SSS 1' }}</td>
+        <td>{{ c.subject|replace('_',' ')|title }}</td>
+        <td>{{ entrance_bank_display_name(c.bank_id, c.exam_name) }}<br><small class="muted">{{ c.question_count }} questions in the bank</small></td>
+        <td>{{ c.questions_to_serve }}</td>
+        <td>{% if c.active %}<span class="status submitted">Live</span>{% else %}<span class="status">Not live</span>{% endif %}</td>
+        <td>{% if can_activate and not c.active %}<form method="post" action="{{ url_for('admin_entrance_config_activate', config_id=c.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="text" name="reason" placeholder="Reason (optional)"><button class="btn btn-light btn-small" type="submit">Make live</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" style="margin:0">No papers have been configured yet, so no candidate can be registered.{% if standard.available and can_create and can_activate %} Use <strong>Set up the standard entrance papers</strong> above, or add each paper yourself below.{% else %} Add each paper below.{% endif %}</p>
+  {% endif %}
+</div>
+
+{% if can_create %}
+<div class="card modern-form" style="margin-top:18px">
+  <h2 style="margin-top:0">Add or change a paper</h2>
+  <p class="muted" style="margin-top:0">Saving sets up the paper but does not make it live. Use <em>Make live</em> above when you are ready. Only one paper is live for each class, subject and session at a time.</p>
+  <form method="post" action="{{ url_for('admin_entrance_config_save') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="field"><label for="bank_id">Question bank</label>
+        <select name="bank_id" id="bank_id" required>
+          <option value="">Choose a question bank...</option>
+          {% for b in banks %}<option value="{{ b.id }}"{% if form and form.get('bank_id') == b.id %} selected{% endif %}>{{ entrance_bank_display_name(b.id, b.name) }} ({{ b.id }})</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="entry_group">Entry class</label>
+        <select name="entry_group" id="entry_group" required>
+          <option value="">Choose a class...</option>
+          <option value="year7"{% if form and form.get('entry_group') == 'year7' %} selected{% endif %}>JSS 1</option>
+          <option value="year10"{% if form and form.get('entry_group') == 'year10' %} selected{% endif %}>SSS 1</option>
+        </select></div>
+      <div class="field"><label for="subject">Subject</label>
+        <select name="subject" id="subject" required>
+          <option value="">Choose a subject...</option>
+          <option value="mathematics"{% if form and form.get('subject') == 'mathematics' %} selected{% endif %}>Mathematics</option>
+          <option value="english"{% if form and form.get('subject') == 'english' %} selected{% endif %}>English</option>
+          <option value="general_knowledge"{% if form and form.get('subject') == 'general_knowledge' %} selected{% endif %}>General Knowledge</option>
+        </select></div>
+      <div class="field"><label for="session_id">Academic session</label>
+        <select name="session_id" id="session_id" required>
+          {% for s in sessions %}<option value="{{ s.id }}"{% if (form and form.get('session_id') == s.id|string) or (not form and current_session and current_session.id == s.id) %} selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="questions_to_serve">Questions each candidate gets</label>
+        <input type="number" name="questions_to_serve" id="questions_to_serve" min="1" value="{{ form.get('questions_to_serve') if form else '' }}" placeholder="e.g. 40" required>
+        <small>Each question is worth an equal share of 100 marks, so this must divide 100 cleanly (for example 20, 25, 40 or 50).</small></div>
+      <div class="field"><label for="reason">Reason <span class="optional">Needed only for a past session</span></label>
+        <input type="text" name="reason" id="reason" value="{{ form.get('reason') if form else '' }}"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save configuration</button></div>
+  </form>
+</div>
+{% endif %}
+{% endif %}
 {% endblock %}

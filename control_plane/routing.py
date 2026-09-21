@@ -39,8 +39,13 @@ def resolve_db_url(value):
     return value
 
 
-def build_engine(db_url, db_schema=None):
-    """Create an engine with the options appropriate to the database backend."""
+def build_engine(db_url, db_schema=None, connect_timeout=None):
+    """Create an engine with the options appropriate to the database backend.
+
+    ``connect_timeout`` (seconds, PostgreSQL only) stops a database that is not
+    answering from holding a request for minutes: without it the operating system
+    decides how long a connection attempt may hang, which can be over two minutes.
+    """
     url = make_url(resolve_db_url(db_url))
     options = {}
     if url.get_backend_name() == 'sqlite':
@@ -53,6 +58,8 @@ def build_engine(db_url, db_schema=None):
                 raise ValueError(f'Invalid database schema name: {db_schema!r}')
             if url.get_backend_name() == 'postgresql':
                 options['connect_args'] = {'options': f'-csearch_path={db_schema}'}
+        if connect_timeout and url.get_backend_name() == 'postgresql':
+            options.setdefault('connect_args', {})['connect_timeout'] = int(connect_timeout)
     return sa.create_engine(url, **options)
 
 
