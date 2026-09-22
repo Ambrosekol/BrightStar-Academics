@@ -178,3 +178,18 @@ class RateLimitCounter(PlatformBase):
     key_hash = mapped_column(Text, primary_key=True)
     hits = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     expires_at = mapped_column(Float, nullable=False)
+
+
+class PlatformState(PlatformBase):
+    """A few named values the whole deployment shares, one row each.
+
+    ``launch_id`` is the only one so far: a random value written once every time the server is
+    started, the same for every worker of that start and different on the next. Sessions are
+    stamped with it, which is how a restart signs people out (see ``control_plane/launch.py``).
+    """
+
+    __tablename__ = 'platform_state'
+
+    key = mapped_column(Text, primary_key=True)
+    value = mapped_column(Text, nullable=False)
+    updated_at = mapped_column(Text, nullable=False)

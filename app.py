@@ -10,13 +10,14 @@ import sys
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from dotenv import load_dotenv
 
 import sqlalchemy as sa
 from sqlalchemy import and_, or_, func, select, delete as sa_delete, update as sa_update
 
-from control_plane.config import platform_db_url
+from control_plane.config import platform_db_url, trusted_proxies
 from control_plane.routing import current_engine
 from core.branding import school_brand
 from core.storage import uploads_dir
@@ -68,6 +69,24 @@ if ENVIRONMENT in ('production','prod') and len(_config_secret) < 32:
     raise RuntimeError('BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.')
 app.secret_key=_config_secret or secrets.token_hex(32)
 
+
+def apply_trusted_proxies(flask_app, count):
+    """Believe the address and scheme that ``count`` reverse proxies in front of us report.
+
+    Off by default (``BRIGHTSTARS_TRUSTED_PROXIES`` = 0): the X-Forwarded-* headers are then ignored,
+    because anyone can send them and a forged one would be written into the audit log and counted
+    by the rate limits. Only the client address and the scheme are taken from them. Never the host
+    or the path prefix: the Host header is what chooses the school, so it must stay exactly as the
+    proxy passed it on.
+    """
+    if count>=1:
+        flask_app.wsgi_app=ProxyFix(flask_app.wsgi_app,x_for=count,x_proto=count,x_host=0,x_prefix=0,x_port=0)
+    return flask_app
+
+
+# An invalid value stops the application starting, with a plain message, rather than guessing.
+apply_trusted_proxies(app,trusted_proxies())
+
 # ---------------- SQLAlchemy ----------------
 # There is no single application database: every school has its own, and
 # TenantSession (models/base.py) picks it per request from the school the
@@ -85,6 +104,12 @@ db.init_app(app)
 # they all query the database and need the request's school selected first.
 from control_plane.resolver import install as _install_multitenancy  # noqa: E402
 _install_multitenancy(app)
+
+# Right behind it, for the same reason: whether a sign-in is still good (the server has not been
+# restarted since, the password has not been changed since) is settled before any route or later
+# hook acts on who is signed in. See core/session_guard.py.
+from core.session_guard import install as _install_session_guard, refresh_password_stamp  # noqa: E402
+_install_session_guard(app)
 
 
 # ---------------- query helpers ----------------
@@ -779,11 +804,26 @@ def index():
     return redirect(_portal_front_door())
 
 
+# Pages whose address carries a secret. The reset token is in the URL, so the page must not be kept
+# by the browser or a cache, and must never be named in a Referer header, not even to this site's own
+# files.
+SECRET_URL_ENDPOINTS=frozenset({'password_reset','forgot_password'})
+
+
 @app.after_request
 def apply_security_headers(response):
     response.headers.setdefault('X-Content-Type-Options','nosniff')
     response.headers.setdefault('X-Frame-Options','DENY')
-    response.headers.setdefault('Referrer-Policy','strict-origin-when-cross-origin')
+    # Nothing is told to another site about where a visitor came from. "same-origin" rather than the
+    # blanker "no-referrer" because this application does use its own Referer: the pages that send a
+    # person back where they were (administration/routes.py), the form-rejection page
+    # (core/request_errors.py) and the error pages' "Go back" all read it, and they only ever read a
+    # link to this same site.
+    response.headers.setdefault('Referrer-Policy','same-origin')
+    if request.endpoint in SECRET_URL_ENDPOINTS:
+        response.headers['Referrer-Policy']='no-referrer'
+        response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma']='no-cache'
     response.headers.setdefault('Permissions-Policy','camera=(), microphone=(), geolocation=()')
     response.headers.setdefault('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
     if ENVIRONMENT in ('production','prod'):
@@ -895,6 +935,7 @@ def admin_password_change():
             db.session.execute(sa_update(Admin).where(Admin.id==aid).values(
                 password_hash=generate_password_hash(new),password_must_change=0))
             db.session.commit()
+            refresh_password_stamp()   # this sign-in stays; every other one made with the old password ends
             audit_log('admin_password_changed','authentication','admin',aid,{'username':admin['username']},True,admin)
             flash('Your administrator password has been changed successfully.','success')
             return redirect(url_for('admin_workspace_home'))
@@ -1040,28 +1081,19 @@ def handle_unexpected_exception(e):
 def health(): return jsonify(status='ok')
 
 
-# Who may fetch what from a school's uploads folder.
+# Who may fetch what from a school's uploads folder. The rule for each folder is in
+# core/upload_access.py; this route cleans the path and asks it.
 #  * branding/  — the school's logo and sign-in photographs, which the sign-in page shows to
 #    people who are not signed in yet, so they are public.
 #  * messages/  — staff message attachments. Never served here: the only way to open one is
 #    the permission-checked download route, which lets just the sender and the recipient in.
-#  * everything else (student and candidate photos, signatures, question images, assignment
-#    work) is a child's or a member of staff's file: served only to someone signed in to
-#    this school, so a file name that leaks in a link or a referrer opens nothing.
+#  * every other folder is a child's or a member of staff's file, and is opened only by the people
+#    that folder's rule names (staff; a student or candidate for their own photograph; a parent for
+#    their child's), so a file name that leaks in a link opens nothing for anyone else. A folder
+#    with no rule is for staff.
 PUBLIC_UPLOAD_FOLDERS=frozenset({'branding'})
 PRIVATE_UPLOAD_FOLDERS=frozenset({'messages'})
-
-
-def signed_in_to_school():
-    """Whether this request belongs to a signed-in account of the current school.
-
-    Sessions are bound to their school by the resolver, so a sign-in at another school
-    never counts. An administrator must still be active; the other accounts are
-    identified by the session they were given at sign-in.
-    """
-    if session.get('admin_id'):
-        return current_admin() is not None
-    return any(session.get(key) for key in ('parent_id','student_id','candidate_id'))
+from core.upload_access import may_open as may_open_upload  # noqa: E402
 
 
 @app.route('/static/uploads/<path:filename>')
@@ -1074,8 +1106,9 @@ def uploaded_file(filename):
     that prefix; everything else under /static/ is still the shared asset
     folder. send_from_directory refuses any path that escapes the folder.
 
-    Which folders are public, private or for signed-in accounts is decided above.
-    A refusal is a 404 either way, so it does not confirm that a file exists.
+    Which folders are public, private or open to which people is decided by
+    core/upload_access.py. A refusal is a 404 either way, so it does not confirm
+    that a file exists.
     """
     # Decide on the path the file server will actually open. "students/../messages/x.pdf" must
     # be judged as messages/x.pdf, not as being in students/, so it is normalised first, and that
@@ -1086,7 +1119,7 @@ def uploaded_file(filename):
     folder=clean.split('/',1)[0].lower()
     if folder in PRIVATE_UPLOAD_FOLDERS:
         abort(404)
-    if folder not in PUBLIC_UPLOAD_FOLDERS and not signed_in_to_school():
+    if folder not in PUBLIC_UPLOAD_FOLDERS and not may_open_upload(folder,clean):
         # A school whose logo predates the branding folder still has to show it on its sign-in page.
         if f'uploads/{clean}'!=school_brand().get('logo_path'):
             abort(404)
@@ -1097,4 +1130,8 @@ if __name__=='__main__':
     # Bring every registered school's schema up to date before serving.
     from control_plane.provisioning import upgrade_all_tenants
     upgrade_all_tenants()
+    # This start is a new launch: everyone who was signed in before it must sign in again, except
+    # people in the middle of an exam (core/session_guard.py). Written once, here, before serving.
+    from control_plane.launch import record_new_launch
+    record_new_launch()
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False)

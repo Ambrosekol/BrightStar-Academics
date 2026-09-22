@@ -532,7 +532,9 @@ def audit_log(action,module,target_type=None,target_id=None,details=None,success
             action=action,module=module,target_type=target_type,
             target_id=str(target_id) if target_id is not None else None,
             details=json.dumps(details,ensure_ascii=False,sort_keys=True) if isinstance(details,(dict,list)) else (str(details) if details else None),
-            ip_address=request.headers.get('X-Forwarded-For',request.remote_addr or ''),
+            # The address the connection came from, never a header the visitor could write: behind a
+            # proxy we trust, BRIGHTSTARS_TRUSTED_PROXIES makes remote_addr the visitor's real one.
+            ip_address=(request.remote_addr or '')[:64],
             user_agent=request.headers.get('User-Agent','')[:500],
             success=1 if success else 0,
             created_at=datetime.now(timezone.utc).isoformat()))

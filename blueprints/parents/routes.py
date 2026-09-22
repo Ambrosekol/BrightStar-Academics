@@ -93,6 +93,7 @@ def parent_password_change():
         if not errors:
             parent.password_hash=generate_password_hash(new); parent.password_must_change=0
             db.session.commit()
+            refresh_password_stamp()   # this sign-in stays; every other one made with the old password ends
             audit_log('parent_password_changed','authentication','parent',pid)
             flash('Your password has been changed successfully.','success')
             return redirect(url_for('parent_dashboard'))

@@ -23,6 +23,7 @@ from models import (
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _flatten
 from core.security import audit_log, csrf_protect
+from core.session_guard import refresh_password_stamp
 from blueprints.student_portal.helpers import (
     _student_assessment_context, student_assessment_grade, student_required,
 )
@@ -54,6 +55,7 @@ def student_password_change():
             db.session.execute(sa_update(Student).where(Student.id==sid).values(
                 login_password_hash=generate_password_hash(new_password),password_must_change=0))
             db.session.commit()
+            refresh_password_stamp()   # this sign-in stays; every other one made with the old password ends
             flash('Your password has been changed successfully.','success')
             return redirect(url_for('student_dashboard'))
     return render_template('student_password.html',student=student,errors=errors)

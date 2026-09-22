@@ -107,3 +107,31 @@ def registry_cache_seconds():
         return max(0.0, float(os.environ.get('BRIGHTSTARS_REGISTRY_CACHE_SECONDS', '10')))
     except ValueError:
         return 10.0
+
+
+MAX_TRUSTED_PROXIES = 5
+
+
+def trusted_proxies():
+    """How many reverse proxies sit in front of the application (``BRIGHTSTARS_TRUSTED_PROXIES``).
+
+    0, the default, means none: the address a request appears to come from is the connection's own,
+    and the ``X-Forwarded-*`` headers are ignored, because anyone can send them. A number of 1 or
+    more says that many proxies of ours stand in front, so the address and the scheme (http or
+    https) they report can be believed (see app.py, ``ProxyFix``). Anything else refuses to start,
+    since a wrong guess here either records forged addresses or records the proxy's address for
+    every visitor.
+    """
+    raw = os.environ.get('BRIGHTSTARS_TRUSTED_PROXIES', '').strip()
+    if not raw:
+        return 0
+    try:
+        count = int(raw)
+    except ValueError:
+        count = -1
+    if not 0 <= count <= MAX_TRUSTED_PROXIES:
+        raise RuntimeError(
+            f'BRIGHTSTARS_TRUSTED_PROXIES is "{raw}", which is not a number this application can use. '
+            f'Set it to how many reverse proxies stand in front of the application: 0 (the default, '
+            f'none) or a whole number up to {MAX_TRUSTED_PROXIES}.')
+    return count

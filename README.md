@@ -408,7 +408,10 @@ python -m control_plane <command>
   create-platform-admin USER [--super]   add a platform admin (the first is the super admin)
   create-tenant CODE "Name"     create a school (portal address issued automatically)
   list                          every school, its addresses and its database
-  upgrade [CODE]                bring school database(s) up to the current schema
+  upgrade [CODE]                bring school database(s) up to the current schema (with no CODE it also
+                                records a new launch, like starting the server does)
+  new-launch                    record a new launch: everyone signed in must sign in again, except
+                                people in the middle of an exam
   drop-retired-tables [CODE] [--yes]   show, or with --yes drop, tables left by the removed website editor
   add-domain CODE HOST [--primary] / remove-domain HOST
   suspend CODE [--reason TEXT] / activate CODE
@@ -431,6 +434,7 @@ variable; the ones that shape the deployment:
 | `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
 | `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
 | `BRIGHTSTARS_CHROME` | Optional. The Chrome or Chromium program that draws a candidate's result image; found automatically on Windows and under the usual names on Linux and macOS. |
+| `BRIGHTSTARS_TRUSTED_PROXIES` | Optional, default `0`. How many reverse proxies stand in front of the application; see *Behind a reverse proxy* under [Operating](#operating). |
 | `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and WhatsApp secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
 
 ## Project layout
@@ -543,6 +547,9 @@ python tests/verification/write_paths_candidate_results.py # a candidate's resul
 python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, signatures, portals
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
+python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies
+python tests/verification/write_paths_upload_access.py     # who may open which uploads folder
+python tests/verification/write_paths_upload_limits.py     # every picture upload: the limit told beforehand, every refusal explained
 ```
 
 Between them they cover hostname routing, per-school databases, session cookies copied between
@@ -592,8 +599,57 @@ email/WhatsApp test buttons are limited to a number of tries per stretch of time
 window, and only a hash of the key is stored, never an address or a username. If the registry
 cannot be reached each worker counts in its own memory until it can again, and logs a warning at
 most once a minute; nobody is locked out. A limit at the reverse proxy in front is still worthwhile,
-and behind a proxy make sure the application sees the visitor's real address, or every visitor
-shares one count. The registry connection gives up after 3 seconds rather than holding a request.
+and behind a proxy set `BRIGHTSTARS_TRUSTED_PROXIES` (below) so the application sees the visitor's
+real address, or every visitor shares one count. The registry connection gives up after 3 seconds
+rather than holding a request.
+
+**A restart signs everyone out, except people sitting an exam.** Sign-in is a signed cookie, and the
+signing secret does not change, so without this a cookie would outlive every restart. Each time the
+server is started it writes a new random *launch id* into the registry database (`python app.py` does
+it just before it starts serving; `python -m control_plane upgrade`, or `python -m control_plane
+new-launch`, does it for a deployment started some other way, so make either a deploy step there).
+Every session carries the id it was opened under. After a restart, staff, students, parents,
+candidates and platform admins meet the sign-in page ("The system was restarted, please sign in
+again") on their next click. The exception is anyone in the middle of an exam at that moment: a
+candidate with an unfinished paper, a student with an unfinished test, examination, practice paper or
+quiz whose time has not run out. They are kept, and their answers, the heartbeat and the submit carry
+on as if nothing happened. The exam clock keeps running while the server is off, so a paper whose time
+ran out during the restart is finished from the answers already saved; the person signs in and sees it
+marked. If the registry cannot be read, or no launch was ever recorded, nobody is signed out.
+
+**A changed password ends the account's other sign-ins.** Whoever changes their own password stays
+signed in where they did it; every other browser signed in to that account is signed out. The same
+happens when an administrator resets someone's login, when an emailed reset link is used, and for a
+platform admin's password. (The check compares a fingerprint of the stored password with the one the
+session was opened under, so it holds however the password was changed.)
+
+**Behind a reverse proxy.** `BRIGHTSTARS_TRUSTED_PROXIES` says how many reverse proxies (nginx, Caddy, a load balancer) stand
+between the internet and the application. **Leave it at `0` unless you run one.** With `0` the
+application takes a visitor's address and http/https from the connection itself and ignores the
+`X-Forwarded-For` and `X-Forwarded-Proto` headers, because anyone can write them: trusting them
+blindly would let a visitor put any address they like in the audit log and dodge the sign-in limits.
+
+When a proxy is in front, every connection appears to come from the proxy, so the audit log and the
+limits would see one "visitor". Set the number to how many proxies of yours the request passes through
+(1 for the usual single nginx or Caddy; 2 if a load balancer sits in front of that; at most 5). Then the
+application believes the address and the scheme the last *n* proxies report and nothing a visitor wrote
+in front of them. Too high a number lets a visitor forge their address; too low records the proxy's.
+Only the address and the scheme are believed, never the host: the `Host` header chooses the school, so
+your proxy must pass it through unchanged. A value that is not a whole number from 0 to 5 stops the
+application starting, with a message saying so. With a TLS-terminating proxy, also set it so links in
+emails and the console's "Enter school" redirect use `https`.
+
+The audit log stores the connection's address (as corrected by this setting), cut to 64 characters.
+Every response carries `Referrer-Policy: same-origin`, and the password-reset pages are never cached and
+send no referrer, so a reset link is not kept or shown to anyone.
+
+**Uploaded files** (`/static/uploads/...`) are not open to every signed-in account. Each folder has its
+own rule (`core/upload_access.py`): the school's logo and sign-in photographs are public; message
+attachments are never served there; staff photographs and signatures are for staff; a candidate's
+photograph is for staff and that candidate; a student's photograph is for staff, that student and a
+parent linked to them; question and assignment pictures are for staff and the students and candidates
+who sit the exams; any other folder is for staff. Ownership is read from the database row that holds the
+file, and a refusal is a plain 404.
 
 **Connections.** Each school has its own connection pool, so total connections scale with
 schools × pool size × workers. Size PostgreSQL's `max_connections` accordingly, or put a pooler

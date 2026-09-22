@@ -3,7 +3,10 @@
     init                          create the platform registry tables
     create-platform-admin USER [--super]   add a platform admin (password prompted)
     create-tenant CODE "Name" [--domain HOST ...]   (the portal address is issued automatically)
-    upgrade [CODE]                bring school database(s) up to the current schema
+    upgrade [CODE]                bring school database(s) up to the current schema (with no CODE it also
+                                  records a new launch, like starting the server does)
+    new-launch                    record a new launch of the server: everyone signed in must sign in
+                                  again, except people in the middle of an exam
     drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
@@ -49,6 +52,8 @@ def _parser():
 
     s = sub.add_parser('upgrade')
     s.add_argument('code', nargs='?')
+
+    sub.add_parser('new-launch')
 
     s = sub.add_parser('drop-retired-tables')
     s.add_argument('code', nargs='?')
@@ -111,7 +116,17 @@ def main(argv=None):
                     pv.upgrade_tenant(info)
             else:
                 infos = pv.upgrade_all_tenants()
+                # A deploy step that upgrades every school is the start of a new launch (see
+                # control_plane/launch.py), so people signed in before it sign in again.
+                from .launch import record_new_launch
+                record_new_launch()
             print('Upgraded: ' + (', '.join(i.slug for i in infos) or 'nothing to upgrade'))
+        elif args.command == 'new-launch':
+            from .launch import record_new_launch
+
+            record_new_launch()
+            print('New launch recorded. Everyone signed in before now must sign in again, '
+                  'except people in the middle of an exam.')
         elif args.command == 'drop-retired-tables':
             from core import retired_tables
 

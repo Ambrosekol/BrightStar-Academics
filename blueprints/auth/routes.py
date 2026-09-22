@@ -23,6 +23,7 @@ from core.delivery import email_settings, send_email
 from core.presence import _presence_identity, end_presence
 from core.public_settings import _public_settings
 from core.security import audit_log, current_admin
+from core.session_guard import stamp_sign_in
 
 
 def _rate_limit_scope():
@@ -136,6 +137,7 @@ def login():
         if not account:
             return render_template('login.html',error='We could not verify those login details. Please check your ID/username and password.',identifier=identifier)
         _clear_identity_sessions()
+        stamp_sign_in(kind,account)   # this launch of the server, and this password (core/session_guard.py)
         if kind=='admin':
             session['admin_id']=account['id']; session['admin_logged_in']=True
             db.session.execute(sa_update(Admin).where(Admin.id==account['id'])

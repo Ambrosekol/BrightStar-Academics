@@ -22,8 +22,10 @@ from werkzeug.utils import secure_filename
 from app import app
 from core import theme
 from core.security import csrf_protect
+from core.session_guard import refresh_password_stamp, stamp_session, take_sign_out_reason
 from core.uploads import IMAGE_EXTENSIONS
 
+from . import config
 from . import provisioning as pv
 from . import team
 from .entry import (
@@ -36,6 +38,14 @@ from .ratelimit import allow
 from .registry import get_tenant, platform_session, to_info
 
 SESSION_KEY = 'platform_admin_id'
+
+
+def stamp_platform_sign_in(admin_id):
+    """Mark a console session that has just been opened: this launch of the server, and the
+    password the account has now (core/session_guard.py)."""
+    from core.session_guard import _current_fingerprint
+
+    stamp_session(fingerprint=_current_fingerprint('platform', admin_id))
 
 
 app.add_template_filter(team.describe, 'describe_action')
@@ -159,8 +169,11 @@ def platform_login():
         # A platform session shares nothing with a school session.
         session.clear()
         session[SESSION_KEY] = admin['id']
+        stamp_platform_sign_in(admin['id'])
         return redirect(_safe_next(request.args.get('next'), url_for('platform_dashboard')))
-    return render_template('platform/login.html')
+    # The sign-in page has no place for queued messages, so the one reason a sign-in was ended
+    # (a restart, a changed password) is shown in its own alert box instead.
+    return render_template('platform/login.html', error=take_sign_out_reason())
 
 
 @app.post('/platform/logout')
@@ -188,6 +201,7 @@ def platform_password():
             error = set_platform_password(g.platform_admin['id'],
                                           request.form.get('current_password', ''), new)
         if not error:
+            refresh_password_stamp()  # this sign-in stays; every other one made with the old password ends
             flash('Your platform password has been changed.', 'success')
             return redirect(url_for('platform_dashboard'))
     return render_template('platform/password.html', error=error,
@@ -559,7 +573,9 @@ def platform_team_reset(admin_id):
 def _school_url(hostname, path):
     """An absolute URL on a school's own domain, keeping this request's scheme
     and port so it works behind TLS in production and on :5000 locally."""
-    scheme = request.headers.get('X-Forwarded-Proto', request.scheme).split(',')[0].strip() or 'https'
+    # Never taken from a request header: anyone can send one. Behind a proxy we trust, the scheme is
+    # already right (BRIGHTSTARS_TRUSTED_PROXIES, see app.py); in production the portal is https.
+    scheme = 'https' if config.is_production() else request.scheme
     port = urlsplit(f'//{request.host}').port
     if port and port not in (80, 443):
         hostname = f'{hostname}:{port}'
@@ -593,6 +609,7 @@ def platform_entry(token):
     session['admin_id'] = admin_id
     session['admin_logged_in'] = True
     session['platform_operator'] = platform_admin['username']
+    stamp_session(fingerprint='operator')
     audit_log('platform_admin_entered_school', 'authentication', 'admin', admin_id,
               {'platform_admin': platform_admin['username'], 'school': tenant.slug})
     flash(f"You are in {tenant.name} as a Brightstars Academics operator.", 'success')

@@ -86,10 +86,13 @@ def _discard_school_identity():
         return
     from .console import SESSION_KEY  # deferred: console imports this package
 
-    platform_admin_id = session.get(SESSION_KEY)
+    # The stamps that say which launch of the server, and which password, the console sign-in was
+    # made with go with it (core/session_guard.py).
+    kept = {key: session[key] for key in (SESSION_KEY, 'launch', 'pwv') if key in session}
+    platform_admin_id = kept.get(SESSION_KEY)
     session.clear()
     if platform_admin_id:
-        session[SESSION_KEY] = platform_admin_id
+        session.update(kept)
 
 
 def resolve_tenant():

@@ -20,7 +20,7 @@ def _rate_limit(key, limit=10, window=300):
     return allow(key, limit, window)
 
 def _clear_identity_sessions():
-    for key in ('admin_id','admin_logged_in','admin_workspace','student_id','parent_id','candidate_id','attempt_id','_presence_token'):
+    for key in ('admin_id','admin_logged_in','admin_workspace','student_id','parent_id','candidate_id','attempt_id','_presence_token','pwv'):
         session.pop(key,None)
 
 def _authenticate_unified(identifier, password):
