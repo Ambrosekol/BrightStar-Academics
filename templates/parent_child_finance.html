@@ -1,156 +1,152 @@
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+{#-
+  One child's fee account: the lifetime totals (every session, so an old balance is never
+  hidden by a new one), a callout for a balance left in another session or a payment not yet
+  applied, then the chosen session's fees and the full payment history with receipts.
+-#}
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{student.first_name}} {{student.last_name}} — Fee Account — Parent Portal</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-<style>
-.pcf-session-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.pcf-session-form label{font-size:12px;font-weight:800;color:#334a5e}
-.pcf-session-form select{padding:9px 12px;border:1px solid #ccd5e2;border-radius:10px;font:inherit;font-size:13px;background:#fff}
-.pcf-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
-.pcf-kpi{padding:18px;border-radius:16px;background:#fff;border:1px solid #e7edf3;box-shadow:0 8px 24px rgba(20,55,90,.045)}
-.pcf-kpi span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#8a95a4}
-.pcf-kpi strong{display:block;margin-top:8px;font-size:22px;color:#193451}
-.pcf-kpi.is-paid strong{color:#167447}
-.pcf-kpi.is-outstanding strong{color:#b42318}
-.pcf-table-wrap{overflow-x:auto}
-.pcf-table{width:100%;border-collapse:collapse}
-.pcf-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#8a95a4;padding:0 10px 10px;border-bottom:1px solid #edf1f5}
-.pcf-table td{padding:13px 10px;border-bottom:1px solid #f3f6f9;font-size:13px;color:#1a314c;vertical-align:middle}
-.pcf-table td.numeric,.pcf-table th.numeric{text-align:right}
-.pcf-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:800}
-.pcf-badge.paid{background:#eafaf0;color:#167447}
-.pcf-badge.partial{background:#fff8df;color:#9a6700}
-.pcf-badge.unpaid{background:#fff0ee;color:#b42318}
-.pcf-badge.voided{background:#f1f3f6;color:#68758a}
-.pcf-badge.posted{background:#eaf3f9;color:#1669a5}
-.pcf-other-sessions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding:14px 18px;border-radius:14px;background:#fff4e8;border:1px solid #f2d9b0}
-.pcf-other-sessions strong{color:#7a5a1a;font-size:12.5px}
-.pcf-session-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#fff;border:1px solid #f2d9b0;color:#8a5a00;font-size:11.5px;font-weight:800;text-decoration:none}
-.pcf-session-chip:hover{background:#fff9f0}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ student.first_name }} {{ student.last_name }} — Fee Account — Parent Portal</title>
+<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
 </head>
-<body class="student-portal-page">
-<header class="student-topbar">
-  <div class="student-brand">
-    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
-    <div><strong>{{ school_brand.name|upper }}</strong><span>Parent Portal</span></div>
-  </div>
-  <div class="student-top-actions">
-    <a href="{{url_for('parent_dashboard')}}">Dashboard</a>
-    <a href="{{url_for('parent_child_detail',student_id=student.id)}}">Child profile</a>
-    <a href="{{url_for('logout')}}">Sign out</a>
+<body class="school-ui">
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">Parent Portal</span>
+    </span>
+  </a>
+  <div class="fp-bar__actions">
+    <a class="fp-bar__link" href="{{ url_for('parent_dashboard') }}">{{ icon('dashboard') }} Dashboard</a>
+    <a class="fp-bar__link" href="{{ url_for('parent_child_detail', student_id=student.id) }}">{{ icon('user') }} Child profile</a>
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
   </div>
 </header>
 
-<main class="student-dashboard-shell">
+<main class="fp-main" id="main">
 
-  <section class="student-hero">
+  <section class="fp-hero">
     <div>
-      <p class="student-eyebrow">FEE ACCOUNT</p>
-      <h1>{{student.first_name}}{% if student.middle_name %} {{student.middle_name}}{% endif %} {{student.last_name}}</h1>
-      <p>{{student.admission_no}} · lifetime balance across every academic session, what has been paid, and what is still outstanding.</p>
+      <p class="fp-hero__eyebrow">Fee account</p>
+      <h1>{{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %} {{ student.last_name }}</h1>
+      <p class="fp-hero__meta">{{ student.admission_no }} · lifetime balance across every academic session, what has been paid, and what is still outstanding.</p>
     </div>
   </section>
 
-  <div class="pcf-kpi-grid">
-    <div class="pcf-kpi"><span>Total Assessed (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_assessed or 0) }}</strong></div>
-    <div class="pcf-kpi is-paid"><span>Total Paid (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_paid or 0) }}</strong></div>
-    <div class="pcf-kpi is-outstanding"><span>Outstanding (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_outstanding or 0) }}</strong></div>
+  <div class="fp-kpis">
+    <div class="fp-kpi"><span>Total Assessed (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_assessed or 0) }}</strong></div>
+    <div class="fp-kpi is-paid"><span>Total Paid (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_paid or 0) }}</strong></div>
+    <div class="fp-kpi is-outstanding"><span>Outstanding (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_outstanding or 0) }}</strong></div>
   </div>
 
   {% if other_sessions_with_balance %}
-  <div class="pcf-other-sessions">
+  <div class="ui-alert ui-alert--warning fp-alert-row">
     <strong>Balance also outstanding in:</strong>
-    {% for s in other_sessions_with_balance %}
-    <a class="pcf-session-chip" href="?session_id={{s.id}}">{{s.name}} · ₦{{ '{:,.0f}'.format(s.outstanding) }}</a>
-    {% endfor %}
+    <span class="fp-chip-row">
+      {% for s in other_sessions_with_balance %}
+      <a class="fp-chip-link" href="?session_id={{ s.id }}">{{ s.name }} · ₦{{ '{:,.0f}'.format(s.outstanding) }}</a>
+      {% endfor %}
+    </span>
   </div>
   {% endif %}
 
-  {% if total_unallocated and total_unallocated>0.005 %}
-  <div class="pcf-other-sessions" style="background:#eaf3f9;border-color:#c6dcfa">
-    <div>
-      <strong style="display:block;color:#0d3b70">₦{{ '{:,.2f}'.format(total_unallocated) }} recently paid, not yet applied to a specific fee</strong>
-      <span style="display:block;margin-top:3px;color:#3a6ea8;font-size:11.5px">The school office hasn't yet matched this payment to one of the fees below — it doesn't reduce the outstanding balance shown here until they do, but the money has been received.</span>
-    </div>
+  {% if total_unallocated and total_unallocated > 0.005 %}
+  <div class="ui-alert ui-alert--info">
+    <strong>₦{{ '{:,.2f}'.format(total_unallocated) }} recently paid, not yet applied to a specific fee</strong>
+    <span class="fp-alert-note">The school office hasn't yet matched this payment to one of the fees below — it doesn't reduce the outstanding balance shown here until they do, but the money has been received.</span>
   </div>
   {% endif %}
 
-  <section class="student-panel" style="margin-top:20px">
-    <form method="get" class="pcf-session-form">
-      <label for="session_id">Browse a specific session's fee breakdown</label>
-      <select id="session_id" name="session_id" onchange="this.form.submit()">
-        {% for s in sessions %}
-        <option value="{{s.id}}" {% if session and s.id==session.id %}selected{% endif %}>{{s.name}}</option>
-        {% endfor %}
-      </select>
-      <noscript><button class="btn btn-light" type="submit">Show</button></noscript>
+  <section class="fp-panel">
+    <form method="get" class="fp-inline-form">
+      <div class="ui-field">
+        <label for="session_id">Browse a specific session's fee breakdown</label>
+        <select id="session_id" name="session_id" class="ui-input" onchange="this.form.submit()">
+          {% for s in sessions %}
+          <option value="{{ s.id }}" {% if session and s.id == session.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <noscript><button class="ui-btn ui-btn--light" type="submit">Show</button></noscript>
     </form>
   </section>
 
   {% if not session %}
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-empty"><strong>No active academic session is available.</strong></div>
+  <section class="fp-panel">
+    <div class="fp-empty"><strong>No active academic session is available.</strong></div>
   </section>
   {% else %}
 
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head">
-      <div><p class="student-eyebrow">FEES ASSESSED</p><h2>Fees for {{session.name}}</h2></div>
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div><p class="fp-panel__eyebrow">Fees assessed</p><h2>Fees for {{ session.name }}</h2></div>
     </div>
     {% if account %}
-    <div class="pcf-table-wrap">
-      <table class="pcf-table">
-        <thead><tr><th>Fee</th><th>Term</th><th>Due</th><th class="numeric">Assessed</th><th class="numeric">Paid</th><th class="numeric">Outstanding</th><th>Status</th></tr></thead>
+    <div class="fp-table-wrap">
+      <table class="fp-table">
+        <thead>
+          <tr><th>Fee</th><th>Term</th><th>Due</th><th class="num">Assessed</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th></tr>
+        </thead>
         <tbody>
           {% for item in account %}
           <tr>
-            <td><strong>{{item.category}}</strong></td>
-            <td>{{item.term or 'Full Session'}}</td>
-            <td>{{item.due_date or '—'}}</td>
-            <td class="numeric">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
-            <td class="numeric">₦{{ '{:,.2f}'.format(item.paid) }}</td>
-            <td class="numeric"><strong>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
-            <td>{% if item.status=='Paid' %}<span class="pcf-badge paid">Paid</span>{% elif item.status=='Part Paid' %}<span class="pcf-badge partial">Part Paid</span>{% else %}<span class="pcf-badge unpaid">Unpaid</span>{% endif %}</td>
+            <td><strong>{{ item.category }}</strong></td>
+            <td>{{ item.term or 'Full Session' }}</td>
+            <td>{{ item.due_date or '—' }}</td>
+            <td class="num">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
+            <td class="num">₦{{ '{:,.2f}'.format(item.paid) }}</td>
+            <td class="num"><strong>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
+            <td>{% if item.status == 'Paid' %}<span class="pcf-badge paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="pcf-badge partial">Part Paid</span>{% else %}<span class="pcf-badge unpaid">Unpaid</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <p class="muted" style="margin:12px 2px 0;font-size:11px">Paid/outstanding above — and the totals at the top of this page — reflect payments the school office has applied to each specific fee. A payment you have just made may take a short time to be applied and will show as "not yet applied to a specific fee" above until then.</p>
+    <p class="fp-table-note">Paid/outstanding above — and the totals at the top of this page — reflect payments the school office has applied to each specific fee. A payment you have just made may take a short time to be applied and will show as "not yet applied to a specific fee" above until then.</p>
     {% else %}
-    <div class="student-empty"><strong>No fees have been assessed for {{session.name}} yet.</strong></div>
+    <div class="fp-empty"><strong>No fees have been assessed for {{ session.name }} yet.</strong></div>
     {% endif %}
   </section>
 
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head">
-      <div><p class="student-eyebrow">PAYMENT HISTORY</p><h2>Payments</h2><small>Every payment ever recorded, across all sessions.</small></div>
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div><p class="fp-panel__eyebrow">Payment history</p><h2>Payments</h2><small>Every payment ever recorded, across all sessions.</small></div>
     </div>
     {% if payments %}
-    <div class="pcf-table-wrap">
-      <table class="pcf-table">
-        <thead><tr><th>Receipt</th><th>Paid at</th><th>Method</th><th>Purpose</th><th class="numeric">Amount</th><th>Status</th><th></th></tr></thead>
+    <div class="fp-table-wrap">
+      <table class="fp-table">
+        <thead>
+          <tr><th>Receipt</th><th>Paid at</th><th>Method</th><th>Purpose</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+        </thead>
         <tbody>
           {% for p in payments %}
           <tr>
-            <td><strong>{{p.receipt_no}}</strong></td>
-            <td>{{p.paid_at}}</td>
-            <td>{{p.method}}</td>
-            <td>{{p.category}}</td>
-            <td class="numeric">₦{{ '{:,.2f}'.format(p.amount or 0) }}</td>
-            <td>{% if p.status=='voided' %}<span class="pcf-badge voided">Voided</span>{% else %}<span class="pcf-badge posted">Posted</span>{% endif %}</td>
-            <td><a class="btn btn-light btn-small" href="{{url_for('parent_receipt_pdf',student_id=student.id,payment_id=p.id)}}" target="_blank">Receipt</a></td>
+            <td><strong>{{ p.receipt_no }}</strong></td>
+            <td>{{ p.paid_at }}</td>
+            <td>{{ p.method }}</td>
+            <td>{{ p.category }}</td>
+            <td class="num">₦{{ '{:,.2f}'.format(p.amount or 0) }}</td>
+            <td>{% if p.status == 'voided' %}<span class="pcf-badge voided">Voided</span>{% else %}<span class="pcf-badge posted">Posted</span>{% endif %}</td>
+            <td><a class="btn btn-light btn-small" href="{{ url_for('parent_receipt_pdf', student_id=student.id, payment_id=p.id) }}" target="_blank">Receipt</a></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% else %}
-    <div class="student-empty"><strong>No payments have been recorded yet.</strong></div>
+    <div class="fp-empty"><strong>No payments have been recorded yet.</strong></div>
     {% endif %}
   </section>
 

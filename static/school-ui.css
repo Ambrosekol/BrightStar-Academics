@@ -240,6 +240,8 @@
 }
 .ui-alert--error { background: var(--danger-bg); border-color: var(--danger-line); border-left-color: var(--danger); color: #6d1a12; }
 .ui-alert--success { background: var(--success-bg); border-color: var(--success-line); border-left-color: var(--success); color: #14472e; }
+.ui-alert--warning { background: var(--warning-bg); border-color: var(--warning-line); border-left-color: var(--warning); color: #5c3c00; }
+.ui-alert--info { background: var(--brand-tint); border-color: var(--line-strong); border-left-color: var(--brand); color: var(--ink); }
 
 .ui-link {
     color: var(--brand-accent);

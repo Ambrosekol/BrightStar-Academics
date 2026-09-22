@@ -1,140 +1,156 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Message the School — Parent Portal</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-<style>
-/* ---- New conversation form ---- */
-.pf-new-card{padding:26px}
-.pf-new-card .student-eyebrow{margin-bottom:6px}
-.pf-new-card h2{margin:0 0 4px;color:var(--navy,#0d2b52);font-size:20px}
-.pf-new-card>p.muted{margin:0 0 20px;color:var(--muted,#657388);font-size:13px}
-.pf-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.pf-field{display:flex;flex-direction:column;gap:7px}
-.pf-field.pf-field-wide{grid-column:1/-1}
-.pf-field label{font-size:12px;font-weight:800;color:#334a5e}
-.pf-field .optional{font-weight:600;color:#8a95a4;text-transform:none}
-.pf-field select,.pf-field input[type=text],.pf-field textarea{
-  width:100%;padding:12px 13px;border:1px solid #ccd5e2;border-radius:10px;
-  font:inherit;font-size:14px;background:#fff;color:#1e293b;transition:border-color .15s,box-shadow .15s;
-}
-.pf-field select:focus,.pf-field input:focus,.pf-field textarea:focus{
-  outline:none;border-color:#1674b9;box-shadow:0 0 0 3px rgba(22,116,185,.12);
-}
-.pf-field textarea{resize:vertical;min-height:110px;line-height:1.5}
-.pf-form-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:4px;border-top:1px solid #eef1f5;margin-top:4px}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+{#-
+  "Message the school": start a new conversation (optionally about one child), and carry on
+  every existing one — active conversations can be replied to here, resolved ones are kept
+  read-only below them.
+-#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Message the School — Parent Portal</title>
+<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
+</head>
+<body class="school-ui">
+<a class="skip-link" href="#main">Skip to main content</a>
 
-/* ---- Conversations ---- */
-.pf-section{margin-top:30px}
-.pf-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
-.pf-section-head h2{margin:2px 0 0;color:var(--navy,#0d2b52);font-size:19px}
-.pf-count{font-size:12px;font-weight:800;color:#8a95a4}
-.feedback-thread-card{margin-top:16px;border-radius:14px;overflow:hidden;display:block}
-.feedback-thread-head{padding:15px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.feedback-thread-head strong{color:#102f3e;font-size:15px}
-.feedback-thread-head small{color:#8a95a4}
-.feedback-thread-status{display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;text-transform:capitalize;background:#eef2f6;color:#334a5e;border:1px solid #dce6ee;white-space:nowrap}
-.feedback-thread-status.open{background:#fff4e0;color:#8a5a00;border-color:#f2ddb0}
-.feedback-thread-status.in_progress{background:#e5f0ff;color:#0d3b70;border-color:#c6dcfa}
-.feedback-thread-status.resolved{background:#e5f8ec;color:#1a7a3d;border-color:#bfe8cc}
-.feedback-thread-feed{padding:18px 20px;background:#f8fafc;display:flex;flex-direction:column;gap:10px}
-.feedback-thread-feed .message-bubble{max-width:78%}
-.pf-attachment-link{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:700;color:#1674b9;text-decoration:none}
-.pf-attachment-link:hover{text-decoration:underline}
-.pf-reply-box{padding:14px 20px 18px;background:#fff;border-top:1px solid #eef1f5}
-.pf-reply-form{display:flex;gap:10px;align-items:flex-end}
-.pf-reply-form textarea{flex:1;padding:11px 13px;border:1px solid #ccd5e2;border-radius:10px;font:inherit;font-size:13px;resize:none;min-height:44px;max-height:140px}
-.pf-reply-form textarea:focus{outline:none;border-color:#1674b9;box-shadow:0 0 0 3px rgba(22,116,185,.12)}
-.pf-resolved-note{padding:14px 20px;background:#fff;color:#8a95a4;font-size:12.5px;font-style:italic}
-@media (max-width:640px){.feedback-thread-feed .message-bubble{max-width:92%}.pf-form-grid{grid-template-columns:1fr}.pf-reply-form{flex-direction:column;align-items:stretch}}
-</style>
-</head><body class="student-portal-page"><header class="student-topbar"><div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Parent Portal</span></div></div><div class="student-top-actions"><a href="{{url_for('parent_dashboard')}}">Dashboard</a><a href="{{url_for('logout')}}">Sign out</a></div></header><main class="student-dashboard-shell"><section class="student-hero"><div><p class="student-eyebrow">PARENT SUPPORT</p><h1>Message the school</h1><p>Send a question, feedback or concern to the school team assigned to parent communication. You'll get an email and WhatsApp alert as soon as they reply.</p></div></section>{% for e in errors %}<div class="student-panel" style="margin-top:20px"><div class="student-empty"><strong>{{e}}</strong></div></div>{% endfor %}
-
-<section class="student-panel pf-new-card" style="margin-top:20px">
-  <p class="student-eyebrow">START A NEW CONVERSATION</p>
-  <h2>Ask the school something new</h2>
-  <p class="muted">For an existing conversation, reply directly inside it below instead of starting another one.</p>
-  <form enctype="multipart/form-data" method="post">
-    <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-    <div class="pf-form-grid">
-      <div class="pf-field">
-        <label>Child <span class="optional">(optional)</span></label>
-        <select name="student_id"><option value="">General message to the school</option>{% for c in children %}<option value="{{c.id}}" {% if request.args.get('student')|int==c.id or form and form.get('student_id')|int==c.id %}selected{% endif %}>{{c.first_name}} {{c.last_name}} · {{c.class_name or 'Class not assigned'}}</option>{% endfor %}</select>
-      </div>
-      <div class="pf-field">
-        <label>Subject</label>
-        <input type="text" name="subject" value="{{form.get('subject','') if form else ''}}" placeholder="e.g. Question about Mathematics assignment" required>
-      </div>
-      <div class="pf-field pf-field-wide">
-        <label>Your message</label>
-        <textarea name="body" rows="5" placeholder="Write your feedback or message to the school..." required>{{form.get('body','') if form else ''}}</textarea>
-      </div>
-    </div>
-    <div class="pf-form-actions">
-      {% include 'includes/_chat_attachment_input.html' %}
-      <button class="btn btn-primary" type="submit">Send message</button>
-    </div>
-  </form>
-</section>
-
-{% set active_threads = feedback|selectattr('status','ne','resolved')|list %}
-{% set resolved_threads = feedback|selectattr('status','equalto','resolved')|list %}
-
-<section class="pf-section">
-  <div class="pf-section-head"><h2>Active conversations</h2><span class="pf-count">{{active_threads|length}}</span></div>
-  {% for f in active_threads %}
-  <div class="card feedback-thread-card">
-    <div class="feedback-thread-head">
-      <div><strong>{{f.subject}}</strong><br><small>{{f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message'}} · {{f.created_at[:10]}}</small></div>
-      <span class="feedback-thread-status {{f.status}}">{{f.status|replace('_',' ')|title}}</span>
-    </div>
-    <div class="feedback-thread-feed">
-      <div class="message-bubble outgoing">
-        <div>{{f.body}}</div>
-        {% if f.attachment_path %}<a class="pf-attachment-link" href="{{url_for('parent_feedback_attachment',feedback_id=f.id)}}" target="_blank" rel="noopener">Attachment: {{f.attachment_name or 'file'}}</a>{% endif %}
-        <span class="message-timestamp">You · {{f.created_at[:16].replace('T',' ')}} UTC</span>
-      </div>
-      {% for r in replies.get(f.id,[]) %}
-      <div class="message-bubble {% if r.is_parent %}outgoing{% else %}incoming{% endif %}">
-        <div>{{r.body}}</div>
-        <span class="message-timestamp">{{'You' if r.is_parent else r.admin_name}} · {{r.created_at[:16].replace('T',' ')}} UTC</span>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="pf-reply-box">
-      <form class="pf-reply-form" method="post" action="{{url_for('parent_feedback_reply',feedback_id=f.id)}}">
-        <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-        <textarea name="body" rows="1" placeholder="Reply to the school…" required></textarea>
-        <button class="btn btn-primary btn-small" type="submit">Send</button>
-      </form>
-    </div>
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">Parent Portal</span>
+    </span>
+  </a>
+  <div class="fp-bar__actions">
+    <a class="fp-bar__link" href="{{ url_for('parent_dashboard') }}">{{ icon('dashboard') }} Dashboard</a>
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
   </div>
-  {% else %}
-  <div class="student-panel" style="margin-top:14px"><div class="student-empty"><strong>No active conversations.</strong></div></div>
-  {% endfor %}
-</section>
+</header>
 
-<section class="pf-section">
-  <div class="pf-section-head"><h2>Resolved</h2><span class="pf-count">{{resolved_threads|length}}</span></div>
-  {% for f in resolved_threads %}
-  <div class="card feedback-thread-card">
-    <div class="feedback-thread-head">
-      <div><strong>{{f.subject}}</strong><br><small>{{f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message'}} · {{f.created_at[:10]}}</small></div>
-      <span class="feedback-thread-status {{f.status}}">{{f.status|replace('_',' ')|title}}</span>
+<main class="fp-main" id="main">
+
+  <section class="fp-hero">
+    <div>
+      <p class="fp-hero__eyebrow">Parent support</p>
+      <h1>Message the school</h1>
+      <p class="fp-hero__meta">Send a question, feedback or concern to the school team assigned to parent communication. You'll get an email and WhatsApp alert as soon as they reply.</p>
     </div>
-    <div class="feedback-thread-feed">
-      <div class="message-bubble outgoing">
-        <div>{{f.body}}</div>
-        {% if f.attachment_path %}<a class="pf-attachment-link" href="{{url_for('parent_feedback_attachment',feedback_id=f.id)}}" target="_blank" rel="noopener">Attachment: {{f.attachment_name or 'file'}}</a>{% endif %}
-        <span class="message-timestamp">You · {{f.created_at[:16].replace('T',' ')}} UTC</span>
-      </div>
-      {% for r in replies.get(f.id,[]) %}
-      <div class="message-bubble {% if r.is_parent %}outgoing{% else %}incoming{% endif %}">
-        <div>{{r.body}}</div>
-        <span class="message-timestamp">{{'You' if r.is_parent else r.admin_name}} · {{r.created_at[:16].replace('T',' ')}} UTC</span>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="pf-resolved-note">This conversation has been marked resolved. Start a new conversation above if you need further help.</div>
-  </div>
-  {% else %}
-  <div class="student-panel" style="margin-top:14px"><div class="student-empty"><strong>No resolved conversations yet.</strong></div></div>
+  </section>
+
+  {% for e in errors %}
+  <div class="ui-alert ui-alert--error" role="alert">{{ e }}</div>
   {% endfor %}
-</section>
-</main></body></html>
+
+  <section class="fp-panel">
+    <p class="fp-panel__eyebrow">Start a new conversation</p>
+    <h2>Ask the school something new</h2>
+    <p class="fp-panel-note">For an existing conversation, reply directly inside it below instead of starting another one.</p>
+    <form enctype="multipart/form-data" method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="fp-form-grid">
+        <div class="ui-field">
+          <label>Child <span class="fp-optional">(optional)</span></label>
+          <select name="student_id" class="ui-input">
+            <option value="">General message to the school</option>
+            {% for c in children %}
+            <option value="{{ c.id }}" {% if request.args.get('student')|int == c.id or form and form.get('student_id')|int == c.id %}selected{% endif %}>{{ c.first_name }} {{ c.last_name }} · {{ c.class_name or 'Class not assigned' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="ui-field">
+          <label>Subject</label>
+          <input type="text" class="ui-input" name="subject" value="{{ form.get('subject', '') if form else '' }}" placeholder="e.g. Question about Mathematics assignment" required>
+        </div>
+        <div class="ui-field fp-field-wide">
+          <label>Your message</label>
+          <textarea class="ui-input" name="body" rows="5" placeholder="Write your feedback or message to the school..." required>{{ form.get('body', '') if form else '' }}</textarea>
+        </div>
+      </div>
+      <div class="fp-form-actions">
+        <div class="fp-attach">{% include 'includes/_chat_attachment_input.html' %}</div>
+        <button class="ui-btn ui-btn--primary" type="submit">Send message {{ icon('send', 'ico-sm') }}</button>
+      </div>
+    </form>
+  </section>
+
+  {% set active_threads = feedback|selectattr('status', 'ne', 'resolved')|list %}
+  {% set resolved_threads = feedback|selectattr('status', 'equalto', 'resolved')|list %}
+
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div><h2>Active conversations</h2></div>
+      <span class="fp-count">{{ active_threads|length }}</span>
+    </div>
+    {% for f in active_threads %}
+    <div class="fp-thread">
+      <div class="fp-thread__head">
+        <div><strong>{{ f.subject }}</strong><span class="fp-row__sub">{{ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message' }} · {{ f.created_at[:10] }}</span></div>
+        <span class="fp-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
+      </div>
+      <div class="fp-thread__feed">
+        <div class="fp-bubble is-out">
+          <div>{{ f.body }}</div>
+          {% if f.attachment_path %}<a class="pf-attachment-link" href="{{ url_for('parent_feedback_attachment', feedback_id=f.id) }}" target="_blank" rel="noopener">Attachment: {{ f.attachment_name or 'file' }}</a>{% endif %}
+          <span class="fp-bubble__time">You · {{ f.created_at[:16].replace('T', ' ') }} UTC</span>
+        </div>
+        {% for r in replies.get(f.id, []) %}
+        <div class="fp-bubble {% if r.is_parent %}is-out{% else %}is-in{% endif %}">
+          <div>{{ r.body }}</div>
+          <span class="fp-bubble__time">{{ 'You' if r.is_parent else r.admin_name }} · {{ r.created_at[:16].replace('T', ' ') }} UTC</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="fp-reply">
+        <form method="post" action="{{ url_for('parent_feedback_reply', feedback_id=f.id) }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <textarea class="ui-input" name="body" rows="1" placeholder="Reply to the school…" required></textarea>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="fp-empty"><strong>No active conversations.</strong></div>
+    {% endfor %}
+  </section>
+
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div><h2>Resolved</h2></div>
+      <span class="fp-count">{{ resolved_threads|length }}</span>
+    </div>
+    {% for f in resolved_threads %}
+    <div class="fp-thread">
+      <div class="fp-thread__head">
+        <div><strong>{{ f.subject }}</strong><span class="fp-row__sub">{{ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message' }} · {{ f.created_at[:10] }}</span></div>
+        <span class="fp-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
+      </div>
+      <div class="fp-thread__feed">
+        <div class="fp-bubble is-out">
+          <div>{{ f.body }}</div>
+          {% if f.attachment_path %}<a class="pf-attachment-link" href="{{ url_for('parent_feedback_attachment', feedback_id=f.id) }}" target="_blank" rel="noopener">Attachment: {{ f.attachment_name or 'file' }}</a>{% endif %}
+          <span class="fp-bubble__time">You · {{ f.created_at[:16].replace('T', ' ') }} UTC</span>
+        </div>
+        {% for r in replies.get(f.id, []) %}
+        <div class="fp-bubble {% if r.is_parent %}is-out{% else %}is-in{% endif %}">
+          <div>{{ r.body }}</div>
+          <span class="fp-bubble__time">{{ 'You' if r.is_parent else r.admin_name }} · {{ r.created_at[:16].replace('T', ' ') }} UTC</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="fp-resolved-note">This conversation has been marked resolved. Start a new conversation above if you need further help.</div>
+    </div>
+    {% else %}
+    <div class="fp-empty"><strong>No resolved conversations yet.</strong></div>
+    {% endfor %}
+  </section>
+
+</main>
+</body>
+</html>
