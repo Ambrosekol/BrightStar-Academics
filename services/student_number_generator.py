@@ -175,7 +175,8 @@ def allocate_student_number(
     if allocation_year is None:
         allocation_year = datetime.now(timezone.utc).year
 
-    # A school may write its numbers its own way (tenants/<code>/numbering.py). The running
+    # A school may write its numbers its own way (a student-number pattern in tenants/<code>/numbering.json,
+    # set on the platform console; a pattern is read, never run). The running
     # number, the ledger and the collision checks below stay the platform's, whatever the rule.
     try:
         candidate = numbering.student_number(

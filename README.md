@@ -204,6 +204,9 @@ other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
   examinations can run at once. Untick it, or pass `--no-starter-banks` on the command line, for a
   school that will bring only its own. The starter files name no school, and copying never
   overwrites a file the school already has.
+- **Numbering.** How the school writes its candidate codes and student numbers: a short pattern
+  with the default already filled in (see *How a school numbers its people*, below). Leave it
+  alone unless the school wants something different; it can be changed later on the school's page.
 - **Its own domain** (optional, addable later).
 - **First administrator** (optional). A one-time password is shown once and must be changed at
   first sign-in.
@@ -302,32 +305,78 @@ top-level administrator holds and can grant to a role): a mail server, or a What
 
 ## How a school numbers its people
 
-Schools do not all number their entrance candidates the same way, so the platform does not decide
-what a candidate code looks like. **Each school has its own rule, in a file in its own folder:**
-`tenants/<code>/numbering.py`.
+Schools do not all number their entrance candidates and students the same way, so the platform
+does not decide what a code looks like. **Each school has its own numbering rules, which the
+platform team sets on the platform console** — on the *Create a school* form, and later in the
+**Numbering** section of the school's page — in a small text-editor-like area with the default
+already filled in. They are kept in the school's own folder, `tenants/<code>/numbering.json`, so
+nobody edits a file in the project folder for a school.
 
-- A new school is given a copy of the starter (`tenant_starter/numbering.py`) when its folder is
-  made. The starter makes `CODE-2026-0001`, `CODE-2026-0002`, … and starts again each year, which
-  is what the platform always did. A school made before this existed gets the same file the first
-  time it needs a number, so nothing changes for it until someone edits the file.
-- Edit the file and save it. The next candidate is numbered by the new rule, with no restart.
-  Nothing else in the platform, and no other school, is affected.
-- The rule is an ordinary function, `candidate_code(ctx)`. It can look at the school's code and
-  name, the year, the candidate's name and the class applied for, and it has helpers to find the
-  next free number. A second, optional function, `student_number(ctx)`, changes how a student's
-  number is *written* (the running number and the ledger that stops one being issued twice stay
-  with the platform). The file explains each option in plain words.
-- Whatever the rule returns is checked: a candidate code is made capitals (that is how candidates
-  sign in), may use letters, digits and `.` `_` `-`, and is 3 to 40 characters. If it is already
-  taken the rule is asked again, so a counter can move on.
-- A rule with a mistake in it is **refused with a plain message on the form, and nothing is
-  saved.** It never falls back to another rule, so a school's codes always follow its own rule.
+A rule is a **pattern**: plain text with `{placeholders}` in it. The default candidate pattern is
+`{school}-{year}-{seq:4}`, which makes `ABC-2026-0001`, `ABC-2026-0002`, … and starts again each
+year, which is what the platform always did. A school that does not want to change it changes
+nothing. The student-number pattern is empty by default, which means "use the school's numbering
+policy" (a prefix, optionally the year, and a running number, e.g. `ABC/2026/0001`).
 
-The file is program code and runs with the application's own power, so **only the people who run
-the platform should edit it.** School staff cannot change it from the portal, on purpose: letting a
-school's administrators write code would let one school reach into all the others. The platform
-console's folder listing shows the file among the school's files, and copying the school's folder
-moves its rule with it. (`tests/verification/write_paths_numbering.py` proves all of this.)
+| Write | It gives | Example |
+|---|---|---|
+| `{school}` | the school's code, in capitals | `ABC` |
+| `{initials}` | the initials of the school's name | `Bright Future Academy` gives `BFA` |
+| `{year}` `{yy}` | the 4-digit / 2-digit year | `2026` / `26` |
+| `{month}` `{mon}` | the 2-digit month / 3-letter month | `09` / `SEP` |
+| `{day}` | the 2-digit day | `05` |
+| `{class}` | the class applied for, without spaces, in capitals; empty if unknown (candidate codes only) | `JSS 1` gives `JSS1` |
+| `{seq}` | the running number, not padded | `7` |
+| `{seq:4}` | the running number padded with zeros to exactly 4 digits | `0007` |
+| `{seq:4-5}` | padded to at least 4 digits, may grow to 5; beyond 5 is refused with a clear message | `0007`, later `12345` |
+| `{random:N}` | N random digits | `4827` |
+| `{letters:N}` | N random capital letters (never I or O) | `KWTB` |
+| `{alnum:N}` | N random capital letters and digits (never I or O) | `K7WB` |
+| `{prefix}` | the numbering policy's prefix (student numbers only) | `ABC` |
+
+Plain text between the placeholders may use letters, digits and `-` `_` `.` (and `/` in student
+numbers). `{school|lower}` or `|upper` changes the case of a word (`|lower` is for student
+numbers: a candidate code is always made into capitals, because that is how candidates sign in).
+
+- **A pattern needs `{seq}` or a random part**, or every code would be the same, and at most one
+  `{seq}`. Unknown placeholders, unbalanced braces, forbidden characters and patterns over 80
+  characters are refused with a message that names the problem and its position.
+- **How `{seq}` counts.** The next number is one more than the biggest number already used by a
+  code that has the *same text in every other part*. So the count starts again by itself each year
+  if `{year}` is in the pattern, each month with `{month}`, for each class with `{class}`, and
+  never if none of them is. The **first number** setting (default 1) is where it starts when
+  nothing matches; it never sends the count backwards. A code that is already taken moves on to
+  the next number, and a `{random}` pattern tries again (up to 50 times).
+- **Student numbers.** The platform's own running number
+  (`services/student_number_generator.py`) stays the source of the sequence and of the ledger that
+  stops a number being issued twice; the pattern only decides how the number is *written*.
+- **Safety checks that always apply.** A finished candidate code is 3 to 40 characters of letters,
+  digits and `.` `_` `-`, starting with a letter or digit; a student number is 1 to 40, and may
+  also contain `/`. A pattern that could make a code that fails these (for example one that begins
+  with `-` when the class is not known) is refused when it is saved.
+- **Codes already issued do not change.** A new pattern applies only to the codes made after it
+  is saved; the school's page says so.
+
+**Nothing typed is ever run.** A pattern is *read* by `core/numbering_pattern.py` — split into
+pieces, each checked against the fixed list above, then filled in — never executed: there is no
+`eval`, `exec`, import or template engine anywhere near it. So being able to set a school's
+numbering does not let anyone run code on a server that can reach every school's database. (An
+earlier design used a Python file per school; that mechanism has been removed. A `numbering.py`
+left in a school's folder is ignored.)
+
+The console editor has a monospace box for each pattern, a chip for every placeholder that inserts
+at the cursor (hover for what it means and an example), a **live preview** of the next three codes
+with any problem shown beside the pattern (with its position), **Reset to default**, and a
+reference table. On a school's page the preview reads that school's own candidates (read-only) to
+show its real next numbers; a school that cannot be read still gets an example preview. The server
+re-checks everything on save; the preview never writes anything; input is length-capped and always
+shown escaped. Every save is recorded in the platform audit trail with the old and the new
+pattern, and any platform admin who may edit a school may change it. `numbering.json` is checked
+every time it is read and written whole and atomically; a missing file means the default, and a
+corrupt file is refused with a plain message (registering a candidate shows it on the form) and is
+**never silently replaced** — the console's next explicit, checked save puts the school right and
+keeps a copy of the file it replaced. (`tests/verification/write_paths_numbering_rules.py` proves
+all of this.)
 
 ## Question banks
 
@@ -478,7 +527,8 @@ Academics/
 │   ├── entrance.py           #   question banks, grading, result rendering
 │   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
 │   ├── banks.py              #   question-bank validation, safe writing, the standard set
-│   ├── numbering.py          #   runs each school's own numbering rules (tenants/<code>/numbering.py)
+│   ├── numbering.py          #   each school's numbering rules (tenants/<code>/numbering.json): reading, saving, making numbers
+│   ├── numbering_pattern.py  #   the pattern language: read and checked, never run
 │   ├── report_card_pdf.py    #   draws report cards as a PDF (one page per student)
 │   ├── marks.py              #   marks are decimals: exact totals, whole marks shown as whole numbers
 │   ├── retired_tables.py     #   drops the removed website editor's tables when they are empty
@@ -497,11 +547,10 @@ Academics/
 │   ├── library/              #   library administration
 │   └── administration/       #   accounts, roles, permissions, messaging
 ├── services/                 # Small dependency-free utilities
-├── tenant_starter/           # Files every new school is given a copy of (its numbering rules)
 ├── starter_banks/            # The standard entrance question banks copied into a new school
 ├── templates/                # Jinja templates; templates/platform/ is the console and site
 ├── static/                   # CSS/JS/images shared by every school
-├── tenants/                  # Per school: <code>/data and <code>/uploads (gitignored)
+├── tenants/                  # Per school: <code>/data, <code>/uploads and numbering.json (gitignored)
 ├── tests/
 │   ├── current/              #   the authoritative contract suite
 │   ├── verification/         #   end-to-end scripts against real databases
@@ -534,7 +583,7 @@ python tests/verification/write_paths_delivery.py          # a school's own emai
 python tests/verification/write_paths_known_gaps.py        # roles, profile page, uploads, search, sign-in errors
 python tests/verification/write_paths_pg_smoke.py          # every page, opened on PostgreSQL
 python tests/verification/write_paths_pg_posts.py          # every form submission, sent on PostgreSQL
-python tests/verification/write_paths_numbering.py         # each school's own candidate and student numbering
+python tests/verification/write_paths_numbering_rules.py   # each school's numbering patterns: the console, the language, candidates and students
 python tests/verification/write_paths_question_banks.py    # the standard banks, importing banks, a new school's first exam
 python tests/verification/write_paths_fractional_marks.py  # a 40-question paper is 100 marks; older schools upgraded
 python tests/verification/write_paths_retired_tables.py    # clearing the removed editor's leftover tables

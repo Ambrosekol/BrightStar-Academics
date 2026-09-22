@@ -51,6 +51,7 @@ ACTION_LABELS = {
     'tenant.enter': 'Entered a school',
     'tenant.school_admin_create': "Created a school's administrator",
     'tenant.branding_update': "Changed a school's branding",
+    'tenant.numbering_update': "Changed a school's numbering rules",
     'platform_admin.login': 'Signed in',
     'platform_admin.logout': 'Signed out',
     'platform_admin.login_failed': 'Failed sign-in',

@@ -1,0 +1,48 @@
+/* The numbering editor on the platform console (create a school, a school's page).
+ * Uses the console's own colours (platform.css); nothing here is shared with any school. */
+
+.np-input {
+  font-family: var(--mono); font-size: 1.05rem; letter-spacing: .01em; line-height: 1.4;
+  background: #fff; border: 1px solid var(--rule-strong); border-radius: 4px; padding: 11px 13px;
+}
+.np-input.np-first { max-width: 12rem; }
+.np-input[aria-invalid="true"] { border-color: var(--bad); outline-color: var(--bad); }
+
+.np-result { min-height: 1.6rem; margin: 8px 0 0; font-size: .88rem; }
+.np-samples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.np-samples .np-note { color: var(--muted); font-size: .82rem; flex-basis: 100%; }
+.np-sample {
+  font-family: var(--mono); font-size: .95rem; padding: 3px 10px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 3px; color: var(--ink);
+}
+.np-error {
+  border-left: 4px solid var(--bad); background: #fdf3f2; padding: 9px 12px; border-radius: 0 4px 4px 0;
+}
+.np-error p { margin: 0 0 .35rem; color: var(--bad); font-weight: 600; }
+.np-error pre {
+  margin: 0; font: .95rem/1.35 var(--mono); color: var(--ink); overflow-x: auto; white-space: pre;
+}
+.np-error pre .np-caret { color: var(--bad); font-weight: 700; }
+.np-status { color: var(--muted); }
+
+.np-tools { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.np-palette-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.np-palette { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+.np-chip {
+  font: .86rem var(--mono); padding: 5px 11px; cursor: pointer; color: var(--ink-soft); background: var(--surface);
+  border: 1px solid var(--rule-strong); border-radius: 99px;
+}
+.np-chip:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+.np-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.np-chip[aria-disabled="true"] { opacity: .38; cursor: not-allowed; }
+.np-chip[aria-disabled="true"]:hover { background: var(--surface); border-color: var(--rule-strong); color: var(--ink-soft); }
+.np-default { margin-left: 8px; font-size: .84rem; }
+
+.np-reference { margin-top: 18px; }
+.np-reference summary { color: var(--blue); }
+.np-rules { margin: 14px 0 0; padding-left: 1.2rem; color: var(--ink-soft); font-size: .9rem; }
+.np-rules li { margin: .3rem 0; }
+.np-warning {
+  margin-top: 18px; padding: 12px 14px; border: 1px solid var(--warn); border-left-width: 4px;
+  background: #fffaf0; border-radius: 4px; color: var(--ink); font-size: .9rem;
+}

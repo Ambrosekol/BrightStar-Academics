@@ -526,18 +526,24 @@ def test_the_who_is_online_ping_only_exists_where_a_school_is_selected():
     assert "_discard_school_identity()" in RESOLVER[RESOLVER.index("if host in config.platform_hosts()"):]
 
 
-def test_each_school_numbers_its_people_by_a_file_in_its_own_folder():
+def test_each_school_numbers_its_people_by_a_pattern_in_its_own_folder():
     import inspect
 
-    from core import numbering
+    from core import numbering, numbering_pattern
 
-    assert numbering.RULES_FILE == "numbering.py" and numbering.STARTER_FILE.is_file()
-    starter = numbering.STARTER_FILE.read_text(encoding="utf-8")
-    assert "def candidate_code(ctx):" in starter and "\ndef student_number(ctx):" not in starter
-    # Made when the school's folder is made, and never overwritten afterwards.
+    # The rule is data, not code: a small JSON file in the school's own folder, never a program.
+    assert numbering.RULES_FILE == "numbering.json"
+    assert not (ROOT / "tenant_starter").exists(), "there is no starter program any more: the default is a pattern"
+    assert numbering.DEFAULT_CANDIDATE_PATTERN == "{school}-{year}-{seq:4}"
+    assert numbering.DEFAULT_STUDENT_PATTERN == "" and numbering.DEFAULT_FIRST_NUMBER == 1
+    assert not hasattr(numbering, "install_rules_file") and not hasattr(numbering, "STARTER_FILE")
+    # A new school is given its file from the create-school form (default pre-filled), checked before
+    # anything is created; the platform never copies a file that is then executed.
     provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
-    assert "numbering.install_rules_file(root)" in provisioning
-    assert "'x'" in inspect.getsource(numbering.install_rules_file)
+    assert "install_rules_file" not in provisioning
+    create = provisioning[provisioning.index("def create_tenant("):provisioning.index("# A school's own identity")]
+    assert "check_numbering_inputs(" in create and "numbering.write_rules(" in create
+    assert create.index("check_numbering_inputs(") < create.index("init_platform_db()") < create.index("upgrade_tenant(info)")
     # The platform decides nothing about what a candidate code looks like: the one place that
     # used to build it now only asks the school's own rule.
     entrance = (ROOT / "core" / "entrance.py").read_text(encoding="utf-8")
@@ -548,13 +554,82 @@ def test_each_school_numbers_its_people_by_a_file_in_its_own_folder():
     assert not numbering.CANDIDATE_CODE.match("../X1") and not numbering.CANDIDATE_CODE.match("AB/123")
     assert not numbering.CANDIDATE_CODE.match("A B12") and not numbering.CANDIDATE_CODE.match("A" * 41)
     source = inspect.getsource(numbering.new_candidate_code)
-    assert "except" not in source and "MAX_ATTEMPTS" in source
-    # The rules file is program code: the only way this module writes one is the exclusive create above.
-    assert inspect.getsource(numbering).count("open(") == 1
+    assert "MAX_ATTEMPTS" in source and "read_rules(" in source
+    assert "DEFAULT_RULES" not in source, "a rule that fails must be refused, never swapped for the default"
+    # Written whole and atomically, and only after the checks; a file that is wrong is refused, not replaced.
+    assert "os.replace(" in inspect.getsource(numbering._write) and "os.fsync(" in inspect.getsource(numbering._write)
+    assert "check_rules(" in inspect.getsource(numbering.write_rules)
+    assert "check_rules(" in inspect.getsource(numbering.save_rules)
+    import re as _re
+    assert not _re.search(r"(?<![A-Za-z_])open\(", inspect.getsource(numbering)) and inspect.getsource(numbering).count("os.fdopen(") == 1
     # A student number may be written the school's way, but the running number and the ledger
     # that stops a number being issued twice stay the platform's.
     generator = (ROOT / "services" / "student_number_generator.py").read_text(encoding="utf-8")
     assert generator.index("numbering.student_number(") < generator.index("Collision check #1")
+    assert numbering_pattern.PALETTE, "the console's palette and reference table come from one list"
+
+
+def test_a_numbering_pattern_is_read_and_never_run():
+    """Letting the platform's operators type a school's numbering rule must not let them run code on
+    a server that can reach every school's database. So the two modules that handle a pattern only
+    ever read it: no eval, exec, compile, import machinery, template engine, ``format`` on typed text,
+    pickle, subprocess or shell, and nothing typed is used as a regular expression."""
+    import ast
+
+    banned_calls = {"eval", "exec", "compile", "__import__", "setattr", "globals", "locals", "open", "system", "popen", "Popen", "loads_module", "import_module", "exec_module", "spec_from_file_location", "format", "format_map", "safe_substitute", "substitute", "Template", "literal_eval"}
+    banned_imports = {"importlib", "runpy", "pickle", "marshal", "shelve", "subprocess", "ctypes", "imp", "code", "codeop", "ast", "string.Template", "jinja2", "yaml", "cffi"}
+    for name in ("numbering.py", "numbering_pattern.py"):
+        source = (ROOT / "core" / name).read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                function = node.func
+                called = function.id if isinstance(function, ast.Name) else function.attr if isinstance(function, ast.Attribute) else ""
+                regex_compile = (isinstance(function, ast.Attribute) and called == "compile"
+                                 and isinstance(function.value, ast.Name) and function.value.id == "re")
+                if called in banned_calls and not regex_compile:  # re.compile only: see the matcher check below
+                    # str.format is fine on OUR OWN literals only; none of these files uses it at all.
+                    raise AssertionError(f"core/{name} line {node.lineno} calls {called}(): typed text must never be run or formatted")
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert alias.name.split(".")[0] not in banned_imports, f"core/{name} imports {alias.name}"
+            if isinstance(node, ast.ImportFrom):
+                assert (node.module or "").split(".")[0] not in banned_imports, f"core/{name} imports from {node.module}"
+    pattern_source = (ROOT / "core" / "numbering_pattern.py").read_text(encoding="utf-8")
+    matcher = pattern_source[pattern_source.index("    def matcher("):pattern_source.index("    def next_number(")]
+    assert "re.escape(token.text.upper())" in matcher and "re.escape(self._value(" in matcher
+    # The retired Python-file mechanism is gone for good.
+    for path in (ROOT / "core", ROOT / "control_plane", ROOT / "services"):
+        for file in path.glob("*.py"):
+            code = file.read_text(encoding="utf-8")
+            assert "exec_module" not in code and "spec_from_file_location" not in code, file.name
+    # The console routes that take a pattern never pass it anywhere but the checked functions.
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    for route in ("platform_school_numbering", "platform_numbering_preview"):
+        block = console[console.index(f"def {route}("):]
+        block = block[:block.index("\n@app.") if "\n@app." in block else len(block)]
+        for word in ("eval(", "exec(", "compile(", "importlib", "|safe"):
+            assert word not in block, f"{route} uses {word}"
+    editor = (ROOT / "templates" / "platform" / "_numbering.html").read_text(encoding="utf-8")
+    assert "|safe" not in editor and "innerHTML" not in (ROOT / "static" / "platform-numbering.js").read_text(encoding="utf-8")
+
+
+def test_only_signed_in_platform_admins_can_set_a_schools_numbering():
+    console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")
+    for route in ("platform_school_numbering", "platform_numbering_preview"):
+        start = console.index(f"def {route}(")
+        decorators = console[console.rindex("@app.post", 0, start):start]
+        assert "@platform_host_only" in decorators and "@platform_required" in decorators and "@csrf_protect" in decorators, route
+        assert decorators.index("@platform_host_only") < decorators.index("@platform_required") < decorators.index("@csrf_protect"), route
+    # Every save is recorded with the old and the new pattern.
+    provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
+    update = provisioning[provisioning.index("def update_numbering("):provisioning.index("def preview_numbering(")]
+    assert "record('tenant.numbering_update'" in update and "_describe_rules(old, new)" in update
+    # The preview only ever reads a school's own database.
+    preview = provisioning[provisioning.index("def _read_school("):provisioning.index("def update_numbering(")]
+    for verb in ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "COMMIT"):
+        assert verb not in preview.upper().replace("UPDATED", ""), verb
+    assert preview.count("postgresql_readonly=True") >= 3
 
 
 def test_retired_tables_are_only_dropped_when_nothing_would_be_lost():

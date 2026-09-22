@@ -30,7 +30,7 @@ from .registry import (
     clear_cache, get_tenant, init_platform_db, now_iso, platform_session, to_info,
     validate_hostname, validate_slug,
 )
-from .routing import build_engine, ensure_database_exists, resolve_db_url
+from .routing import build_engine, engine_for, ensure_database_exists, resolve_db_url
 
 
 class ProvisioningError(Exception):
@@ -74,11 +74,15 @@ def tenant_folder(slug_or_info):
 
 
 def ensure_tenant_folders(slug_or_info):
-    """Create the school's container folder, its standard subfolders and its own numbering rules."""
+    """Create the school's container folder and its standard subfolders.
+
+    The school's numbering rules (``numbering.json``) are not made here: a school that has no
+    such file numbers by the default pattern, and a new school is given its file, from the form
+    the operator filled in, by ``create_tenant``.
+    """
     root = tenant_folder(slug_or_info)
     for sub in TENANT_SUBFOLDERS:
         (root / sub).mkdir(parents=True, exist_ok=True)
-    numbering.install_rules_file(root)
     return root
 
 
@@ -192,7 +196,7 @@ def create_school_admin(info, username, display_name=None):
 
 def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
                   admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
-                  actor='cli'):
+                  actor='cli', numbering_rules=None):
     """Register a new school and build its database.
 
     The school's portal hostname is generated here and works immediately; any
@@ -202,7 +206,9 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
     ``logo`` and ``gallery`` (the photographs shown on the school's sign-in page)
     are uploaded files. Every choice that can be checked without a school — the
     colours and the images — is checked first, so a bad one is reported before a
-    database and a folder have been created for the school.
+    database and a folder have been created for the school. That includes the school's
+    numbering rules: ``numbering_rules`` is a dict with ``candidate_pattern``, ``student_pattern``
+    and ``first_number`` (anything left out is the default), or None for the defaults.
 
     Returns ``(info, admin_password)``.
     """
@@ -211,6 +217,7 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
     if not name:
         raise ProvisioningError('A school name is required.')
     branding, gallery = check_branding_inputs(branding, logo, gallery)
+    rules, rule_facts = check_numbering_inputs(slug, name, numbering_rules)
     init_platform_db()
     portal_host = config.portal_hostname(slug)
     with platform_session() as session:
@@ -234,6 +241,12 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
     try:
         upgrade_tenant(info)
         apply_branding(info, branding or {'school_name': name}, logo, gallery)
+        try:
+            numbering.write_rules(tenant_folder(info), rules, rule_facts)  # written even if it is the default
+        except numbering.NumberingRuleError as exc:
+            raise ProvisioningError(str(exc)) from None
+        if not numbering.is_default(rules):
+            record('tenant.numbering_update', _describe_rules(None, rules), info.id, actor)
         if starter_banks:
             add_starter_banks(info)  # the standard entrance banks, copied into the school's own folder
         password = create_school_admin(info, admin_username, admin_display_name) if admin_username else None
@@ -317,6 +330,135 @@ def update_branding(info, branding=None, logo=None, gallery=(), remove_gallery=(
     """
     branding, gallery = check_branding_inputs(branding, logo, gallery)
     apply_branding(info, branding, logo, gallery, remove_gallery, partial=True)
+
+
+# A school's numbering rules (numbering.json in its own folder) are patterns that are read and
+# checked, never run: see core/numbering.py. These are the platform-side wrappers: they turn a
+# refused pattern into a ProvisioningError, and read a school's own database, read-only, for the
+# console's previews.
+
+def check_numbering_inputs(slug, name, given=None):
+    """Validate the numbering rules chosen for a school without touching any school.
+
+    ``given`` is a dict with ``candidate_pattern``, ``student_pattern`` and ``first_number``;
+    whatever is missing is the default. Returns ``(rules, facts)``; raises
+    :class:`ProvisioningError` with a message safe to show.
+    """
+    given = given or {}
+    facts = numbering.Facts(school_code=(slug or '').upper(), school_name=name or '')
+    try:
+        rules = numbering.check_rules(
+            given.get('candidate_pattern', numbering.DEFAULT_CANDIDATE_PATTERN),
+            given.get('student_pattern', numbering.DEFAULT_STUDENT_PATTERN),
+            given.get('first_number', numbering.DEFAULT_FIRST_NUMBER), facts)
+    except numbering.NumberingRuleError as exc:
+        raise ProvisioningError(str(exc)) from None
+    return rules, facts
+
+
+def _describe_rules(old, new):
+    def shown(pattern):
+        return pattern or '(the numbering policy)'
+
+    if old is None:
+        return (f'candidate code: {new.candidate_pattern}; student number: {shown(new.student_pattern)}; '
+                f'first number: {new.first_number}')
+    return (f'candidate code: {old.candidate_pattern} -> {new.candidate_pattern}; '
+            f'student number: {shown(old.student_pattern)} -> {shown(new.student_pattern)}; '
+            f'first number: {old.first_number} -> {new.first_number}')
+
+
+def numbering_of(info):
+    """``(rules, problem)``: a school's numbering rules, or the default and a plain message if its
+    numbering.json cannot be used (which the school's page shows, and never hides)."""
+    try:
+        return numbering.read_rules(tenant_folder(info)), None
+    except numbering.NumberingRuleError as exc:
+        return numbering.DEFAULT_RULES, str(exc)
+
+
+def _read_school(info):
+    """The school's own code and name, read from its database without writing anything. Falls back
+    to what the registry knows if the database cannot be read."""
+    found = {'code': (info.slug or '').upper(), 'name': info.name or ''}
+    try:
+        with engine_for(info).connect() as conn:
+            conn.execution_options(postgresql_readonly=True)
+            row = conn.execute(sa.text('SELECT code, name FROM schools ORDER BY id LIMIT 1')).first()
+        if row:
+            found = {'code': (row[0] or found['code']).upper(), 'name': row[1] or found['name']}
+    except Exception:
+        pass
+    return found
+
+
+def _read_policy(info):
+    with engine_for(info).connect() as conn:
+        conn.execution_options(postgresql_readonly=True)
+        row = conn.execute(sa.text(
+            'SELECT prefix, include_year, padding, next_sequence FROM school_numbering_policies '
+            'ORDER BY id LIMIT 1')).first()
+    return ({'prefix': row[0], 'include_year': row[1], 'padding': row[2], 'next_sequence': row[3]}
+            if row else {})
+
+
+def _read_candidate_codes(info, prefix):
+    """Existing candidate codes that begin with ``prefix`` (all of them if it is empty), read-only."""
+    statement = 'SELECT candidate_code FROM candidates'
+    params = {}
+    if prefix:
+        statement += ' WHERE left(candidate_code, :size) = :prefix'
+        params = {'size': len(prefix), 'prefix': prefix}
+    with engine_for(info).connect() as conn:
+        conn.execution_options(postgresql_readonly=True)
+        return [code for (code,) in conn.execute(sa.text(statement), params)]
+
+
+def update_numbering(info, candidate_pattern, student_pattern, first_number, actor='cli', admin_id=None):
+    """Change a school's numbering rules. Everything is checked first, the file is replaced whole,
+    and the old and new patterns go into the platform audit trail. Codes already issued are not
+    touched. Returns the new :class:`numbering.Rules`."""
+    school = _read_school(info)
+    facts = numbering.Facts(school_code=school['code'], school_name=school['name'])
+    try:
+        old, unreadable = numbering.save_rules(
+            tenant_folder(info), numbering.Rules(candidate_pattern, student_pattern, first_number), facts)
+        new = numbering.read_rules(tenant_folder(info))
+    except numbering.NumberingRuleError as exc:
+        raise ProvisioningError(str(exc)) from None
+    detail = _describe_rules(old, new) if old is not None else (
+        'the old file could not be read and was replaced (a copy was kept); ' + _describe_rules(None, new))
+    record('tenant.numbering_update', detail, info.id, actor, admin_id)
+    return new
+
+
+def preview_numbering(candidate_pattern, student_pattern, first_number, code, name, info=None):
+    """What a set of numbering rules would make, for the console's live preview. Never writes.
+
+    For a school that exists (``info``) the next numbers are the real ones, read from its own
+    candidates and numbering policy; for a school still being created (``code`` and ``name`` as
+    typed on the form) they are examples. A school that cannot be read still gets a preview.
+    """
+    example_policy = None
+    if info is not None:
+        school = _read_school(info)
+        facts = numbering.Facts(school_code=school['code'], school_name=school['name'], target_class='JSS 1')
+    else:
+        facts = numbering.Facts(school_code=(code or 'CODE').upper(), school_name=name or 'Your school',
+                                target_class='JSS 1')
+    example_policy = {'prefix': facts.school_code, 'include_year': 1, 'padding': 4, 'next_sequence': 1}
+    if info is not None:
+        try:
+            return numbering.preview(candidate_pattern, student_pattern, first_number, facts,
+                                     candidate_codes=lambda prefix: _read_candidate_codes(info, prefix),
+                                     policy=_read_policy(info))
+        except Exception:
+            result = numbering.preview(candidate_pattern, student_pattern, first_number, facts,
+                                       policy=example_policy)
+            result['unreadable'] = ("This school's candidates could not be read just now, so these are "
+                                    "examples rather than its real next numbers.")
+            return result
+    return numbering.preview(candidate_pattern, student_pattern, first_number, facts, policy=example_policy)
 
 
 def create_platform_admin(username, display_name, password, actor='cli', superadmin=False):

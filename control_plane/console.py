@@ -15,12 +15,12 @@ from urllib.parse import urlsplit
 
 import sqlalchemy as sa
 from flask import (
-    abort, flash, g, redirect, render_template, request, send_from_directory, session, url_for,
+    abort, flash, g, jsonify, redirect, render_template, request, send_from_directory, session, url_for,
 )
 from werkzeug.utils import secure_filename
 
 from app import app
-from core import theme
+from core import numbering, theme
 from core.security import csrf_protect
 from core.session_guard import refresh_password_stamp, stamp_session, take_sign_out_reason
 from core.uploads import IMAGE_EXTENSIONS
@@ -35,7 +35,7 @@ from .entry import (
 )
 from .models import Tenant, TENANT_ACTIVE, TENANT_SUSPENDED
 from .ratelimit import allow
-from .registry import get_tenant, platform_session, to_info
+from .registry import SLUG_RE, get_tenant, platform_session, to_info
 
 SESSION_KEY = 'platform_admin_id'
 
@@ -144,6 +144,42 @@ def _safe_next(target, fallback):
     if target and target.startswith('/') and not target.startswith('//'):
         return target
     return fallback
+
+
+# ---------------- a school's numbering rules (patterns; see core/numbering.py) ----------------
+
+NUMBERING_FIELDS = ('candidate_pattern', 'student_pattern', 'first_number')
+MAX_NUMBERING_INPUT = 200  # longer than any pattern may be, so an over-long one is refused, not cut short
+
+
+def _numbering_defaults():
+    return {'candidate_pattern': numbering.DEFAULT_CANDIDATE_PATTERN,
+            'student_pattern': numbering.DEFAULT_STUDENT_PATTERN,
+            'first_number': str(numbering.DEFAULT_FIRST_NUMBER)}
+
+
+def _numbering_posted(require_all):
+    """The numbering fields of a submitted form, exactly as typed (never trimmed, so the position
+    of a problem is the position the person sees). A field the form does not carry is the default
+    when a school is created, and a refusal when a school's rules are saved."""
+    values, missing = _numbering_defaults(), []
+    for key in NUMBERING_FIELDS:
+        if key in request.form:
+            values[key] = request.form.get(key, '')[:MAX_NUMBERING_INPUT]
+        elif require_all:
+            missing.append(key)
+    return values, missing
+
+
+def _numbering_view(values, slug='', problem=None):
+    """Everything the numbering editor (templates/platform/_numbering.html) needs."""
+    return {
+        'fields': values, 'defaults': _numbering_defaults(), 'slug': slug, 'problem': problem,
+        'preview_url': url_for('platform_numbering_preview'), 'max_pattern': numbering.MAX_PATTERN_LENGTH,
+        'palette': [{'token': token, 'meaning': meaning, 'example': example,
+                     'candidate': numbering.CANDIDATE in kinds, 'student': numbering.STUDENT in kinds}
+                    for token, meaning, example, kinds in numbering.PALETTE],
+    }
 
 
 # ---------------- sign in / out ----------------
@@ -263,8 +299,10 @@ def platform_school_new():
             theme.PRIMARY_KEY: theme.DEFAULT_PRIMARY, theme.ACCENT_KEY: theme.DEFAULT_ACCENT}
     errors = []
     starter_banks = True  # ticked unless the operator unticks it
+    numbering_values = _numbering_defaults()  # the editor starts filled with the default rules
     if request.method == 'POST':
         starter_banks = request.form.get('starter_banks') == '1'
+        numbering_values, _ = _numbering_posted(require_all=False)
         form = {k: request.form.get(k, '').strip() for k in form}
         domains = [line.strip() for line in form['domains'].replace(',', '\n').splitlines() if line.strip()]
         if not form['name']:
@@ -283,7 +321,7 @@ def platform_school_new():
                     admin_username=form['admin_username'] or None,
                     admin_display_name=form['admin_display_name'] or None,
                     branding=branding, logo=logo, gallery=gallery, starter_banks=starter_banks,
-                    actor=g.platform_admin['username'])
+                    actor=g.platform_admin['username'], numbering_rules=numbering_values)
             except (pv.ProvisioningError, ValueError) as exc:
                 errors.append(str(exc))
             else:
@@ -296,6 +334,7 @@ def platform_school_new():
                                        folder=pv.tenant_folder_listing(info))
     return render_template('platform/school_new.html', form=form, errors=errors,
                            starter_banks=starter_banks,
+                           numbering=_numbering_view(numbering_values),
                            portal_domain=pv.config.portal_domain(),
                            max_gallery=theme.MAX_GALLERY_IMAGES,
                            min_contrast=theme.MIN_CONTRAST_WITH_WHITE)
@@ -305,11 +344,24 @@ def platform_school_new():
 @platform_host_only
 @platform_required
 def platform_school(slug):
+    return _school_page(slug)
+
+
+def _school_page(slug, numbering_values=None, numbering_errors=()):
+    """A school's page. ``numbering_values`` are what the numbering editor shows instead of the
+    school's saved rules (the values just typed, when a save was refused)."""
     info, domains, suspended_reason = _tenant_or_404(slug)
     portal = next((d['hostname'] for d in domains if d['portal']), None)
     branding = pv.branding_of(info)
     logo_path = branding.get(pv.LOGO_SETTING_KEY) or ''
+    rules, numbering_problem = pv.numbering_of(info)
+    if numbering_values is None:
+        numbering_values = {'candidate_pattern': rules.candidate_pattern,
+                            'student_pattern': rules.student_pattern,
+                            'first_number': str(rules.first_number)}
     return render_template('platform/school.html', info=info, domains=domains, portal=portal,
+                           numbering=_numbering_view(numbering_values, info.slug, numbering_problem),
+                           numbering_errors=list(numbering_errors),
                            suspended_reason=suspended_reason, stats=tenant_stats(info),
                            admins=school_admins(info), folder=pv.tenant_folder_listing(info),
                            branding=branding,
@@ -321,6 +373,53 @@ def platform_school(slug):
                            accent=branding.get(theme.ACCENT_KEY) or theme.DEFAULT_ACCENT,
                            max_gallery=theme.MAX_GALLERY_IMAGES,
                            audit=pv.recent_audit(tenant_id=info.id, limit=15))
+
+
+@app.post('/platform/schools/<slug>/numbering')
+@platform_host_only
+@platform_required
+@csrf_protect
+def platform_school_numbering(slug):
+    """Change a school's numbering rules. Every platform admin may, like the school's other
+    settings; everything is checked here again whatever the page's preview said, and the old and
+    new patterns are written to the audit trail."""
+    info, _, _ = _tenant_or_404(slug)
+    values, missing = _numbering_posted(require_all=True)
+    if missing:
+        return _school_page(slug, values, ['The numbering form was incomplete, so nothing was saved.']), 400
+    try:
+        pv.update_numbering(info, values['candidate_pattern'], values['student_pattern'],
+                            values['first_number'], g.platform_admin['username'], g.platform_admin['id'])
+    except (pv.ProvisioningError, ValueError) as exc:
+        return _school_page(slug, values, [str(exc)]), 400
+    flash("The school's numbering rules have been saved. Codes already issued are unchanged.", 'success')
+    return redirect(url_for('platform_school', slug=slug) + '#numbering')
+
+
+@app.post('/platform/numbering/preview')
+@platform_host_only
+@platform_required
+@csrf_protect
+def platform_numbering_preview():
+    """Show what a set of numbering rules would make. Writes nothing, anywhere: it only reads.
+
+    For a school that exists, the numbers are its real next ones; while a school is being
+    created, the code and name typed on the form are used for examples."""
+    def field(key, size=MAX_NUMBERING_INPUT):
+        return request.form.get(key, '')[:size]
+
+    slug = field('slug', 64)
+    if slug and not SLUG_RE.match(slug):
+        abort(404)  # never look up (or send to the database) anything that is not a school code
+    info = _tenant_or_404(slug)[0] if slug else None
+    name = field('name', 120).strip()
+    code = field('code', 60).strip()
+    code = pv.suggest_slug(code) if code else (pv.suggest_slug(name) if name else 'code')
+    result = pv.preview_numbering(field('candidate_pattern'), field('student_pattern'),
+                                  field('first_number', 20), code, name, info)
+    response = jsonify(result)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @app.post('/platform/schools/<slug>/branding')

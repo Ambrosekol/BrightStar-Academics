@@ -139,6 +139,19 @@
   <p style="margin-bottom:0"><button class="btn btn-primary" type="submit">Save branding</button></p>
 </form>
 
+<h2 id="numbering-heading">Numbering</h2>
+<form method="post" class="panel" action="{{ url_for('platform_school_numbering', slug=info.slug) }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <p class="muted" style="margin-top:0">How this school writes its candidate codes and student numbers.
+    Each rule is a short pattern that is checked, never run.</p>
+  {% if numbering_errors %}
+    <div class="errors"><strong>The numbering rules were not saved.</strong>
+      <ul>{% for error in numbering_errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% include "platform/_numbering.html" %}
+  <p style="margin-bottom:0"><button class="btn btn-primary" type="submit">Save numbering</button></p>
+</form>
+
 <h2>Administrators</h2>
 <div class="panel">
   <table>

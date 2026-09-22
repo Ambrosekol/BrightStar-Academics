@@ -1,0 +1,103 @@
+{# The numbering editor: how a school writes its candidate codes and student numbers.
+   Included inside a form by the create-school page and the school's page.
+   `numbering` comes from console._numbering_view(). Nothing here is ever run: the patterns are
+   read and checked by core/numbering_pattern.py, and everything typed is shown as plain text. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='platform-numbering.css', v='1') }}">
+<div class="np" id="numbering" data-numbering
+     data-preview-url="{{ numbering.preview_url }}" data-slug="{{ numbering.slug }}"
+     data-csrf="{{ csrf_token() }}"
+     data-default-candidate="{{ numbering.defaults.candidate_pattern }}"
+     data-default-student="{{ numbering.defaults.student_pattern }}"
+     data-default-first="{{ numbering.defaults.first_number }}">
+
+  {% if numbering.problem %}
+    <div class="errors"><strong>This school's numbering file cannot be used.</strong>
+      <p style="margin:.3rem 0 0">{{ numbering.problem }}</p>
+      <p class="muted" style="margin:.3rem 0 0">Until it is put right, registering a candidate is refused
+        with that message. Saving below replaces it (a copy of the unreadable file is kept beside it).</p>
+    </div>
+  {% endif %}
+
+  <label for="numbering-candidate">Candidate code pattern
+    <span class="hint">How a new entrance-exam candidate's sign-in code is written. Always made into
+      capitals, because that is how candidates sign in.</span></label>
+  <input type="text" class="np-input" id="numbering-candidate" name="candidate_pattern"
+         value="{{ numbering.fields.candidate_pattern }}" maxlength="200" spellcheck="false"
+         autocomplete="off" autocapitalize="off" aria-describedby="numbering-candidate-result">
+  <div class="np-result" id="numbering-candidate-result" aria-live="polite">
+    <noscript>The preview needs JavaScript. The pattern is checked when you save either way.</noscript>
+  </div>
+
+  <label for="numbering-student">Student number pattern <span class="muted" style="font-weight:400">(optional)</span>
+    <span class="hint">Leave empty to use the school's own numbering policy (for example ABC/2026/0001).
+      When it is filled in, it decides how each student number is <em>written</em>; the running number
+      itself still comes from the platform, so a number is never issued twice.</span></label>
+  <input type="text" class="np-input" id="numbering-student" name="student_pattern"
+         value="{{ numbering.fields.student_pattern }}" maxlength="200" spellcheck="false"
+         autocomplete="off" autocapitalize="off" aria-describedby="numbering-student-result"
+         placeholder="empty: use the school's numbering policy">
+  <div class="np-result" id="numbering-student-result" aria-live="polite"></div>
+
+  <label for="numbering-first">First number for candidate codes
+    <span class="hint">Where the running number starts when no code like it exists yet (normally 1). It
+      never sends the count backwards: once codes exist, the next number is one more than the biggest
+      already used.</span></label>
+  <input type="text" class="np-input np-first" id="numbering-first" name="first_number" inputmode="numeric"
+         value="{{ numbering.fields.first_number }}" maxlength="12" autocomplete="off"
+         aria-describedby="numbering-first-result">
+  <div class="np-result" id="numbering-first-result" aria-live="polite"></div>
+
+  <div class="np-tools">
+    <div class="np-palette-head">
+      <strong>Placeholders</strong>
+      <span class="muted">Click one to put it where your cursor is. Hover for what it means.</span>
+    </div>
+    <div class="np-palette" role="group" aria-label="Placeholders">
+      {% for chip in numbering.palette %}
+        <button type="button" class="np-chip" data-token="{{ chip.token }}"
+                data-candidate="{{ '1' if chip.candidate else '0' }}" data-student="{{ '1' if chip.student else '0' }}"
+                title="{{ chip.meaning }} Example: {{ chip.example }}"
+                aria-label="Insert {{ chip.token }}. {{ chip.meaning }} Example: {{ chip.example }}">{{ chip.token }}</button>
+      {% endfor %}
+    </div>
+    <p class="hint">Add <code>|upper</code> or <code>|lower</code> inside the braces to change the case of a word,
+      for example <code>{{ '{school|lower}' }}</code> (student numbers only for <code>|lower</code>).</p>
+    <button type="button" class="btn btn-sm" id="numbering-reset">Reset to default</button>
+    <span class="muted np-default">Default: <code>{{ numbering.defaults.candidate_pattern }}</code>, first number
+      {{ numbering.defaults.first_number }}, and the school's numbering policy for students.</span>
+  </div>
+
+  <details class="np-reference">
+    <summary>Reference: every placeholder, and the rules</summary>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Write</th><th>What it gives</th><th>Example</th><th>Used in</th></tr></thead>
+        <tbody>
+          {% for chip in numbering.palette %}
+            <tr>
+              <td><code>{{ chip.token }}</code></td>
+              <td>{{ chip.meaning }}</td>
+              <td class="mono">{{ chip.example }}</td>
+              <td class="muted">{% if chip.candidate and chip.student %}both{% elif chip.candidate %}candidate codes only{% else %}student numbers only{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <ul class="np-rules">
+      <li>Plain text may use letters, digits and <code>-</code> <code>_</code> <code>.</code> (and <code>/</code> in student numbers). Nothing else: no spaces.</li>
+      <li>A pattern needs <code>{{ '{seq}' }}</code> or a random part such as <code>{{ '{random:4}' }}</code>, or every code would be the same. It may have one <code>{{ '{seq}' }}</code> at most.</li>
+      <li>The running number goes on from the biggest number already used by a code that is the <em>same in every other part</em>. So it starts again each year if <code>{{ '{year}' }}</code> is in the pattern, each month with <code>{{ '{month}' }}</code>, for each class with <code>{{ '{class}' }}</code>, and never if none of them is.</li>
+      <li><code>{{ '{seq:4}' }}</code> is exactly 4 digits: after 9999 it is refused with a message, so widen it to <code>{{ '{seq:4-5}' }}</code> before that happens.</li>
+      <li>A finished candidate code is 3 to 40 characters, starting with a letter or digit. A student number is 1 to 40.</li>
+      <li>The previews use the class <strong>JSS 1</strong> and today's date.</li>
+    </ul>
+  </details>
+
+  {% if numbering.slug %}
+    <div class="np-warning" role="note"><strong>Codes already issued do not change.</strong> Candidates and
+      students who already have a code or number keep it, and go on signing in with it. A new rule applies
+      only to the codes made after you save it.</div>
+  {% endif %}
+</div>
+<script src="{{ url_for('static', filename='platform-numbering.js', v='1') }}"></script>
