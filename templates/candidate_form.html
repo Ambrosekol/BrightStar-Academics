@@ -37,8 +37,8 @@
 
         <div class="field">
             <label>Candidate photo <span class="optional">(optional)</span></label>
-            <input type="file" name="photo" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp">
-            <small class="field-help">PNG, JPG, JPEG, GIF or WEBP.</small>
+            <input type="file" name="photo" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+            {{ upload_hint() }}
         </div>
 
         <div class="field">

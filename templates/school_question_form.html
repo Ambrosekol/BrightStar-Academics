@@ -34,8 +34,8 @@
     {% endif %}
     <div class="field" style="margin-top:14px">
       <label>Replace / add question image <span class="optional">(optional)</span></label>
-      <input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp">
-      <small class="field-help">PNG, JPG, JPEG, GIF or WEBP · maximum 5 MB.</small>
+      <input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+      {{ upload_hint() }}
     </div>
     <div class="form-grid" style="margin-top:14px">
       <div class="field"><label>Option A</label><input name="option_a" value="{{question.option_a}}" required></div>

@@ -73,7 +73,7 @@
       <p>PNG, JPG, GIF or WEBP. Choosing a file replaces the current logo.</p>
     </div></div>
     {% if logo_url %}<div class="brand-logo-box"><img src="{{ logo_url }}" alt="Current logo"></div>{% endif %}
-    <div class="field"><input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp"></div>
+    <div class="field"><input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>{{ upload_hint() }}</div>
   </div>
 
   <div class="form-section">
@@ -92,8 +92,8 @@
       </div>
     {% endif %}
     {% if photos|length < max_gallery %}
-      <div class="field"><input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp">
-        <small>Hold Ctrl (or Cmd) to choose several at once.</small></div>
+      <div class="field"><input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>
+        {{ upload_hint(multiple=True) }}<small>Hold Ctrl (or Cmd) to choose several at once.</small></div>
     {% else %}
       <p class="muted">Your gallery is full. Remove a photograph to add another.</p>
     {% endif %}

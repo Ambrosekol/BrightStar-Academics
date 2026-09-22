@@ -207,12 +207,13 @@ def check_branding_inputs(branding, logo=None, gallery=()):
     gallery = _uploaded(gallery)
     if len(gallery) > theme.MAX_GALLERY_IMAGES:
         raise ValueError(f'A school can have at most {theme.MAX_GALLERY_IMAGES} sign-in photos.')
-    for label, upload in [('The logo', logo)] + [(f'"{f.filename}"', f) for f in gallery]:
+    # Each message already names the file it is about; the logo also says which box it came from.
+    for label, upload in [('The logo: ', logo)] + [('', f) for f in gallery]:
         if _uploaded([upload]):
             try:
                 validate_image_upload(upload)
             except ValueError as exc:
-                raise ValueError(f'{label}: {exc}') from None
+                raise ValueError(f'{label}{exc}') from None
     return branding, gallery
 
 
@@ -223,8 +224,10 @@ def max_branding_request_bytes():
     logo and up to ``theme.MAX_GALLERY_IMAGES`` photographs at once raise their
     own limit to fit them.
     """
-    one = int(os.environ.get('BRIGHTSTARS_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
-    default = int(os.environ.get('BRIGHTSTARS_MAX_REQUEST_BYTES', 8 * 1024 * 1024))
+    from core.uploads import DEFAULT_REQUEST_LIMIT_BYTES, _env_bytes, image_limit_bytes
+
+    one = image_limit_bytes()
+    default = _env_bytes('BRIGHTSTARS_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
     return max(default, one * (theme.MAX_GALLERY_IMAGES + 1) + 1024 * 1024)
 
 

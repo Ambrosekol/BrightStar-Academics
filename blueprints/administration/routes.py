@@ -45,7 +45,7 @@ from core.security import (
     _notify_school_admins,
 )
 from core.storage import uploads_dir
-from core.uploads import _save_image_upload
+from core.uploads import ATTACHMENT_EXTENSIONS, _save_image_upload
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
     _admin_contact_fields, _sync_admin_roles, _validate_admin_contact_fields,
@@ -552,10 +552,7 @@ def admin_message_send():
     attachment_name=None
     saved_file=None
 
-    allowed_extensions={
-        '.jpg','.jpeg','.png','.gif','.webp',
-        '.pdf','.doc','.docx','.txt','.xls','.xlsx'
-    }
+    allowed_extensions=ATTACHMENT_EXTENSIONS  # the same list the message box tells the person about
 
     if has_file:
         original_name=secure_filename(file_obj.filename or '')

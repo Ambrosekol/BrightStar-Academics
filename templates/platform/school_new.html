@@ -46,13 +46,15 @@
 
     <label for="logo">Logo
       <span class="hint">PNG, JPG, GIF or WEBP. Stored in the school's own folder.</span></label>
-    <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+    <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>
+    {{ upload_hint() }}
 
     <label for="gallery">Photographs for the sign-in page
       <span class="hint">Up to {{ max_gallery }} pictures of the school. Hold Ctrl (or Cmd) to choose
         several at once. They fade one after another beside the sign-in form.</span></label>
     <input type="file" id="gallery" name="gallery" multiple
-           accept="image/png,image/jpeg,image/gif,image/webp">
+           accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>
+    {{ upload_hint(multiple=True) }}
 
     <label>Brand colours
       <span class="hint">The school's portal — its menus, headers, buttons and sign-in page — is

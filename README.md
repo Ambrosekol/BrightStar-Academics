@@ -197,7 +197,12 @@ Colours, logo and photographs can all be changed afterwards, by either side:
 Both use the same rules (`core/branding.py`), so they cannot disagree about what is allowed.
 Images must be PNG, JPG, GIF or WEBP, each up to `BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by
 default). The pages that take a logo plus a full gallery raise the request limit to fit it; every
-other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`.
+other request keeps `BRIGHTSTARS_MAX_REQUEST_BYTES`. Every file box in the application prints
+this limit under itself and, through `static/upload-limit.js`, refuses a file that is too large or of
+the wrong type beside the box before anything is sent; the server gives the same explanation
+(the file's name, its size and the limit) if the script is off, and a submission over the request limit
+is answered with a plain explanation rather than an error page (`core/uploads.py`,
+`core/request_errors.py`).
 - **Question banks.** Ticked by default: *Start with the standard entrance question banks*. The
   platform's standard set (`starter_banks/`, six banks: Mathematics, English and General Knowledge
   for Year 7 and SSS 1) is copied into the school's own `data/` folder, so its entrance
@@ -535,7 +540,7 @@ Academics/
 │   ├── notifications.py      #   guardian email/WhatsApp alerts
 │   ├── presence.py           #   who is online
 │   ├── public_settings.py    #   the school's settings lookup
-│   └── uploads.py            #   image upload validation
+│   └── uploads.py            #   image upload validation, the size limit and the words that explain a refusal
 ├── blueprints/               # One package per route domain
 │   ├── auth/                 #   sign-in, sign-out, password recovery
 │   ├── school/               #   the school portal

@@ -16,7 +16,7 @@
       {% if editing and editing.photo_path %}<img id="adminPhotoPreview" class="admin-photo-preview" src="{{ url_for('static',filename=editing.photo_path) }}" alt="Current profile image">{% else %}<span id="adminPhotoPlaceholder" class="admin-photo-placeholder">{{ (editing.display_name[:1] if editing else 'A')|upper }}</span><img id="adminPhotoPreview" class="admin-photo-preview is-hidden" alt="Selected profile image">{% endif %}
      </div>
      <label class="admin-photo-upload-btn" for="adminPhotoInput">Choose photo</label>
-     <input id="adminPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp">
+     <input id="adminPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
      <small>Profile photo</small>
     </div>
     <div class="form-grid profile-fields">
@@ -25,7 +25,7 @@
      <div class="field"><label>Email <span class="optional">Optional</span></label><input type="email" name="email" value="{{ form.get('email','') }}" autocomplete="email"></div>
      <div class="field"><label>Phone number <span class="optional">Optional</span></label><input type="tel" name="phone" value="{{ form.get('phone','') }}" autocomplete="tel"></div>
      <div class="field"><label>WhatsApp number <span class="optional">Optional</span></label><input type="tel" name="whatsapp" value="{{ form.get('whatsapp','') }}"><small>Can be different from the main phone number.</small></div>
-     <div class="field field-wide"><label>Profile image <span class="optional">Optional</span></label><small>PNG, JPG, JPEG, GIF or WEBP. Maximum upload size follows the platform security policy.</small></div>
+     <div class="field field-wide"><label>Profile image <span class="optional">Optional</span></label>{{ upload_hint() }}</div>
     </div>
    </div>
   </div>

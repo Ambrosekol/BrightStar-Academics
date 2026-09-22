@@ -115,7 +115,8 @@
       <img src="{{ url_for('platform_school_photo', slug=info.slug, filename=logo_file) }}"
            alt="Current logo" style="display:block;max-height:60px;max-width:220px"></span></p>
   {% endif %}
-  <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+  <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>
+  {{ upload_hint() }}
 
   <label for="gallery">Photographs on the sign-in page
     <span class="hint">{{ gallery|length }} of {{ max_gallery }} in use. Tick a picture to remove it
@@ -131,7 +132,8 @@
     </div>
   {% endif %}
   {% if gallery|length < max_gallery %}
-    <input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp">
+    <input type="file" id="gallery" name="gallery" multiple accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image', 'branding') }}>
+    {{ upload_hint(multiple=True) }}
   {% else %}
     <p class="muted">The gallery is full. Remove a photograph to add another.</p>
   {% endif %}

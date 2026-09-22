@@ -1,10 +1,13 @@
+<span class="chat-attachment" style="display:inline-flex;flex-direction:column;align-items:flex-start;max-width:280px">
 <label for="chat-file-input" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 mb-0 custom-attach-btn" title="Attach file">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-paperclip" viewBox="0 0 16 16">
         <path d="M4.5 3a2.5 2.5 0 0 1 5 0v9a1.5 1.5 0 0 1-3 0V5a.5.5 0 0 1 1 0v7a.5.5 0 0 0 1 0V3a1.5 1.5 0 1 0-3 0v9a2.5 2.5 0 0 0 5 0V5a.5.5 0 0 1 1 0v7a3.5 3.5 0 1 1-7 0z"/>
     </svg>
     <span id="file-indicator-text">Attach</span>
-    <input type="file" id="chat-file-input" name="attachment" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx" class="d-none" onchange="updateFileIndicator(this)">
+    <input type="file" id="chat-file-input" name="attachment" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx" class="d-none" onchange="updateFileIndicator(this)" {{ upload_attrs('attachment') }}>
 </label>
+{{ upload_hint('attachment') }}
+</span>
 
 <script>
 function updateFileIndicator(input) {

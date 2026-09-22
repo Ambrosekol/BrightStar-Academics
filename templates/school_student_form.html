@@ -39,8 +39,8 @@
             {% endif %}
           </div>
           <label class="admin-photo-upload-btn" for="studentPhotoInput">Choose photo</label>
-          <input id="studentPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp">
-          <small>Optional. PNG, JPG, GIF or WEBP.</small>
+          <input id="studentPhotoInput" class="admin-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+          <small>Optional.</small>{{ upload_hint() }}
         </div>
 
         <div class="form-grid profile-fields">

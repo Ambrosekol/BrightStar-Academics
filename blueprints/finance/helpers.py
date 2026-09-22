@@ -178,8 +178,9 @@ def _save_signature_data_url(data_url):
         raise ValueError('The drawn signature could not be read. Please try drawing it again.')
     try: raw=base64.b64decode(data_url.split(',',1)[1])
     except Exception: raise ValueError('The drawn signature could not be read. Please try drawing it again.')
-    max_bytes=int(os.environ.get('BRIGHTSTARS_MAX_UPLOAD_BYTES', 5 * 1024 * 1024))
-    if len(raw) > max_bytes: raise ValueError('Signature image is too large.')
+    from core.uploads import format_limit, format_size_over, image_limit_bytes
+    max_bytes=image_limit_bytes()
+    if len(raw) > max_bytes: raise ValueError(f'The drawn signature is {format_size_over(len(raw),max_bytes)}. The limit is {format_limit(max_bytes)}. Clear the pad and draw it again, a little smaller.')
     if not raw.startswith(b'\x89PNG\r\n\x1a\n'):
         raise ValueError('The drawn signature could not be read. Please try drawing it again.')
     folder=os.path.join(uploads_dir(),'signatures'); os.makedirs(folder,exist_ok=True)

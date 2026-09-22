@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {% set school_title = (public_settings.get('school_name') if public_settings else None) or school_brand.name %}
-<title>{{code}} {{name}} — {{school_title}}</title>
+<title>{{code}} {{ 'File Too Large' if code==413 else name }} — {{school_title}}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 <style>
   body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -38,6 +38,7 @@
       {% elif code==403 %}Access Denied
       {% elif code==401 %}Sign In Required
       {% elif code==400 %}Bad Request
+      {% elif code==413 %}That File Is Too Large
       {% elif code==405 %}Method Not Allowed
       {% elif code==429 %}Too Many Requests
       {% else %}{{name or 'Request Error'}}

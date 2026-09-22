@@ -57,7 +57,8 @@
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" value="upload">
       <div class="field">
-        <input type="file" name="signature_file" accept="image/png,image/jpeg,image/gif,image/webp" required>
+        <input type="file" name="signature_file" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }} required>
+        {{ upload_hint() }}
       </div>
       <button type="submit" class="btn btn-primary">Upload signature</button>
     </form>
