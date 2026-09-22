@@ -726,6 +726,12 @@ object-store backend behind `core/storage.py`.
   alongside `sqlite_where`. A contract test enforces this.
 - **Never hard-code a school's name, motto or logo.** Use `school_brand` in templates and
   `core.branding.school_name()` in code. A contract test fails the build on any occurrence.
+- **The school interface has one design system.** `static/school-ui.css` holds the tokens (the school's colours as `--brand`,
+  `--brand-dark` and `--brand-accent`, a warm-grey surface scale, type, spacing, radii, the focus ring) and the components built on them:
+  the navigation rail, the workspace home, and the sign-in and password pages. Use the tokens rather than new colours or sizes. Fonts are
+  self-hosted in `static/fonts/` (`fonts.css`, licences alongside): Public Sans for text, Newsreader for titles and the school's name, IBM Plex
+  Mono for codes only. Who sees which menu item is one list in `templates/admin_base.html`; icons come from `templates/includes/_nav_icons.html`.
+  Sign-in and password pages extend `templates/auth_base.html`. The platform console keeps its own look (`static/platform.css`).
 - **The schema is declared in `models/` alone.** `create_all()` builds a school's tables and a
   column-diffing helper at start-up adds any column an older database lacks; there are no migration
   scripts to keep in step.

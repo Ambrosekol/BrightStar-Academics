@@ -202,7 +202,7 @@ plain = client("plain.portal.test")
 page = plain[0].get("/login", base_url=plain[1]).get_data(as_text=True)
 check("a school that picks no colours and no photographs gets neither",
       info_for("plain") is not None and "school-theme" not in page and 'class="login-slide"' not in page
-      and "--brand: #08294f" in page and setting("plain", theme.PRIMARY_KEY) is None,
+      and "--brand: #0d2b52" in page and setting("plain", theme.PRIMARY_KEY) is None,
       f'{setting("plain", theme.PRIMARY_KEY)}')
 
 # ------------------------------------------------------- refusing bad choices
@@ -231,7 +231,7 @@ with A.app.app_context(), tenant_context(info_for("plain")):
     A.db.session.commit()
 page = plain[0].get("/login", base_url=plain[1]).get_data(as_text=True)
 check("a malformed stored colour never reaches a page",
-      "display:none" not in page and "school-theme" not in page and "--brand: #08294f" in page)
+      "display:none" not in page and "school-theme" not in page and "--brand: #0d2b52" in page)
 with A.app.app_context(), tenant_context(info_for("plain")):
     A.db.session.execute(sa.delete(SchoolPublicSetting).where(SchoolPublicSetting.setting_key == theme.PRIMARY_KEY))
     A.db.session.commit()
@@ -307,7 +307,7 @@ c_pl.post("/platform/schools/maroon/branding", data={
 page = c_m.get("/login", base_url=u_m).get_data(as_text=True)
 check("choosing the portal's own colours removes the school's choice",
       setting("maroon", theme.PRIMARY_KEY) is None and setting("maroon", theme.ACCENT_KEY) is None
-      and "school-theme" not in page and "--brand: #08294f" in page)
+      and "school-theme" not in page and "--brand: #0d2b52" in page)
 check("…and its photographs are untouched by that",
       len(re.findall(r'class="login-slide"', page)) == 4)
 

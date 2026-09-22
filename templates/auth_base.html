@@ -1,0 +1,86 @@
+{% from 'includes/_school_mark.html' import school_mark %}
+{#-
+  The frame for every page a person sees before (or on the way into) their account: sign in, forgot password,
+  reset password, and the "set your own password" page each kind of account is sent to after a temporary one.
+
+  Left: the school (its logo or monogram, its name, motto and contact details, on its own colour, beside its
+  photographs when it has them). Right: the form. A child template fills two blocks:
+
+      {% extends 'auth_base.html' %}
+      {% block title %}Sign In — {{ school_title }}{% endblock %}
+      {% block card %} ...the heading, the form, the help links... {% endblock %}
+
+  Colours come from the school (--brand and friends, set just below; the platform's own until it chooses
+  any); everything else is in static/school-ui.css section 8.
+-#}
+{% set school_title = (public_settings.get('school_name') if public_settings else None) or (settings.get('school_name') if settings else None) or school_brand.name %}
+{% set motto = (public_settings.get('school_motto') if public_settings else None) or (settings.get('school_motto') if settings else None) or school_brand.motto %}
+{# Each photograph is shown for SLIDE_SECONDS, fading into the next; the keyframes are in percent of the whole cycle. #}
+{% set photos = school_brand.gallery %}
+{% set n = photos|length %}
+{% set slide_seconds = 6 %}
+{% set step = (100 / n) if n > 1 else 100 %}
+{% set fade = step * 0.2 %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ school_title }}{% endblock %}</title>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+  <style>
+    /* The school's own colours (chosen when it was created), or the platform's defaults. */
+    :root {
+      --brand: {{ school_brand.primary or '#0d2b52' }};
+      --brand-dark: {{ school_brand.primary_dark or '#081c35' }};
+      --brand-accent: {{ school_brand.accent or '#1674b9' }};
+    }
+    {% if n > 1 %}
+    @keyframes login-fade {
+      0% { opacity: 0; }
+      {{ '%.2f'|format(fade) }}% { opacity: 1; }
+      {{ '%.2f'|format(step) }}% { opacity: 1; }
+      {{ '%.2f'|format(step + fade) }}% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    {% endif %}
+  </style>
+</head>
+<body class="school-ui auth">
+  <div class="auth-shell">
+
+    <aside class="auth-panel{% if photos %} auth-panel--photos{% endif %}">
+      {% if photos %}
+        <div class="login-slides{% if n == 1 %} login-slides-single{% endif %}" aria-hidden="true">
+          {% for photo in photos %}
+            <div class="login-slide" style="background-image: url('{{ photo }}');{% if n > 1 %} animation-duration: {{ n * slide_seconds }}s; animation-delay: {{ loop.index0 * slide_seconds }}s;{% endif %}"></div>
+          {% endfor %}
+        </div>
+        <div class="login-slides-tint" aria-hidden="true"></div>
+      {% endif %}
+      <div class="auth-plate">
+        {{ school_mark(school_brand) }}
+        <p class="auth-plate__name">{{ school_title }}</p>
+        {% if motto %}<p class="auth-plate__motto">{{ motto }}</p>{% endif %}
+        {% if school_brand.address or school_brand.phone or school_brand.email %}
+        <ul class="auth-plate__contact">
+          {% if school_brand.address %}<li>{{ school_brand.address }}</li>{% endif %}
+          {% if school_brand.phone %}<li>{{ school_brand.phone }}</li>{% endif %}
+          {% if school_brand.email %}<li>{{ school_brand.email }}</li>{% endif %}
+        </ul>
+        {% endif %}
+      </div>
+    </aside>
+
+    <main class="auth-main" id="main">
+      <div class="auth-card">
+        {% block card %}{% endblock %}
+      </div>
+    </main>
+
+  </div>
+</body>
+</html>

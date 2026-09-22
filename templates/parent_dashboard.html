@@ -1,77 +1,52 @@
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+{#-
+  A parent's front door: whether any fee is owing, what's happened recently, then one
+  card per linked child with their academic snapshot and a way into their fee account.
+-#}
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Parent Portal — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-<style>
-.pd-outstanding-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px;padding:18px 22px;border-radius:16px;background:linear-gradient(135deg,#fff4e8,#fff9f0);border:1px solid #f2d9b0}
-.pd-outstanding-banner.is-clear{background:linear-gradient(135deg,#eafaf0,#f4fdf7);border-color:#bfe8cc}
-.pd-outstanding-banner strong{display:block;color:#173f59;font-size:16px}
-.pd-outstanding-banner span{display:block;margin-top:3px;color:#7a6a4a;font-size:12px}
-.pd-outstanding-banner.is-clear span{color:#3f7a56}
-.pd-outstanding-amount{font-size:22px;font-weight:900;color:#9a6700}
-.pd-outstanding-banner.is-clear .pd-outstanding-amount{color:#167447}
-
-.pd-notif-row{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid #edf1f5}
-.pd-notif-row:first-child{border-top:none}
-.pd-notif-icon{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;background:#eaf3f9;color:#1669a5}
-.pd-notif-icon.finance{background:#eafaf0;color:#167447}
-.pd-notif-icon.feedback{background:#fff4e0;color:#9a6700}
-.pd-notif-body{flex:1;min-width:0}
-.pd-notif-body strong{display:block;color:#1a314c;font-size:12.5px}
-.pd-notif-body small{display:block;margin-top:3px;color:#718095;font-size:10.5px;line-height:1.5}
-.pd-notif-row>span{flex:0 0 auto;color:#1669a5;font-size:11px;font-weight:800;white-space:nowrap}
-
-.pd-child-card{margin-top:22px;padding:0;overflow:hidden}
-.pd-child-head{display:flex;align-items:center;gap:16px;padding:22px;background:linear-gradient(135deg,#ffffff,#f3f8fd);border-bottom:1px solid #e7edf3;flex-wrap:wrap}
-.pd-child-avatar{flex:0 0 56px;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#1a4d9e,#1f5cb8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900}
-.pd-child-head h2{margin:0;color:#102a4c;font-size:19px}
-.pd-child-head small{display:block;margin-top:3px;color:#68758a;font-size:11.5px}
-.pd-child-head .pd-child-actions{margin-left:auto}
-.pd-child-body{padding:20px 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.pd-subpanel{border:1px solid #e7edf3;border-radius:14px;padding:16px 18px}
-.pd-subpanel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.pd-subpanel-head span{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a95a4}
-.pd-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.pd-stat{padding:10px;border-radius:10px;background:#f7fafc;text-align:center}
-.pd-stat span{display:block;font-size:9px;font-weight:800;text-transform:uppercase;color:#8a95a4;letter-spacing:.04em}
-.pd-stat strong{display:block;margin-top:5px;font-size:14px;color:#193451}
-.pd-stat.is-paid strong{color:#167447}
-.pd-stat.is-outstanding strong{color:#b42318}
-.pd-fee-cta{margin-top:14px;display:flex;justify-content:flex-end}
-.pd-no-session{color:#8a95a4;font-size:12px;padding:6px 0}
-
-@media(max-width:760px){.pd-child-body{grid-template-columns:1fr}.pd-child-head .pd-child-actions{margin-left:0;width:100%}.pd-child-head .pd-child-actions .btn{width:100%;justify-content:center}}
-</style>
+<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
 </head>
-<body class="student-portal-page">
-<header class="student-topbar">
-  <div class="student-brand">
-    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
-    <div><strong>{{ school_brand.name|upper }}</strong><span>Parent Portal</span></div>
-  </div>
-  <div class="student-top-actions">
-    <span>{{parent.display_name}}</span>
-    <a href="{{url_for('parent_feedback')}}">Message school</a>
-    <a href="{{url_for('logout')}}">Sign out</a>
+<body class="school-ui">
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">Parent Portal</span>
+    </span>
+  </a>
+  <div class="fp-bar__actions">
+    <span class="fp-bar__person">{{ parent.display_name }}</span>
+    <a class="fp-bar__link" href="{{ url_for('parent_feedback') }}">{{ icon('message') }} Message school</a>
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
   </div>
 </header>
 
-<main class="student-dashboard-shell">
+<main class="fp-main" id="main">
 
-  <section class="student-hero">
+  <section class="fp-hero">
     <div>
-      <p class="student-eyebrow">MY PARENT PORTAL</p>
-      <h1>Welcome, {{parent.display_name}}!</h1>
-      <p>Open a child profile to review results, assignments, projects, fees and academic activity.</p>
+      <p class="fp-hero__eyebrow">My parent portal</p>
+      <h1>Welcome, {{ parent.display_name }}!</h1>
+      <p class="fp-hero__meta">Open a child profile to review results, assignments, projects, fees and academic activity.</p>
     </div>
   </section>
 
-  <div class="pd-outstanding-banner {% if total_outstanding_all<=0 %}is-clear{% endif %}">
-    <div>
-      {% if total_outstanding_all>0 %}
+  <div class="fp-banner{% if total_outstanding_all <= 0 %} is-clear{% endif %}">
+    <div class="fp-banner__text">
+      {% if total_outstanding_all > 0 %}
       <strong>You have an outstanding balance</strong>
       <span>This is your total across every academic session, including any balance carried over from a previous one. Contact the school office to make a payment, or view the breakdown for each child below.</span>
       {% else %}
@@ -79,79 +54,96 @@
       <span>Every fee ever assessed to your children, across every academic session, has been paid in full.</span>
       {% endif %}
     </div>
-    <div class="pd-outstanding-amount">₦{{ '{:,.2f}'.format(total_outstanding_all) }}</div>
+    <div class="fp-banner__amount pd-outstanding-amount">₦{{ '{:,.2f}'.format(total_outstanding_all) }}</div>
   </div>
 
   {% if notifications %}
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head">
-      <div><p class="student-eyebrow">NOTIFICATIONS</p><h2>Recent school activity</h2></div>
-      <span class="student-count">{{notifications|length}}</span>
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div>
+        <p class="fp-panel__eyebrow">Notifications</p>
+        <h2>Recent school activity</h2>
+      </div>
+      <span class="fp-count">{{ notifications|length }}</span>
     </div>
-    {% for n in notifications %}
-    <a class="pd-notif-row student-clickable-row" href="{{n.action_url or url_for('parent_dashboard')}}">
-      <span class="pd-notif-icon {{n.category}}">{{'₦' if n.category=='finance' else ('✉' if n.category=='feedback' else '•')}}</span>
-      <div class="pd-notif-body"><strong>{{n.title}}</strong><small>{{n.message}} · {{n.created_at[:10]}}</small></div>
-      <span>View →</span>
-    </a>
-    {% endfor %}
+    <div class="fp-list">
+      {% for n in notifications %}
+      <a class="fp-row" href="{{ n.action_url or url_for('parent_dashboard') }}">
+        <span class="fp-row__icon{% if n.category == 'finance' %} is-finance{% elif n.category == 'feedback' %} is-feedback{% endif %}">
+          {% if n.category == 'finance' %}{{ icon('wallet') }}{% elif n.category == 'feedback' %}{{ icon('message') }}{% else %}{{ icon('bell') }}{% endif %}
+        </span>
+        <span class="fp-row__body">
+          <span class="fp-row__title">{{ n.title }}</span>
+          <span class="fp-row__sub">{{ n.message }} · {{ n.created_at[:10] }}</span>
+        </span>
+        <span class="fp-row__go">{{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      {% endfor %}
+    </div>
   </section>
   {% endif %}
 
   {% for item in children %}
-  {% set child=item.child %}
-  <section class="student-panel pd-child-card">
-    <div class="pd-child-head">
-      <div class="pd-child-avatar">{{(child.first_name or '?')[0]|upper}}{{(child.last_name or '')[0]|upper}}</div>
+  {% set child = item.child %}
+  <section class="fp-child">
+    <div class="fp-child__head">
+      <div class="fp-avatar fp-avatar--md">{{ (child.first_name or '?')[0]|upper }}{{ (child.last_name or '')[0]|upper }}</div>
       <div>
-        <h2>{{child.first_name}} {{child.middle_name or ''}} {{child.last_name}}</h2>
-        <small>{{child.class_name or 'Class not assigned'}}{% if child.session_name %} · {{child.session_name}}{% endif %}{% if child.relationship %} · {{child.relationship}}{% endif %}</small>
+        <h2 class="fp-child__name">{{ child.first_name }} {{ child.middle_name or '' }} {{ child.last_name }}</h2>
+        <span class="fp-child__meta">{{ child.class_name or 'Class not assigned' }}{% if child.session_name %} · {{ child.session_name }}{% endif %}{% if child.relationship %} · {{ child.relationship }}{% endif %}</span>
       </div>
-      <div class="pd-child-actions"><a class="btn btn-primary" href="{{url_for('parent_child_detail',student_id=child.id)}}">Open profile →</a></div>
+      <div class="fp-child__action"><a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile {{ icon('arrow-right', 'ico-sm') }}</a></div>
     </div>
-    <div class="pd-child-body">
-      <div class="pd-subpanel">
-        <div class="pd-subpanel-head"><span>Academic</span></div>
-        <div class="pd-stat-row">
-          <div class="pd-stat"><span>Assignments</span><strong>{{item.assignments|length}}</strong></div>
-          <div class="pd-stat"><span>Completion</span><strong>{{item.completion ~ '%' if item.completion is not none else '—'}}</strong></div>
-          <div class="pd-stat"><span>Average</span><strong>{{item.avg ~ '%' if item.avg is not none else '—'}}</strong></div>
-          <div class="pd-stat"><span>Trend</span><strong>{{item.trend}}</strong></div>
-          <div class="pd-stat"><span>Projects</span><strong>{{item.projects|length}}</strong></div>
-          <div class="pd-stat"><span>Results</span><strong>{{item.results|length}}</strong></div>
+    <div class="fp-child__body">
+      <div class="fp-subpanel">
+        <div class="fp-subpanel__head"><span>Academic</span></div>
+        <div class="fp-stats">
+          <div class="fp-stat"><span>Assignments</span><strong>{{ item.assignments|length }}</strong></div>
+          <div class="fp-stat"><span>Completion</span><strong>{{ item.completion ~ '%' if item.completion is not none else '—' }}</strong></div>
+          <div class="fp-stat"><span>Average</span><strong>{{ item.avg ~ '%' if item.avg is not none else '—' }}</strong></div>
+          <div class="fp-stat"><span>Trend</span><strong>{{ item.trend }}</strong></div>
+          <div class="fp-stat"><span>Projects</span><strong>{{ item.projects|length }}</strong></div>
+          <div class="fp-stat"><span>Results</span><strong>{{ item.results|length }}</strong></div>
         </div>
       </div>
-      <div class="pd-subpanel">
-        <div class="pd-subpanel-head"><span>Fees</span></div>
+      <div class="fp-subpanel">
+        <div class="fp-subpanel__head"><span>Fees</span></div>
         {% if item.fee_summary %}
-        <div class="pd-stat-row">
-          <div class="pd-stat"><span>Assessed</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.assessed) }}</strong></div>
-          <div class="pd-stat is-paid"><span>Paid</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.paid) }}</strong></div>
-          <div class="pd-stat {% if item.fee_summary.outstanding>0 %}is-outstanding{% endif %}"><span>Outstanding</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.outstanding) }}</strong></div>
+        <div class="fp-stats">
+          <div class="fp-stat"><span>Assessed</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.assessed) }}</strong></div>
+          <div class="fp-stat is-paid"><span>Paid</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.paid) }}</strong></div>
+          <div class="fp-stat{% if item.fee_summary.outstanding > 0 %} is-outstanding{% endif %}"><span>Outstanding</span><strong>₦{{ '{:,.0f}'.format(item.fee_summary.outstanding) }}</strong></div>
         </div>
         {% else %}
-        <div class="pd-no-session">No active academic session is available yet.</div>
+        <div class="fp-no-session">No active academic session is available yet.</div>
         {% endif %}
-        <div class="pd-fee-cta"><a class="btn btn-light" href="{{url_for('parent_child_finance',student_id=child.id)}}">View fee account & receipts →</a></div>
+        <div class="fp-fee-cta"><a class="ui-btn ui-btn--light ui-btn--sm" href="{{ url_for('parent_child_finance', student_id=child.id) }}">View fee account &amp; receipts {{ icon('arrow-right', 'ico-sm') }}</a></div>
       </div>
     </div>
   </section>
   {% else %}
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-empty"><strong>No students are linked to this account.</strong><span>Please contact the school office if this is unexpected.</span></div>
+  <section class="fp-panel">
+    <div class="fp-empty"><strong>No students are linked to this account.</strong><span>Please contact the school office if this is unexpected.</span></div>
   </section>
   {% endfor %}
 
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head">
-      <div><p class="student-eyebrow">PARENT SUPPORT</p><h2>Need to speak to the school?</h2><small>Send a feedback, question or message to the school academic team.</small></div>
-      <a class="btn btn-primary" href="{{url_for('parent_feedback')}}">Send feedback →</a>
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div>
+        <p class="fp-panel__eyebrow">Parent support</p>
+        <h2>Need to speak to the school?</h2>
+        <small>Send a feedback, question or message to the school academic team.</small>
+      </div>
+      <div class="fp-panel__action"><a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('parent_feedback') }}">Send feedback {{ icon('arrow-right', 'ico-sm') }}</a></div>
     </div>
   </section>
 
-  <section class="student-profile-strip">
-    <div><strong>{{parent.display_name}}</strong><span>{{parent.email or parent.phone or 'Parent account'}}</span></div>
-    <a href="{{url_for('parent_password_change')}}">Change password</a>
+  <section class="fp-profile">
+    <div class="fp-profile__text">
+      <strong>{{ parent.display_name }}</strong>
+      <span>{{ parent.email or parent.phone or 'Parent account' }}</span>
+    </div>
+    <a class="fp-profile__link ui-link" href="{{ url_for('parent_password_change') }}">Change password</a>
   </section>
 
 </main>

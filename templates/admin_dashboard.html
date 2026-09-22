@@ -1,86 +1,177 @@
 {% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Dashboard — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="dashboard-page">
-  <div class="topbar dashboard-topbar">
-    <div>
-      <p class="eyebrow">ENTRANCE EXAMINATION / OVERVIEW</p>
-      <h1>Admin Dashboard</h1>
-      <p class="dashboard-lead">A management-level view of examination activity, subject strength, class performance and the leading candidates.</p>
-    </div>
-    <div class="actions dashboard-actions">
-      <a class="btn btn-light" href="{{url_for('admin_results')}}">Results &amp; Analytics</a>
-      <a class="btn btn-primary" href="{{url_for('admin_new_candidate')}}">+ Register Candidate</a>
-    </div>
+{% set completion_rate = (stats.completed / stats.attempts * 100) if stats.attempts else none %}
+{% set ns = namespace(inactive=0) %}
+{% for b in banks %}{% if not exam_states.get(b.id, 1) %}{% set ns.inactive = ns.inactive + 1 %}{% endif %}{% endfor %}
+
+<div class="wd-head">
+  <div>
+    <h1 class="wd-head__title">Entrance examination</h1>
+    <p class="wd-head__lead">A management view of examination activity, subject strength, class performance and the leading candidates.</p>
   </div>
-
-  <!-- Preserve the original {{ school_brand.name }} metric-card layout; Phase 6K.3 only adds colour and polish. -->
-  <section class="grid dashboard-metric-grid">
-    {% for key,label,abbr,desc in [('banks','Question Banks','QB','Available question banks'),('questions','Questions','Q','Questions across all banks'),('attempts','Attempts','AT','Candidate examination attempts'),('completed','Completed','✓','Completed examinations'),('candidates','Candidates','C','Registered candidates')] %}
-    <article class="card dashboard-metric-card metric-card-{{key}}">
-      <div class="dashboard-metric-head"><span class="dashboard-metric-icon">{{abbr}}</span><strong>{{label}}</strong></div>
-      <div class="metric dashboard-metric-number">{{stats[key]}}</div>
-      <div class="dashboard-metric-description">{{desc}}</div>
-    </article>
-    {% endfor %}
-  </section>
-  {% if current_admin and admin_has_permission(current_admin['id'],'presence.view') %}
-  <section class="grid dashboard-metric-grid" style="margin-top:16px">
-    <article class="card dashboard-metric-card"><div class="dashboard-metric-head"><span class="dashboard-metric-icon">AD</span><strong>Administrators online</strong></div><div class="metric dashboard-metric-number">{{online_counts.admins}}</div><div class="dashboard-metric-description"><a href="{{url_for('admin_presence')}}">View online users →</a></div></article>
-    <article class="card dashboard-metric-card"><div class="dashboard-metric-head"><span class="dashboard-metric-icon">ST</span><strong>Students online</strong></div><div class="metric dashboard-metric-number">{{online_counts.students}}</div><div class="dashboard-metric-description"><a href="{{url_for('admin_presence')}}">View online users →</a></div></article><article class="card dashboard-metric-card"><div class="dashboard-metric-head"><span class="dashboard-metric-icon">PA</span><strong>Parents online</strong></div><div class="metric dashboard-metric-number">{{online_counts.parents}}</div><div class="dashboard-metric-description"><a href="{{url_for('admin_presence')}}">View online users →</a></div></article>
-  </section>
-  {% endif %}
-
-  <section class="dashboard-section">
-    <div class="section-head dashboard-section-head">
-      <div>
-        <p class="eyebrow">ACADEMIC INSIGHT</p>
-        <h2>Performance Overview</h2>
-        <p class="dashboard-section-copy">Colour-coded performance makes strengths and problem areas immediately visible.</p>
-      </div>
-      <div class="actions"><a class="btn btn-light" href="{{url_for('admin_rankings')}}">View Rankings →</a></div>
-    </div>
-
-    <div class="overview-chart-grid">
-      <article class="card insight-card subject-chart-card">
-        <div class="insight-card-head"><div><h3>Subject Performance</h3><p>Average percentage across completed subject attempts.</p></div><span class="chart-legend"><i class="legend-dot good"></i>70%+ <i class="legend-dot fair"></i>50–69% <i class="legend-dot poor"></i>&lt;50%</span></div>
-        <div class="bar-chart">
-          {% for s in subject_analytics %}{% set cls='good' if s.average>=70 else 'fair' if s.average>=50 else 'poor' %}
-          <div class="bar-row"><div class="bar-label"><strong>{{s.label}}</strong><small>{{s.attempted}} attempted · {{s.passed}} passed</small></div><div class="bar-track"><div class="bar-fill {{cls}}" style="width:{{[s.average,100]|min}}%"></div></div><strong class="bar-value {{cls}}">{{'%.1f'|format(s.average)}}%</strong></div>
-          {% endfor %}
-        </div>
-      </article>
-      <article class="card insight-card class-chart-card">
-        <div class="insight-card-head"><div><h3>Class / Entry Performance</h3><p>Average cumulative percentage for fully completed candidates.</p></div></div>
-        <div class="class-chart">
-          {% for c in class_analytics %}{% set avg=c.average if c.average is not none else 0 %}{% set cls='good' if avg>=70 else 'fair' if avg>=50 else 'poor' if avg else 'empty' %}
-          <div class="class-row"><div class="class-name"><strong>{{c.label}}</strong><small>{{c.candidates}} candidate{{'' if c.candidates==1 else 's'}} · {{c.completed}} completed</small></div><div class="class-meter"><div class="class-fill {{cls}}" style="width:{{[avg,100]|min}}%"></div></div><strong class="class-value {{cls}}">{% if c.average is not none %}{{'%.1f'|format(c.average)}}%{% else %}—{% endif %}</strong></div>
-          {% endfor %}
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="dashboard-section">
-    <div class="section-head dashboard-section-head">
-      <div><p class="eyebrow">OFFICIAL RANKING SNAPSHOT</p><h2>Leading Candidates</h2><p class="dashboard-section-copy">Top completed three-paper candidates, using the same ranking rule as the Rankings page.</p></div>
-      <div class="actions"><a class="btn btn-light" href="{{url_for('admin_rankings')}}">Open full ranking →</a></div>
-    </div>
-    <div class="top-candidate-grid">
-      {% for c in top_candidates %}{% set cls='good' if c.overall_percentage>=70 else 'fair' if c.overall_percentage>=50 else 'poor' %}
-      <article class="top-candidate-card card">
-        <div class="candidate-rank-badge">{{c.rank}}</div>
-        <div class="candidate-avatar">{% if c.photo_path %}<img src="{{url_for('static',filename=c.photo_path)}}" alt="{{c.candidate_name}}">{% else %}{{c.candidate_name[:1]|upper}}{% endif %}</div>
-        <div class="candidate-main"><strong>{{c.candidate_name}}</strong><small>{{c.target_class}} · {{c.candidate_code}}</small><div class="candidate-progress"><div class="candidate-progress-fill {{cls}}" style="width:{{[c.overall_percentage,100]|min}}%"></div></div></div>
-        <div class="candidate-score {{cls}}"><strong>{{'%.1f'|format(c.overall_percentage)}}%</strong><small>{{c.total_score}} / {{c.total_max}}</small></div>
-      </article>
-      {% else %}<div class="empty-state">No candidate has completed all three papers yet.</div>{% endfor %}
-    </div>
-  </section>
-
-  <section class="dashboard-section">
-    <div class="section-head dashboard-section-head"><div><p class="eyebrow">EXAMINATION SETUP</p><h2>Question Banks</h2><p class="dashboard-section-copy">The operational content behind the entrance examination.</p></div><div class="actions"><a class="btn btn-light" href="{{url_for('admin_question_banks')}}">Manage Question Banks →</a></div></div>
-    <div class="card dashboard-table-card"><div class="dashboard-table-wrap"><table class="dashboard-table"><thead><tr><th class="bank-column">Subject</th><th>Level</th><th>Questions</th><th>Duration</th><th>Exam</th><th>Action</th></tr></thead><tbody>{% for b in banks %}<tr><td><span class="bank-name">{{entrance_bank_display_name(b.id, b.name)}}</span><span class="bank-id">{{b.level}}</span></td><td><span class="level-badge">{{b.level}}</span></td><td><span class="question-count">{{b.questions|length}}</span></td><td><span class="duration-text">{{(b.duration_seconds//60)}} min</span></td><td><span class="exam-status-btn {% if exam_states.get(b.id,1) %}exam-status-active{% else %}exam-status-inactive{% endif %}"><span class="status-dot"></span>{{'Active' if exam_states.get(b.id,1) else 'Inactive'}}</span></td><td><a class="manage-btn" href="{{url_for('admin_bank',bid=b.id)}}">Manage</a></td></tr>{% else %}<tr><td colspan="6"><div class="empty-state">No question banks found.</div></td></tr>{% endfor %}</tbody></table></div></div>
-  </section>
+  <div class="wd-head__actions">
+    <a class="ui-btn ui-btn--light" href="{{ url_for('admin_results') }}">Results &amp; Analytics</a>
+    <a class="ui-btn ui-btn--primary" href="{{ url_for('admin_new_candidate') }}">Register candidate</a>
+  </div>
 </div>
+
+{% if ns.inactive > 0 %}
+<div class="ui-alert ui-alert--warning ui-alert--action">
+  <span>{{ ns.inactive }} question bank{{ '' if ns.inactive == 1 else 's' }} {{ 'is' if ns.inactive == 1 else 'are' }} turned off and won't appear in an exam.</span>
+  <a class="ui-link" href="{{ url_for('admin_question_banks') }}">Review question banks {{ icon('arrow-right', 'ico-sm') }}</a>
+</div>
+{% endif %}
+
+<div class="wd-stat-hero">
+  <div class="wd-stat-hero__primary">
+    <span class="wd-stat-hero__icon">{{ icon('candidate') }}</span>
+    <span class="wd-stat-hero__value">{{ stats.candidates }}</span>
+    <span class="wd-stat-hero__label">Registered candidates</span>
+    {% if completion_rate is not none %}
+    <span class="wd-stat-hero__note">{{ '%.0f'|format(completion_rate) }}% of attempts completed</span>
+    {% else %}
+    <span class="wd-stat-hero__note">No attempts recorded yet</span>
+    {% endif %}
+  </div>
+  <div class="wd-stat-hero__secondary">
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('bank') }}</span><span class="wd-stat-chip__value">{{ stats.banks }}</span><span class="wd-stat-chip__label">Question banks</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('list') }}</span><span class="wd-stat-chip__value">{{ stats.questions }}</span><span class="wd-stat-chip__label">Questions</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('pulse') }}</span><span class="wd-stat-chip__value">{{ stats.attempts }}</span><span class="wd-stat-chip__label">Attempts</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('check-circle') }}</span><span class="wd-stat-chip__value">{{ stats.completed }}</span><span class="wd-stat-chip__label">Completed</span></div>
+  </div>
+</div>
+
+{% if current_admin and admin_has_permission(current_admin['id'], 'presence.view') %}
+<a class="wd-online" href="{{ url_for('admin_presence') }}">
+  <span class="wd-online__label">{{ icon('presence', 'ico-sm') }} Online now</span>
+  <span class="wd-online__items">
+    <span class="wd-online__item"><strong>{{ online_counts.admins }}</strong><span>Administrators</span></span>
+    <span class="wd-online__item"><strong>{{ online_counts.students }}</strong><span>Students</span></span>
+    <span class="wd-online__item"><strong>{{ online_counts.parents }}</strong><span>Parents</span></span>
+  </span>
+</a>
+{% endif %}
+
+<section class="wd-section">
+  <div class="wd-section__head">
+    <div>
+      <h2 class="wd-section__title">Performance</h2>
+      <p class="wd-section__desc">How each subject and each entry level is doing, from completed attempts.</p>
+    </div>
+    <a class="ui-link wd-section__action" href="{{ url_for('admin_rankings') }}">View rankings {{ icon('arrow-right', 'ico-sm') }}</a>
+  </div>
+  <div class="wd-perf-grid">
+    <article class="ui-panel">
+      <div class="ui-panel__head">
+        <div>
+          <h3 class="ui-panel__title">Subject performance</h3>
+          <p class="ui-panel__desc">Average percentage across completed subject attempts.</p>
+        </div>
+        <span class="wd-perf-legend"><span><i class="wd-perf-legend__dot wd-perf-legend__dot--good"></i>70%+</span><span><i class="wd-perf-legend__dot wd-perf-legend__dot--fair"></i>50–69%</span><span><i class="wd-perf-legend__dot wd-perf-legend__dot--poor"></i>Below 50%</span></span>
+      </div>
+      <div class="ui-panel__body wd-perf-rows">
+        {% for s in subject_analytics %}
+        {% set cls = 'empty' if s.attempted == 0 else ('good' if s.average >= 70 else ('fair' if s.average >= 50 else 'poor')) %}
+        <div class="wd-perf-row{% if cls == 'empty' %} wd-perf-row--empty{% endif %}">
+          <div class="wd-perf-row__top">
+            <span class="wd-perf-row__name">{{ s.label }}</span>
+            <span class="wd-perf-row__value">{% if cls == 'empty' %}—{% else %}{{ '%.1f'|format(s.average) }}%{% endif %}</span>
+          </div>
+          <div class="wd-perf-track"><div class="wd-perf-fill wd-perf-fill--{{ cls }}" style="width:{{ 0 if cls == 'empty' else [s.average, 100]|min }}%"></div></div>
+          <p class="wd-perf-row__meta">{% if cls == 'empty' %}No attempts recorded yet{% else %}{{ s.attempted }} attempted · {{ s.passed }} passed{% endif %}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+    <article class="ui-panel">
+      <div class="ui-panel__head">
+        <div>
+          <h3 class="ui-panel__title">Class / entry performance</h3>
+          <p class="ui-panel__desc">Average cumulative percentage for fully completed candidates.</p>
+        </div>
+      </div>
+      <div class="ui-panel__body wd-perf-rows">
+        {% for c in class_analytics %}
+        {% set cls = 'empty' if c.completed == 0 else ('good' if c.average >= 70 else ('fair' if c.average >= 50 else 'poor')) %}
+        <div class="wd-perf-row{% if cls == 'empty' %} wd-perf-row--empty{% endif %}">
+          <div class="wd-perf-row__top">
+            <span class="wd-perf-row__name">{{ c.label }}</span>
+            <span class="wd-perf-row__value">{% if c.average is not none %}{{ '%.1f'|format(c.average) }}%{% else %}—{% endif %}</span>
+          </div>
+          <div class="wd-perf-track"><div class="wd-perf-fill wd-perf-fill--{{ cls }}" style="width:{{ 0 if cls == 'empty' else [c.average, 100]|min }}%"></div></div>
+          <p class="wd-perf-row__meta">{{ c.candidates }} candidate{{ '' if c.candidates == 1 else 's' }} · {{ c.completed }} completed</p>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="wd-section">
+  <div class="wd-section__head">
+    <div>
+      <h2 class="wd-section__title">Leading candidates</h2>
+      <p class="wd-section__desc">Top completed three-paper candidates, using the same ranking rule as the Rankings page.</p>
+    </div>
+    <a class="ui-link wd-section__action" href="{{ url_for('admin_rankings') }}">Open full ranking {{ icon('arrow-right', 'ico-sm') }}</a>
+  </div>
+  <div class="ui-panel">
+    {% if top_candidates %}
+    <ol class="wd-rank-list">
+      {% for c in top_candidates %}
+      {% set cls = 'good' if c.overall_percentage >= 70 else ('fair' if c.overall_percentage >= 50 else 'poor') %}
+      <li class="wd-rank-row{% if c.rank == 1 %} wd-rank-row--1{% endif %}">
+        <span class="wd-rank-pos">{{ c.rank }}</span>
+        <span class="wd-rank-avatar">{% if c.photo_path %}<img src="{{ url_for('static', filename=c.photo_path) }}" alt="">{% else %}{{ c.candidate_name[:1]|upper }}{% endif %}</span>
+        <span class="wd-rank-main">
+          <span class="wd-rank-name">{{ c.candidate_name }}</span>
+          <span class="wd-rank-meta">{{ c.target_class }} · {{ c.candidate_code }}</span>
+        </span>
+        <span class="wd-rank-score">
+          <strong class="tone-{{ cls }}">{{ '%.1f'|format(c.overall_percentage) }}%</strong>
+          <small>{{ c.total_score }} / {{ c.total_max }}</small>
+        </span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="ui-empty">{{ icon('podium') }}<p>No candidate has completed all three papers yet.</p></div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="wd-section">
+  <div class="wd-section__head">
+    <div>
+      <h2 class="wd-section__title">Question banks</h2>
+      <p class="wd-section__desc">The operational content behind the entrance examination.</p>
+    </div>
+    <a class="ui-link wd-section__action" href="{{ url_for('admin_question_banks') }}">Manage question banks {{ icon('arrow-right', 'ico-sm') }}</a>
+  </div>
+  <div class="ui-panel">
+    {% if banks %}
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead><tr><th>Subject</th><th>Level</th><th class="num">Questions</th><th class="num">Duration</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for b in banks %}
+        <tr>
+          <td><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong></td>
+          <td>{{ b.level }}</td>
+          <td class="num">{{ b.questions|length }}</td>
+          <td class="num">{{ (b.duration_seconds // 60) }} min</td>
+          <td>{% if exam_states.get(b.id, 1) %}<span class="ui-status ui-status--on">Active</span>{% else %}<span class="ui-status ui-status--off">Inactive</span>{% endif %}</td>
+          <td><a class="ui-link" href="{{ url_for('admin_bank', bid=b.id) }}">Manage</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="ui-empty">{{ icon('bank') }}<p>No question banks found. Import one, or ask the platform team to add the standard set.</p></div>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

@@ -1,0 +1,20 @@
+{#-
+  The school's mark: its own logo, or a tidy monogram when it has not uploaded one.
+
+      {% from 'includes/_school_mark.html' import school_mark %}
+      {{ school_mark(school_brand) }}             the mark only; size it with CSS (.school-mark)
+      {{ school_mark(school_brand, 'my-class') }}  plus a class of your own
+
+  The monogram is the first letters of the first two words of the name ("Bright Stars Academy" -> BS),
+  skipping "the", "of" and "and". It is decoration: the school's name is always written out beside it,
+  so a screen reader hears the logo's alt text or nothing, never a stray pair of letters.
+-#}
+{% macro school_mark(brand, extra='') -%}
+{%- set words = (brand.name or '').split()|reject('in', ['the', 'The', 'THE', 'of', 'Of', 'and', 'And', '&'])|list -%}
+{%- set initials = ((words[0][:1] if words else '') ~ (words[1][:1] if words|length > 1 else ''))|upper -%}
+{%- if brand.logo_path -%}
+<img class="school-mark school-mark--logo{% if extra %} {{ extra }}{% endif %}" src="{{ brand.logo_url }}" alt="{{ brand.name }} logo">
+{%- else -%}
+<span class="school-mark school-mark--mono{% if extra %} {{ extra }}{% endif %}" aria-hidden="true">{{ initials or '·' }}</span>
+{%- endif -%}
+{%- endmacro %}

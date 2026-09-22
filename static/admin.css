@@ -1,3 +1,5 @@
+/* The interface fonts are self-hosted: see static/fonts/fonts.css. The tokens are in school-ui.css. */
+@import url("fonts/fonts.css");
 :root {
     --navy: #0b1f3a;
     --blue: #1769aa;
@@ -16,7 +18,7 @@
 
 body {
     margin: 0;
-    font-family: Inter, Segoe UI, Arial, sans-serif;
+    font-family: "Public Sans","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
     background: var(--bg);
     color: var(--text);
 }
@@ -328,7 +330,7 @@ th {
 }
 
 .code {
-    font-family: ui-monospace, Consolas, monospace;
+    font-family: "IBM Plex Mono",ui-monospace,Consolas,monospace;
     background: #f0f2f5;
     padding: 2px 5px;
     border-radius: 4px;
@@ -391,7 +393,7 @@ th {
 }
 
 .credential-code {
-    font-family: ui-monospace, Consolas, monospace;
+    font-family: "IBM Plex Mono",ui-monospace,Consolas,monospace;
     letter-spacing: .05em;
 }
 
@@ -1281,12 +1283,12 @@ select:focus-visible {
 .permission-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .permission-item { display:flex; gap:8px; align-items:flex-start; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fafbfd; }
 .permission-item span { display:flex; flex-direction:column; gap:2px; }
-.permission-item small { color:var(--muted); font-family:ui-monospace,monospace; font-size:10px; }
+.permission-item small { color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace; font-size:10px; }
 .tag-list { display:flex; flex-wrap:wrap; gap:7px; }
-.tag { background:#eef2f7; border-radius:99px; padding:5px 8px; font-family:ui-monospace,monospace; font-size:11px; }
+.tag { background:#eef2f7; border-radius:99px; padding:5px 8px; font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace; font-size:11px; }
 .role-card { margin-top:14px; }
 .table-wrap { overflow:auto; }
-.code { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+.code { font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace; }
 @media (max-width:900px) { .admin-module-grid,.form-grid { grid-template-columns:1fr; } .permission-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:620px) { .sidebar { position:static; width:100%; } .admin-shell { display:block; } .main { margin-left:0; width:100%; padding:18px; } .permission-grid { grid-template-columns:1fr; } .topbar { align-items:flex-start; gap:15px; flex-direction:column; } }
 
@@ -1354,20 +1356,8 @@ body{background:var(--bg);color:var(--text)}
 @media (max-width: 650px) { .school-module-grid, .school-module-rules { grid-template-columns: 1fr; } }
 
  
-.workspace-backbar{display:flex;align-items:center;margin:0 0 18px;}
-.workspace-back-button{display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:11px 16px;border-radius:10px;background:#eef3f8;color:#26364c;text-decoration:none;font-size:13px;font-weight:800;line-height:1.2;border:1px solid #e2e9f0;transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease;}
-.workspace-back-button span:first-child{font-size:16px;line-height:1;margin-top:-1px;}
-.workspace-back-button:hover{background:#e5edf5;border-color:#d4e0eb;transform:translateX(-1px);box-shadow:0 3px 10px rgba(20,36,60,.06);}
-.workspace-back-button:focus-visible{outline:3px solid rgba(22,116,185,.22);outline-offset:2px;}
-@media print{.workspace-backbar{display:none!important;}}
 
  
-.workspace-selection-shell{display:block;min-height:100vh}
-.workspace-selection-main{margin-left:0;width:100%;max-width:1280px;margin-right:auto;padding:0 38px 54px}
-.workspace-selection-main .global-header{margin-left:-38px;margin-right:-38px;padding-left:38px;padding-right:38px}
-.workspace-selection-main .workspace-backbar{display:none}
-.workspace-selection-main .workspace-hero{padding-top:8px}
-@media (max-width:650px){.workspace-selection-main{padding:0 14px 32px}.workspace-selection-main .global-header{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}}
 
 
  

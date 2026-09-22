@@ -1,0 +1,1007 @@
+/* ==========================================================================
+   School interface: design tokens, navigation, workspace home, sign-in and password pages.
+
+   Load this AFTER admin.css / app.css. Everything school-facing reads its values from the custom
+   properties in section 1, so a page never needs a colour or size of its own:
+
+     colour     --brand (the school's main colour), --brand-dark, --brand-accent, --brand-tint,
+                a warm-grey surface scale --surface-0..3, hairlines --line / --line-strong,
+                text --ink / --ink-2 / --ink-3, status colours
+     type       --font-ui (Public Sans), --font-display (Newsreader), --font-mono (IBM Plex Mono),
+                sizes --fs-sm 13px, --fs-md 15px (body), --fs-lg .. --fs-4xl
+     space      --sp-1 .. --sp-8 (4px steps up to 16, then 24, 32, 48, 64)
+     shape      --radius-sm 3px, --radius 4px, --radius-lg 6px (nothing rounder), --border (hairline)
+     focus      --focus-ring (the one outline every interactive element uses)
+
+   The school's own colours arrive as --navy (main) and --blue (accent) from the <style id="school-theme">
+   the application adds to every page of a school that chose colours (core/theme.py); the sign-in pages set
+   --brand directly. A school that chose nothing gets the platform's own pair, below. The theme check
+   guarantees white text is readable on both colours, so white-on-brand needs no further test; text that
+   sits on a pale tint of the brand uses --brand-dark instead.
+   ========================================================================== */
+
+
+/* ---------- 1. Tokens ---------------------------------------------------- */
+
+:root {
+    /* The platform's own colours, used until a school chooses its own (same as core/theme.py). */
+    --navy: #0d2b52;
+    --navy-2: #173e70;
+    --navy-deep: #091f3b;
+    --blue: #1674b9;
+    --blue-2: #0f5a91;
+
+    --brand: var(--navy);
+    --brand-dark: var(--navy-deep);
+    --brand-accent: var(--blue);
+    --brand-tint: #e8ecf2;            /* the brand at about 8% on white; refined below where supported */
+
+    /* One warm-grey scale for every surface and hairline. */
+    --surface-0: #ffffff;             /* cards, the rail, form panels */
+    --surface-1: #f7f6f3;             /* the page */
+    --surface-2: #f0eee9;             /* hover, quiet fills */
+    --surface-3: #e6e3dc;             /* pressed, chips */
+    --line: #e4e1da;                  /* hairline borders and dividers */
+    --line-strong: #cfcbc2;           /* input borders */
+
+    --ink: #1d2127;
+    --ink-2: #464b53;
+    --ink-3: #666b73;                 /* still 4.9:1 on the page colour: never lighter than this for text */
+
+    --danger: #a4261b;
+    --danger-bg: #fcefed;
+    --danger-line: #e8c4bf;
+    --success: #1f6b45;
+    --success-bg: #ecf6f0;
+    --success-line: #bcdcc8;
+    --warning: #8a5a00;
+    --warning-bg: #fbf3e2;
+    --warning-line: #e6d3a3;
+
+    --font-ui: "Public Sans", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, "Courier New", monospace;
+
+    --fs-xs: 11px;                    /* navigation section labels only */
+    --fs-sm: 13px;
+    --fs-md: 15px;
+    --fs-lg: 17px;
+    --fs-xl: 20px;
+    --fs-2xl: 24px;
+    --fs-3xl: 30px;
+    --fs-4xl: 40px;
+
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+    --sp-8: 64px;
+
+    --radius-sm: 3px;
+    --radius: 4px;
+    --radius-lg: 6px;
+    --border: 1px solid var(--line);
+
+    --focus-ring: 2px solid var(--brand-accent);
+    --shadow-pop: 0 8px 24px rgba(29, 33, 39, .12), 0 1px 2px rgba(29, 33, 39, .08);
+
+    --dur: .18s;
+    --ease: cubic-bezier(.3, .1, .2, 1);
+
+    --rail-w: 64px;
+    --rail-open: 232px;
+    --header-h: 56px;
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+    :root { --brand-tint: color-mix(in srgb, var(--brand) 8%, #fff); }
+}
+
+
+/* ---------- 2. Base ------------------------------------------------------ */
+
+.school-ui {
+    margin: 0;
+    background: var(--surface-1);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.school-ui *,
+.school-ui *::before,
+.school-ui *::after { box-sizing: border-box; }
+
+.school-ui h1,
+.school-ui h2,
+.school-ui h3 { font-weight: 600; line-height: 1.25; }
+
+/* Figures line up in columns: every table, mark and amount uses tabular numerals. */
+.school-ui table,
+.school-ui .metric,
+.school-ui .metric-number,
+.school-ui .num,
+.school-ui time { font-variant-numeric: tabular-nums; }
+
+/* Codes, IDs and candidate codes: the one place a monospace is used. */
+.school-ui code,
+.school-ui .code,
+.school-ui .mono,
+.school-ui .candidate-code,
+.school-ui .credential-code {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+
+.school-ui a:focus-visible,
+.school-ui button:focus-visible,
+.school-ui input:focus-visible,
+.school-ui select:focus-visible,
+.school-ui textarea:focus-visible,
+.school-ui [tabindex]:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 200;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-160%);
+}
+.skip-link:focus { transform: none; }
+
+.ico { flex: none; width: 22px; height: 22px; }
+.ico-sm { width: 18px; height: 18px; }
+.ico-lg { width: 26px; height: 26px; }
+
+
+/* ---------- 3. Small components used by the sign-in and workspace pages -- */
+
+.ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    min-height: 44px;
+    padding: 0 var(--sp-5);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    font: 600 var(--fs-md)/1.2 var(--font-ui);
+    text-decoration: none;
+    cursor: pointer;
+}
+.ui-btn--primary { background: var(--brand); color: #fff; }
+.ui-btn--primary:hover { background: var(--brand-dark); }
+.ui-btn--light { background: var(--surface-0); border-color: var(--line-strong); color: var(--ink); }
+.ui-btn--light:hover { border-color: var(--brand); color: var(--brand-dark); }
+.ui-btn--sm { min-height: 34px; padding: 0 var(--sp-4); font-size: var(--fs-sm); }
+.ui-btn--block { width: 100%; }
+
+.ui-field { margin: 0 0 var(--sp-4); }
+.ui-field label {
+    display: block;
+    margin: 0 0 var(--sp-1);
+    color: var(--ink);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+}
+.ui-input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--surface-0);
+    color: var(--ink);
+    font: 400 var(--fs-md)/1.4 var(--font-ui);
+}
+.ui-input::placeholder { color: var(--ink-3); opacity: 1; }
+.ui-input:hover { border-color: var(--ink-3); }
+.ui-input:focus { border-color: var(--brand-accent); }
+
+.ui-alert {
+    margin: 0 0 var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--line-strong);
+    border-left-width: 3px;
+    border-radius: var(--radius);
+    background: var(--surface-0);
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+}
+.ui-alert--error { background: var(--danger-bg); border-color: var(--danger-line); border-left-color: var(--danger); color: #6d1a12; }
+.ui-alert--success { background: var(--success-bg); border-color: var(--success-line); border-left-color: var(--success); color: #14472e; }
+
+.ui-link {
+    color: var(--brand-accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.ui-link:hover { color: var(--brand-dark); }
+
+/* The school's mark: its logo, or a monogram. Sized by the container that holds it. */
+.school-mark { display: block; flex: none; }
+.school-mark--logo { object-fit: contain; }
+.school-mark--mono {
+    display: grid;
+    place-items: center;
+    background: var(--brand);
+    color: #fff;
+    border-radius: var(--radius);
+    font: 500 1.05em/1 var(--font-display);
+    letter-spacing: .02em;
+}
+
+
+/* ---------- 4. The navigation rail --------------------------------------- */
+
+.rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    width: var(--rail-w);
+    background: var(--surface-0);
+    border-right: var(--border);
+    overflow: hidden;
+    transition: width var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+/* Open: while it is being used (hover intent, keyboard focus) or when the person pinned it. */
+.rail.is-open { width: var(--rail-open); box-shadow: var(--shadow-pop); }
+html[data-rail="pinned"] .rail { width: var(--rail-open); box-shadow: none; }
+
+/* Without scripting the rail still opens, on plain hover and focus. */
+html:not(.js) .rail:hover,
+html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--shadow-pop); }
+
+.rail-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex: none;
+    height: 72px;
+    padding: 0 var(--sp-3);
+    border-bottom: var(--border);
+    color: var(--ink);
+    text-decoration: none;
+}
+.rail-brand .school-mark { width: 40px; height: 40px; }
+.rail-brand .school-mark--mono { font-size: 17px; }
+.rail-brand__text { display: block; min-width: 0; line-height: 1.2; }
+.rail-brand__name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font: 600 16px/1.2 var(--font-display);
+}
+.rail-brand__sub { display: block; margin-top: 2px; color: var(--ink-3); font-size: 12px; }
+
+.rail-nav {
+    flex: 1;
+    min-height: 0;
+    padding: var(--sp-2) 0 var(--sp-3);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+}
+
+.rail-section { margin: 0 var(--sp-3); }
+.rail-section + .rail-section { margin-top: var(--sp-2); border-top: var(--border); }
+.rail-section__label {
+    display: flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 var(--sp-3);
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.rail-list { margin: 0; padding: 0; list-style: none; }
+
+.rail-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 38px;
+    margin: 1px 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--ink-2);
+    font: 500 14px/1.25 var(--font-ui);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.rail-ico {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 38px;
+}
+.rail-label { min-width: 0; padding-right: var(--sp-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-link--sub .rail-label { font-size: var(--fs-sm); }
+
+@media (hover: hover) and (pointer: fine) {
+    .rail-link:hover { background: var(--surface-2); color: var(--ink); }
+}
+
+/* The page you are on: the school's colour as a bar on the edge, a pale wash of it behind the row,
+   and the darker shade of it for the text, so it reads on any school colour that passed the contrast check. */
+.rail-link.active { color: var(--brand-dark); font-weight: 600; }
+.rail-link.active::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--brand);
+    opacity: .09;
+    pointer-events: none;
+}
+.rail-link.active::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: calc(-1 * var(--sp-3));
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--brand);
+}
+.rail-link.active .rail-ico { color: var(--brand); }
+
+/* Labels are always in the page (screen readers read them); they simply fade in as the rail opens. */
+.rail-label,
+.rail-section__label,
+.rail-brand__text,
+.rail-person__copy { opacity: 0; transition: opacity .1s ease; }
+.rail.is-open .rail-label,
+.rail.is-open .rail-section__label,
+.rail.is-open .rail-brand__text,
+.rail.is-open .rail-person__copy,
+html[data-rail="pinned"] .rail .rail-label,
+html[data-rail="pinned"] .rail .rail-section__label,
+html[data-rail="pinned"] .rail .rail-brand__text,
+html[data-rail="pinned"] .rail .rail-person__copy,
+html:not(.js) .rail:hover .rail-label,
+html:not(.js) .rail:focus-within .rail-label { opacity: 1; transition-delay: .07s; }
+
+/* Counts: a small square figure when open, a dot on the icon when the rail is narrow. */
+.rail .nav-link-copy { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; padding: var(--sp-1) var(--sp-3) var(--sp-1) 0; }
+.rail .nav-link-copy > span:first-child { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.rail .nav-link-copy .nav-label-text,
+.rail .nav-link-copy > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.rail .nav-message-sender {
+    display: block;
+    overflow: hidden;
+    color: var(--ink-3);
+    font-size: 12px;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rail .nav-badge {
+    display: inline-block;
+    min-width: 20px;
+    height: 20px;
+    margin-left: auto;
+    padding: 0 6px;
+    border-radius: var(--radius-sm);
+    background: var(--danger);
+    color: #fff;
+    font: 600 12px/20px var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.rail-dot {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 9px;
+    height: 9px;
+    border: 2px solid var(--surface-0);
+    border-radius: 50%;
+    background: var(--danger);
+    box-sizing: content-box;
+    visibility: hidden;
+}
+.rail-link[data-unread] .rail-dot { visibility: visible; }
+.rail.is-open .rail-dot,
+html[data-rail="pinned"] .rail .rail-dot { visibility: hidden; }
+
+.rail-foot { flex: none; padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: var(--border); }
+.rail-person { display: flex; align-items: center; min-height: 48px; }
+.rail-person__ava { display: grid; flex: none; place-items: center; width: 40px; height: 40px; }
+.rail-avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font: 600 13px/1 var(--font-ui);
+    object-fit: cover;
+    overflow: hidden;
+}
+.rail-person__copy { min-width: 0; padding-right: var(--sp-3); line-height: 1.25; }
+.rail-person__name,
+.rail-person__role { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-person__name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.rail-person__role { font-size: 12px; color: var(--ink-3); }
+
+.rail-pin[aria-pressed="true"] { color: var(--brand-dark); }
+.rail-pin[aria-pressed="true"] .rail-ico { color: var(--brand); }
+
+/* The one tooltip, drawn by school-nav.js outside the rail (the rail clips anything that overflows it). */
+.rail-tip {
+    position: fixed;
+    z-index: 90;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: #fff;
+    font: 500 var(--fs-sm)/1.3 var(--font-ui);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .1s ease;
+}
+.rail-tip.is-shown { opacity: 1; }
+
+.rail-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(29, 33, 39, .45);
+}
+.rail-scrim[hidden] { display: none; }
+
+/* Content moves over to make room for the rail; a pinned rail takes its full width. */
+.school-ui .admin-shell { display: block; min-height: 100vh; background: var(--surface-1); }
+.school-ui .admin-shell .main {
+    width: auto;
+    max-width: none;
+    margin-left: 0;
+    padding: 0;
+    background: transparent;
+    animation: none;
+}
+.school-ui .admin-shell.has-rail .main { margin-left: var(--rail-w); transition: margin-left var(--dur) var(--ease); }
+html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: var(--rail-open); }
+
+
+/* ---------- 5. Page header, back link, messages -------------------------- */
+
+.ui-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    height: var(--header-h);
+    padding: 0 var(--sp-6);
+    background: var(--surface-1);
+    border-bottom: var(--border);
+}
+.ui-iconbtn.ui-menu-btn { display: none; }
+.ui-crumbs { flex: 1; min-width: 0; }
+.ui-crumbs ol { display: flex; align-items: center; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; font-size: var(--fs-sm); color: var(--ink-3); }
+.ui-crumbs li { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-crumbs li + li::before { content: "/"; margin-right: var(--sp-2); color: var(--line-strong); }
+.ui-crumbs li[aria-current] { color: var(--ink); font-weight: 600; }
+.ui-header-actions { display: flex; align-items: center; gap: var(--sp-2); }
+
+.ui-iconbtn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--ink-2);
+    text-decoration: none;
+    cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+    .ui-iconbtn:hover { background: var(--surface-2); color: var(--ink); }
+}
+.ui-count {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--danger);
+    box-shadow: 0 0 0 2px var(--surface-1);
+    color: #fff;
+    font: 600 11px/18px var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.ui-page { max-width: 1480px; padding: var(--sp-5) var(--sp-6) var(--sp-8); }
+
+.ui-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0 0 var(--sp-4);
+    padding: 6px var(--sp-3) 6px var(--sp-2);
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--ink-2);
+    font: 500 14px/1.2 var(--font-ui);
+    cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+    .ui-back:hover { background: var(--surface-2); color: var(--ink); }
+}
+
+.school-ui .flash {
+    margin: 0 0 var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--line-strong);
+    border-left-width: 3px;
+    border-radius: var(--radius);
+    background: var(--surface-0);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+}
+.school-ui .flash.success { background: var(--success-bg); border-color: var(--success-line); border-left-color: var(--success); color: #14472e; }
+.school-ui .flash.error,
+.school-ui .flash.danger { background: var(--danger-bg); border-color: var(--danger-line); border-left-color: var(--danger); color: #6d1a12; }
+.school-ui .flash.warning { background: var(--warning-bg); border-color: var(--warning-line); border-left-color: var(--warning); color: #5c3c00; }
+
+
+/* ---------- 6. Phones and small tablets: the rail becomes a drawer ---------- */
+
+@media (max-width: 768px) {
+    .ui-iconbtn.ui-menu-btn { display: inline-grid; }
+    .ui-header { padding: 0 var(--sp-3); }
+    .ui-page { padding: var(--sp-4) var(--sp-4) var(--sp-7); }
+
+    .school-ui .admin-shell.has-rail .main,
+    html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: 0; }
+
+    html.js .rail {
+        width: min(300px, 86vw);
+        transform: translateX(-102%);
+        visibility: hidden;
+        box-shadow: none;
+        transition: transform var(--dur) var(--ease), visibility 0s linear var(--dur);
+    }
+    html.js .rail.is-drawer-open {
+        transform: none;
+        visibility: visible;
+        box-shadow: var(--shadow-pop);
+        transition: transform var(--dur) var(--ease), visibility 0s;
+    }
+    /* In the drawer there is room for everything, so nothing is hidden. */
+    html.js .rail .rail-label,
+    html.js .rail .rail-section__label,
+    html.js .rail .rail-brand__text,
+    html.js .rail .rail-person__copy { opacity: 1; }
+    html.js .rail .rail-dot { visibility: hidden; }
+    html.js .rail .rail-pin { display: none; }
+
+    /* No scripting: the menu is a plain block above the page rather than a drawer nobody can open. */
+    html:not(.js) .rail {
+        position: static;
+        width: 100%;
+        max-height: none;
+        border-right: 0;
+        border-bottom: var(--border);
+        box-shadow: none;
+    }
+    html:not(.js) .rail .rail-label,
+    html:not(.js) .rail .rail-section__label,
+    html:not(.js) .rail .rail-brand__text,
+    html:not(.js) .rail .rail-person__copy { opacity: 1; }
+    html:not(.js) .rail-pin { display: none; }
+    html:not(.js) .school-ui .admin-shell.has-rail .main { margin-left: 0; }
+}
+
+html.rail-locked { overflow: hidden; }
+
+
+/* ---------- 7. Workspace home: the front door ------------------------------ */
+
+.door { min-height: 100vh; border-top: 4px solid var(--brand); }
+.door-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    height: var(--header-h);
+    padding: 0 var(--sp-6);
+    background: var(--surface-0);
+    border-bottom: var(--border);
+    font-size: 14px;
+}
+.door-bar__label { color: var(--ink-3); font-size: var(--fs-sm); }
+.door-bar__user { display: flex; align-items: center; gap: var(--sp-4); min-width: 0; color: var(--ink-2); }
+.door-bar__user strong { overflow: hidden; color: var(--ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.door-bar__user a { color: var(--ink-2); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.door-bar__user a:hover { color: var(--brand-dark); }
+
+.door-main { max-width: 960px; margin: 0 auto; padding: var(--sp-7) var(--sp-6) var(--sp-8); }
+
+.door-identity {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    margin: 0 0 var(--sp-6);
+    padding: 0 0 var(--sp-6);
+    border-bottom: var(--border);
+}
+.door-identity .school-mark { width: 72px; height: 72px; }
+.door-identity .school-mark--mono { font-size: 30px; }
+.door-identity__text { min-width: 0; }
+.door-welcome { margin: 0 0 var(--sp-1); color: var(--ink-2); font-size: var(--fs-md); }
+.door-school {
+    margin: 0;
+    color: var(--brand);
+    font: 500 var(--fs-4xl)/1.1 var(--font-display);
+    letter-spacing: -.005em;
+    overflow-wrap: anywhere;
+}
+.door-motto { margin: var(--sp-2) 0 0; color: var(--ink-2); font-size: var(--fs-md); }
+.door-address { margin: var(--sp-1) 0 0; color: var(--ink-3); font-size: var(--fs-sm); }
+
+.door-heading { margin: 0 0 var(--sp-1); font: 500 var(--fs-2xl)/1.25 var(--font-display); color: var(--ink); }
+.door-intro { margin: 0 0 var(--sp-5); color: var(--ink-2); max-width: 60ch; }
+
+.door-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); margin: 0; padding: 0; list-style: none; }
+.door-choice {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--sp-5);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-0);
+    color: var(--ink);
+    text-decoration: none;
+}
+.door-choice__ico { display: grid; place-items: center; width: 40px; height: 40px; margin: 0 0 var(--sp-4); border-radius: var(--radius); background: var(--brand-tint); color: var(--brand); }
+.door-choice__title { margin: 0 0 var(--sp-2); font: 500 var(--fs-2xl)/1.2 var(--font-display); }
+.door-choice__text { margin: 0 0 var(--sp-4); color: var(--ink-2); }
+.door-choice__fact { margin: 0 0 var(--sp-4); padding-top: var(--sp-3); border-top: var(--border); color: var(--ink-3); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.door-choice__note { margin: 0 0 var(--sp-4); color: var(--ink-3); font-size: var(--fs-sm); }
+.door-choice__go {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: auto;
+    color: var(--brand-accent);
+    font-weight: 600;
+}
+.door-choice:hover { border-color: var(--brand); }
+.door-choice:hover .door-choice__go { color: var(--brand-dark); }
+.door-choice:hover .door-choice__go .ico { transform: translateX(3px); }
+.door-choice__go .ico { transition: transform var(--dur) var(--ease); }
+.door-choice:focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+
+.door-foot { margin: var(--sp-6) 0 0; color: var(--ink-3); font-size: var(--fs-sm); }
+
+@media (max-width: 720px) {
+    .door-bar { padding: 0 var(--sp-4); }
+    .door-main { padding: var(--sp-6) var(--sp-4) var(--sp-7); }
+    .door-identity { flex-direction: column; align-items: flex-start; gap: var(--sp-4); }
+    .door-school { font-size: 32px; }
+    .door-choices { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .door-bar__label { display: none; }
+}
+
+
+/* ---------- 8. Sign-in, password and recovery pages ------------------------ */
+
+.auth-shell {
+    display: grid;
+    grid-template-columns: minmax(340px, 5fr) minmax(0, 6fr);
+    min-height: 100vh;
+}
+
+/* The school's side: flat brand colour, or its photographs with the name on a solid plate,
+   so the words never sit on a picture. */
+.auth-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--brand);
+    color: #fff;
+    overflow: hidden;
+}
+.auth-panel--photos { justify-content: flex-end; }
+.auth-panel .login-slides,
+.auth-panel .login-slides-tint { position: absolute; inset: 0; z-index: 0; }
+.auth-panel .login-slides-tint { z-index: 1; background: var(--brand); opacity: .14; }
+.login-slide {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    opacity: 0;
+    animation-name: login-fade;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+}
+.login-slide:first-child { opacity: 1; }
+.login-slides-single .login-slide { animation: none; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .login-slide { animation: none; opacity: 0; }
+    .login-slide:first-child { opacity: 1; }
+}
+
+.auth-plate { position: relative; z-index: 2; padding: var(--sp-7); background: var(--brand); }
+.auth-panel--photos .auth-plate { padding-top: var(--sp-6); }
+.auth-plate .school-mark { width: 72px; height: 72px; }
+.auth-plate .school-mark--logo { padding: var(--sp-2); border-radius: var(--radius); background: #fff; }
+.auth-plate .school-mark--mono { background: #fff; color: var(--brand); font-size: 30px; }
+.auth-plate__name { margin: var(--sp-5) 0 0; font: 500 38px/1.15 var(--font-display); letter-spacing: -.005em; overflow-wrap: anywhere; }
+.auth-plate__motto { margin: var(--sp-2) 0 0; font-size: var(--fs-lg); line-height: 1.4; max-width: 34ch; }
+.auth-plate__contact { margin: var(--sp-5) 0 0; padding: var(--sp-4) 0 0; border-top: 1px solid rgba(255, 255, 255, .35); font-size: var(--fs-sm); list-style: none; }
+.auth-plate__contact li + li { margin-top: 2px; }
+
+.auth-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--sp-7) var(--sp-5);
+    background: var(--surface-0);
+}
+.auth-card { width: 100%; max-width: 400px; }
+.auth-back { display: inline-flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-5); color: var(--ink-2); font-size: 14px; font-weight: 500; text-decoration: none; }
+.auth-back:hover { color: var(--brand-dark); text-decoration: underline; text-underline-offset: 3px; }
+.auth-title { margin: 0 0 var(--sp-2); color: var(--ink); font: 500 var(--fs-3xl)/1.2 var(--font-display); }
+.auth-lead { margin: 0 0 var(--sp-5); color: var(--ink-2); }
+.auth-form { margin: 0; }
+.auth-form .ui-btn { margin-top: var(--sp-2); }
+.auth-help { margin: var(--sp-5) 0 0; font-size: 14px; }
+.auth-note {
+    margin: var(--sp-5) 0 0;
+    padding: var(--sp-4) 0 0;
+    border-top: var(--border);
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+}
+.auth-note strong { color: var(--ink); }
+
+/* Narrow screens: the school's side shrinks to a strip carrying its mark and name. */
+@media (max-width: 900px) {
+    .auth-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; min-height: 100vh; }
+    .auth-panel,
+    .auth-panel--photos { flex-direction: row; justify-content: flex-start; }
+    .auth-panel .login-slides,
+    .auth-panel .login-slides-tint { display: none; }
+    .auth-plate { display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: var(--sp-3) var(--sp-4); }
+    .auth-panel--photos .auth-plate { padding-top: var(--sp-3); }
+    .auth-plate .school-mark { width: 44px; height: 44px; }
+    .auth-plate .school-mark--logo { padding: 4px; }
+    .auth-plate .school-mark--mono { font-size: 19px; }
+    .auth-plate__name { margin: 0; font-size: 22px; }
+    .auth-plate__motto,
+    .auth-plate__contact { display: none; }
+    .auth-main { justify-content: flex-start; padding: var(--sp-6) var(--sp-4) var(--sp-7); }
+    .auth-title { font-size: 26px; }
+}
+
+
+/* ---------- 9. Print, and people who ask for less motion -------------------- */
+
+@media print {
+    .rail,
+    .rail-scrim,
+    .rail-tip,
+    .ui-header,
+    .ui-back,
+    .skip-link { display: none !important; }
+    .school-ui .admin-shell.has-rail .main,
+    html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: 0 !important; }
+    .ui-page { max-width: none; padding: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .school-ui *,
+    .school-ui *::before,
+    .school-ui *::after {
+        transition-duration: .01ms !important;
+        transition-delay: 0s !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+    }
+    .login-slides .login-slide { animation: none !important; }
+}
+
+
+/* ---------- 10. Workspace dashboards (admin_dashboard.html, admin_school_home.html) ----
+   New, generic additions to the shared component family (.ui-*), plus page-composition
+   classes prefixed .wd- so they cannot collide with anything in admin.css/app.css. Nothing
+   existing above this line was changed. ---------------------------------------------- */
+
+/* .ui-alert: a caution tone, and a variant that carries an action on the same line. */
+.ui-alert--warning { background: var(--warning-bg); border-color: var(--warning-line); border-left-color: var(--warning); color: #5c3c00; }
+.ui-alert--action { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+
+/* .ui-panel: the one bordered container every dashboard block (a chart, a table, a list) sits in. */
+.ui-panel { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); }
+.ui-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-bottom: var(--border); }
+.ui-panel__title { margin: 0 0 2px; font: 600 var(--fs-lg)/1.3 var(--font-ui); color: var(--ink); }
+.ui-panel__desc { margin: 0; color: var(--ink-3); font-size: var(--fs-sm); }
+.ui-panel__body { padding: var(--sp-5); }
+
+/* .ui-table: a proper data table — hairline rows, a quiet header, tabular figures already global. */
+.ui-table-wrap { overflow-x: auto; }
+.ui-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.ui-table th { padding: var(--sp-2) var(--sp-5); border-bottom: 1px solid var(--line-strong); color: var(--ink-3); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; text-align: left; }
+.ui-table td { padding: var(--sp-3) var(--sp-5); border-bottom: var(--border); color: var(--ink); vertical-align: middle; }
+.ui-table tbody tr:last-child td { border-bottom: 0; }
+@media (hover: hover) and (pointer: fine) {
+    .ui-table tbody tr:hover td { background: var(--surface-1); }
+}
+.ui-table th.num, .ui-table td.num { text-align: right; }
+
+/* A quiet state/status indicator: a dot and a word, never a filled pill. */
+.ui-status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; }
+.ui-status::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.ui-status--on { color: var(--success); }
+.ui-status--off { color: var(--ink-3); }
+
+/* A centred empty state for a panel that has nothing to show yet. */
+.ui-empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-7) var(--sp-5); color: var(--ink-3); text-align: center; }
+.ui-empty .ico { width: 30px; height: 30px; color: var(--line-strong); }
+.ui-empty p { margin: 0; max-width: 46ch; }
+
+/* Score-tone text, shared by the two performance charts and the ranking list. */
+.tone-good { color: var(--success); }
+.tone-fair { color: var(--warning); }
+.tone-poor { color: var(--danger); }
+
+/* -- Page header: a title, a one-line brief, and the page's primary actions. -- */
+.wd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-5); flex-wrap: wrap; margin: 0 0 var(--sp-6); }
+.wd-head__title { margin: 0 0 var(--sp-1); font: 500 var(--fs-3xl)/1.2 var(--font-display); color: var(--ink); }
+.wd-head__lead { margin: 0; max-width: 62ch; color: var(--ink-2); }
+.wd-head__actions { display: flex; gap: var(--sp-3); flex: none; flex-wrap: wrap; }
+
+/* -- A named section further down the page: a heading, a brief, and one action. -- */
+.wd-section { margin: 0 0 var(--sp-7); }
+.wd-section__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin: 0 0 var(--sp-4); flex-wrap: wrap; }
+.wd-section__title { margin: 0 0 2px; font: 500 var(--fs-2xl)/1.3 var(--font-display); color: var(--ink); }
+.wd-section__desc { margin: 0; color: var(--ink-3); font-size: var(--fs-sm); }
+.wd-section__action { display: inline-flex; align-items: center; gap: var(--sp-1); }
+
+/* -- The stat hierarchy: one headline figure in the school's colour, plus quieter supporting figures. -- */
+.wd-stat-hero { display: flex; gap: var(--sp-5); align-items: stretch; flex-wrap: wrap; margin: 0 0 var(--sp-5); }
+.wd-stat-hero__primary { display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: 1 1 240px; min-width: 220px; padding: var(--sp-5); border: var(--border); border-radius: var(--radius-lg); background: var(--brand); color: #fff; }
+.wd-stat-hero__icon { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: var(--sp-2); border-radius: var(--radius); background: rgba(255, 255, 255, .16); color: #fff; }
+.wd-stat-hero__value { font: 700 var(--fs-4xl)/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+.wd-stat-hero__label { font-size: var(--fs-md); font-weight: 600; opacity: .94; }
+.wd-stat-hero__note { font-size: var(--fs-sm); opacity: .82; }
+.wd-stat-hero__secondary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1px; flex: 2 1 420px; background: var(--line); border: var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.wd-stat-chip { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); background: var(--surface-0); }
+.wd-stat-chip__icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius); background: var(--brand-tint); color: var(--brand); }
+.wd-stat-chip__value { font: 700 var(--fs-2xl)/1 var(--font-ui); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wd-stat-chip__label { font-size: var(--fs-sm); color: var(--ink-3); }
+
+/* -- Who is online: one quiet strip, not three duplicate cards. -- */
+a.wd-online { display: flex; align-items: center; margin: 0 0 var(--sp-6); border: var(--border); border-radius: var(--radius-lg); background: var(--surface-0); color: inherit; text-decoration: none; overflow: hidden; }
+a.wd-online:hover { background: var(--surface-1); }
+.wd-online__label { display: flex; align-items: center; gap: var(--sp-2); flex: none; padding: var(--sp-3) var(--sp-4); color: var(--ink-2); font-size: var(--fs-sm); font-weight: 600; border-right: var(--border); }
+.wd-online__label .ico { color: var(--ink-3); }
+.wd-online__items { display: flex; flex: 1; flex-wrap: wrap; }
+.wd-online__item { display: flex; align-items: baseline; gap: var(--sp-2); flex: 1 1 140px; padding: var(--sp-3) var(--sp-4); }
+.wd-online__item + .wd-online__item { border-left: var(--border); }
+.wd-online__item strong { font: 600 var(--fs-xl)/1 var(--font-ui); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wd-online__item span { color: var(--ink-3); font-size: var(--fs-sm); }
+
+/* -- The two performance charts: a labelled row, a track with a 50% reference tick, a fill. -- */
+.wd-perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); }
+@media (max-width: 900px) { .wd-perf-grid { grid-template-columns: 1fr; } }
+.wd-perf-legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; color: var(--ink-3); font-size: 12px; }
+.wd-perf-legend__dot { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; vertical-align: middle; }
+.wd-perf-legend__dot--good { background: var(--success); }
+.wd-perf-legend__dot--fair { background: var(--warning); }
+.wd-perf-legend__dot--poor { background: var(--danger); }
+.wd-perf-rows { display: flex; flex-direction: column; gap: var(--sp-4); }
+.wd-perf-row__top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); margin: 0 0 6px; }
+.wd-perf-row__name { font-weight: 600; color: var(--ink); font-size: var(--fs-sm); }
+.wd-perf-row__value { font: 600 var(--fs-md)/1 var(--font-ui); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wd-perf-row--empty .wd-perf-row__value { color: var(--ink-3); font-weight: 500; }
+.wd-perf-row__meta { margin: 6px 0 0; color: var(--ink-3); font-size: 12px; }
+.wd-perf-track { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.wd-perf-track::after { content: ""; position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: var(--line-strong); }
+.wd-perf-fill { height: 100%; border-radius: 4px; }
+.wd-perf-fill--good { background: var(--success); }
+.wd-perf-fill--fair { background: var(--warning); }
+.wd-perf-fill--poor { background: var(--danger); }
+.wd-perf-fill--empty { background: transparent; }
+
+/* -- Leading candidates: a ranked list, not a grid of identical cards. -- */
+.wd-rank-list { list-style: none; margin: 0; padding: 0; }
+.wd-rank-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-5); }
+.wd-rank-row + .wd-rank-row { border-top: var(--border); }
+.wd-rank-pos { display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); font: 600 12px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+.wd-rank-row--1 .wd-rank-pos { background: var(--brand); color: #fff; }
+.wd-rank-avatar { display: grid; flex: none; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); font: 600 13px/1 var(--font-ui); overflow: hidden; }
+.wd-rank-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.wd-rank-main { flex: 1; min-width: 0; }
+.wd-rank-name { display: block; overflow: hidden; color: var(--ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.wd-rank-meta { display: block; overflow: hidden; color: var(--ink-3); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
+.wd-rank-score { flex: none; text-align: right; }
+.wd-rank-score strong { display: block; font: 600 var(--fs-lg)/1.2 var(--font-ui); font-variant-numeric: tabular-nums; }
+.wd-rank-score small { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* -- Module groups: real information architecture instead of one flat grid. -- */
+.wd-module-groups { display: flex; flex-direction: column; gap: var(--sp-6); margin: 0 0 var(--sp-6); }
+.wd-module-group__label { margin: 0 0 var(--sp-3); color: var(--ink-3); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+.wd-module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-4); margin: 0; padding: 0; list-style: none; }
+.wd-module-card { display: flex; flex-direction: column; height: 100%; padding: var(--sp-4); border: var(--border); border-radius: var(--radius-lg); background: var(--surface-0); color: var(--ink); text-decoration: none; }
+.wd-module-card__ico { display: grid; place-items: center; width: 34px; height: 34px; margin: 0 0 var(--sp-3); border-radius: var(--radius); background: var(--brand-tint); color: var(--brand); }
+.wd-module-card__title { margin: 0 0 6px; font: 600 var(--fs-md)/1.3 var(--font-ui); color: var(--ink); }
+.wd-module-card__text { margin: 0 0 var(--sp-3); color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.5; flex: 1; }
+.wd-module-card__go { display: inline-flex; align-items: center; gap: var(--sp-1); margin-top: auto; color: var(--brand-accent); font-size: var(--fs-sm); font-weight: 600; }
+.wd-module-card__go .ico { transition: transform var(--dur) var(--ease); }
+.wd-module-card:hover { border-color: var(--brand); }
+.wd-module-card:hover .wd-module-card__go .ico { transform: translateX(3px); }
+.wd-module-card:focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+
+@media (max-width: 720px) {
+    .wd-head__title { font-size: 26px; }
+    .wd-section__title { font-size: var(--fs-xl); }
+    .wd-stat-hero__value { font-size: var(--fs-3xl); }
+}

@@ -91,12 +91,10 @@ def theme_css(primary, accent):
     if accent:
         rules.append(f'--blue:{accent};--blue-2:{shade(accent, -0.18)}')
     css = ':root{' + ';'.join(rules) + '}'
-    # Places the stylesheets fix a colour instead of reading the variables above.
+    # Places the stylesheets fix a colour instead of reading the variables above. (The navigation
+    # rail, headers and sign-in pages of static/school-ui.css read the variables directly.)
     if accent:
         css += '.btn-primary{background:var(--blue)}.btn-primary:hover{background:var(--blue-2)}'
-    if primary:
-        css += ('.sidebar{background:linear-gradient(180deg,var(--navy),var(--navy-deep))}'
-                '.nav-link.active{background:var(--navy-2)!important}')
     return css
 
 

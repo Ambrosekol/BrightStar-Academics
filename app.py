@@ -973,13 +973,25 @@ def admin_presence():
     rows=[{**dict(r),'last_seen_wat':_wat(r['last_seen'])} for r in rows]
     return render_template('admin_presence.html',counts=counts,rows=rows)
 
+def _workspace_facts():
+    """A few plain facts for the workspace chooser (the current session, how many students and candidates).
+    Purely informative: a failure here must never stop the page, so it just leaves the fact out."""
+    facts={'session':None,'students':None,'candidates':None}
+    try:
+        facts['session']=one_scalar(select(AcademicSession.name).where(AcademicSession.is_current==1,AcademicSession.active==1).order_by(AcademicSession.id.desc()).limit(1))
+        facts['students']=one_scalar(select(func.count()).select_from(Student).where(Student.active==1))
+        facts['candidates']=one_scalar(select(func.count()).select_from(Candidate).where(Candidate.active==1))
+    except Exception:
+        db.session.rollback()
+    return facts
+
 @app.route('/admin/home')
 @admin_required
 def admin_workspace_home():
     # Workspace Home is a neutral boundary. No workspace remains selected here.
     session.pop('admin_workspace', None)
     me=current_admin()
-    return render_template('admin_workspace_home.html',admin=me,can_entrance=admin_has_workspace_access(me['id'],'entrance'),can_school=admin_has_workspace_access(me['id'],'school'))
+    return render_template('admin_workspace_home.html',admin=me,can_entrance=admin_has_workspace_access(me['id'],'entrance'),can_school=admin_has_workspace_access(me['id'],'school'),facts=_workspace_facts())
 
 @app.route('/admin/workspace/entrance')
 @admin_required

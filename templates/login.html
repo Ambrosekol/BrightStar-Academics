@@ -1,233 +1,39 @@
-﻿<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  {% set school_title = (public_settings.get('school_name') if public_settings else None) or (settings.get('school_name') if settings else None) or school_brand.name %}
-  {% set motto = (public_settings.get('school_motto') if public_settings else None) or (settings.get('school_motto') if settings else None) or school_brand.motto %}
-  {# Each photograph is shown for SLIDE_SECONDS, fading into the next; the keyframes are in percent of the whole cycle. #}
-  {% set photos = school_brand.gallery %}
-  {% set n = photos|length %}
-  {% set slide_seconds = 6 %}
-  {% set step = (100 / n) if n > 1 else 100 %}
-  {% set fade = step * 0.2 %}
-  <title>Portal Sign In — {{ school_title }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
-  <style>
-    /* The school's own colours (chosen when it was created), or the portal's defaults. */
-    :root {
-      --brand: {{ school_brand.primary or '#08294f' }};
-      --brand-dark: {{ school_brand.primary_dark or '#051d38' }};
-      --brand-accent: {{ school_brand.accent or '#0284c7' }};
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #ffffff;
-      min-height: 100vh;
-    }
-    .login-container {
-      display: flex;
-      min-height: 100vh;
-      width: 100%;
-    }
-    .login-brand-panel {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 60%, var(--brand-accent) 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 3.5rem;
-      color: #ffffff;
-    }
-    .login-brand-panel > .panel-content { position: relative; z-index: 2; }
-    /* The school's photographs, fading one into the next behind the panel's text. */
-    .login-slides, .login-slides-tint { position: absolute; inset: 0; z-index: 0; }
-    .login-slide {
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      opacity: 0;
-      animation-name: login-fade;
-      animation-timing-function: ease-in-out;
-      animation-iteration-count: infinite;
-      animation-fill-mode: both;
-    }
-    .login-slide:first-child { opacity: 1; }
-    .login-slides-single .login-slide { animation: none; opacity: 1; }
-    /* A wash of the school's colour keeps the text readable over any photograph. */
-    .login-slides-tint {
-      z-index: 1;
-      background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 100%);
-      opacity: 0.72;
-    }
-    @keyframes login-fade {
-      0% { opacity: 0; }
-      {{ '%.2f'|format(fade) }}% { opacity: 1; }
-      {{ '%.2f'|format(step) }}% { opacity: 1; }
-      {{ '%.2f'|format(step + fade) }}% { opacity: 0; }
-      100% { opacity: 0; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .login-slide { animation: none; opacity: 0; }
-      .login-slide:first-child { opacity: 1; }
-    }
-    .login-form-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 2.5rem;
-      background-color: #ffffff;
-    }
-    .form-wrapper {
-      width: 100%;
-      max-width: 420px;
-    }
-    .brand-logo-img {
-      max-height: 90px;
-      width: auto;
-      object-fit: contain;
-      margin-bottom: 1.5rem;
-    }
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-    .form-group label {
-      display: block;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 0.4rem;
-    }
-    .form-group input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      outline: none;
-      box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .form-group input:focus {
-      border-color: var(--brand-accent);
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-    }
-    .btn-submit {
-      width: 100%;
-      background: var(--brand);
-      color: white;
-      border: none;
-      padding: 0.9rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-submit:hover {
-      background: var(--brand-accent);
-    }
-    .info-callout {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-top: 1.5rem;
-      font-size: 0.85rem;
-      color: #475569;
-      line-height: 1.5;
-    }
-    @media (max-width: 900px) {
-      .login-brand-panel { display: none; }
-      .login-form-panel { padding: 1.5rem; }
-    }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    
-    <!-- Left Panel: Brand Experience -->
-    <div class="login-brand-panel">
-      {% if photos %}
-        <div class="login-slides{% if n == 1 %} login-slides-single{% endif %}" aria-hidden="true">
-          {% for photo in photos %}
-            <div class="login-slide" style="background-image: url('{{ photo }}');{% if n > 1 %} animation-duration: {{ n * slide_seconds }}s; animation-delay: {{ loop.index0 * slide_seconds }}s;{% endif %}"></div>
-          {% endfor %}
-        </div>
-        <div class="login-slides-tint" aria-hidden="true"></div>
-      {% endif %}
-      <div class="panel-content">
-        <span style="color: rgba(255,255,255,0.8); font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Official School Portal</span>
-        <h1 style="font-size: 2.75rem; font-weight: 800; margin: 0.5rem 0 1rem 0; line-height: 1.2;">{{ school_title }}</h1>
-        <p style="color: #cbd5e1; font-size: 1.1rem; line-height: 1.6; max-width: 480px;">
-          Access your personalized dashboard for academic tracking, online CBT assessments, and school communications.
-        </p>
-      </div>
-      <div class="panel-content">
-        <p style="font-style: italic; color: #94a3b8; margin: 0; font-size: 0.95rem;">"{{ motto }}"</p>
-      </div>
-    </div>
-
-    <!-- Right Panel: Login Form -->
-    <div class="login-form-panel">
-      <div class="form-wrapper">
-        
-        <div style="text-align: center; margin-bottom: 2rem;">
-          <img src="{{ school_brand.logo_url }}" alt="{{ school_title }} logo" class="brand-logo-img">
-          <h2 style="font-size: 1.75rem; color: var(--brand); margin: 0; font-weight: 700;">Portal Sign In</h2>
-          <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.4rem;">Enter your assigned ID or username to continue</p>
-        </div>
+{% extends 'auth_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Portal Sign In — {{ school_title }}{% endblock %}
+{% block card %}
+        <h1 class="auth-title">Portal Sign In</h1>
+        <p class="auth-lead">Enter your assigned ID or username to continue</p>
 
         {# The sign-in view passes its own explanation ("could not verify", "too many attempts"). #}
         {% if error %}
-          <div role="alert" style="padding: 0.85rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem; background: #fee2e2; color: #991b1b;">
-            {{ error }}
-          </div>
+          <div class="ui-alert ui-alert--error" role="alert">{{ error }}</div>
         {% endif %}
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div style="padding: 0.85rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem; {% if category == 'success' %}background: #dcfce7; color: #166534;{% else %}background: #fee2e2; color: #991b1b;{% endif %}">
-                {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
+          {% for category, message in messages %}
+            <div class="ui-alert {% if category == 'success' %}ui-alert--success{% else %}ui-alert--error{% endif %}" role="status">{{ message }}</div>
+          {% endfor %}
         {% endwith %}
 
-        <form action="{{ url_for('login') }}" method="POST">
-          <div class="form-group">
+        <form class="auth-form" action="{{ url_for('login') }}" method="POST">
+          <div class="ui-field">
             <label for="username">Username, Student ID or Candidate ID</label>
-            <input type="text" id="username" name="username" placeholder="your assigned ID" value="{{ identifier or '' }}" autocomplete="username" required autofocus>
+            <input class="ui-input" type="text" id="username" name="username" placeholder="your assigned ID" value="{{ identifier or '' }}" autocomplete="username" required autofocus>
           </div>
 
-          <div class="form-group">
+          <div class="ui-field">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required>
+            <input class="ui-input" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
           </div>
 
-          <button type="submit" class="btn-submit">Sign In Securely →</button>
+          <button type="submit" class="ui-btn ui-btn--primary ui-btn--block">Sign In Securely {{ icon('arrow-right', 'ico-sm') }}</button>
         </form>
 
-        <div class="info-callout">
+        <div class="auth-note">
           <strong>Need Access Credentials?</strong><br>
           Student, candidate, and parent accounts are provisioned directly by the school administration desk. Please contact the school office if you require credential assistance.
         </div>
 
-        <div style="text-align: center; margin-top: 1.5rem;">
-          <a href="mailto:{{ school_brand.email }}" style="color: var(--brand-accent); font-weight: 600; text-decoration: none; font-size: 0.9rem;">Need Help or Forgot Password?</a>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-</body>
-</html>
+        <p class="auth-help"><a class="ui-link" href="{% if school_brand.email %}mailto:{{ school_brand.email }}{% else %}{{ url_for('forgot_password') }}{% endif %}">Need Help or Forgot Password?</a></p>
+{% endblock %}

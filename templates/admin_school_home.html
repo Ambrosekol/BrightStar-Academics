@@ -1,27 +1,119 @@
 {% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}School Portal — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero workspace-hero"><div><div class="eyebrow">SCHOOL PORTAL</div><h1>School administration</h1><p class="hero-copy">Manage enrolled students, classes, subjects and academic assessment separately from the Entrance Examination workspace.</p></div></div>
-<section class="grid dashboard-metric-grid school-dashboard-metrics">
-  {% for key,label,abbr,desc in [('students','Students','ST','Enrolled student records'),('projects','Projects','PR','Practical classroom projects'),('classes','Classes','CL','Active class levels'),('subjects','Subjects','SB','School subjects'),('assignments','Assignments','AS','Active assignments'),('tests','Tests','T','School tests'),('examinations','Examinations','EX','School examinations')] %}
-  <article class="card dashboard-metric-card metric-card-{{key}} school-metric-card">
-    <div class="dashboard-metric-head"><span class="dashboard-metric-icon">{{abbr}}</span><strong>{{label}}</strong></div>
-    <div class="metric dashboard-metric-number">{{stats[key]}}</div>
-    <div class="dashboard-metric-description">{{desc}}</div>
-  </article>
-  {% endfor %}
-</section>
-<div class="school-module-grid">
-  <a class="school-module-card" href="{{ url_for('admin_school_students') }}"><strong>Students</strong><span>Register and maintain enrolled student records and their class connections.</span><b>Open Students →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_classes') }}"><strong>Classes</strong><span>Daycare / Playgroup / Nursery Reception, Primary 1–6, JSS 1–3 and SSS 1–3.</span><b>Open Classes →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_subjects') }}"><strong>Subjects</strong><span>Create subjects for the classes where they are offered, with School Admin locking.</span><b>Open Subjects →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_assignments') }}"><strong>Assignments</strong><span>Create written or CBT-style assignments, set timing and track completion.</span><b>Open Assignments →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_projects') }}"><strong>Projects</strong><span>Create practical classroom projects with required dates, completion and scores.</span><b>Open Projects →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_tests') }}"><strong>Tests</strong><span>Create teacher-managed tests and load questions into each assessment.</span><b>Open Tests →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_practice_tests') }}"><strong>Practice Tests</strong><span>Manage practice assessments separately from official school examinations.</span><b>Open Practice Tests →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_examinations') }}"><strong>Examinations</strong><span>Create formal school examinations and load their questions.</span><b>Open Examinations →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_parent_feedback') }}"><strong>Parents' Feedback</strong><span>Receive, assign, reply to and resolve messages from the Parent Portal.</span><b>Open Parents' Feedback →</b></a>
-  <a class="school-module-card" href="{{ url_for('admin_school_results') }}"><strong>Results &amp; Records</strong><span>View connected academic records for enrolled students.</span><b>Open Results →</b></a>
+
+<div class="wd-head">
+  <div>
+    <h1 class="wd-head__title">School portal</h1>
+    <p class="wd-head__lead">Enrolled students, classes, subjects and academic assessment, kept separate from the Entrance Examination workspace.</p>
+  </div>
 </div>
-<div class="info-banner"><strong>Portal boundary.</strong><span>This workspace is for enrolled school students. Entrance Examination candidates remain in the separate Entrance Examination workspace. Student login is available through the unified school sign-in and routes enrolled students to the Student Portal.</span></div>
+
+<div class="wd-stat-hero">
+  <div class="wd-stat-hero__primary">
+    <span class="wd-stat-hero__icon">{{ icon('user') }}</span>
+    <span class="wd-stat-hero__value">{{ stats.students }}</span>
+    <span class="wd-stat-hero__label">Enrolled students</span>
+    <span class="wd-stat-hero__note">{{ stats.classes }} class{{ 'es' if stats.classes != 1 else '' }} · {{ stats.subjects }} subject{{ '' if stats.subjects == 1 else 's' }}</span>
+  </div>
+  <div class="wd-stat-hero__secondary">
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('grid') }}</span><span class="wd-stat-chip__value">{{ stats.classes }}</span><span class="wd-stat-chip__label">Classes</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('book') }}</span><span class="wd-stat-chip__value">{{ stats.subjects }}</span><span class="wd-stat-chip__label">Subjects</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('assignment') }}</span><span class="wd-stat-chip__value">{{ stats.assignments }}</span><span class="wd-stat-chip__label">Assignments</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('folder') }}</span><span class="wd-stat-chip__value">{{ stats.projects }}</span><span class="wd-stat-chip__label">Projects</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('edit') }}</span><span class="wd-stat-chip__value">{{ stats.tests }}</span><span class="wd-stat-chip__label">Tests</span></div>
+    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('stopwatch') }}</span><span class="wd-stat-chip__value">{{ stats.examinations }}</span><span class="wd-stat-chip__label">Examinations</span></div>
+  </div>
+</div>
+
+<div class="wd-module-groups">
+
+  <section>
+    <h2 class="wd-module-group__label">People</h2>
+    <div class="wd-module-grid">
+      <a class="wd-module-card" href="{{ url_for('admin_school_students') }}">
+        <span class="wd-module-card__ico">{{ icon('user') }}</span>
+        <h3 class="wd-module-card__title">Students</h3>
+        <p class="wd-module-card__text">Register and maintain enrolled student records and their class connections.</p>
+        <span class="wd-module-card__go">Open Students {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="wd-module-group__label">Academic structure</h2>
+    <div class="wd-module-grid">
+      <a class="wd-module-card" href="{{ url_for('admin_school_classes') }}">
+        <span class="wd-module-card__ico">{{ icon('grid') }}</span>
+        <h3 class="wd-module-card__title">Classes</h3>
+        <p class="wd-module-card__text">Daycare / Playgroup / Nursery Reception, Primary 1–6, JSS 1–3 and SSS 1–3.</p>
+        <span class="wd-module-card__go">Open Classes {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_subjects') }}">
+        <span class="wd-module-card__ico">{{ icon('book') }}</span>
+        <h3 class="wd-module-card__title">Subjects</h3>
+        <p class="wd-module-card__text">Create subjects for the classes where they are offered, with School Admin locking.</p>
+        <span class="wd-module-card__go">Open Subjects {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="wd-module-group__label">Assessment</h2>
+    <div class="wd-module-grid">
+      <a class="wd-module-card" href="{{ url_for('admin_school_assignments') }}">
+        <span class="wd-module-card__ico">{{ icon('assignment') }}</span>
+        <h3 class="wd-module-card__title">Assignments</h3>
+        <p class="wd-module-card__text">Create written or CBT-style assignments, set timing and track completion.</p>
+        <span class="wd-module-card__go">Open Assignments {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_projects') }}">
+        <span class="wd-module-card__ico">{{ icon('folder') }}</span>
+        <h3 class="wd-module-card__title">Projects</h3>
+        <p class="wd-module-card__text">Create practical classroom projects with required dates, completion and scores.</p>
+        <span class="wd-module-card__go">Open Projects {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_tests') }}">
+        <span class="wd-module-card__ico">{{ icon('edit') }}</span>
+        <h3 class="wd-module-card__title">Tests</h3>
+        <p class="wd-module-card__text">Create teacher-managed tests and load questions into each assessment.</p>
+        <span class="wd-module-card__go">Open Tests {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_practice_tests') }}">
+        <span class="wd-module-card__ico">{{ icon('target') }}</span>
+        <h3 class="wd-module-card__title">Practice Tests</h3>
+        <p class="wd-module-card__text">Manage practice assessments separately from official school examinations.</p>
+        <span class="wd-module-card__go">Open Practice Tests {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_examinations') }}">
+        <span class="wd-module-card__ico">{{ icon('stopwatch') }}</span>
+        <h3 class="wd-module-card__title">Examinations</h3>
+        <p class="wd-module-card__text">Create formal school examinations and load their questions.</p>
+        <span class="wd-module-card__go">Open Examinations {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="wd-module-group__label">Records &amp; communication</h2>
+    <div class="wd-module-grid">
+      <a class="wd-module-card" href="{{ url_for('admin_school_results') }}">
+        <span class="wd-module-card__ico">{{ icon('trend') }}</span>
+        <h3 class="wd-module-card__title">Results &amp; Records</h3>
+        <p class="wd-module-card__text">View connected academic records for enrolled students.</p>
+        <span class="wd-module-card__go">Open Results {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+      <a class="wd-module-card" href="{{ url_for('admin_school_parent_feedback') }}">
+        <span class="wd-module-card__ico">{{ icon('message') }}</span>
+        <h3 class="wd-module-card__title">Parents' Feedback</h3>
+        <p class="wd-module-card__text">Receive, assign, reply to and resolve messages from the Parent Portal.</p>
+        <span class="wd-module-card__go">Open Parents' Feedback {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<div class="ui-alert"><strong>Portal boundary.</strong> This workspace is for enrolled school students; entrance-examination candidates stay in the separate Entrance Examination workspace. Students sign in through the shared school sign-in page, which routes them to the Student Portal.</div>
 {% endblock %}
