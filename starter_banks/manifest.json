@@ -2,7 +2,7 @@
   "format": 1,
   "name": "Standard entrance question banks",
   "version": "2.0",
-  "description": "The question banks a new school starts with: Mathematics, English and General Knowledge for entry into Year 7 and into SSS 1. Written for the platform (no school's questions), owned by the platform, copied into each new school's own data folder, and free for the school to edit afterwards. questions_to_serve is how many questions one candidate is given; it must split 100 marks into whole hundredths (20, 25, 40 or 50, for example).",
+  "description": "The question banks a new school starts with: Mathematics, English and General Knowledge for entry into Year 7 / JSS 1 and into Year 10 / SSS 1 (schools name this stage differently, so both names are shown together everywhere a school sees it). Written for the platform (no school's questions), owned by the platform, copied into each new school's own data folder, and free for the school to edit afterwards. questions_to_serve is how many questions one candidate is given; it must split 100 marks into whole hundredths (20, 25, 40 or 50, for example).",
   "banks": [
     {
       "file": "starter_year7_mathematics.json",

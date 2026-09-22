@@ -35,6 +35,8 @@
 .feedback-thread-status.resolved{background:#e5f8ec;color:#1a7a3d;border-color:#bfe8cc}
 .feedback-thread-feed{padding:18px 20px;background:#f8fafc;display:flex;flex-direction:column;gap:10px}
 .feedback-thread-feed .message-bubble{max-width:78%}
+.pf-attachment-link{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:700;color:#1674b9;text-decoration:none}
+.pf-attachment-link:hover{text-decoration:underline}
 .pf-reply-box{padding:14px 20px 18px;background:#fff;border-top:1px solid #eef1f5}
 .pf-reply-form{display:flex;gap:10px;align-items:flex-end}
 .pf-reply-form textarea{flex:1;padding:11px 13px;border:1px solid #ccd5e2;border-radius:10px;font:inherit;font-size:13px;resize:none;min-height:44px;max-height:140px}
@@ -85,6 +87,7 @@
     <div class="feedback-thread-feed">
       <div class="message-bubble outgoing">
         <div>{{f.body}}</div>
+        {% if f.attachment_path %}<a class="pf-attachment-link" href="{{url_for('parent_feedback_attachment',feedback_id=f.id)}}" target="_blank" rel="noopener">Attachment: {{f.attachment_name or 'file'}}</a>{% endif %}
         <span class="message-timestamp">You · {{f.created_at[:16].replace('T',' ')}} UTC</span>
       </div>
       {% for r in replies.get(f.id,[]) %}
@@ -118,6 +121,7 @@
     <div class="feedback-thread-feed">
       <div class="message-bubble outgoing">
         <div>{{f.body}}</div>
+        {% if f.attachment_path %}<a class="pf-attachment-link" href="{{url_for('parent_feedback_attachment',feedback_id=f.id)}}" target="_blank" rel="noopener">Attachment: {{f.attachment_name or 'file'}}</a>{% endif %}
         <span class="message-timestamp">You · {{f.created_at[:16].replace('T',' ')}} UTC</span>
       </div>
       {% for r in replies.get(f.id,[]) %}

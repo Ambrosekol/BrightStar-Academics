@@ -95,15 +95,22 @@ uploads are never served there either.
 | `control_plane/context.py` | `TenantInfo` (immutable snapshot), the per-request current school, `tenant_context()` |
 | `control_plane/routing.py` | `TenantSession`, per-school engine cache, `build_engine()` (SQLite and PostgreSQL) |
 | `control_plane/resolver.py` | `before_request` hook + session-to-school binding; `install(app)` |
+| `control_plane/launch.py` | The server's launch id: written to the registry (`platform_state`) once at each start, read (cached a few seconds) by every worker |
+| `core/session_guard.py` | The hook right behind the resolver: a restart or a changed password ends a sign-in (exam sitters excepted) |
+| `core/upload_access.py` | Which people may open which folder of a school's uploads |
 | `control_plane/provisioning.py` | Create / upgrade schools, first admin, suspend, domains |
 | `control_plane/console.py` | The platform console: sign-in, dashboard, create school, addresses, administrators, suspend, activity, "Enter school" |
 | `control_plane/entry.py` | Platform-admin sign-in, entry tickets, the reserved operator account inside a school |
 | `control_plane/cli.py` | `python -m control_plane …` |
 | `core/storage.py` | `data_dir()`, `uploads_dir()`, `stored_upload_path()` — per school |
 | `core/branding.py` | The school's own name/motto/logo, exposed to every template as `school_brand` |
+| `core/numbering.py`, `core/numbering_pattern.py` | Each school's numbering rules: a pattern per school in `tenants/<code>/numbering.json`, set on the console, read and checked and never run |
 | `templates/platform/` | The console and the platform website |
 | `app.py` | Installs the resolver first, serves `/static/uploads/<path>` per school, `init_db(school=…, bootstrap_super_admin=…)` |
 | `tests/verification/write_paths_multitenancy.py` | End-to-end isolation checks (49) |
+| `tests/verification/write_paths_session_guard.py` | Restart sign-out (exam sitters kept), password changes ending sign-ins, referrer/caching headers, trusted proxies |
+| `tests/verification/write_paths_upload_access.py` | Every uploads folder against every kind of person |
+| `tests/verification/write_paths_numbering_rules.py` | The numbering patterns: the language, the console editor and preview, audit, candidates and students, a corrupt file |
 | `tests/verification/write_paths_platform_console.py` | End-to-end console checks (84) |
 | `tests/current/test_multitenancy_contract.py` | Fast contract guards |
 
@@ -172,6 +179,53 @@ header gets a 404, not a school.
   is stamped with its school id; on any mismatch it is cleared before any account
   lookup runs. (Without this, admin #3 at school A could be admin #3 at school B.)
   This also signs everyone out once at cut-over.
+* **A restart signs everyone out, except people sitting an exam.** Each server start
+  writes a new random *launch id* into the registry (`platform_state`, key `launch_id`),
+  from `python app.py`, `python -m control_plane upgrade` or `python -m control_plane
+  new-launch`, before any worker serves a request; workers only read it, cached for a
+  few seconds, so several workers of one start agree and the next start differs. Every
+  session is stamped with the id at sign-in. A request whose stamp is not the current
+  id is a sign-in from before the restart: if that person has an exam running (a
+  candidate with an unfinished paper; a student with an unfinished test, examination,
+  practice paper, or quiz) the session is kept and stamped again, so they carry on
+  where they were; anyone else is signed out and meets the sign-in page (staff,
+  students, parents, candidates and the platform console alike). The exam clock is the
+  server's and keeps running while it is off, so a paper that has run out of time by
+  the restart protects nobody. If the registry (or the school's database, for the exam
+  check) cannot be read, or no launch was ever recorded, nobody is signed out. The
+  check does not run for `/health` or shared static files. Where the server is started
+  by some other means than `python app.py` (a WSGI server), run `python -m
+  control_plane upgrade` (or `new-launch`) as the deploy step, or restarts will not
+  sign anyone out.
+* **A changed password ends the account's other sign-ins.** Each session also carries
+  a fingerprint of the password hash the account had at sign-in. Any change of the
+  hash (the person, an administrator's reset, an emailed reset link, a command)
+  invalidates every session made with the old one; the person who changed their own
+  password is stamped again and stays in. It is judged from the stored hash, so no
+  route can forget to do it. A platform operator's reserved account inside a school
+  is exempt (its hash changes on every entry and is never a way in).
+* **Uploaded files have a rule per folder** (`core/upload_access.py`, decided on the
+  normalised path): `branding/` public; `messages/` never served there; `admins/`
+  and `signatures/` staff; `candidates/` staff and that candidate; `students/` staff,
+  that student and a parent actively linked to them (matched through the owning row's
+  `photo_path`); `questions/` staff, students and candidates; `assignments/` staff and
+  students; any other folder staff only. A refusal is a plain 404. A sign-in that has
+  ended, a switched-off account and a cookie of another school open nothing.
+* **Proxies.** By default no proxy is trusted: the application uses the address and
+  scheme of the connection and ignores every `X-Forwarded-*` header, so the audit log
+  (which stores `request.remote_addr`, cut to 64 characters) and the rate limits cannot
+  be fooled by a forged header. `BRIGHTSTARS_TRUSTED_PROXIES=n` (n >= 1, at most 5)
+  wraps the app in werkzeug's `ProxyFix(x_for=n, x_proto=n)` only. Never the host or
+  the prefix: the `Host` header chooses the school.
+* **Referrers and caching.** Every response carries `Referrer-Policy: same-origin`; the
+  password-reset pages (`/reset-password/<token>`, `/forgot-password`) also send
+  `no-referrer` and `Cache-Control: no-store`, so a reset token in a URL is neither
+  kept nor named to anyone.
+* **A school's numbering rules are data, not code.** Its candidate-code and student-number
+  patterns are set on the platform console and kept in `tenants/<code>/numbering.json`. A pattern
+  is read and checked (`core/numbering_pattern.py`), never executed, so being able to set one does
+  not let anyone run code on a server that can reach every school's database. Every save is in the
+  platform audit trail with the old and the new pattern.
 * **Files are per school.** Uploads and question banks live under
   `BRIGHTSTARS_TENANTS_DIR/<code>/`; `/static/uploads/…` is served from the
   requesting school's folder, `send_from_directory` refuses traversal, and stored

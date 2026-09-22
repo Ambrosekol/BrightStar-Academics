@@ -272,9 +272,9 @@ check("the platform's own starter files were not touched by making schools",
 visible = {}
 for slug in ("alpha", "gamma"):
     visible[slug] = in_school(slug, lambda: {i: entrance_bank_display_name(i) for i in starter_ids})
-expected = {"starter_year7_mathematics": "Mathematics - Entrance Examination into Year 7",
-            "starter_sss1_english": "English - Entrance Examination into SSS 1",
-            "starter_sss1_general_knowledge": "General Knowledge - Entrance Examination into SSS 1"}
+expected = {"starter_year7_mathematics": "Mathematics - Entrance Examination into Year 7 / JSS 1",
+            "starter_sss1_english": "English - Entrance Examination into Year 10 / SSS 1",
+            "starter_sss1_general_knowledge": "General Knowledge - Entrance Examination into Year 10 / SSS 1"}
 check("the names an administrator sees are neutral and say what each paper is",
       all(visible["alpha"][k] == v for k, v in expected.items()), str(visible["alpha"]))
 check("…and are the same in every school, because they name no school",
@@ -306,9 +306,9 @@ c_g, u_g, r = sign_in("gamma", "gamma_admin", "Gamma-admin-pass-1")
 
 page = text_of(c_a.get("/admin/banks?level=year7", base_url=u_a))
 check("alpha's bank list shows the standard Year 7 banks by their neutral names",
-      "Mathematics - Entrance Examination into Year 7" in page
-      and "English - Entrance Examination into Year 7" in page
-      and "General Knowledge - Entrance Examination into Year 7" in page)
+      "Mathematics - Entrance Examination into Year 7 / JSS 1" in page
+      and "English - Entrance Examination into Year 7 / JSS 1" in page
+      and "General Knowledge - Entrance Examination into Year 7 / JSS 1" in page)
 check("…and no other school's name, and none of the first school's",
       "Beta College" not in page and "Gamma School" not in page and "Creative Rainbow" not in page)
 
@@ -441,7 +441,10 @@ for q in big_report["questions"]:
     q["answer"] = 9
 rejected("a very long list of problems is cut short and says so", big_report, "more problem")
 check("nothing was ever written outside a school's data folder by any of those",
-      not [n for n in os.listdir(os.path.join(TMP, "tenants", "alpha")) if n.endswith(".json")]
+      # numbering.json is the school's own numbering rules (a separate, legitimate feature),
+      # not a bank file, and every school has one from the moment it is created.
+      not [n for n in os.listdir(os.path.join(TMP, "tenants", "alpha"))
+           if n.endswith(".json") and n != "numbering.json"]
       and not os.path.exists(os.path.join(TMP, "tenants", "x.json"))
       and not os.path.exists(os.path.join(TMP, "x.json")) and not os.path.exists(os.path.join(TMP, "tenants", "alpha", "x.json")))
 check("…and no stray temporary files were left behind",

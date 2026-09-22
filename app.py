@@ -424,7 +424,7 @@ def _active_sessions():
 # (sync_examinations from init_db, the three template-context helpers below).
 from core.entrance import (  # noqa: E402
     entrance_subject_label, entrance_paper_label, entrance_bank_display_name,
-    sync_examinations,
+    entry_group_label, sync_examinations,
 )
 
 
@@ -707,6 +707,7 @@ def inject_csrf_token():
         'entrance_subject_label': entrance_subject_label,
         'entrance_paper_label': entrance_paper_label,
         'entrance_bank_display_name': entrance_bank_display_name,
+        'entry_group_label': entry_group_label,
         # The school's own name/motto/logo, so no template has to hard-code one.
         'school_brand': school_brand(),
     }

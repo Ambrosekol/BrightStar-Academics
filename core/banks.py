@@ -146,7 +146,7 @@ def check_bank(data):
     if entry_group in (None, ''):
         entry_group = None
     elif entry_group not in ENTRY_GROUPS:
-        problems.add('The "entry_group" must be "year7" (JSS 1) or "year10" (SSS 1), or left out.')
+        problems.add('The "entry_group" must be "year7" (Year 7 / JSS 1) or "year10" (Year 10 / SSS 1), or left out.')
         entry_group = None
 
     if 'duration_seconds' in data:

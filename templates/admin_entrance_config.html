@@ -37,7 +37,7 @@
 <div class="card modern-form" style="margin-top:18px">
   <h2 style="margin-top:0">Standard entrance papers</h2>
   {% if standard.todo %}
-    <p>This school has the standard entrance question banks. One click makes them the live papers for <strong>{{ standard.session.name }}</strong> ({{ standard.todo }} of {{ standard.available }} still to set up): Mathematics, English and General Knowledge for Year 7 and for SSS 1. Any paper you have already configured yourself is left exactly as it is.</p>
+    <p>This school has the standard entrance question banks. One click makes them the live papers for <strong>{{ standard.session.name }}</strong> ({{ standard.todo }} of {{ standard.available }} still to set up): Mathematics, English and General Knowledge for Year 7/JSS 1 and for Year 10/SSS 1. Any paper you have already configured yourself is left exactly as it is.</p>
     <form method="post" action="{{ url_for('admin_entrance_config_standard') }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-primary" type="submit">Set up the standard entrance papers</button>
@@ -57,7 +57,7 @@
     {% for c in configs %}
       <tr>
         <td><strong>{{ c.session_name }}</strong>{% if c.is_current %}<br><small class="muted">Current session</small>{% endif %}</td>
-        <td>{{ 'JSS 1' if c.entry_group == 'year7' else 'SSS 1' }}</td>
+        <td>{{ entry_group_label(c.entry_group) }}</td>
         <td>{{ c.subject|replace('_',' ')|title }}</td>
         <td>{{ entrance_bank_display_name(c.bank_id, c.exam_name) }}<br><small class="muted">{{ c.question_count }} questions in the bank</small></td>
         <td>{{ c.questions_to_serve }}</td>
@@ -87,8 +87,8 @@
       <div class="field"><label for="entry_group">Entry class</label>
         <select name="entry_group" id="entry_group" required>
           <option value="">Choose a class...</option>
-          <option value="year7"{% if form and form.get('entry_group') == 'year7' %} selected{% endif %}>JSS 1</option>
-          <option value="year10"{% if form and form.get('entry_group') == 'year10' %} selected{% endif %}>SSS 1</option>
+          <option value="year7"{% if form and form.get('entry_group') == 'year7' %} selected{% endif %}>{{ entry_group_label('year7') }}</option>
+          <option value="year10"{% if form and form.get('entry_group') == 'year10' %} selected{% endif %}>{{ entry_group_label('year10') }}</option>
         </select></div>
       <div class="field"><label for="subject">Subject</label>
         <select name="subject" id="subject" required>

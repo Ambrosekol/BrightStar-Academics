@@ -15,7 +15,7 @@ The project README's *Testing* section says what each covers.
 | `write_paths_finance.py` | fee items, paid / part paid / unpaid, payments and allocations, what a parent sees and is told |
 | `write_paths_receipts.py` | the receipt PDF, its email and WhatsApp, the authorised signature, one school never wearing another's |
 | `write_paths_known_gaps.py` | roles, the profile page, uploads, search, sign-in errors |
-| `write_paths_numbering.py` | each school's own candidate and student numbering |
+| `write_paths_numbering_rules.py` | each school's numbering patterns: the language, the console editor and preview, audit, candidate registration and student creation, a corrupt file |
 | `write_paths_question_banks.py` | the standard banks, importing banks, a new school's first exam |
 | `write_paths_fractional_marks.py` | a 40-question paper is 100 marks; older schools upgraded |
 | `write_paths_retired_tables.py` | clearing the removed website editor's leftover tables |
@@ -26,6 +26,9 @@ The project README's *Testing* section says what each covers.
 | `write_paths_candidate_results.py` | a candidate's result image and share page: the school's own logo and photo, nothing of another school, nothing left behind |
 | `write_paths_error_pages.py` | the 404, 403 and 500 pages: each school's own, "Go Back" for signed-in people, nothing leaked |
 | `write_paths_rate_limits.py` | limits shared by every worker process |
+| `write_paths_session_guard.py` | a restart signs everyone out except people sitting an exam (who carry on through answers, heartbeat and submit), a changed password ends the account's other sign-ins, referrer and no-store headers, the trusted-proxy setting |
+| `write_paths_upload_access.py` | who may open each uploads folder: staff, the student and their parent, the candidate, another student, an unrelated parent, signed out, another school |
+| `write_paths_upload_limits.py` | every picture upload (staff, student, candidate, question, signature, branding, console): the 5 MB limit printed beside the box, a refusal that names the file and both sizes, a friendly answer to an over-8 MB submission, and the browser script run in Chrome |
 | `write_paths_pg_smoke.py` | every page, opened with data behind it |
 | `write_paths_pg_posts.py` | every form submission, valid and hostile |
 

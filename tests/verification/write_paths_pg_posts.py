@@ -732,17 +732,40 @@ FATHER = one("SELECT id FROM parent_accounts WHERE email = 'chidi.obi@example.te
 FATHER_USER = one("SELECT username FROM parent_accounts WHERE id = :p", p=FATHER)
 r = op.post(f"{PARENTS}/{FATHER}/credentials/reset", {})
 FATHER_TEMP = grab(r"<code>(.+?)</code>", r.body, "the parent's temporary password")
+AUNT_USER = one("SELECT username FROM parent_accounts WHERE id = :p", p=AUNT)
+r = op.post(f"{PARENTS}/{AUNT}/credentials/reset", {})
+AUNT_TEMP = grab(r"<code>(.+?)</code>", r.body, "the aunt's temporary password")
 
 father = Actor("parent")
 r = father.post("/login", {"username": FATHER_USER, "password": FATHER_TEMP})
 check("a parent signs in with the temporary password and is sent to change it", "/parent/password" in r.location)
 father.post("/parent/password", {"current_password": FATHER_TEMP, "new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD})
 check("a parent's password was changed", one("SELECT password_must_change FROM parent_accounts WHERE id = :p", p=FATHER) == 0)
-father.post("/parent/feedback", {"student_id": ADA, "subject": "Homework load", "body": "Is the homework too much this term?"})
+father.post("/parent/feedback", {"student_id": ADA, "subject": "Homework load", "body": "Is the homework too much this term?"},
+            files={"attachment": ("permission_slip.txt", b"Please allow Ada to leave early on Friday.")})
 FEEDBACK = one("SELECT id FROM parent_feedback WHERE subject = 'Homework load'")
 check("a parent's message was sent to the school and staff were notified",
       FEEDBACK is not None and count("admin_notifications", "title = 'New parent message'") >= 1)
+check("the attachment the parent picked was actually saved, not silently dropped",
+      (one("SELECT attachment_path FROM parent_feedback WHERE id = :f", f=FEEDBACK) or "").startswith("uploads/messages/")
+      and one("SELECT attachment_name FROM parent_feedback WHERE id = :f", f=FEEDBACK) == "permission_slip.txt"
+      and one("SELECT file_type FROM parent_feedback WHERE id = :f", f=FEEDBACK) == "file")
+r = father.get(f"/parent/feedback/{FEEDBACK}/attachment")
+check("the parent can fetch back what they attached, under its own name",
+      r.status_code == 200 and r.get_data(as_text=True) == "Please allow Ada to leave early on Friday."
+      and "permission_slip.txt" in (r.headers.get("Content-Disposition") or ""))
+aunt = Actor("parent")
+aunt.post("/login", {"username": AUNT_USER, "password": AUNT_TEMP})
+aunt.post("/parent/password", {"current_password": AUNT_TEMP, "new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD})
+check("a different parent cannot fetch it", aunt.get(f"/parent/feedback/{FEEDBACK}/attachment").status_code == 404)
+check("a signed-out visitor cannot fetch it", Actor("stranger").get(f"/parent/feedback/{FEEDBACK}/attachment").status_code in (302, 401, 403, 404))
 FB = "/admin/school/parent-feedback"
+check("staff with permission can fetch the same attachment from the school side",
+      op.get(f"{FB}/{FEEDBACK}/attachment").status_code == 200)
+r2 = father.post("/parent/feedback", {"subject": "A form", "body": "Attaching the wrong kind of file."},
+                 files={"attachment": ("form.exe", b"not really a program, just the wrong extension")}, valid=False)
+check("a disallowed file type is refused, and nothing was saved for it",
+      r2.status in (200, 302) and one("SELECT COUNT(*) FROM parent_feedback WHERE subject = 'A form'") == 0)
 mail_before = len(FakeSMTP.sent)
 wa_before = len(WHATSAPP_CALLS)
 op.post(f"{FB}/{FEEDBACK}/reply", {"body": "Thank you, we will review it."})
@@ -1033,7 +1056,7 @@ check("a platform admin's access was removed (the account is kept)", registry("S
 r = console.post(f"/platform/team/{OPS2}/restore", {})
 grab(r'id="temp-password">(.+?)</span>', r.body, "a restored platform admin's one-time password")
 r = console.post(f"/platform/team/{OPS2}/reset-password", {})
-grab(r'id="temp-password">(.+?)</span>', r.body, "a reset platform admin's one-time password")
+OPS2_RESET_TEMP = grab(r'id="temp-password">(.+?)</span>', r.body, "a reset platform admin's one-time password")
 
 console.post("/platform/schools/posts/branding", {"school_brand_primary": "#123456", "school_brand_accent": "#1674b9"},
              files={"logo": png("newlogo.png"), "gallery": [png("c.png")]})
@@ -1042,6 +1065,12 @@ console.post("/platform/schools/posts/domains", {"action": "add", "hostname": "p
 check("an address was added for the school", registry("SELECT count(*) FROM tenant_domains WHERE hostname = 'portal.postsschool.example'") == 1)
 console.post("/platform/schools/posts/domains", {"action": "remove", "hostname": "portal.postsschool.example"})
 check("…and removed", registry("SELECT count(*) FROM tenant_domains WHERE hostname = 'portal.postsschool.example'") == 0)
+r = console.post("/platform/numbering/preview", {"candidate_pattern": "{school}-{yy}-{seq:3}", "student_pattern": "", "first_number": "1",
+                                                   "slug": "posts", "name": "", "code": ""})
+check("the numbering preview shows the school's next codes", r.json.get("candidate", {}).get("ok") is True and r.json["candidate"]["samples"])
+console.post("/platform/schools/posts/numbering", {"candidate_pattern": "{school}-{yy}-{seq:3}", "student_pattern": "", "first_number": "1"})
+check("a school's numbering rules were changed from the console",
+      '{school}-{yy}-{seq:3}' in open(os.path.join(TMP, "tenants", "posts", "numbering.json"), encoding="utf-8").read())
 r = console.post("/platform/schools/posts/admins", {"username": "secondadmin", "display_name": "Second Admin"})
 grab(r'id="temp-password">(.+?)</span>', r.body, "a new school administrator's one-time password")
 check("a school administrator was created from the console", count("admins", "username = 'secondadmin'") == 1)
@@ -1063,6 +1092,13 @@ op_leaver = Actor("platform admin signing out", PL, PLATFORM_ADAPTER)
 op_leaver.post("/platform/login", {"username": "ops", "password": NEW_PASSWORD})
 op_leaver.post("/platform/logout", {})
 check("a platform admin signed out", "platform_admin_id" not in op_leaver.session())
+
+# Changing or resetting a password ends the account's other sign-ins (core/session_guard.py). Two people the
+# sweep below sends junk as had their passwords changed by other steps above (the staff member through the
+# emailed recovery link, the second platform admin through the super admin's reset), so they sign in again with
+# the password they have now, to be signed-in people once more.
+clerk.post("/login", {"username": "clerk1", "password": "recovered-password-9"})
+ops2.post("/platform/login", {"username": "ops2", "password": OPS2_RESET_TEMP})
 
 # ================================================================ 17. JUNK: every route, refused cleanly
 # For each route: an empty form, two forms of hostile values, no CSRF token, and (for routes with an id in the
@@ -1094,7 +1130,15 @@ def junk_variants(fields):
 junk_total = 0
 bounced = []  # routes whose junk was all turned away at the sign-in page: it never reached the route's own code
 ANONYMOUS = {"visitor", "student signing out", "platform admin signing out"}
-for rule in sorted(coverage.write_rules(A.app.url_map)):
+# A password reset ends every sign-in of the account it resets (core/session_guard.py), and an empty
+# form is a valid request to a reset route, so junk sent to one really does end the sessions of the
+# person it is aimed at. Those routes go last, so the junk for every other route is still sent by
+# people who are signed in.
+def _ends_sign_ins(rule):
+    return any(word in rule for word in ("reset", "credentials", "/account"))
+
+
+for rule in sorted(coverage.write_rules(A.app.url_map), key=lambda r: (_ends_sign_ins(r), r)):
     if rule in coverage.EXEMPT or rule not in HITS:
         continue
     who, path, fields, _ = HITS[rule]

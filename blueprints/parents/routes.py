@@ -13,13 +13,16 @@ which depends on app.py, so those import safely at the top regardless of
 order.
 """
 
+import os
 import re
+import uuid
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
-from flask import Response, abort, flash, redirect, render_template, request, session, url_for
+from flask import Response, abort, flash, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import and_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from app import app, _active_sessions, _school_current_session
 from models import (
@@ -31,6 +34,9 @@ from core.branding import school_name
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_school_admin
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
+from core.session_guard import refresh_password_stamp
+from core.storage import uploads_dir
+from core.uploads import ATTACHMENT_EXTENSIONS, attachment_kind
 from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
     _finance_student_sessions_with_balance, _receipt_pdf,
@@ -228,6 +234,36 @@ def parent_feedback():
         if len(body)>5000: errors.append('Please keep the message under 5,000 characters.')
         if errors:
             return render_template('parent_feedback.html',parent=parent,children=children,errors=errors,form=request.form)
+
+        # An attachment is optional; the "Attach" button on the form posts it as "attachment".
+        attachment_path=attachment_type=attachment_name=None
+        saved_file=None
+        file_obj=request.files.get('attachment')
+        if file_obj and file_obj.filename:
+            original_name=secure_filename(file_obj.filename)
+            if not original_name:
+                return render_template('parent_feedback.html',parent=parent,children=children,
+                    errors=['The selected attachment has an invalid filename.'],form=request.form)
+            fext=os.path.splitext(original_name)[1].lower()
+            if fext not in ATTACHMENT_EXTENSIONS:
+                return render_template('parent_feedback.html',parent=parent,children=children,
+                    errors=['That file type is not supported. Please attach an image, PDF, Word, text or Excel file.'],
+                    form=request.form)
+            attachment_type=attachment_kind(fext)
+            attachment_name=original_name
+            uname=f'{uuid.uuid4().hex}{fext}'
+            udir=os.path.join(uploads_dir(),'messages')
+            os.makedirs(udir,exist_ok=True)
+            saved_file=os.path.join(udir,uname)
+            file_obj.save(saved_file)
+            attachment_path=f'uploads/messages/{uname}'
+
+        def discard_upload():
+            """Do not leave an orphaned file behind when the send fails."""
+            if saved_file and os.path.exists(saved_file):
+                try: os.remove(saved_file)
+                except OSError: pass
+
         now=datetime.now(timezone.utc).isoformat(); target_class=None
         if student_id:
             target_class=one(select(SchoolClass.id,SchoolClass.name)
@@ -249,8 +285,15 @@ def parent_feedback():
             candidates.append(aid)
         assigned=candidates[0] if candidates else None
         thread=ParentFeedback(parent_id=pid,student_id=student_id,subject=subject,body=body,
-                              status='open',assigned_admin_id=assigned,created_at=now,updated_at=now)
-        db.session.add(thread); db.session.flush()
+                              status='open',assigned_admin_id=assigned,created_at=now,updated_at=now,
+                              attachment_path=attachment_path,file_type=attachment_type,
+                              attachment_name=attachment_name)
+        try:
+            db.session.add(thread); db.session.flush()
+        except Exception:
+            db.session.rollback(); discard_upload()
+            return render_template('parent_feedback.html',parent=parent,children=children,
+                errors=['Your message could not be sent. Please try again.'],form=request.form)
         sender_name=parent.display_name if parent else 'A parent'
         notification_message=f'{sender_name}: {subject}'
         exact_feedback_url=url_for('admin_school_parent_feedback_detail',feedback_id=thread.id)
@@ -271,6 +314,44 @@ def parent_feedback():
         .order_by(ParentFeedback.id.desc()).limit(20))]
     replies=_feedback_replies([x['id'] for x in feedback])
     return render_template('parent_feedback.html',parent=parent,children=children,feedback=feedback,replies=replies,errors=[],form={})
+
+@app.get('/parent/feedback/<int:feedback_id>/attachment')
+@parent_required
+def parent_feedback_attachment(feedback_id):
+    """The file a parent attached to their own message. Only that parent may fetch it here;
+    the school side has its own route, gated by 'parent.feedback.view' instead."""
+    pid=session['parent_id']
+    row=one(select(ParentFeedback.parent_id,ParentFeedback.attachment_path,
+                   ParentFeedback.attachment_name).where(ParentFeedback.id==feedback_id))
+    if not row or not row['attachment_path'] or row['parent_id']!=pid: abort(404)
+    filename=os.path.basename(row['attachment_path'])
+    directory=os.path.join(uploads_dir(),'messages')
+    if not filename or not os.path.isfile(os.path.join(directory,filename)): abort(404)
+    return send_from_directory(directory,filename,as_attachment=False,
+                               download_name=row['attachment_name'] or filename)
+
+@app.get('/admin/school/parent-feedback/<int:feedback_id>/attachment')
+@admin_required
+def admin_school_parent_feedback_attachment(feedback_id):
+    """The file a parent attached, for the staff side. Gated exactly like the detail page:
+    'parent.feedback.view' plus the same class-scope check."""
+    me=current_admin()
+    if not admin_has_permission(me['id'],'parent.feedback.view'): return admin_access_error('parent.feedback.view')
+    row=one(select(ParentFeedback.student_id,ParentFeedback.attachment_path,ParentFeedback.attachment_name)
+            .where(ParentFeedback.id==feedback_id))
+    if not row or not row['attachment_path']: abort(404)
+    if row['student_id']:
+        target_class=one(select(SchoolClass.id).select_from(StudentEnrolment)
+            .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
+            .where(StudentEnrolment.student_id==row['student_id'],StudentEnrolment.active==1)
+            .order_by(StudentEnrolment.id.desc()).limit(1))
+        if target_class and not me['admin_type_system'] and not _school_class_allowed(me['id'],target_class['id']):
+            return admin_access_error('parent feedback scope')
+    filename=os.path.basename(row['attachment_path'])
+    directory=os.path.join(uploads_dir(),'messages')
+    if not filename or not os.path.isfile(os.path.join(directory,filename)): abort(404)
+    return send_from_directory(directory,filename,as_attachment=False,
+                               download_name=row['attachment_name'] or filename)
 
 @app.post('/parent/feedback/<int:feedback_id>/reply')
 @parent_required

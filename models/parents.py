@@ -69,6 +69,10 @@ class ParentFeedback(_LegacyAttachmentColumns, db.Model):
     updated_at = db.Column(Text, nullable=False)
     closed_at = db.Column(Text)
     file_type = db.Column(Text)
+    # attachment_path/file_type come from _LegacyAttachmentColumns; this column is this
+    # table's own, holding the name the parent's file was picked under, so a download can
+    # offer it back under that name rather than the random one it is stored under.
+    attachment_name = db.Column(Text)
 
 
 class ParentFeedbackReply(_LegacyAttachmentColumns, db.Model):

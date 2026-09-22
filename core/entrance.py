@@ -91,6 +91,18 @@ ENTRANCE_SUBJECT_LABELS = {
     'general_knowledge': 'General Knowledge',
 }
 
+# Schools name this entry stage differently — some say "Year 7"/"Year 10" (the British-style
+# naming), others "JSS 1"/"SSS 1" (the Nigerian naming). Rather than pick one, every candidate-
+# and staff-facing label shows both together, so nobody has to translate in their head.
+ENTRY_GROUP_LABELS = {
+    'year7': 'Year 7 / JSS 1',
+    'year10': 'Year 10 / SSS 1',
+}
+
+def entry_group_label(group):
+    """The candidate-facing name of an entrance set ('year7' or 'year10'); '' if unknown."""
+    return ENTRY_GROUP_LABELS.get(group, '')
+
 def entrance_subject_label(bank_id, fallback=''):
     """Return the candidate-facing subject name; never expose the internal bank ID."""
     subject = bank_subject(bank(bank_id) or {'id': bank_id, 'name': fallback or ''})
@@ -109,7 +121,7 @@ def entrance_bank_display_name(bank_id, fallback=''):
     b = bank(bank_id) or {'id': bank_id, 'name': fallback or '', 'level': ''}
     subject = entrance_subject_label(bank_id, b.get('name') or fallback or '')
     group = bank_entry_group(b)
-    target = {'year7': 'Year 7', 'year10': 'SSS 1'}.get(group)
+    target = entry_group_label(group)
     if target:
         return f'{subject} - Entrance Examination into {target}'
     # Safe fallback for a bank whose entry level cannot be resolved.
@@ -594,7 +606,7 @@ def premium_result_metrics(papers):
     )
 
 def _new_candidate_code(candidate_name='',target_class=''):
-    """The next candidate code, made by the school's own rule (tenants/<code>/numbering.py)."""
+    """The next candidate code, made by the school's own numbering pattern (tenants/<code>/numbering.json)."""
     from core.numbering import new_candidate_code  # deferred: it reads the school's database
 
     return new_candidate_code(candidate_name=candidate_name,target_class=target_class)

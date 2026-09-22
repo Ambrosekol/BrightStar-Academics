@@ -26,9 +26,20 @@ from core.storage import uploads_dir
 BASE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC=os.path.join(BASE,'static')
 IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
-# What a message may carry besides a picture (the staff messages' attachment box).
+# What a message may carry besides a picture (the staff messages' and the parent feedback
+# attachment boxes).
 ATTACHMENT_EXTENSIONS={'.jpg','.jpeg','.png','.gif','.webp','.pdf','.doc','.docx','.txt','.xls','.xlsx'}
 IMAGE_TYPES_LABEL='PNG, JPG, GIF or WEBP'
+
+
+def attachment_kind(ext):
+    """A broad category for a message attachment's extension, for its icon/label."""
+    ext=(ext or '').lower()
+    if ext in {'.jpg','.jpeg','.png','.gif','.webp'}: return 'image'
+    if ext=='.pdf': return 'pdf'
+    if ext in {'.doc','.docx'}: return 'doc'
+    if ext in {'.xls','.xlsx'}: return 'spreadsheet'
+    return 'file'
 
 DEFAULT_IMAGE_LIMIT_BYTES=5*1024*1024
 DEFAULT_REQUEST_LIMIT_BYTES=8*1024*1024

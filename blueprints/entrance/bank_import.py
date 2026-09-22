@@ -91,7 +91,7 @@ def admin_bank_import():
                'questions. School Admin has been notified.')
     if not _usable_for_entrance(new_bank):
         message += (' It does not say which subject (Mathematics, English or General Knowledge) and entry class '
-                    '(Year 7 or SSS 1) it is for, so it cannot be used as an entrance paper until it does.')
+                    '(Year 7/JSS 1 or Year 10/SSS 1) it is for, so it cannot be used as an entrance paper until it does.')
     flash(message, 'success')
     return redirect(url_for('admin_bank', bid=new_bank['id']))
 

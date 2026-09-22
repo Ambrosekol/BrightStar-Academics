@@ -35,7 +35,7 @@ from core.entrance import (
     _result_file_data_uri, _school_logo_data_uri,
     _valid_question_configuration, bank, bank_entry_group, bank_subject,
     candidate_cumulative, entrance_paper_label, entrance_subject_label,
-    get_attempt, grade, load_banks, normalize_entry_group,
+    entry_group_label, get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
 )
 from core.marks import tidy as tidy_mark
@@ -92,7 +92,7 @@ def admin_dashboard():
         })
 
     class_analytics=[]
-    for key,label in (('year7','JSS 1'),('year10','SSS 1')):
+    for key,label in (('year7',entry_group_label('year7')),('year10',entry_group_label('year10'))):
         group=[r for r in summaries if normalize_entry_group(r['target_class'])==key]
         complete=[r for r in group if r['complete']]
         percentages=[r['overall_percentage'] for r in complete]
@@ -147,7 +147,7 @@ def admin_entrance_config_save():
     errors=[]
     b=bank(bank_id)
     if not b: errors.append('Select a valid entrance question bank.')
-    if entry_group not in ('year7','year10'): errors.append('Select JSS 1 or SSS 1.')
+    if entry_group not in ('year7','year10'): errors.append('Select Year 7/JSS 1 or Year 10/SSS 1.')
     if subject not in ENTRANCE_SUBJECT_LABELS: errors.append('Select a valid entrance subject.')
     if b and not admin_scope_allows(me['id'],'bank',bank_id): errors.append('This question bank is outside your authorised scope.')
     if b and bank_subject(b)!=subject: errors.append('The selected subject does not match the question bank.')
@@ -279,7 +279,7 @@ def admin_candidates():
     for cand_id,status in tuples(select(Attempt.candidate_id,Attempt.status)):
         statuses_by_candidate.setdefault(cand_id,[]).append(status)
     # Class cards are intentionally derived from the two supported entrance sets.
-    groups=[('year7','JSS 1'),('year10','SSS 1')]
+    groups=[('year7',entry_group_label('year7')),('year10',entry_group_label('year10'))]
     cards=[]
     for key,label in groups:
         subset=[c for c in all_candidates if normalize_entry_group(c['target_class'])==key]
@@ -650,7 +650,7 @@ def admin_question_banks():
         select(AdminResourceLock.resource_id,AdminResourceLock.reason)
         .where(AdminResourceLock.resource_type=='bank',
                AdminResourceLock.unlocked_at.is_(None)))}
-    groups=[('year7','JSS 1'),('year10','SSS 1')]
+    groups=[('year7',entry_group_label('year7')),('year10',entry_group_label('year10'))]
     cards=[]
     for key,label in groups:
         matching=[b for b in all_banks if bank_entry_group(b)==key or (bank_entry_group(b) is None and bank_subject(b)=='general_knowledge')]
