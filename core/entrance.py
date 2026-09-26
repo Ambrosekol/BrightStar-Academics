@@ -22,7 +22,8 @@ from sqlalchemy import and_, func, select
 from app import _school_current_session
 from models import (
     Answer, Attempt, AttemptQuestion, Candidate, CandidatePaper,
-    EntranceBankConfig, Examination, RetakeGrant, db,
+    AcademicSession, EntranceBankConfig, EntrancePracticeSetting, Examination,
+    RetakeGrant, db,
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.marks import total as total_marks
@@ -615,3 +616,77 @@ def _new_candidate_password():
     alphabet=string.ascii_uppercase+string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(8))
 
+
+# ---------------------------------------------------------------- public practice
+
+PRACTICE_DEFAULT_QUESTIONS = 20
+
+
+def _current_exam_bank_ids():
+    """Banks the live session's entrance papers use: never offered as practice, so practising can
+    not reveal the questions of an examination that has not been sat yet."""
+    current = _school_current_session()
+    if not current:
+        return set()
+    return {b for (b,) in tuples(select(EntranceBankConfig.bank_id)
+                                 .where(EntranceBankConfig.session_id == current['id']))}
+
+
+def entrance_practice_setting(entry_group, subject):
+    """The administrator's choice for one entry class and subject, as a dict.
+
+    With nothing chosen, a subject serves the last session's paper.
+    """
+    row = db.session.scalars(select(EntrancePracticeSetting).where(
+        EntrancePracticeSetting.entry_group == entry_group,
+        EntrancePracticeSetting.subject == subject)).first()
+    if not row:
+        return {'source': 'last_session', 'bank_id': None, 'questions_to_serve': None}
+    return {'source': row['source'] or 'last_session', 'bank_id': row['bank_id'],
+            'questions_to_serve': row['questions_to_serve']}
+
+
+def _last_session_bank(entry_group, subject, protected):
+    """``(bank_id, session_name, count)`` from the most recent earlier session that had a paper for
+    this class and subject, or None. A bank the current session also uses is skipped."""
+    current = _school_current_session()
+    stmt = (select(EntranceBankConfig, AcademicSession.name.label('session_name'))
+            .join(AcademicSession, AcademicSession.id == EntranceBankConfig.session_id)
+            .where(EntranceBankConfig.entry_group == entry_group,
+                   EntranceBankConfig.subject == subject))
+    if current:
+        stmt = stmt.where(EntranceBankConfig.session_id != current['id'])
+    for row in all_rows(stmt.order_by(EntranceBankConfig.session_id.desc(),
+                                      EntranceBankConfig.active.desc(),
+                                      EntranceBankConfig.id.desc())):
+        cfg = _flatten(row, 'EntranceBankConfig', 'session_name')
+        if cfg['bank_id'] in protected:
+            continue
+        return cfg['bank_id'], cfg['session_name'], int(cfg['questions_to_serve'] or 0)
+    return None
+
+
+def entrance_practice_paper(entry_group, subject):
+    """What a practice taker is served for one class and subject, or None if nothing is set up.
+
+    Returns ``{'bank': <bank>, 'count': n, 'label': 'where the questions come from'}``. The
+    count is how many questions one sitting draws at random from the whole bank.
+    """
+    setting = entrance_practice_setting(entry_group, subject)
+    protected = _current_exam_bank_ids()
+    if setting['source'] == 'custom':
+        bank_id = setting['bank_id']
+        if not bank_id or bank_id in protected:
+            return None
+        found, wanted, label = bank(bank_id), setting['questions_to_serve'], 'Practice questions set by the school'
+    else:
+        last = _last_session_bank(entry_group, subject, protected)
+        if not last:
+            return None
+        bank_id, session_name, wanted = last
+        found, label = bank(bank_id), f'Questions from the {session_name} entrance examination'
+    questions = (found or {}).get('questions') or []
+    if not questions:
+        return None
+    count = min(len(questions), int(wanted or PRACTICE_DEFAULT_QUESTIONS))
+    return {'bank': found, 'count': count, 'label': label}

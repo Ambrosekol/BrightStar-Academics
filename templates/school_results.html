@@ -1,13 +1,175 @@
 {% extends 'admin_base.html' %}
 {% block title %}Results & Records — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Results &amp; Records</h1><p class="hero-copy">Choose a class first, then review the academic records belonging to that class.</p></div></div>
-<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Academic records remain separated by the student's current class boundary.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_results')}}">← All classes</a>{% endif %}</div>{% if current_admin and admin_has_permission(current_admin['id'],'school.results.enter') %}<a class="btn btn-primary btn-small" href="{{url_for('admin_school_result_manual_new')}}">+ Enter offline result</a>{% endif %}
-{% if is_school_admin_ui or admin_has_permission(current_admin['id'],'school.results.release') %}<div class="card release-schedule-card"><div><div class="eyebrow">RESULT RELEASE GOVERNANCE</div><h2>Current session release schedule</h2><p class="muted">Tests and examinations remain private to staff until this release date and time. Practice-test results remain immediate.</p></div><form method="post" action="{{url_for('admin_school_results_release')}}" class="release-schedule-form"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><label>Release date &amp; time (UTC)<input type="datetime-local" name="result_release_at" value="{{current_session.result_release_at[:16] if current_session and current_session.result_release_at else ''}}"></label><button class="btn btn-primary" type="submit">Save release schedule</button></form></div>{% endif %}
-<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_results',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} recorded result{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
-{% if selected_class %}<div class="card table-card segmented-register-panel"><div class="table-toolbar register-toolbar"><div><strong>{{selected_class}} Academic Records</strong><span class="muted">Only records for this class are shown.</span></div><form class="register-search" method="get"><input type="hidden" name="class" value="{{selected_class}}"><input name="q" value="{{search}}" placeholder="Search student, admission number or subject"><button class="btn btn-light" type="submit">Search</button>{% if search %}<a class="btn btn-light" href="{{url_for('admin_school_results',class=selected_class)}}">Clear</a>{% endif %}</form></div><div class="table-scroll"><table><thead><tr><th>Student</th><th>Subject</th><th>Component</th><th>Score</th><th>Term</th><th>Status</th><th>Workflow</th></tr></thead><tbody>{% for r in results %}<tr><td><strong>{{r.first_name}} {{r.last_name}}</strong><small>{{r.admission_no}}</small></td><td>{{r.subject_name}}</td><td>{{r.component_name or r.assessment_title or 'CBT Assessment'}}</td><td>{{r.score if r.score is not none else '—'}}{% if r.max_score is not none %} / {{r.max_score}}{% endif %}</td><td>{{r.term or 'Full Session'}}</td><td><span class="role-chip">{{r.status}}</span></td><td>{% if r.status in ('entered','verified') and admin_has_permission(current_admin['id'],'school.results.enter') %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_result_edit',result_id=r.id)}}">Edit</a>{% endif %}
-{% if r.status=='entered' and admin_has_permission(current_admin['id'],'school.results.verify') %}<form method="post" action="{{url_for('admin_school_result_workflow',result_id=r.id)}}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="action" value="verify"><button class="btn btn-light btn-small">Verify</button></form>
-{% elif r.status=='verified' and admin_has_permission(current_admin['id'],'school.results.approve') %}<form method="post" action="{{url_for('admin_school_result_workflow',result_id=r.id)}}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="action" value="approve"><button class="btn btn-light btn-small">Approve</button></form>
-{% elif r.status=='approved' and admin_has_permission(current_admin['id'],'school.results.release') %}<form method="post" action="{{url_for('admin_school_result_workflow',result_id=r.id)}}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="action" value="release"><button class="btn btn-light btn-small">Release</button></form>{% endif %}
-</td></tr>{% else %}<tr><td colspan="7"><div class="empty-state">No academic results have been recorded in {{selected_class}}.</div></td></tr>{% endfor %}</tbody></table></div></div>{% else %}<div class="info-banner segmentation-note"><strong>Results boundary.</strong><span>Select a class above before the academic record register is displayed.</span></div>{% endif %}
+{% set can_release = current_admin and admin_has_permission(current_admin['id'],'school.results.release') %}
+{% set can_enter = current_admin and admin_has_permission(current_admin['id'],'school.results.enter') %}
+<style>
+.rr-backdrop{position:fixed;inset:0;z-index:80;background:rgba(10,24,44,.55);display:flex;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
+.rr-modal{background:#fff;border-radius:18px;width:min(940px,100%);box-shadow:0 30px 80px rgba(8,20,40,.35);display:flex;flex-direction:column;max-height:90vh}
+.rr-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;border-bottom:1px solid #e3eaf2}
+.rr-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:#61748a}
+.rr-crumbs a{color:var(--blue,#1674b9);font-weight:700;text-decoration:none}
+.rr-crumbs strong{color:#102a4c}
+.rr-close{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:22px;line-height:1;color:#4c6078;background:#eef3f8}
+.rr-close:hover{background:#dde7f1}
+.rr-body{padding:22px;overflow-y:auto}
+.rr-body h2{margin:0 0 4px;font-size:22px;color:#102a4c}
+.rr-sub{margin:0 0 16px;color:#66788d;font-size:13px}
+.rr-search{width:100%;padding:12px 14px;border:1px solid #cdd8e4;border-radius:10px;font-size:15px;margin-bottom:14px}
+.rr-students{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rr-student{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dbe5ef;border-radius:12px;text-decoration:none;color:inherit;background:#fff}
+.rr-student:hover{border-color:var(--blue,#1674b9);background:#f5faff}
+.rr-avatar{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--navy,#0d2b52);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.rr-student strong{display:block;color:#102a4c;font-size:14px}
+.rr-student small{color:#71839a;font-size:12px}
+.rr-session{margin:0 0 18px}
+.rr-session h3{margin:0 0 8px;font-size:14px;color:#102a4c;display:flex;gap:8px;align-items:center}
+.rr-badge{font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:#e5f3ea;color:#19734a}
+.rr-terms{display:flex;flex-wrap:wrap;gap:10px}
+.rr-term{min-width:170px;padding:12px 16px;border:1px solid #dbe5ef;border-radius:12px;text-decoration:none;color:#102a4c;font-weight:700;font-size:14px;background:#fff}
+.rr-term small{display:block;margin-top:3px;font-weight:500;color:#71839a;font-size:12px}
+.rr-term:hover{border-color:var(--blue,#1674b9);background:#f5faff}
+.rr-term.empty{color:#8899ab;background:#f8fafc}
+.rr-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-radius:14px;background:#f2f7fc;border:1px solid #d9e6f2;margin-bottom:16px}
+.rr-chips{display:flex;flex-wrap:wrap;gap:8px}
+.rr-chip{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #d5e2ee;color:#41566e}
+.rr-chip.ok{background:#e5f3ea;border-color:#bfe0cb;color:#19734a}
+.rr-chip.warn{background:#fff6e0;border-color:#efdca6;color:#7a5d0f}
+.rr-confirm{margin:0 0 16px;padding:16px 18px;border-radius:14px;background:#fff8e6;border:1px solid #efdca6;color:#5c4710;font-size:14px;line-height:1.55}
+.rr-confirm .btn{margin-top:10px}
+.rr-empty{padding:26px;text-align:center;color:#6b7c90}
+.rr-none{display:none;padding:18px;text-align:center;color:#6b7c90}
+@media(max-width:700px){.rr-students{grid-template-columns:1fr}.rr-modal{max-height:none}.rr-backdrop{padding:0}.rr-modal{border-radius:0;min-height:100vh}}
+</style>
+
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Results &amp; Records</h1><p class="hero-copy">Choose a class, then a student, then a session and term to review and release that term&rsquo;s results.</p></div>{% if can_enter %}<a class="btn btn-primary btn-small" href="{{url_for('admin_school_result_manual_new')}}">+ Enter offline result</a>{% endif %}</div>
+
+{% if is_school_admin_ui or can_release %}<div class="card release-schedule-card"><div><div class="eyebrow">RESULT RELEASE GOVERNANCE</div><h2>Current session release schedule</h2><p class="muted">Tests and examinations remain private to staff until this release date and time. Practice-test results remain immediate.</p></div><form method="post" action="{{url_for('admin_school_results_release')}}" class="release-schedule-form"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><label>Release date &amp; time (UTC)<input type="datetime-local" name="result_release_at" value="{{current_session.result_release_at[:16] if current_session and current_session.result_release_at else ''}}"></label><button class="btn btn-primary" type="submit">Save release schedule</button></form></div>{% endif %}
+
+<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Academic records remain separated by the student&rsquo;s current class boundary.</span></div></div>
+<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_results',**{'class':card.name})}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} recorded result{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
+{% if not class_row %}<div class="info-banner segmentation-note"><strong>Results boundary.</strong><span>Select a class above to see its students.</span></div>{% endif %}
+
+{% if class_row %}
+{% set here = url_for('admin_school_results',**{'class':class_row.name}) %}
+{% set close = url_for('admin_school_results') %}
+<div class="rr-backdrop" id="rrModal" role="dialog" aria-modal="true" aria-labelledby="rrTitle">
+  <div class="rr-modal">
+    <header class="rr-head">
+      <nav class="rr-crumbs" aria-label="Where you are">
+        {% if student %}<a href="{{ here }}">{{ class_row.name }}</a> <span>›</span>
+          {% if period %}<a href="{{ url_for('admin_school_results',**{'class':class_row.name,'student':student.id}) }}">{{ student.first_name }} {{ student.last_name }}</a> <span>›</span> <strong>{{ period.term }}, {{ period.session.name }}</strong>
+          {% else %}<strong>{{ student.first_name }} {{ student.last_name }}</strong>{% endif %}
+        {% else %}<strong>{{ class_row.name }}</strong>{% endif %}
+      </nav>
+      <a class="rr-close" href="{{ close }}" aria-label="Close">&times;</a>
+    </header>
+    <div class="rr-body">
+
+    {% if not student %}
+      <h2 id="rrTitle">Students in {{ class_row.name }}</h2>
+      <p class="rr-sub">{{ students|length }} student{{ '' if students|length==1 else 's' }}. Choose one to see their results.</p>
+      {% if students %}
+      <input class="rr-search" id="rrSearch" type="search" placeholder="Search by name or admission number" autocomplete="off" autofocus aria-label="Search students">
+      <div class="rr-students" id="rrList">
+        {% for s in students %}
+        <a class="rr-student" data-search="{{ (s.first_name ~ ' ' ~ s.last_name ~ ' ' ~ s.last_name ~ ' ' ~ s.first_name ~ ' ' ~ (s.admission_no or ''))|lower }}" href="{{ url_for('admin_school_results',**{'class':class_row.name,'student':s.id}) }}">
+          <span class="rr-avatar">{{ s.first_name[:1]|upper }}{{ s.last_name[:1]|upper }}</span>
+          <span><strong>{{ s.last_name }}, {{ s.first_name }}</strong><small>{{ s.admission_no or 'No admission number' }}</small></span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="rr-none" id="rrNone">No student matches that search.</div>
+      {% else %}
+      <div class="rr-empty">There are no students enrolled in {{ class_row.name }}.</div>
+      {% endif %}
+
+    {% elif not period %}
+      <h2 id="rrTitle">{{ student.first_name }} {{ student.last_name }}</h2>
+      <p class="rr-sub">{{ student.admission_no or '' }}{% if student.admission_no %} · {% endif %}Choose the session and term whose results you want to see.</p>
+      {% for p in periods %}
+      <div class="rr-session">
+        <h3>{{ p.name }} {% if p.is_current %}<span class="rr-badge">CURRENT</span>{% endif %}</h3>
+        <div class="rr-terms">
+          {% for t in p.terms %}
+          <a class="rr-term {{ '' if t.total else 'empty' }}" href="{{ url_for('admin_school_results',**{'class':class_row.name,'student':student.id,'session':p.id,'term':t.term}) }}">{{ t.term }}<small>{% if t.total %}{{ t.total }} result{{ '' if t.total==1 else 's' }} · {{ t.released }} released{% else %}No results yet{% endif %}</small></a>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="rr-empty">No academic sessions have been set up yet.</div>
+      {% endfor %}
+
+    {% else %}
+      <h2 id="rrTitle">{{ period.term }} &middot; {{ period.session.name }}</h2>
+      <p class="rr-sub">{{ student.first_name }} {{ student.last_name }} · {{ summary.subjects }} subject{{ '' if summary.subjects==1 else 's' }}</p>
+      {% set back_here = request.full_path.rstrip('?') %}
+      <div class="rr-actions">
+        <div class="rr-chips">
+          <span class="rr-chip">{{ summary.total }} result{{ '' if summary.total==1 else 's' }}</span>
+          <span class="rr-chip ok">{{ summary.released }} released</span>
+          {% if summary.approved %}<span class="rr-chip">{{ summary.approved }} approved, ready to release</span>{% endif %}
+          {% if summary.waiting %}<span class="rr-chip warn">{{ summary.waiting }} awaiting verification or approval</span>{% endif %}
+          {% if summary.ready %}<span class="rr-chip ok">Report card ready</span>{% endif %}
+        </div>
+        {% if can_release %}
+        <button type="button" class="btn btn-primary" id="rrReleaseBtn" {% if not summary.approved %}disabled title="Nothing is approved and waiting to be released"{% endif %}>Release all results for this term</button>
+        {% endif %}
+      </div>
+      {% if can_release and summary.approved %}
+      <form class="rr-confirm" id="rrConfirm" method="post" action="{{ url_for('admin_school_results_release_term') }}" hidden>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="student_id" value="{{ student.id }}">
+        <input type="hidden" name="session_id" value="{{ period.session.id }}">
+        <input type="hidden" name="term" value="{{ period.term }}">
+        <input type="hidden" name="return_to" value="{{ back_here }}">
+        <strong>Release {{ summary.approved }} approved result{{ '' if summary.approved==1 else 's' }} for {{ student.first_name }} {{ student.last_name }}?</strong><br>
+        Every approved subject in {{ period.term }}, {{ period.session.name }} becomes visible to the student and the parents.
+        {% if summary.waiting %}{{ summary.waiting }} result{{ '' if summary.waiting==1 else 's' }} not yet approved will stay private, and the report card will wait for them.{% else %}The report card becomes ready, and the parents are told by email and WhatsApp.{% endif %}
+        <div><button class="btn btn-primary" type="submit">Yes, release the results</button> <button class="btn btn-light" type="button" id="rrCancel">Cancel</button></div>
+      </form>
+      {% endif %}
+      <div class="table-scroll"><table><thead><tr><th>Subject</th><th>Component</th><th>Score</th><th>Status</th><th>Workflow</th></tr></thead><tbody>
+      {% for r in rows %}
+        <tr><td><strong>{{ r.subject_name }}</strong></td><td>{{ r.component_name or r.assessment_title or 'CBT Assessment' }}</td><td>{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}</td><td><span class="role-chip">{{ r.status }}</span></td><td>
+          {% if r.status in ('entered','verified') and can_enter %}<a class="btn btn-light btn-small" href="{{ url_for('admin_school_result_edit',result_id=r.id) }}">Edit</a>{% endif %}
+          {% for st,act,perm,label in (('entered','verify','school.results.verify','Verify'),('verified','approve','school.results.approve','Approve'),('approved','release','school.results.release','Release')) %}
+            {% if r.status==st and current_admin and admin_has_permission(current_admin['id'],perm) %}<form method="post" action="{{ url_for('admin_school_result_workflow',result_id=r.id) }}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ act }}"><input type="hidden" name="return_to" value="{{ back_here }}"><button class="btn btn-light btn-small">{{ label }}</button></form>{% endif %}
+          {% endfor %}
+        </td></tr>
+      {% else %}
+        <tr><td colspan="5"><div class="rr-empty">No results have been recorded for {{ student.first_name }} in {{ period.term }}, {{ period.session.name }}.</div></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% endif %}
+
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var modal=document.getElementById('rrModal'); if(!modal) return;
+  document.body.style.overflow='hidden';
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var c=modal.querySelector('.rr-close'); if(c) c.click(); }});
+  modal.addEventListener('click',function(e){ if(e.target===modal){ modal.querySelector('.rr-close').click(); }});
+  var search=document.getElementById('rrSearch');
+  if(search){
+    var list=document.getElementById('rrList').children, none=document.getElementById('rrNone');
+    search.addEventListener('input',function(){
+      var words=search.value.toLowerCase().split(/\s+/).filter(Boolean), shown=0;
+      Array.prototype.forEach.call(list,function(el){
+        var hay=el.getAttribute('data-search'), ok=words.every(function(w){return hay.indexOf(w)!==-1});
+        el.style.display=ok?'':'none'; if(ok) shown++;
+      });
+      none.style.display=shown?'none':'block';
+    });
+  }
+  var btn=document.getElementById('rrReleaseBtn'), box=document.getElementById('rrConfirm'), cancel=document.getElementById('rrCancel');
+  if(btn&&box){
+    btn.addEventListener('click',function(){ box.hidden=false; btn.hidden=true; box.scrollIntoView({block:'nearest'}); });
+    cancel.addEventListener('click',function(){ box.hidden=true; btn.hidden=false; });
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

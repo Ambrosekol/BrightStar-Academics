@@ -17,6 +17,7 @@ from models import (
     StudentEnrolment, db,
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
+from core.background import run_in_background
 from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
 from core.uploads import _save_image_upload
@@ -25,7 +26,8 @@ from blueprints.finance.helpers import (
     _finance_can_view_all, _finance_payment_allocated,
     _finance_student_lifetime_totals, _finance_student_outstanding,
     _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
-    _receipt_payload, _receipt_pdf, _receipt_signature_abspath,
+    _receipt_payload, _receipt_pdf, _receipt_sheet, _receipt_signature_abspath,
+    _send_payment_receipt_to_guardian,
     _receipt_signature_relpath, _save_signature_data_url, _send_email_receipt,
     _send_whatsapp_receipt, _set_receipt_signature, RECEIPT_SIGNATURE_SETTING_KEY,
 )
@@ -280,9 +282,11 @@ def admin_finance_record():
         db.session.add(payment); db.session.commit()
         audit_log('finance_payment_recorded','finance','payment',payment.id,{'receipt_no':receipt,'amount':amount,'student_id':student_id,'method':method})
         try:
-            _notify_parents_payment_recorded(student_id,receipt,amount,category,me['id'])
+            _notify_parents_payment_recorded(student_id,receipt,amount,category,me['id'],external=False)
         except Exception:
             app.logger.exception('Parent payment-recorded notification failed for student %s',student_id)
+        # The parents get the receipt itself by email and WhatsApp, without anyone having to send it.
+        run_in_background(_send_payment_receipt_to_guardian,payment.id,me['id'])
         return redirect(url_for('admin_finance_receipt',payment_id=payment.id))
     return render_template('finance_payment_form.html',students=students,sessions=sessions,form=None,errors=[],current_session=dict(current) if current else None)
 
@@ -292,7 +296,7 @@ def admin_finance_receipt(payment_id):
     me=current_admin(); row=_receipt_payload(payment_id)
     if not row: abort(404)
     if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
-    return render_template('finance_receipt.html',payment=row,signature_path=_receipt_signature_relpath())
+    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id),signature_path=_receipt_signature_relpath())
 
 @app.route('/admin/finance/receipts/<int:payment_id>/print')
 @admin_required
@@ -300,7 +304,7 @@ def admin_finance_receipt_print(payment_id):
     me=current_admin(); row=_receipt_payload(payment_id)
     if not row: abort(404)
     if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
-    return render_template('finance_receipt_print.html',payment=row,signature_path=_receipt_signature_relpath())
+    return render_template('finance_receipt_print.html',payment=row,sheet=_receipt_sheet(payment_id),signature_path=_receipt_signature_relpath())
 
 @app.route('/admin/finance/receipts/<int:payment_id>/pdf')
 @admin_required

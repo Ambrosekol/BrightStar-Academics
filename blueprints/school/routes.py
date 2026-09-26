@@ -37,6 +37,8 @@ from core.security import (
 )
 from core.uploads import _save_image_upload
 from core.notifications import _notify_guardians_of_school_work
+from blueprints.school.result_notices import announce_ready_report_cards
+from blueprints.school.results_records import results_return_url
 from blueprints.parents.helpers import _new_parent_password
 from blueprints.school.helpers import (
     ACADEMIC_HISTORY_LEVELS, PROMOTION_ACTIONS, PROMOTION_DECISIONS,
@@ -1624,9 +1626,10 @@ def admin_school_result_workflow(result_id):
     if not _school_class_allowed(me['id'],row['class_id']): return admin_access_error(required)
     transitions={'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}
     frm,to=transitions[action]
+    back=results_return_url(url_for('admin_school_results',**{'class':row['class_name']}))
     # The workflow is strictly ordered: entered -> verified -> approved -> released.
     if row['status']!=frm:
-        flash(f'This result must be {frm} before it can be {to}.','error'); return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
+        flash(f'This result must be {frm} before it can be {to}.','error'); return redirect(back)
     reason=request.form.get('reason','').strip()
     now=datetime.now(timezone.utc).isoformat()
     record=obj(SchoolStudentResult,result_id)
@@ -1640,36 +1643,9 @@ def admin_school_result_workflow(result_id):
     db.session.commit()
     audit_log(f'school_result_{action}','school','result',result_id,{'from':frm,'to':to})
     flash(f'Result {to}.','success')
-    return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
-
-@app.route('/admin/school/results')
-@admin_required
-def admin_school_results():
-    selected_class=request.args.get('class','').strip(); search=request.args.get('q','').strip()
-    _release_due_school_results(); db.session.commit()
-    current_session=_school_current_session()
-    rows=[_flatten(r,'SchoolStudentResult','admission_no','first_name','last_name',
-                   'subject_name','class_name') for r in all_rows(
-        select(SchoolStudentResult,Student.admission_no,Student.first_name,Student.last_name,
-               SchoolSubject.name.label('subject_name'),SchoolClass.name.label('class_name'))
-            .select_from(SchoolStudentResult)
-            .join(Student,Student.id==SchoolStudentResult.student_id)
-            .join(SchoolSubject,SchoolSubject.id==SchoolStudentResult.subject_id)
-            .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
-                                             StudentEnrolment.active==1))
-            .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
-            .order_by(SchoolStudentResult.id.desc()).limit(250))]
-    classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
-                               .order_by(SchoolClass.level_order)).all()
-    admin=current_admin()
-    if admin and not admin['admin_type_system']:
-        classes=[c for c in classes if admin_scope_allows(admin['id'],'class',c['name'])]
-        rows=[r for r in rows if r['class_name'] and admin_scope_allows(admin['id'],'class',r['class_name']) and admin_scope_allows(admin['id'],'subject',r['subject_name'])]
-    cards=[{'name':c['name'],'count':sum(1 for r in rows if r['class_name']==c['name']),'id':c['id']} for c in classes]
-    if selected_class: rows=[r for r in rows if r['class_name']==selected_class]
-    if search:
-        needle=search.casefold(); rows=[r for r in rows if needle in f"{r['first_name']} {r['last_name']} {r['admission_no']} {r['subject_name']}".casefold()]
-    return render_template('school_results.html',results=rows,class_cards=cards,selected_class=selected_class,search=search,current_session=current_session)
+    if action=='release':
+        announce_ready_report_cards([(row['student_id'],row['session_id'],row['term'])],me['id'])
+    return redirect(back)
 
 @app.post('/admin/school/results/release-schedule')
 @admin_required

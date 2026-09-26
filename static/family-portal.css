@@ -195,7 +195,7 @@ a.fp-row:hover .fp-row__title { color: var(--brand-dark); text-decoration: under
 
 /* ---------- The five-tile feature grid (student dashboard) ---------- */
 
-.fp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-4); margin: 0 0 var(--sp-6); }
+.fp-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--sp-4); margin: 0 0 var(--sp-6); }
 .fp-tile {
     display: flex;
     flex-direction: column;

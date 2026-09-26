@@ -16,14 +16,15 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-from flask import abort
+from flask import abort, current_app
 from sqlalchemy import and_, func, select
 
 from models import (
-    AcademicSession, FinanceDeliveryLog, FinanceFeeAssessment,
+    AcademicSession, Admin, FinanceDeliveryLog, FinanceFeeAssessment,
     FinancePayment, FinancePaymentAllocation, School, SchoolClass,
     SchoolPublicSetting, SchoolSetting, Student, StudentEnrolment, db,
 )
+from core import theme
 from core.branding import receipt_prefix, school_brand, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
 from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
@@ -188,108 +189,63 @@ def _save_signature_data_url(data_url):
     with open(path,'wb') as fh: fh.write(raw)
     return f"uploads/signatures/{filename}"
 
-def _receipt_pdf(payment_id):
+def _receipt_summary(row):
+    """What the student owes for the session, as it stood when this receipt was issued.
+
+    Counts payments up to and including this one, so reprinting an old receipt never shows a
+    balance that later payments have changed. None when the student has no fees charged.
+    """
+    charged=round(float(one_scalar(select(func.coalesce(func.sum(FinanceFeeAssessment.amount),0)).where(
+        FinanceFeeAssessment.student_id==row['student_id'],FinanceFeeAssessment.session_id==row['session_id'],
+        FinanceFeeAssessment.active==1),0)),2)
+    if charged<=0: return None
+    paid=round(float(one_scalar(select(func.coalesce(func.sum(FinancePayment.amount),0)).where(
+        FinancePayment.student_id==row['student_id'],FinancePayment.session_id==row['session_id'],
+        FinancePayment.status=='posted',FinancePayment.id<=row['id']),0)),2)
+    return {'charged':charged,'paid':paid,'balance':round(max(charged-paid,0.0),2)}
+
+def _receipt_sheet(payment_id):
+    """Everything drawn on one receipt, in the school's own identity, or None if there is no such payment.
+
+    The one description of a receipt: the on-screen page, the printout and the PDF sent to parents are
+    all made from it (see core/receipt_pdf.py), so they can never differ. Colours are the school's two
+    brand colours; a school that has chosen none gets the portal's own.
+    """
     row=_receipt_payload(payment_id)
-    if not row: abort(404)
-    from reportlab.lib.pagesizes import A5, landscape
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import mm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.lib.utils import ImageReader
-    import io
-    font_regular=os.path.join(STATIC,'fonts','DejaVuSans.ttf'); font_bold=os.path.join(STATIC,'fonts','DejaVuSans-Bold.ttf')
-    if os.path.exists(font_regular):
-        try: pdfmetrics.registerFont(TTFont('ReceiptBody',font_regular)); pdfmetrics.registerFont(TTFont('ReceiptBold',font_bold))
-        except Exception: pass
-    regular='ReceiptBody' if 'ReceiptBody' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'; bold='ReceiptBold' if 'ReceiptBold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
-    W,H=landscape(A5); buf=io.BytesIO(); c=canvas.Canvas(buf,pagesize=(W,H))
-
-    # Whole sheet: white, with a smooth blue wave and a gold trim line tracing
-    # its crest along the bottom, matching the school's printed receipt pad.
-    import math
-    c.setFillColorRGB(1,1,1); c.rect(0,0,W,H,fill=1,stroke=0)
-    band_h=20*mm; amp=4.5*mm; wavelength=90*mm
-    def wave_y(x): return band_h+amp*math.sin(2*math.pi*x/wavelength+0.6)
-    steps=90
-    wave_pts=[(W*i/steps,wave_y(W*i/steps)) for i in range(steps+1)]
-    c.saveState()
-    clip=c.beginPath(); clip.moveTo(0,0)
-    for x,y in wave_pts: clip.lineTo(x,y)
-    clip.lineTo(W,0); clip.close()
-    c.clipPath(clip,stroke=0,fill=0)
-    c.setFillColorRGB(0.08,0.22,0.46); c.rect(0,0,W,band_h+amp,fill=1,stroke=0)
-    for x,r,g,b in [(10,0.10,0.30,0.62),(55,0.07,0.24,0.52),(105,0.12,0.36,0.72),(155,0.08,0.27,0.58),(200,0.11,0.33,0.66)]:
-        c.setFillColorRGB(r,g,b); c.circle(x*mm,2*mm,30*mm,fill=1,stroke=0)
-    c.restoreState()
-    c.setStrokeColorRGB(0.95,0.76,0.13); c.setLineWidth(1.6*mm); c.setLineJoin(1)
-    trim=c.beginPath(); trim.moveTo(*wave_pts[0])
-    for x,y in wave_pts[1:]: trim.lineTo(x,y)
-    c.drawPath(trim,stroke=1,fill=0)
-
-    # The school's own logo, or, when it has none, its own name in the logo's place. Never another school's mark.
-    logo=_school_logo_path(); drawn=False
-    if logo:
-        try: c.drawImage(ImageReader(logo),8*mm,H-42*mm,width=88*mm,height=36*mm,preserveAspectRatio=True,mask='auto'); drawn=True
-        except Exception: pass
-    if not drawn:
-        c.setFillColorRGB(0.02,0.28,0.55); c.setFont(bold,14)
-        for i,line in enumerate(_wrap_text(school_name(),26,3)): c.drawString(9*mm,H-19*mm-i*7*mm,line)
-
-    # The school's own address and contact details, as it entered them; a block it left blank stays blank.
-    brand=school_brand(); y=H-10*mm
-    c.setFillColorRGB(0.12,0.12,0.12); c.setFont(regular,7.2)
-    for line in _wrap_text(brand.get('address'),36,3): c.drawString(140*mm,y,line); y-=5*mm
-    if brand.get('phone'): c.setFont(bold,7.2); c.drawString(140*mm,y,f"Tel: {brand['phone']}"[:44]); y-=5*mm
-    if brand.get('email'): c.setFont(regular,7.2); c.drawString(140*mm,y,str(brand['email'])[:44])
-
-    c.setFillColorRGB(0.78,0.10,0.08); c.roundRect(72*mm,H-59*mm,66*mm,11*mm,2.5*mm,fill=1,stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont(bold,11); c.drawCentredString(105*mm,H-55.5*mm,'OFFICIAL RECEIPT')
-
-    c.setFillColorRGB(0.12,0.12,0.12); c.setFont(bold,8); c.drawString(140*mm,H-37*mm,'No:'); c.setFont(regular,8); c.drawString(150*mm,H-37*mm,str(row['receipt_no']))
-    c.setFillColorRGB(0.83,0.91,0.95); c.rect(140*mm,H-49*mm,62*mm,9*mm,fill=1,stroke=0)
+    if not row: return None
+    brand=school_brand()
+    primary=brand.get('primary') or theme.DEFAULT_PRIMARY
+    accent=brand.get('accent') or theme.DEFAULT_ACCENT
     try: date_text=datetime.fromisoformat(str(row.get('paid_at')).replace('Z','+00:00')).strftime('%d/%m/%Y')
     except Exception: date_text=str(row.get('paid_at') or '')[:10]
-    c.setFillColorRGB(0.02,0.16,0.24); c.setFont(bold,8.5); c.drawString(143*mm,H-45*mm,'Date:'); c.setFont(regular,8.5); c.drawString(156*mm,H-45*mm,date_text)
-
-    left=8*mm; right=W-8*mm; y_top=H-64*mm; row_h=8.6*mm; c.setStrokeColorRGB(0.70,0.80,0.84); c.setLineWidth(0.6)
     method=(row.get('method') or '').strip()
-    labels=[
-        ('Received from:',row.get('payer_name') or _student_display(row)),
-        ('the sum of:',row.get('amount_words','')),
-        ('Being payment for:',row['purpose']),
-        ('Cash/Cheque No.:',row.get('reference') or ('Cash' if method.lower()=='cash' else '—')),
-        ('Bank:',method or '—'),
-    ]
-    for i,(label,value) in enumerate(labels):
-        yy=y_top-i*row_h; c.setFillColorRGB(0.80,0.91,0.96); c.rect(left,yy-row_h+1*mm,right-left,row_h-1.4*mm,fill=1,stroke=0); c.setStrokeColorRGB(0.72,0.82,0.87); c.rect(left,yy-row_h+1*mm,right-left,row_h-1.4*mm,fill=0,stroke=1)
-        c.setFillColorRGB(0.02,0.15,0.20); c.setFont(bold,8); c.drawString(left+3*mm,yy-5.3*mm,label); c.setFont(regular,8.2); c.drawString(left+42*mm,yy-5.3*mm,str(value)[:105])
+    reference=(row.get('reference') or '').strip()
+    student_line=' · '.join(x for x in (_student_display(row),row.get('admission_no'),row.get('class_name')) if x)
+    purpose=(row.get('category') or 'School Fees')+(f" — {row['session_name']} session" if row.get('session_name') else '')
+    received_by=one_scalar(select(Admin.display_name).where(Admin.id==row['recorded_by']),'')
+    logo=_school_logo_path()
+    from core.receipt_pdf import _initials
+    return {
+        'payment_id':payment_id,'initials':_initials(school_name()),'status':row['status'],'voided':row['status']=='voided',
+        'school':{'name':school_name(),'motto':brand.get('motto') or '','address':brand.get('address') or '',
+                  'phone':brand.get('phone') or '','email':brand.get('email') or ''},
+        'primary':primary,'accent':accent,'tint':theme.shade(primary,0.92),'soft':theme.shade(primary,0.8),
+        'logo':logo,'logo_url':brand.get('logo_url') if logo else None,
+        'signature':_receipt_signature_abspath(),'signature_relpath':_receipt_signature_relpath(),
+        'number':row['receipt_no'],'date':date_text,'payer':row['payer_name'],'student':student_line,
+        'purpose':purpose,'method':method+(f' · Ref {reference}' if reference else '') if method or reference else '—',
+        'amount':float(row.get('amount') or 0),'amount_words':row['amount_words'],
+        'amount_naira':row['amount_naira'],'amount_kobo':row['amount_kobo'],
+        'notes':' '.join(str(row.get('notes') or '').split()),'received_by':received_by or '',
+        'summary':_receipt_summary(row),
+    }
 
-    amount=float(row.get('amount') or 0); naira=int(amount); kobo=int(round((amount-naira)*100))
-    ay=y_top-len(labels)*row_h-3*mm
-    c.setFillColorRGB(0.98,0.90,0.55); c.rect(left,ay-13*mm,100*mm,13*mm,fill=1,stroke=0)
-    c.setFillColorRGB(0.95,0.76,0.13); c.rect(left,ay-13*mm,10*mm,13*mm,fill=1,stroke=0); c.rect(left+90*mm,ay-13*mm,10*mm,13*mm,fill=1,stroke=0)
-    c.setFillColorRGB(0.05,0.05,0.05); c.setFont(bold,13); c.drawCentredString(left+5*mm,ay-9*mm,'N'); c.drawCentredString(left+95*mm,ay-9*mm,'K')
-    c.setFont(bold,14); c.drawCentredString(left+50*mm,ay-9*mm,f'₦{naira:,}.{kobo:02d}')
-
-    sig_path=_receipt_signature_abspath()
-    sig_line_x1,sig_line_x2,sig_line_y=right-58*mm,right,ay-13*mm+4*mm
-    if sig_path:
-        try: c.drawImage(ImageReader(sig_path),sig_line_x1+6*mm,sig_line_y+1*mm,width=42*mm,height=11*mm,preserveAspectRatio=True,anchor='sw',mask='auto')
-        except Exception: pass
-    c.setStrokeColorRGB(0.30,0.30,0.30); c.setLineWidth(0.7); c.line(sig_line_x1,sig_line_y,sig_line_x2,sig_line_y)
-    c.setFillColorRGB(0.12,0.12,0.12); c.setFont(regular,6.5); c.drawCentredString((sig_line_x1+sig_line_x2)/2,sig_line_y-3.2*mm,'Authorised Signature')
-
-    c.setFillColorRGB(1,1,1); c.setFont(bold,7.4)
-    c.drawString(left,band_h*0.32,f'For: {school_name().upper()}')
-
-    if row.get('status')=='voided':
-        # A voided payment's receipt must never pass for a valid one, on paper, by email or in the parent portal.
-        c.saveState(); c.translate(W/2,H/2-5*mm); c.rotate(18)
-        c.setStrokeColorRGB(0.69,0.09,0.09); c.setFillColorRGB(0.69,0.09,0.09); c.setLineWidth(1*mm)
-        c.rect(-42*mm,-8*mm,84*mm,20*mm,fill=0,stroke=1); c.setFont(bold,40); c.drawCentredString(0,-3*mm,'VOIDED'); c.restoreState()
-
-    c.showPage(); c.save(); buf.seek(0); return buf.getvalue(),row
+def _receipt_pdf(payment_id):
+    """``(pdf bytes, payment row)``. The design is in core/receipt_pdf.py."""
+    row=_receipt_payload(payment_id)
+    if not row: abort(404)
+    from core.receipt_pdf import render_receipt_pdf
+    return render_receipt_pdf(_receipt_sheet(payment_id)),row
 
 
 def _send_email_receipt(payment_id):
@@ -303,7 +259,14 @@ def _send_email_receipt(payment_id):
     pdf,_=_receipt_pdf(payment_id)
     from email.message import EmailMessage
     school=school_name()
-    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(f'Dear Parent/Guardian,\n\nPlease find attached the official payment receipt {row["receipt_no"]} for {_student_display(row)}.\n\nAmount paid: {_format_money(row["amount"])}\nPurpose: {row["category"]}\n\n{school}'); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
+    sheet=_receipt_sheet(payment_id); summary=sheet['summary']
+    lines=[f'Dear Parent/Guardian,','',
+           f'Thank you. We have received a payment for {_student_display(row)}, and the official receipt {row["receipt_no"]} is attached.','',
+           f'Amount paid: {_format_money(row["amount"])}',f'Date: {sheet["date"]}',f'Paid for: {sheet["purpose"]}']
+    if summary: lines.append(f'Balance due for the session: {_format_money(summary["balance"])}')
+    if sheet['notes']: lines+=['',f'Note from the school: {sheet["notes"]}']
+    lines+=['',school]
+    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content('\n'.join(lines)); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
     try:
         send_email(settings,msg)
         return True,recipient
@@ -328,6 +291,24 @@ def _send_whatsapp_receipt(payment_id):
         return True,result.get('messages',[{}])[0].get('id',recipient)
     except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
     except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
+
+def _send_payment_receipt_to_guardian(payment_id, actor_id):
+    """Send a newly recorded payment's receipt to the guardian by email and by WhatsApp.
+
+    This is what makes telling the parents automatic: nobody has to remember to press "send". Each
+    attempt is logged like a hand-sent one, so the bursar can see on the receipt page whether it
+    arrived. Never raises; runs after the payment was committed (see core/background.py).
+    """
+    row=_receipt_payload(payment_id)
+    if not row or row['status']=='voided': return
+    for channel,send,contact in (('email',_send_email_receipt,row['guardian_email']),
+                                 ('whatsapp',_send_whatsapp_receipt,row['guardian_phone'])):
+        try:
+            ok,msg=send(payment_id)
+            _log_receipt_delivery(payment_id,channel,contact,ok,msg,actor_id)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception('Automatic %s receipt failed for payment %s',channel,payment_id)
 
 def _log_receipt_delivery(payment_id, channel, recipient, ok, msg, actor_id):
     """Record every delivery attempt, successful or not."""

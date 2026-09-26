@@ -385,12 +385,17 @@ check("assignments and projects were made with their session and term",
 ada_portal = student_in(ADA_LOGIN, ADA_TEMP)
 check("Ada takes test one: 8 of 10 right", take(ada_portal, TEST1, 8) == "submitted")
 check("…and the examination: 9 of 10 questions right, each worth 5 (45 of 50)", take(ada_portal, EXAM, 9) == "submitted")
-check("…and the practice test, getting every question right", take(ada_portal, PRACTICE, 3) == "submitted")
+ada_portal.get(f"/student/practice/{PRACTICE}")
+practice_key = {f"q_{qid}": right for qid, right in sql("SELECT id, correct_option FROM school_questions WHERE assessment_id = :a", a=PRACTICE)}
+r = ada_portal.post(f"/student/practice/{PRACTICE}", practice_key, page=f"/student/practice/{PRACTICE}")
+check("…and the practice test, getting every question right (it is marked on the spot and nothing is recorded)",
+      r.status_code == 200 and "NOT RECORDED" in r.get_data(as_text=True)
+      and one("SELECT count(*) FROM school_assessment_attempts WHERE assessment_id = :a", a=PRACTICE) == 0)
 grade_assignment(A1, ADA, "9")
 grade_project(P1, ADA, "7")
-check("the results the portal wrote are 8/10 and 45/50, and the practice one",
+check("the results the portal wrote are 8/10 and 45/50, and none for the practice test",
       sql("SELECT r.score, r.max_score, a.assessment_type FROM school_student_results r JOIN school_assessments a ON a.id = r.assessment_id "
-          "WHERE r.student_id = :s ORDER BY a.assessment_type", s=ADA) == [(45.0, 50.0, "examination"), (3.0, 3.0, "practice"), (8.0, 10.0, "test")])
+          "WHERE r.student_id = :s ORDER BY a.assessment_type", s=ADA) == [(45.0, 50.0, "examination"), (8.0, 10.0, "test")])
 r = report(ADA)
 check("Ada's exam is scaled to 60: 45/50 = 54", close(r["exam_score"], 54) and r["exam_max"] == 60, str(r))
 check("…her test to its 20: 8/10 = 16", close(r["test_score"], 16) and r["test_max"] == 20)
@@ -398,7 +403,8 @@ check("…her assignment to its 10: 9/10 = 9", close(r["assignment_score"], 9) a
 check("…her project to its 10: 7/10 = 7", close(r["project_score"], 7) and r["project_max"] == 10)
 check("…CA is 16 + 9 + 7 = 32 out of 40", close(r["ca_score"], 32) and r["ca_max"] == 40)
 check("…and the term result is 54 + 32 = 86 out of 100", close(r["total_score"], 86) and r["total_max"] == 100, str(r))
-check("the practice test (a perfect 3/3) added nothing to either part", r["exam_score"] < 60 and r["test_score"] < 20)
+check("the practice test (a perfect 3/3) added nothing to either part",
+      r["exam_score"] < 60 and r["test_score"] < 20 and one("SELECT count(*) FROM school_student_results WHERE assessment_id = :a", a=PRACTICE) == 0)
 
 rows = term_rows(ADA)
 check("her page shows the Term Results table with those figures",
@@ -623,20 +629,20 @@ def workflow(result, action, actor=None, reason=""):
                                  page="/admin/school/results" if actor is None else "/admin/password")
 
 
-ADA_EXAM, ADA_TEST, ADA_PRACTICE = result_id(ADA, EXAM), result_id(ADA, TEST1), result_id(ADA, PRACTICE)
+ADA_EXAM, ADA_TEST = result_id(ADA, EXAM), result_id(ADA, TEST1)
 status = lambda rid: one("SELECT status FROM school_student_results WHERE id = :r", r=rid)  # noqa: E731
-check("Ada's test and exam wait as 'entered'; her practice result is visible at once",
-      [status(ADA_TEST), status(ADA_EXAM), status(ADA_PRACTICE)] == ["entered", "entered", "released"])
-check("her own page lists only the practice result: the exam and test are not shown to her yet",
-      dashboard_results(ada_portal) == [(3.0, 3.0)], str(dashboard_results(ada_portal)))
+check("Ada's test and exam wait as 'entered'",
+      [status(ADA_TEST), status(ADA_EXAM)] == ["entered", "entered"])
+check("her own page lists no result at all: the exam and test are not shown to her yet, and practice is never a result",
+      dashboard_results(ada_portal) == [], str(dashboard_results(ada_portal)))
 page = ada_portal.text(f"/student/assessments/{EXAM}/result")
 check("the exam's result page says it was received but shows no score",
       "Submission received" in page and "withheld" in page and "<strong>45" not in page and "ASSESSMENT COMPLETE" not in page)
 check("…and her page has no Term Results table at all (that is for staff)",
       "Term Results" not in ada_portal.text("/student/dashboard") and "Continuous Assessment" not in ada_portal.text("/student/dashboard"))
-results_page = admin.text("/admin/school/results?class=JSS 1")
-check("staff see the marks and the 'Verify' step on the results page for the class", "Verify" in results_page and "Mathematics" in results_page,
-      results_page[results_page.find("Academic Records"):][:200])
+results_page = admin.text(f"/admin/school/results?class=JSS 1&student={ADA}&session={CURRENT}&term=First Term")
+check("staff see the marks and the 'Verify' step in the dialog for the student's term", "Verify" in results_page and "Mathematics" in results_page,
+      results_page[results_page.find("rr-body"):][:200])
 
 r = workflow(ADA_EXAM, "release")
 check("a result cannot be released before it is verified and approved", status(ADA_EXAM) == "entered" and admin.said(r, "must be approved before it can be released"))
@@ -650,12 +656,12 @@ check("verifying moves it on and records who did it",
 workflow(ADA_EXAM, "approve")
 check("approving moves it on, but the student still sees nothing of it",
       status(ADA_EXAM) == "approved" and one("SELECT approved_by FROM school_student_results WHERE id = :r", r=ADA_EXAM) is not None
-      and dashboard_results(ada_portal) == [(3.0, 3.0)])
+      and dashboard_results(ada_portal) == [])
 workflow(ADA_EXAM, "release")
 check("releasing shows it: the result is 'released' with the time it was released",
       status(ADA_EXAM) == "released" and one("SELECT released_at FROM school_student_results WHERE id = :r", r=ADA_EXAM) is not None)
 check("the student now sees the exam mark 45/50 on her page, and still not the test",
-      sorted(dashboard_results(ada_portal)) == [(3.0, 3.0), (45.0, 50.0)], str(dashboard_results(ada_portal)))
+      sorted(dashboard_results(ada_portal)) == [(45.0, 50.0)], str(dashboard_results(ada_portal)))
 page = ada_portal.text(f"/student/assessments/{EXAM}/result")
 check("…and the exam's result page shows her score", "ASSESSMENT COMPLETE" in page and "<strong>45</strong>" in page and "/ 50" in page, page[page.find("<main"):][:300])
 check("every step is on the record: entered → verified → approved → released",
@@ -750,7 +756,8 @@ check("the clerk is not the School Admin",
       one("SELECT t.is_system FROM admins a JOIN admin_types t ON t.id = a.admin_type_id WHERE a.username = 'clerk'") == 0)
 check("the clerk can open the results page but is offered no Verify, Approve or Release step",
       clerk.get("/admin/school/results").status_code == 200
-      and not any(w in clerk.text("/admin/school/results") for w in (">Verify<", ">Approve<", ">Release<")))
+      and not any(w in clerk.text(f"/admin/school/results?class=JSS 1&student={ADA}&session={CURRENT}&term=First Term")
+                  for w in (">Verify<", ">Approve<", ">Release<", "Release all results")))
 r = manual_as = clerk.post(MANUAL, {"class_id": JSS1, "session_id": CURRENT, "student_id": CHIDI, "subject_id": MATHS, "term": "First Term",
                                     "took_test": "yes", "test_score": "5", "test_max": "10", "exam_score": "30", "exam_max": "60"}, page=MANUAL)
 check("the clerk can enter an offline result (they were given that permission)",

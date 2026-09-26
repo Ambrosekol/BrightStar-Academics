@@ -1,0 +1,54 @@
+{#- One school's payment receipt. `sheet` comes from _receipt_sheet(); its colours are #rrggbb values the school's
+    branding has already validated, so they are safe inside a style attribute. -#}
+<div class="rc-wrap">
+  <div class="rc" style="--rc-primary:{{ sheet.primary }};--rc-accent:{{ sheet.accent }};--rc-tint:{{ sheet.tint }};--rc-soft:{{ sheet.soft }}">
+    <div class="rc-head">
+      <div class="rc-logo">{% if sheet.logo_url %}<img src="{{ sheet.logo_url }}" alt="{{ sheet.school.name }} logo">{% else %}{{ sheet.initials }}{% endif %}</div>
+      <div class="rc-id">
+        <h2 class="rc-name">{{ sheet.school.name }}</h2>
+        {% if sheet.school.motto %}<div class="rc-motto">{{ sheet.school.motto }}</div>{% endif %}
+      </div>
+      <div class="rc-contact">
+        {% if sheet.school.address %}<div class="addr">{{ sheet.school.address }}</div>{% endif %}
+        {% if sheet.school.phone %}<div>Tel: {{ sheet.school.phone }}</div>{% endif %}
+        {% if sheet.school.email %}<div>{{ sheet.school.email }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="rc-stripe"></div>
+
+    <div class="rc-title"><h1>OFFICIAL RECEIPT</h1><p>Acknowledgement of payment received</p></div>
+    <div class="rc-meta"><b>No. {{ sheet.number }}</b><span>Date: {{ sheet.date }}</span></div>
+
+    <div class="rc-rows">
+      <div class="rc-row"><small>Received from</small><strong>{{ sheet.payer or '—' }}</strong></div>
+      <div class="rc-row"><small>Student</small><strong>{{ sheet.student or '—' }}</strong></div>
+      <div class="rc-row"><small>Being payment for</small><strong>{{ sheet.purpose }}</strong></div>
+      <div class="rc-row"><small>Paid by</small><strong>{{ sheet.method }}</strong></div>
+      <div class="rc-row words"><small>The sum of</small><span>{{ sheet.amount_words }}</span></div>
+    </div>
+
+    {% if sheet.notes %}<div class="rc-notes"><small>NOTE</small><p>{{ sheet.notes }}</p></div>{% endif %}
+
+    <div class="rc-side">
+      <div class="rc-amount"><small>AMOUNT RECEIVED</small><strong>₦{{ '{:,.2f}'.format(sheet.amount) }}</strong></div>
+      {% if sheet.summary %}
+      <div class="rc-account">
+        <small>ACCOUNT THIS SESSION</small>
+        <div><span>Fees charged</span><span>₦{{ '{:,.2f}'.format(sheet.summary.charged) }}</span></div>
+        <div><span>Paid to date</span><span>₦{{ '{:,.2f}'.format(sheet.summary.paid) }}</span></div>
+        <div class="due"><span>Balance due</span><b class="{{ 'clear' if sheet.summary.balance <= 0.004 else '' }}">₦{{ '{:,.2f}'.format(sheet.summary.balance) }}</b></div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="rc-sign">
+      <div class="img">{% if sheet.signature and sheet.signature_relpath %}<img src="{{ url_for('static', filename=sheet.signature_relpath) }}" alt="Authorised Signature">{% endif %}</div>
+      <div class="line"></div>
+      <span>Authorised Signature</span>
+      {% if sheet.received_by %}<em>Received by {{ sheet.received_by }}</em>{% endif %}
+    </div>
+
+    <div class="rc-foot"><strong>For: {{ sheet.school.name|upper }}</strong><span>Thank you for your payment.</span></div>
+    {% if sheet.voided %}<div class="rc-void">VOIDED</div>{% endif %}
+  </div>
+</div>

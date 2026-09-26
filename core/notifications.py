@@ -131,11 +131,13 @@ def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, sess
     except Exception: current_app.logger.exception('Guardian WhatsApp (fee assessed) failed for student %s',student_id)
 
 
-def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, admin_id):
+def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, admin_id, external=True):
     """Alert a student's parents that a payment has been recorded for them.
 
     Same best-effort contract as _notify_parents_fee_assessed. Call only
-    after the payment has been committed.
+    after the payment has been committed. With ``external=False`` only the
+    in-app alert is made; the email and WhatsApp message are then the caller's
+    to send (the finance routes send the receipt itself).
     """
     student=one(select(Student.first_name,Student.last_name,Student.guardian_email,
                        Student.guardian_phone).where(Student.id==student_id))
@@ -155,6 +157,7 @@ def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, a
     except Exception:
         db.session.rollback()
         current_app.logger.exception('In-app payment notification failed for student %s',student_id)
+    if not external: return
     subject=f'Payment received — {child}'
     body=(f'Dear Parent/Guardian,\n\nWe have received a payment of ₦{amount:,.2f} for {category} '
           f'on behalf of {child}. Receipt number: {receipt_no}.\n\n'
@@ -165,3 +168,43 @@ def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, a
     except Exception: current_app.logger.exception('Guardian email (payment recorded) failed for student %s',student_id)
     try: _notify_guardian_whatsapp(student['guardian_phone'],text)
     except Exception: current_app.logger.exception('Guardian WhatsApp (payment recorded) failed for student %s',student_id)
+
+
+def _notify_parents_report_card_ready(student_id, session_name, term, view_url, admin_id=None):
+    """Tell a student's parents that a term's results are released and the report card is ready.
+
+    An in-app alert for every linked parent account, plus an email and a WhatsApp message to the
+    guardian contact on the student's record. Same best-effort contract as the senders above: a
+    channel that is missing or fails never stops the others. Call only after the release has been
+    committed. ``view_url`` is where the parent opens the card once signed in.
+    """
+    student=one(select(Student.first_name,Student.last_name,Student.guardian_email,
+                       Student.guardian_phone).where(Student.id==student_id))
+    if not student: return
+    child=f"{student['first_name']} {student['last_name']}".strip()
+    period='the annual' if term=='Full Session' else f'the {term}'
+    label='Annual' if term=='Full Session' else term
+    now=datetime.now(timezone.utc).isoformat()
+    title=f'{label} report card ready for {child}'
+    message=f'{child}’s results for {period} report card ({session_name}) have been released. The report card is ready to view and download.'
+    try:
+        for pid in _parent_ids_for_student(student_id):
+            db.session.add(SchoolNotification(
+                recipient_type='parent',recipient_id=pid,student_id=student_id,
+                category='results',title=title,message=message,action_url=view_url,
+                created_at=now,created_by=admin_id))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('In-app report card notification failed for student %s',student_id)
+    subject=f'{label} report card ready — {child}'
+    body=(f'Dear Parent/Guardian,\n\n{child}’s results for {period} report card ({session_name}) have been released, '
+          'and the report card is now ready.\n\n'
+          f'Sign in to the parent portal to view and download it:\n{view_url}\n\n'
+          f'Thank you,\n{school_name()}')
+    text=(f'{school_name()}: {child}’s {label} report card ({session_name}) is ready. '
+          f'Sign in to the parent portal to view and download it: {view_url}')
+    try: _notify_guardian_email(student['guardian_email'],subject,body)
+    except Exception: current_app.logger.exception('Guardian email (report card ready) failed for student %s',student_id)
+    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
+    except Exception: current_app.logger.exception('Guardian WhatsApp (report card ready) failed for student %s',student_id)

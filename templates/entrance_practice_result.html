@@ -1,1 +1,38 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Practice Result</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head><body class="student-portal-page"><main class="student-dashboard-shell"><section class="student-hero"><div><p class="student-eyebrow">PRACTICE RESULT</p><h1>{{score}} / {{max_score}}</h1><p>{{'%.1f'|format(percentage)}}% · Historical entrance practice</p></div></section><section class="student-panel" style="margin-top:20px">{% for r in results %}<article class="student-list-row"><div><strong>Q{{loop.index}}. {{r.text}}</strong><small>Your answer: {% if r.selected >= 0 %}{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.selected]}}{% else %}Not answered{% endif %} · Correct: {{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.correct]}}</small></div><span>{{'Correct' if r.selected==r.correct else 'Review'}}</span></article>{% endfor %}</section><a class="btn btn-primary" href="{{url_for('entrance_practice')}}">Back to practice</a></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Practice Result — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+</head>
+<body class="student-portal-page">
+<header class="student-topbar">
+  <div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Entrance Practice</span></div></div>
+  <div class="student-top-actions"><a href="{{url_for('login')}}">Portal sign-in</a></div>
+</header>
+<main class="student-dashboard-shell">
+  <section class="student-result-card">
+    <p class="student-eyebrow">PRACTICE RESULT &middot; NOT RECORDED</p>
+    <h1>{{group_label}} &middot; {{subject_label}}</h1>
+    <div class="student-result-score"><strong>{{score}}</strong><span>/ {{total}}</span></div>
+    <div class="student-result-percent">{{'%.0f'|format(percentage)}}%</div>
+    <p class="student-result-note">This was practice only. Nothing is saved. Try again for a new set of questions in a new order.</p>
+    <a class="student-start-btn student-result-back" href="{{url_for('entrance_practice_take',group=group,subject=subject)}}">Try again &rarr;</a>
+    <a class="student-start-btn student-result-back" href="{{url_for('entrance_practice',group=group)}}">Other subjects</a>
+  </section>
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><h2>Review your answers</h2></div>
+    {% for r in results %}
+    {% set right = r.selected == r.correct %}
+    <article class="student-list-row">
+      <div>
+        <strong>Q{{loop.index}}. {{r.text}}</strong>
+        <small>Your answer: {% if r.selected >= 0 %}{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.selected]}}. {{r.options[r.selected]}}{% else %}Not answered{% endif %}</small>
+        {% if not right and r.correct >= 0 and r.correct < r.options|length %}<small>Correct answer: {{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.correct]}}. {{r.options[r.correct]}}</small>{% endif %}
+      </div>
+      <span class="student-status" {% if not right %}style="background:#fdeceb;color:#a32626"{% endif %}>{{'Correct' if right else 'Review'}}</span>
+    </article>
+    {% endfor %}
+  </section>
+</main>
+</body></html>

@@ -1052,8 +1052,13 @@ READY.update({("BOLA", TERM), ("CHIDI", TERM), ("HOST", TERM), ("BOLA_T2", "Seco
               ("IFE", TERM), ("OLA", TERM), ("LONG", TERM), ("ANN", "Full Session")})
 
 # ================================================================ A. READINESS, the honest way
-check("Ada takes her test (8 of 10) and her examination (9 of 10 right, 45 of 50) in her own portal, and the practice test",
-      [take(ada_portal, TEST1, 8), take(ada_portal, EXAM, 9), take(ada_portal, PRACTICE, 3)] == ["submitted"] * 3)
+check("Ada takes her test (8 of 10) and her examination (9 of 10 right, 45 of 50) in her own portal",
+      [take(ada_portal, TEST1, 8), take(ada_portal, EXAM, 9)] == ["submitted"] * 2)
+ada_portal.get(f"/student/practice/{PRACTICE}")
+ada_portal.post(f"/student/practice/{PRACTICE}", {f"q_{qid}": right for qid, right in alpha.sql(
+    "SELECT id, correct_option FROM school_questions WHERE assessment_id = :a", a=PRACTICE)}, page=f"/student/practice/{PRACTICE}")
+check("…and she practises too: it is marked, and leaves no result behind, so it can neither count nor hold a card back",
+      alpha.one("SELECT count(*) FROM school_student_results WHERE assessment_id = :a", a=PRACTICE) == 0)
 op.post(f"/admin/school/assignments/{A1}/students/{ADA}", {"status": "done", "score": "9"}, page=f"/admin/school/assignments/{A1}")
 op.post(f"/admin/school/projects/{P1}/students/{ADA}", {"status": "done", "score": "7"}, page=f"/admin/school/projects/{P1}")
 
@@ -1070,9 +1075,9 @@ def workflow(result, action, actor=None):
     return (actor or op).post(f"/admin/school/results/{result}/workflow", {"action": action, "reason": "Checked"}, page="/admin/school/results")
 
 
-R_TEST, R_EXAM, R_PRACTICE = rid(TEST1), rid(EXAM), rid(PRACTICE)
-check("the workflow starts as it should: test and exam entered, the practice result visible at once",
-      [status_of(R_TEST), status_of(R_EXAM), status_of(R_PRACTICE)] == ["entered", "entered", "released"])
+R_TEST, R_EXAM = rid(TEST1), rid(EXAM)
+check("the workflow starts as it should: test and exam entered",
+      [status_of(R_TEST), status_of(R_EXAM)] == ["entered", "entered"])
 
 
 def ada_snapshot(label, ready, waiting=None, extra_lines=""):
@@ -1112,13 +1117,18 @@ check("…yet her dashboard already lists the released exam mark (the card is st
 workflow(R_TEST, "approve")
 ada_snapshot("Ada, the test approved but not released", False, waiting=1)
 
-# practice never blocks: an unreleased practice result does not hold a card back, and does not count when it is released
+# practice never blocks: an unreleased practice result does not hold a card back, and does not count when it is released.
+# The portal no longer writes one (practice leaves no trace), but a school upgraded from an earlier version may still hold old
+# ones, so one is planted here and the card must go on ignoring it.
+alpha.sql("INSERT INTO school_student_results (student_id, assessment_id, subject_id, score, max_score, term, session_id, status, created_at) "
+          "SELECT :s, :a, subject_id, 3, 3, 'First Term', session_id, 'released', :t FROM school_assessments WHERE id = :a", s=ADA, a=PRACTICE, t=NOW)
+R_PRACTICE = rid(PRACTICE)
 alpha.sql("UPDATE school_student_results SET status = 'entered', released_at = NULL WHERE id = :r", r=R_PRACTICE)
 workflow(R_TEST, "release")
 check("her last result is released", [status_of(R_TEST), status_of(R_EXAM)] == ["released", "released"])
 READY.add(("ADA", TERM))
 ada_snapshot("Ada, everything released (her practice result still 'entered', which does not matter)", True)
-alpha.sql("UPDATE school_student_results SET status = 'released', released_at = :t WHERE id = :r", r=R_PRACTICE, t=REL)
+alpha.sql("UPDATE school_student_results SET status = 'released', released_at = :t WHERE id = :r", r=R_PRACTICE, t=NOW)
 
 # ================================================================ B. what is on the card, with Maths only
 page, pdf = verify_card("Ada's card (Maths only)", ada_portal, s_view(CUR), s_view(CUR) + "/pdf", "ADA", TERM,

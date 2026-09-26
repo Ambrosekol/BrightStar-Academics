@@ -11,15 +11,12 @@ from datetime import datetime, timedelta, timezone
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import select, update as sa_update
 
-from app import (
-    app, ENTRANCE_CONFIG_EXTRA, _entrance_config_select,
-    _school_current_session, csrf_token,
-)
+from app import app, _school_current_session, csrf_token
 from core.entrance import (
     _answers_for_attempt, _valid_question_configuration, bank,
     candidate_cumulative, candidate_has_unused_retake, candidate_record,
-    entrance_paper_label, entrance_subject_label, get_attempt,
-    grade, remaining,
+    ENTRANCE_SUBJECT_LABELS, ENTRY_GROUP_LABELS, entrance_paper_label,
+    entrance_practice_paper, entrance_subject_label, get_attempt, grade, remaining,
 )
 from models import (
     AcademicSession, Answer, Attempt, AttemptQuestion, CandidatePaper,
@@ -32,53 +29,64 @@ from core.security import csrf_protect
 
 @app.route('/entrance-practice')
 def entrance_practice():
-    current=_school_current_session()
-    stmt=_entrance_config_select().where(EntranceBankConfig.practice_enabled==1)
-    if current:
-        # The live session is never offered as practice material.
-        stmt=stmt.where(EntranceBankConfig.session_id!=current['id'])
-    stmt=stmt.order_by(EntranceBankConfig.session_id.desc(),
-                       EntranceBankConfig.entry_group,EntranceBankConfig.subject)
-    configs=[_flatten(r,'EntranceBankConfig',*ENTRANCE_CONFIG_EXTRA) for r in all_rows(stmt)]
-    return render_template('entrance_practice.html',configs=configs)
+    """The public entrance practice page: pick the class you are aiming for, then a subject.
 
-@app.route('/entrance-practice/<int:config_id>',methods=['GET','POST'])
-def entrance_practice_take(config_id):
-    current=_school_current_session()
-    raw=one(_entrance_config_select().where(EntranceBankConfig.id==config_id,
-                                            EntranceBankConfig.practice_enabled==1))
-    cfg=_flatten(raw,'EntranceBankConfig',*ENTRANCE_CONFIG_EXTRA) if raw else None
-    if not cfg or (current and cfg['session_id']==current['id']):
-        abort(404)
-    b=bank(cfg['bank_id'])
-    valid,marks=_valid_question_configuration(cfg['questions_to_serve'])
-    if not b or not valid or cfg['questions_to_serve']>len(b.get('questions',[])):
-        return render_template('entrance_practice.html',configs=[],error='This practice set is not currently available.')
+    Nobody signs in or registers. What each subject serves is the school's choice (see
+    core.entrance.entrance_practice_paper): the last session's paper, or questions set for practice.
+    """
+    group=request.args.get('group','')
+    if group not in ENTRY_GROUP_LABELS: group=''
+    subjects=[]
+    if group:
+        for key,label in ENTRANCE_SUBJECT_LABELS.items():
+            paper=entrance_practice_paper(group,key)
+            subjects.append({'key':key,'label':label,'available':bool(paper),
+                             'count':paper['count'] if paper else 0,
+                             'source':paper['label'] if paper else ''})
+    return render_template('entrance_practice.html',groups=list(ENTRY_GROUP_LABELS.items()),
+                           group=group,group_label=ENTRY_GROUP_LABELS.get(group,''),subjects=subjects)
+
+@app.route('/entrance-practice/<group>/<subject>',methods=['GET','POST'])
+@csrf_protect
+def entrance_practice_take(group,subject):
+    if group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS: abort(404)
+    paper=entrance_practice_paper(group,subject)
+    if not paper:
+        return render_template('entrance_practice.html',groups=list(ENTRY_GROUP_LABELS.items()),
+            group=group,group_label=ENTRY_GROUP_LABELS[group],subjects=[],
+            error='Practice questions for this subject are not available yet.'),404
+    questions=paper['bank']['questions']
+    subject_label=ENTRANCE_SUBJECT_LABELS[subject]; group_label=ENTRY_GROUP_LABELS[group]
     if request.method=='GET':
-        chosen=random.sample(list(b['questions']),int(cfg['questions_to_serve']))
-        session['entrance_practice_config']=config_id
-        session['entrance_practice_questions']=[int(q['id']) for q in chosen]
-        public=[dict(q,answer=None,points=marks) for q in chosen]
-        for q in public: q.pop('answer',None)
-        return render_template('entrance_practice_take.html',config=cfg,questions=public)
-    if session.get('entrance_practice_config')!=config_id:
-        return redirect(url_for('entrance_practice_take',config_id=config_id))
-    ids={int(x) for x in session.get('entrance_practice_questions',[])}
-    selected=[q for q in b['questions'] if int(q['id']) in ids]
-    score=0
-    results=[]
-    for q in selected:
-        raw_choice=request.form.get(f"q_{q['id']}")
-        try: choice=int(raw_choice) if raw_choice is not None else -1
-        except ValueError: choice=-1
-        correct=choice==int(q.get('answer',-1))
-        if correct: score+=marks
-        results.append({'text':q.get('text',''),'selected':choice,'correct':int(q.get('answer',-1)),'options':q.get('options',[])})
-    score=round(score,2)
-    max_score=round(marks*len(selected),2)
-    pct=round(score/max_score*100,2) if max_score else 0
-    session.pop('entrance_practice_config',None); session.pop('entrance_practice_questions',None)
-    return render_template('entrance_practice_result.html',config=cfg,score=score,max_score=max_score,percentage=pct,results=results)
+        # A fresh random draw, in a fresh random order, every time.
+        chosen=random.sample(list(questions),paper['count'])
+        session['entrance_practice']={'group':group,'subject':subject,'ids':[int(q['id']) for q in chosen]}
+        public=[{'id':int(q['id']),'text':q.get('text',''),'options':q.get('options',[]),
+                 'instruction':q.get('instruction'),'image_path':q.get('image_path')} for q in chosen]
+        return render_template('entrance_practice_take.html',group=group,group_label=group_label,
+            subject=subject,
+            subject_label=subject_label,label=paper['label'],questions=public,
+            seconds=int(paper['bank'].get('duration_seconds') or 0))
+    state=session.get('entrance_practice') or {}
+    if state.get('group')!=group or state.get('subject')!=subject or not state.get('ids'):
+        return redirect(url_for('entrance_practice_take',group=group,subject=subject))
+    by_id={int(q['id']):q for q in questions}
+    results=[]; score=0
+    for qid in state['ids']:
+        q=by_id.get(int(qid))
+        if not q: continue
+        options=q.get('options',[])
+        try: picked=int(request.form.get(f'q_{qid}'))
+        except (TypeError,ValueError): picked=-1
+        if picked<0 or picked>=len(options): picked=-1
+        correct=int(q.get('answer',-1))
+        score+=1 if picked==correct else 0
+        results.append({'text':q.get('text',''),'options':options,'selected':picked,'correct':correct})
+    session.pop('entrance_practice',None)
+    total=len(results)
+    return render_template('entrance_practice_result.html',group=group,group_label=group_label,
+        subject=subject,subject_label=subject_label,results=results,score=score,total=total,
+        percentage=(score/total*100) if total else 0)
 
 @app.route('/practice',methods=['GET','POST'])
 @csrf_protect

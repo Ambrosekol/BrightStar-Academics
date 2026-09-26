@@ -1,0 +1,76 @@
+/* A school's payment receipt, in that school's own colours.
+   Every size is in em, and 1em is 1% of the sheet's width, so the same numbers as
+   core/receipt_pdf.py draw the same receipt on screen, on paper and as a PDF. The colours arrive as
+   custom properties set on .rc by the page (--rc-primary, --rc-accent, --rc-tint, --rc-soft). */
+
+.rc-wrap{container-type:inline-size;width:100%}
+.rc{--ink:#1b2733;--muted:#66788d;--green:#19734a;
+    position:relative;width:100%;aspect-ratio:210/148;overflow:hidden;background:#fff;color:var(--ink);
+    font-family:"Public Sans","DejaVu Sans",Arial,sans-serif;font-size:1cqw;line-height:1.25}
+.rc *{box-sizing:border-box}
+
+.rc-head{position:absolute;left:0;right:0;top:0;height:13em;background:var(--rc-primary);color:#fff;
+    display:flex;align-items:center;gap:2.4em;padding:0 3.8em}
+.rc-stripe{position:absolute;left:0;right:0;top:13em;height:1em;background:var(--rc-accent)}
+.rc-logo{flex:0 0 10em;width:10em;height:10em;border-radius:1.2em;background:#fff;display:flex;align-items:center;
+    justify-content:center;overflow:hidden;color:var(--rc-primary);font-weight:800;font-size:4.2em}
+.rc-logo img{width:84%;height:84%;object-fit:contain}
+.rc-id{flex:1;min-width:0}
+.rc-name{margin:0;font-size:3em;line-height:1.13;font-weight:800;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+.rc-motto{margin-top:.5em;font-size:1.6em;color:var(--rc-tint);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+.rc-contact{flex:0 0 30em;width:30em;text-align:right;font-size:1.5em;line-height:1.4}
+.rc-contact div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-contact .addr{white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+
+.rc-title{position:absolute;left:3.8em;top:15.6em}
+.rc-title h1{margin:0;font-size:3.3em;line-height:1;letter-spacing:0;font-weight:800;color:var(--rc-primary)}
+.rc-title p{margin:.7em 0 0;font-size:1.5em;color:var(--muted)}
+.rc-meta{position:absolute;right:3.8em;top:15.4em;width:30em;height:6em;border-radius:.8em;background:var(--rc-soft);
+    padding:1em 1.6em;text-align:right}
+.rc-meta b{display:block;font-size:1.9em;color:var(--rc-primary)}
+.rc-meta span{display:block;margin-top:.5em;font-size:1.7em}
+
+.rc-rows{position:absolute;left:3.8em;top:23.4em;width:63em}
+.rc-row{height:5.8em;border-bottom:.15em solid var(--rc-soft);padding-top:.7em}
+.rc-row.words{height:7.6em}
+.rc-row small{display:block;font-size:1.2em;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.rc-row strong{display:block;margin-top:.35em;font-size:1.95em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-row.words span{display:-webkit-box;margin-top:.35em;font-size:1.85em;line-height:1.3;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+
+.rc-notes{position:absolute;left:3.8em;top:55.2em;width:63em;height:8em;border-radius:.8em;background:var(--rc-tint);
+    border-left:.7em solid var(--rc-accent);padding:.9em 1.6em 0 1.5em;overflow:hidden}
+.rc-notes small{display:block;font-size:1.15em;font-weight:800;letter-spacing:.04em;color:var(--muted)}
+.rc-notes p{margin:.5em 0 0;font-size:1.5em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;
+    -webkit-box-orient:vertical;overflow:hidden}
+
+.rc-side{position:absolute;right:3.8em;top:23.4em;width:27em}
+.rc-amount{height:11.5em;border-radius:1.2em;background:var(--rc-primary);color:#fff;padding:2em}
+.rc-amount small{display:block;font-size:1.25em;font-weight:800;letter-spacing:.04em;color:var(--rc-tint);opacity:.85}
+.rc-amount strong{display:block;margin-top:1.4em;font-size:4.1em;line-height:1;white-space:nowrap}
+.rc-account{margin-top:1.2em;height:11em;border-radius:1.2em;background:var(--rc-tint);border:.15em solid var(--rc-soft);padding:1.2em 2em}
+.rc-account small{display:block;font-size:1.2em;font-weight:800;letter-spacing:.04em;color:var(--muted)}
+.rc-account div{display:flex;justify-content:space-between;margin-top:.62em;font-size:1.6em}
+.rc-account .due{font-weight:800}
+.rc-account .due b{color:var(--rc-accent)}
+.rc-account .due b.clear{color:var(--green)}
+
+.rc-sign{position:absolute;right:3.8em;top:48.6em;width:27em;text-align:center}
+.rc-sign .img{height:6em;display:flex;align-items:flex-end;justify-content:center}
+.rc-sign img{max-width:21em;max-height:6em;object-fit:contain}
+.rc-sign .line{margin:.4em 1.5em 0;border-top:.13em solid var(--ink)}
+.rc-sign span{display:block;margin-top:1em;font-size:1.3em}
+.rc-sign em{display:block;margin-top:.5em;font-size:1.3em;font-style:normal;color:var(--muted)}
+
+.rc-foot{position:absolute;left:0;right:0;bottom:0;height:6em;background:var(--rc-primary);color:#fff;
+    display:flex;align-items:center;justify-content:space-between;padding:0 3.8em;border-top:.5em solid var(--rc-accent);
+    box-sizing:content-box;height:5.5em}
+.rc-foot strong{font-size:1.6em;letter-spacing:.02em}
+.rc-foot span{font-size:1.5em;color:var(--rc-tint);opacity:.85}
+
+.rc-void{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) rotate(18deg);padding:1.2em 3em;
+    border:.5em solid #b01818;color:#b01818;font-size:9em;font-weight:900;letter-spacing:.05em;background:rgba(255,255,255,.35)}
+
+@media print{.rc{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

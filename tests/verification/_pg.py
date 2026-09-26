@@ -99,7 +99,7 @@ def setup(tag):
     # Each school's database is named from this template, so they all carry the
     # run's prefix and can be found and dropped again afterwards.
     os.environ['BRIGHTSTARS_SCHOOL_DB_TEMPLATE'] = url.set(
-        database=f'{prefix}_{{slug}}').render_as_string(hide_password=False)
+        database=f'{prefix}_{{slug}}').render_as_string(hide_password=False).replace('%7Bslug%7D', '{slug}')  # SQLAlchemy percent-encodes the braces; the template needs them literal
 
     def teardown():
         from control_plane.routing import dispose_engines

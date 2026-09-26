@@ -40,6 +40,7 @@ from .entrance import (
     Candidate,
     CandidatePaper,
     EntranceBankConfig,
+    EntrancePracticeSetting,
     Examination,
     RetakeGrant,
 )
@@ -128,7 +129,7 @@ __all__ = [
     'Base', 'db',
     # entrance
     'Answer', 'Attempt', 'AttemptQuestion', 'Candidate', 'CandidatePaper',
-    'EntranceBankConfig', 'Examination', 'RetakeGrant',
+    'EntranceBankConfig', 'EntrancePracticeSetting', 'Examination', 'RetakeGrant',
     # auth / governance
     'Admin', 'AdminControlItem', 'AdminMessage', 'AdminNotification',
     'AdminPermission', 'AdminResourceLock', 'AdminRoleAssignment',

@@ -1,1 +1,51 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Entrance Practice — {{ school_brand.name }}</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head><body class="student-portal-page"><header class="student-topbar"><div class="student-brand"><img src="{{school_brand.logo_url}}"><div><strong>{{ school_brand.name|upper }}</strong><span>Entrance Practice</span></div></div><div class="student-top-actions"><a href="{{url_for('index')}}">Home</a></div></header><main class="student-dashboard-shell"><section class="student-hero"><div><p class="student-eyebrow">HISTORICAL ENTRANCE PRACTICE</p><h1>Practice with previous entrance papers</h1><p>Only historical practice-enabled entrance configurations are shown here. The current entrance examination configuration is excluded.</p></div></section>{% if error %}<div class="login-error">{{error}}</div>{% endif %}<div class="student-feature-grid">{% for c in configs %}<a class="student-feature-card blue" href="{{url_for('entrance_practice_take',config_id=c.id)}}"><span class="feature-icon">🎯</span><div><strong>{{ entry_group_label(c.entry_group) }} · {{c.subject|replace('_',' ')|title}}</strong><small>{{c.session_name if c.session_name else c.session_id}} · {{c.questions_to_serve}} questions</small></div><b>→</b></a>{% else %}<div class="student-empty"><strong>No previous entrance practice sets are available.</strong><span>The school can enable historical entrance configurations for practice.</span></div>{% endfor %}</div></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrance Practice — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+</head>
+<body class="student-portal-page">
+<header class="student-topbar">
+  <div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Entrance Practice</span></div></div>
+  <div class="student-top-actions"><a href="{{url_for('login')}}">Portal sign-in</a></div>
+</header>
+<main class="student-dashboard-shell">
+  <section class="student-hero">
+    <div>
+      <p class="student-eyebrow">ENTRANCE EXAMINATION PRACTICE</p>
+      <h1>Practise before the real thing</h1>
+      <p>Open to everyone: no registration and no sign-in. Choose the class you are hoping to join, pick a subject, and answer questions in the style of the entrance examination. Your score is only for you and is not saved. Every attempt mixes the questions into a new order.</p>
+    </div>
+  </section>
+  {% if error %}<div class="login-error" style="margin-top:18px">{{error}}</div>{% endif %}
+
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">STEP 1</p><h2>Which class are you aiming for?</h2></div></div>
+    <div class="student-feature-grid" style="grid-template-columns:repeat(2,1fr)">
+      {% for key,label in groups %}
+      <a class="student-feature-card {{ 'green' if key==group else 'blue' }}" href="{{url_for('entrance_practice',group=key)}}">
+        <span class="feature-icon">🎓</span>
+        <div><strong>{{label}}</strong><small>{% if key==group %}Selected{% else %}Practise for entry into {{label}}{% endif %}</small></div><b>→</b>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if group %}
+  <section class="student-panel" style="margin-top:20px">
+    <div class="student-panel-head"><div><p class="student-eyebrow">STEP 2</p><h2>Choose a subject for {{group_label}}</h2></div></div>
+    <div class="student-assessment-grid">
+      {% for s in subjects %}
+      <article class="student-assessment-card">
+        <div class="assessment-card-icon">📘</div>
+        <div><span class="student-assessment-subject">{{group_label}}</span><h2>{{s.label}}</h2>
+          <p>{% if s.available %}{{s.count}} questions per attempt · {{s.source}}{% else %}Not available yet{% endif %}</p></div>
+        {% if s.available %}<a class="student-start-btn" href="{{url_for('entrance_practice_take',group=group,subject=s.key)}}">Start →</a>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</main>
+</body></html>

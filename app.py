@@ -883,16 +883,27 @@ from core.accounts import _clear_identity_sessions  # noqa: E402
 import blueprints.parents.routes  # noqa: F401,E402
 
 def _release_due_school_results():
-    """Release every approved result whose session release time has passed."""
+    """Release every approved result whose session release time has passed.
+
+    A student's term whose last result this releases has its report card ready, so its parents are
+    told (email and WhatsApp), exactly as when an administrator releases it by hand. The release is
+    committed here, before anyone is told, and only when it actually released something.
+    """
     now=datetime.now(timezone.utc).isoformat()
     due=(select(AcademicSession.id)
          .where(AcademicSession.result_release_at.is_not(None),
                 AcademicSession.result_release_at <= now)
          .scalar_subquery())
-    db.session.execute(sa_update(SchoolStudentResult)
+    released=db.session.execute(sa_update(SchoolStudentResult)
         .where(SchoolStudentResult.status=='approved',
                SchoolStudentResult.session_id.in_(due))
-        .values(status='released',released_at=now))
+        .values(status='released',released_at=now)
+        .returning(SchoolStudentResult.student_id,SchoolStudentResult.session_id,
+                   SchoolStudentResult.term)).all()
+    if released:
+        db.session.commit()
+        from blueprints.school.result_notices import announce_ready_report_cards  # deferred: it imports this module
+        announce_ready_report_cards([(sid,sess,term) for sid,sess,term in released if sess is not None])
 
 
 def _entrance_config_select(*extra):
@@ -1022,6 +1033,7 @@ import blueprints.school.routes  # noqa: F401,E402
 import blueprints.school.branding  # noqa: F401,E402
 import blueprints.school.delivery  # noqa: F401,E402
 import blueprints.school.report_cards  # noqa: F401,E402
+import blueprints.school.results_records  # noqa: F401,E402
 import blueprints.student_portal.report_cards  # noqa: F401,E402
 import blueprints.parents.report_cards  # noqa: F401,E402
 

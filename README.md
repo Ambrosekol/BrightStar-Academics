@@ -33,7 +33,9 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Email and WhatsApp](#email-and-whatsapp)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
+- [Practice tests](#practice-tests)
 - [Report cards](#report-cards)
+- [Receipts and parent notices](#receipts-and-parent-notices)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -420,6 +422,23 @@ Marks are stored as decimals, so a candidate's raw score is exact, and a whole m
 number everywhere ("75 / 100", not "75.0 / 100.0"). A school database made before this is upgraded
 in place on the next start, and no stored mark changes.
 
+## Practice tests
+
+Practice is a self-study bank, never part of anyone's record. Nothing a person does in a practice
+test is written to the database: no attempt, no answers, no result, so it can never reach a term
+result or a report card. Every run serves the questions in a fresh random order.
+
+- **Students** always find their class's practice tests under *Practice* in the student portal, in
+  every session, and can take and retake them as often as they like. Each run is timed like a CBT
+  paper, marked at once, and shows the correct answers.
+- **Entrance practice is public.** `/entrance-practice` on a school's address lets anyone, with no
+  registration, choose the class they are aiming for (Year 7 / JSS 1 or Year 10 / SSS 1) and then a
+  subject. For each class and subject the administrator chooses (under *Practice Tests* in the
+  entrance workspace) whether the questions come from **the last session's entrance examination**
+  (the default, so it works without any setup) or from a **custom bank** set up for practice. The
+  current session's own bank is never offered, so practice cannot reveal an examination that has not
+  been sat.
+
 ## Report cards
 
 Every school gives each student a **report card for each term**, as a page and as a PDF.
@@ -452,6 +471,28 @@ Every school gives each student a **report card for each term**, as a page and a
   comment still appears on release, with an empty comment box. Whoever last changes a comment is its
   author: their name and their signature are printed beside it, and saving the page without changing a
   comment never takes it over.
+
+## Receipts and parent notices
+
+- **Every school's receipt is its own.** The receipt (page, printout and the PDF sent to parents,
+  all drawn from the one description in `blueprints/finance/helpers.py`, `core/receipt_pdf.py` and
+  `templates/includes/_receipt_sheet.html`) uses the school's two brand colours, logo, name, motto,
+  address, phone and email, its authorised signature, the name of the member of staff who recorded
+  it, the note the bursar attached to the payment, and where the student's account stood for the
+  session as of that payment. A school with no logo gets its initials in the logo's place.
+- **Parents are told automatically.** Recording a payment sends the guardian the receipt itself, by
+  email (PDF attached) and by WhatsApp, and adds an in-app alert for linked parent accounts; each
+  attempt is logged on the receipt page. When a student's last result for a term is released, whether
+  by the *Release all results* button, one result at a time, or the session's release date, the
+  parents are told by email, WhatsApp and in-app that the report card is ready. Sending happens on a
+  background thread (`core/background.py`), so nobody waits on a mail server and a failed message never
+  undoes what was saved. WhatsApp Cloud API only delivers free-form messages within 24 hours of the
+  recipient's last message to the school's number; a school that needs to reach parents outside that
+  window needs approved message templates, which this application does not send.
+- **Results & Records** is a dialog: choose a class, search its students, choose a student, then a
+  session and term, then read that term's subjects and release them all with one confirmed button.
+  The button releases every *approved* result of the term; results not yet verified or approved stay
+  private and hold the report card back.
 
 ## Command line
 

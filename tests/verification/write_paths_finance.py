@@ -77,6 +77,8 @@ os.chdir(ROOT)
 import sqlalchemy as sa  # noqa: E402
 
 import app as A  # noqa: E402
+A.app.config['BACKGROUND_INLINE'] = True  # messages to parents run at once, so they can be checked
+
 import blueprints.finance.helpers as FIN  # noqa: E402
 from control_plane import provisioning as pv  # noqa: E402
 from control_plane.context import tenant_context  # noqa: E402
@@ -858,11 +860,12 @@ Outbox.mail.clear(), Outbox.whatsapp.clear()
 r, PB1 = pay(op_alpha, BOLA, CURRENT, "20000", payer="Mrs Eze", category="Transport")
 receipt_b1 = alpha.one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=PB1)
 sent = [(s, m) for s, m in Outbox.mail if m["To"] == "eze.family@alpha.example"]
-body = sent[0][1].get_content() if sent else ""
+body = sent[0][1].get_body().get_content() if sent else ""
 check("recording a payment emailed the guardian a confirmation, with the amount and the receipt number",
-      len(sent) == 1 and "Payment received" in sent[0][1]["Subject"] and "₦20,000.00" in body and receipt_b1 in body, body[:200])
+      len(sent) == 1 and "Payment Receipt" in sent[0][1]["Subject"] and "₦20,000.00" in body and receipt_b1 in body
+      and any(a.get_content_type() == "application/pdf" for a in sent[0][1].iter_attachments()), body[:200])
 check("…and sent it by WhatsApp too, with the receipt number",
-      any(p["to"] == "+2348035550002" and receipt_b1 in p["text"]["body"] and "₦20,000.00" in p["text"]["body"]
+      any(isinstance(p, dict) and p.get("to") == "+2348035550002" and receipt_b1 in p.get("document", {}).get("caption", "")
           for _, p in Outbox.whatsapp))
 check("…and there are now two in-app alerts for Bola's parent: the charge and the payment", bola_alerts() == n_before + 2)
 
@@ -1012,8 +1015,8 @@ check("Beta's alerts went out through Beta's own mail account and WhatsApp token
       Outbox.mail and all(s.source == "school" and s.host == "smtp.beta.test" and m["From"] == "office@beta.example"
                           and m["To"] == "chike.family@beta.example" for s, m in Outbox.mail)
       and Outbox.whatsapp and all(t == "Bearer token-beta" and p["to"] == "+2348035550009" for t, p in Outbox.whatsapp)
-      and all("Alpha" not in m.get_content() for _, m in Outbox.mail)
-      and all("Alpha" not in p["text"]["body"] for _, p in Outbox.whatsapp))
+      and all("Alpha" not in m.get_body().get_content() for _, m in Outbox.mail)
+      and all("Alpha" not in str(p) for _, p in Outbox.whatsapp))
 check("Alpha's receipt numbers are its own, unbroken from one, and never Beta's",
       [r[0] for r in alpha.sql("SELECT receipt_no FROM finance_payments ORDER BY id")]
       == [f"{SCHOOL_CODE}-{YEAR}-{n:05d}" for n in range(1, alpha.count("finance_payments") + 1)] and SCHOOL_CODE != BETA_CODE)

@@ -35,6 +35,8 @@ from core.entrance import (
     _result_file_data_uri, _school_logo_data_uri,
     _valid_question_configuration, bank, bank_entry_group, bank_subject,
     candidate_cumulative, entrance_paper_label, entrance_subject_label,
+    ENTRY_GROUP_LABELS, _current_exam_bank_ids, _last_session_bank,
+    entrance_practice_paper, entrance_practice_setting,
     entry_group_label, get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
 )
@@ -42,7 +44,7 @@ from core.marks import tidy as tidy_mark
 from core.numbering import NumberingRuleError
 from models import (
     AcademicSession, AdminResourceLock, Answer, Attempt, Candidate,
-    CandidatePaper, EntranceBankConfig, Examination, RetakeGrant, db,
+    CandidatePaper, EntranceBankConfig, EntrancePracticeSetting, Examination, RetakeGrant, db,
 )
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import (
@@ -108,15 +110,73 @@ def admin_dashboard():
 @app.route('/admin/practice-tests')
 @admin_required
 def admin_practice_tests():
+    """Where each entrance practice subject gets its questions from: the last session's paper or
+    a bank the school set up for practice. Taking the practice itself is public (/entrance-practice)."""
     me=current_admin()
     if not admin_has_permission(me['id'],'entrance.config.view'):
         return admin_access_error('entrance.config.view')
-    current=_school_current_session()
-    configs=[_flatten(r,'EntranceBankConfig',*ENTRANCE_CONFIG_EXTRA) for r in all_rows(
-        _entrance_config_select().where(EntranceBankConfig.practice_enabled==1)
-        .order_by(AcademicSession.id.desc(),EntranceBankConfig.entry_group,
-                  EntranceBankConfig.subject))]
-    return render_template('admin_entrance_practice.html',configs=configs,current_session=current)
+    protected=_current_exam_bank_ids()
+    banks=_entrance_banks_for(me)
+    rows=[]
+    for group,group_label in ENTRY_GROUP_LABELS.items():
+        for subject,subject_label in ENTRANCE_SUBJECT_LABELS.items():
+            paper=entrance_practice_paper(group,subject)
+            last=_last_session_bank(group,subject,protected)
+            rows.append({
+                'group':group,'group_label':group_label,'subject':subject,'subject_label':subject_label,
+                'setting':entrance_practice_setting(group,subject),
+                'last_session':last[1] if last else None,
+                'live':bool(paper),'count':paper['count'] if paper else 0,
+                'banks':[b for b in banks if b['id'] not in protected and bank_subject(b)==subject
+                         and (subject=='general_knowledge' or bank_entry_group(b) in (group,None))]})
+    return render_template('admin_entrance_practice.html',rows=rows,current_session=_school_current_session(),
+                           practice_url=url_for('entrance_practice',_external=True))
+
+@app.post('/admin/practice-tests/save')
+@admin_required
+@csrf_protect
+def admin_practice_tests_save():
+    me=current_admin()
+    if not admin_has_permission(me['id'],'entrance.practice.manage'):
+        return admin_access_error('entrance.practice.manage')
+    group=request.form.get('entry_group','').strip().lower()
+    subject=request.form.get('subject','').strip().lower()
+    source=request.form.get('source','').strip()
+    bank_id=request.form.get('bank_id','').strip()
+    try: count=int(request.form.get('questions_to_serve','') or 0)
+    except ValueError: count=-1
+    if group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS or source not in ('last_session','custom'):
+        abort(400)
+    if source=='custom':
+        b=bank(bank_id)
+        if not b or not admin_scope_allows(me['id'],'bank',bank_id):
+            flash('Choose one of your question banks for the custom practice questions.','error')
+            return redirect(url_for('admin_practice_tests'))
+        if bank_subject(b)!=subject:
+            flash('That question bank is for a different subject.','error'); return redirect(url_for('admin_practice_tests'))
+        if bank_id in _current_exam_bank_ids():
+            flash('That bank is used by the current entrance examination, so it cannot also be offered as practice. Create a separate bank for practice.','error')
+            return redirect(url_for('admin_practice_tests'))
+        if count<0 or count>len(b.get('questions',[])):
+            flash(f'Choose how many questions each attempt draws (1 to {len(b.get("questions",[]))}), or leave it blank for the default.','error')
+            return redirect(url_for('admin_practice_tests'))
+    else:
+        bank_id=None; count=0
+    now=datetime.now(timezone.utc).isoformat()
+    row=db.session.scalars(select(EntrancePracticeSetting).where(
+        EntrancePracticeSetting.entry_group==group,EntrancePracticeSetting.subject==subject)).first()
+    if not row:
+        row=EntrancePracticeSetting(entry_group=group,subject=subject,source=source,bank_id=bank_id,
+                                    questions_to_serve=count or None,updated_at=now,updated_by=me['id'])
+        db.session.add(row)
+    else:
+        row.source=source; row.bank_id=bank_id; row.questions_to_serve=count or None
+        row.updated_at=now; row.updated_by=me['id']
+    db.session.commit()
+    audit_log('entrance_practice_source_changed','assessment','entrance_practice',f'{group}:{subject}',
+              {'source':source,'bank_id':bank_id,'questions_to_serve':count or None})
+    flash('Practice questions updated.','success')
+    return redirect(url_for('admin_practice_tests'))
 
 @app.route('/admin/entrance-config')
 @admin_required
@@ -238,30 +298,6 @@ def admin_entrance_config_activate(config_id):
     db.session.commit()
     audit_log('entrance_config_activated','assessment','entrance_config',config_id,{'bank_id':cfg.bank_id,'entry_group':cfg.entry_group,'subject':cfg.subject,'session_id':cfg.session_id,'reason':reason or None})
     flash('Entrance examination configuration activated.','success')
-    return redirect(url_for('admin_entrance_config'))
-
-@app.post('/admin/entrance-config/<int:config_id>/practice')
-@admin_required
-@csrf_protect
-def admin_entrance_config_practice(config_id):
-    me=current_admin()
-    if not admin_has_permission(me['id'],'entrance.practice.manage'):
-        return admin_access_error('entrance.practice.manage')
-    cfg=obj(EntranceBankConfig,config_id)
-    if not cfg: abort(404)
-    current=_school_current_session()
-    if current and cfg.session_id==current['id']:
-        flash('The current academic entrance configuration cannot be enabled for practice.','error'); return redirect(url_for('admin_entrance_config'))
-    if not admin_scope_allows(me['id'],'bank',cfg.bank_id):
-        return admin_access_error('entrance.practice.manage')
-    new=0 if cfg.practice_enabled else 1
-    reason=request.form.get('reason','').strip()
-    if new and not reason:
-        flash('A reason is required when enabling historical practice for an entrance configuration.','error'); return redirect(url_for('admin_entrance_config'))
-    cfg.practice_enabled=new; cfg.updated_at=datetime.now(timezone.utc).isoformat(); cfg.updated_by=me['id']
-    db.session.commit()
-    audit_log('entrance_practice_eligibility_changed','assessment','entrance_config',config_id,{'enabled':bool(new),'reason':reason or None})
-    flash('Historical entrance practice eligibility updated.','success')
     return redirect(url_for('admin_entrance_config'))
 
 @app.route('/admin/candidates')

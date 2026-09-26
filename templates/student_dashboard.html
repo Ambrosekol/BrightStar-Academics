@@ -91,6 +91,10 @@
       <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('edit') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
       <span><span class="fp-tile__label">Tests</span><span class="fp-tile__meta">{{ assessment_counts.test }} available</span></span>
     </a>
+    <a class="fp-tile" href="{{ url_for('student_assessment_list', kind='practice') }}">
+      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('target') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
+      <span><span class="fp-tile__label">Practice</span><span class="fp-tile__meta">{{ assessment_counts.practice }} to retake any time</span></span>
+    </a>
     <a class="fp-tile" href="{{ url_for('student_assessment_list', kind='examinations') }}">
       <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('stopwatch') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
       <span><span class="fp-tile__label">Examinations</span><span class="fp-tile__meta">{{ assessment_counts.examination }} available</span></span>

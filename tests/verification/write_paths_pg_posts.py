@@ -113,6 +113,7 @@ for handler in list(A.app.logger.handlers):
     if handler is not errors:  # keep the run's output to the checks; the handler above keeps the detail
         A.app.logger.removeHandler(handler)
 A.app.logger.propagate = False
+A.app.config['BACKGROUND_INLINE'] = True
 
 
 def is_database_error(exc):
@@ -616,6 +617,27 @@ for result_id in (TEST_RESULT, EXAM_RESULT):
     for action in ("verify", "approve"):
         op.post(f"{RESULTS}/{result_id}/workflow", {"action": action, "reason": "Checked against the script"})
 check("results were verified and approved", count("school_student_results", "id IN (:a, :b) AND status = 'approved'", a=TEST_RESULT, b=EXAM_RESULT) == 2)
+TUNDE_RESULTS = [r[0] for r in sql("SELECT id FROM school_student_results WHERE student_id = :s ORDER BY id", s=TUNDE)]
+for result_id in TUNDE_RESULTS:
+    for action in ("verify", "approve"):
+        op.post(f"{RESULTS}/{result_id}/workflow", {"action": action, "reason": "Checked against the script"})
+page = op.text(f"{RESULTS}?class=JSS%201")
+check("results: choosing a class opens a dialog listing its students", "Students in JSS 1" in page and "Search by name or admission number" in page)
+page = op.text(f"{RESULTS}?class=JSS%201&student={TUNDE}")
+check("results: choosing a student asks for a session and term first", "Choose the session and term" in page and "Release all results" not in page)
+page = op.text(f"{RESULTS}?class=JSS%201&student={TUNDE}&session={CURRENT}&term=First%20Term")
+check("results: the term shows its subjects, with one release button at the top",
+      "Release all results for this term" in page and page.index("Release all results") < page.index("<table"))
+before = len(FakeSMTP.sent)
+op.post(f"{RESULTS}/release-term", {"student_id": TUNDE, "session_id": CURRENT, "term": "First Term",
+                                    "return_to": f"{RESULTS}?class=JSS%201&student={TUNDE}"})
+check("results: one press released every approved result of the term",
+      count("school_student_results", "id = ANY(:ids) AND status = 'released'", ids=TUNDE_RESULTS) == len(TUNDE_RESULTS))
+check("…and the parents were told the report card is ready (email and in-app)",
+      any("report card ready" in str(m["Subject"]) for m in FakeSMTP.sent[before:])
+      and count("school_notifications", "student_id = :s AND category = 'results'", s=TUNDE) >= 0)
+r = op.post(f"{RESULTS}/release-term", {"student_id": TUNDE, "session_id": CURRENT, "term": "First Term"}, valid=False)
+check("results: releasing a term with nothing approved is refused", r.said("no approved results"))
 op.post(f"{RESULTS}/{TEST_RESULT}/workflow", {"action": "release"})
 check("a result was released", one("SELECT status FROM school_student_results WHERE id = :r", r=TEST_RESULT) == "released")
 op.post(f"{RESULTS}/release-schedule", {"result_release_at": "2026-01-01T09:00"})
@@ -645,19 +667,30 @@ check("…and the parents were told (in-app notification)", count("school_notifi
 
 PAY = {"student_id": ADA, "session_id": CURRENT, "amount": "30000", "category": "School Fees", "method": "Cash",
        "reference": "CASH-001", "paid_at": "2026-10-05 10:30", "payer_name": "Chidi Obi", "notes": "Part payment"}
+mail_auto = len(FakeSMTP.sent)
 r = op.post(f"{FIN}/payments/new", PAY)
 PAYMENT = int(grab(r"/receipts/(\d+)", r.location, "the new receipt's id"))
 check("a payment was recorded with a receipt number", one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=PAYMENT) is not None)
 assessment_id = one("SELECT id FROM finance_fee_assessments WHERE student_id = :s AND fee_item_id = :f", s=ADA, f=TUITION)
 op.post(f"{FIN}/payments/{PAYMENT}/allocate", {"allocations": json.dumps({str(assessment_id): 30000})})
 check("a payment was allocated to a fee", one("SELECT sum(amount) FROM finance_payment_allocations WHERE payment_id = :p", p=PAYMENT) == 30000)
+check("a recorded payment emailed its receipt to the guardian automatically",
+      len(FakeSMTP.sent) == mail_auto + 1 and any(p.get_content_type() == "application/pdf" for p in FakeSMTP.sent[-1].iter_attachments())
+      and "Part payment" in FakeSMTP.sent[-1].get_body().get_content())
+check("…and sent it by WhatsApp too, both attempts logged",
+      count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PAYMENT) == 2)
+receipt_pdf = op.get(f"{FIN}/receipts/{PAYMENT}/pdf")
+check("the receipt PDF is drawn from the school's own identity", receipt_pdf.status_code == 200 and receipt_pdf.data.startswith(b"%PDF"))
+receipt_page = op.text(f"{FIN}/receipts/{PAYMENT}")
+check("the receipt page carries the school's brand colours and the bursar's note",
+      "--rc-primary:#" in receipt_page and "Part payment" in receipt_page and "Trust the process" in receipt_page)
 mail_before = len(FakeSMTP.sent)
 op.post(f"{FIN}/receipts/{PAYMENT}/email", {})
 check("a receipt PDF was emailed to the guardian", len(FakeSMTP.sent) == mail_before + 1
       and any(part.get_content_type() == "application/pdf" for part in FakeSMTP.sent[-1].iter_attachments()))
 op.post(f"{FIN}/receipts/{PAYMENT}/whatsapp", {})
 check("a receipt PDF was sent by WhatsApp", any(u.endswith("/media") for u in WHATSAPP_CALLS)
-      and count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PAYMENT) == 2)
+      and count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PAYMENT) == 4)
 r = op.post(f"{FIN}/payments/new", {**PAY, "amount": "5000", "reference": "CASH-002"})
 VOIDED = int(grab(r"/receipts/(\d+)", r.location, "the second receipt's id"))
 op.post(f"{FIN}/payments/{VOIDED}/void", {"reason": "Entered against the wrong child"})
@@ -811,6 +844,22 @@ check("the test was submitted and marked", one("SELECT status FROM school_assess
 check("…and a result row was written for the school to verify",
       count("school_student_results", "student_id = :s AND assessment_id = :a", s=ADA, a=TEST) == 1)
 
+# practice is a self-study bank: any session, any number of times, and never recorded
+practice_page = student.text("/student/practice")
+check("student practice: the practice tests of the student's class are always listed", "Old practice paper" in practice_page)
+attempts_before = count("school_assessment_attempts")
+results_before = count("school_student_results")
+for run in range(2):
+    student.get(f"/student/practice/{PRACTICE}")
+    served = student.session().get("student_practice", {}).get("ids", [])
+    check(f"student practice: run {run + 1} served the practice paper's questions", sorted(served) == sorted(r[0] for r in sql("SELECT id FROM school_questions WHERE assessment_id = :a", a=PRACTICE)))
+    r = student.post(f"/student/practice/{PRACTICE}", {f"q_{qid}": right for qid, right in sql("SELECT id, correct_option FROM school_questions WHERE assessment_id = :a", a=PRACTICE)})
+    check(f"student practice: run {run + 1} was marked, and it can be taken again", r.status == 200 and "NOT RECORDED" in r.body and "Retake this practice" in r.body)
+check("student practice leaves no attempt and no result behind",
+      count("school_assessment_attempts") == attempts_before and count("school_student_results") == results_before)
+r = student.post(f"/student/assessments/{PRACTICE}/start", {}, valid=False)
+check("student practice: the old graded start route now leads to the practice page", f"/student/practice/{PRACTICE}" in r.location and count("school_assessment_attempts") == attempts_before)
+
 # ================================================================ 11. the public practice area (past sessions only)
 visitor = Actor("visitor")
 r = visitor.post("/practice", {"class_id": JSS1, "subject_id": MATHS})
@@ -898,12 +947,31 @@ op.post(f"{CONFIG}/save", {"config_id": PAST_CONFIG, "bank_id": "starter_year7_e
 check("…and edited", one("SELECT questions_to_serve FROM entrance_bank_configs WHERE id = :c", c=PAST_CONFIG) == 25)
 op.post(f"{CONFIG}/{PAST_CONFIG}/activate", {"reason": "Check it works"})
 check("a configuration was activated", one("SELECT active FROM entrance_bank_configs WHERE id = :c", c=PAST_CONFIG) == 1)
-op.post(f"{CONFIG}/{PAST_CONFIG}/practice", {"reason": "Open last year's paper for practice"})
-check("a past configuration was opened for practice", one("SELECT practice_enabled FROM entrance_bank_configs WHERE id = :c", c=PAST_CONFIG) == 1)
-visitor.get(f"/entrance-practice/{PAST_CONFIG}")
-picked = visitor.session().get("entrance_practice_questions", [])
-r = visitor.post(f"/entrance-practice/{PAST_CONFIG}", {f"q_{qid}": "0" for qid in picked})
-check("public entrance practice was taken and marked", len(picked) == 25 and r.status == 200)
+# public entrance practice: nobody registers; a subject serves last session's paper or a bank set up for practice
+op.post(f"{CONFIG}/save", {"bank_id": MY_BANK, "entry_group": "year7", "subject": "mathematics", "session_id": PAST, "term": "Full Session",
+                           "questions_to_serve": "2", "reason": "Last year's Mathematics paper"})
+attempts_before = count("attempts")
+listing = visitor.text("/entrance-practice?group=year7")
+check("entrance practice: anyone can pick a target class and see its subjects", "Year 7 / JSS 1" in listing and "Mathematics" in listing)
+visitor.get("/entrance-practice/year7/mathematics")
+picked = visitor.session().get("entrance_practice", {}).get("ids", [])
+r = visitor.post("/entrance-practice/year7/mathematics", {f"q_{qid}": "1" for qid in picked})
+check("entrance practice: last session's paper was served, taken without signing in, and marked",
+      len(picked) == 2 and r.status == 200 and "NOT RECORDED" in r.body)
+check("entrance practice: the current session's own bank is never offered", visitor.get("/entrance-practice/year7/english").status_code == 404)
+op.text("/admin/practice-tests")
+page = op.text("/admin/practice-tests")
+check("entrance practice: the administrator sees where each subject's questions come from", "Where each subject" in page)
+r = op.post("/admin/practice-tests/save", {"entry_group": "year7", "subject": "english", "source": "custom",
+                                            "bank_id": "starter_year7_english", "questions_to_serve": "5"}, valid=False)
+check("entrance practice: a bank used by the current examination cannot be offered", r.said("cannot also be offered"))
+op.post("/admin/practice-tests/save", {"entry_group": "year7", "subject": "english", "source": "custom",
+                                       "bank_id": "posts_english_import", "questions_to_serve": "3"})
+check("entrance practice: a custom bank was chosen for a subject",
+      count("entrance_practice_settings", "entry_group = 'year7' AND subject = 'english' AND source = 'custom'") == 1)
+visitor.get("/entrance-practice/year7/english")
+check("entrance practice: the custom questions were served, three at random", len(visitor.session().get("entrance_practice", {}).get("ids", [])) == 3)
+check("entrance practice leaves nothing recorded", count("attempts") == attempts_before)
 
 # a candidate: register, sign in, sit a paper, be marked; then the administrator's controls over the result
 CANDS = "/admin/candidates"

@@ -4,6 +4,8 @@ CBT-style quiz), and school assessments (tests/practice/examinations).
 
 from datetime import datetime, timedelta, timezone
 
+import random
+
 import sqlalchemy as sa
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_, func, select, update as sa_update
@@ -25,7 +27,8 @@ from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _fla
 from core.security import audit_log, csrf_protect
 from core.session_guard import refresh_password_stamp
 from blueprints.student_portal.helpers import (
-    _student_assessment_context, student_assessment_grade, student_required,
+    _student_assessment_context, _student_practice_context,
+    student_assessment_grade, student_required,
 )
 
 
@@ -105,7 +108,8 @@ def student_dashboard():
                SchoolAssessment.title.label('assessment_title'))
         .join(SchoolSubject,SchoolSubject.id==SchoolStudentResult.subject_id)
         .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
-        .where(SchoolStudentResult.student_id==sid,SchoolStudentResult.status=='released')
+        .where(SchoolStudentResult.student_id==sid,SchoolStudentResult.status=='released',
+               or_(SchoolAssessment.assessment_type.is_(None),SchoolAssessment.assessment_type!='practice'))
         .order_by(SchoolStudentResult.id.desc()).limit(10))
     assessments=[]
     if student['class_id'] and student['session_id']:
@@ -117,11 +121,15 @@ def student_dashboard():
                    SchoolAssessment.question_count,SchoolSubject.name.label('subject_name'))
             .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
             .where(SchoolAssessment.class_id==student['class_id'],SchoolAssessment.active==1,
-                   SchoolAssessment.question_count>0,
+                   SchoolAssessment.question_count>0,SchoolAssessment.assessment_type!='practice',
                    or_(SchoolAssessment.session_id==student['session_id'],
                        SchoolAssessment.session_id.is_(None)))
             .order_by(kind,SchoolAssessment.id.desc()).limit(12))
     counts={k:sum(1 for a in assessments if a['assessment_type']==k) for k in ('practice','test','examination')}
+    counts['practice']=(one_scalar(select(func.count()).select_from(SchoolAssessment)
+        .where(SchoolAssessment.assessment_type=='practice',SchoolAssessment.active==1,
+               SchoolAssessment.question_count>0,
+               SchoolAssessment.class_id==student['class_id']),0) if student['class_id'] else 0)
     return render_template('student_dashboard.html',student=student,report_periods=student_periods(sid),assignments=assignments,projects=projects,notifications=notifications,results=results,assessments=assessments,assessment_counts=counts)
 
 @app.route('/student/assignments/<int:assignment_id>',methods=['GET','POST'])
@@ -272,15 +280,17 @@ def student_assessment_list(kind):
     student=_student_with_enrolment(sid)
     rows=[]
     if student and student['class_id']:
-        rows=[_flatten(r,'SchoolAssessment','subject_name') for r in all_rows(
-            select(SchoolAssessment,SchoolSubject.name.label('subject_name'))
-                .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
-                .where(SchoolAssessment.assessment_type==assessment_type,
-                       SchoolAssessment.class_id==student['class_id'],
-                       SchoolAssessment.active==1,SchoolAssessment.question_count>0,
-                       or_(SchoolAssessment.session_id==student['session_id'],
-                           SchoolAssessment.session_id.is_(None)))
-                .order_by(SchoolAssessment.id.desc()))]
+        stmt=(select(SchoolAssessment,SchoolSubject.name.label('subject_name'))
+              .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
+              .where(SchoolAssessment.assessment_type==assessment_type,
+                     SchoolAssessment.class_id==student['class_id'],
+                     SchoolAssessment.active==1,SchoolAssessment.question_count>0))
+        if assessment_type!='practice':
+            # Practice is a standing question bank; tests and examinations belong to a session.
+            stmt=stmt.where(or_(SchoolAssessment.session_id==student['session_id'],
+                                SchoolAssessment.session_id.is_(None)))
+        rows=[_flatten(r,'SchoolAssessment','subject_name')
+              for r in all_rows(stmt.order_by(SchoolSubject.name,SchoolAssessment.id.desc()))]
     title={'practice':'Practice Tests','tests':'Tests','examinations':'Examinations'}[kind]
     return render_template('student_assessment_list.html',student=student,assessments=rows,title=title,assessment_type=assessment_type)
 
@@ -289,6 +299,8 @@ def student_assessment_list(kind):
 @csrf_protect
 def student_assessment_start(assessment_id):
     sid=session.get('student_id')
+    if _is_practice(assessment_id):
+        return redirect(url_for('student_practice_take',assessment_id=assessment_id))
     student,a,questions=_student_assessment_context(assessment_id,sid)
     if not a: abort(404)
     existing=db.session.scalars(select(SchoolAssessmentAttempt).where(
@@ -336,6 +348,8 @@ def student_assessment_start(assessment_id):
 @student_required
 def student_assessment_take(assessment_id):
     sid=session.get('student_id')
+    if _is_practice(assessment_id):
+        return redirect(url_for('student_practice_take',assessment_id=assessment_id))
     student,a,questions=_student_assessment_context(assessment_id,sid)
     if not a: abort(404)
     attempt=db.session.scalars(select(SchoolAssessmentAttempt).where(
@@ -433,3 +447,56 @@ def student_assessment_result(assessment_id):
     visible=bool(result_row) if a and a['assessment_type']!='practice' else True
     return render_template('student_assessment_result.html',student=student,assessment=a,
                            result=(result_row or attempt),percentage=(result_row['score']/result_row['max_score']*100 if result_row and result_row['max_score'] else attempt['percentage']),submitted=True,visible_to_student=visible)
+
+
+# --------------------------------------------------------------- practice
+# Practice is a self-study bank, deliberately kept out of a student's record: taking it writes
+# nothing to the database (no attempt, no answer rows, no result), so it can never reach a term
+# result or report card. It can be taken and retaken at any time, and every run serves the
+# questions in a fresh random order.
+
+PRACTICE_MAX_QUESTIONS=40
+
+def _is_practice(assessment_id):
+    return one_scalar(select(SchoolAssessment.id).where(
+        SchoolAssessment.id==assessment_id,SchoolAssessment.assessment_type=='practice')) is not None
+
+@app.route('/student/practice/<int:assessment_id>',methods=['GET','POST'])
+@student_required
+@csrf_protect
+def student_practice_take(assessment_id):
+    sid=session.get('student_id')
+    student,a,questions=_student_practice_context(assessment_id,sid)
+    if not a: abort(404)
+    if not questions:
+        flash('This practice test has no questions yet.','error')
+        return redirect(url_for('student_assessment_list',kind='practice'))
+    if request.method=='GET':
+        chosen=random.sample(list(questions),min(len(questions),PRACTICE_MAX_QUESTIONS))
+        session['student_practice']={'assessment_id':assessment_id,'ids':[q.id for q in chosen]}
+        minutes=int(a['duration_minutes'] or 0)
+        seconds=max(60,round(minutes*60*len(chosen)/max(1,len(questions)))) if minutes else 0
+        return render_template('student_practice_take.html',student=student,assessment=a,
+                               questions=chosen,seconds=seconds)
+    state=session.get('student_practice') or {}
+    ids=state.get('ids') or []
+    if state.get('assessment_id')!=assessment_id or not ids:
+        return redirect(url_for('student_practice_take',assessment_id=assessment_id))
+    by_id={q.id:q for q in questions}
+    results=[]; score=0
+    for qid in ids:
+        q=by_id.get(qid)
+        if not q: continue
+        try: picked=int(request.form.get(f'q_{qid}'))
+        except (TypeError,ValueError): picked=-1
+        options=[q.option_a,q.option_b,q.option_c,q.option_d]
+        if picked not in (0,1,2,3) or options[picked] is None: picked=-1
+        right=picked==q.correct_option
+        score+=1 if right else 0
+        results.append({'text':q.question_text,'options':options,'selected':picked,
+                        'correct':q.correct_option,'right':right})
+    session.pop('student_practice',None)
+    total=len(results)
+    return render_template('student_practice_result.html',student=student,assessment=a,
+                           results=results,score=score,total=total,
+                           percentage=(score/total*100) if total else 0)

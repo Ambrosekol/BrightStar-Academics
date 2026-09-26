@@ -3,297 +3,98 @@
 {% block title %}Entrance Practice &mdash; {{ school_brand.name }} Administration{% endblock %}
 
 {% block content %}
-
-{% set ns = namespace(total=0, historical=0, current=0) %}
-
-{% for c in configs %}
-  {% set ns.total = ns.total + 1 %}
-  {% if current_session and c.session_id == current_session.id %}
-    {% set ns.current = ns.current + 1 %}
-  {% else %}
-    {% set ns.historical = ns.historical + 1 %}
-  {% endif %}
-{% endfor %}
-
 <div class="practice-admin-page">
 
   <section class="practice-admin-hero">
-
     <div class="practice-admin-hero-copy">
-
-      <a href="/admin" class="practice-admin-back">
-        &larr; Back to Administration
-      </a>
-
-      <div class="practice-admin-eyebrow">
-        EXAMINATION PRACTICE
-      </div>
-
+      <a href="/admin" class="practice-admin-back">&larr; Back to Administration</a>
+      <div class="practice-admin-eyebrow">ENTRANCE PRACTICE</div>
       <div class="practice-admin-title-row">
-
         <div>
-          <h1>Historical Practice Sets</h1>
-
+          <h1>Entrance practice questions</h1>
           <p>
-            Manage previous-period entrance examination configurations
-            that have been enabled for candidate practice. The current
-            examination configuration remains protected.
+            Anyone with the practice link can pick a target class and a subject and practise, with no
+            registration. Every attempt draws its questions at random, in a new order, and is never saved.
+            For each class and subject, choose where the questions come from.
           </p>
         </div>
-
-        <div class="practice-admin-hero-stat">
-          <strong>{{ ns.historical }}</strong>
-          <span>Historical sets</span>
-        </div>
-
       </div>
-
     </div>
-
   </section>
-
-
-  <section class="practice-admin-summary"
-           aria-label="Practice set summary">
-
-    <div class="practice-admin-summary-card">
-
-      <span class="practice-admin-summary-label">
-        Available Configurations
-      </span>
-
-      <strong>{{ ns.total }}</strong>
-
-      <small>
-        Practice-enabled examination configurations
-      </small>
-
-    </div>
-
-
-    <div class="practice-admin-summary-card practice-admin-summary-primary">
-
-      <span class="practice-admin-summary-label">
-        Historical Sets
-      </span>
-
-      <strong>{{ ns.historical }}</strong>
-
-      <small>
-        Previous-period configurations
-      </small>
-
-    </div>
-
-
-    <div class="practice-admin-summary-card practice-admin-summary-protected">
-
-      <span class="practice-admin-summary-label">
-        Current Session
-      </span>
-
-      <strong>{{ ns.current }}</strong>
-
-      <small>
-        Protected from candidate practice
-      </small>
-
-    </div>
-
-
-    <div class="practice-admin-summary-card">
-
-      <span class="practice-admin-summary-label">
-        Practice Mode
-      </span>
-
-      <strong>CBT</strong>
-
-      <small>
-        Candidate self-practice experience
-      </small>
-
-    </div>
-
-  </section>
-
 
   <section class="practice-admin-workspace">
-
     <div class="practice-admin-workspace-head">
-
       <div>
-        <span class="practice-admin-section-eyebrow">
-          PRACTICE LIBRARY
-        </span>
+        <span class="practice-admin-section-eyebrow">PRACTICE LINK</span>
+        <h2>Share this address</h2>
+        <p><a href="{{ practice_url }}" target="_blank" rel="noopener"><strong>{{ practice_url }}</strong></a></p>
+      </div>
+    </div>
+  </section>
 
-        <h2>Historical Examination Sets</h2>
-
+  <section class="practice-admin-workspace">
+    <div class="practice-admin-workspace-head">
+      <div>
+        <span class="practice-admin-section-eyebrow">QUESTION SOURCES</span>
+        <h2>Where each subject&rsquo;s questions come from</h2>
         <p>
-          Previous examination configurations available for practice.
+          <strong>Last session&rsquo;s examination</strong> serves the entrance paper of the most recent earlier
+          session. <strong>Custom questions</strong> serves a question bank you set up for practice. The
+          current session&rsquo;s examination is never offered, so its questions cannot leak.
         </p>
       </div>
-
-      <div class="practice-admin-count-chip">
-        {{ ns.historical }}
-        historical set{% if ns.historical != 1 %}s{% endif %}
-      </div>
-
     </div>
-
-
-    {% if configs %}
 
     <div class="practice-admin-table-wrap">
-
       <table class="practice-admin-table">
-
         <thead>
-          <tr>
-            <th>Session</th>
-            <th>Entry Class</th>
-            <th>Subject</th>
-            <th>Questions</th>
-            <th>Status</th>
-            <th>Practice</th>
-          </tr>
+          <tr><th>Entry class</th><th>Subject</th><th>Serving now</th><th>Question source</th></tr>
         </thead>
-
         <tbody>
-
-          {% for c in configs %}
-
-          {% set is_current = current_session and c.session_id == current_session.id %}
-
-          <tr class="{% if is_current %}practice-row-protected{% endif %}">
-
+          {% for r in rows %}
+          <tr>
+            <td><span class="practice-entry-class">{{ r.group_label }}</span></td>
+            <td><strong class="practice-subject">{{ r.subject_label }}</strong></td>
             <td>
-
-              <div class="practice-session">
-
-                <div class="practice-session-icon">
-                  {{ c.session_name[:1]|upper }}
-                </div>
-
-                <div>
-                  <strong>{{ c.session_name }}</strong>
-
-                  {% if is_current %}
-                  <small>Current examination session</small>
-                  {% else %}
-                  <small>Historical session</small>
-                  {% endif %}
-                </div>
-
-              </div>
-
-            </td>
-
-
-            <td>
-
-              <span class="practice-entry-class">
-                {{ entry_group_label(c.entry_group) }}
-              </span>
-
-            </td>
-
-
-            <td>
-
-              <strong class="practice-subject">
-                {{ c.subject|replace('_',' ')|title }}
-              </strong>
-
-            </td>
-
-
-            <td>
-
-              <div class="practice-question-count">
-
-                <strong>{{ c.questions_to_serve }}</strong>
-
-                <span>questions</span>
-
-              </div>
-
-            </td>
-
-
-            <td>
-
-              {% if is_current %}
-
-              <span class="practice-status practice-status-protected">
-                Protected
-              </span>
-
+              {% if r.live %}
+              <span class="practice-status practice-status-ready"><i aria-hidden="true"></i>{{ r.count }} questions per attempt</span>
               {% else %}
-
-              <span class="practice-status practice-status-ready">
-                <i aria-hidden="true"></i>
-                Practice Ready
-              </span>
-
+              <span class="practice-status practice-status-protected">Nothing to serve yet</span>
               {% endif %}
-
             </td>
-
-
             <td>
-
-              {% if is_current %}
-
-              <span class="practice-action-disabled">
-                Current session
-              </span>
-
+              {% if admin_has_permission(session.get('admin_id'), 'entrance.practice.manage') %}
+              <form method="post" action="{{ url_for('admin_practice_tests_save') }}" class="practice-source-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="entry_group" value="{{ r.group }}">
+                <input type="hidden" name="subject" value="{{ r.subject }}">
+                <select name="source" onchange="this.form.querySelector('.custom-fields').hidden = this.value !== 'custom'">
+                  <option value="last_session" {% if r.setting.source == 'last_session' %}selected{% endif %}>
+                    Last session&rsquo;s examination{% if r.last_session %} ({{ r.last_session }}){% else %} (none yet){% endif %}
+                  </option>
+                  <option value="custom" {% if r.setting.source == 'custom' %}selected{% endif %}>Custom questions</option>
+                </select>
+                <span class="custom-fields" {% if r.setting.source != 'custom' %}hidden{% endif %}>
+                  <select name="bank_id">
+                    <option value="">Choose a question bank</option>
+                    {% for b in r.banks %}
+                    <option value="{{ b.id }}" {% if r.setting.bank_id == b.id %}selected{% endif %}>{{ b.name or b.id }} ({{ b.questions|length }})</option>
+                    {% endfor %}
+                  </select>
+                  <input type="number" name="questions_to_serve" min="1" placeholder="Questions per attempt" value="{{ r.setting.questions_to_serve or '' }}">
+                </span>
+                <button type="submit" class="practice-open-btn">Save</button>
+              </form>
               {% else %}
-
-              <a
-                href="/entrance-practice/{{ c.id }}"
-                class="practice-open-btn"
-              >
-                Open Practice
-                <span aria-hidden="true">&rarr;</span>
-              </a>
-
+              {{ 'Custom questions' if r.setting.source == 'custom' else 'Last session\'s examination' }}
               {% endif %}
-
             </td>
-
           </tr>
-
           {% endfor %}
-
         </tbody>
-
       </table>
-
     </div>
-
-    {% else %}
-
-    <div class="practice-admin-empty">
-
-      <div class="practice-admin-empty-icon" aria-hidden="true">
-        &#128196;
-      </div>
-
-      <h3>No historical practice sets yet</h3>
-
-      <p>
-        Practice-enabled configurations from completed examination periods
-        will appear here when they are available for candidate practice.
-      </p>
-
-    </div>
-
-    {% endif %}
-
   </section>
 
 </div>
-
 {% endblock %}

@@ -52,6 +52,30 @@ def _student_assessment_context(assessment_id, sid):
         .order_by(SchoolQuestion.sort_order,SchoolQuestion.id)).all()
     return student,a,questions
 
+def _student_practice_context(assessment_id, sid):
+    """A practice test a student may take, or ``(None, None, [])``.
+
+    Practice is a self-study bank, so unlike a test or examination it is open to the student's
+    class in every session, and nothing about taking it is ever written to the database.
+    """
+    student=_student_with_enrolment(sid)
+    if not student or not student['class_id']:
+        return None,None,[]
+    a=_flatten(one(select(SchoolAssessment,SchoolClass.name.label('class_name'),
+                          SchoolSubject.name.label('subject_name'))
+        .join(SchoolClass,SchoolClass.id==SchoolAssessment.class_id)
+        .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
+        .where(SchoolAssessment.id==assessment_id,SchoolAssessment.assessment_type=='practice',
+               SchoolAssessment.active==1,SchoolAssessment.question_count>0,
+               SchoolAssessment.class_id==student['class_id'])),
+        'SchoolAssessment','class_name','subject_name')
+    if not a:
+        return None,None,[]
+    questions=db.session.scalars(select(SchoolQuestion)
+        .where(SchoolQuestion.assessment_id==assessment_id)
+        .order_by(SchoolQuestion.sort_order,SchoolQuestion.id)).all()
+    return student,a,questions
+
 def student_assessment_grade(attempt_id,auto=False):
     """Grade a frozen student assessment attempt safely and idempotently."""
     try:

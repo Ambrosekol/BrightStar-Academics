@@ -2,35 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{subject_label}} Practice — {{ school_brand.name }}</title>
+<title>{{assessment.title}} — Practice — {{ school_brand.name }}</title>
 <link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
 </head>
 <body class="exam-page student-assessment-page">
 <header class="top exam-top student-exam-top">
   <div class="portal-brand">
     <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
-    <div><strong>{{ school_brand.name|upper }}</strong><span>Entrance practice · {{subject_label}}</span></div>
+    <div><strong>{{ school_brand.name|upper }}</strong><span>Practice · {{assessment.subject_name}}</span></div>
   </div>
   {% if seconds %}<div class="timer student-assessment-timer" id="practiceTimer">--:--</div>{% endif %}
 </header>
 <main class="student-assessment-shell">
   <section class="student-assessment-heading">
-    <p class="student-eyebrow">PRACTICE &middot; NOT RECORDED</p>
-    <h1>{{group_label}} &middot; {{subject_label}}</h1>
-    <p>{{questions|length}} questions in a fresh order. {{label}}. Your score is not saved.</p>
+    <p class="student-eyebrow">PRACTICE TEST &middot; NOT RECORDED</p>
+    <h1>{{assessment.title}}</h1>
+    <p>{{assessment.class_name}} &middot; {{assessment.subject_name}} &middot; {{questions|length}} questions in a fresh order. Nothing here counts towards your grades: it is only for you to see how prepared you are.</p>
   </section>
-  <form method="post" action="{{url_for('entrance_practice_take',group=group,subject=subject)}}" id="practiceForm">
+  {% if assessment.instructions %}
+  <details class="student-instructions" open><summary>Instructions</summary><div>{{assessment.instructions}}</div></details>
+  {% endif %}
+  <form method="post" action="{{url_for('student_practice_take',assessment_id=assessment.id)}}" id="practiceForm">
     <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
     {% for q in questions %}
     <article class="student-question-card">
       <div class="student-question-number">Question {{loop.index}} of {{questions|length}}</div>
       {% if q.instruction %}<div class="student-question-instruction"><strong>Instruction</strong><span>{{q.instruction}}</span></div>{% endif %}
       {% if q.image_path %}<div class="student-question-image"><img src="{{url_for('static',filename=q.image_path)}}" alt="Question illustration"></div>{% endif %}
-      <h2>{{q.text}}</h2>
+      <h2>{{q.question_text}}</h2>
       <div class="student-options">
-        {% for o in q.options %}
-        <label><input type="radio" name="q_{{q.id}}" value="{{loop.index0}}"><span><b>{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[loop.index0]}}.</b> {{o}}</span></label>
-        {% endfor %}
+        {% for text in [q.option_a,q.option_b,q.option_c,q.option_d] %}{% if text is not none %}
+        <label><input type="radio" name="q_{{q.id}}" value="{{loop.index0}}"><span><b>{{'ABCD'[loop.index0]}}.</b> {{text}}</span></label>
+        {% endif %}{% endfor %}
       </div>
     </article>
     {% endfor %}

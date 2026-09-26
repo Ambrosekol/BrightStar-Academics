@@ -153,3 +153,24 @@ class EntranceBankConfig(db.Model):
     created_by = db.Column(Integer, ForeignKey('admins.id'))
     updated_at = db.Column(Text, nullable=False)
     updated_by = db.Column(Integer, ForeignKey('admins.id'))
+
+
+class EntrancePracticeSetting(db.Model):
+    """Where one subject's public practice questions come from, for one entry class.
+
+    ``last_session`` serves the questions of the most recent earlier session's entrance paper;
+    ``custom`` serves a bank the school set up just for practice. With no row the subject uses
+    ``last_session``, so practice works without any setup.
+    """
+
+    __tablename__ = 'entrance_practice_settings'
+    __table_args__ = (UniqueConstraint('entry_group', 'subject'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    entry_group = db.Column(Text, nullable=False)
+    subject = db.Column(Text, nullable=False)
+    source = db.Column(Text, nullable=False, default='last_session', server_default=text("'last_session'"))
+    bank_id = db.Column(Text)
+    questions_to_serve = db.Column(Integer)
+    updated_at = db.Column(Text, nullable=False)
+    updated_by = db.Column(Integer, ForeignKey('admins.id'))
