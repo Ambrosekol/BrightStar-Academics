@@ -1,12 +1,44 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
 <p>Running the school itself — its staff, its roles, its look, and who did what.</p>
 
+<h2 id="administration-hub">The Administration page</h2>
+<p><a href="{{ url_for('admin_administration') }}">Administration</a> is a hub, not one page of its
+own content: it shows a few counts (how many staff accounts, how many roles, how many unread control
+items) and links into the real pages described below. If you cannot see this link at all, your
+account does not hold any administration permission — that is normal for most teaching staff.</p>
+
 <h2 id="staff">Staff accounts</h2>
-<p><a href="{{ url_for('admin_administration') }}">Administration</a> creates, edits and deactivates
-staff accounts, and assigns each one its roles and scope (see
-<a href="{{ url_for('admin_guide_page', slug='roles-permissions') }}">Roles, permissions and scope</a>).
-A new account starts on a one-time password that must be changed at first sign-in.</p>
+<p><a href="{{ url_for('admin_accounts') }}">Accounts</a> lists every member of staff. From here you
+add a new one — a name, a username, an email, a phone number, and which role(s) they hold — or open
+an existing account to edit its details, change its roles or scope, switch its sign-in on or off, or
+reset its password to a fresh one-time password. A new account always starts on a one-time password
+that must be changed at first sign-in; nobody, not even the School Admin, can ever see what a
+password is, only reset it.</p>
+
+<h2 id="roles">Roles</h2>
+<p><a href="{{ url_for('admin_roles') }}">Roles</a> is where the named bundles of permissions
+described in {{ page('roles-permissions', 'Roles, permissions and scope') }} are actually built and
+edited — pick which permissions a role carries by ticking them, from the full list. You can only ever
+tick a permission you hold yourself.</p>
+<p>Two further pages exist mainly for checking your own work, reached by typing their address rather
+than a button in the menu (so do not worry if you never notice them):
+<a href="{{ url_for('admin_permissions_catalogue') }}">the permissions catalogue</a> lists every
+permission that exists in the whole system, grouped by area, so you can see exactly what a role could
+carry before you build one; <a href="{{ url_for('admin_scopes') }}">scopes</a> lists every account in
+the school that is currently limited to particular classes, subjects or banks, all in one place.</p>
+
+<h2 id="messages">Messages</h2>
+<p><a href="{{ url_for('admin_messages') }}">Messages</a> is a simple inbox between members of staff —
+pick a colleague, write a note, attach a file if you need to. It is only ever between staff; a parent
+or a student never sees it and cannot use it. A small red number by the link in the navigation rail
+shows how many messages you have not opened yet.</p>
+
+<h2 id="presence">Who is online now</h2>
+<p><a href="{{ url_for('admin_presence') }}">Online Now</a> shows which staff, students and parents are
+currently signed in and active — useful, for example, to know whether the person you want to message
+is actually at their screen right now.</p>
 
 <h2 id="audit">Audit log</h2>
 <p>The <a href="{{ url_for('admin_audit_logs') }}">Activity Log</a> records who did what, to which

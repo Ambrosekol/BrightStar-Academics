@@ -1,20 +1,33 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
-<p>Four kinds of work sit under the School workspace, and they all feed the same term result once
-marked.</p>
+<p>Five kinds of work sit under the School workspace's navigation rail — Assignments, Projects, Tests,
+Practice Tests and Examinations — and every one except Practice feeds the same term result once
+marked (see {{ page('results-report-cards', 'Results and report cards') }}).</p>
 
 <h2 id="assignments">Assignments</h2>
 <p><a href="{{ url_for('admin_school_assignments') }}">Assignments</a> can be written work you mark by
-hand, or a quiz taken on-screen and marked automatically, timed or not. Set the class, subject,
-session and term, choose which students it applies to, and — for a quiz — the questions.</p>
+hand, or a quiz taken on-screen and marked automatically, timed or not. Open the list, choose
+<strong>New assignment</strong>, and set the class, subject, session and term it belongs to, which
+students it applies to, and — for a quiz — the questions themselves (a text, four options and the
+right one, exactly like a question bank question). Once students have started work, opening one
+assignment from the list shows every student's own answer or score, ready to mark or check.</p>
 
 <h2 id="projects">Projects</h2>
-<p><a href="{{ url_for('admin_school_projects') }}">Projects</a> are practical, longer-running tasks
-with their own due date, scored and remarked individually once submitted or assessed.</p>
+<p><a href="{{ url_for('admin_school_projects') }}">Projects</a> are practical, longer-running tasks —
+a model to build, a report to write — with their own due date. There is no on-screen quiz for a
+project: a student is simply marked as having completed it or not, with a score and a remark you add
+by hand once you have seen the work.</p>
 
-<h2 id="tests">Tests and examinations</h2>
-<p><a href="{{ url_for('admin_school_tests') }}">Tests</a> and examinations are formal, question-based
-assessments whose results become part of a student's official record — unlike practice, below.</p>
+<h2 id="tests-and-examinations">Tests and Examinations: two separate shelves for the same kind of work</h2>
+<p><a href="{{ url_for('admin_school_tests') }}">Tests</a> and
+<a href="{{ url_for('admin_school_examinations') }}">Examinations</a> work in exactly the same way —
+build them the same way you build an assignment's quiz, question by question — and both count fully
+toward a student's official term result, unlike practice below. The only difference between them is
+which list a piece of work sits on and which permission controls it, so a school can tell its own
+smaller, in-term tests apart from its bigger, formal end-of-term examinations, and decide separately
+who may create or edit each kind. Put a piece of work under whichever of the two your school calls it;
+nothing about how it behaves changes either way.</p>
 
 <h2 id="practice">Practice tests</h2>
 <p><a href="{{ url_for('admin_school_practice_tests') }}">Practice</a> is a self-study bank: nothing a

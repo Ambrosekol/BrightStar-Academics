@@ -18,8 +18,18 @@ paper once, and their attempt is recorded automatically as they go.</p>
 
 <h2 id="results">Results and rankings</h2>
 <p><a href="{{ url_for('admin_results') }}">Results &amp; Analytics</a> shows every candidate's
-outcome; <a href="{{ url_for('admin_rankings') }}">Rankings</a> orders them. A candidate's own result
-can be shared as an image carrying the school's own branding, nothing of another school's.</p>
+outcome, one subject at a time, so you can compare how everyone did in Mathematics, or in English,
+without the other subjects in the way. <a href="{{ url_for('admin_rankings') }}">Rankings</a> instead
+orders every candidate by their overall score, highest first — the list a school actually uses to
+decide who is offered admission. A candidate's own result can be shared as an image carrying the
+school's own branding, nothing of another school's, and both pages can export what they show as a
+CSV spreadsheet or a JSON file for further work outside the portal.</p>
+
+<h2 id="activity">Examination Activity</h2>
+<p><a href="{{ url_for('admin_attempts') }}">Examination Activity</a> is a plain, newest-first list of
+every paper ever started, by anyone, for any subject — not analysed or ranked, just a record: who
+started which paper, when, and what became of it. It is the page to check when something seems to
+have gone wrong with one particular sitting, rather than with a whole subject's results.</p>
 
 <h2 id="practice">Entrance practice</h2>
 <p><a href="{{ url_for('admin_practice_tests') }}">Practice Tests</a> lets anyone, with no registration,

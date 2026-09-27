@@ -21,10 +21,39 @@ reverse — the portal stops you and sends you back to Workspace Home to choose.
 the two are kept apart so nobody wanders from one into the other by mistake.</div>
 
 <h2 id="start-here">Where to start</h2>
-<p>If your school is brand new, the <strong>setup checklist</strong> on the School workspace's home
+<p>Whichever workspace you choose, the very first page you land on is called
+<strong>Overview</strong> — <a href="{{ url_for('admin_school_home') }}">Overview</a> in the School
+workspace, <a href="{{ url_for('admin_dashboard') }}">Overview</a> in the Entrance workspace. Think of
+it as the front porch: a handful of numbers (how many students, how many payments today, how many
+candidates registered) so you can tell at a glance whether anything needs your attention, with quick
+links into the busiest pages.</p>
+<p>If your school is brand new, the <strong>setup checklist</strong> on the School workspace's Overview
 page walks you through the order most schools actually need: review classes, add subjects, enrol
 students, set up fees. It disappears on its own once everything is done, and you can bring it back
 with a small link if you dismiss it early.</p>
-<p>Otherwise, use the list on the left. Each page is short and links to the real page it is about, so
-you never have to guess where a button lives.</p>
+<p>Otherwise, use the list on the left of this guide. Each page is short and links to the real page it
+is about, so you never have to guess where a button lives. There is also a search box above that
+list — type a word (say, "receipt" or "attendance") and it searches every guide page for you, not
+just titles.</p>
+
+<h2 id="terms">A few words this guide uses a lot</h2>
+<p>You do not need to memorise these — they are explained again wherever they matter — but having
+them in one place helps if a word confuses you later.</p>
+<ul>
+  <li><strong>Endpoint / route</strong> — not a word you need at all as a school staff member;
+    ignore it if you ever see it in a technical document. Everywhere in <em>this</em> guide we just
+    say "page".</li>
+  <li><strong>Permission</strong> — one specific thing an account is allowed to do, like "mark
+    attendance" or "record a payment". See {{ page('roles-permissions', 'Roles, permissions and
+    scope') }}.</li>
+  <li><strong>Scope</strong> — a limit on which permission applies to which rows, e.g. a class
+    teacher's "mark attendance" only working for their own class, not every class in the school.</li>
+  <li><strong>Session</strong> — a school year, e.g. "2025/2026". See
+    {{ page('classes-subjects', 'Classes and subjects') }}.</li>
+  <li><strong>Term</strong> — First, Second or Third Term inside a session (or "Full Session" for
+    the whole year at once).</li>
+  <li><strong>Released</strong> — made visible outside staff. A result, a report card, an exam
+    timetable are all held back from students and parents until a member of staff with the right
+    permission releases them.</li>
+</ul>
 {% endblock %}

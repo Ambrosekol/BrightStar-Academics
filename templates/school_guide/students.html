@@ -4,6 +4,12 @@
 <p>A student account is never self-registered — staff always create it, one at a time or many at
 once — and it always starts on a one-time password the student must replace at first sign-in.</p>
 
+<h2 id="list">The students list</h2>
+<p><a href="{{ url_for('admin_school_students') }}">Students</a> is the full list of everyone
+currently enrolled, searchable by name or admission number and filterable by class. Clicking a name
+opens that one student's own page: their details, their class history, their results so far, and
+buttons to edit them, print their account slip, or reset their password.</p>
+
 <h2 id="one-at-a-time">Registering one student</h2>
 <p><a href="{{ url_for('admin_school_student_new') }}">Register Student</a> creates the student
 record, enrols them in the class and session you choose, and generates their admission number and

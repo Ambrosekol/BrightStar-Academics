@@ -23,6 +23,11 @@ hand or by a session's own release date. One result still waiting holds the whol
 the school's own branding, each subject's marks and grade, the overall percentage, the class average,
 and (once at least one has been rated) affective and psychomotor trait ratings, alongside the class
 teacher's comment and the head's signature.</p>
+<p>Open <a href="{{ url_for('admin_school_report_cards') }}">Report cards</a> from the navigation rail
+to see, for a class, session and term you choose, which students already have a ready card and which
+are still waiting (and why — which subject has not been released yet). From there you can open one
+student's card to read it exactly as they would see it, download it as a PDF, or — if every student
+in the class is ready — download the whole class's cards as one PDF at once, for printing or filing.</p>
 <p>A class teacher writes the <a href="{{ url_for('admin_school_report_card_comments') }}">comment</a>
 and rates <a href="{{ url_for('admin_school_report_card_traits') }}">traits</a> — Punctuality,
 Neatness, Leadership and the like — from the same page, and can do so before results are even
@@ -31,4 +36,13 @@ never takes over someone else's.</p>
 <div class="guide-tip">When a card becomes ready, the parent is told automatically — an in-app alert,
 an email and a WhatsApp message — that it is ready to view and download. Nobody has to remember to
 announce it.</div>
+
+<h2 id="settings">Setting up how a report card looks</h2>
+<p>Two small pages decide what appears at the bottom of every report card in the school:
+<a href="{{ url_for('admin_school_report_card_settings') }}">Report card settings</a> sets the head of
+school's title (Principal, Headmistress, and so on) and their signature image, once for the whole
+school, plus how much of a subject's mark comes from Continuous Assessment versus the exam (see
+above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is different: it is where any
+member of staff uploads <em>their own</em> signature image, for use wherever their own name appears
+signed on a document.</p>
 {% endblock %}

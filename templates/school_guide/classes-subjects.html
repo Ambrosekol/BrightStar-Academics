@@ -25,9 +25,16 @@ classes at the same time, so it only ever shows up where it is actually taught. 
 that class.</p>
 
 <h2 id="promotion">Moving a class up a session</h2>
-<p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> generates a
-draft of who moves where — promote, repeat, transfer, graduate, hold or withdraw — one student at a
-time or as a batch, using progression rules you set once (e.g. "JSS 1 → JSS 2"). A draft must be
-approved before it can be committed, and committing is what actually moves everyone's enrolment into
-the new session.</p>
+<p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> lets you
+generate a <strong>draft</strong> of who moves where, for every student currently enrolled — using
+progression rules you set once beforehand under
+<a href="{{ url_for('admin_school_promotion_progressions') }}">Class progressions</a> (e.g. "JSS 1
+students go to JSS 2"), so the draft already guesses correctly for almost everyone.</p>
+<p>Opening that draft shows one row per student, each with a decision you can change one at a time or
+in a batch: <strong>promote</strong> (the usual case), <strong>repeat</strong> the same class,
+<strong>transfer</strong> to a class other than the usual next one, <strong>graduate</strong> (leaving
+school entirely), <strong>hold</strong> (decide later) or <strong>withdraw</strong>. A draft can be
+saved and returned to as many times as you like — nothing moves yet. Only once you
+<strong>approve</strong> it, and then <strong>commit</strong> it, does every student's enrolment
+actually move into the new session; before that point, the whole exercise is completely reversible.</p>
 {% endblock %}

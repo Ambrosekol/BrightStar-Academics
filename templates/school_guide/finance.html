@@ -12,11 +12,26 @@ fourth step of the new-school setup checklist.</p>
 student's balance and generates a receipt at once. A payment can be voided, with a reason, if it was
 entered wrong; voiding never deletes it, it just stops it counting.</p>
 
+<h2 id="allocation">Deciding what a payment covers</h2>
+<p>A payment on its own is just an amount received — <strong>allocating</strong> it is what says which
+particular charge (this term's tuition, say, or the uniform levy) it pays off. Open a payment from a
+student's account page to allocate it across one or more of that student's outstanding charges; a
+payment can cover several charges at once, or only part of one, and what is left unallocated still
+shows as credit on the account.</p>
+
+<h2 id="account">A student's own fee account</h2>
+<p>A student's account (opened from their own page under
+<a href="{{ url_for('admin_school_students') }}">Students</a>, or from a payment's receipt) lists
+everything ever charged to them and every payment ever recorded for them, session by session, with
+the running balance — the same page a linked parent sees their own version of.</p>
+
 <h2 id="receipts">The receipt</h2>
 <p>Every school's receipt carries its own branding — logo, colours, name, address, phone, a signature
 and, if set, the bursar's own notes — drawn from the same description on screen, in print and in the
 PDF a parent is sent, so all three always agree. A receipt can be re-sent by email or WhatsApp, or
-downloaded again, at any time.</p>
+downloaded again, at any time. <a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt
+settings</a> is where that authorised signature image is uploaded, and where a school can choose its
+own receipt-number prefix, once, for the whole school.</p>
 <div class="guide-note">Recording a payment automatically tells the parent — an in-app alert, an email
 and a WhatsApp message with the receipt attached — the moment it is saved.</div>
 

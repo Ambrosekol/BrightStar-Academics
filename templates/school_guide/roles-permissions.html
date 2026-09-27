@@ -12,17 +12,20 @@ you probably hold this role, or you are a platform operator visiting the school 
 
 <h2 id="presets">Ready-made roles</h2>
 <p>A new school starts with seventeen ready-made roles under
-<a href="{{ url_for('admin_administration') }}">Administration</a> — Primary Class Teacher, Finance
+<a href="{{ url_for('admin_roles') }}">Roles</a> — Primary Class Teacher, Finance
 Manager, Librarian, Report Card Officer, Parents' Feedback Officer and more — each already carrying a
 sensible bundle of permissions for that job. You can edit what a role carries, or build your own from
 scratch, but you can only ever hand out a permission you hold yourself: nobody can promote themselves,
-or a colleague, past their own reach.</p>
+or a colleague, past their own reach. A member of staff is given one or more roles from
+<a href="{{ url_for('admin_accounts') }}">Accounts</a>, when their account is created or at any time
+after.</p>
 
 <h2 id="scope">Scope: limited to some classes or subjects</h2>
 <p>A class teacher is usually limited to their own class; a subject teacher can be limited to a class
 <em>and</em> a subject together; someone managing question banks can be limited to particular banks.
-This is set under Administration too, per account. It is why two teachers looking at the same page —
-Students, Attendance, Results — see different rows: each sees only what their scope allows.</p>
+This is set per account, from that account's own page under
+<a href="{{ url_for('admin_accounts') }}">Accounts</a>. It is why two teachers looking at the same
+page — Students, Attendance, Results — see different rows: each sees only what their scope allows.</p>
 
 <div class="guide-tip">If a page or a button you expect to see is missing, it is almost always a
 permission or a scope, not a fault. Ask whoever manages Administration at your school to check what
