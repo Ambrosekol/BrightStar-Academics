@@ -104,12 +104,25 @@ def test_marketing_is_public_but_only_on_platform_hosts():
     assert "@platform_host_only" in block[:120] and "platform_required" not in block[:200]
 
 
-def test_a_school_address_serves_neither_page():
+def test_a_school_address_serves_neither_marketing_nor_docs():
     # the resolver lets these paths through on a platform host only; on a school's address the
     # decorator above answers 404, and the resolver's own school branch never serves them
-    assert "PLATFORM_SITE_PATHS = ('/marketing', '/docs')" in RESOLVER
+    assert "PLATFORM_SITE_PATHS = ('/marketing', '/docs', '/privacy')" in RESOLVER
     platform_branch = RESOLVER[RESOLVER.index("if host in config.platform_hosts():"):RESOLVER.index("tenant = tenant_for_host(host)")]
     assert "PLATFORM_SITE_PATHS" in platform_branch
+    marketing = SITE[SITE.index("@app.route('/marketing')"):]
+    assert "@platform_host_only" in marketing[:200]
+    docs = SITE[SITE.index("@app.route('/docs')\n"):]
+    assert "@docs_required" in docs[:80]  # docs_required itself wraps platform_host_only + platform_required
+
+
+def test_privacy_is_reachable_everywhere_signed_in_or_not():
+    # unlike marketing and docs, /privacy carries no host guard at all: it must render on a
+    # school's own address too, so it cannot depend on g.on_platform_host or a signed-in admin.
+    block = SITE[SITE.index("@app.route('/privacy')"):]
+    header = block[:block.index("def privacy")]
+    for guard in ("@platform_host_only", "@platform_required", "@docs_required", "@admin_required"):
+        assert guard not in header, guard
 
 
 def test_only_the_super_admin_can_change_who_reads_the_documentation():
@@ -128,6 +141,15 @@ def test_the_marketing_page_does_not_name_any_school_or_promise_numbers():
     assert not re.search(r"creative rainbow|crainbow|montessori", text, re.I)
     # no invented statistics or testimonials: every figure on the page is a fact about the product
     assert "testimonial" not in text.lower()
+
+
+def test_the_privacy_page_names_no_real_school_and_marks_its_placeholders():
+    text = (ROOT / "templates" / "privacy.html").read_text(encoding="utf-8")
+    assert not re.search(r"creative rainbow|crainbow|montessori", text, re.I)
+    # legal details Claude cannot know (registration number, registered address, DPO) are left as
+    # visible placeholders, never invented as if they were real
+    assert "[" in text and "]" in text
+    assert not re.search(r"\bRC\d{4,}\b|\bNITDA/[A-Z0-9-]+\b", text)
 
 
 if __name__ == "__main__":  # pragma: no cover

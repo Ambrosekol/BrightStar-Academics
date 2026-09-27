@@ -1,0 +1,184 @@
+<!--
+  Fill in the bracketed placeholders in the "Who we are" box below (legal name, registration
+  number, registered address, Data Protection Officer contact) before sharing this page during a
+  school's procurement process. Everything else on this page describes how the software actually
+  behaves and should be kept in step with the code, not treated as a template to relax.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy &amp; Data Protection Statement — Brightstars Academics</title>
+  <meta name="description" content="How Brightstars Academics processes personal data on behalf of the schools it serves, and what stays under each school's own control.">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='marketing.css', v='1') }}">
+</head>
+<body>
+<header class="legal-top">
+  <div class="wrap">
+    <img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics">
+    <span>Privacy &amp; Data Protection Statement</span>
+  </div>
+</header>
+
+<main class="legal-shell">
+  <div class="narrow">
+    <div class="eyebrow">Last updated: 27 September 2026</div>
+    <h1>Privacy &amp; Data Protection Statement</h1>
+    <p class="legal-updated">This statement explains how Brightstars Academics ("the platform", "we", "us") handles personal data
+      when a school uses the platform to run its entrance examinations, academic records, fees and parent communication. It applies
+      wherever this page is opened — from the platform's own site or from any individual school's portal — because it describes the
+      same practices everywhere.</p>
+
+    <nav class="legal-toc" aria-label="Sections">
+      <a href="#who">1. Who we are, and who this covers</a>
+      <a href="#roles">2. Controller and processor</a>
+      <a href="#data">3. What personal data is processed</a>
+      <a href="#why">4. Why it is processed</a>
+      <a href="#basis">5. Legal basis</a>
+      <a href="#isolation">6. How your school's data is kept apart</a>
+      <a href="#security">7. Security measures</a>
+      <a href="#retention">8. Retention and deletion</a>
+      <a href="#rights">9. Rights over your data</a>
+      <a href="#children">10. Children's data</a>
+      <a href="#cookies">11. Cookies and tracking</a>
+      <a href="#processors">12. Sub-processors and delivery channels</a>
+      <a href="#transfers">13. Where data is hosted</a>
+      <a href="#changes">14. Changes to this statement</a>
+      <a href="#contact">15. Contact</a>
+    </nav>
+
+    <div class="legal-box">
+      <p><strong>Who we are</strong></p>
+      <p><span class="ph">[Brightstars Academics Limited]</span>, a company registered in <span class="ph">[Nigeria, registration number XXXXXXX]</span>,
+        with its registered address at <span class="ph">[registered address]</span>.</p>
+      <p>Data Protection Officer / privacy contact: <span class="ph">[name and email of the person who handles data requests]</span>,
+        reachable in the meantime at {% if contact_email %}<a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% else %}<span class="ph">[a contact email]</span>{% endif %}.</p>
+      <p>This statement is written to align with the principles of Nigeria's Data Protection Act 2023 and the NDPR, and with the
+        same general principles (lawfulness, purpose limitation, data minimisation, accuracy, storage limitation, integrity and
+        confidentiality) that similar laws elsewhere share.</p>
+    </div>
+
+    <h2 id="who">1. Who we are, and who this covers</h2>
+    <p>Brightstars Academics is a software platform used by schools to run entrance examinations, day-to-day school administration,
+      student and parent portals, and fee collection. Each school that uses it — its staff, students, parents, guardians and
+      entrance-examination candidates — is covered by this statement. If you are a parent, student or staff member, your school is
+      the organisation you should contact first about your own information (see <a href="#rights">section 9</a>); we support your
+      school in answering you.</p>
+
+    <h2 id="roles">2. Controller and processor</h2>
+    <p>For the personal data a school enters about its own students, parents, staff and candidates, <strong>the school is the data
+      controller</strong>: it decides what is collected and why, and it is the organisation a parent or staff member should approach
+      first with a question or a request about their own data. <strong>Brightstars Academics acts as the school's data processor</strong>:
+      we provide and operate the software the school uses to store and process that data, under the school's instructions, and we do
+      not sell it, share it with other schools, or use it for anything beyond running the platform and supporting the school.</p>
+
+    <h2 id="data">3. What personal data is processed</h2>
+    <table class="legal-table">
+      <tr><th>Category</th><th>Examples</th></tr>
+      <tr><td>Student and candidate records</td><td>Name, date of birth, gender, class, admission or candidate number, photograph, academic results, attendance, entrance-examination attempts and answers</td></tr>
+      <tr><td>Guardian and parent contact details</td><td>Name, relationship, phone number, email address, WhatsApp number, home address</td></tr>
+      <tr><td>Staff records</td><td>Name, role, contact details, photograph, signature image, login credentials, work assigned to and by them</td></tr>
+      <tr><td>Financial records</td><td>Fees charged, payments recorded, receipts issued, and who recorded them</td></tr>
+      <tr><td>Communications</td><td>Messages between a school and a parent, and the content of the notices sent about results, fees and school work</td></tr>
+      <tr><td>Technical and usage data</td><td>Sign-in times, the IP address a request came from, and a record of significant actions taken in the system (the audit log)</td></tr>
+    </table>
+    <p>A school decides what it enters; we do not ask schools to collect anything beyond what the platform's own forms request, and
+      we do not add hidden fields to collect more.</p>
+
+    <h2 id="why">4. Why it is processed</h2>
+    <ul>
+      <li>To run the school's entrance examinations, academic records, report cards, assignments and results.</li>
+      <li>To record and reconcile fees and payments, and to produce receipts.</li>
+      <li>To send parents and guardians the notices they would otherwise be told by phone or letter: a payment received, a report
+        card ready, new work set for their child.</li>
+      <li>To let the right staff, and only the right staff, see and change the records their role covers, and to keep a record of
+        who changed what.</li>
+      <li>To keep the service itself running securely: sign-in, rate-limiting against guessing, and diagnosing a fault.</li>
+    </ul>
+
+    <h2 id="basis">5. Legal basis</h2>
+    <p>Personal data is processed under the contract between a school and Brightstars Academics, for the school's own legitimate
+      interest in running its administration (and, for its staff and the platform's own security logs, the platform's legitimate
+      interest in keeping the service secure and dependable), and, for anything a person is separately asked to agree to (such as a
+      marketing communication, where that ever applies), their consent.</p>
+
+    <h2 id="isolation">6. How your school's data is kept apart</h2>
+    <p>Every school on this platform has <strong>its own separate database and its own separate folder of files</strong> — not a
+      shared table filtered by a school identifier, but a database of its own. A query made for one school's data can never
+      accidentally return another's, because the software is built so that no database connection is ever shared between two
+      schools within the same request. A cookie or sign-in issued by one school's address is rejected if it is ever presented at
+      another school's address. Uploaded files (student and staff photographs, signatures, question images) are served only to the
+      people the record says may see them, checked on every request.</p>
+
+    <h2 id="security">7. Security measures</h2>
+    <ul>
+      <li>Passwords are never stored in readable form; they are hashed, and changing a password immediately ends every other
+        sign-in on that account.</li>
+      <li>A school's own email server password and WhatsApp Business token, where it sets one up, are encrypted before they are
+        stored, under a key specific to that school; they are never shown again once saved, and a copy of the database does not
+        expose them.</li>
+      <li>Sign-in attempts, password-recovery requests and test-message buttons are rate-limited against guessing.</li>
+      <li>Significant actions — creating or changing a record, a staff member's access, a payment — are written to an audit trail
+        recording who did it, when, and from where.</li>
+      <li>The platform loads no advertising or analytics scripts, fonts or images from outside its own servers; its security policy
+        blocks pages from embedding anything foreign.</li>
+      <li>Traffic to the platform is encrypted in transit (HTTPS/TLS).</li>
+    </ul>
+
+    <h2 id="retention">8. Retention and deletion</h2>
+    <p>A school's data is kept for as long as the school's account with the platform remains active, or for as long as applicable
+      law requires records of that kind to be kept, whichever is longer. A school may ask us at any time for an export of its own
+      data, or for its data to be deleted once its account ends, subject to any legal or regulatory requirement to retain particular
+      records for a set period (for example, financial records). A parent, student or staff member should raise a request to see,
+      correct or remove their own information with their school first, as the school is best placed to act on it; the school may in
+      turn ask us to carry it out on the platform.</p>
+
+    <h2 id="rights">9. Rights over your data</h2>
+    <p>Depending on the law that applies to you, you may have the right to ask to see the personal data held about you, to have
+      inaccurate data corrected, to have it deleted, to object to certain processing, or to receive a copy of it in a portable
+      form. Because your school is the controller of its own records, the quickest route is to ask your school directly; if you
+      contact us instead, we will pass your request to the relevant school and support them in answering it.</p>
+
+    <h2 id="children">10. Children's data</h2>
+    <p>Much of what a school records is about children. A school is responsible, as controller, for having a proper basis to collect
+      and hold information about the students in its care, in the way it already does for paper records; the platform's role is to
+      hold and process that information securely on the school's behalf, under the same isolation and security measures described
+      above, and to make it visible only to the people the school's own settings say may see it — never to another school, and
+      never to the platform's own staff, other than someone the school has itself entered as an administrator.</p>
+
+    <h2 id="cookies">11. Cookies and tracking</h2>
+    <p>The platform sets one cookie: a signed session cookie that records who is signed in. It carries no advertising identifier and
+      is not read by any third party. The platform runs no third-party analytics, advertising or tracking scripts of any kind, on
+      any page, for anyone.</p>
+
+    <h2 id="processors">12. Sub-processors and delivery channels</h2>
+    <p>Two kinds of message leave the platform on a school's behalf, and only when that school has set them up (or is using the
+      platform's own shared account, where offered, as a stand-in until it sets up its own):</p>
+    <ul>
+      <li><strong>Email</strong>, sent through the mail server the school (or the platform, as a fallback) has configured.</li>
+      <li><strong>WhatsApp</strong>, sent through the WhatsApp Business Cloud API, operated by Meta, using the school's own
+        connected WhatsApp Business account where it has one.</li>
+    </ul>
+    <p>The underlying database and application hosting is provided by <span class="ph">[your infrastructure/hosting provider(s)]</span>,
+      acting as a sub-processor under contract with us, bound to the same confidentiality and security expectations as this statement.</p>
+
+    <h2 id="transfers">13. Where data is hosted</h2>
+    <p>Each school's data is stored on servers operated for this deployment of the platform. <span class="ph">[State here where
+      those servers are located, and, if any data ever leaves that country or region, what safeguard covers the transfer.]</span></p>
+
+    <h2 id="changes">14. Changes to this statement</h2>
+    <p>We may update this statement as the platform changes. The date at the top shows when it was last revised, and a material
+      change that affects how personal data is handled will be brought to schools' attention rather than only noted here silently.</p>
+
+    <h2 id="contact">15. Contact</h2>
+    <p>Questions about this statement, or about how the platform handles data, can be sent to
+      {% if contact_email %}<a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% else %}<span class="ph">[a contact email]</span>{% endif %}.
+      A parent, student or staff member asking about their own personal data should start with their school, which holds the
+      records and can act on the request directly.</p>
+  </div>
+</main>
+</body>
+</html>

@@ -213,3 +213,30 @@ footer a { color: var(--muted); }
   .compare tbody th { width: 100%; background: var(--blue-tint); padding-bottom: 8px; }
   .compare td.them::before { content: "Often: "; font-weight: 700; }
 }
+
+/* ---------- the legal document layout (/privacy) ---------- */
+.legal-top { border-bottom: 1px solid var(--line); padding: 22px 0; }
+.legal-top .wrap { display: flex; align-items: center; justify-content: space-between; }
+.legal-top img { height: 34px; width: auto; display: block; }
+.legal-top span { color: var(--muted); font-size: .82rem; }
+.legal-shell { padding: 56px 0 90px; }
+.legal-shell .eyebrow { margin-bottom: 10px; }
+.legal-shell h1 { font-size: clamp(2rem, 4vw, 2.7rem); }
+.legal-updated { color: var(--muted); font-size: .92rem; margin: 14px 0 40px; }
+.legal-shell h2 { font-size: 1.4rem; margin: 44px 0 14px; padding-top: 20px; border-top: 1px solid var(--line); }
+.legal-shell h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 30px; }
+.legal-shell h3 { font-size: 1.05rem; font-family: var(--sans); font-weight: 700; margin: 22px 0 8px; }
+.legal-shell p, .legal-shell li { color: var(--body); font-size: .98rem; line-height: 1.7; }
+.legal-shell ul, .legal-shell ol { padding-left: 1.3rem; margin: 0 0 1rem; }
+.legal-shell li { margin: 6px 0; }
+.legal-shell strong { color: var(--ink); }
+.legal-box { background: var(--blue-tint); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; margin: 0 0 40px; }
+.legal-box p { margin: 4px 0; font-size: .94rem; }
+.legal-box .ph { color: var(--red); font-weight: 600; }
+.legal-table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: .93rem; }
+.legal-table th, .legal-table td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.legal-table th { background: var(--blue-tint); font-weight: 700; color: var(--ink); }
+.legal-toc { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 20px 26px; margin: 0 0 44px; columns: 2; column-gap: 32px; }
+.legal-toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; font-size: .92rem; break-inside: avoid; }
+.legal-toc a:hover { color: var(--red); }
+@media (max-width: 620px) { .legal-toc { columns: 1; } }

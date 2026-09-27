@@ -269,9 +269,9 @@ next click. The account and its whole log are kept, and the super admin can rest
 new temporary password) or reset any admin's password. If a school cannot be reached while
 removing someone, the console says which, so it is never silently missed.
 
-## Documentation and the marketing page
+## Documentation, the marketing page and the privacy statement
 
-Two more pages live on the platform hostnames, alongside the console:
+Three more pages live on the platform hostnames, alongside the console:
 
 - **`/docs`** is the platform's own developer documentation: architecture, deployment,
   recommendations, and a reference (routes, tables, permissions, modules, templates) generated
@@ -283,10 +283,28 @@ Two more pages live on the platform hostnames, alongside the console:
   [control_plane/docsgen.py](control_plane/docsgen.py).
 - **`/marketing`** is the public page that explains the product to schools, in the Brightstars
   brand. It needs no sign-in. See [templates/marketing.html](templates/marketing.html).
+- **`/privacy`** is the platform's NDPR-aligned data-protection statement. Unlike the other two it
+  carries no host guard at all, so it is reachable both on a platform hostname (for a school
+  considering the platform) and on every school's own address (linked from its sign-in page, for
+  that school's own parents and staff). See [templates/privacy.html](templates/privacy.html) — a
+  few bracketed details (legal name, registration number, registered address, Data Protection
+  Officer contact) are placeholders and must be filled in before it is used in procurement.
 
-Both are checked by `tests/current/test_docs_contract.py`: every file, route, table, permission and
-template the documentation names is verified to still exist, and the access rules for `/docs` are
-enforced (only a signed-in admin with access; nobody else, not even by guessing the address).
+All three are checked by `tests/current/test_docs_contract.py`: every file, route, table, permission
+and template the documentation names is verified to still exist, the access rules for `/docs` are
+enforced (only a signed-in admin with access; nobody else, not even by guessing the address), and
+`/privacy` is confirmed to carry no such guard.
+
+## The new-school setup checklist
+
+A school that signs up and then stalls on setup — never adding a subject, never enrolling a
+student — is a school that quietly churns. The School workspace home page (`/admin/school`) shows
+an ordered checklist of the four things a school does before it can really run: review its classes
+(pre-seeded, so usually already done), add subjects, enrol students, and set up fee items. Each
+step's state is read live from the school's own data, never a flag anyone has to remember to set,
+so the checklist can never disagree with what the school has actually done. It disappears once all
+four are done, or a school can hide it early (a small link brings it back). See
+[blueprints/school/onboarding.py](blueprints/school/onboarding.py).
 
 **The activity log** is arranged as *choose an admin, then read their log*: the super admin picks
 anyone (or Everyone, or a removed admin) and reads their entries, filtered by Schools, Accounts &

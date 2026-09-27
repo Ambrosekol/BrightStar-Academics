@@ -806,6 +806,9 @@ html.rail-locked { overflow: hidden; }
     background: var(--surface-0);
 }
 .auth-card { width: 100%; max-width: 400px; }
+.auth-legal { width: 100%; max-width: 400px; margin: var(--sp-6) 0 0; text-align: center; }
+.auth-legal a { color: var(--ink-3); font-size: var(--fs-xs); text-decoration: underline; text-underline-offset: 3px; }
+.auth-legal a:hover { color: var(--ink-2); }
 .auth-back { display: inline-flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-5); color: var(--ink-2); font-size: 14px; font-weight: 500; text-decoration: none; }
 .auth-back:hover { color: var(--brand-dark); text-decoration: underline; text-underline-offset: 3px; }
 .auth-title { margin: 0 0 var(--sp-2); color: var(--ink); font: 500 var(--fs-3xl)/1.2 var(--font-display); }
@@ -987,6 +990,43 @@ a.wd-online:hover { background: var(--surface-1); }
 .wd-rank-score { flex: none; text-align: right; }
 .wd-rank-score strong { display: block; font: 600 var(--fs-lg)/1.2 var(--font-ui); font-variant-numeric: tabular-nums; }
 .wd-rank-score small { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* -- Setup checklist: the four things a brand-new school does before it can really run. -- */
+.wd-setup { margin: 0 0 var(--sp-6); padding: var(--sp-5); border: var(--border); border-radius: var(--radius-lg); background: var(--surface-0); }
+.wd-setup__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; margin: 0 0 var(--sp-4); }
+.wd-setup__title { margin: 0 0 4px; font: 600 var(--fs-xl)/1.3 var(--font-ui); color: var(--ink); }
+.wd-setup__lead { margin: 0; max-width: 56ch; color: var(--ink-3); font-size: var(--fs-sm); }
+.wd-setup__progress { position: relative; flex: none; width: 52px; height: 52px; display: grid; place-items: center; }
+.wd-setup__ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.wd-setup__ring-track { fill: none; stroke: var(--line); stroke-width: 4; }
+.wd-setup__ring-fill { fill: none; stroke: var(--brand); stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray var(--dur) var(--ease); }
+.wd-setup__progress-text { position: absolute; font: 700 var(--fs-xs)/1 var(--font-ui); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wd-setup__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.wd-setup__step { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-2); border-radius: var(--radius); }
+.wd-setup__step + .wd-setup__step { border-top: var(--border); }
+.wd-setup__step-num {
+    display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface-1); color: var(--ink-3); font: 700 var(--fs-sm)/1 var(--font-ui);
+}
+.wd-setup__step.is-done .wd-setup__step-num { background: var(--success-bg); color: var(--success); }
+.wd-setup__step.is-done .wd-setup__step-num .ico { width: 15px; height: 15px; }
+.wd-setup__step-body { flex: 1; min-width: 0; }
+.wd-setup__step-body strong { display: block; color: var(--ink); font-size: var(--fs-md); }
+.wd-setup__step.is-done .wd-setup__step-body strong { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.wd-setup__step-body p { margin: 2px 0 0; color: var(--ink-3); font-size: var(--fs-sm); line-height: 1.45; }
+.wd-setup__step-go { flex: none; }
+.wd-setup__step-done { flex: none; color: var(--success); font-size: var(--fs-sm); font-weight: 600; }
+.wd-setup__dismiss, .wd-setup__reshow { margin: var(--sp-4) 0 0; }
+.wd-setup__reshow { margin: 0 0 var(--sp-6); }
+.wd-setup__dismiss button, .wd-setup__reshow button {
+    border: 0; background: none; padding: 0; color: var(--ink-3); font-size: var(--fs-sm); text-decoration: underline;
+    text-underline-offset: 3px; cursor: pointer;
+}
+.wd-setup__dismiss button:hover, .wd-setup__reshow button:hover { color: var(--ink); }
+@media (max-width: 640px) {
+    .wd-setup__step { flex-wrap: wrap; }
+    .wd-setup__step-go { margin-left: 44px; }
+}
 
 /* -- Module groups: real information architecture instead of one flat grid. -- */
 .wd-module-groups { display: flex; flex-direction: column; gap: var(--sp-6); margin: 0 0 var(--sp-6); }

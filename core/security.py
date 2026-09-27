@@ -257,6 +257,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_practice_tests':'school.practice.view','admin_school_practice_new':'school.practice.create','admin_school_practice_edit':'school.practice.edit','admin_school_practice_delete':'school.practice.delete',
     'admin_school_examinations':'school.examinations.view','admin_school_examination_new':'school.examinations.create','admin_school_examination_edit':'school.examinations.edit','admin_school_examination_delete':'school.examinations.delete',
     'admin_school_results':'school.results.view','admin_school_results_release':'school.results.release','admin_school_results_release_term':'school.results.release',
+    'admin_school_onboarding_dismiss':'school.view','admin_school_onboarding_show':'school.view',
     'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.verify',
     'admin_school_assessment_detail':'school.view','admin_school_assessment_edit':'school.view','admin_school_assessment_toggle':'school.view','admin_school_assessment_question_new':'school.view','admin_school_assessment_question_delete':'school.view','admin_school_assessment_delete':'school.view',
 }

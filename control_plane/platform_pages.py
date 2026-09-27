@@ -1,4 +1,4 @@
-"""The two pages the platform serves besides its console: ``/marketing`` and ``/docs``.
+"""The pages the platform serves besides its console: ``/marketing``, ``/docs`` and ``/privacy``.
 
 * ``/marketing`` is public: the page a school (or anyone) is shown to understand what Brightstars
   Academics is. It is on the platform hostnames only, like the console, because a school's own address
@@ -8,6 +8,12 @@
   platform admin who has been given access: the super admin always has it, and grants it to others one at
   a time on the Team page. Anyone else gets the same 404 as for any address that does not exist, so the
   page cannot even be found by someone who should not read it. Signing in first is the only way in.
+* ``/privacy`` is the platform's data-protection statement. Unlike the other two, it is registered as
+  a plain route with no host guard at all, so it is reachable both on a platform hostname (a school
+  considering the platform reads it before signing anything) and on every school's own address (that
+  school's own parents and staff can read it too, from their own sign-in page). ``resolver.py`` still
+  has to let it through explicitly on a platform hostname (``PLATFORM_SITE_PATHS``); on a school's own
+  address nothing needs to, because only the console's own paths are restricted there.
 """
 
 import html
@@ -191,3 +197,10 @@ def _search(query):
 def marketing():
     """The public marketing page. ``BRIGHTSTARS_CONTACT_EMAIL``, when set, is where its buttons write to."""
     return render_template('marketing.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip())
+
+
+@app.route('/privacy')
+def privacy():
+    """The platform's data-protection statement. Deliberately unguarded (see the module docstring):
+    reachable on a platform hostname and on every school's own address alike, signed in or not."""
+    return render_template('privacy.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip())

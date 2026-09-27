@@ -66,6 +66,8 @@ EXERCISED = frozenset({
     "/admin/results/<int:aid>/grant-retake",
     "/admin/results/<int:aid>/regrade",
     "/admin/school/results/release-term",
+    "/admin/school/onboarding/dismiss",
+    "/admin/school/onboarding/show",
     "/admin/school/assessments/<int:assessment_id>/edit",
     "/admin/school/assessments/<int:assessment_id>/questions/<int:question_id>/delete",
     "/admin/school/assessments/<int:assessment_id>/questions/<int:question_id>/edit",

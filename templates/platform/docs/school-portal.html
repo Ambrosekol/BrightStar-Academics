@@ -52,6 +52,15 @@ def admin_school_results(): ...</code></pre>
   <li>Parent accounts and feedback, and the school's own email and WhatsApp: {{ page('families', 'Students, parents and messages') }}.</li>
   <li>Branding and numbering: {{ page('branding-numbering', 'Identity and numbering') }}.</li>
 </ul>
+
+<h2 id="onboarding">The new-school setup checklist</h2>
+<p>The School workspace home page ({{ route('admin_school_home') }}) shows an ordered checklist of the four things a school does
+before it can really run: review its classes (every school is seeded with the standard Primary/JSS/SSS list, so this step is
+usually already done), add subjects, enrol students, and set up fee items ({{ file('blueprints/school/onboarding.py') }}). Each
+step's state is read live from a plain count of the school's own active rows — never a stored flag — so it can never disagree with
+what the school has actually done. A school may dismiss it early ({{ route('admin_school_onboarding_dismiss') }}, one
+{{ table('school_settings') }} row) and bring it back ({{ route('admin_school_onboarding_show') }}); it disappears by itself once
+every step is done.</p>
 <p>The Entrance workspace is described in {{ page('entrance', 'Entrance examinations') }}.</p>
 
 <h2 id="accounts">Accounts other people get</h2>

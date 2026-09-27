@@ -23,9 +23,11 @@ _ANYWHERE_PREFIXES = ('/static/brand/',)
 
 # On a platform hostname "/" only redirects into the console; there is no page.
 PLATFORM_ROOT_PATHS = ('/',)
-# The two things besides the console that a platform hostname serves: the public /marketing page and
-# the /docs pages, which only signed-in platform admins with access can open (control_plane/platform_pages.py).
-PLATFORM_SITE_PATHS = ('/marketing', '/docs')
+# The things besides the console that a platform hostname serves (control_plane/platform_pages.py):
+# the public /marketing page, the /docs pages (only signed-in platform admins with access), and
+# /privacy. /privacy is deliberately not platform-only: it is registered as a plain, unguarded route,
+# so it is also reachable on every school's own address, where its own users can read it too.
+PLATFORM_SITE_PATHS = ('/marketing', '/docs', '/privacy')
 
 
 # What to say when a request cannot be served, and why. Each becomes a designed

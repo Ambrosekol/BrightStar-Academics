@@ -1034,6 +1034,7 @@ import blueprints.school.branding  # noqa: F401,E402
 import blueprints.school.delivery  # noqa: F401,E402
 import blueprints.school.report_cards  # noqa: F401,E402
 import blueprints.school.results_records  # noqa: F401,E402
+import blueprints.school.onboarding  # noqa: F401,E402
 import blueprints.student_portal.report_cards  # noqa: F401,E402
 import blueprints.parents.report_cards  # noqa: F401,E402
 

@@ -61,6 +61,7 @@ from blueprints.school.helpers import (
 @app.route('/admin/school')
 @admin_required
 def admin_school_home():
+    from blueprints.school.onboarding import onboarding_status  # deferred: it is imported after this module
     def count(model, *where):
         return one_scalar(select(func.count()).select_from(model).where(*where), 0)
     stats={
@@ -72,7 +73,7 @@ def admin_school_home():
         'tests':count(SchoolAssessment, SchoolAssessment.assessment_type=='test'),
         'examinations':count(SchoolAssessment, SchoolAssessment.assessment_type=='examination'),
     }
-    return render_template('admin_school_home.html',stats=stats)
+    return render_template('admin_school_home.html',stats=stats,onboarding=onboarding_status())
 
 @app.route('/admin/school/students')
 @admin_required

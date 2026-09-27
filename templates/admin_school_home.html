@@ -27,6 +27,50 @@
   </div>
 </div>
 
+{% if onboarding.show %}
+<section class="wd-setup" aria-label="Setup checklist">
+  <div class="wd-setup__head">
+    <div>
+      <h2 class="wd-setup__title">Finish setting up your school</h2>
+      <p class="wd-setup__lead">Four things get your school ready to run. Do them in order, or jump straight to whichever you need.</p>
+    </div>
+    <div class="wd-setup__progress" role="img" aria-label="{{ onboarding.done_count }} of {{ onboarding.total }} steps done">
+      <svg viewBox="0 0 42 42" class="wd-setup__ring">
+        <circle cx="21" cy="21" r="17.5" class="wd-setup__ring-track"/>
+        <circle cx="21" cy="21" r="17.5" class="wd-setup__ring-fill"
+                style="stroke-dasharray:{{ (110 * onboarding.done_count / onboarding.total)|round(1) }} 110"/>
+      </svg>
+      <span class="wd-setup__progress-text">{{ onboarding.done_count }}/{{ onboarding.total }}</span>
+    </div>
+  </div>
+  <ol class="wd-setup__list">
+    {% for step in onboarding.steps %}
+    <li class="wd-setup__step {{ 'is-done' if step.done else '' }}">
+      <span class="wd-setup__step-num">{{ icon('check') if step.done else loop.index }}</span>
+      <div class="wd-setup__step-body">
+        <strong>{{ step.label }}</strong>
+        <p>{{ step.text }}</p>
+      </div>
+      {% if not step.done and admin_has_permission(current_admin['id'], step.permission) %}
+      <a class="btn btn-light btn-small wd-setup__step-go" href="{{ url_for(step.endpoint) }}">Open {{ icon('arrow-right', 'ico-sm') }}</a>
+      {% elif step.done %}
+      <span class="wd-setup__step-done">Done</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <form method="post" action="{{ url_for('admin_school_onboarding_dismiss') }}" class="wd-setup__dismiss">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="linklike" type="submit">Hide this checklist</button>
+  </form>
+</section>
+{% elif onboarding.dismissed and not onboarding.complete %}
+<form method="post" action="{{ url_for('admin_school_onboarding_show') }}" class="wd-setup__reshow">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <button class="linklike" type="submit">Show setup checklist ({{ onboarding.done_count }}/{{ onboarding.total }} done)</button>
+</form>
+{% endif %}
+
 <div class="wd-module-groups">
 
   <section>

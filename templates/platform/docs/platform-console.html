@@ -13,6 +13,7 @@ calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider 
 <tr><td><code>/platform</code></td><td>signed-in platform admins</td><td>The console: schools, team, activity, password.</td></tr>
 <tr><td><code>/marketing</code></td><td><strong>public</strong></td><td>The page that explains the product to schools. See {{ route('marketing') }}.</td></tr>
 <tr><td><code>/docs</code></td><td>super admin, and admins granted access</td><td>This documentation. See {{ route('docs_home') }}.</td></tr>
+<tr><td><code>/privacy</code></td><td><strong>public, and unguarded</strong></td><td>The NDPR-aligned data-protection statement. Carries no host check at all, so it also renders on every school's own address (linked from that school's sign-in page). See {{ route('privacy') }}.</td></tr>
 </table></div>
 
 <h2 id="team">The team: super admin and platform admins</h2>

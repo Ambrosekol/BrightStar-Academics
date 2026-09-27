@@ -383,6 +383,18 @@ op = Actor("operator", admin=True)
 op.get(r.location[len(SCHOOL):])
 check("the operator is inside the school", op.get("/admin/home").status_code == 200)
 
+# the new-school setup checklist: classes are pre-seeded (so step one is already done), nothing else is yet
+op.get("/admin/workspace/school")
+page = op.text("/admin/school")
+check("the setup checklist shows on a brand-new school, one of four steps already done",
+      "Finish setting up your school" in page and "1/4" in page and "Add your subjects" in page)
+op.post("/admin/school/onboarding/dismiss", {})
+page = op.text("/admin/school")
+check("dismissing the checklist hides it, but leaves a way to bring it back",
+      "Finish setting up your school" not in page and "Show setup checklist" in page)
+op.post("/admin/school/onboarding/show", {})
+check("…and showing it again brings it back", "Finish setting up your school" in op.text("/admin/school"))
+
 # ================================================================ 1. sessions, classes, subjects
 def cls(name):
     return one("SELECT id FROM school_classes WHERE name = :n", n=name)
@@ -655,6 +667,8 @@ TUITION = one("SELECT id FROM finance_fee_items WHERE name = 'Tuition (JSS 1)'")
 op.post(f"{FIN}/fee-items/new", {**FEE, "name": "Uniform", "category": "Uniform", "amount": "12000", "optional": "1", "required": ""})
 UNIFORM = one("SELECT id FROM finance_fee_items WHERE name = 'Uniform'")
 check("two fee items were created and mapped to their class", count("finance_fee_item_classes", "class_id = :c AND active = 1", c=JSS1) == 2)
+check("…and the setup checklist now considers itself complete and stays out of the way",
+      "Finish setting up your school" not in op.text("/admin/school"))
 op.post(f"{FIN}/fee-items/{UNIFORM}/edit", {**FEE, "name": "School uniform", "category": "Uniform", "amount": "13500", "optional": "1"})
 check("a fee item was edited", one("SELECT amount FROM finance_fee_items WHERE id = :i", i=UNIFORM) == 13500)
 op.post(f"{FIN}/fee-items/{UNIFORM}/toggle", {})
