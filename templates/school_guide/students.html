@@ -33,6 +33,18 @@ readable form afterwards, so copy or download them before you navigate away.</di
 Entrance workspace: once a candidate has sat their entrance exam, an admissions officer can admit them
 straight into a real student record, the same way as the other two paths above.</p>
 
+<h2 id="history-import">Moving from another system? Bring their history too</h2>
+<p>A school switching from another system, or from paper, usually already knows each student's
+past classes and sessions — that is not something the bulk student import above brings in, since
+it only ever creates a student's <em>current</em> record. From the Students page, once a student
+already exists here (imported above, or registered by hand),
+<a href="{{ url_for('admin_school_students_import_history') }}">bulk-import enrolment history</a>
+takes a second file — one row per (student, session) — matched to your students by admission
+number, and backfills the rest. A session in that file may be one your school has since archived;
+bringing in exactly that kind of old record is the point, unlike the single "Add enrolment
+history" entry on a student's own page, whose dropdown only offers the school's currently active
+sessions since it is meant for everyday correction, not migration.</p>
+
 <h2 id="account">A student's account afterwards</h2>
 <p>From a student's own page you can edit their details, deactivate them (which also switches their
 login off), reset their password to a new one-time password, or switch their login on or off without

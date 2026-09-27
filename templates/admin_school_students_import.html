@@ -23,4 +23,11 @@
   </form>
   <p class="muted">A row that fails (a missing name, an unknown class, an invalid gender or email) is skipped and reported by line number; every other valid row is still imported. Nothing is a "preview" — a valid row is created immediately, so check the file once before uploading.</p>
 </section>
+
+{% if admin_has_permission(current_admin.id, 'student.history.manage') %}
+<section class="card modern-form" style="margin-top:18px">
+  <h3 style="margin-top:0">Moving from another system? Bring their history too</h3>
+  <p class="muted">Once a student exists here (imported above, or registered by hand), <a href="{{ url_for('admin_school_students_import_history') }}">bulk-import enrolment history</a> backfills the classes and sessions they were in before — a separate file, matched to your students by admission number.</p>
+</section>
+{% endif %}
 {% endblock %}

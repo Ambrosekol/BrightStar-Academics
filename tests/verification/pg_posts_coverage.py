@@ -140,6 +140,7 @@ EXERCISED = frozenset({
     "/admin/school/students/<int:sid>/toggle",
     "/admin/school/students/new",
     "/admin/school/students/import",
+    "/admin/school/students/import-history",
     "/admin/school/subjects/<int:subject_id>/delete",
     "/admin/school/subjects/<int:subject_id>/edit",
     "/admin/school/subjects/<int:subject_id>/final-lock/<int:class_id>",

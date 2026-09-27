@@ -527,6 +527,16 @@ the generated usernames and one-time passwords are ever shown — download them 
 in the browser, never a second trip to the server) before leaving the page. A file with no header row,
 a missing required column, or one over the size limit is refused outright, before anything is written.
 
+**Migration: bringing in enrolment history.** The importer above only ever creates a student's
+*current* record — a school moving from another system, or from paper, usually already knows each
+student's *past* classes and sessions too. *Bulk-import enrolment history*, linked from the same
+Students page, takes a second file (`admission_no`, `level`, `session` required; `enrolled_at`,
+`completed_at`, `notes` optional) matched to an already-existing student by admission number, and
+records exactly what the single "Add enrolment history" entry on a student's own page records by
+hand. A session named in that file may be one the school has since archived — bringing in exactly
+that kind of old record is the point, unlike the hand-entry form's own dropdown, which only offers
+currently active sessions since it is built for everyday correction, not migration.
+
 ## Admissions: candidate to student
 
 The third way a student arrives, alongside registering one by hand and bulk import: the entrance
@@ -798,6 +808,7 @@ python tests/verification/write_paths_report_cards.py      # report cards: when 
 python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
 python tests/verification/write_paths_timetable.py           # exam/test timetables: draft, release, notifications, scope, portals
 python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
+python tests/verification/write_paths_student_history_import.py # bulk enrolment-history import: valid/skipped rows, an archived session accepted, permissions and CSRF, isolation
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
 python tests/verification/write_paths_resilience.py           # durable background jobs, retry-safe writes, the exam page's connection-drop retry logic, and the connectivity banner, in a real browser

@@ -1,0 +1,23 @@
+{% extends 'admin_base.html' %}
+{% block title %}Enrolment history import report — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
+  <h1>Import report</h1>
+  <p class="hero-copy">{{ created }} row{{ '' if created == 1 else 's' }} imported{% if skipped %}, {{ skipped }} row{{ 's' if skipped != 1 else '' }} skipped{% endif %}.</p>
+</div></div>
+
+<section class="card" style="margin-top:18px">
+  <div class="table-scroll"><table class="import-report">
+    <tr><th>Line</th><th>Row</th><th>Result</th></tr>
+    {% for o in outcomes %}
+    <tr class="{{ 'skipped' if not o.ok else '' }}">
+      <td>{{ o.line }}</td><td>{{ o.label }}</td>
+      {% if o.ok %}<td>Imported</td>{% else %}<td>{{ o.reason }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </table></div>
+</section>
+<p style="margin-top:14px"><a class="btn btn-light" href="{{ url_for('admin_school_students') }}">Back to students</a>
+<a class="btn btn-light" href="{{ url_for('admin_school_students_import_history') }}">Import another file</a></p>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'admin_base.html' %}
+{% block title %}Bulk import enrolment history — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
+  <h1>Bulk import enrolment history</h1>
+  <p class="hero-copy">Backfill the classes and sessions a student was in <em>before</em> they ever joined this portal — the deeper migration a school moving from another system, or from paper, usually needs after bringing students in. Each row does exactly what adding one enrolment history entry by hand does, on a student who already exists here.</p>
+</div></div>
+
+<section class="card modern-form">
+  <h3 style="margin-top:0">1. Start from the template</h3>
+  <p class="muted">Columns: <code>{{ required_columns|join(', ') }}</code> are required; <code>{{ optional_columns|join(', ') }}</code> are optional. <code>admission_no</code> must match an active student already in this school. <code>session</code> is matched by name (e.g. "2023/2024") and, unlike adding one entry by hand, may be a session that is no longer active — bringing in old history is exactly what an archived session is for. <code>level</code> must be one of: <code>{{ levels|join(', ') }}</code>. Dates (<code>enrolled_at</code>, <code>completed_at</code>) are YYYY-MM-DD.</p>
+  <p><a class="btn btn-light" href="{{ url_for('admin_school_students_import_history_template') }}">Download CSV template</a></p>
+</section>
+
+<section class="card modern-form" style="margin-top:18px">
+  <h3 style="margin-top:0">2. Upload your file</h3>
+  <form method="post" action="{{ url_for('admin_school_students_import_history_run') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="csv_file">CSV file (UTF-8, first {{ max_rows }} rows)</label>
+      <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" {{ upload_attrs('data') }} required>{{ upload_hint('data') }}</div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Import</button></div>
+  </form>
+  <p class="muted">A row that fails (an unknown admission number, an unrecognised level, a session that does not exist) is skipped and reported by line number; every other valid row is still imported. A valid row is created immediately, so check the file once before uploading.</p>
+</section>
+{% endblock %}

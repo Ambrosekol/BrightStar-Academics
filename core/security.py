@@ -251,6 +251,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     
     'admin_account_edit':'admins.edit',
     'admin_school_student_history_add':'student.history.manage','admin_school_student_history_edit':'student.history.manage',
+    'admin_school_students_import_history':'student.history.manage','admin_school_students_import_history_template':'student.history.manage',
+    'admin_school_students_import_history_run':'student.history.manage',
     'admin_finance_dashboard':'finance.view_own',
 'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_student_assessed_items':'finance.manage',
     'admin_finance_record':'finance.record',

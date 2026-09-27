@@ -530,6 +530,20 @@ check("a bulk student import created the good row and skipped the bad one",
 check("…the imported student was enrolled in the named class with a generated admission number",
       one("SELECT student_number FROM students WHERE first_name = 'Chika' AND last_name = 'Nwosu'") not in (None, ""))
 CHIKA = one("SELECT id FROM students WHERE first_name = 'Chika' AND last_name = 'Nwosu'")
+CHIKA_NO = one("SELECT admission_no FROM students WHERE id = :i", i=CHIKA)
+
+# ---- bulk-importing enrolment history: the deeper migration, for a student already in the system
+history_csv = (
+    "admission_no,level,session,enrolled_at,completed_at,notes\r\n"
+    f"{CHIKA_NO},Primary 4,2025/2026,2025-09-08,2026-07-17,Brought in from her previous school\r\n"
+    "NOT-A-REAL-NUMBER,Primary 4,2025/2026,,,\r\n"
+).encode("utf-8")
+r = op.post(f"{STUDENTS}/import-history", {}, files={"csv_file": ("history.csv", history_csv)})
+check("a bulk enrolment-history import created the good row and skipped the bad one",
+      "1 enrolment history row imported" in r.body.lower() and "1 row skipped" in r.body.lower())
+check("…the historical level and session were recorded against the right student, matched by admission number",
+      one("SELECT level_name FROM student_enrollment_history WHERE student_id = :s AND session_id = :sess",
+          s=CHIKA, sess=PAST) == "Primary 4")
 op.post(f"{STUDENTS}/{CHIKA}/toggle", {})  # deactivated: later exact-count sections (promotion) assume only Ada and Tunde
 check("…deactivating her afterwards keeps her out of everyone else's counts below",
       one("SELECT active FROM students WHERE id = :i", i=CHIKA) == 0)
