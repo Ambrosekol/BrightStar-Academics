@@ -1756,6 +1756,8 @@ def admin_school_student_history_edit(sid,history_id):
 @csrf_protect
 def admin_school_promotion():
     me=current_admin()
+    if not is_school_admin():
+        return admin_access_error('Promotion')
     sessions=db.session.scalars(select(AcademicSession)
         .where(AcademicSession.active==1)
         .order_by(AcademicSession.id.desc())).all()
@@ -1833,6 +1835,8 @@ def admin_school_promotion():
 @csrf_protect
 def admin_school_promotion_run(run_id):
     me=current_admin()
+    if not is_school_admin():
+        return admin_access_error('Promotion')
     FromSession=sa.orm.aliased(AcademicSession)
     ToSession=sa.orm.aliased(AcademicSession)
     raw=one(select(AcademicPromotionRun,

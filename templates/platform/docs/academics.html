@@ -87,6 +87,12 @@ A student sees only <strong>released</strong> marks. The admin's own term-result
 
 <h2 id="promotion">Promotion between sessions</h2>
 <p>At the end of a session a school promotes students. A <em>run</em> ({{ table('academic_promotion_runs') }}) lists each student with a decision (promote, repeat, transfer, graduate, withdraw, hold) and a target class from the school's configured progressions ({{ table('school_class_progressions') }}); items are in {{ table('academic_promotion_items') }}. Validation before applying is in <code>_promotion_validate_run</code>. It creates the next session's enrolments and keeps the enrolment history.</p>
+<div class="note"><p>Every promotion action - starting a draft, editing it, approving and committing it, and the
+progression rules it drafts from - is restricted to the school's own top-level admin type
+(<code>is_school_admin</code>), the same gate {{ route('admin_school_sessions') }} uses: it moves
+every currently enrolled student at once, including graduating and withdrawing them, so it is kept
+out of {{ perm('admin.access') }}'s ordinary reach rather than made a grantable permission a custom
+role could pick up. <em>Promotion</em> appears in the navigation rail only for that same admin type.</p></div>
 
 <h2 id="gotchas">Things that have bitten people</h2>
 <ul>
