@@ -1,0 +1,78 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>The console is where Brightstars operators run the platform: create and suspend schools, manage their addresses and look, and (for the super admin) manage the team.
+It is served only on the platform hostnames (<code>BRIGHTSTARS_PLATFORM_HOSTS</code>) and is invisible from a school's own address: the guard {{ file('control_plane/console.py') }}
+calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider cannot even tell the routes exist.</p>
+
+<h2 id="pages">What is on the platform address</h2>
+<div class="table-scroll"><table>
+<tr><th>Path</th><th>Who</th><th>What</th></tr>
+<tr><td><code>/</code></td><td>anyone</td><td>Redirects to the console sign-in, or the dashboard if signed in. There is no home page on a platform address.</td></tr>
+<tr><td><code>/platform</code></td><td>signed-in platform admins</td><td>The console: schools, team, activity, password.</td></tr>
+<tr><td><code>/marketing</code></td><td><strong>public</strong></td><td>The page that explains the product to schools. See {{ route('marketing') }}.</td></tr>
+<tr><td><code>/docs</code></td><td>super admin, and admins granted access</td><td>This documentation. See {{ route('docs_home') }}.</td></tr>
+</table></div>
+
+<h2 id="team">The team: super admin and platform admins</h2>
+<p>There are two kinds of platform admin, and both have <strong>full control over every school</strong>: create, brand, suspend and enter any of them.</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>Platform admin</th><th>Super admin</th></tr>
+<tr><td>Create, brand, suspend and enter schools</td><td>yes</td><td>yes</td></tr>
+<tr><td>Add, remove, restore and reset other admins</td><td>no</td><td><strong>yes</strong></td></tr>
+<tr><td>Read what each admin has done</td><td>only their own log</td><td><strong>everyone's</strong></td></tr>
+<tr><td>Read <code>/docs</code></td><td>only if the super admin grants it</td><td><strong>always</strong></td></tr>
+<tr><td>Can be removed</td><td>by the super admin</td><td><strong>never</strong></td></tr>
+</table></div>
+<p>The first admin created becomes the super admin. The console can never create another (do it deliberately from the command line with <code>--super</code>). A registry that had admins before roles existed promotes its earliest admin automatically on start ({{ file('control_plane/registry.py') }}, <code>ensure_superadmin</code>).</p>
+<ul>
+  <li><strong>Adding an admin</strong> ({{ route('platform_team_new') }}) generates a one-time password, shown once. The new admin must replace it at first sign-in, and nothing else opens until they have.</li>
+  <li><strong>Removing an admin</strong> ({{ route('platform_team_remove') }}) never deletes the account. It switches their access off everywhere at once: their console session ends, their unused entry tickets die, and their reserved account inside every school is switched off, so a session already open inside a school stops at the next click. The account and its log stay; {{ route('platform_team_restore') }} brings them back with a new temporary password. If a school cannot be reached while removing someone, the console names it, so it is never silently missed.</li>
+  <li><strong>Resetting a password</strong> ({{ route('platform_team_reset') }}) gives a new temporary password.</li>
+  <li><strong>Documentation access</strong> ({{ route('platform_team_docs_access') }}). On the Team page each non-super admin has a <em>grant / withdraw</em> button. It changes a single flag, <code>platform_admins.docs_access</code> ({{ table('platform_admins') }}), and is written to the activity log. There is no bulk grant and no self-service: only the super admin decides who reads these pages.</li>
+</ul>
+
+<h2 id="schools">Creating and running a school</h2>
+<p>The <em>Create a school</em> form ({{ route('platform_school_new') }}) is the normal path, because it captures everything the school will look like <em>before</em> the school exists, so nobody ever sees a portal wearing another school's name:</p>
+<ul>
+  <li><strong>Name and code.</strong> The code is permanent: it forms the portal address and names the school's database and folder. It can never be reused or renamed.</li>
+  <li><strong>Branding.</strong> Name, motto, tagline, phone, email, address and a logo.</li>
+  <li><strong>Sign-in photographs.</strong> Up to eight, shown as a slideshow beside the sign-in form.</li>
+  <li><strong>Brand colours.</strong> A main and an accent colour with a live preview. Both sit behind white text, so a colour too light to read it is refused (WCAG AA contrast, 4.5:1); the form warns as you pick and the server enforces it.</li>
+  <li><strong>Question banks.</strong> Ticked by default: start with the platform's standard entrance banks, copied into the school's own folder.</li>
+  <li><strong>Numbering.</strong> How candidate codes and student numbers are written: a pattern with the default already filled in. See {{ page('branding-numbering', 'Identity and numbering') }}.</li>
+  <li><strong>Its own domain</strong> (optional) and a <strong>first administrator</strong> (optional; a one-time password is shown once).</li>
+</ul>
+<p>What happens when you press the button is in <code>create_tenant</code> ({{ file('control_plane/provisioning.py') }}). Every choice that can be checked without a school is checked <em>first</em>, so a bad one is reported before a database and a folder exist. Then, in order:</p>
+<ol class="steps">
+  <li>a row in <code>tenants</code> and its portal hostname in <code>tenant_domains</code>, plus the audit entry;</li>
+  <li>the school's database is created and its schema built (<code>upgrade_tenant</code>);</li>
+  <li>branding is applied and the numbering rules written to <code>tenants/&lt;code&gt;/numbering.json</code>;</li>
+  <li>the starter banks are copied in, and the first administrator created if asked.</li>
+</ol>
+<p>If any step after the first fails, the half-made school is removed again. The school is reachable the moment it exists at <code>&lt;code&gt;.&lt;portal domain&gt;</code>.</p>
+
+<h3 id="domains">Addresses</h3>
+<p>Every school gets a <strong>portal address</strong> the platform owns. It works at once and can never be removed. A school may add its own domain as well: the school creates one DNS record, <code>portal.theschool.example. CNAME theschool.&lt;portal domain&gt;.</code>, and the console (or <code>add-domain</code>) registers the hostname ({{ route('platform_school_domains') }}). Your reverse proxy needs a certificate for every hostname it serves (a wildcard for the portal domain, plus one per school domain) and must pass the original <code>Host</code> header through unchanged, because that is what selects the school.</p>
+
+<h3 id="suspend">Suspending</h3>
+<p>{{ route('platform_school_status') }} takes a school offline for everyone (staff, parents, students, candidates) within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code> on each worker, because host lookups are cached. Data is untouched and returns on reactivation. A reason is recorded.</p>
+
+<h3 id="look">Look of the portal</h3>
+<p>Colours, logo and photographs can be changed afterwards from the school's page ({{ route('platform_school_branding') }}) and, if the school's <code>branding.manage</code> permission is granted, by the school's own administrators. Both use the same rules in {{ file('core/branding.py') }} and {{ file('core/theme.py') }}, so they cannot disagree about what is allowed.</p>
+
+<h2 id="enter">Entering a school</h2>
+<p>Each school is on its own domain, so the console cannot set a session cookie for it. {{ route('platform_school_enter') }} instead mints a token, stores only its SHA-256 (a copy of the registry does not let anyone in), and redirects the operator to the school's own address where {{ route('platform_entry') }} redeems it exactly once, within a short time.</p>
+<p>Redemption signs the operator in to a <strong>reserved account</strong> in that school, <code>platform@&lt;username&gt;</code>, with the school's top-level role. The <code>@</code> is what keeps this namespace unreachable from anything a person can type when creating a school account. The entry is recorded in the platform audit log <em>and</em> in the school's own audit trail; everything the operator does there is recorded under that account. The banner inside a school shows that a platform operator is present.</p>
+<div class="why"><p>Platform admins must be able to do everything a school admin can do, in any school, but they must never share a school's passwords, and their footprint inside a school must be readable by the super admin. A reserved, revocable account per operator achieves all three.</p></div>
+
+<h2 id="activity">The activity log</h2>
+<p>{{ route('platform_activity') }} is arranged as <em>choose an admin, then read their log</em>. The super admin can pick anyone (or Everyone, or a removed admin) and filter by <em>Schools</em>, <em>Accounts &amp; team</em>, <em>Sign-ins</em> or <em>Inside schools</em>. It records what each admin did to schools, within the platform (adding, removing, restoring, resetting, docs access, password changes) and every sign-in, sign-out and failed or refused attempt on a real account with the address it came from. "Inside schools" is read, read-only, from each school's own audit trail; only schools the admin has entered are opened, and a school that cannot be reached is named on the page rather than silently omitted. Any other admin sees only their own log. Logic: {{ file('control_plane/team.py') }}.</p>
+
+<h2 id="cli">The command line</h2>
+<p>Everything above that a console does has a command, for servers and for scripting: <code>python -m control_plane init | create-platform-admin | create-tenant | list | upgrade | new-launch | add-domain | remove-domain | suspend | activate | drop-retired-tables</code>. Full syntax is in the <a href="{{ url_for('docs_page', slug='reference-config') }}#cli">configuration and commands reference</a>.</p>
+
+<h2 id="limits">Sign-in limits</h2>
+<p>Sign-in (schools and console), password recovery and the email/WhatsApp test buttons are limited per address and username, for example 8 sign-ins per 5 minutes. The counts live in the registry ({{ table('rate_limits') }}), so several workers, or a restart, cannot multiply or reset them. Details in {{ file('control_plane/ratelimit.py') }} and {{ page('security', 'Security model') }}.</p>
+{% endblock %}

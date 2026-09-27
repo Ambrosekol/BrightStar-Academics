@@ -30,6 +30,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Creating a school](#creating-a-school)
 - [Giving a school its own domain](#giving-a-school-its-own-domain)
 - [The platform team and its activity log](#the-platform-team-and-its-activity-log)
+- [Documentation and the marketing page](#documentation-and-the-marketing-page)
 - [Email and WhatsApp](#email-and-whatsapp)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
@@ -267,6 +268,25 @@ every school is switched off, so a session they already had open *inside a schoo
 next click. The account and its whole log are kept, and the super admin can restore them (with a
 new temporary password) or reset any admin's password. If a school cannot be reached while
 removing someone, the console says which, so it is never silently missed.
+
+## Documentation and the marketing page
+
+Two more pages live on the platform hostnames, alongside the console:
+
+- **`/docs`** is the platform's own developer documentation: architecture, deployment,
+  recommendations, and a reference (routes, tables, permissions, modules, templates) generated
+  from the code itself so it cannot fall behind. It is visible only to a signed-in platform admin
+  who has been given access — the super admin always has it and grants or withdraws it for each
+  other admin, one at a time, from the Team page; everyone else meets the same 404 as an address
+  that does not exist. Read from the app: [Welcome](templates/platform/docs/welcome.html) and
+  [control_plane/platform_pages.py](control_plane/platform_pages.py) and
+  [control_plane/docsgen.py](control_plane/docsgen.py).
+- **`/marketing`** is the public page that explains the product to schools, in the Brightstars
+  brand. It needs no sign-in. See [templates/marketing.html](templates/marketing.html).
+
+Both are checked by `tests/current/test_docs_contract.py`: every file, route, table, permission and
+template the documentation names is verified to still exist, and the access rules for `/docs` are
+enforced (only a signed-in admin with access; nobody else, not even by guessing the address).
 
 **The activity log** is arranged as *choose an admin, then read their log*: the super admin picks
 anyone (or Everyone, or a removed admin) and reads their entries, filtered by Schools, Accounts &

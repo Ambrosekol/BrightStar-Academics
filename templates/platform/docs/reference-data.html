@@ -1,0 +1,46 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+<p>The whole schema, read from the SQLAlchemy models when the server starts. A school's database is built from the
+<code>models/</code> package alone (<code>create_all()</code> creates missing tables, and a small column-diffing helper in
+<code>app.py</code> adds any column an older database lacks), so there are no migration files to keep in step with this.
+The platform registry has its own models in <code>control_plane/models.py</code> and its own database.</p>
+<div class="note"><p>Conventions that hold everywhere: timestamps are ISO-8601 UTC <em>text</em> (never <code>DateTime</code>), yes/no flags are
+<code>INTEGER</code> 0/1, and marks are floats so a 40-question paper can be worth 2.5 a question. Rows also answer to
+<code>row['column']</code>, which older templates rely on.</p></div>
+<input class="filter" id="filter" type="search" placeholder="Filter by table or column name…" aria-label="Filter tables" autocomplete="off">
+{% for group in ref.tables() %}
+<section class="ref-group">
+  <h2>{{ group.title }}</h2>
+  <p class="muted">{{ group.blurb }}</p>
+  {% for t in group.tables %}
+  <div class="ref-item" id="{{ t.slug }}" data-text="{{ (t.name ~ ' ' ~ t.doc ~ ' ' ~ (t.columns|map(attribute='name')|join(' ')))|lower }}">
+    <h3>{{ t.name }}</h3>
+    {% if t.doc %}<p>{{ t.doc }}</p>{% endif %}
+    {% if t.file %}<p class="ref-meta">model <code>{{ t.model }}</code> in <a class="ref" href="{{ url_for('docs_page', slug='reference-modules') }}#{{ t.file|docs_slug }}"><code>{{ t.file }}</code></a></p>{% endif %}
+    <details><summary>{{ t.columns|length }} columns</summary>
+      <div class="table-scroll"><table class="symbols">
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        {% for c in t.columns %}<tr><td><code>{{ c.name }}</code></td><td class="ref-meta">{{ c.type }}</td>
+          <td class="ref-meta">{% if c.pk %}primary key {% endif %}{% if not c.nullable and not c.pk %}required {% endif %}{% if c.default %}has default {% endif %}{% for r in c.refs %}&rarr; <a href="#{{ r.split('.')[0]|docs_slug }}">{{ r }}</a> {% endfor %}</td></tr>{% endfor %}
+      </table></div>
+      {% if t.uniques %}<p class="ref-meta">unique: {% for u in t.uniques %}<code>{{ u }}</code> {% endfor %}</p>{% endif %}
+      {% if t.indexes %}<p class="ref-meta">indexes: {% for i in t.indexes %}<code>{{ i }}</code> {% endfor %}</p>{% endif %}
+    </details>
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+<script>
+(function () {
+  var box = document.getElementById('filter');
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('.ref-item').forEach(function (el) {
+      var hay = el.getAttribute('data-text');
+      el.style.display = words.every(function (w) { return hay.indexOf(w) !== -1; }) ? '' : 'none';
+    });
+  });
+  if (location.hash) { var t = document.querySelector(location.hash); if (t) { var d = t.querySelector('details'); if (d) d.open = true; } }
+})();
+</script>
+{% endblock %}

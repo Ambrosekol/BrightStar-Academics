@@ -1,0 +1,40 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+{% set groups = ref.modules() %}
+<p>This page is <strong>generated from the code</strong> when the server starts, so it is always current. Each entry shows the file's own
+docstring (the paragraph its author wrote at the top) and its top-level classes and functions with their line numbers.</p>
+<input class="filter" id="filter" type="search" placeholder="Filter by file name, docstring or function name…" aria-label="Filter modules" autocomplete="off">
+{% for group in groups %}
+<section class="ref-group">
+  <h2 id="{{ group.group|docs_slug }}">{{ group.group }}</h2>
+  <p class="muted">{{ group.blurb }}.</p>
+  {% for m in group.files %}
+  <div class="ref-item" id="{{ m.slug }}" data-text="{{ (m.path ~ ' ' ~ m.doc ~ ' ' ~ (m.symbols|map(attribute='name')|join(' ')))|lower }}">
+    <h3>{{ m.path }}</h3>
+    <p>{{ m.summary or 'No module docstring.' }}</p>
+    <p class="ref-meta">{{ m.lines }} lines{% if m.symbols %} &middot; {{ m.symbols|length }} top-level definitions{% endif %}</p>
+    {% if m.symbols %}
+    <details><summary>Show definitions</summary>
+      <table class="symbols">
+        {% for s in m.symbols %}<tr><td><span class="pill-mini">{{ s.kind }}</span></td><td><code>{{ s.name }}</code> <span class="ref-meta">{{ m.path }}:{{ s.line }}</span></td><td class="ref-meta">{{ s.doc }}</td></tr>{% endfor %}
+      </table>
+    </details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+<script>
+(function () {
+  var box = document.getElementById('filter');
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('.ref-item').forEach(function (el) {
+      var hay = el.getAttribute('data-text');
+      el.style.display = words.every(function (w) { return hay.indexOf(w) !== -1; }) ? '' : 'none';
+    });
+  });
+  if (location.hash) { var t = document.querySelector(location.hash); if (t) { var d = t.querySelector('details'); if (d) d.open = true; } }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Students and parents have portals of their own inside their school's address. This page covers what each can do, how parents are linked to children, and, importantly, <strong>how the platform tells parents things</strong>.</p>
+
+<h2 id="students">The student portal</h2>
+<p>Code: {{ file('blueprints/student_portal/routes.py') }} and {{ file('blueprints/student_portal/helpers.py') }}. A student signs in at the school's <code>/login</code> and lands on their dashboard ({{ route('student_dashboard') }}):</p>
+<ul>
+  <li><strong>Assignments and projects</strong> set for them, and CBT quiz assignments they can take.</li>
+  <li><strong>Tests and examinations</strong> for their class and current session; one attempt each, timed, with answers saved as they go.</li>
+  <li><strong>Practice</strong>, always open and retakeable; see {{ page('academics', 'Academics') }}.</li>
+  <li><strong>Results</strong>, only once <em>released</em>, and their <strong>report cards</strong> once a term is complete ({{ file('blueprints/student_portal/report_cards.py') }}).</li>
+  <li>Notifications, and a password change. A student on a temporary password is forced to change it first (<code>student_required</code>).</li>
+</ul>
+<p>Every route that takes a student id from the address checks it against the signed-in session; there is no way to open another student's page by editing a number.</p>
+
+<h2 id="parents">The parent portal</h2>
+<p>Code: {{ file('blueprints/parents/routes.py') }}, helpers in {{ file('blueprints/parents/helpers.py') }}, report cards in {{ file('blueprints/parents/report_cards.py') }}. A parent account ({{ table('parent_accounts') }}) is linked to one or more children through {{ table('parent_student_links') }}; a link can be switched off. The <em>link</em>, not the account, authorises everything: a parent can open a child, the child's finances and receipts, and the child's report cards only through an active link ({{ route('parent_dashboard') }}, {{ route('parent_child_detail') }}, {{ route('parent_child_finance') }}).</p>
+<ul>
+  <li>Parents follow results (once released), attendance and fee status, download receipts as PDF, and read report cards.</li>
+  <li><strong>Feedback</strong> is a two-way thread between a parent and the school ({{ table('parent_feedback') }}, {{ table('parent_feedback_replies') }}) with optional attachments (served only by a permission-checked download). Staff triage and reply from the admin side; who may is <code>parent.feedback.view</code> and <code>parent.feedback.manage</code>.</li>
+  <li>Staff create parent accounts (and link them to students), each with a one-time password. A brother or sister is linked to the <em>same</em> parent account, not a new one.</li>
+</ul>
+
+<h2 id="delivery">Email and WhatsApp: a school's own accounts</h2>
+<p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. Staff with {{ perm('delivery.manage') }} set them up on <em>Email &amp; WhatsApp</em> ({{ route('admin_school_delivery') }}), each with a button to test before relying on it.</p>
+<div class="table-scroll"><table>
+<tr><th>Rule</th><th>Why</th></tr>
+<tr><td><strong>The platform's shared account is the fallback.</strong> A school that has set up nothing sends through the <code>BRIGHTSTARS_SMTP_*</code> / <code>BRIGHTSTARS_WHATSAPP_*</code> account if the deployment has one. With neither, it cannot send, and says so.</td><td>New schools work at once, but nothing is ever sent from a place nobody chose.</td></tr>
+<tr><td><strong>A half-set-up school never borrows the platform's account.</strong> Once a mail host is entered, the school's settings are used exclusively, even if incomplete.</td><td>Otherwise a typo would quietly send a school's parents' mail from the platform's address.</td></tr>
+<tr><td><strong>Secrets are encrypted at rest</strong> (Fernet) in the school's own database, under a key derived from the application secret <em>and the school's code</em>. Never shown again; blank on save means "keep".</td><td>A copy of a school's database is not a copy of its mail credentials, and one school's stored token means nothing in another. Set <code>BRIGHTSTARS_DELIVERY_KEY</code> so rotating the app secret does not strand them.</td></tr>
+<tr><td><strong>The server cannot be aimed at its own network.</strong> In production a school's mail host must resolve only to public addresses (checked when saved and again before each connection, connecting to the very address checked); only ports 25, 465, 587 and 2525.</td><td>A school chooses a host the <em>server</em> connects to, which is a way to probe internal services.</td></tr>
+</table></div>
+<p>Tables: {{ table('school_delivery_settings') }}. Test buttons are rate limited (they share the registry counters).</p>
+
+<h2 id="notices">What parents are told, and when</h2>
+<div class="table-scroll"><table>
+<tr><th>Event</th><th>Channels</th><th>Code</th></tr>
+<tr><td>New assignment or project</td><td>email, WhatsApp to the guardian</td><td><code>_notify_guardians_of_school_work</code></td></tr>
+<tr><td>A fee charged to their child</td><td>in-app, email, WhatsApp</td><td><code>_notify_parents_fee_assessed</code></td></tr>
+<tr><td><strong>A payment recorded</strong></td><td>in-app; the <strong>receipt PDF</strong> by email and WhatsApp, automatically</td><td><code>_notify_parents_payment_recorded</code>, <code>_send_payment_receipt_to_guardian</code></td></tr>
+<tr><td><strong>A term's results released, so the report card is ready</strong></td><td>in-app, email, WhatsApp</td><td><code>_notify_parents_report_card_ready</code>, {{ file('blueprints/school/result_notices.py') }}</td></tr>
+</table></div>
+<p>All in {{ file('core/notifications.py') }}. They share one contract: <strong>best effort, and never blocks the change that triggered it</strong>. A missing channel, an unset contact or a failed delivery for one child never stops the others and never rolls anything back. Each sender is called only after its own commit has succeeded.</p>
+<p>Because delivery can be slow, the payment receipt and the report card notices are sent on a background thread ({{ file('core/background.py') }}). The in-app alerts are written synchronously so they are there when the page reloads.</p>
+<div class="note"><p><strong>Idempotence.</strong> The report card notice fires when a term <em>becomes</em> complete, and only then: releasing one subject of several says nothing (the term is not ready yet), and releasing the last one sends it. If a result is later edited and the term released again, the parents are told again; that is a real new event.</p></div>
+
+<h2 id="recovery">Password recovery</h2>
+<p>{{ route('forgot_password') }} accepts an identifier for any of the four account types, finds the account and emails a single-use link ({{ table('password_reset_tokens') }}; only a hash of the token is stored). The reset pages are never cached and send no referrer, so a link is not kept or shown to anyone. Using a link ends the account's other sign-ins. Requests are rate limited per address and username.</p>
+{% endblock %}

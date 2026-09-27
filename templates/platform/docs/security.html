@@ -1,0 +1,64 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>A school holds children's names, photographs, results and fees. The security design is built around one worst case: <strong>one school seeing another's data</strong>. Most controls below serve that, and the rest keep the platform's own operators honest.</p>
+
+<h2 id="map">Threats, controls and where they live</h2>
+<div class="table-scroll"><table>
+<tr><th>Threat</th><th>Control</th><th>Where</th></tr>
+<tr><td>School A sees school B's data</td><td>School chosen from the address only; a database per school; queries fail closed with no school; sessions stamped with their school and discarded elsewhere; files in per-school folders</td><td>{{ file('control_plane/resolver.py') }}, {{ file('control_plane/routing.py') }}, {{ file('core/storage.py') }}</td></tr>
+<tr><td>A cookie copied between schools</td><td>Every session carries its school's id; a mismatch clears it</td><td>{{ file('control_plane/resolver.py') }}</td></tr>
+<tr><td>Forged form posts (CSRF)</td><td><code>csrf_protect</code> on every write route; a token in every form; a test that fails if a write route is not exercised</td><td>{{ file('core/security.py') }}, <code>tests/verification/pg_posts_coverage.py</code></td></tr>
+<tr><td>Password guessing</td><td>Rate limits per address and username, counted in the registry so every worker shares them; password hashing with Werkzeug</td><td>{{ file('control_plane/ratelimit.py') }}, {{ file('core/accounts.py') }}</td></tr>
+<tr><td>A stolen or old sign-in</td><td>A restart signs everyone out; a changed password ends the account's other sign-ins</td><td>{{ file('core/session_guard.py') }}</td></tr>
+<tr><td>A staff member exceeding their role</td><td>Permission per endpoint, scope per class/subject/bank, bounded delegation, audit of refusals</td><td>{{ file('core/security.py') }}</td></tr>
+<tr><td>An operator's power inside a school</td><td>One-time entry ticket (hash stored), reserved revocable account, entry recorded on both sides, footprint readable by the super admin</td><td>{{ file('control_plane/entry.py') }}, {{ file('control_plane/team.py') }}</td></tr>
+<tr><td>Someone finding the console</td><td>Console routes return 404 on any address that is not a platform host; <code>/docs</code> returns the same 404 to anyone without access</td><td>{{ file('control_plane/console.py') }}, {{ file('control_plane/platform_pages.py') }}</td></tr>
+<tr><td>Hostile uploads</td><td>Type, size and real-image checks; random file names; only inside the school's folder; per-folder access rules; a 404 (not 403) on refusal</td><td>{{ file('core/uploads.py') }}, {{ file('core/upload_access.py') }}</td></tr>
+<tr><td>Path traversal</td><td>Paths are normalised before anything is decided or served</td><td><code>uploaded_file</code> in {{ file('app.py') }}</td></tr>
+<tr><td>Injection into pages</td><td>Jinja autoescaping; brand colours accepted only as <code>#rrggbb</code> because they go inside <code>&lt;style&gt;</code>; the numbering editor shows input escaped and never as HTML</td><td>{{ file('core/theme.py') }}</td></tr>
+<tr><td>Running code typed on a web page</td><td>Nothing typed is ever executed; numbering is a pattern that is read, not run</td><td>{{ file('core/numbering_pattern.py') }}</td></tr>
+<tr><td>Aiming the server at its own network (SSRF)</td><td>A school's mail host must resolve only to public addresses in production, checked when saved and again just before connecting, connecting to the address checked; only standard mail ports</td><td>{{ file('core/delivery.py') }}</td></tr>
+<tr><td>Stored mail/WhatsApp secrets leaking</td><td>Encrypted at rest, key derived from the app secret <em>and the school's code</em>; never shown again; absent from the audit log</td><td>{{ file('core/delivery.py') }}</td></tr>
+<tr><td>Forged client addresses</td><td>Forwarded headers ignored unless a trusted proxy count is set; never the host, only address and scheme</td><td><code>apply_trusted_proxies</code> in {{ file('app.py') }}</td></tr>
+<tr><td>Crashing on hostile input</td><td>Huge numbers and NUL bytes answered with a plain 400; the test suite sends every route hostile input and fails on any 500</td><td>{{ file('core/request_errors.py') }}</td></tr>
+<tr><td>Leaking internals in errors</td><td>Designed error pages that show no detail; per school, in its colours</td><td>{{ file('app.py') }}, {{ tpl('error_5xx.html') }}</td></tr>
+</table></div>
+
+<h2 id="headers">Headers and cookies</h2>
+<p>Every response gets (in <code>apply_security_headers</code>, {{ file('app.py') }}): <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: same-origin</code> (the application does read its own Referer for "go back"), a restrictive <code>Permissions-Policy</code>, HSTS in production, and this Content-Security-Policy:</p>
+<pre><code>default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';
+script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'</code></pre>
+<div class="note"><p><strong>Consequences you will hit.</strong> No external fonts, scripts, images or stylesheets: everything is self-hosted, which is why fonts live in <code>static/fonts/</code>. Inline scripts and styles are allowed (a deliberate trade-off for the many small page scripts); tightening to nonces would be a sensible hardening step. Password-reset pages are never cached and send no referrer.</p></div>
+
+<h2 id="roles">Who is trusted with what</h2>
+<div class="table-scroll"><table>
+<tr><th>Person</th><th>Trusted with</th><th>Cannot</th></tr>
+<tr><td>Super admin</td><td>Everything on the platform: the team, every log, every school</td><td>Be removed</td></tr>
+<tr><td>Platform admin</td><td>Every school (create, brand, suspend, enter)</td><td>Touch the team, read others' logs, read <code>/docs</code> unless granted</td></tr>
+<tr><td>School Admin</td><td>Their own school entirely</td><td>See any other school</td></tr>
+<tr><td>School staff</td><td>What their role, and scope, allow</td><td>Grant what they do not hold themselves</td></tr>
+<tr><td>Parent</td><td>Their linked children</td><td>Any other child</td></tr>
+<tr><td>Student / candidate</td><td>Their own work and, once released, results</td><td>Anyone else's; a candidate never sees scores</td></tr>
+</table></div>
+
+<h2 id="secrets">Secrets: what to protect</h2>
+<ul>
+  <li><code>BRIGHTSTARS_SECRET</code> signs every session cookie. Anyone with it can forge a sign-in for any school. Keep it out of source control and logs; rotate it only knowing everyone will be signed out (and that, without <code>BRIGHTSTARS_DELIVERY_KEY</code>, saved school credentials become unreadable).</li>
+  <li><code>BRIGHTSTARS_PLATFORM_DB</code> holds a database credential that can create databases. Store it as a secret.</li>
+  <li>Flask sessions are <em>signed, not encrypted</em>: the person can read their own cookie. Never store anything in a session that they must not see.</li>
+  <li>Never log a password, token, or a school's stored credential. Audit entries record <em>which</em> fields changed, not their values.</li>
+</ul>
+
+<h2 id="gaps">What it does not do</h2>
+<p>Honest limits, so nobody assumes more than exists:</p>
+<ul>
+  <li><strong>No two-factor authentication</strong> for any account, including platform admins.</li>
+  <li><strong>Databases are not encrypted per school</strong> beyond stored delivery credentials; rely on disk and PostgreSQL-level encryption and access control.</li>
+  <li><strong>A shared PostgreSQL role.</strong> By default the same role connects to every school's database; a compromised application process can read every school. Isolation is by design and by test, not by database privileges. Separate roles per school are possible but not set up.</li>
+  <li><strong>The CSP allows inline scripts and styles.</strong></li>
+  <li><strong>Background messaging runs on threads</strong> in the web process, without persistence or retry.</li>
+</ul>
+<p>Each is a candidate for the hardening list in {{ page('recommendations', 'Recommendations') }}.</p>
+{% endblock %}

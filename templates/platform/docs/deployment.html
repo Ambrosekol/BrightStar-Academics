@@ -1,0 +1,86 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>This page is a checklist for standing the platform up for real. Read {{ page('architecture', 'Architecture') }} first; the sections on the address and on the launch id explain <em>why</em> several of these steps exist.</p>
+
+<div class="warn"><p>The built-in server that <code>python app.py</code> starts (<code>app.run</code>, no debug) is for development and small trials. For production run the application under a proper WSGI server behind a reverse proxy, as below.</p></div>
+
+<h2 id="shape">What you are deploying</h2>
+<div class="flow"><span class="node">Browser</span><span class="arrow">&rarr;</span><span class="node">TLS-terminating reverse proxy<br><small>nginx, Caddy, a load balancer</small></span><span class="arrow">&rarr;</span><span class="node">WSGI server<br><small>several worker processes</small></span><span class="arrow">&rarr;</span><span class="node">PostgreSQL<br><small>registry + one database per school</small></span></div>
+<p>Plus a folder of school files (<code>BRIGHTSTARS_TENANTS_DIR</code>), which must be on disk that every worker sees.</p>
+
+<h2 id="dns">1. Names and certificates</h2>
+<ul>
+  <li><strong>The platform address</strong>, for operators, the console, the marketing page and these docs: for example <code>platform.brightstars.com</code>. Put it in <code>BRIGHTSTARS_PLATFORM_HOSTS</code>. Keep the company's public website (<code>brightstars.com</code>) on separate hosting; the platform serves only <code>/platform</code>, <code>/marketing</code> and <code>/docs</code> here.</li>
+  <li><strong>The portal domain</strong>, under which every school is issued an address: for example <code>schools.brightstars.com</code>, so a school called <code>alpha</code> is at <code>alpha.schools.brightstars.com</code>. Set <code>BRIGHTSTARS_PORTAL_DOMAIN</code> to it and create a <strong>wildcard DNS record</strong> <code>*.schools.brightstars.com</code> pointing at the proxy.</li>
+  <li><strong>Certificates.</strong> A wildcard certificate for the portal domain, one for the platform address, and one for each school's own domain that is added later (Let's Encrypt with the DNS challenge handles the wildcard; a proxy like Caddy can issue per-domain certificates on demand).</li>
+  <li><strong>A school's own domain</strong>: the school adds one CNAME (<code>portal.theirschool.example. CNAME alpha.schools.brightstars.com.</code>); you register the hostname in the console.</li>
+</ul>
+<div class="warn"><p>The proxy must pass the original <code>Host</code> header through <strong>unchanged</strong>. The <code>Host</code> header is what selects the school. A proxy that rewrites it makes every request "address not found" or, worse, the wrong school.</p></div>
+
+<h2 id="postgres">2. PostgreSQL</h2>
+<ul>
+  <li>PostgreSQL 14 or newer (tested on 18). One server can hold the registry and every school's database.</li>
+  <li>A role that can <code>CREATE DATABASE</code>. Schools' databases are created on demand. A separate, less privileged role for schools is possible with <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code> when the databases are created elsewhere.</li>
+  <li><strong>Connections multiply.</strong> Each school has its own connection pool, so total connections are roughly <em>schools &times; pool size &times; workers</em>. Size <code>max_connections</code> accordingly, or put a pooler in front. With PgBouncer in transaction mode use a <em>database per school</em>, not a schema per school.</li>
+  <li>Back up the registry and every school's database. Restoring one school never touches another.</li>
+</ul>
+
+<h2 id="env">3. Environment</h2>
+<p>Everything is read from environment variables (loaded from <code>.env</code> if present; a real environment variable always wins). Minimum for production:</p>
+<pre><code>BRIGHTSTARS_ENV=production
+BRIGHTSTARS_SECRET=&lt;64 hex characters from secrets.token_hex(32)&gt;
+BRIGHTSTARS_PLATFORM_DB=postgresql+psycopg://brightstars:...@db-host:5432/brightstars_platform
+BRIGHTSTARS_PLATFORM_HOSTS=platform.brightstars.com
+BRIGHTSTARS_PORTAL_DOMAIN=schools.brightstars.com
+BRIGHTSTARS_TENANTS_DIR=/var/lib/brightstars/tenants
+BRIGHTSTARS_TRUSTED_PROXIES=1
+BRIGHTSTARS_DELIVERY_KEY=&lt;a different long random string&gt;
+BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
+<ul>
+  <li><strong><code>BRIGHTSTARS_ENV=production</code></strong> makes session cookies <code>Secure</code>, adds HSTS, and makes the application <em>refuse to start</em> if the secret is under 32 characters.</li>
+  <li><strong><code>BRIGHTSTARS_TRUSTED_PROXIES</code></strong> is how many reverse proxies you run in front (usually 1). Leave it 0 with none. Too high lets a visitor forge their address in the audit log and dodge the sign-in limits; too low records the proxy's address for everyone. Behind a TLS-terminating proxy it is also what makes links in emails and the "Enter school" redirect use <code>https</code>.</li>
+  <li><strong><code>BRIGHTSTARS_DELIVERY_KEY</code></strong> encrypts schools' saved mail and WhatsApp secrets independently of the session secret. <strong>Set it before any school saves credentials and never change it afterwards.</strong> Without it the key derives from <code>BRIGHTSTARS_SECRET</code>, so rotating that secret would make every saved credential unreadable.</li>
+  <li><code>BRIGHTSTARS_CONTACT_EMAIL</code> is optional: the address the marketing page's buttons write to. Without it the page shows the buttons without a mail link.</li>
+  <li>Optional shared mail and WhatsApp accounts (<code>BRIGHTSTARS_SMTP_*</code>, <code>BRIGHTSTARS_WHATSAPP_*</code>) are the fallback for schools that have set up none. See the full list in the {{ page('reference-config', 'configuration reference') }}.</li>
+</ul>
+
+<h2 id="first">4. First launch</h2>
+<ol class="steps">
+  <li>Install: <code>python -m venv venv</code>, <code>pip install -r requirements.txt</code>, plus a WSGI server (for example <code>gunicorn</code> on Linux, <code>waitress</code> on Windows; neither is in <code>requirements.txt</code>).</li>
+  <li><code>python -m control_plane init</code> creates the registry and its tables.</li>
+  <li><code>python -m control_plane create-platform-admin &lt;you&gt;</code> makes the super admin (password prompted, at least 10 characters).</li>
+  <li><code>python -m control_plane upgrade</code>: brings every school's schema up to date <strong>and records a new launch</strong>. This is the deploy step when you do not start with <code>python app.py</code> (which does both itself).</li>
+  <li>Start the WSGI server with several workers, pointing at <code>app:app</code>, for example <code>gunicorn -w 4 -b 127.0.0.1:8000 app:app</code>.</li>
+  <li>Configure the proxy: TLS, the wildcard, the <code>Host</code> header passed through, <code>X-Forwarded-For</code> and <code>X-Forwarded-Proto</code> set.</li>
+  <li>Open the platform address, sign in, and create a first real school. Check its sign-in page in a private window.</li>
+</ol>
+<div class="why"><p><strong>Why "upgrade" is a deploy step.</strong> The launch id (which signs everyone out after a restart) must be written once, before any worker serves a request; workers only read it. If you start workers directly, nothing writes it, and nobody is ever signed out for a restart. Also, a new release may add columns; upgrade adds them to every school's database before requests arrive.</p></div>
+
+<h2 id="storage">5. Files</h2>
+<p>A school's question banks and uploads are files under <code>BRIGHTSTARS_TENANTS_DIR/&lt;code&gt;/</code>. With more than one application server this folder <strong>must be shared storage</strong> visible to every server (or you swap the two functions in {{ file('core/storage.py') }} for an object-store backend). Back it up together with the databases; a school is its database plus its folder.</p>
+
+<h2 id="health">6. Health and monitoring</h2>
+<ul>
+  <li><code>GET /health</code> answers <code>{"status":"ok"}</code> on any address, touches no database and needs no sign-in. Use it for the load balancer.</li>
+  <li>Watch the application log. Failures of best-effort work (a message that could not be sent) are logged with the school and the reason, never raised to the person.</li>
+  <li>Watch for the log warning that the registry could not be reached: rate limits and the launch id then degrade safely (nobody is locked out or signed out), but you want to know.</li>
+</ul>
+
+<h2 id="checklist">Production checklist</h2>
+<div class="table-scroll"><table>
+<tr><th>Check</th><th>Why</th></tr>
+<tr><td><code>BRIGHTSTARS_ENV=production</code> and a 32+ character secret</td><td>Secure cookies, HSTS, refusal to start on a weak secret.</td></tr>
+<tr><td><code>BRIGHTSTARS_DELIVERY_KEY</code> set before any credentials are saved</td><td>Independent of secret rotation.</td></tr>
+<tr><td>Proxy passes <code>Host</code> unchanged; <code>BRIGHTSTARS_TRUSTED_PROXIES</code> matches the proxy count</td><td>School selection; true client addresses.</td></tr>
+<tr><td>Wildcard DNS and certificate for the portal domain</td><td>Every new school works the moment it is created.</td></tr>
+<tr><td><code>upgrade</code> runs before workers start, on every release</td><td>Schema and launch id.</td></tr>
+<tr><td>Tenants folder on shared storage (if more than one server)</td><td>Every server sees every school's files.</td></tr>
+<tr><td>Backups of the registry, each school database and <code>tenants/</code></td><td>A school is a database plus a folder.</td></tr>
+<tr><td>PostgreSQL <code>max_connections</code> sized for schools &times; pool &times; workers</td><td>Otherwise new connections fail as schools are added.</td></tr>
+<tr><td>Shared mail and WhatsApp accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>
+<tr><td>Chrome or Chromium installed, if candidates' result <em>images</em> are wanted</td><td>The one feature that shells out to a browser.</td></tr>
+<tr><td>Contract suite and the end-to-end scripts pass against a copy of production settings</td><td>See {{ page('testing', 'Testing') }}.</td></tr>
+</table></div>
+{% endblock %}

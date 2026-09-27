@@ -145,6 +145,7 @@ EXERCISED = frozenset({
     "/platform/schools/<slug>/numbering",
     "/platform/schools/<slug>/status",
     "/platform/schools/new",
+    "/platform/team/<int:admin_id>/docs-access",
     "/platform/team/<int:admin_id>/remove",
     "/platform/team/<int:admin_id>/reset-password",
     "/platform/team/<int:admin_id>/restore",

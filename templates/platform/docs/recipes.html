@@ -1,0 +1,97 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Step-by-step for the changes people make most. Each recipe ends with how to prove it works. Read {{ page('contributing', 'Contributing') }} first.</p>
+
+<h2 id="page">Add a page to the school's admin area</h2>
+<p>Example: a "Class notices" page for staff.</p>
+<ol class="steps">
+  <li><strong>Choose the permission.</strong> Reuse an existing one if it fits ({{ page('reference-permissions', 'the catalogue') }}); otherwise add one (next recipe).</li>
+  <li><strong>Write the route</strong> in the right package, for example {{ file('blueprints/school/routes.py') }} or a new module next to it:
+<pre><code>@app.route('/admin/school/notices')
+@admin_required
+def admin_school_notices():
+    rows = all_rows(select(Notice).order_by(Notice.id.desc()).limit(100))
+    return render_template('school_notices.html', notices=rows)
+
+@app.post('/admin/school/notices/new')
+@admin_required
+@csrf_protect
+def admin_school_notice_new():
+    ...
+    db.session.commit()
+    audit_log('school_notice_created', 'school', 'notice', notice.id, {})
+    flash('Notice saved.', 'success')
+    return redirect(url_for('admin_school_notices'))</code></pre></li>
+  <li><strong>Map both endpoints to a permission</strong> in <code>ADMIN_ENDPOINT_PERMISSIONS</code> ({{ file('core/security.py') }}): <code>'admin_school_notices': 'school.notices.view'</code>, <code>'admin_school_notice_new': 'school.notices.create'</code>.</li>
+  <li><strong>If it is a new module,</strong> import it at the bottom of {{ file('app.py') }} next to the others.</li>
+  <li><strong>Write the template</strong> extending <code>admin_base.html</code>. Put the CSRF token in every form: <code>{% raw %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endraw %}</code>. Read the school's name from <code>school_brand</code>, never from a string.</li>
+  <li><strong>Add the menu entry</strong> to the one list in {{ tpl('admin_base.html') }}, guarded by the same permission.</li>
+  <li><strong>Audit friendly text.</strong> Add a sentence for the action to the <code>friendly</code> dictionary in <code>audit_log</code>'s helper in {{ file('core/security.py') }}.</li>
+  <li><strong>Prove it.</strong> Add a submission for the POST to <code>tests/verification/write_paths_pg_posts.py</code> and the route pattern to <code>pg_posts_coverage.py</code> (<code>EXERCISED</code>). Run the contract suite and that script.</li>
+</ol>
+
+<h2 id="permission">Add a permission</h2>
+<ol class="steps">
+  <li>Add a tuple <code>(key, label, group, description)</code> to <code>ADMIN_PERMISSION_DEFS</code> in {{ file('core/security.py') }}. Keys are dotted: <code>area.thing.action</code>.</li>
+  <li>Map the endpoints to it in <code>ADMIN_ENDPOINT_PERMISSIONS</code>.</li>
+  <li>Decide which <strong>role presets</strong> get it (<code>ADMIN_ROLE_PRESETS</code>). Presets are seeded once: <em>existing</em> schools keep their edited roles, so a new permission appears in a preset only for new schools. The School Admin role always gets every permission at start.</li>
+  <li>The catalogue is seeded into each school on start (<code>init_admin_security</code>), so no migration is needed.</li>
+</ol>
+
+<h2 id="column">Add a column to an existing table</h2>
+<ol class="steps">
+  <li>Add it to the model in <code>models/</code>, <strong>with a default or nullable</strong>:
+<pre><code>note = db.Column(Text)                                   # nullable: fine
+flag = db.Column(Integer, nullable=False, default=0, server_default=text('0'))</code></pre></li>
+  <li>On the next start every school's database gets the column (<code>_add_missing_columns</code> in {{ file('app.py') }}); or run <code>python -m control_plane upgrade</code>.</li>
+  <li>Run <code>python tests/current/run_current.py</code>. The <em>models match the database</em> check compares against the first registered school and fails until you have upgraded it, which is the reminder to do so.</li>
+</ol>
+<div class="note"><p>The platform registry works the same way: {{ file('control_plane/models.py') }}, upgraded by <code>_add_missing_columns</code> in {{ file('control_plane/registry.py') }} when the app starts. That is how <code>docs_access</code> was added.</p></div>
+
+<h2 id="table">Add a table</h2>
+<ol class="steps">
+  <li>Add a model class to the right module in <code>models/</code> and export it from {{ file('models/__init__.py') }} (both the import and <code>__all__</code>).</li>
+  <li>Give it a docstring: the Data model reference shows it.</li>
+  <li>Restart or run <code>upgrade</code>; <code>create_all()</code> creates it in every school.</li>
+</ol>
+
+<h2 id="setting">Add a per-school setting</h2>
+<p>For a simple value the school chooses (a text, a number, a switch): store it as a key/value row in <code>school_settings</code> ({{ table('school_settings') }}), as the report card head's name and the CA weights are ({{ file('blueprints/school/report_card_data.py') }}, <code>report_settings</code> and <code>save_report_settings</code>). Provide a default so an unset key means the default. Do not add a column to the school row for every setting.</p>
+
+<h2 id="notify">Notify parents about something</h2>
+<ol class="steps">
+  <li>Write the sender in {{ file('core/notifications.py') }}, modelled on <code>_notify_parents_report_card_ready</code>: look the student up, add in-app <code>SchoolNotification</code> rows for linked parents, then best-effort email and WhatsApp to the guardian, each wrapped so one failure does not stop the other.</li>
+  <li>Call it <strong>after the commit</strong>. If it may be slow or covers many students, call it through <code>run_in_background</code> ({{ file('core/background.py') }}) and build any link with <code>url_for(..., _external=True)</code> inside the job (it runs in a request-like context on the school's own address).</li>
+  <li>In tests, set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so the work runs immediately and the fake mail server can be inspected.</li>
+</ol>
+
+<h2 id="console">Add a page to the platform console</h2>
+<pre><code>@app.route('/platform/thing')
+@platform_host_only
+@platform_required
+def platform_thing(): ...</code></pre>
+<p>Order matters: <code>platform_host_only</code> first (so the route does not exist on a school's address), then <code>platform_required</code>. Add <code>@superadmin_required</code> for the super admin only and <code>@csrf_protect</code> on any POST. Extend <code>platform/base.html</code>. Record meaningful actions with <code>audit(...)</code> and give the action a label in <code>ACTION_LABELS</code> ({{ file('control_plane/team.py') }}).</p>
+
+<h2 id="docs">Add or change a documentation page</h2>
+<ol class="steps">
+  <li>Create <code>templates/platform/docs/&lt;slug&gt;.html</code> starting with <code>{% raw %}{% extends "platform/docs/_layout.html" %}{% endraw %}</code> and the macro import line copied from any existing page.</li>
+  <li>Register the slug, title and one-line summary in <code>DOC_GROUPS</code> ({{ file('control_plane/platform_pages.py') }}). Order there is the sidebar and the previous/next order.</li>
+  <li>Refer to code with the macros, never bare text: <code>{% raw %}{{ file('core/security.py') }}{% endraw %}</code>, <code>route('endpoint')</code>, <code>table('name')</code>, <code>perm('key')</code>, <code>tpl('name.html')</code>. They make links, and the docs contract test fails if what they name does not exist.</li>
+  <li>Put a sample containing <code>{% raw %}{{{% endraw %}</code> inside a <code>raw</code> block or Jinja will try to run it.</li>
+</ol>
+
+<h2 id="school-created">Create a school for testing</h2>
+<pre><code>python -m control_plane create-tenant demo "Demo School" --admin-username demo_admin
+python -m control_plane list</code></pre>
+<p>Then open <code>http://demo.localhost:5000</code>. Delete nothing by hand: a school is a database and a folder, and the registry knows about it. Use throwaway schools in the verification scripts; they clean up after themselves.</p>
+
+<h2 id="debug">Debugging tips</h2>
+<ul>
+  <li><strong>A page shows "address not found" in development:</strong> you used <code>localhost</code>. Use <code>platform.localhost</code> or <code>&lt;code&gt;.localhost</code>.</li>
+  <li><strong>A query fails only in a browser:</strong> run the same submission through <code>write_paths_pg_posts.py</code>; it reports the database error and the route.</li>
+  <li><strong>A template renders wrongly for one school:</strong> check <code>school_brand</code> and that school's settings rows, not the template first.</li>
+  <li><strong>"No school is selected for this request":</strong> you are querying a school table from a context where no school is chosen (a thread, a script). Wrap it in <code>tenant_context(info)</code> ({{ file('control_plane/context.py') }}).</li>
+</ul>
+{% endblock %}

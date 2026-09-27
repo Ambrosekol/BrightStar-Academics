@@ -311,8 +311,11 @@ def test_the_brightstars_logo_belongs_to_the_platform_and_never_to_a_school():
     assert (ROOT / "static" / "brand" / "brightstars-logo.png").is_file()
     for page in ("base.html", "login.html"):
         assert logo in (ROOT / "templates" / "platform" / page).read_text(encoding="utf-8"), page
-    # A school's portal must look like the school's own, not like the platform's.
+    # A school's portal must look like the school's own, not like the platform's. The public
+    # marketing page is the platform's own, not any school's, so it is allowed to carry the mark.
     for template in (ROOT / "templates").glob("*.html"):
+        if template.name == "marketing.html":
+            continue
         assert "brightstars-logo" not in template.read_text(encoding="utf-8", errors="ignore"), template.name
 
 

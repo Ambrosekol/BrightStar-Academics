@@ -1057,6 +1057,7 @@ import blueprints.library.routes  # noqa: F401,E402
 # Served only on the platform hostnames. Imported here, at the end, because its
 # routes are registered on this module's `app` and it uses names defined above.
 import control_plane.console  # noqa: F401,E402
+import control_plane.platform_pages  # noqa: F401,E402
 
 def _error_page_context():
     """Whether the visitor is signed in, and where their "back" should

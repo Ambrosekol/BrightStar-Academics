@@ -1,0 +1,64 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Entrance examinations are how a school admits new students: candidates register (or are registered), sit timed computer-based papers, and are ranked. The exam engine is older than the rest
+of the school portal and everything else (tests, examinations) was modelled on its attempt-and-grading design. Shared logic is in {{ file('core/entrance.py') }}; the admin side is
+{{ file('blueprints/entrance/routes.py') }}; candidates' own side is {{ file('blueprints/candidate_portal/routes.py') }}.</p>
+
+<h2 id="banks">Question banks</h2>
+<p>A school's banks are <strong>JSON files</strong> in its own folder, <code>tenants/&lt;code&gt;/data/</code> ({{ file('core/storage.py') }}), owned by the school. Copying the folder moves them; no school can read another's.</p>
+<pre><code>{
+  "id": "starter_year7_mathematics",
+  "name": "Mathematics ...",  "level": "...",  "subject": "Mathematics",
+  "entry_group": "year7",     "duration_seconds": 3600,  "version": "1.0",
+  "questions": [
+    { "id": 1, "text": "...", "options": ["...", "...", "...", "..."], "answer": 1, "points": 1 }
+  ]
+}</code></pre>
+<ul>
+  <li><strong>A new school is not empty.</strong> Creating a school copies the platform's standard banks from <code>starter_banks/</code> (six: Mathematics, English and General Knowledge for Year 7 and SSS 1; 255 questions written for the platform, naming no school). Nothing is ever overwritten. A contract test keeps the set free of any school's name.</li>
+  <li><strong>A school can bring its own.</strong> <em>Question Banks, Import from file</em> takes a JSON file. It is checked strictly by {{ file('core/banks.py') }}: a size cap in the low megabytes, a safe id, a name, 1 to 500 questions, each with four different options and an answer, no picture paths. Everything wrong is listed at once, it is written only inside the school's own folder, replacing needs an explicit tick, and every import is audited. Permissions: {{ perm('question_banks.create') }}, {{ perm('question_banks.edit') }}.</li>
+  <li><strong>Writes are atomic and checked</strong> so a crash never leaves half a bank ({{ file('blueprints/entrance/helpers.py') }}, <code>save_bank</code>). A bank can be <em>locked</em> during a live exam, which makes it refuse edits.</li>
+  <li>The subject of a bank is worked out from its fields (<code>bank_subject</code>) and its entry class from <code>bank_entry_group</code>. There are two entry groups: <code>year7</code> ("Year 7 / JSS 1") and <code>year10</code> ("Year 10 / SSS 1"); both names are always shown together, because schools use one or the other.</li>
+</ul>
+
+<h2 id="config">Making a bank a live paper</h2>
+<p>A bank is not an exam until it is <em>configured</em> ({{ table('entrance_bank_configs') }}): bank, entry group, subject, session, term, and how many questions to serve. Exactly one configuration is live per group, subject, session and term; activating one deactivates its rivals ({{ route('admin_entrance_config_activate') }}). One click sets up the standard papers for the current session.</p>
+<div class="why"><p>A paper is always out of <strong>100</strong>. The number of questions served must split 100 into whole hundredths (<code>_valid_question_configuration</code>): 20, 25, 40 and 50 work; 30 does not (3.33...). Marks are stored as decimals so a raw score is exact. A configuration already issued to a candidate is frozen: changing it would change the meaning of results already given.</p></div>
+<p>{{ table('examinations') }} rows mirror the banks (<code>sync_examinations</code>) so an attempt has something to point at.</p>
+
+<h2 id="candidates">Candidates</h2>
+<ul>
+  <li>Staff register a candidate ({{ route('admin_candidates') }}): name, target class, previous school, parent or guardian details, photograph. A <strong>candidate code</strong> and password are generated and shown once, on a printable sheet.</li>
+  <li>The target class maps to an entry group (<code>normalize_entry_group</code>), which decides which papers they must sit (<code>required_papers_for_target</code>): one paper per subject, in numbered slots ({{ table('candidate_papers') }}).</li>
+  <li>The code is written by the school's <em>numbering pattern</em> ({{ page('branding-numbering', 'Identity and numbering') }}).</li>
+</ul>
+
+<h2 id="taking">Sitting a paper</h2>
+<ol class="steps">
+  <li>The candidate signs in and sees their dashboard ({{ route('candidate_dashboard') }}), never their scores.</li>
+  <li><em>Start</em> ({{ route('candidate_start_paper') }}) checks: the paper is theirs, its configuration is valid, no other paper is open, and they have not already taken it (unless staff granted a retake). Then one attempt is created with an expiry, and <code>serve_count</code> questions are drawn <strong>at random</strong> and <strong>frozen</strong> into {{ table('attempt_questions') }}.</li>
+  <li>The exam page ({{ route('exam') }}) shows one question at a time with a countdown; each choice is saved immediately ({{ route('answer') }}). Time is enforced by the server.</li>
+  <li>Submitting ({{ route('submit') }}) or running out of time grades the attempt from the frozen copy (<code>grade</code> in {{ file('core/entrance.py') }}).</li>
+</ol>
+<p><strong>Restarts.</strong> A candidate with an unfinished paper is exempt from the "restart signs everyone out" rule; they carry on, and the clock keeps running while the server is off. A paper whose time ran out during a restart is finished from the answers already saved.</p>
+<p><strong>Staff controls</strong>: rankings, results, per-subject analytics, CSV/JSON export, a result image (drawn by headless Chrome, <code>BRIGHTSTARS_CHROME</code>), <em>grant retake</em> ({{ route('admin_grant_retake') }}, a one-use permission stored in {{ table('retake_grants') }}) and <em>regrade</em> ({{ route('admin_regrade') }}).</p>
+
+<h2 id="practice">Entrance practice, for anyone</h2>
+<p>Anyone with a school's practice address (<code>/entrance-practice</code> on the school's own address) can practise <strong>without registering or signing in</strong>. They choose the class they are aiming for, then a subject; each attempt draws its questions at random, in a new order, is marked immediately with the answers shown, and is <strong>never saved</strong> ({{ route('entrance_practice') }}, {{ route('entrance_practice_take') }}).</p>
+<p>For each class and subject, an administrator with {{ perm('entrance.practice.manage') }} chooses where the questions come from, on <em>Practice Tests</em> in the entrance workspace ({{ route('admin_practice_tests') }}, {{ route('admin_practice_tests_save') }}). The choice is stored in {{ table('entrance_practice_settings') }}:</p>
+<div class="table-scroll"><table>
+<tr><th>Source</th><th>What is served</th></tr>
+<tr><td><strong>Last session's examination</strong> (the default)</td><td>The paper of the most recent <em>earlier</em> session that had one for that class and subject. Works with no setup. If there is none, that subject shows as not available yet.</td></tr>
+<tr><td><strong>Custom questions</strong></td><td>A bank the school set up for practice, with a chosen number of questions per attempt.</td></tr>
+</table></div>
+<div class="warn"><p><strong>The live exam is protected.</strong> A bank used by the <em>current</em> session's configurations is never offered as practice, either as "last session's" or as a custom bank (the save is refused with an explanation). Otherwise practising could reveal the questions of an examination not yet sat. The logic is <code>entrance_practice_paper</code> in {{ file('core/entrance.py') }}.</p></div>
+
+<h2 id="gotchas">Things worth knowing</h2>
+<ul>
+  <li>The candidate flow keeps a few legacy anonymous-paper URLs (<code>/exam</code>, <code>/answer</code>, <code>/submit</code>, <code>/result</code>) that also serve the candidate flow; they check the candidate id in the session, so one candidate can never reach another's attempt.</li>
+  <li>An attempt's questions are frozen, so editing or deleting a bank question never changes an exam in progress or a past result.</li>
+  <li>Candidate photographs are visible to staff and to that candidate only ({{ file('core/upload_access.py') }}).</li>
+</ul>
+{% endblock %}

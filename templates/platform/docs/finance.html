@@ -1,0 +1,52 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Finance covers what a school charges, what it has received, and the paper (or PDF) that proves it. Routes: {{ file('blueprints/finance/routes.py') }}. Rules, balance arithmetic and receipts:
+{{ file('blueprints/finance/helpers.py') }}. Tables: {{ file('models/finance.py') }}.</p>
+
+<h2 id="model">The four things</h2>
+<div class="table-scroll"><table>
+<tr><th>Thing</th><th>Table</th><th>Meaning</th></tr>
+<tr><td>Fee item</td><td>{{ table('finance_fee_items') }}, {{ table('finance_fee_item_classes') }}</td><td>A line in the school's fee catalogue: "Tuition (JSS 1)", amount, category, applicability (Full Session, a term, or One-time), required or optional, and which classes it applies to.</td></tr>
+<tr><td>Fee assessment</td><td>{{ table('finance_fee_assessments') }}</td><td>A fee charged to one student for one session (and term): "this child owes this much for this". Created from fee items on the <em>assess</em> form.</td></tr>
+<tr><td>Payment</td><td>{{ table('finance_payments') }}</td><td>Money received: amount, category, method, reference, who paid, the date, who recorded it, an optional note, and a status (<code>posted</code> or <code>voided</code>).</td></tr>
+<tr><td>Allocation</td><td>{{ table('finance_payment_allocations') }}</td><td>How much of a payment is applied to which assessment. Recording a payment does <em>not</em> apply it: allocating is a separate step.</td></tr>
+</table></div>
+
+<h2 id="balances">What "paid" means</h2>
+<p>"Paid" for a fee always means <strong>allocated to that specific fee</strong>. A fee is <em>Paid</em>, <em>Part Paid</em> or <em>Unpaid</em> computed to the kobo (<code>_payment_status</code>) so a floating-point crumb never flips a status. A payment that has been recorded but not yet allocated appears as an <em>unallocated credit</em> in the student's totals, so a just-made payment is never invisible, and never silently hides debt on an unrelated fee.
+Balances are summed across every session, so a debt left from last year is not hidden when the school moves on. See <code>_finance_student_outstanding</code> and <code>_finance_student_lifetime_totals</code>.</p>
+<p>Money is entered as naira and kept to the kobo. <code>_money</code> refuses NaN, infinity and absurd sizes; the amount in words on a receipt stops at the billions.</p>
+
+<h2 id="receipt-numbers">Receipt numbers</h2>
+<p>Each payment gets a number <code>&lt;PREFIX&gt;-&lt;year&gt;-&lt;5 digits&gt;</code> ({{ file('blueprints/finance/helpers.py') }}, <code>_next_receipt_no</code>). The prefix is a per-school setting (defaulting to the school's code) so a school keeps numbering the same way for ever. Numbers are unique per school (a database constraint), never shared or borrowed across schools.</p>
+
+<h2 id="void">Voiding</h2>
+<p>A wrong payment is <strong>voided with a reason</strong>, never deleted. Its receipt stays in the audit history, stays viewable, is marked VOIDED in big letters on the page, the printout, the PDF, and the parent's copy, is never emailed or sent by WhatsApp, and its allocations stop counting. Permission: <code>finance.manage</code>.</p>
+
+<h2 id="receipt">The receipt: one design per school</h2>
+<p>A receipt is drawn in <strong>the school's own identity</strong>: its two brand colours, logo (or its initials if it has none), name, motto, address, phone and email, its authorised signature image, the name of the member of staff who recorded the payment, the <strong>note</strong> the bursar attached, the student's name, admission number and class, the session, the method and reference, the amount in figures and in words, and a small account summary (fees charged, paid to date and balance due as at that payment, so re-printing an old receipt never shows a balance later payments have changed).</p>
+<p>The design exists in exactly one description, <code>_receipt_sheet</code> ({{ file('blueprints/finance/helpers.py') }}), and is drawn three ways from it:</p>
+<div class="flow"><span class="node">on screen<br><small>{{ tpl('finance_receipt.html') }}</small></span><span class="node">printed<br><small>{{ tpl('finance_receipt_print.html') }}</small></span><span class="node">PDF<br><small>{{ file('core/receipt_pdf.py') }}</small></span></div>
+<p>The two web renderings share one partial ({{ tpl('includes/_receipt_sheet.html') }}) and one stylesheet ({{ file('static/receipt.css') }}); the PDF is drawn by {{ file('core/receipt_pdf.py') }}, which is self-contained (no Flask, no database) and takes one dictionary. All three use the same measurements, expressed in <em>em</em> where 1 em is 1% of the sheet's width, so the receipt on screen, on paper and in a parent's inbox is the same receipt.</p>
+<div class="why"><p>Colours come from the school's brand colours, which are validated to be dark enough for white text, so the header and footer bands are always legible. A school with no colours of its own gets the portal defaults. Nothing about the school is hard-coded: an earlier version drew one fixed blue-wave design for every school, which is exactly what this replaced.</p></div>
+<p>To change the look, edit <code>static/receipt.css</code> <em>and</em> <code>core/receipt_pdf.py</code> together; a school's signature is set on <em>Receipt settings</em> ({{ route('admin_finance_receipt_settings') }}), drawn on a pad or uploaded, stored under <code>uploads/signatures/</code>.</p>
+
+<h2 id="notices">Telling parents</h2>
+<p>Recording a payment ({{ route('admin_finance_record') }}) automatically:</p>
+<ol>
+  <li>adds an in-app alert for the child's linked parent accounts (<code>_notify_parents_payment_recorded</code> in {{ file('core/notifications.py') }});</li>
+  <li>emails the guardian the <strong>receipt as a PDF</strong> with amount, date, purpose, balance and the bursar's note in the body; and</li>
+  <li>sends the receipt PDF by <strong>WhatsApp</strong>.</li>
+</ol>
+<p>Steps 2 and 3 run on a background thread ({{ file('core/background.py') }}) via <code>_send_payment_receipt_to_guardian</code>, and every attempt is written to {{ table('finance_delivery_logs') }}, so the bursar can see on the receipt page whether it arrived and why not. Sending by hand (<em>Send by email</em>, <em>Send by WhatsApp</em>) uses the same senders and logs the same way; who may send is <code>finance.receipt.send</code>.</p>
+<div class="note"><p>Contact details come from the student's record (<code>guardian_email</code>, <code>guardian_phone</code>). Phone numbers are converted to international form (<code>_ng_phone</code>). The WhatsApp Cloud API only delivers free-form messages within 24 hours of the recipient's last message to the school's number; reaching parents outside that window needs approved message templates, which this application does not send.</p></div>
+
+<h2 id="perms">Permissions</h2>
+<ul>
+  <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>
+  <li>{{ perm('finance.record') }} records payments. {{ perm('finance.manage') }} manages fee items, voids payments and sets the receipt signature.</li>
+  <li>{{ perm('finance.receipt.send') }} sends a receipt by email or WhatsApp.</li>
+</ul>
+{% endblock %}

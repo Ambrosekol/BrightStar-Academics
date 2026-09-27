@@ -653,6 +653,25 @@ def platform_team_restore(admin_id):
                              'Their old password was discarded. They must choose a new one when they sign in.')
 
 
+@app.post('/platform/team/<int:admin_id>/docs-access')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_docs_access(admin_id):
+    """Grant or withdraw one admin's access to /docs. Only the super admin decides who reads it."""
+    me = g.platform_admin
+    allowed = request.form.get('allow') == '1'
+    try:
+        username = team.set_docs_access(admin_id, allowed, me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+    else:
+        flash(f'{username} can now read the documentation.' if allowed
+              else f'{username} can no longer read the documentation.', 'success')
+    return redirect(url_for('platform_team'))
+
+
 @app.post('/platform/team/<int:admin_id>/reset-password')
 @platform_host_only
 @platform_required

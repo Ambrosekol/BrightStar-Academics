@@ -61,6 +61,7 @@ ACTION_LABELS = {
     'platform_admin.remove': 'Removed a platform admin',
     'platform_admin.restore': 'Restored a platform admin',
     'platform_admin.password_reset': "Reset an admin's password",
+    'platform_admin.docs_access': "Changed an admin's access to the documentation",
     'platform_admin.school_access_revoked': "Revoked a removed admin's access inside schools",
     'platform_admin.promote': 'Became the super admin',
     'platform_admin.adopt': 'Adopted admins from an installation',
@@ -111,6 +112,7 @@ def list_admins():
         return [{
             'id': a.id, 'username': a.username, 'display_name': a.display_name, 'email': a.email,
             'role': a.role, 'is_super': a.role == ROLE_SUPER, 'active': bool(a.active),
+            'docs_access': a.role == ROLE_SUPER or bool(a.docs_access),
             'created_at': a.created_at, 'last_login_at': a.last_login_at,
             'removed_at': a.removed_at, 'removed_by': a.removed_by,
             'must_change': bool(a.password_must_change),
@@ -230,6 +232,26 @@ def restore_admin(admin_id, actor, actor_id):
         username = admin.username
         session.commit()
     return username, password
+
+
+def set_docs_access(admin_id, allowed, actor, actor_id):
+    """Let a platform admin read the documentation (``/docs``), or take that away again.
+
+    The super admin can always read it, so there is nothing to grant or revoke for them. Returns the
+    admin's username.
+    """
+    with platform_session() as session:
+        admin = _target(session, admin_id)
+        if admin.role == ROLE_SUPER:
+            raise ProvisioningError('The super admin can always read the documentation.')
+        if not admin.active:
+            raise ProvisioningError(f'{admin.username} has been removed; restore them first.')
+        admin.docs_access = 1 if allowed else 0
+        audit(session, 'platform_admin.docs_access', f'{admin.username}: {"granted" if allowed else "withdrawn"}',
+              None, actor, actor_id)
+        username = admin.username
+        session.commit()
+    return username
 
 
 def reset_password(admin_id, actor, actor_id):

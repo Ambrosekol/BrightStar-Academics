@@ -1125,6 +1125,12 @@ r = console.post(f"/platform/team/{OPS2}/restore", {})
 grab(r'id="temp-password">(.+?)</span>', r.body, "a restored platform admin's one-time password")
 r = console.post(f"/platform/team/{OPS2}/reset-password", {})
 OPS2_RESET_TEMP = grab(r'id="temp-password">(.+?)</span>', r.body, "a reset platform admin's one-time password")
+console.post(f"/platform/team/{OPS2}/docs-access", {"allow": "1"})
+check("the super admin granted a platform admin access to the documentation",
+      registry("SELECT docs_access FROM platform_admins WHERE id = :i", i=OPS2) in (1, True))
+check("…and a visitor can read the public marketing page but not the documentation",
+      Actor("visitor", PL, PLATFORM_ADAPTER).get("/marketing").status_code == 200
+      and Actor("stranger", PL, PLATFORM_ADAPTER).get("/docs").status_code in (302, 404))
 
 console.post("/platform/schools/posts/branding", {"school_brand_primary": "#123456", "school_brand_accent": "#1674b9"},
              files={"logo": png("newlogo.png"), "gallery": [png("c.png")]})

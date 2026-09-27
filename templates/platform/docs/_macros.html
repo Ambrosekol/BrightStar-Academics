@@ -1,0 +1,32 @@
+{#- Small helpers for writing documentation pages. Every reference they make is checked by
+    tests/current/test_docs_contract.py, so a page can never point at a file, route or table that is gone. -#}
+
+{# A source file, linked to its entry in the module reference. #}
+{% macro file(path) -%}
+<a class="ref" href="{{ url_for('docs_page', slug='reference-modules') }}#{{ path|docs_slug }}"><code>{{ path }}</code></a>
+{%- endmacro %}
+
+{# A page template, linked to the template reference. #}
+{% macro tpl(name) -%}
+<a class="ref" href="{{ url_for('docs_page', slug='reference-templates') }}#{{ name|docs_slug }}"><code>templates/{{ name }}</code></a>
+{%- endmacro %}
+
+{# A route, by its endpoint name, linked to the route reference. #}
+{% macro route(endpoint) -%}
+<a class="ref" href="{{ url_for('docs_page', slug='reference-routes') }}#{{ endpoint|docs_slug }}"><code>{{ endpoint }}</code></a>
+{%- endmacro %}
+
+{# A database table, linked to the data model. #}
+{% macro table(name) -%}
+<a class="ref" href="{{ url_for('docs_page', slug='reference-data') }}#{{ name|docs_slug }}"><code>{{ name }}</code></a>
+{%- endmacro %}
+
+{# A permission key, linked to the permission reference. #}
+{% macro perm(key) -%}
+<a class="ref" href="{{ url_for('docs_page', slug='reference-permissions') }}#{{ key|docs_slug }}"><code>{{ key }}</code></a>
+{%- endmacro %}
+
+{# A page of these docs. #}
+{% macro page(slug, label) -%}
+<a href="{{ url_for('docs_home') if slug == 'welcome' else url_for('docs_page', slug=slug) }}">{{ label }}</a>
+{%- endmacro %}

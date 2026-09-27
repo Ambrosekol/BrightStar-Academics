@@ -42,7 +42,8 @@ def _hash_token(raw):
 def _as_dict(row):
     return {'id': row.id, 'username': row.username, 'display_name': row.display_name,
             'email': row.email, 'password_must_change': row.password_must_change,
-            'role': row.role, 'is_super': row.role == ROLE_SUPER}
+            'role': row.role, 'is_super': row.role == ROLE_SUPER,
+            'docs_access': row.role == ROLE_SUPER or bool(row.docs_access)}
 
 
 def authenticate_platform_admin(username, password, ip=None):

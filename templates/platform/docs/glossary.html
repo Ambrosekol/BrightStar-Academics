@@ -1,0 +1,43 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+<p>The words this codebase and its users use, with where to read more.</p>
+<div class="table-scroll"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><strong>Platform</strong></td><td>The whole deployment: the registry, the console and every school. Also <code>control_plane/</code>.</td></tr>
+<tr><td><strong>School / tenant</strong></td><td>One customer. Has a code, a database, a folder and addresses. "Tenant" is the code's word for it.</td></tr>
+<tr><td><strong>Code (slug)</strong></td><td>A school's permanent short identifier (<code>alpha</code>). Forms its address, database and folder. Never reused or renamed.</td></tr>
+<tr><td><strong>Registry</strong></td><td>The one database holding which schools exist, their addresses, the platform team, tickets, limits, the launch id.</td></tr>
+<tr><td><strong>Portal address</strong></td><td>The address the platform issues, <code>&lt;code&gt;.&lt;portal domain&gt;</code>. Permanent.</td></tr>
+<tr><td><strong>Platform host</strong></td><td>An address listed in <code>BRIGHTSTARS_PLATFORM_HOSTS</code>: serves the console, <code>/marketing</code>, <code>/docs</code>, never a school.</td></tr>
+<tr><td><strong>Super admin</strong></td><td>The one overall platform admin who manages the team and reads every log, and can never be removed.</td></tr>
+<tr><td><strong>Platform admin</strong></td><td>An operator with full control over every school but not the team or others' logs.</td></tr>
+<tr><td><strong>School Admin</strong></td><td>A school's top-level role (<code>is_system = 1</code>): everything in that school. Platform admins entering a school hold it.</td></tr>
+<tr><td><strong>Entry ticket</strong></td><td>A single-use, short-lived token that lets a platform admin into a school ({{ file('control_plane/entry.py') }}).</td></tr>
+<tr><td><strong>Reserved account</strong></td><td><code>platform@&lt;username&gt;</code>: the account a platform admin uses inside a school.</td></tr>
+<tr><td><strong>Launch id</strong></td><td>A random value written at every server start; sessions carry it, which is how a restart signs people out.</td></tr>
+<tr><td><strong>Workspace</strong></td><td>Entrance Examination or School: the two areas staff choose between.</td></tr>
+<tr><td><strong>Permission / role / scope</strong></td><td>An ability; a bundle of abilities; a limit to particular classes, subjects or banks.</td></tr>
+<tr><td><strong>Candidate</strong></td><td>Someone sitting the entrance examination. Not yet a student.</td></tr>
+<tr><td><strong>Entry group</strong></td><td><code>year7</code> (Year 7 / JSS 1) or <code>year10</code> (Year 10 / SSS 1): which entrance papers apply.</td></tr>
+<tr><td><strong>Bank</strong></td><td>A JSON file of questions in a school's <code>data/</code> folder.</td></tr>
+<tr><td><strong>Configuration (entrance)</strong></td><td>The rule that makes a bank a live paper for an entry group, subject, session and term.</td></tr>
+<tr><td><strong>Attempt</strong></td><td>One sitting of a test, examination or paper, with its frozen copy of the questions.</td></tr>
+<tr><td><strong>Frozen questions</strong></td><td>The copy of the questions taken when an attempt starts, so later edits cannot change it.</td></tr>
+<tr><td><strong>Practice</strong></td><td>Self-study: retakeable, shuffled, marked at once, never stored, never counted.</td></tr>
+<tr><td><strong>CA</strong></td><td>Continuous assessment: tests, assignments and projects, out of 40.</td></tr>
+<tr><td><strong>Exam / CA / term result</strong></td><td>Exam out of 60 plus CA out of 40, 100 in all, per subject and term.</td></tr>
+<tr><td><strong>Entered / verified / approved / released</strong></td><td>The four steps a result passes before a student may see it.</td></tr>
+<tr><td><strong>Report card</strong></td><td>A student's term summary, worked out on demand; ready when all official results of the term are released.</td></tr>
+<tr><td><strong>Session</strong></td><td>An academic year such as 2025/2026. (Not a browser session: the docs say "sign-in" or "cookie" for that.)</td></tr>
+<tr><td><strong>Term</strong></td><td>First, Second or Third Term; "Full Session" means the whole year.</td></tr>
+<tr><td><strong>Fee item / assessment / payment / allocation</strong></td><td>A catalogue line; a fee charged to a student; money received; the part of a payment applied to a fee.</td></tr>
+<tr><td><strong>Voided</strong></td><td>A payment cancelled with a reason and kept in the record.</td></tr>
+<tr><td><strong>Guardian</strong></td><td>The contact on a student's record who receives notices (email and phone). Distinct from a <em>parent account</em>, which is a sign-in linked to children.</td></tr>
+<tr><td><strong>Delivery</strong></td><td>Sending email and WhatsApp: a school's own accounts, with the platform's shared account as a fallback.</td></tr>
+<tr><td><strong>Best effort</strong></td><td>Work that must never block or undo the change that triggered it, such as notifications.</td></tr>
+<tr><td><strong>Numbering pattern</strong></td><td>The checked text a school uses to say how its codes look, such as <code>{school}-{year}-{seq:4}</code>.</td></tr>
+<tr><td><strong>Verification script</strong></td><td>An end-to-end test in <code>tests/verification/</code>.</td></tr>
+<tr><td><strong>Contract test</strong></td><td>A fast test in <code>tests/current/</code> guarding a rule of the design.</td></tr>
+</table></div>
+{% endblock %}

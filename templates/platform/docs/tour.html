@@ -1,0 +1,94 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>This is the map. For every file and every function, use the <a href="{{ url_for('docs_page', slug='reference-modules') }}">module reference</a>, which is generated
+and always current. Here we explain the <em>shape</em>.</p>
+
+<h2 id="layout">The folders</h2>
+<pre><code>Academics/
+├── app.py            the Flask application, request hooks, error pages, shared helpers
+├── control_plane/    the PLATFORM: schools, addresses, admins, console, marketing, these docs
+├── models/           ONE SCHOOL's database schema, one module per area
+├── core/             helpers used everywhere; contain no routes
+├── blueprints/       the ROUTES, one package per part of the product
+├── services/         small dependency-free utilities
+├── templates/        Jinja pages (templates/platform/ is the console, docs and marketing page)
+├── static/           CSS, JavaScript, images and fonts shared by every school
+├── starter_banks/    the platform's own standard entrance question banks
+├── tenants/          per school: data/, uploads/, numbering.json  (git-ignored, never shared)
+├── tests/            current/ (contract suite) and verification/ (end-to-end)
+└── docs/architecture/  older design notes the tests enforce</code></pre>
+
+<h2 id="two-halves">Two halves: the platform and the schools</h2>
+<p>The single most useful thing to know is that the code has <strong>two separate worlds</strong>.</p>
+<div class="table-scroll"><table>
+<tr><th></th><th>The platform (<code>control_plane/</code>)</th><th>A school (<code>models/</code>, <code>blueprints/</code>, <code>core/</code>)</th></tr>
+<tr><td>Who uses it</td><td>Brightstars operators</td><td>A school's staff, students, parents, candidates</td></tr>
+<tr><td>Where the data is</td><td>The <em>registry</em> database, one for the whole deployment</td><td>That school's own database. One per school.</td></tr>
+<tr><td>Addresses</td><td><code>BRIGHTSTARS_PLATFORM_HOSTS</code>, paths under <code>/platform</code>, <code>/marketing</code>, <code>/docs</code></td><td><code>&lt;code&gt;.&lt;portal domain&gt;</code>, or the school's own domain</td></tr>
+<tr><td>Models</td><td>{{ file('control_plane/models.py') }}</td><td>{{ file('models/school.py') }} and its siblings</td></tr>
+<tr><td>Sign-in</td><td>{{ file('control_plane/entry.py') }}</td><td>{{ file('blueprints/auth/routes.py') }}</td></tr>
+</table></div>
+<div class="warn"><p>Never mix them. A school's route must never read the registry directly, and the platform must never query a school's tables except through the deliberate, read-only paths in {{ file('control_plane/provisioning.py') }} and {{ file('control_plane/team.py') }}.</p></div>
+
+<h2 id="control-plane">Inside <code>control_plane/</code></h2>
+<div class="table-scroll"><table>
+<tr><th>File</th><th>Role</th></tr>
+<tr><td>{{ file('control_plane/config.py') }}</td><td>Reads the environment. Lazily, so tests can set variables after importing.</td></tr>
+<tr><td>{{ file('control_plane/registry.py') }}</td><td>The registry engine and session, hostname to school lookup with a small cache, adds any missing registry column.</td></tr>
+<tr><td>{{ file('control_plane/resolver.py') }}</td><td>The <code>before_request</code> hook that decides which school a request belongs to. Everything depends on it.</td></tr>
+<tr><td>{{ file('control_plane/routing.py') }}</td><td>Makes <code>db.session</code> hand each query the current school's engine.</td></tr>
+<tr><td>{{ file('control_plane/context.py') }}</td><td>A <code>ContextVar</code> holding the current school for this request (or provisioning job).</td></tr>
+<tr><td>{{ file('control_plane/provisioning.py') }}</td><td>Create, upgrade, brand, suspend schools; domains; a school's first administrator.</td></tr>
+<tr><td>{{ file('control_plane/entry.py') }}</td><td>Platform admin sign-in, and single-use tickets to enter a school.</td></tr>
+<tr><td>{{ file('control_plane/team.py') }}</td><td>Adding, removing and restoring platform admins; docs access; the activity log.</td></tr>
+<tr><td>{{ file('control_plane/console.py') }}</td><td>The console's routes and its guards (<code>platform_required</code>, <code>superadmin_required</code>).</td></tr>
+<tr><td>{{ file('control_plane/platform_pages.py') }}</td><td><code>/marketing</code> and <code>/docs</code>.</td></tr>
+<tr><td>{{ file('control_plane/docsgen.py') }}</td><td>Builds the Reference pages from the code.</td></tr>
+<tr><td>{{ file('control_plane/launch.py') }}</td><td>The "launch id" that signs everyone out after a restart.</td></tr>
+<tr><td>{{ file('control_plane/ratelimit.py') }}</td><td>Rate limits that every worker process shares.</td></tr>
+<tr><td>{{ file('control_plane/cli.py') }}</td><td><code>python -m control_plane ...</code></td></tr>
+</table></div>
+
+<h2 id="feature">How one feature is spread across the code</h2>
+<p>Take "a parent sees their child's report card". It touches, in this order:</p>
+<div class="flow"><span class="node">a URL and a guard<br><small>{{ file('blueprints/parents/report_cards.py') }}</small></span><span class="arrow">&rarr;</span>
+<span class="node">the rules and the numbers<br><small>{{ file('blueprints/school/report_card_data.py') }}</small></span><span class="arrow">&rarr;</span>
+<span class="node">the tables<br><small>{{ file('models/school.py') }}</small></span><span class="arrow">&rarr;</span>
+<span class="node">the drawing<br><small>{{ file('core/report_card_pdf.py') }}</small></span><span class="arrow">&rarr;</span>
+<span class="node">the page<br><small>{{ tpl('report_card_page.html') }}</small></span></div>
+<p>The pattern repeats everywhere: <strong>a route module</strong> (thin: check who, read the form, call, redirect or render), <strong>a helper or data module</strong>
+(the rules), <strong>models</strong>, sometimes a <strong>drawing module</strong>, and a <strong>template</strong>. When a route file is large, look for its
+neighbouring <code>helpers.py</code>; the real logic is usually there.</p>
+
+<h2 id="blueprints">The route packages</h2>
+<div class="table-scroll"><table>
+<tr><th>Package</th><th>What lives there</th></tr>
+<tr><td><code>blueprints/auth/</code></td><td>The one sign-in page for all four kinds of account, sign-out, password recovery.</td></tr>
+<tr><td><code>blueprints/school/</code></td><td>The school portal: students, classes, subjects, assignments, projects, tests, practice, examinations, results, report cards, promotion, sessions, branding, delivery settings.</td></tr>
+<tr><td><code>blueprints/entrance/</code></td><td>Entrance examination administration: banks, configurations, candidates, attempts, rankings, practice settings.</td></tr>
+<tr><td><code>blueprints/candidate_portal/</code></td><td>Entrance candidates' own side, and the public entrance practice.</td></tr>
+<tr><td><code>blueprints/student_portal/</code></td><td>Students' own side, including practice.</td></tr>
+<tr><td><code>blueprints/parents/</code></td><td>The parent portal, and the admin side of parent accounts and feedback.</td></tr>
+<tr><td><code>blueprints/finance/</code></td><td>Fees, payments, receipts.</td></tr>
+<tr><td><code>blueprints/library/</code></td><td>Books and loans.</td></tr>
+<tr><td><code>blueprints/administration/</code></td><td>Staff accounts, roles, permissions, scopes, messaging, resource locks, the audit log.</td></tr>
+</table></div>
+<p>Modules in these packages are imported at the bottom of {{ file('app.py') }} purely for the side effect of registering their routes. To add a new route module you must add its import there.</p>
+
+<h2 id="core">The shared helpers</h2>
+<p>{{ file('core/security.py') }} is the one to learn first: the permission catalogue, role presets, the endpoint-to-permission map, <code>admin_required</code>,
+<code>csrf_protect</code>, <code>audit_log</code>. Next {{ file('core/db_helpers.py') }} (query helpers and the dialect-neutral upsert),
+{{ file('core/branding.py') }} (a school's name, colours, logo: never hard-code them), {{ file('core/storage.py') }} (a school's folders),
+{{ file('core/uploads.py') }} (every image upload) and {{ file('core/delivery.py') }} (a school's own email and WhatsApp).</p>
+
+<h2 id="habits">Habits of this codebase that surprise newcomers</h2>
+<ul>
+  <li><strong>Plain <code>@app.route</code>, no Blueprint objects</strong>, so endpoint names stay stable. Every <code>url_for</code> and every entry in the permission map depends on that.</li>
+  <li><strong>Rows behave like dictionaries</strong> (<code>row['name']</code>) as well as objects. Older templates rely on it.</li>
+  <li><strong>Dense, compact Python</strong> in some older route files (several statements on a line). Match the surrounding style when you edit; do not reformat a file you are only fixing.</li>
+  <li><strong>Everything about "which school" is implicit.</strong> You will not see a <code>school_id</code> in most queries: the database itself is the school. That is deliberate.</li>
+  <li><strong>Timestamps are text</strong> in ISO-8601 UTC, and yes/no flags are integers 0 or 1.</li>
+</ul>
+{% endblock %}

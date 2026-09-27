@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ title }} &middot; Docs &middot; Brightstars Academics</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='4') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='docs.css', v='1') }}">
+</head>
+<body class="docs">
+<header class="docs-top">
+  <a class="docs-brand" href="{{ url_for('docs_home') }}" aria-label="Brightstars Academics documentation">
+    <img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"><span>Docs</span>
+  </a>
+  <form class="docs-search" action="{{ url_for('docs_search') }}" method="get" role="search">
+    <input type="search" name="q" value="{{ query or '' }}" placeholder="Search pages, files, routes, tables, permissions" aria-label="Search the documentation" autocomplete="off">
+    <button type="submit">Search</button>
+  </form>
+  <nav class="docs-top-links" aria-label="Elsewhere">
+    <a href="{{ url_for('platform_dashboard') }}">Console</a>
+    <a href="{{ url_for('marketing') }}">Marketing page</a>
+  </nav>
+  <button class="docs-menu" type="button" aria-label="Show the page list" onclick="document.body.classList.toggle('nav-open')">Pages</button>
+</header>
+
+<div class="docs-shell">
+  <nav class="docs-nav" aria-label="Documentation pages">
+    {% for group_name, items in groups %}
+      <div class="docs-nav-group">{{ group_name }}</div>
+      {% for page_slug, page_title, page_blurb in items %}
+        <a href="{{ url_for('docs_home') if page_slug == 'welcome' else url_for('docs_page', slug=page_slug) }}"
+           title="{{ page_blurb }}" {% if page_slug == slug %}aria-current="page"{% endif %}>{{ page_title }}</a>
+      {% endfor %}
+    {% endfor %}
+  </nav>
+
+  <main class="docs-main">
+    <article class="docs-article" id="article">
+      <p class="docs-crumb">{% if group %}{{ group }} &rsaquo; {% endif %}{{ title }}</p>
+      <h1>{{ title }}</h1>
+      {% if blurb %}<p class="docs-lede">{{ blurb }}</p>{% endif %}
+      {% block content %}{% endblock %}
+    </article>
+    {% if before or after %}
+    <nav class="docs-pager" aria-label="Previous and next page">
+      {% if before %}<a href="{{ url_for('docs_home') if before.slug == 'welcome' else url_for('docs_page', slug=before.slug) }}"><small>Previous</small>{{ before.title }}</a>{% else %}<span></span>{% endif %}
+      {% if after %}<a class="next" href="{{ url_for('docs_page', slug=after.slug) }}"><small>Next</small>{{ after.title }}</a>{% endif %}
+    </nav>
+    {% endif %}
+  </main>
+
+  <aside class="docs-toc" aria-label="On this page"><div class="docs-toc-title">On this page</div><div id="toc"></div></aside>
+</div>
+
+<script>
+(function () {
+  var article = document.getElementById('article'), toc = document.getElementById('toc');
+  if (!article || !toc) return;
+  var heads = article.querySelectorAll('h2[id], h3[id]');
+  if (!heads.length) { toc.parentNode.style.display = 'none'; return; }
+  heads.forEach(function (h) {
+    var a = document.createElement('a');
+    a.href = '#' + h.id; a.textContent = h.textContent;
+    if (h.tagName === 'H3') a.className = 'sub';
+    toc.appendChild(a);
+  });
+  // Every code sample can be copied with a click.
+  article.querySelectorAll('pre').forEach(function (pre) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(pre.innerText.replace(/^Copy\n?/, ''));
+      b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1200);
+    });
+    pre.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>

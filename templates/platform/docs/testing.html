@@ -1,0 +1,65 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Two folders, two jobs. <code>tests/current/</code> is fast and runs after <em>every</em> change. <code>tests/verification/</code> drives the real application against real PostgreSQL and is run when a change touches something the fast tests cannot see. Between them they are the reason a change to one school's feature does not silently break another school's.</p>
+
+<h2 id="contract">The contract suite: <code>tests/current/</code></h2>
+<pre><code>python tests/current/run_current.py</code></pre>
+<p>Source-level checks of architecture, security, the assessment flow, roles and multi-tenancy rules. It needs no database, except that the schema-drift check compares the models with the first registered school when one is reachable (and is skipped when none is).</p>
+<div class="table-scroll"><table>
+<tr><th>File</th><th>Guards</th></tr>
+<tr><td>{{ file('tests/current/test_architecture_contract.py') }}</td><td>Layering and conventions: no SQLite-only constructs, no hard-coded school, route registration style.</td></tr>
+<tr><td>{{ file('tests/current/test_multitenancy_contract.py') }}</td><td>School isolation rules, numbering safety, retired tables, <strong>the coverage guard</strong> (every write route is exercised on PostgreSQL), the starter banks being the platform's own.</td></tr>
+<tr><td>{{ file('tests/current/test_security_contract.py') }}</td><td>Headers, CSRF, permission mapping, safe defaults.</td></tr>
+<tr><td>{{ file('tests/current/test_assessment_contract.py') }}</td><td>The exam and assessment flow's invariants (frozen questions, server timing).</td></tr>
+<tr><td>{{ file('tests/current/test_models_match_db.py') }}</td><td>Models and a real school's schema agree; if a school is behind, it fails until you run <code>upgrade</code>.</td></tr>
+<tr><td>{{ file('tests/current/test_people_access_contract.py') }}</td><td>Who may see which person's records.</td></tr>
+<tr><td>{{ file('tests/current/test_sessions_and_uploads_contract.py') }}</td><td>Session guard and upload access rules.</td></tr>
+<tr><td>{{ file('tests/current/test_upload_limits_contract.py') }}</td><td>The size limit is told before and explained after.</td></tr>
+<tr><td>{{ file('tests/current/test_phase3e_admin_hardening.py') }}, {{ file('tests/current/test_phase3e_governance.py') }}</td><td>Administrator hardening and governance.</td></tr>
+<tr><td>{{ file('tests/current/test_message_notification_sender.py') }}</td><td>Admin messaging notification behaviour.</td></tr>
+<tr><td>{{ file('tests/current/test_docs_contract.py') }}</td><td>These documentation pages: every file, route, table, permission and template they name still exists, and the access rules for <code>/docs</code> hold.</td></tr>
+</table></div>
+
+<h2 id="e2e">The end-to-end scripts: <code>tests/verification/</code></h2>
+<p>Each script creates its own throwaway databases (<code>bs_test_*</code>), runs, and drops them, and clears any left by a crashed run. They never touch real data. They need PostgreSQL reachable through your <code>.env</code> and are run by hand; each prints <code>PASS</code>/<code>FAIL</code> lines and a total. Run <em>the ones for the area you changed</em>, plus the two big ones below before a release.</p>
+<div class="table-scroll"><table>
+<tr><th>Script</th><th>What it proves</th></tr>
+<tr><td><code>write_paths_pg_posts.py</code></td><td><strong>Every form submission</strong> in the application, sent for real as the right kind of signed-in person, checking rows were written, then junk (empty forms, hostile text, huge numbers, NUL bytes, no CSRF token, missing ids). Fails on any 500 or database error. Also enforces the coverage guard.</td></tr>
+<tr><td><code>write_paths_pg_smoke.py</code></td><td>Every page opens on PostgreSQL.</td></tr>
+<tr><td><code>write_paths_multitenancy.py</code></td><td>Isolation between schools; cookies copied between schools; path traversal.</td></tr>
+<tr><td><code>write_paths_platform_console.py</code>, <code>_platform_team.py</code></td><td>The console end to end; the team, roles, removal and activity logs.</td></tr>
+<tr><td><code>write_paths_portal_branding.py</code></td><td>Colours, logo and sign-in photographs, including hostile input.</td></tr>
+<tr><td><code>write_paths_delivery.py</code></td><td>A school's own email and WhatsApp; fallbacks; encryption; safe hosts.</td></tr>
+<tr><td><code>write_paths_numbering_rules.py</code></td><td>Numbering patterns: the console, the language, candidates and students.</td></tr>
+<tr><td><code>write_paths_question_banks.py</code>, <code>_bank_locks.py</code></td><td>The standard banks, importing, a new school's first exam, locking.</td></tr>
+<tr><td><code>write_paths_term_grading.py</code></td><td>Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility.</td></tr>
+<tr><td><code>write_paths_report_cards.py</code></td><td>When a report card is ready, its content, comments, signatures, both portals.</td></tr>
+<tr><td><code>write_paths_finance.py</code>, <code>_receipts.py</code></td><td>Fees, paid/unpaid, payments, allocations, parents' alerts; the receipt PDF, its email and WhatsApp, the signature, one design per school.</td></tr>
+<tr><td><code>write_paths_candidate_results.py</code></td><td>A candidate's result image carries the right school and leaks nothing. Needs Chrome or Chromium.</td></tr>
+<tr><td><code>write_paths_session_guard.py</code>, <code>_rate_limits.py</code>, <code>_upload_access.py</code>, <code>_upload_limits.py</code></td><td>Restart sign-out (exam sitters kept), password changes, headers, trusted proxies; shared limits; who may open which files; every upload's limit and explanations.</td></tr>
+<tr><td><code>write_paths_fractional_marks.py</code>, <code>_retired_tables.py</code>, <code>_error_pages.py</code>, <code>_known_gaps.py</code></td><td>Decimal marks and upgrading older schools; clearing removed features' tables; the 404/403/500 pages; a set of previously found gaps.</td></tr>
+</table></div>
+
+<h2 id="harness">How the scripts work</h2>
+<ul>
+  <li><strong>{{ file('tests/verification/_pg.py') }}</strong> sets up the throwaway databases. It gives each run a unique prefix and a database-name template with a literal <code>{slug}</code>, so every school under test gets its own database. (An earlier bug percent-encoded those braces, so every test school silently shared one database and isolation checks passed or failed for the wrong reasons; keep that in mind when touching it.)</li>
+  <li>The scripts call the Flask application <em>in process</em> through its test client, with hostnames like <code>posts.portal.test</code>, so the real resolver, real sessions and real CSRF are all in play.</li>
+  <li><strong>The outside world is stood in for at the last step.</strong> A fake SMTP connection and a fake <code>urlopen</code> catch email and WhatsApp, so the real sending code (including building a PDF) runs but nothing leaves the machine.</li>
+  <li>They set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so messages to parents are sent at once and can be inspected ({{ file('core/background.py') }}).</li>
+  <li>An <code>Actor</code> is one browser with its own cookies; <code>check(name, ok, detail)</code> records a result; <code>sql(...)</code>/<code>one(...)</code> read the school's database directly to confirm a row was written.</li>
+</ul>
+
+<h2 id="guard">The coverage guard</h2>
+<div class="why"><p>A query PostgreSQL rejects is easiest to miss in a form submission, and pages that only load can look fine. So the fast suite <em>imports the application</em> and compares its URL map with <code>tests/verification/pg_posts_coverage.py</code>: every route that accepts POST, PUT, PATCH or DELETE must be in <code>EXERCISED</code> (the big script really submits it) or <code>EXEMPT</code> (with a written reason). The big script also checks the other direction: what it actually submitted must equal <code>EXERCISED</code>. So a new route <em>cannot</em> ship untested on PostgreSQL, and the list cannot claim more than the script does.</p></div>
+
+<h2 id="write">Writing a check</h2>
+<pre><code># in write_paths_pg_posts.py, in the section for the area
+op.post(f"/admin/school/notices/new", {"title": "Sports day", "body": "Friday"})
+check("a notice was saved", count("school_notices", "title = :t", t="Sports day") == 1)</code></pre>
+<p>Then add the route pattern (as Flask writes it, with converters like <code>&lt;int:notice_id&gt;</code>) to <code>EXERCISED</code>. Prefer asserting on the <em>database</em> and on what a person would see, not on incidental wording.</p>
+
+<h2 id="known">Known state of the suites</h2>
+<p>All suites pass except one that needs Chrome (<code>write_paths_candidate_results.py</code>) on a machine without it. If a script fails at its very start with "three schools were created" or similar, check the database-name template in {{ file('tests/verification/_pg.py') }} first.</p>
+{% endblock %}

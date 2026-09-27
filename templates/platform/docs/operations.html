@@ -1,0 +1,57 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Day-two knowledge: how the running system behaves, and what to do when something needs attention.</p>
+
+<h2 id="backups">Backups and moving a school</h2>
+<p><strong>Each school is one PostgreSQL database plus one folder.</strong> That is the whole unit of backup, restore and relocation. Restoring one school never touches another. To move a school to another deployment, dump its database, copy <code>tenants/&lt;code&gt;/</code>, register it there, and point its address at the new server. The registry (which schools exist, their addresses, the platform team) is separate and needs its own backup.</p>
+
+<h2 id="upgrades">Upgrading the software</h2>
+<ul>
+  <li>The schema of a school is declared once, in {{ file('models/__init__.py') }} and siblings. On start, <code>create_all()</code> creates missing tables and a helper adds missing columns to existing ones ({{ file('app.py') }}, <code>_add_missing_columns</code>); the registry does the same in {{ file('control_plane/registry.py') }}. There are no migration scripts.</li>
+  <li><code>python app.py</code> upgrades every registered school before serving. With many schools or several workers, run <code>python -m control_plane upgrade</code> as a deploy step instead, then start the workers. Upgrade a single school with <code>upgrade &lt;code&gt;</code>.</li>
+  <li>A new column must have a default (or be nullable) so existing rows are valid at once. The helper refuses a NOT NULL column with no default.</li>
+  <li>Removing a feature that owned tables: an upgrade drops such a table <em>only when it is empty</em> ({{ file('core/retired_tables.py') }}); one that still holds rows is kept and a warning says so. <code>drop-retired-tables</code> shows what is left, and <code>--yes</code> drops it for good.</li>
+</ul>
+
+<h2 id="restarts">Restarts and sign-outs</h2>
+<p>A restart <strong>signs everyone out</strong>, on purpose: the signing secret does not change, so without this a cookie would outlive every restart. Everyone meets the sign-in page with "The system was restarted, please sign in again". The exception is anyone in the middle of an exam: a candidate with an unfinished paper, a student with an unfinished test, examination, practice paper or quiz whose time has not run out. They carry on as if nothing happened. The exam clock keeps running while the server is off, so a paper whose time ran out during the restart is finished from the answers already saved.</p>
+<p>The mechanism is the <em>launch id</em> ({{ file('control_plane/launch.py') }}). To sign everyone out without restarting, run <code>python -m control_plane new-launch</code>. If the registry cannot be read, or no launch was ever recorded, <strong>nobody is signed out</strong>.</p>
+
+<h2 id="suspend">Suspending a school</h2>
+<p>Suspending takes a school's portal offline for everyone. It takes effect within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code> (default 10) on each worker, because host lookups are cached per worker. Data is untouched and returns on reactivation. A suspended school's address shows a designed "portal paused" page with HTTP 503.</p>
+
+<h2 id="limits">Rate limits</h2>
+<p>Sign-in (schools and console), password recovery and the email/WhatsApp test buttons allow a number of tries per stretch of time, for example 8 sign-ins per 5 minutes per address and username. The counts live in the registry (table <code>rate_limits</code>), so several workers or a restart cannot multiply or reset them. Each is a fixed window; only a hash of the key is stored. If the registry cannot be reached each worker counts in its own memory and logs a warning at most once a minute; nobody is locked out. A limit at the reverse proxy is still worthwhile, and behind a proxy set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application sees real visitor addresses (or every visitor shares one count).</p>
+
+<h2 id="passwords">Passwords</h2>
+<ul>
+  <li>Whoever changes their own password stays signed in where they did it; <strong>every other browser signed in to that account is signed out</strong>. The same happens when an administrator resets someone's login, when an emailed reset link is used, and for a platform admin's password. It is judged from the stored hash, so it holds however the password changed.</li>
+  <li>Accounts created or reset by someone else start on a temporary password that must be replaced before anything else opens.</li>
+</ul>
+
+<h2 id="uploads">Uploaded files</h2>
+<p>Files under <code>/static/uploads/...</code> are <em>not</em> open to every signed-in account. Each folder has its own rule ({{ file('core/upload_access.py') }}); ownership is read from the database row that holds the file, and a refusal is a plain 404 so a file's existence is not confirmed. A school's logo and photographs are public; message attachments are never served there.</p>
+
+<h2 id="reading">Reading what happened</h2>
+<div class="table-scroll"><table>
+<tr><th>Question</th><th>Look at</th></tr>
+<tr><td>What did a platform admin do, anywhere?</td><td>The console's <em>Activity</em> (super admin), which merges the platform log and each school's own audit trail.</td></tr>
+<tr><td>What did a member of a school's staff do?</td><td>That school's <em>Administration, Audit log</em> ({{ table('audit_logs') }}).</td></tr>
+<tr><td>Did a parent get the receipt or the report card notice?</td><td>The receipt page's delivery log ({{ table('finance_delivery_logs') }}); for report card notices, the application log and the parent's in-app alert ({{ table('school_notifications') }}).</td></tr>
+<tr><td>Who is online?</td><td>The admin <em>Presence</em> page ({{ table('presence_sessions') }}).</td></tr>
+<tr><td>Why did a form fail with a plain message?</td><td>{{ file('core/request_errors.py') }}: too-large numbers, NUL bytes and oversize requests are answered plainly, not as errors.</td></tr>
+</table></div>
+
+<h2 id="incidents">When things go wrong</h2>
+<div class="table-scroll"><table>
+<tr><th>Symptom</th><th>Likely cause and what to do</th></tr>
+<tr><td>A school shows "address not found"</td><td>The hostname is not registered (or is registered to another school); check the school's page in the console. A platform host that is also registered to a school logs a warning at start: the platform wins, taking that school offline.</td></tr>
+<tr><td>Everyone reports being signed out</td><td>A restart, or <code>new-launch</code>. Expected.</td></tr>
+<tr><td>Parents say they received nothing</td><td>The school has no email/WhatsApp set up and the deployment has no shared account; or the guardian's email or phone is missing on the student; or WhatsApp's 24-hour rule. The delivery log says which.</td></tr>
+<tr><td>A school cannot be entered</td><td>The entry ticket is single-use and short-lived: go back to the console and press <em>Enter school</em> again. If the school cannot be reached, the console says so.</td></tr>
+<tr><td>Every visitor seems to share one sign-in limit</td><td>Behind a proxy with <code>BRIGHTSTARS_TRUSTED_PROXIES</code> at 0.</td></tr>
+<tr><td>"Cannot add NOT NULL column" at upgrade</td><td>A model added a required column with no default. Give it a default.</td></tr>
+</table></div>
+{% endblock %}

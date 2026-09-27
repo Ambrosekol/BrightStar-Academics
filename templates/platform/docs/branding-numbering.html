@@ -1,0 +1,35 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<h2 id="identity">A school's identity</h2>
+<p>Each school has its own <strong>name, motto, tagline, phone, email, address, logo, two brand colours and up to eight sign-in photographs</strong>. They are set on the platform's <em>Create a school</em> form, so nobody ever sees a portal wearing another school's name, and can be changed afterwards by platform operators (from the school's page in the console) or by the school's own administrators with {{ perm('branding.manage') }} ({{ route('admin_school_branding') }}).</p>
+<ul>
+  <li><strong>Where it is kept.</strong> As key/value rows in {{ table('school_public_settings') }} (read by {{ file('core/public_settings.py') }}); the school's own row is in {{ table('schools') }}. Files (logo, photos) are under the school's <code>uploads/branding/</code>, which is the one folder anyone may open, because the sign-in page needs it.</li>
+  <li><strong>How code reads it.</strong> Always through <code>school_brand()</code> and <code>school_name()</code> ({{ file('core/branding.py') }}), and in templates through <code>school_brand</code>. <strong>Never hard-code a school's name, motto or logo.</strong> A contract test fails the build on any occurrence.</li>
+  <li><strong>Colours.</strong> {{ file('core/theme.py') }} is deliberately free of Flask and the database. A colour is accepted only as <code>#rrggbb</code> and written into a page only as that normalised value, because it goes inside a <code>&lt;style&gt;</code> block: anything looser would let a school's settings inject CSS into its own users' pages. Both colours sit behind white text, so a colour with less than 4.5:1 contrast against white is refused.</li>
+  <li><strong>How colours reach the pages.</strong> An <code>after_request</code> hook (<code>apply_school_theme</code> in {{ file('app.py') }}) injects <code>:root{--navy:...;--blue:...}</code> into every school HTML response; the stylesheets read those variables. The Brightstars logo <em>never</em> appears on a school's portal, only on the platform's own pages.</li>
+</ul>
+
+<h2 id="design">The school interface's design system</h2>
+<p>All school-facing pages use one design system, <code>static/school-ui.css</code>: tokens for the school's colours (<code>--brand</code>, <code>--brand-dark</code>, <code>--brand-accent</code>), a warm-grey surface scale, type, spacing, radii, the focus ring, and the components built on them: the navigation rail, workspace home, sign-in and password pages. Use the tokens; do not add new colours or sizes. Fonts are self-hosted in <code>static/fonts/</code> (Public Sans for text, Newsreader for titles and the school's name, IBM Plex Mono for codes only), because the Content-Security-Policy allows no outside font. Who sees which menu item is one list in {{ tpl('admin_base.html') }}; icons come from {{ tpl('includes/_nav_icons.html') }}. Sign-in and password pages extend {{ tpl('auth_base.html') }}.</p>
+<div class="note"><p>The platform console, this documentation and the marketing page have their own look (<code>static/platform.css</code>, <code>static/docs.css</code>, <code>static/marketing.css</code>). Do not mix the two sets.</p></div>
+
+<h2 id="uploads">Uploads</h2>
+<p>Every picture upload goes through one hardened saver in {{ file('core/uploads.py') }}: type and size are checked, the content is verified as a real image, the file is renamed with random characters, and it is stored only in the school's own folder. <strong>People are always told the limit</strong>: every file box prints the real limit under itself, <code>static/upload-limit.js</code> refuses a too-large or wrong-type file beside the box before anything is sent, and the server gives the same explanation (the file's name, its size and the limit) if the script is off. The limits are <code>BRIGHTSTARS_MAX_UPLOAD_BYTES</code> (one image; the default is a few megabytes) and <code>BRIGHTSTARS_MAX_REQUEST_BYTES</code> (a whole request, larger still); pages that take a logo plus a gallery raise the request limit to fit. See the {{ page('reference-config', 'configuration reference') }} for the exact defaults.</p>
+<p>Who may open a stored file is decided folder by folder in {{ file('core/upload_access.py') }}; see {{ page('security', 'Security model') }}.</p>
+
+<h2 id="numbering">Numbering: how a school writes its people's codes</h2>
+<p>A school chooses how candidate codes and student numbers look. Platform operators set this as a <strong>pattern</strong> on the console, both when creating the school and later on its page:</p>
+<pre><code>{% raw %}{school}-{year}-{seq:4}{% endraw %}      →   ABC-2026-0007</code></pre>
+<p>Placeholders include the year, month, the school's code, the class, a running number with a width and range, and random letters or digits. The full table is on the console's numbering editor ({{ tpl('platform/_numbering.html') }}). Important rules:</p>
+<ul>
+  <li>A pattern needs a <code>seq</code> or a random part, and at most one <code>seq</code>. Unknown placeholders, unbalanced braces, forbidden characters and patterns over 80 characters are refused with a message naming the problem and its position.</li>
+  <li><strong><code>seq</code> counts within its siblings.</strong> The next number is one more than the biggest already used by a code with the <em>same text in every other part</em>, so the count restarts by itself each year if the year is in the pattern, per class if the class is, and never if neither is.</li>
+  <li>A finished candidate code is 3 to 40 characters (letters, digits, <code>. _ -</code>); a student number is 1 to 40 and may also contain <code>/</code>. A pattern that could produce a code failing these is refused when it is saved.</li>
+  <li>Codes already issued never change. A new pattern applies only to codes made after it is saved.</li>
+  <li>Student numbers: the platform's running number ({{ file('services/student_number_generator.py') }}) stays the source of the sequence and of the ledger ({{ table('student_number_allocations') }}) that stops a number being issued twice; the pattern only decides how the number is written.</li>
+</ul>
+<div class="warn"><p><strong>Nothing typed is ever run.</strong> {{ file('core/numbering_pattern.py') }} <em>reads</em> a pattern: it splits it into pieces, checks each against a fixed list, and fills it in. There is no <code>eval</code>, <code>exec</code>, import or template engine anywhere near it. The rules are stored as data in <code>tenants/&lt;code&gt;/numbering.json</code> ({{ file('core/numbering.py') }}), read and written whole and atomically, and a corrupt file is refused with a plain message and <strong>never silently replaced</strong>. An earlier design used a Python file per school; it was removed because being able to set numbering would have meant being able to run code on a server that reaches every school's database.</p></div>
+<p>Every save is recorded in the platform audit log with the old and the new pattern.</p>
+{% endblock %}

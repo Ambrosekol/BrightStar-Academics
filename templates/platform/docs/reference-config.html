@@ -1,0 +1,62 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<h2 id="env">Environment variables</h2>
+<p>Read lazily, on each use ({{ file('control_plane/config.py') }}), so a test can set them after importing. Loaded from <code>.env</code> at start; a real environment variable always wins. <code>.env.example</code> documents every one with its reasoning.</p>
+<div class="table-scroll"><table>
+<tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+<tr><td><code>BRIGHTSTARS_PLATFORM_DB</code></td><td><strong>none (required)</strong></td><td>PostgreSQL URL of the registry. No default, because a wrong guess would silently create an empty registry.</td></tr>
+<tr><td><code>BRIGHTSTARS_PLATFORM_HOSTS</code></td><td><code>platform.localhost</code></td><td>Comma-separated hostnames (no ports) that serve the console, <code>/marketing</code> and <code>/docs</code>.</td></tr>
+<tr><td><code>BRIGHTSTARS_PORTAL_DOMAIN</code></td><td><code>localhost</code></td><td>The domain schools' portal addresses are issued under.</td></tr>
+<tr><td><code>BRIGHTSTARS_TENANTS_DIR</code></td><td><code>tenants</code></td><td>Where each school's <code>data/</code>, <code>uploads/</code> and <code>numbering.json</code> live.</td></tr>
+<tr><td><code>BRIGHTSTARS_SECRET</code></td><td>random per start</td><td>Session-signing secret. Blank signs everyone out on every restart. In production must be at least 32 characters or the app will not start.</td></tr>
+<tr><td><code>BRIGHTSTARS_ENV</code></td><td><code>development</code></td><td><code>production</code> makes cookies Secure, adds HSTS and enforces the secret's length.</td></tr>
+<tr><td><code>PORT</code></td><td><code>5000</code></td><td>Port of the built-in server (<code>python app.py</code>).</td></tr>
+<tr><td><code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code></td><td>beside the registry</td><td>Where new schools' databases go: a URL with <code>{slug}</code> (the code) and/or <code>{db}</code> (the full name).</td></tr>
+<tr><td><code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code></td><td><code>10</code></td><td>How long a hostname lookup is cached per worker; bounds how fast a suspension takes effect. <code>0</code> disables.</td></tr>
+<tr><td><code>BRIGHTSTARS_TRUSTED_PROXIES</code></td><td><code>0</code></td><td>How many reverse proxies are in front (0 to 5). See {{ page('deployment', 'Deployment') }}.</td></tr>
+<tr><td><code>BRIGHTSTARS_MAX_UPLOAD_BYTES</code></td><td><code>5242880</code></td><td>Largest single image.</td></tr>
+<tr><td><code>BRIGHTSTARS_MAX_REQUEST_BYTES</code></td><td><code>8388608</code></td><td>Largest request. Must be at least the upload limit.</td></tr>
+<tr><td><code>BRIGHTSTARS_SMTP_HOST</code>, <code>_PORT</code>, <code>_USER</code>, <code>_PASSWORD</code>, <code>_FROM</code>, <code>_STARTTLS</code>, <code>_SSL</code></td><td>unset</td><td>The platform's <em>shared</em> mail account, the fallback for schools with none of their own. Blank host disables it.</td></tr>
+<tr><td><code>BRIGHTSTARS_WHATSAPP_TOKEN</code>, <code>_PHONE_NUMBER_ID</code>, <code>_GRAPH_VERSION</code></td><td>unset</td><td>The shared WhatsApp Business (Cloud API) account, likewise a fallback.</td></tr>
+<tr><td><code>BRIGHTSTARS_DELIVERY_KEY</code></td><td>derived from the secret</td><td>Key that schools' saved mail and WhatsApp credentials are encrypted under. Set it early and never change it.</td></tr>
+<tr><td><code>BRIGHTSTARS_CHROME</code></td><td>auto-detected</td><td>Chrome or Chromium program, for candidates' result images.</td></tr>
+<tr><td><code>BRIGHTSTARS_CONTACT_EMAIL</code></td><td>unset</td><td>Where the public <code>/marketing</code> page's buttons write to.</td></tr>
+</table></div>
+
+<h2 id="appconfig">Application settings worth knowing</h2>
+<div class="table-scroll"><table>
+<tr><th>Key</th><th>Meaning</th></tr>
+<tr><td><code>app.config['BACKGROUND_INLINE']</code></td><td>Run background notification work in the calling thread. Used by the tests; never set in production.</td></tr>
+<tr><td><code>SQLALCHEMY_DATABASE_URI</code></td><td>Points at the <em>registry</em>, only because Flask-SQLAlchemy insists on a default bind. School data is never read through it.</td></tr>
+</table></div>
+
+<h2 id="constants">Constants that shape behaviour</h2>
+<div class="table-scroll"><table>
+<tr><th>Constant</th><th>Where</th><th>Value and meaning</th></tr>
+<tr><td><code>ACADEMIC_TERMS</code></td><td>{{ file('app.py') }}</td><td>First Term, Second Term, Third Term ("Full Session" is also a valid term for annual results).</td></tr>
+<tr><td><code>CA_DEFAULT_WEIGHTS</code>, <code>CA_MAX_SCORE</code>, <code>EXAM_MAX_SCORE</code></td><td>{{ file('app.py') }}</td><td>Continuous assessment 40 split test 20 / assignment 10 / project 10 by default; the exam is out of 60.</td></tr>
+<tr><td><code>FINANCE_FEE_CATEGORIES</code>, <code>FINANCE_FEE_APPLICABILITY</code></td><td>{{ file('app.py') }}</td><td>The fee categories offered; applicability is Full Session, a term or One-time.</td></tr>
+<tr><td><code>PRACTICE_MAX_QUESTIONS</code></td><td>{{ file('blueprints/student_portal/routes.py') }}</td><td>40: the most questions one student practice run draws.</td></tr>
+<tr><td><code>PRACTICE_DEFAULT_QUESTIONS</code></td><td>{{ file('core/entrance.py') }}</td><td>20: entrance practice questions per attempt when a custom bank does not say.</td></tr>
+<tr><td><code>GRADE_SCALE</code></td><td>{{ file('blueprints/school/report_card_data.py') }}</td><td>A 70+, B 60, C 50, D 45, E 40, F below; one scale for every school.</td></tr>
+<tr><td><code>ALLOWED_SMTP_PORTS</code></td><td>{{ file('core/delivery.py') }}</td><td>25, 465, 587, 2525: a school cannot aim the server at another port.</td></tr>
+</table></div>
+
+<h2 id="cli">Command line</h2>
+<p><code>python -m control_plane &lt;command&gt;</code> ({{ file('control_plane/cli.py') }}). Its own help text, verbatim:</p>
+{% for group in ref.modules() %}{% for m in group.files if m.path == 'control_plane/cli.py' %}<pre><code>{{ m.doc }}</code></pre>{% endfor %}{% endfor %}
+<div class="table-scroll"><table>
+<tr><th>Command</th><th>When you use it</th></tr>
+<tr><td><code>init</code></td><td>Once per deployment, to create the registry.</td></tr>
+<tr><td><code>create-platform-admin USER [--super]</code></td><td>The first admin (automatically the super admin), and any later platform admin created from a terminal.</td></tr>
+<tr><td><code>create-tenant CODE "Name"</code></td><td>Scripted school creation. Options include <code>--domain</code>, <code>--admin-username</code>, <code>--db-url</code>, <code>--no-starter-banks</code>.</td></tr>
+<tr><td><code>list</code></td><td>Every school, its addresses and database.</td></tr>
+<tr><td><code>upgrade [CODE]</code></td><td>Deploy step: brings schema(s) up to date and (with no code) records a new launch.</td></tr>
+<tr><td><code>new-launch</code></td><td>Sign everyone out (except exam sitters) without restarting.</td></tr>
+<tr><td><code>add-domain</code> / <code>remove-domain</code></td><td>A school's own domain. The portal address can never be removed.</td></tr>
+<tr><td><code>suspend</code> / <code>activate</code></td><td>Take a school offline, or bring it back.</td></tr>
+<tr><td><code>drop-retired-tables [CODE] [--yes]</code></td><td>Show, or drop, leftovers of a removed feature.</td></tr>
+</table></div>
+{% endblock %}

@@ -14,7 +14,7 @@
   <section aria-label="Admins">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Admin</th><th>Role</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
+        <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
         <tbody>
           {% for a in admins if a.active %}
             <tr>
@@ -24,6 +24,16 @@
                 {% if a.must_change %}<div class="pill pill-quiet" style="margin-top:4px">Has not chosen a password yet</div>{% endif %}
               </td>
               <td>{% if a.is_super %}<span class="tag tag-super">Super admin</span>{% else %}<span class="tag tag-quiet">Platform admin</span>{% endif %}</td>
+              <td>
+                {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always</span>
+                {% else %}
+                  <form method="post" action="{{ url_for('platform_team_docs_access', admin_id=a.id) }}" style="margin:0">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="allow" value="{{ 0 if a.docs_access else 1 }}">
+                    <button class="btn btn-sm" type="submit" title="{{ 'Withdraw' if a.docs_access else 'Grant' }} access to the documentation">{{ 'Can read · withdraw' if a.docs_access else 'No access · grant' }}</button>
+                  </form>
+                {% endif %}
+              </td>
               <td class="muted">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>
               <td class="num"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
               <td>

@@ -23,6 +23,9 @@ _ANYWHERE_PREFIXES = ('/static/brand/',)
 
 # On a platform hostname "/" only redirects into the console; there is no page.
 PLATFORM_ROOT_PATHS = ('/',)
+# The two things besides the console that a platform hostname serves: the public /marketing page and
+# the /docs pages, which only signed-in platform admins with access can open (control_plane/platform_pages.py).
+PLATFORM_SITE_PATHS = ('/marketing', '/docs')
 
 
 # What to say when a request cannot be served, and why. Each becomes a designed
@@ -109,6 +112,8 @@ def resolve_tenant():
         if request.path == '/platform' or request.path.startswith('/platform/'):
             return None
         if request.path in PLATFORM_ROOT_PATHS:
+            return None
+        if any(request.path == p or request.path.startswith(p + '/') for p in PLATFORM_SITE_PATHS):
             return None
         if request.path.startswith('/static/') and not request.path.startswith('/static/uploads/'):
             return None

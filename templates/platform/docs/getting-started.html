@@ -1,0 +1,74 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<h2 id="requirements">What you need</h2>
+<div class="table-scroll"><table>
+<tr><th>Requirement</th><th>Notes</th></tr>
+<tr><td><strong>Python 3.10 or newer</strong></td><td>Developed and tested on 3.13.</td></tr>
+<tr><td><strong>PostgreSQL 14 or newer</strong></td><td>Required in development as well as production. There is no SQLite mode and never will be: a bug that only PostgreSQL reveals must be found on your laptop, not at a school. Tested on PostgreSQL 18.</td></tr>
+<tr><td>A database role that may <code>CREATE DATABASE</code></td><td>Each school's database is created when the school is. Locally the <code>postgres</code> superuser is fine.</td></tr>
+<tr><td>Nothing else</td><td>No message queue, cache server or build toolchain. The PostgreSQL driver installs from <code>requirements.txt</code>. (Drawing a candidate's result <em>image</em> needs Chrome or Chromium; that one feature only.)</td></tr>
+</table></div>
+
+<h2 id="install">Install</h2>
+<pre><code>git clone &lt;the repository&gt;
+cd Academics
+
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS / Linux
+
+pip install -r requirements.txt
+copy .env.example .env         # Windows
+# cp .env.example .env         # macOS / Linux</code></pre>
+
+<h2 id="configure">Configure</h2>
+<p>Open <code>.env</code>. Four values matter to get running; <code>.env.example</code> documents every other one, and the
+{{ page('reference-config', 'configuration reference') }} lists them all.</p>
+<div class="table-scroll"><table>
+<tr><th>Variable</th><th>What to put</th></tr>
+<tr><td><code>BRIGHTSTARS_PLATFORM_DB</code></td><td>Your PostgreSQL URL, for example <code>postgresql+psycopg://postgres:yourpassword@localhost:5432/brightstars_platform</code>.</td></tr>
+<tr><td><code>BRIGHTSTARS_SECRET</code></td><td>A real random secret: <code>python -c "import secrets; print(secrets.token_hex(32))"</code></td></tr>
+<tr><td><code>BRIGHTSTARS_PLATFORM_HOSTS</code></td><td><code>platform.localhost</code> for development.</td></tr>
+<tr><td><code>BRIGHTSTARS_PORTAL_DOMAIN</code></td><td><code>localhost</code> for development.</td></tr>
+</table></div>
+<div class="note"><p>You do not create any database by hand. <code>python -m control_plane init</code> creates the registry, and every school's database is created with the school.
+Browsers resolve <code>*.localhost</code> to your own machine, so a school called <code>demo</code> is reachable at <code>http://demo.localhost:5000</code> with no hosts-file editing.</p></div>
+
+<h2 id="first-run">First run</h2>
+<pre><code>python -m control_plane init                        # create the registry database
+python -m control_plane create-platform-admin ops   # your own platform login (the password is prompted)
+python app.py</code></pre>
+<ol class="steps">
+  <li>Open <code>http://platform.localhost:5000/</code>. It goes straight to the console's sign-in page. Sign in as <code>ops</code>.</li>
+  <li>The first platform admin you create is the <strong>super admin</strong>. Open <em>Team</em> in the rail to see it, and <em>Docs</em>, which is this documentation.</li>
+  <li>Choose <strong>Create a school</strong>. Give it a name, a code (for example <code>demo</code>; it is permanent), a logo if you have one, and tick the option to start with the standard question banks. Enter a first administrator username so you get a one-time password.</li>
+  <li>Open <code>http://demo.localhost:5000/</code> and sign in with that administrator. You are now inside a school. Every screen you see there belongs to <code>demo</code> and to nobody else.</li>
+  <li>To act as a platform operator inside a school without knowing its password, use <strong>Enter school</strong> on the school's page in the console. That mints a one-time ticket; see {{ page('platform-console', 'The platform console') }}.</li>
+</ol>
+<div class="tip"><p>Plain <code>http://localhost:5000/</code> belongs to no school and no console, so it shows an "address not found" page. In development that page prints the console's address and the shape of a school's, which is usually what you were looking for.</p></div>
+
+<h2 id="explore">Things to try while you are here</h2>
+<ul>
+  <li>Create two schools and sign in to each in a different browser profile. Notice that nothing you do in one appears in the other. That is the point of the platform.</li>
+  <li>In a school, create a class, a subject and a student. Hand the student's one-time password to a second browser and sign in as them.</li>
+  <li>Open a school's <em>Branding</em> page, change the two colours, and watch every page change. See {{ page('branding-numbering', 'Identity and numbering') }}.</li>
+  <li>Register an entrance candidate and take a practice paper from <code>/entrance-practice</code>, which needs no sign-in.</li>
+</ul>
+
+<h2 id="tests">Check that your setup is healthy</h2>
+<pre><code>python tests/current/run_current.py</code></pre>
+<p>This is the fast contract suite. Run it after any change. It needs no database except that one check compares the models against the first registered school. The
+end-to-end scripts in <code>tests/verification/</code> create throwaway databases, drop them afterwards, and never touch real data; see {{ page('testing', 'Testing') }}.</p>
+
+<h2 id="stuck">If something does not work</h2>
+<div class="table-scroll"><table>
+<tr><th>Symptom</th><th>Usually</th></tr>
+<tr><td>"Could not reach PostgreSQL to create the platform registry"</td><td>The URL in <code>BRIGHTSTARS_PLATFORM_DB</code> is wrong, or the server is not running, or the role may not create databases.</td></tr>
+<tr><td>A page that says "Address not found"</td><td>You used <code>localhost</code> or an IP address. Use <code>platform.localhost</code> for the console and <code>&lt;code&gt;.localhost</code> for a school. The <em>address</em> chooses the school.</td></tr>
+<tr><td>You are signed out every time you restart</td><td>By design: a restart signs everyone out (except people in the middle of an exam). See {{ page('operations', 'Operating it') }}.</td></tr>
+<tr><td>Startup refuses with a message about the secret</td><td>In production the secret must be at least 32 characters.</td></tr>
+<tr><td>Email or WhatsApp does not send</td><td>Nothing is configured yet. A school sets up its own under <em>Email &amp; WhatsApp</em>, or the deployment has a shared account. See {{ page('families', 'Students, parents and messages') }}.</td></tr>
+</table></div>
+{% endblock %}

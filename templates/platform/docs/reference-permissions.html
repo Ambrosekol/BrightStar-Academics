@@ -1,0 +1,43 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+{% set p = ref.permissions() %}
+<p>A school administrator's power is a set of <strong>permissions</strong>, gathered into <strong>roles</strong>. There are
+{{ p.total }} permissions. Each URL in the admin areas is mapped to exactly one of them in
+<code>ADMIN_ENDPOINT_PERMISSIONS</code> (<a class="ref" href="{{ url_for('docs_page', slug='reference-modules') }}#core-security-py"><code>core/security.py</code></a>);
+an endpoint with no entry only needs <code>admin.access</code>. On top of permissions, an account can be <em>scoped</em> to particular
+classes, subjects or banks (see <a href="{{ url_for('docs_page', slug='school-portal') }}">The school portal</a>).</p>
+
+<h2 id="roles">Role presets</h2>
+<p>Every school starts with these roles. The School Admin type is created with everything and cannot be removed; a school may edit
+the others or create its own.</p>
+{% for role in p.roles %}
+<div class="ref-item"><h3 style="font-family:var(--sans)">{{ role.name }}</h3><p>{{ role.description }}</p>
+  <details><summary>{{ role.permissions|length }} permissions</summary><p class="ref-meta">{% for k in role.permissions %}<code>{{ k }}</code> {% endfor %}</p></details></div>
+{% endfor %}
+
+<h2 id="catalogue">The catalogue</h2>
+<input class="filter" id="filter" type="search" placeholder="Filter by key or description…" aria-label="Filter permissions" autocomplete="off">
+{% for group in p.groups %}
+<section class="ref-group"><h3>{{ group.name|title }}</h3>
+  {% for item in group.permissions %}
+  <div class="ref-item" id="{{ item.key|docs_slug }}" data-text="{{ (item.key ~ ' ' ~ item.label ~ ' ' ~ item.description)|lower }}">
+    <h3>{{ item.key }}</h3><p><strong>{{ item.label }}.</strong> {{ item.description }}</p>
+    {% if item.endpoints %}<details><summary>Guards {{ item.endpoints|length }} endpoint{{ '' if item.endpoints|length == 1 else 's' }}</summary>
+      <p class="ref-meta">{% for e in item.endpoints %}<a class="ref" href="{{ url_for('docs_page', slug='reference-routes') }}#{{ e|docs_slug }}"><code>{{ e }}</code></a> {% endfor %}</p></details>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+<script>
+(function () {
+  var box = document.getElementById('filter');
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('.ref-item[data-text]').forEach(function (el) {
+      var hay = el.getAttribute('data-text');
+      el.style.display = words.every(function (w) { return hay.indexOf(w) !== -1; }) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

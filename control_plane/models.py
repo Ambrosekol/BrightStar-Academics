@@ -107,6 +107,9 @@ class PlatformAdmin(PlatformBase):
     email = mapped_column(Text)
     phone = mapped_column(Text)
     role = mapped_column(Text, nullable=False, default=ROLE_ADMIN, server_default=text("'admin'"))
+    # Whether this admin may read /docs. The super admin always may; the super admin grants it to
+    # anyone else, one admin at a time, from the Team page.
+    docs_access = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     active = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     password_must_change = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     created_at = mapped_column(Text, nullable=False)

@@ -1,0 +1,36 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+<p>Every Jinja template, with the code that renders it (found by reading the source for <code>render_template(...)</code>) and the
+templates it extends or includes. A template with no renderer is either a base or partial that others use, or is rendered through a helper.</p>
+<div class="note"><p>Which template a school page uses is worth knowing before you edit it: the platform console extends
+<code>platform/base.html</code> and keeps its own look; every school-facing page uses <code>static/school-ui.css</code> and the school's brand
+colours; a page never hard-codes a school's name or logo, it reads <code>school_brand</code>.</p></div>
+<input class="filter" id="filter" type="search" placeholder="Filter templates and static files…" aria-label="Filter templates" autocomplete="off">
+<section class="ref-group"><h2>Templates</h2>
+{% for t in ref.templates() %}
+  <div class="ref-item" id="{{ t.slug }}" data-text="{{ (t.name ~ ' ' ~ (t.renders|join(' ')))|lower }}">
+    <h3>{{ t.name }}</h3>
+    <p class="ref-meta">{{ t.lines }} lines
+      {% if t.renders %}&middot; rendered at {% for r in t.renders %}<a class="ref" href="{{ url_for('docs_page', slug='reference-modules') }}#{{ r.split(':')[0]|docs_slug }}"><code>{{ r }}</code></a> {% endfor %}{% endif %}</p>
+    {% if t.links %}<p class="ref-meta">{% for kind, target in t.links %}{{ kind }} <code>{{ target }}</code> {% endfor %}</p>{% endif %}
+  </div>
+{% endfor %}
+</section>
+<section class="ref-group"><h2 id="static">Static files</h2>
+<p class="muted">Shared by every school. Fonts are in <code>static/fonts/</code> (self-hosted; the Content-Security-Policy allows no outside font). A school's own files are never here: they live under <code>tenants/&lt;code&gt;/</code>.</p>
+<div class="table-scroll"><table><tr><th>File</th><th>Size</th></tr>
+{% for s in ref.static_files() %}<tr class="ref-item" data-text="{{ s.path|lower }}"><td><code>{{ s.path }}</code></td><td class="ref-meta">{{ s.kb }} KB</td></tr>{% endfor %}
+</table></div></section>
+<script>
+(function () {
+  var box = document.getElementById('filter');
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('.ref-item').forEach(function (el) {
+      var hay = el.getAttribute('data-text');
+      el.style.display = words.every(function (w) { return hay.indexOf(w) !== -1; }) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

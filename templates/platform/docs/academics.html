@@ -1,0 +1,84 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Academics is the day-to-day teaching side of a school: who is enrolled where, what work is set, how it is marked, how marks become a term result, and when parents and
+students may see it. Most of the code is in {{ file('blueprints/school/routes.py') }} (routes) and {{ file('blueprints/school/helpers.py') }} (rules), with the term arithmetic and report card rules in
+{{ file('blueprints/school/report_card_data.py') }}.</p>
+
+<h2 id="structure">The structure of a school year</h2>
+<div class="table-scroll"><table>
+<tr><th>Thing</th><th>Table</th><th>Notes</th></tr>
+<tr><td>Academic session</td><td>{{ table('academic_sessions') }}</td><td>e.g. "2025/2026". One is <em>current</em>; results are filed against it. <code>result_release_at</code> is the date results become visible. See <code>_school_current_session</code> in {{ file('app.py') }}, which falls back to the latest active session if none is marked current.</td></tr>
+<tr><td>Term</td><td>a text field</td><td>First Term, Second Term, Third Term, or "Full Session". Terms are strings, not rows.</td></tr>
+<tr><td>Class</td><td>{{ table('school_classes') }}</td><td>Seeded on start: Primary 1 to 6 (Primary 5 optional), JSS 1 to 3, SSS 1 to 3. Each has a stage and a level order.</td></tr>
+<tr><td>Subject</td><td>{{ table('school_subjects') }}, {{ table('class_subjects') }}</td><td>A subject is offered by classes; a subject can be locked so its records stop changing.</td></tr>
+<tr><td>Student and enrolment</td><td>{{ table('students') }}, {{ table('student_enrolments') }}</td><td>A student is enrolled in a class for a session. One enrolment is active at a time. Enrolment history is kept ({{ table('student_enrollment_history') }}).</td></tr>
+</table></div>
+
+<h2 id="work">Work that is set</h2>
+<div class="table-scroll"><table>
+<tr><th>Kind</th><th>Tables</th><th>What it is</th></tr>
+<tr><td>Assignments</td><td>{{ table('school_assignments') }}, {{ table('assignment_students') }}, {{ table('assignment_questions') }}</td><td>Written (marked by hand) or <em>quiz</em> (CBT, marked automatically). Given to chosen students, with a due date.</td></tr>
+<tr><td>Projects</td><td>{{ table('school_projects') }}, {{ table('project_students') }}</td><td>Marked by hand, out of a maximum.</td></tr>
+<tr><td>Tests</td><td>{{ table('school_assessments') }} with type <code>test</code></td><td>CBT tests for a class and subject in a session and term.</td></tr>
+<tr><td>Examinations</td><td>{{ table('school_assessments') }} with type <code>examination</code></td><td>Formal exams, same engine.</td></tr>
+<tr><td>Practice tests</td><td>{{ table('school_assessments') }} with type <code>practice</code></td><td>A self-study bank; see below. Never part of the record.</td></tr>
+</table></div>
+
+<h3 id="cbt">How a CBT test or exam is run</h3>
+<ol class="steps">
+  <li>A teacher creates the assessment, adds questions (each with four options and a correct one), and opens it. <code>question_count</code> is kept in step with the questions by <code>_resync_question_count</code>.</li>
+  <li>A student presses <em>Start</em> ({{ route('student_assessment_start') }}). One row is created in {{ table('school_assessment_attempts') }} with an expiry time, and <strong>every question is copied</strong> into {{ table('school_assessment_attempt_questions') }}. There is at most one attempt per student per assessment (a unique constraint).</li>
+  <li>Each answer is saved the moment it is chosen ({{ route('student_assessment_answer') }}), as an upsert on {{ table('school_assessment_answers') }}.</li>
+  <li>Grading reads only the frozen copy ({{ file('blueprints/student_portal/helpers.py') }}, <code>student_assessment_grade</code>), never the live bank, and is idempotent: it only acts on an attempt still <code>active</code>, so two simultaneous submissions cannot both post a result.</li>
+  <li>The attempt result creates a row in {{ table('school_student_results') }} with status <code>entered</code>.</li>
+</ol>
+<div class="why"><p>The copy exists so editing a question later cannot change an exam already taken, and so grading is reproducible. Timing is enforced on the server from the stored expiry, never trusted from the browser's clock.</p></div>
+
+<h2 id="practice">Practice tests</h2>
+<p>Practice is a self-study bank for students who want to prepare. It is deliberately outside the record:</p>
+<ul>
+  <li>A student finds their class's practice tests under <em>Practice</em>, in <strong>every session</strong>, and can take and <strong>retake</strong> them without limit.</li>
+  <li>Each run serves the questions in a <strong>fresh random order</strong> (up to 40 drawn from the bank), timed like a CBT paper, marked at once, with the correct answers shown ({{ route('student_practice_take') }}).</li>
+  <li><strong>Nothing is written to the database.</strong> No attempt, no answers, no result. The chosen question ids live only in the student's session cookie until they submit. So a practice run can never reach a term result or a report card.</li>
+  <li>The old graded start route redirects to the practice page, and results of practice tests made by earlier versions are ignored everywhere a result is counted.</li>
+</ul>
+
+<h2 id="results">From marks to a term result</h2>
+<p>A subject's term result is <strong>Exam (out of 60) + Continuous Assessment (out of 40) = 100</strong>. CA is built from three kinds of work, each scaled to its share; by default a school's weights are <strong>test 20, assignment 10, project 10</strong> and can be changed on the sessions page (<code>_ca_weights</code>).</p>
+<ul>
+  <li>Several items of one kind (two tests) are combined by summing their raw score and raw maximum, then scaling the total to that kind's share, never by simply adding them. So an extra test can never push a subject past 100.</li>
+  <li>The rules for what counts are written in one place: <code>_term_raw_sums</code> in {{ file('blueprints/school/helpers.py') }}. Practice tests never count. Removed work does not count. A mark on work with no maximum does not count. A blank mark does not count.</li>
+  <li>Marks are stored as decimals ({{ file('core/marks.py') }}); a whole mark is <em>shown</em> as a whole number ("75 / 100", not "75.0 / 100.0").</li>
+  <li>A teacher can also enter <strong>offline results</strong> (a paper Test and Exam) by hand; these follow the same workflow.</li>
+</ul>
+
+<h3 id="workflow">The result workflow</h3>
+<div class="flow"><span class="node">entered</span><span class="arrow">&rarr;</span><span class="node">verified</span><span class="arrow">&rarr;</span><span class="node">approved</span><span class="arrow">&rarr;</span><span class="node">released</span></div>
+<p>Each step needs its own permission ({{ perm('school.results.enter') }}, {{ perm('school.results.verify') }}, {{ perm('school.results.approve') }}, {{ perm('school.results.release') }}), so different people can do each. The steps are strictly ordered and every move is recorded in {{ table('result_workflow_events') }}. Editing a result sends it back to <em>entered</em>; approved or released results cannot be edited casually.
+A student sees only <strong>released</strong> marks. The admin's own term-results table shows every recorded mark whatever its stage (a deliberate decision, called "Option A").</p>
+<p><strong>Releasing.</strong> Three ways, all ending in the same state:</p>
+<ol>
+  <li>One result at a time ({{ route('admin_school_result_workflow') }}).</li>
+  <li><strong>The whole term for one student at once</strong> ({{ route('admin_school_results_release_term') }}): in <em>Results &amp; Records</em>, choose a class, search and choose a student, choose a session and term, then press <em>Release all results for this term</em> and confirm. It releases every <em>approved</em> result of that term; results not yet approved stay private. The page and its steps are in {{ file('blueprints/school/results_records.py') }}.</li>
+  <li>By date: an academic session's <code>result_release_at</code>. When it passes, <code>_release_due_school_results</code> ({{ file('app.py') }}) releases every approved result of that session the next time anyone asks, whichever page it is.</li>
+</ol>
+
+<h2 id="cards">Report cards</h2>
+<p>A report card is worked out <em>when asked for</em>, never stored, so it can never disagree with the results ({{ file('blueprints/school/report_card_data.py') }}). It is ready for a student and a term the moment <strong>every</strong> official result of that student in that term is released; one result still waiting holds it back. It shows the school's logo, name, motto and colours; the student's details; each subject as CA plus Exam with a grade and remark (A 70 to 100 Excellent, B 60, C 50, D 45, E 40, F below); the overall percentage; the class average; the class teacher's comment with that teacher's own signature; and the head's title, name and signature. It is drawn as a page and as a PDF ({{ file('core/report_card_pdf.py') }}) from the same data, so they say the same thing.</p>
+<p>Who sees them: staff with <code>report_cards.view</code> (limited to the classes they may access), the student, and a parent (through their active link to the child). Comments and staff signatures need <code>report_cards.comment</code>; the head's details need <code>report_cards.manage</code>.</p>
+
+<h3 id="notices">Telling the parents</h3>
+<p>When a student's last result for a term is released, by any of the three ways above, the parents are told, once, by <strong>email, WhatsApp and an in-app alert</strong> that the report card is ready ({{ file('blueprints/school/result_notices.py') }}). Only cards that are actually complete are announced, so releasing one subject of several says nothing. The messages go out on a background thread. Delivery is described in {{ page('families', 'Students, parents and messages') }}.</p>
+
+<h2 id="promotion">Promotion between sessions</h2>
+<p>At the end of a session a school promotes students. A <em>run</em> ({{ table('academic_promotion_runs') }}) lists each student with a decision (promote, repeat, transfer, graduate, withdraw, hold) and a target class from the school's configured progressions ({{ table('school_class_progressions') }}); items are in {{ table('academic_promotion_items') }}. Validation before applying is in <code>_promotion_validate_run</code>. It creates the next session's enrolments and keeps the enrolment history.</p>
+
+<h2 id="gotchas">Things that have bitten people</h2>
+<ul>
+  <li>A PostgreSQL query that selects an expression and groups by it must use the <strong>same expression object</strong> in both places. Building it twice creates two different bind parameters and PostgreSQL reports a grouping error. See <code>term_of</code> in {{ file('blueprints/school/results_records.py') }}.</li>
+  <li>Never grade from the live bank. Always from the frozen attempt questions.</li>
+  <li>A term is a string. "Full Session" is a valid term for annual results; code that assumes only three terms is wrong.</li>
+</ul>
+{% endblock %}

@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brightstars Academics: one platform, every school its own</title>
+  <meta name="description" content="Brightstars Academics runs your school's entrance exams, results, report cards, fees, receipts and parent updates, under your own name, on your own web address.">
+  <meta property="og:title" content="Brightstars Academics: one platform, every school its own">
+  <meta property="og:description" content="Entrance exams, results, report cards, fees and parent updates in one place, in your school's own colours.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='brand/brightstars-logo.png', _external=True) }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='marketing.css', v='1') }}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+{# One set of small line icons, drawn once and reused everywhere below. #}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-exam" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M8 10.5l3 3 5-6"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2-.6-1.2.2-2.5 1.6-2.5H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3.2-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.2.2 3.6 1.7 4 4.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16M15 4v16"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
+    <symbol id="i-question" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Brightstars Academics"><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></a>
+    <nav aria-label="Sections">
+      <a href="#pain">Why schools switch</a>
+      <a href="#features">What you get</a>
+      <a href="#how">How it works</a>
+      <a href="#switching">Already have a system?</a>
+      <a href="#faq">Questions</a>
+      <a class="btn btn-red btn-small" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Brightstars%20Academics') if contact_email else '#talk' }}">Talk to us</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============================================================ hero -->
+<div class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">The school platform</div>
+      <h1>One platform. <em>Every school</em> its own.</h1>
+      <p class="lead">Brightstars Academics runs your entrance exams, results, report cards, fees and parent updates in one place, under your school's own name, in your own colours, on your own web address.</p>
+      <div class="cta">
+        <a class="btn btn-red" href="#how">See how it works</a>
+        <a class="btn btn-line" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Brightstars%20Academics') if contact_email else '#talk' }}">Ask for a walkthrough</a>
+      </div>
+      <div class="assure">
+        <span>Your school's records kept apart from every other school</span>
+        <span>Built for primary, JSS and SSS</span>
+        <span>Naira fees, WhatsApp and email</span>
+      </div>
+    </div>
+
+    <svg class="hero-art" viewBox="0 0 580 470" role="img" aria-label="A school's portal in a browser, with a message arriving on a parent's phone saying a report card is ready">
+      <defs>
+        <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1a8f"/><stop offset="1" stop-color="#070f5c"/></linearGradient>
+      </defs>
+      <circle cx="300" cy="230" r="215" fill="#e9ecfb"/>
+      <circle cx="510" cy="60" r="10" fill="#d8261d"/><circle cx="60" cy="380" r="8" fill="#0a1a8f" opacity=".25"/><circle cx="545" cy="330" r="6" fill="#d8261d" opacity=".6"/>
+      <!-- browser -->
+      <g>
+        <rect x="30" y="50" width="430" height="310" rx="16" fill="#fff" stroke="#d6daf2"/>
+        <path d="M30 66a16 16 0 0116-16h398a16 16 0 0116 16v22H30z" fill="#f1f2fb"/>
+        <circle cx="52" cy="69" r="5" fill="#d8261d"/><circle cx="70" cy="69" r="5" fill="#f2b429"/><circle cx="88" cy="69" r="5" fill="#2ba36b"/>
+        <rect x="112" y="60" width="240" height="18" rx="9" fill="#fff" stroke="#d6daf2"/>
+        <text x="126" y="73" font-family="Public Sans, sans-serif" font-size="10.5" fill="#666b8c">your-school.example</text>
+        <!-- school header -->
+        <rect x="30" y="88" width="430" height="58" fill="url(#hg)"/>
+        <circle cx="66" cy="117" r="20" fill="#fff"/>
+        <use href="#i-star" x="52" y="103" width="28" height="28" fill="#d8261d" stroke="#d8261d"/>
+        <text x="98" y="113" font-family="Newsreader, Georgia, serif" font-size="19" font-weight="600" fill="#fff">Your School's Name</text>
+        <text x="98" y="131" font-family="Public Sans, sans-serif" font-size="11" fill="#c9cdf3">Your motto, in your colours</text>
+        <!-- cards -->
+        <g font-family="Public Sans, sans-serif">
+          <rect x="52" y="166" width="118" height="78" rx="12" fill="#f4f5fd"/>
+          <text x="66" y="188" font-size="10.5" fill="#666b8c">Results released</text>
+          <text x="66" y="220" font-size="30" font-weight="700" fill="#0a1a8f">42</text>
+          <text x="104" y="220" font-size="11" fill="#666b8c">this term</text>
+          <rect x="182" y="166" width="118" height="78" rx="12" fill="#f4f5fd"/>
+          <text x="196" y="188" font-size="10.5" fill="#666b8c">Fees received</text>
+          <text x="196" y="220" font-size="24" font-weight="700" fill="#0a1a8f">₦1.2M</text>
+          <rect x="312" y="166" width="126" height="78" rx="12" fill="#fdeceb"/>
+          <text x="326" y="188" font-size="10.5" fill="#666b8c">Report cards ready</text>
+          <text x="326" y="220" font-size="30" font-weight="700" fill="#d8261d">18</text>
+          <text x="364" y="220" font-size="11" fill="#666b8c">of 24</text>
+        </g>
+        <!-- list -->
+        <g>
+          <rect x="52" y="262" width="386" height="10" rx="5" fill="#eceffc"/>
+          <rect x="52" y="284" width="300" height="10" rx="5" fill="#eceffc"/>
+          <rect x="52" y="306" width="340" height="10" rx="5" fill="#eceffc"/>
+          <rect x="52" y="328" width="220" height="10" rx="5" fill="#eceffc"/>
+          <circle cx="426" cy="267" r="6" fill="#2ba36b"/><circle cx="426" cy="289" r="6" fill="#2ba36b"/><circle cx="426" cy="311" r="6" fill="#f2b429"/>
+        </g>
+      </g>
+      <!-- phone -->
+      <g transform="translate(378 150) rotate(4)">
+        <rect x="0" y="0" width="170" height="300" rx="26" fill="#0d1440"/>
+        <rect x="8" y="8" width="154" height="284" rx="20" fill="#fbfaf6"/>
+        <rect x="58" y="14" width="54" height="8" rx="4" fill="#0d1440"/>
+        <rect x="8" y="30" width="154" height="34" fill="#0a1a8f"/>
+        <text x="20" y="52" font-family="Public Sans, sans-serif" font-size="12" font-weight="700" fill="#fff">Your School</text>
+        <g font-family="Public Sans, sans-serif">
+          <rect x="18" y="82" width="126" height="86" rx="12" fill="#dff5e4"/>
+          <text x="28" y="102" font-size="10.5" fill="#1b3a26" font-weight="700">Report card ready</text>
+          <text x="28" y="120" font-size="10" fill="#1b3a26">Your child's Second Term</text>
+          <text x="28" y="134" font-size="10" fill="#1b3a26">report card is ready to</text>
+          <text x="28" y="148" font-size="10" fill="#1b3a26">view and download.</text>
+          <text x="118" y="162" font-size="8.5" fill="#4d6b58">09:41</text>
+          <rect x="18" y="182" width="126" height="60" rx="12" fill="#dff5e4"/>
+          <text x="28" y="202" font-size="10.5" fill="#1b3a26" font-weight="700">Payment received</text>
+          <text x="28" y="218" font-size="10" fill="#1b3a26">Receipt attached (PDF)</text>
+          <text x="118" y="236" font-size="8.5" fill="#4d6b58">09:44</text>
+          <text x="20" y="272" font-size="8.5" fill="#9096b5">Example messages</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<div class="strip" aria-label="What a school gets">
+  <div class="wrap">
+    <span><svg><use href="#i-globe"/></svg>Your own web address</span>
+    <span><svg><use href="#i-palette"/></svg>Your colours and logo</span>
+    <span><svg><use href="#i-exam"/></svg>Online entrance exams</span>
+    <span><svg><use href="#i-file"/></svg>Report cards</span>
+    <span><svg><use href="#i-receipt"/></svg>Fees and receipts</span>
+    <span><svg><use href="#i-chat"/></svg>Parent updates</span>
+  </div>
+</div>
+
+<!-- ============================================================ pain -->
+<section id="pain">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">Does this sound familiar?</div>
+      <h2>Running a school shouldn't feel like running after paper.</h2>
+      <p>Most schools we talk to are held together by spreadsheets, notebooks and phone calls. It works, until term ends, or exam day arrives, or a parent asks a simple question.</p>
+    </div>
+    <div class="pains">
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-sheet"/></svg></div><h3>Results live in spreadsheets</h3><p>Marks are typed, retyped and added up by hand. One wrong cell and a child's grade is wrong. Nobody is sure which copy is the latest.</p></div>
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-pen"/></svg></div><h3>Receipts written by hand</h3><p>Books run out, handwriting is hard to read, and "did we ever receive this payment?" takes an afternoon to answer.</p></div>
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-phone"/></svg></div><h3>Parents keep phoning the office</h3><p>"Are the results out?" "What do I still owe?" The same questions, every term, and every answer costs someone's time.</p></div>
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-clock"/></svg></div><h3>Entrance exam day is a scramble</h3><p>Printing papers, invigilating, marking by hand, ranking on a calculator, and hoping nothing gets lost.</p></div>
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-users"/></svg></div><h3>Everyone can see everything</h3><p>When one login opens every record, a mistake, or a curious visitor, can reach children's information they should never see.</p></div>
+      <div class="pain reveal"><div class="ico"><svg><use href="#i-question"/></svg></div><h3>A system that looks like nobody's school</h3><p>Generic software with someone else's name on it. Your parents want to see <em>your</em> school.</p></div>
+    </div>
+    <p class="turn reveal">There is a calmer way to run a school. <em>Everything in one place, under your name.</em></p>
+  </div>
+</section>
+
+<!-- ============================================================ features -->
+<section id="features" class="tint">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">What you get</div>
+      <h2>Everything a school runs on, in one place.</h2>
+      <p>Not eight separate tools that don't talk to each other. One system where a result entered by a teacher becomes a report card a parent can open.</p>
+    </div>
+    <div class="features">
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-exam"/></svg></div><h3>Entrance examinations</h3><p>Candidates sit timed computer-based papers. Marked instantly, ranked automatically, with a free practice link anyone can use.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-chart"/></svg></div><h3>Results you can trust</h3><p>Exam and continuous assessment added up for you. Every result checked and approved before a parent sees it.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-file"/></svg></div><h3>Report cards, ready</h3><p>Your logo, teacher's comment and signature, the head's signature, class average. Ready the moment the term's results are released.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-receipt"/></svg></div><h3>Fees and receipts</h3><p>Set fees by class, record payments, see who owes what, and issue receipts in your own colours that go to the parent by themselves.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-chat"/></svg></div><h3>Parents kept informed</h3><p>Email and WhatsApp when a payment is recorded, when a report card is ready, and when new work is set.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-pen"/></svg></div><h3>Students learn and practise</h3><p>Assignments, quizzes and tests online, and a practice bank they can retake as often as they like, with the questions in a new order every time.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-book"/></svg></div><h3>A library that keeps track</h3><p>Books, copies and loans, so nobody has to remember who has what.</p></div>
+      <div class="feature reveal"><div class="ico"><svg><use href="#i-shield"/></svg></div><h3>The right people see the right things</h3><p>Class teachers see their own classes. The bursar sees fees. Every important action is recorded, so you always know who did what.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ dive: entrance -->
+<section class="dive">
+  <div class="wrap">
+    <div class="copy reveal">
+      <div class="eyebrow">Entrance examinations</div>
+      <h2>Admissions day without the paperwork.</h2>
+      <p class="lead">Candidates sit their papers on a computer, with a countdown clock. When they finish, the results are already marked and the ranking is already done.</p>
+      <ul class="checks">
+        <li><strong>Marked instantly.</strong> No scripts to collect, no marking marathon, no arithmetic mistakes.</li>
+        <li><strong>Fair by design.</strong> Each candidate gets their questions in a different order. The clock is kept by the system, not the candidate's device.</li>
+        <li><strong>Start with ours, or bring yours.</strong> Every new school comes with a standard set of entrance question banks. Add your own whenever you like.</li>
+        <li><strong>A practice link for everyone.</strong> Families choose the class they are aiming for and practise, with no sign-up. It uses last year's paper or questions you set for practice, and it never shows the paper about to be sat.</li>
+        <li><strong>Nothing is lost mid-exam.</strong> Every answer is saved the moment it is chosen, and a candidate in the middle of a paper carries on where they were, even if the system is restarted.</li>
+      </ul>
+    </div>
+    <div class="card-art reveal">
+      <svg class="art" viewBox="0 0 520 380" role="img" aria-label="A computer-based exam screen with a timer, a question, four options and a row of question numbers">
+        <rect x="0" y="0" width="520" height="380" rx="12" fill="#fff"/>
+        <rect x="0" y="0" width="520" height="52" rx="12" fill="#0a1a8f"/><rect x="0" y="30" width="520" height="22" fill="#0a1a8f"/>
+        <circle cx="30" cy="26" r="13" fill="#fff"/><use href="#i-star" x="19" y="15" width="22" height="22" fill="#d8261d" stroke="#d8261d"/>
+        <text x="54" y="31" font-family="Public Sans, sans-serif" font-size="14" font-weight="700" fill="#fff">YOUR SCHOOL · Mathematics</text>
+        <rect x="410" y="12" width="94" height="30" rx="8" fill="#070f5c"/><text x="457" y="33" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="16" font-weight="700" fill="#fff">42:18</text>
+        <text x="28" y="88" font-family="Public Sans, sans-serif" font-size="12" fill="#666b8c">Question 7 of 25</text>
+        <text x="28" y="118" font-family="Newsreader, Georgia, serif" font-size="21" font-weight="600" fill="#0d1440">What is three quarters of 24?</text>
+        <g font-family="Public Sans, sans-serif" font-size="15" fill="#363b62">
+          <rect x="28" y="140" width="464" height="44" rx="10" fill="#fff" stroke="#dfe2f4"/><circle cx="52" cy="162" r="9" fill="#fff" stroke="#b9bfe6" stroke-width="2"/><text x="74" y="167"><tspan font-weight="700">A.</tspan> 16</text>
+          <rect x="28" y="194" width="464" height="44" rx="10" fill="#e9ecfb" stroke="#0a1a8f" stroke-width="2"/><circle cx="52" cy="216" r="9" fill="#0a1a8f"/><circle cx="52" cy="216" r="3.5" fill="#fff"/><text x="74" y="221"><tspan font-weight="700">B.</tspan> 18</text>
+          <rect x="28" y="248" width="464" height="44" rx="10" fill="#fff" stroke="#dfe2f4"/><circle cx="52" cy="270" r="9" fill="#fff" stroke="#b9bfe6" stroke-width="2"/><text x="74" y="275"><tspan font-weight="700">C.</tspan> 20</text>
+        </g>
+        <g font-family="Public Sans, sans-serif" font-size="12" font-weight="700" text-anchor="middle">
+          <rect x="28" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="43" y="336" fill="#17784a">1</text>
+          <rect x="66" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="81" y="336" fill="#17784a">2</text>
+          <rect x="104" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="119" y="336" fill="#17784a">3</text>
+          <rect x="142" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="157" y="336" fill="#17784a">4</text>
+          <rect x="180" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="195" y="336" fill="#17784a">5</text>
+          <rect x="218" y="316" width="30" height="30" rx="7" fill="#dcf3e4"/><text x="233" y="336" fill="#17784a">6</text>
+          <rect x="256" y="316" width="30" height="30" rx="7" fill="#fff" stroke="#0a1a8f" stroke-width="2"/><text x="271" y="336" fill="#0a1a8f">7</text>
+          <rect x="294" y="316" width="30" height="30" rx="7" fill="#f1f2fb"/><text x="309" y="336" fill="#666b8c">8</text>
+          <rect x="332" y="316" width="30" height="30" rx="7" fill="#f1f2fb"/><text x="347" y="336" fill="#666b8c">9</text>
+        </g>
+        <rect x="392" y="316" width="100" height="30" rx="15" fill="#d8261d"/><text x="442" y="336" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="13" font-weight="700" fill="#fff">Save &amp; next</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ dive: results -->
+<section class="dive tint flip">
+  <div class="wrap">
+    <div class="copy reveal">
+      <div class="eyebrow">Results and report cards</div>
+      <h2>From marks to report card, with nobody chasing.</h2>
+      <p class="lead">Teachers enter marks. The system adds them up the way your school does it, and holds each result until the right person has checked it.</p>
+      <ul class="checks">
+        <li><strong>Exam plus continuous assessment.</strong> Tests, assignments and projects are worked into one clear result out of 100, the same way for every child.</li>
+        <li><strong>Checked before it is seen.</strong> A result is entered, verified, approved, then released. Different people can do each step, so mistakes are caught before parents see them.</li>
+        <li><strong>One button for a child's term.</strong> Release everything for a student and a term at once, with a confirmation so nothing goes out by accident.</li>
+        <li><strong>Report cards that look like yours.</strong> Your logo and colours, the class teacher's comment with their signature, the head's signature, the class average. They are ready the moment the term is complete.</li>
+        <li><strong>Parents told for you.</strong> When the report card is ready, parents get an email and a WhatsApp message.</li>
+      </ul>
+    </div>
+    <div class="card-art reveal">
+      <svg class="art" viewBox="0 0 520 380" role="img" aria-label="Four steps: entered, verified, approved, released, then a report card and a message to the parent">
+        <g font-family="Public Sans, sans-serif" text-anchor="middle">
+          <g>
+            <rect x="12" y="30" width="108" height="64" rx="14" fill="#f4f5fd" stroke="#dfe2f4"/><text x="66" y="58" font-size="13" font-weight="700" fill="#0d1440">Entered</text><text x="66" y="78" font-size="10.5" fill="#666b8c">by the teacher</text>
+            <rect x="142" y="30" width="108" height="64" rx="14" fill="#f4f5fd" stroke="#dfe2f4"/><text x="196" y="58" font-size="13" font-weight="700" fill="#0d1440">Verified</text><text x="196" y="78" font-size="10.5" fill="#666b8c">checked</text>
+            <rect x="272" y="30" width="108" height="64" rx="14" fill="#f4f5fd" stroke="#dfe2f4"/><text x="326" y="58" font-size="13" font-weight="700" fill="#0d1440">Approved</text><text x="326" y="78" font-size="10.5" fill="#666b8c">signed off</text>
+            <rect x="402" y="30" width="108" height="64" rx="14" fill="#0a1a8f"/><text x="456" y="58" font-size="13" font-weight="700" fill="#fff">Released</text><text x="456" y="78" font-size="10.5" fill="#c9cdf3">parents can see</text>
+            <path d="M122 62h18M252 62h18M382 62h18" stroke="#d8261d" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M136 56l6 6-6 6M266 56l6 6-6 6M396 56l6 6-6 6" fill="none" stroke="#d8261d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <!-- report card -->
+          <g transform="translate(26 128)">
+            <rect x="0" y="0" width="236" height="232" rx="12" fill="#fff" stroke="#dfe2f4"/>
+            <rect x="0" y="0" width="236" height="46" rx="12" fill="#0a1a8f"/><rect x="0" y="30" width="236" height="16" fill="#0a1a8f"/>
+            <circle cx="28" cy="23" r="13" fill="#fff"/><use href="#i-star" x="17" y="12" width="22" height="22" fill="#d8261d" stroke="#d8261d"/>
+            <text x="126" y="28" font-size="12" font-weight="700" fill="#fff">Second Term Report Card</text>
+            <g font-size="10.5" fill="#363b62" text-anchor="start">
+              <text x="16" y="70">Mathematics</text><text x="196" y="70" font-weight="700" fill="#0a1a8f">86  A</text>
+              <text x="16" y="94">English</text><text x="196" y="94" font-weight="700" fill="#0a1a8f">78  A</text>
+              <text x="16" y="118">Basic Science</text><text x="196" y="118" font-weight="700" fill="#0a1a8f">71  A</text>
+              <text x="16" y="142">Civic Education</text><text x="196" y="142" font-weight="700" fill="#0a1a8f">64  B</text>
+              <path d="M16 78h204M16 102h204M16 126h204M16 150h204" stroke="#eceffc"/>
+              <text x="16" y="172" fill="#666b8c">Teacher's comment</text>
+              <path d="M16 200c14-14 22 8 36-4s20 8 34-2" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round"/>
+              <text x="16" y="218" font-size="9" fill="#666b8c">Class teacher's signature</text>
+            </g>
+          </g>
+          <!-- message -->
+          <g transform="translate(290 148)">
+            <path d="M120 112l60 -6" stroke="none"/>
+            <rect x="0" y="0" width="204" height="86" rx="16" fill="#dff5e4"/><path d="M10 86l-6 16 20-12z" fill="#dff5e4"/>
+            <text x="14" y="26" font-size="12" font-weight="700" fill="#1b3a26" text-anchor="start">Report card ready</text>
+            <text x="14" y="46" font-size="11" fill="#1b3a26" text-anchor="start">Your child's Second Term report</text>
+            <text x="14" y="62" font-size="11" fill="#1b3a26" text-anchor="start">card is ready to view and download.</text>
+            <text x="190" y="78" font-size="9" fill="#4d6b58" text-anchor="end">09:41 ✓✓</text>
+            <rect x="0" y="130" width="204" height="72" rx="14" fill="#f4f5fd" stroke="#dfe2f4"/>
+            <use href="#i-chat" x="14" y="146" width="28" height="28" fill="none" stroke="#0a1a8f" stroke-width="1.7"/>
+            <text x="52" y="156" font-size="11.5" font-weight="700" fill="#0d1440" text-anchor="start">Email, WhatsApp and</text>
+            <text x="52" y="172" font-size="11.5" font-weight="700" fill="#0d1440" text-anchor="start">an in-app alert</text>
+            <text x="14" y="192" font-size="10" fill="#666b8c" text-anchor="start">Sent once the whole term is ready.</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ dive: fees -->
+<section class="dive">
+  <div class="wrap">
+    <div class="copy reveal">
+      <div class="eyebrow">Fees and receipts</div>
+      <h2>Receipts that look like your school's own.</h2>
+      <p class="lead">Record a payment and the parent has their receipt within moments, in your colours, with your logo and signature. Nobody has to remember to send it.</p>
+      <ul class="checks">
+        <li><strong>Fees set once, by class.</strong> Tuition, uniform, transport: set them per class and term, then charge students in a few clicks.</li>
+        <li><strong>Always know who owes what.</strong> Paid, part paid or unpaid, per fee and per child, with any balance from earlier sessions still visible.</li>
+        <li><strong>A receipt worth keeping.</strong> Your colours and logo, your address and phone, the amount in words, the bursar's note, the balance still due, and an authorised signature.</li>
+        <li><strong>Sent by itself.</strong> Once your school's email and WhatsApp are connected, the parent receives the receipt by email and WhatsApp as soon as the payment is recorded.</li>
+        <li><strong>Mistakes are corrected, not hidden.</strong> A wrong payment is voided with a reason, and stays in the record.</li>
+      </ul>
+    </div>
+    <div class="card-art reveal">
+      <svg class="art" viewBox="0 0 520 370" role="img" aria-label="A receipt in a school's colours showing the amount, who paid, the note and the balance">
+        <rect x="0" y="0" width="520" height="370" rx="10" fill="#fff" stroke="#dfe2f4"/>
+        <rect x="0" y="0" width="520" height="84" rx="10" fill="#0a1a8f"/><rect x="0" y="60" width="520" height="24" fill="#0a1a8f"/><rect x="0" y="84" width="520" height="7" fill="#d8261d"/>
+        <rect x="24" y="16" width="52" height="52" rx="10" fill="#fff"/><use href="#i-star" x="34" y="26" width="32" height="32" fill="#d8261d" stroke="#d8261d"/>
+        <text x="90" y="40" font-family="Newsreader, Georgia, serif" font-size="21" font-weight="600" fill="#fff">Your School's Name</text>
+        <text x="90" y="60" font-family="Public Sans, sans-serif" font-size="11" fill="#c9cdf3">Your motto, in your colours</text>
+        <text x="496" y="36" text-anchor="end" font-family="Public Sans, sans-serif" font-size="10" fill="#fff">12 Your Street, Your Town</text>
+        <text x="496" y="52" text-anchor="end" font-family="Public Sans, sans-serif" font-size="10" fill="#fff">Tel: 0800 000 0000</text>
+        <text x="24" y="122" font-family="Public Sans, sans-serif" font-size="20" font-weight="800" fill="#0a1a8f" letter-spacing="1">OFFICIAL RECEIPT</text>
+        <rect x="372" y="104" width="124" height="34" rx="8" fill="#e9ecfb"/><text x="434" y="119" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="10.5" font-weight="700" fill="#0a1a8f">No. ABC-2026-00042</text><text x="434" y="132" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="10" fill="#363b62">Date: 05/10/2026</text>
+        <g font-family="Public Sans, sans-serif">
+          <text x="24" y="166" font-size="9" font-weight="700" fill="#666b8c">RECEIVED FROM</text><text x="24" y="184" font-size="14" font-weight="700" fill="#0d1440">Mrs A. Parent</text><path d="M24 192h300" stroke="#e1e4f4"/>
+          <text x="24" y="212" font-size="9" font-weight="700" fill="#666b8c">STUDENT</text><text x="24" y="230" font-size="14" font-weight="700" fill="#0d1440">Sample Student · JSS 1</text><path d="M24 238h300" stroke="#e1e4f4"/>
+          <text x="24" y="258" font-size="9" font-weight="700" fill="#666b8c">BEING PAYMENT FOR</text><text x="24" y="276" font-size="14" font-weight="700" fill="#0d1440">School Fees, 2026/2027</text><path d="M24 284h300" stroke="#e1e4f4"/>
+        </g>
+        <rect x="352" y="152" width="144" height="70" rx="12" fill="#0a1a8f"/><text x="366" y="174" font-family="Public Sans, sans-serif" font-size="9" font-weight="700" fill="#c9cdf3">AMOUNT RECEIVED</text><text x="366" y="206" font-family="Public Sans, sans-serif" font-size="24" font-weight="800" fill="#fff">₦50,000</text>
+        <rect x="352" y="232" width="144" height="60" rx="12" fill="#f4f5fd" stroke="#dfe2f4"/>
+        <g font-family="Public Sans, sans-serif" font-size="10.5" fill="#363b62"><text x="364" y="252">Fees charged</text><text x="484" y="252" text-anchor="end">₦120,000</text><text x="364" y="268">Paid to date</text><text x="484" y="268" text-anchor="end">₦50,000</text><text x="364" y="284" font-weight="800" fill="#d8261d">Balance due</text><text x="484" y="284" text-anchor="end" font-weight="800" fill="#d8261d">₦70,000</text></g>
+        <rect x="24" y="298" width="300" height="34" rx="8" fill="#f4f5fd"/><rect x="24" y="298" width="5" height="34" fill="#d8261d"/><text x="40" y="313" font-family="Public Sans, sans-serif" font-size="9" font-weight="700" fill="#666b8c">NOTE</text><text x="40" y="326" font-family="Public Sans, sans-serif" font-size="11" fill="#0d1440">First instalment. Balance by mid-term break.</text>
+        <path d="M368 328c12-14 20 6 32-4s18 8 30-2" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round"/><path d="M356 336h140" stroke="#363b62"/><text x="426" y="350" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="9" fill="#363b62">Authorised Signature</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ dive: private -->
+<section class="dive tint flip">
+  <div class="wrap">
+    <div class="copy reveal">
+      <div class="eyebrow">Your school, walled off</div>
+      <h2>Your records are yours alone.</h2>
+      <p class="lead">Many schools share one system with many others. Brightstars Academics is built the other way round: every school is a separate place, with its own address and its own private store of records.</p>
+      <ul class="checks">
+        <li><strong>Your own address.</strong> Your school gets a web address the moment it is created, and can use your own domain too.</li>
+        <li><strong>Your own private records.</strong> Students, results, fees and photographs are kept apart from every other school's, not just hidden behind a filter.</li>
+        <li><strong>Your own look.</strong> Your name, logo, two brand colours and up to eight photographs of your school. The Brightstars logo never appears on your portal.</li>
+        <li><strong>Your own messages.</strong> Email and WhatsApp go out from your school's own accounts, so parents recognise who is writing.</li>
+        <li><strong>Your own rules.</strong> You decide how student numbers and candidate codes are written.</li>
+      </ul>
+    </div>
+    <div class="card-art reveal">
+      <svg class="art" viewBox="0 0 520 340" role="img" aria-label="Three separate school buildings, each with its own address and its own private records, side by side but never connected">
+        <g font-family="Public Sans, sans-serif" text-anchor="middle">
+          <g transform="translate(14 40)">
+            <rect x="0" y="0" width="150" height="220" rx="14" fill="#fff" stroke="#dfe2f4"/>
+            <rect x="0" y="0" width="150" height="46" rx="14" fill="#0a1a8f"/><rect x="0" y="30" width="150" height="16" fill="#0a1a8f"/>
+            <text x="75" y="29" font-size="13" font-weight="700" fill="#fff">School A</text>
+            <path d="M75 70l-44 26v50h88V96z" fill="#e9ecfb" stroke="#0a1a8f" stroke-width="1.6" stroke-linejoin="round"/><rect x="65" y="118" width="20" height="28" rx="3" fill="#0a1a8f"/>
+            <rect x="26" y="168" width="98" height="30" rx="8" fill="#f4f5fd" stroke="#dfe2f4"/><use href="#i-lock" x="34" y="174" width="18" height="18" fill="none" stroke="#0a1a8f" stroke-width="1.7"/><text x="90" y="188" font-size="10" fill="#363b62">its own records</text>
+            <text x="75" y="242" font-size="10" fill="#666b8c">school-a.example</text>
+          </g>
+          <g transform="translate(185 40)">
+            <rect x="0" y="0" width="150" height="220" rx="14" fill="#fff" stroke="#dfe2f4"/>
+            <rect x="0" y="0" width="150" height="46" rx="14" fill="#d8261d"/><rect x="0" y="30" width="150" height="16" fill="#d8261d"/>
+            <text x="75" y="29" font-size="13" font-weight="700" fill="#fff">School B</text>
+            <path d="M75 70l-44 26v50h88V96z" fill="#fdeceb" stroke="#d8261d" stroke-width="1.6" stroke-linejoin="round"/><rect x="65" y="118" width="20" height="28" rx="3" fill="#d8261d"/>
+            <rect x="26" y="168" width="98" height="30" rx="8" fill="#f4f5fd" stroke="#dfe2f4"/><use href="#i-lock" x="34" y="174" width="18" height="18" fill="none" stroke="#d8261d" stroke-width="1.7"/><text x="90" y="188" font-size="10" fill="#363b62">its own records</text>
+            <text x="75" y="242" font-size="10" fill="#666b8c">portal.school-b.org</text>
+          </g>
+          <g transform="translate(356 40)">
+            <rect x="0" y="0" width="150" height="220" rx="14" fill="#fff" stroke="#dfe2f4"/>
+            <rect x="0" y="0" width="150" height="46" rx="14" fill="#17784a"/><rect x="0" y="30" width="150" height="16" fill="#17784a"/>
+            <text x="75" y="29" font-size="13" font-weight="700" fill="#fff">School C</text>
+            <path d="M75 70l-44 26v50h88V96z" fill="#e2f3ea" stroke="#17784a" stroke-width="1.6" stroke-linejoin="round"/><rect x="65" y="118" width="20" height="28" rx="3" fill="#17784a"/>
+            <rect x="26" y="168" width="98" height="30" rx="8" fill="#f4f5fd" stroke="#dfe2f4"/><use href="#i-lock" x="34" y="174" width="18" height="18" fill="none" stroke="#17784a" stroke-width="1.7"/><text x="90" y="188" font-size="10" fill="#363b62">its own records</text>
+            <text x="75" y="242" font-size="10" fill="#666b8c">school-c.example</text>
+          </g>
+          <text x="260" y="300" font-size="13" font-weight="700" fill="#0d1440">Side by side. Never mixed.</text>
+          <text x="260" y="320" font-size="11" fill="#666b8c">Each school in its own colours, on its own address.</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ compare -->
+<section id="switching">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">Already using a school system?</div>
+      <h2>Here's what changes when you move.</h2>
+      <p>You may already have software, or a good mix of spreadsheets and habits. Here is how a school day feels different once everything lives in one place.</p>
+    </div>
+    <table class="compare reveal">
+      <thead><tr><th></th><th>What many schools live with</th><th class="us">With Brightstars Academics</th></tr></thead>
+      <tbody>
+        <tr><th>Look and feel</th><td class="them">A generic system with someone else's name and colours on it.</td><td class="us">Your name, logo and colours on every page, and on your own web address.</td></tr>
+        <tr><th>Your records</th><td class="them">Held in one big shared system alongside other schools' records.</td><td class="us">Kept in a private store of their own, apart from every other school's.</td></tr>
+        <tr><th>Results</th><td class="them">Typed into spreadsheets and added up by hand or by formula.</td><td class="us">Exam and continuous assessment worked out for you, checked and approved before release.</td></tr>
+        <tr><th>Report cards</th><td class="them">Assembled in a word processor, one child at a time, after the term.</td><td class="us">Ready automatically the moment a child's term is complete, with comment and signatures.</td></tr>
+        <tr><th>Fees and receipts</th><td class="them">Handwritten receipts and a ledger; balances worked out on request.</td><td class="us">Branded receipts in seconds, sent to the parent by themselves, with balances always to hand.</td></tr>
+        <tr><th>Telling parents</th><td class="them">Phone calls, notice boards, or a message someone remembers to send.</td><td class="us">Email and WhatsApp go out automatically when a payment is recorded or a report card is ready.</td></tr>
+        <tr><th>Entrance exams</th><td class="them">Paper scripts, hand marking and a calculator for the ranking.</td><td class="us">Timed online papers, marked and ranked instantly, plus a free practice link for families.</td></tr>
+        <tr><th>Who sees what</th><td class="them">One login sees everything, or everyone sees the same screen.</td><td class="us">Each person sees only what their role allows, and every important change is recorded.</td></tr>
+        <tr><th>Getting started</th><td class="them">Weeks of setup before the first real use.</td><td class="us">Your school and its address exist the moment it is created; start with our standard question banks and add your own.</td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">The left column describes common situations, not any particular product. Your own setup may already do some of these things well.</p>
+  </div>
+</section>
+
+<!-- ============================================================ how -->
+<section id="how" class="paper">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">How it works</div>
+      <h2>From "yes" to your first class online, in four steps.</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><h3>We create your school</h3><p>Your name, motto, logo, colours and photographs go in first, so nobody ever sees your portal wearing someone else's name.</p></div>
+      <div class="step reveal"><h3>Your address is live at once</h3><p>Your school gets its own web address immediately. Want your own domain? Add it whenever you're ready.</p></div>
+      <div class="step reveal"><h3>You set up your school</h3><p>Add your classes, subjects, staff and their roles. Load your fee items. Start with our question banks or import your own.</p></div>
+      <div class="step reveal"><h3>Everyone gets their sign-in</h3><p>Students, parents and staff receive their own accounts, and choose their own password the first time they sign in.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ people -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">For everyone in the school</div>
+      <h2>A better day for each person.</h2>
+    </div>
+    <div class="people">
+      <div class="person reveal"><svg class="avatar" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-eye"/></svg><h3>Proprietor and head</h3><ul><li>See the whole school at a glance</li><li>Control who can do what</li><li>Know who did what, and when</li><li>Sign report cards once, for everyone</li></ul></div>
+      <div class="person reveal"><svg class="avatar" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-book"/></svg><h3>Teachers</h3><ul><li>Set assignments and quizzes online</li><li>Marks add up on their own</li><li>Write comments and sign report cards</li><li>See only their own classes</li></ul></div>
+      <div class="person reveal"><svg class="avatar" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-receipt"/></svg><h3>Bursar and office</h3><ul><li>Record a payment in a minute</li><li>Receipts sent without a second thought</li><li>Balances for every child, always current</li><li>Fewer phone calls from parents</li></ul></div>
+      <div class="person reveal"><svg class="avatar" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg><h3>Parents and students</h3><ul><li>Results, report cards and fees in one place</li><li>Receipts and updates on their phone</li><li>Students practise as often as they like</li><li>Message the school directly</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ trust -->
+<section class="trust">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:#ff9c95">Private by design</div>
+      <h2>Children's information deserves care.</h2>
+      <p>Behind the friendly screens, the platform is built to protect the people in it.</p>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-item reveal"><svg><use href="#i-lock"/></svg><h3>Every school on its own</h3><p>Each school has its own private records and its own files. One school can never see another's, and a sign-in from one school does not work at another.</p></div>
+      <div class="trust-item reveal"><svg><use href="#i-eye"/></svg><h3>Only what people need to see</h3><p>Roles decide who can enter marks, approve results, take payments or read records. Parents can open only their own children.</p></div>
+      <div class="trust-item reveal"><svg><use href="#i-file"/></svg><h3>A record of who did what</h3><p>Important actions are logged with who did them and when, so you can always answer "how did this change?"</p></div>
+      <div class="trust-item reveal"><svg><use href="#i-shield"/></svg><h3>Careful with passwords</h3><p>New accounts start with a one-time password that must be changed. Repeated wrong guesses are slowed down. Changing a password signs the old one out everywhere.</p></div>
+      <div class="trust-item reveal"><svg><use href="#i-clock"/></svg><h3>Exams that survive a hiccup</h3><p>Answers are saved as they are given, and time is kept by the system. A candidate in the middle of a paper is not thrown out by a restart.</p></div>
+      <div class="trust-item reveal"><svg><use href="#i-chat"/></svg><h3>Your messages, your name</h3><p>Emails and WhatsApp messages leave from your school's own accounts. The sender details are stored encrypted.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ faq -->
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">Questions</div>
+      <h2>Things schools ask us.</h2>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Do we need to be technical to use it?</summary><p>No. Staff use ordinary web pages, and each person sees only the screens that matter to their job. Setting up your school is done with you, and you can change your colours, logo and roles yourself afterwards.</p></details>
+      <details><summary>Can we use our own web address?</summary><p>Yes. Your school gets an address the moment it is created, and it keeps working. If you would like your own domain as well, you add one simple record with your domain provider and we connect it.</p></details>
+      <details><summary>Will parents receive messages from us or from Brightstars?</summary><p>From you. Emails and WhatsApp messages leave from your school's own accounts once you connect them, so parents recognise who is writing. The Brightstars logo is never shown on your portal.</p></details>
+      <details><summary>What happens on entrance exam day if something goes wrong?</summary><p>Every answer is saved the moment it is chosen, and the clock is kept by the system rather than the candidate's device. A candidate who is mid-paper carries on where they were, even if the system is restarted. Staff can also grant a retake when it is needed.</p></details>
+      <details><summary>Do the practice tests count towards a student's grade?</summary><p>Never. Practice is only for preparing: students can take it as often as they like, the questions come in a new order each time, and nothing they do there is recorded or counted.</p></details>
+      <details><summary>Can families practise for the entrance exam without registering?</summary><p>Yes. Anyone with your school's practice link chooses the class they are aiming for and starts practising. It uses last year's paper or questions you have set for practice, and it never uses the paper that is about to be sat.</p></details>
+      <details><summary>Can different staff members have different access?</summary><p>Yes. You choose what each role can do, and you can limit a teacher to their own class. Nobody can give someone more access than they have themselves.</p></details>
+      <details><summary>Can we bring our own questions?</summary><p>Yes. Every new school starts with a standard set of entrance question banks written for the platform, and you can import your own question files whenever you like.</p></details>
+      <details><summary>What does it cost?</summary><p>Talk to us. We will look at the size of your school and what you need, and give you a clear answer.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ cta -->
+<section class="cta-band" id="talk">
+  <svg class="stars" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <use href="#i-star" x="80" y="60" width="46" height="46" fill="#d8261d" stroke="none"/><use href="#i-star" x="1080" y="300" width="60" height="60" fill="#d8261d" stroke="none" opacity=".7"/>
+    <use href="#i-star" x="1010" y="50" width="26" height="26" fill="#fff" stroke="none" opacity=".5"/><use href="#i-star" x="160" y="310" width="30" height="30" fill="#fff" stroke="none" opacity=".4"/>
+    <use href="#i-star" x="560" y="20" width="18" height="18" fill="#fff" stroke="none" opacity=".4"/>
+  </svg>
+  <div class="wrap" style="position:relative">
+    <h2>See it running for your school.</h2>
+    <p>Tell us about your school and we will show you how it would look and feel: your name, your colours, your classes.</p>
+    {% if contact_email %}
+      <a class="btn btn-red" href="mailto:{{ contact_email }}?subject=A%20walkthrough%20of%20Brightstars%20Academics">Write to {{ contact_email }}</a>
+    {% else %}
+      <p style="margin:0"><strong>Ask the Brightstars Academics team for a walkthrough.</strong></p>
+    {% endif %}
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></div>
+    <nav aria-label="Footer">
+      <a href="#features">What you get</a><a href="#switching">Already have a system?</a><a href="#faq">Questions</a>
+      <a href="{{ url_for('platform_login') }}">Platform sign-in</a>
+    </nav>
+    <div>&copy; Brightstars Academics</div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  root.classList.remove('no-js');
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('in'); }); return; }
+  var seen = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); seen.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  items.forEach(function (el) { seen.observe(el); });
+})();
+</script>
+</body>
+</html>

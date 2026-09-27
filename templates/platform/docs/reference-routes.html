@@ -1,0 +1,43 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+{% set all_routes = ref.routes() %}
+<p>Every URL the application answers ({{ all_routes|length }} of them), read from Flask's own URL map when the server starts.
+For each: the HTTP methods, who it is for, the guards written above the function (<code>@admin_required</code> and friends),
+the permission it needs (from the endpoint-to-permission map in <code>core/security.py</code>), and the file and line that serves it.</p>
+<div class="note"><p>Routes are registered with a plain <code>@app.route</code> on one shared application object rather than with Flask
+Blueprint objects, so every endpoint name is simply the function's name and never carries a prefix. See <a href="{{ url_for('docs_page', slug='contributing') }}">Contributing</a> for why.</p></div>
+<input class="filter" id="filter" type="search" placeholder="Filter by path, endpoint, permission, file or description…" aria-label="Filter routes" autocomplete="off">
+{% set audiences = all_routes|map(attribute='audience')|unique|sort %}
+{% for audience in audiences %}
+<section class="ref-group">
+  <h2>{{ audience }}</h2>
+  {% for r in all_routes if r.audience == audience %}
+  <div class="ref-item" id="{{ r.endpoint|docs_slug }}" data-text="{{ (r.path ~ ' ' ~ r.endpoint ~ ' ' ~ r.doc ~ ' ' ~ r.file ~ ' ' ~ r.permission)|lower }}">
+    <h3>{% for m in r.methods %}<span class="pill-mini {{ 'post' if m != 'GET' else ('public' if audience == 'Public' else '') }}">{{ m }}</span> {% endfor %}{{ r.path }}</h3>
+    {% if r.doc %}<p>{{ r.doc }}</p>{% endif %}
+    <p class="ref-meta">
+      endpoint <code>{{ r.endpoint }}</code>
+      {% if r.file %}&middot; served by <a class="ref" href="{{ url_for('docs_page', slug='reference-modules') }}#{{ r.file|docs_slug }}"><code>{{ r.file }}:{{ r.line }}</code></a>{% endif %}
+      {% if r.permission %}&middot; needs <a class="ref" href="{{ url_for('docs_page', slug='reference-permissions') }}#{{ r.permission|docs_slug }}"><code>{{ r.permission }}</code></a>{% endif %}
+    </p>
+    {% if r.guards %}<p class="ref-meta">guards: {% for g in r.guards %}<code>{{ g }}</code> {% endfor %}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+<script>
+(function () {
+  var box = document.getElementById('filter');
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('.ref-item').forEach(function (el) {
+      var hay = el.getAttribute('data-text');
+      el.style.display = words.every(function (w) { return hay.indexOf(w) !== -1; }) ? '' : 'none';
+    });
+    document.querySelectorAll('.ref-group').forEach(function (g) {
+      g.style.display = Array.prototype.some.call(g.querySelectorAll('.ref-item'), function (e) { return e.style.display !== 'none'; }) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<h2 id="what">What Brightstars Academics is</h2>
+<p><strong>Brightstars Academics</strong> is a school platform that runs as <em>one deployment serving many schools</em>. A school
+gets a portal of its own: its own web address, its own PostgreSQL database and its own folder of files. Inside it the school runs
+entrance examinations, day-to-day administration (classes, subjects, assignments, tests, results, report cards, promotion), student
+and parent self-service, finance and receipting, a library, and role-based staff governance. No school can see, reach or affect
+another's data.</p>
+<p>It began as a single-school application and was turned into a platform. That history explains a few names you will
+meet in the code; it never explains a design choice you should copy. If you find something school-specific in the code, treat it as
+a bug and tell someone.</p>
+
+<div class="note"><p>Two ideas shape everything. <strong>A school gets a portal, not a website</strong>: a school's address serves sign-in and
+the staff, student, parent and candidate areas, nothing else. And <strong>the platform issues the address</strong>: creating a school
+immediately gives it <code>&lt;code&gt;.&lt;portal domain&gt;</code>; a school that wants its own domain adds a CNAME record pointing at it.</p></div>
+
+<h2 id="audience">Who these pages are for</h2>
+<p>Everyone who has to understand, run or change the platform, from a first-week hire to the person deciding how to deploy it.
+The pages are written so that a beginner can read them in order, and an experienced developer can jump straight to what they need.
+Each page says <em>what</em> a part does, <em>why</em> it is built that way, and <em>where</em> in the code to look. Anything that looks
+like <code>core/security.py</code> is a link to that file's entry in the module reference.</p>
+
+<h2 id="paths">Where to start</h2>
+<div class="cards">
+  <a class="card-link" href="{{ url_for('docs_page', slug='getting-started') }}"><strong>I am new and want it running</strong><span>Install, configure, create your first school and sign in. About ten minutes.</span></a>
+  <a class="card-link" href="{{ url_for('docs_page', slug='tour') }}"><strong>I want to find my way around the code</strong><span>Every folder and the important files, and how a feature is spread across them.</span></a>
+  <a class="card-link" href="{{ url_for('docs_page', slug='architecture') }}"><strong>I want to understand how it works</strong><span>How one request finds its school, its database, its files and its permissions.</span></a>
+  <a class="card-link" href="{{ url_for('docs_page', slug='deployment') }}"><strong>I have to deploy it</strong><span>Servers, environment, proxy, TLS, the first production launch, and what to check.</span></a>
+  <a class="card-link" href="{{ url_for('docs_page', slug='recipes') }}"><strong>I have a task to do</strong><span>Add a page, a permission, a column or a setting, step by step.</span></a>
+  <a class="card-link" href="{{ url_for('docs_page', slug='reference-routes') }}"><strong>I am looking something up</strong><span>Every route, table, permission and file, generated from the code. Or use the search box.</span></a>
+</div>
+
+<h2 id="order">A suggested reading order for a new developer</h2>
+<ol class="steps">
+  <li><strong>{{ page('getting-started', 'Getting started') }}</strong>. Run the application. Reading about software you have not seen working is slow.</li>
+  <li><strong>{{ page('tour', 'A tour of the code') }}</strong>. Learn the shape of the folders, then open two or three files.</li>
+  <li><strong>{{ page('architecture', 'Architecture') }}</strong>. The most important page. It explains the one rule the whole design serves: <em>a request is for exactly one school, decided by the address alone</em>.</li>
+  <li>The page for the area you will work in: {{ page('academics', 'Academics') }}, {{ page('entrance', 'Entrance examinations') }}, {{ page('finance', 'Finance') }} or {{ page('families', 'Students, parents and messages') }}.</li>
+  <li><strong>{{ page('contributing', 'Contributing') }}</strong> and <strong>{{ page('recipes', 'Recipes') }}</strong>, before you change anything.</li>
+  <li><strong>{{ page('testing', 'Testing') }}</strong>. The test suites are unusually strong here, and they will tell you when you have broken something you did not know existed.</li>
+</ol>
+
+<h2 id="shape">The system in one picture</h2>
+<div class="diagram">
+<svg viewBox="0 0 860 330" role="img" aria-label="Browsers reach one application, which selects a school's database and folder by the address it was asked at">
+  <style>.b{fill:#fffefb;stroke:#b9b3a2}.t{font:600 13px 'Public Sans',sans-serif;fill:#0d1440}.s{font:12px 'Public Sans',sans-serif;fill:#666a86}.a{stroke:#d8261d;stroke-width:1.6;fill:none;marker-end:url(#h)}.bl{fill:#0a1a8f}.w{font:600 12px 'Public Sans',sans-serif;fill:#fff}</style>
+  <defs><marker id="h" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#d8261d"/></marker></defs>
+  <rect class="b" x="10" y="20" width="190" height="52" rx="4"/><text class="t" x="24" y="44">alpha.portal.example</text><text class="s" x="24" y="62">a school's staff, students, parents</text>
+  <rect class="b" x="10" y="92" width="190" height="52" rx="4"/><text class="t" x="24" y="116">portal.beta-college.org</text><text class="s" x="24" y="134">a school's own domain (CNAME)</text>
+  <rect class="b" x="10" y="164" width="190" height="52" rx="4"/><text class="t" x="24" y="188">platform.brightstars.example</text><text class="s" x="24" y="206">operators: console, docs, marketing</text>
+  <path class="a" d="M200,46 L292,120"/><path class="a" d="M200,118 L292,132"/><path class="a" d="M200,190 L292,146"/>
+  <rect class="bl" x="294" y="70" width="200" height="140" rx="6"/>
+  <text class="w" x="312" y="98">One Flask application</text>
+  <text class="w" x="312" y="122" style="font-weight:400">1. read the Host header</text>
+  <text class="w" x="312" y="142" style="font-weight:400">2. look the school up</text>
+  <text class="w" x="312" y="162" style="font-weight:400">3. bind its database and folder</text>
+  <text class="w" x="312" y="182" style="font-weight:400">4. only then run the route</text>
+  <path class="a" d="M494,110 L586,60"/><path class="a" d="M494,140 L586,140"/><path class="a" d="M494,172 L586,232"/>
+  <rect class="b" x="588" y="30" width="262" height="60" rx="4"/><text class="t" x="604" y="55">School alpha</text><text class="s" x="604" y="74">its PostgreSQL database + tenants/alpha/</text>
+  <rect class="b" x="588" y="110" width="262" height="60" rx="4"/><text class="t" x="604" y="135">School beta</text><text class="s" x="604" y="154">its PostgreSQL database + tenants/beta/</text>
+  <rect class="b" x="588" y="200" width="262" height="60" rx="4"/><text class="t" x="604" y="225">Platform registry</text><text class="s" x="604" y="244">schools, addresses, admins, limits, launch id</text>
+  <text class="s" x="10" y="300">A request never chooses its school by a URL, a form field or a cookie: only by the address it arrived at.</text>
+</svg>
+</div>
+
+<h2 id="how">How these pages are made</h2>
+<p>Two kinds of page. The <strong>hand-written</strong> pages explain and advise. The <strong>Reference</strong> pages (modules, routes, data model,
+permissions, templates) are <strong>generated from the code</strong> every time the server starts, by {{ file('control_plane/docsgen.py') }}, so
+they cannot fall behind it. A contract test ({{ file('tests/current/test_docs_contract.py') }}) also checks that every file, route and table the hand-written pages
+mention still exists, so the text cannot quietly point at something that has been renamed.</p>
+<p>If you change the code and a hand-written page becomes wrong, fixing the page is part of the change. The pages live in
+<code>templates/platform/docs/</code>, one file each.</p>
+
+<h2 id="access">Who can read this</h2>
+<p>Only a signed-in platform admin who has been given access. The <strong>super admin</strong> always has it and grants or withdraws it for each
+other platform admin on the <em>Team</em> page (every change is recorded in the activity log). Anyone else, signed in or not, is turned away as if the page did not
+exist. The public <a href="{{ url_for('marketing') }}">marketing page</a> is the only page here that needs no sign-in.</p>
+<div class="warn"><p>These pages describe how the platform is built, including how it is protected. Do not paste them into chats, tickets or slides outside the company.</p></div>
+{% endblock %}

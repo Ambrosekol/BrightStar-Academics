@@ -1,0 +1,13 @@
+{% extends "platform/docs/_layout.html" %}
+{% block content %}
+{% if not query %}<p>Type at least two letters in the box above. Search covers every page here and the generated reference: modules and their functions, routes, tables and columns, permissions and templates.</p>
+{% else %}
+<p>{{ results|length }} result{{ '' if results|length == 1 else 's' }} for <strong>{{ query }}</strong>{% if results|length == 60 %} (showing the best 60){% endif %}.</p>
+<div class="results">
+  {% for r in results %}
+  <div class="hit"><span class="kind">{{ r.kind }}</span><a href="{{ r.url }}">{{ r.title }}</a>{% if r.where %} <span class="ref-meta">&middot; {{ r.where }}</span>{% endif %}
+    {% if r.snippet %}<div class="snip">{{ r.snippet }}</div>{% endif %}</div>
+  {% else %}<p class="muted">Nothing matches. Try a shorter word, a file name, or a table name.</p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

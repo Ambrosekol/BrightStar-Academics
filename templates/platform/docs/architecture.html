@@ -1,0 +1,99 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<h2 id="rule">The one rule</h2>
+<div class="why"><p><strong>A request belongs to exactly one school, and that is decided by the address it arrived at, and by nothing else.</strong>
+Not a URL parameter, not a form field, not a cookie. Everything else in the architecture exists to make that rule impossible to break by accident.</p></div>
+<p>If a school could be chosen by something a visitor controls, one careless route could show school A's children to school B's staff. So the school is chosen once,
+at the very start, from the <code>Host</code> header, and after that <em>the database connection itself</em> is that school's: there is nothing left to forget to filter.</p>
+
+<h2 id="lifecycle">The life of a request</h2>
+<ol class="steps">
+  <li><strong>The address is read.</strong> {{ file('control_plane/resolver.py') }} runs first, before any other hook. It normalises the <code>Host</code> header and asks the registry which school owns it.
+    <ul>
+      <li>A <em>platform host</em> (<code>BRIGHTSTARS_PLATFORM_HOSTS</code>): no school is selected. Only <code>/platform</code>, <code>/marketing</code>, <code>/docs</code>, <code>/</code> and shared static files are served; anything else is a designed "not found" page.</li>
+      <li>An unknown host: a designed "address not found" page. No application code runs.</li>
+      <li>A suspended school: a designed "portal paused" page (HTTP 503).</li>
+      <li>A school: it is stored in a <code>ContextVar</code> ({{ file('control_plane/context.py') }}) for this request, and in <code>g.tenant</code>.</li>
+    </ul></li>
+  <li><strong>Old sign-ins from another school are thrown away.</strong> Every session is stamped with its school's id. A cookie from school A shown to school B fails the stamp and is discarded, so a cookie copied between schools authenticates nowhere.</li>
+  <li><strong>The sign-in is judged.</strong> {{ file('core/session_guard.py') }} decides whether the session is still good (see below).</li>
+  <li><strong>Small hooks run:</strong> the admin workspace boundary, live presence tracking ({{ file('app.py') }}).</li>
+  <li><strong>The route runs.</strong> Its decorators check who is asking (<code>@admin_required</code>, <code>@student_required</code>, ...) and, for anything that changes data, the CSRF token (<code>@csrf_protect</code>). Any query it makes goes to <em>this school's</em> database.</li>
+  <li><strong>The response is finished.</strong> Security headers are added; on a school's pages the school's two brand colours are injected as CSS ({{ file('core/theme.py') }}). A heartbeat script is added for signed-in people.</li>
+  <li><strong>The school is deselected.</strong> A teardown hook closes the database session while the school is still current, then clears it.</li>
+</ol>
+<div class="note"><p>The order matters and is fixed: the resolver must be installed <em>before</em> any other hook is registered, because every later hook queries the database and needs the school already chosen. {{ file('app.py') }} does this near the top.</p></div>
+
+<h2 id="databases">Two kinds of database</h2>
+<div class="table-scroll"><table>
+<tr><th></th><th>Registry (one)</th><th>School (one per school)</th></tr>
+<tr><td>Holds</td><td>Which schools exist, their addresses, the platform admins, entry tickets, the platform audit log, rate-limit counters, the launch id</td><td>Everything about that school: students, staff, results, fees, books, settings, audit trail</td></tr>
+<tr><td>Configured by</td><td><code>BRIGHTSTARS_PLATFORM_DB</code>, required, no default</td><td>Made automatically as <code>brightstars_&lt;code&gt;</code> on the same server, or placed elsewhere with <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code> or a per-school URL</td></tr>
+<tr><td>Models</td><td>{{ file('control_plane/models.py') }}</td><td>{{ file('models/__init__.py') }} and siblings</td></tr>
+<tr><td>Schema kept current by</td><td><code>create_all()</code> and a column-adding helper in {{ file('control_plane/registry.py') }}</td><td><code>create_all()</code> and a column-adding helper in {{ file('app.py') }}, run for every school on start or by <code>python -m control_plane upgrade</code></td></tr>
+</table></div>
+<div class="why"><p>There is no default registry URL because a wrong guess would silently create an empty registry, and every school would look as though it had never existed. PostgreSQL is the only database: the tests run against it, and constructs only SQLite understands are forbidden (a contract test enforces it).</p></div>
+
+<h3 id="routing">How <code>db.session</code> finds the right school</h3>
+<p>{{ file('control_plane/routing.py') }} replaces Flask-SQLAlchemy's session with a <code>TenantSession</code>. When a query runs, the session asks "which school is current?" and uses that school's engine. Each school has its own connection pool, cached and reused.
+The rest of the code just writes <code>db.session.execute(...)</code>. It <strong>fails closed</strong>: with no school selected the query raises rather than guessing.</p>
+<div class="warn"><p>Never use <code>db.engine</code>. It names the default bind, which is the registry, and holds no school data. Use <code>control_plane.routing.current_engine()</code> if you truly need an engine.</p></div>
+
+<h2 id="files">A school's files</h2>
+<p>{{ file('core/storage.py') }} gives each school a folder, <code>tenants/&lt;code&gt;/</code>, with <code>data/</code> (its question banks as JSON), <code>uploads/</code> (pictures, signatures, attachments) and <code>numbering.json</code>.
+Copying that folder plus dumping that database moves the whole school. Uploaded files are served by one route in {{ file('app.py') }} (<code>uploaded_file</code>), and {{ file('core/upload_access.py') }}
+decides, folder by folder, who may open what: a child's photo is visible to staff, that student, and a parent linked to them; branding pictures are public because the sign-in page needs them.</p>
+
+<h2 id="identity">Who is signed in</h2>
+<p>There are <strong>five kinds of identity</strong>, and the session records which one it is:</p>
+<div class="table-scroll"><table>
+<tr><th>Kind</th><th>Signs in at</th><th>Session key</th><th>Lives in</th></tr>
+<tr><td>School staff (administrator)</td><td>the school's <code>/login</code></td><td><code>admin_id</code></td><td>the school's <code>admins</code> table</td></tr>
+<tr><td>Student</td><td>the school's <code>/login</code></td><td><code>student_id</code></td><td><code>students</code></td></tr>
+<tr><td>Parent</td><td>the school's <code>/login</code></td><td><code>parent_id</code></td><td><code>parent_accounts</code></td></tr>
+<tr><td>Entrance candidate</td><td>the school's <code>/login</code></td><td><code>candidate_id</code></td><td><code>candidates</code></td></tr>
+<tr><td>Platform admin</td><td>the platform's <code>/platform/login</code></td><td><code>platform_admin_id</code></td><td>the registry's <code>platform_admins</code></td></tr>
+</table></div>
+<p>The first four share one form (see {{ file('core/accounts.py') }} and {{ file('blueprints/auth/routes.py') }}): one identifier and one password, tried against each kind. A platform admin never appears in a school's sign-in; to work inside a school they use <strong>Enter school</strong>, which mints a single-use, short-lived ticket, redeemed at the school's own address for a reserved account named <code>platform@&lt;username&gt;</code>. Every entry is recorded on both sides.</p>
+
+<h3 id="sessions">Sessions and the "launch id"</h3>
+<p>A session is a signed cookie. Nothing in it expires by itself, so {{ file('core/session_guard.py') }} adds two rules, decided before any route runs:</p>
+<ol>
+  <li><strong>A restart signs everyone out, except people sitting an exam.</strong> Every start writes a fresh random <em>launch id</em> into the registry ({{ file('control_plane/launch.py') }}). Sessions carry the id they were opened under; a mismatch means "from before the restart". If that person has an unfinished exam right now, the session is kept and re-stamped so they carry on; everyone else meets the sign-in page.</li>
+  <li><strong>Changing a password ends the account's other sign-ins.</strong> Each session also carries a fingerprint of the password hash it was opened with. A different hash means the old sessions stop working, however the password was changed.</li>
+</ol>
+<div class="why"><p>The launch id lives in the registry, not in process memory, because a deployment may run several workers and they must agree. If the registry or school database cannot be read, nobody is signed out: an outage must never cost a room full of candidates their exam.</p></div>
+
+<h2 id="authorisation">What a person may do</h2>
+<p>For staff, three layers stack (details in {{ page('school-portal', 'The school portal') }}):</p>
+<div class="flow"><span class="node">Workspace<br><small>entrance or school</small></span><span class="arrow">+</span><span class="node">Permission<br><small>from the endpoint map</small></span><span class="arrow">+</span><span class="node">Scope<br><small>this class, subject, bank</small></span></div>
+<p>Students, parents and candidates are not permission-based; each route checks that the record being asked for belongs to the signed-in person (a parent may open a child only through an active link).</p>
+
+<h2 id="writes">Changing data safely</h2>
+<ul>
+  <li><strong>CSRF.</strong> Every state-changing route is decorated with <code>@csrf_protect</code> ({{ file('core/security.py') }}); every form carries <code>_csrf_token</code>. A contract test lists all write routes and fails if a new one is not exercised against PostgreSQL.</li>
+  <li><strong>Refusals are explained.</strong> A number too big for a database column, or text containing a NUL byte, is answered with a plain 400 ({{ file('core/request_errors.py') }}), never a 500. A request over the size limit is answered with the limit and the size sent.</li>
+  <li><strong>Audit.</strong> Significant actions call <code>audit_log</code>; the entry records who, what, on which target, from which address.</li>
+  <li><strong>After the commit.</strong> Messages to parents are sent only after the change they report was committed, and on a background thread ({{ file('core/background.py') }}) so nobody waits on a mail server and a failed message never undoes what was saved.</li>
+</ul>
+
+<h2 id="background">Background work</h2>
+<p>There is no job queue. {{ file('core/background.py') }} runs best-effort work on a thread <em>as the same school</em>: it captures the school and the request's address, then opens a fresh application context and school context inside the thread, so anything that builds a link or reads branding works exactly as in a request. It never raises. Setting <code>BACKGROUND_INLINE</code> in the app config runs the work in the calling thread, which is how the tests make it deterministic.</p>
+<div class="note"><p>It is deliberately small. If a job must survive a restart, retry, or be visible to an operator, that is the day to introduce a real queue; see {{ page('recommendations', 'Recommendations') }}.</p></div>
+
+<h2 id="errors">Errors</h2>
+<p>{{ file('app.py') }} registers handlers for HTTP errors and unexpected exceptions that render designed pages ({{ tpl('error_4xx.html') }}, {{ tpl('error_5xx.html') }}), per school and in the school's colours, without leaking internals. Requests that arrive where no school can be chosen get the platform's own notice page instead, rendered straight from the template because normal rendering would look the signed-in person up in a school database that does not exist there.</p>
+
+<h2 id="decisions">Design decisions worth knowing the reasons for</h2>
+<div class="table-scroll"><table>
+<tr><th>Decision</th><th>Reason</th></tr>
+<tr><td>A database per school</td><td>Isolation you can reason about; per-school backup and restore; a whole school moves by copying one database and one folder.</td></tr>
+<tr><td>No public website for schools</td><td>A school's address is a portal. The company's marketing site is separate; the platform itself serves only <code>/marketing</code> and <code>/docs</code>, on platform hosts.</td></tr>
+<tr><td>Restart signs everyone out</td><td>The signing secret does not change, so without this a cookie would outlive every restart. The exam exception protects people mid-paper.</td></tr>
+<tr><td>Numbering is a pattern, not code</td><td>Typed Python that the server runs would let anyone who reached the console run code on a server that can reach every school's database. A pattern is read, never executed.</td></tr>
+<tr><td>No existing-school import</td><td>Every school is created from scratch through the platform. Do not reintroduce an import-an-old-installation path.</td></tr>
+<tr><td>Schema declared once, in <code>models/</code></td><td>No migration scripts to drift; a column-diffing helper adds what an older database lacks.</td></tr>
+</table></div>
+{% endblock %}

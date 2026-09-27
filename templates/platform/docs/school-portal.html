@@ -1,0 +1,59 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Everything a school's staff use, at the school's own address. This page explains who staff are, what they are allowed to do, and how that is enforced.
+The list of every permission and role is generated on the <a href="{{ url_for('docs_page', slug='reference-permissions') }}">permissions reference</a>.</p>
+
+<h2 id="workspaces">Two workspaces</h2>
+<p>A staff member signs in and lands on the <em>workspace home</em> ({{ route('admin_workspace_home') }}), where they choose <strong>Entrance Examination</strong> or <strong>School</strong>.
+The choice is remembered in the session and enforced by a request hook in {{ file('app.py') }} (<code>enforce_admin_workspace_boundary</code>): the paths of one workspace are refused from the other, so a
+person cannot wander from entrance administration into student records by editing an address. Which paths belong to which workspace is one function, <code>_admin_workspace_for_path</code>.</p>
+
+<h2 id="rbac">Roles, permissions and scope</h2>
+<div class="flow"><span class="node"><strong>Permission</strong><br><small>a single ability, e.g. <code>school.results.release</code></small></span><span class="arrow">&rarr;</span>
+<span class="node"><strong>Role</strong><br><small>a named bundle of permissions</small></span><span class="arrow">&rarr;</span>
+<span class="node"><strong>Account</strong><br><small>one or more roles, plus optional overrides</small></span><span class="arrow">&rarr;</span>
+<span class="node"><strong>Scope</strong><br><small>limits it to certain classes, subjects or banks</small></span></div>
+<ul>
+  <li><strong>The catalogue.</strong> Every permission is defined once in <code>ADMIN_PERMISSION_DEFS</code> ({{ file('core/security.py') }}). At every start, <code>init_admin_security</code> in {{ file('app.py') }} seeds the catalogue into the school's {{ table('permissions') }} table without ever creating an account.</li>
+  <li><strong>The School Admin role.</strong> The system role (<code>admin_types.is_system = 1</code>) has every permission and is unrestricted by scope. It is found by that flag, never by name: a custom role that happens to be called "School Admin" must not be mistaken for it and handed everything. Platform operators who enter a school hold this role.</li>
+  <li><strong>Role presets.</strong> A new school gets seventeen ready-made roles (Primary Class Teacher, Finance Manager, Librarian, Report Card Officer and so on), seeded once; edits a school makes are kept.</li>
+  <li><strong>Delegation is bounded.</strong> Someone may only grant a role whose permissions they already hold (<code>admin_can_delegate_roles</code>), so nobody can promote themselves or a friend past their own reach.</li>
+  <li><strong>Overrides.</strong> An individual account can carry permission overrides independent of role ({{ table('admin_permissions') }}).</li>
+  <li><strong>Scope.</strong> A class teacher is limited to their own class; a college subject teacher can additionally be limited to a subject; a bank manager to particular question banks. Scopes are rows in {{ table('admin_scopes') }} and are checked by <code>admin_scope_allows</code>. Denials are audited (<code>scope_denied</code>).</li>
+</ul>
+
+<h3 id="enforce">How a route is guarded</h3>
+<pre><code>@app.route('/admin/school/results')
+@admin_required
+def admin_school_results(): ...</code></pre>
+<p><code>admin_required</code> ({{ file('core/security.py') }}) looks up the route's endpoint name in <code>ADMIN_ENDPOINT_PERMISSIONS</code>, checks the signed-in account holds that permission (falling back to <code>admin.access</code> for an unmapped endpoint), extracts a scope from the URL's arguments where the endpoint has one, forces a password change if the account is on a temporary password, and audits a refusal. Routes still do finer checks themselves: for example, a results route also asks whether this account may see this <em>class</em> ({{ file('blueprints/school/helpers.py') }}, <code>_school_class_allowed</code>).</p>
+<div class="warn"><p>An admin endpoint with no entry in the map is only guarded by <code>admin.access</code>, which nearly every staff account holds. When you add an admin route, add it to the map. A contract test helps, but it cannot know which permission you meant.</p></div>
+
+<h2 id="governance">Governance features</h2>
+<div class="table-scroll"><table>
+<tr><th>Feature</th><th>What it is</th><th>Where</th></tr>
+<tr><td>Staff accounts</td><td>Create, edit, deactivate, reset passwords, assign roles and scopes. New accounts start on a temporary password that must be changed.</td><td>{{ file('blueprints/administration/routes.py') }}</td></tr>
+<tr><td>Audit log</td><td>Who did what, to which target, from which address, whether it succeeded. Written by <code>audit_log</code>; some actions also notify the School Admins.</td><td>{{ table('audit_logs') }}</td></tr>
+<tr><td>Resource locks</td><td>Freeze something (a question bank during a live exam) so it refuses changes, with a reason and an unlock.</td><td>{{ table('admin_resource_locks') }}</td></tr>
+<tr><td>Control items</td><td>Things needing a senior person's review, raised automatically, resolved by hand.</td><td>{{ table('admin_control_items') }}</td></tr>
+<tr><td>Messaging</td><td>Direct messages between administrators, with attachments (served only by a permission-checked download route).</td><td>{{ table('admin_messages') }}</td></tr>
+<tr><td>Notifications</td><td>In-app alerts for staff (administrative changes, messages).</td><td>{{ table('admin_notifications') }}</td></tr>
+<tr><td>Presence</td><td>Who is online right now, from a heartbeat the page sends every 30 seconds.</td><td>{{ file('core/presence.py') }}</td></tr>
+<tr><td>Own profile and signature</td><td>A staff member's photo and their own signature (used on report cards).</td><td>{{ file('blueprints/school/report_cards.py') }}</td></tr>
+</table></div>
+
+<h2 id="school-side">What the School workspace covers</h2>
+<p>The School workspace is the largest part of the product; each area has its own page.</p>
+<ul>
+  <li>Sessions, classes, subjects, students, enrolment, promotion, assignments, projects, tests, practice, examinations, results and report cards: {{ page('academics', 'Academics') }}.</li>
+  <li>Fees, payments and receipts: {{ page('finance', 'Finance and receipts') }}. Library books and loans: {{ file('blueprints/library/routes.py') }}.</li>
+  <li>Parent accounts and feedback, and the school's own email and WhatsApp: {{ page('families', 'Students, parents and messages') }}.</li>
+  <li>Branding and numbering: {{ page('branding-numbering', 'Identity and numbering') }}.</li>
+</ul>
+<p>The Entrance workspace is described in {{ page('entrance', 'Entrance examinations') }}.</p>
+
+<h2 id="accounts">Accounts other people get</h2>
+<p>Students, parents and entrance candidates are created by staff, never self-registered. Each receives a generated one-time password and must change it at first sign-in (students and parents; candidates use the credentials printed for them). Student sign-in names come from the admission number; numbers themselves come from the school's numbering rules.</p>
+{% endblock %}

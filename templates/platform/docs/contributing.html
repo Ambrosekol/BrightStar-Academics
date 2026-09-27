@@ -1,0 +1,67 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>The rules of the house, each with the reason behind it. Most are enforced by a contract test, so breaking one fails the build rather than a school.</p>
+
+<h2 id="rules">The rules</h2>
+
+<h3 id="r-routes">Register routes with plain <code>@app.route</code></h3>
+<p>Every <code>blueprints/*/routes.py</code> does <code>from app import app</code> and decorates that shared instance, rather than creating <code>Blueprint</code> objects. This keeps every endpoint name (and therefore every <code>url_for(...)</code> and every entry in the permission map) stable and prefix-free, at the cost of Blueprint features like URL prefixes. New route modules are imported at the bottom of {{ file('app.py') }} for their side effect.</p>
+
+<h3 id="r-engine">Never use <code>db.engine</code></h3>
+<p>It names the default bind, which is the <em>registry</em> and holds no school data. Use <code>db.session</code> for school data (the routing gives it the current school), or <code>control_plane.routing.current_engine()</code> when you need an engine.</p>
+
+<h3 id="r-postgres">PostgreSQL only: nothing SQLite-shaped</h3>
+<p>Upserts go through <code>core.db_helpers.insert_stmt()</code> and string aggregation through <code>group_concat()</code> ({{ file('core/db_helpers.py') }}); partial indexes declare <code>postgresql_where</code>. A contract test enforces it. Corollaries you will meet:</p>
+<ul>
+  <li><strong>An expression that is selected and grouped must be one expression object.</strong> <code>func.coalesce(col, 'x')</code> written twice becomes two different bind parameters and PostgreSQL rejects the grouping. Build it once and reuse the variable in both places.</li>
+  <li>An integer column has a fixed size: never assume Python's unlimited integers reach the database. The application already answers oversize numbers with a plain 400; still validate what you read from a form.</li>
+  <li>Text with a NUL byte is refused by PostgreSQL; the same 400 covers it.</li>
+</ul>
+
+<h3 id="r-school">Never hard-code a school</h3>
+<p>Use <code>school_brand</code> in templates and <code>core.branding.school_name()</code> in code. There is no default school and no school-specific string anywhere; the tests search for any that appears.</p>
+
+<h3 id="r-schema">The schema lives in <code>models/</code>, and only there</h3>
+<p>No <code>CREATE TABLE</code> script, no migration files. <code>create_all()</code> makes tables; a column-diffing helper adds missing columns to existing databases. So: a new column needs a default (or nullable), and a rename is a new column plus a copy, never an <code>ALTER</code> hidden in code. Conventions ({{ file('models/__init__.py') }}): timestamps are ISO-8601 UTC text, flags are integer 0/1, marks are floats.</p>
+
+<h3 id="r-tenancy">Do not import an old installation, and do not ship a school's data</h3>
+<p>Every school is created from scratch through the platform. The import-an-old-installation commands and the SQLite import code were removed on purpose; do not reintroduce them. No school's own questions ship with the platform: a new school starts from <code>starter_banks/</code> or imports its own.</p>
+
+<h3 id="r-secure">Never run anything typed on a web page</h3>
+<p>No <code>eval</code>, <code>exec</code>, dynamic import or template engine on user-provided text. Numbering is a <em>pattern</em> that is read, never executed. If a new feature seems to need code as data, design a small checked language instead.</p>
+
+<h3 id="r-ui">Use the design system</h3>
+<p>School pages use the tokens in <code>static/school-ui.css</code>; do not add colours or sizes. Fonts are self-hosted. The platform console, docs and marketing page have their own stylesheets. Uploads: always show the real limit beside a file box and explain any refusal ({{ file('core/uploads.py') }}, <code>static/upload-limit.js</code>).</p>
+
+<h3 id="r-after-commit">Notify after the commit, never inside it</h3>
+<p>Messages to parents are best-effort and must never roll back or block what triggered them. Call the sender only after your own <code>db.session.commit()</code> succeeded, wrap it so an exception is swallowed and logged, and for anything slow use {{ file('core/background.py') }}. A background job opens its own database session: it cannot see uncommitted changes.</p>
+
+<h3 id="r-audit">Audit significant actions</h3>
+<p>Call <code>audit_log(action, module, target_type, target_id, details)</code> for anything an administrator would want to be able to find later, and add a human sentence for the action to the <code>friendly</code> dictionary in {{ file('core/security.py') }}. Never put a secret in <code>details</code>.</p>
+
+<h3 id="r-tests">Every write route gets a real submission</h3>
+<p>A route that accepts a POST but is neither submitted in <code>tests/verification/write_paths_pg_posts.py</code> nor listed with a reason in <code>pg_posts_coverage.py</code> fails the contract suite. Add the submission and list the route pattern. See {{ page('testing', 'Testing') }}.</p>
+
+<h2 id="style">Style</h2>
+<ul>
+  <li><strong>Match the file you are in.</strong> Some older route files are dense (several statements to a line, terse names). Keep that style when fixing them; do not reformat a whole file to make a two-line change. New modules should be clearer: short functions, a module docstring explaining <em>why</em>, comments only for non-obvious reasons.</li>
+  <li><strong>Every module has a docstring</strong> that says what it is for and any rule a reader must know. The Reference pages are built from them.</li>
+  <li><strong>Explain refusals in plain words.</strong> A form that fails says what to change ("Enter the payment amount as a number of naira, for example 12500.50"), not "invalid input".</li>
+  <li><strong>Line endings.</strong> Many files use Windows (CRLF) line endings. Let your editor preserve them; a tool that rewrites a file with different endings turns a small change into a whole-file diff.</li>
+  <li><strong>Templates escape by default.</strong> Never use <code>|safe</code> on anything that came from a person.</li>
+</ul>
+
+<h2 id="pitfalls">Mistakes worth not repeating</h2>
+<div class="table-scroll"><table>
+<tr><th>Mistake</th><th>What happens</th><th>Do this instead</th></tr>
+<tr><td>Reading a school id from the URL or a form to choose a school</td><td>One careless route shows a school's data to another.</td><td>Never. The address alone chooses the school.</td></tr>
+<tr><td>Adding an admin route without a permission map entry</td><td>It is guarded only by <code>admin.access</code>.</td><td>Add it to <code>ADMIN_ENDPOINT_PERMISSIONS</code>.</td></tr>
+<tr><td>Grading from the live question bank</td><td>An edited question changes a past result.</td><td>Grade from the frozen attempt questions.</td></tr>
+<tr><td>Writing a practice run to the database</td><td>It could count towards grades.</td><td>Practice is stateless: nothing is stored.</td></tr>
+<tr><td>Sending a message before the commit</td><td>A message about something that then rolled back.</td><td>Send after the commit, on the background helper.</td></tr>
+<tr><td>Testing only the page, not the submit</td><td>A query PostgreSQL rejects ships.</td><td>The POST script exists for exactly this.</td></tr>
+<tr><td>A test that shares one database between "schools"</td><td>Isolation tests pass for the wrong reason.</td><td>Each test school needs its own database (the helper builds the names from a <code>{slug}</code> template).</td></tr>
+</table></div>
+{% endblock %}
