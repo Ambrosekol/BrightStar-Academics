@@ -30,6 +30,10 @@ IMAGE_EXTENSIONS={'png','jpg','jpeg','gif','webp'}
 # attachment boxes).
 ATTACHMENT_EXTENSIONS={'.jpg','.jpeg','.png','.gif','.webp','.pdf','.doc','.docx','.txt','.xls','.xlsx'}
 IMAGE_TYPES_LABEL='PNG, JPG, GIF or WEBP'
+# A bulk-data upload (the student CSV importer, and anything like it later): plain-text data, not
+# a picture or a document, so it gets its own kind, extensions and (smaller, fixed) limit.
+DATA_EXTENSIONS={'.csv'}
+DATA_TYPES_LABEL='a CSV file'
 
 
 def attachment_kind(ext):
@@ -43,6 +47,7 @@ def attachment_kind(ext):
 
 DEFAULT_IMAGE_LIMIT_BYTES=5*1024*1024
 DEFAULT_REQUEST_LIMIT_BYTES=8*1024*1024
+DEFAULT_DATA_LIMIT_BYTES=2*1024*1024
 # What the rest of a form (its text fields, the security token, the multipart framing) takes
 # out of the room a message attachment has in the whole-request limit.
 REQUEST_OVERHEAD_BYTES=64*1024
@@ -87,6 +92,11 @@ def request_limit_bytes(scope=''):
     except RuntimeError:
         configured=None
     return int(configured) if configured else _env_bytes('BRIGHTSTARS_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
+
+
+def data_upload_limit_bytes():
+    """The largest a bulk-data upload (a CSV import) may be, in bytes (one file)."""
+    return _env_bytes('BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES', DEFAULT_DATA_LIMIT_BYTES)
 
 
 def attachment_limit_bytes():
@@ -185,8 +195,9 @@ def _mtime_version():
 def upload_attrs(kind='image', scope=''):
     """The data attributes for an ``<input type="file">``: what it may take, for the script.
 
-    ``kind`` is 'image' (one of the allowed picture types, up to the picture limit) or
-    'attachment' (a message attachment, limited only by the size of the whole request).
+    ``kind`` is 'image' (one of the allowed picture types, up to the picture limit), 'attachment'
+    (a message attachment, limited only by the size of the whole request) or 'data' (a bulk-data
+    upload such as the student CSV importer, with its own fixed limit).
     ``scope`` is 'branding' where the form also carries a logo and a set of photographs.
     """
     from markupsafe import Markup, escape
@@ -194,6 +205,10 @@ def upload_attrs(kind='image', scope=''):
         limit=attachment_limit_bytes()
         types=','.join(sorted(e.lstrip('.') for e in ATTACHMENT_EXTENSIONS))
         types_label='an image, PDF, Word, text or Excel file'
+    elif kind=='data':
+        limit=data_upload_limit_bytes()
+        types=','.join(sorted(e.lstrip('.') for e in DATA_EXTENSIONS))
+        types_label=DATA_TYPES_LABEL
     else:
         kind='image'
         limit=image_limit_bytes()
@@ -220,6 +235,8 @@ def upload_hint(kind='image', scope='', multiple=False):
     from markupsafe import Markup, escape
     if kind=='attachment':
         text=f'An image, PDF, Word, text or Excel file, up to {format_limit(attachment_limit_bytes())}.'
+    elif kind=='data':
+        text=f'{DATA_TYPES_LABEL}, up to {format_limit(data_upload_limit_bytes())}.'
     else:
         each=' each' if multiple else ''
         text=f'{IMAGE_TYPES_LABEL}, up to {format_limit(image_limit_bytes())}{each}.'

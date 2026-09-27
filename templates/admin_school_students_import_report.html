@@ -1,0 +1,60 @@
+{% extends 'admin_base.html' %}
+{% block title %}Import report — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  table.import-report { width: 100%; border-collapse: collapse; }
+  table.import-report th, table.import-report td { padding: 8px 10px; border-bottom: 1px solid #e4ebf2; text-align: left; font-size: 13.5px; }
+  table.import-report tr.skipped td { color: #9c1f1f; }
+  code.pw { background: #fff3d6; padding: 2px 6px; border-radius: 4px; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
+  <h1>Import report</h1>
+  <p class="hero-copy">{{ created }} student{{ '' if created == 1 else 's' }} imported{% if skipped %}, {{ skipped }} row{{ 's' if skipped != 1 else '' }} skipped{% endif %}. The usernames and one-time passwords below are shown only here — copy or download them now before you leave this page.</p>
+</div></div>
+
+<section class="card" style="margin-top:18px">
+  {% if created %}<p><button class="btn btn-primary" type="button" id="downloadCreds">Download credentials (CSV)</button></p>{% endif %}
+  <div class="table-scroll"><table class="import-report" id="reportTable">
+    <tr><th>Line</th><th>Name</th><th>Class</th><th>Admission no.</th><th>Username</th><th>Password</th><th>Result</th></tr>
+    {% for o in outcomes %}
+    <tr class="{{ 'skipped' if not o.ok else '' }}">
+      <td>{{ o.line }}</td><td>{{ o.name or '—' }}</td>
+      {% if o.ok %}
+      <td>{{ o.class_name }}</td><td>{{ o.admission_no }}</td><td>{{ o.username }}</td><td><code class="pw">{{ o.password }}</code></td><td>Imported</td>
+      {% else %}
+      <td colspan="4">{{ o.reason }}</td><td>Skipped</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table></div>
+</section>
+<p style="margin-top:14px"><a class="btn btn-light" href="{{ url_for('admin_school_students') }}">Back to students</a>
+<a class="btn btn-light" href="{{ url_for('admin_school_students_import') }}">Import another file</a></p>
+
+<script>
+(function(){
+  var btn = document.getElementById('downloadCreds');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    var rows = [['line','name','class','admission_no','username','password']];
+    document.querySelectorAll('#reportTable tr:not(.skipped)').forEach(function(tr, i){
+      if (i === 0) return; // header row
+      var cells = tr.querySelectorAll('td');
+      if (cells.length < 6) return;
+      rows.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent, cells[4].textContent, cells[5].textContent]);
+    });
+    var csv = rows.map(function(r){
+      return r.map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'student-import-credentials.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+{% endblock %}

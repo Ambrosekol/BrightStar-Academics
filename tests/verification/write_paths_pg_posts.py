@@ -509,6 +509,22 @@ op.post(f"{STUDENTS}/{ADA}/history/{HISTORY}/edit", {"level_name": "Primary 6", 
 check("enrolment history was corrected with a reason",
       one("SELECT correction_reason FROM student_enrollment_history WHERE id = :i", i=HISTORY) == "The register had the wrong date")
 
+before_students = count("students")
+# Primary 5, deliberately: JSS 1 and JSS 2 have exact-count checks later (the promotion section),
+# which an extra imported student would throw off.
+csv_bytes = ("first_name,last_name,gender,class,guardian_name,guardian_email\r\n"
+            "Chika,Nwosu,Female,Primary 5,Mrs Nwosu,mrs.nwosu@example.test\r\n"
+            "Bad,Row,Not-A-Gender,Primary 5,,\r\n").encode("utf-8")
+r = op.post(f"{STUDENTS}/import", {}, files={"csv_file": ("import.csv", csv_bytes)})
+check("a bulk student import created the good row and skipped the bad one",
+      count("students") == before_students + 1 and "1 student imported" in r.body.lower() and "1 row skipped" in r.body.lower())
+check("…the imported student was enrolled in the named class with a generated admission number",
+      one("SELECT student_number FROM students WHERE first_name = 'Chika' AND last_name = 'Nwosu'") not in (None, ""))
+CHIKA = one("SELECT id FROM students WHERE first_name = 'Chika' AND last_name = 'Nwosu'")
+op.post(f"{STUDENTS}/{CHIKA}/toggle", {})  # deactivated: later exact-count sections (promotion) assume only Ada and Tunde
+check("…deactivating her afterwards keeps her out of everyone else's counts below",
+      one("SELECT active FROM students WHERE id = :i", i=CHIKA) == 0)
+
 # ================================================================ 3. the school's own email and WhatsApp (set up now, so everything below can send)
 DELIVERY = "/admin/school/delivery"
 op.post(f"{DELIVERY}/email/save", {"smtp_host": "smtp.posts.test", "smtp_port": "587", "smtp_security": "starttls",

@@ -1,0 +1,26 @@
+{% extends 'admin_base.html' %}
+{% block title %}Bulk import students — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
+  <h1>Bulk import students</h1>
+  <p class="hero-copy">Bring in students from a spreadsheet all at once. Each row becomes exactly what "Register Student" creates by hand: the student record, an enrolment in the named class, and a login with a generated admission number and a one-time password.</p>
+</div></div>
+
+<section class="card modern-form">
+  <h3 style="margin-top:0">1. Start from the template</h3>
+  <p class="muted">Columns: <code>{{ required_columns|join(', ') }}</code> are required; <code>{{ optional_columns|join(', ') }}</code> are optional. <code>class</code> must match one of this school's own class names exactly (case does not matter), and <code>gender</code> must be "Male" or "Female". Admission numbers are never typed: the school's own numbering rules generate every one, the same as adding a student by hand.</p>
+  <p><a class="btn btn-light" href="{{ url_for('admin_school_students_import_template') }}">Download CSV template</a></p>
+</section>
+
+<section class="card modern-form" style="margin-top:18px">
+  <h3 style="margin-top:0">2. Upload your file</h3>
+  <form method="post" action="{{ url_for('admin_school_students_import_run') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="csv_file">CSV file (UTF-8, first {{ max_rows }} rows)</label>
+      <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" {{ upload_attrs('data') }} required>{{ upload_hint('data') }}</div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Import</button></div>
+  </form>
+  <p class="muted">A row that fails (a missing name, an unknown class, an invalid gender or email) is skipped and reported by line number; every other valid row is still imported. Nothing is a "preview" — a valid row is created immediately, so check the file once before uploading.</p>
+</section>
+{% endblock %}

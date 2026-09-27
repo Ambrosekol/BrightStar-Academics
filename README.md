@@ -38,6 +38,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Practice tests](#practice-tests)
 - [Attendance](#attendance)
 - [Exam and test timetables](#exam-and-test-timetables)
+- [Bulk student import](#bulk-student-import)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
 - [Command line](#command-line)
@@ -507,6 +508,22 @@ entries) and `school.timetable.release` (the sensitive one: only this notifies s
 A student and a linked parent each see only released entries for their own class, on the dashboard
 under *Exam timetable*, and can download it as a PDF or print it.
 
+## Bulk student import
+
+A school with existing students does not type them in one at a time: *Bulk import (CSV)* on the
+Students page takes a spreadsheet — `first_name`, `last_name`, `gender` and `class` required;
+`middle_name`, `guardian_name`, `guardian_email`, `guardian_phone` optional — and creates exactly
+what "Register Student" creates by hand for each valid row: the student record, an enrolment in the
+named class for the current session, and a login with a generated admission number and a one-time
+password, using the same numbering and account machinery either way. `class` is matched against the
+school's own class names, case-insensitively; admission numbers are never typed, in bulk any more
+than one at a time. A row that fails (a missing name, an unrecognised gender, an unknown class, a bad
+guardian email, or a class outside the importing staff member's own scope) is skipped and reported by
+line number and reason; every other valid row is still imported. The results page is the only place
+the generated usernames and one-time passwords are ever shown — download them as a CSV from there (built
+in the browser, never a second trip to the server) before leaving the page. A file with no header row,
+a missing required column, or one over the size limit is refused outright, before anything is written.
+
 ## Report cards
 
 Every school gives each student a **report card for each term**, as a page and as a PDF.
@@ -714,6 +731,7 @@ python tests/verification/write_paths_candidate_results.py # a candidate's resul
 python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, traits, signatures, portals
 python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
 python tests/verification/write_paths_timetable.py           # exam/test timetables: draft, release, notifications, scope, portals
+python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies
