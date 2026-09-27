@@ -40,7 +40,7 @@ Balances are summed across every session, so a debt left from last year is not h
   <li>emails the guardian the <strong>receipt as a PDF</strong> with amount, date, purpose, balance and the bursar's note in the body; and</li>
   <li>sends the receipt PDF by <strong>WhatsApp</strong>.</li>
 </ol>
-<p>Steps 2 and 3 run on a background thread ({{ file('core/background.py') }}) via <code>_send_payment_receipt_to_guardian</code>, and every attempt is written to {{ table('finance_delivery_logs') }}, so the bursar can see on the receipt page whether it arrived and why not. Sending by hand (<em>Send by email</em>, <em>Send by WhatsApp</em>) uses the same senders and logs the same way; who may send is <code>finance.receipt.send</code>.</p>
+<p>Steps 2 and 3 run as the durable 'send_payment_receipt' job ({{ file('core/jobs.py') }}) via <code>_send_payment_receipt_to_guardian</code>, and every attempt is written to {{ table('finance_delivery_logs') }}, so the bursar can see on the receipt page whether it arrived and why not. Sending by hand (<em>Send by email</em>, <em>Send by WhatsApp</em>) uses the same senders and logs the same way; who may send is <code>finance.receipt.send</code>.</p>
 <div class="note"><p>Contact details come from the student's record (<code>guardian_email</code>, <code>guardian_phone</code>). Phone numbers are converted to international form (<code>_ng_phone</code>). The WhatsApp Cloud API only delivers free-form messages within 24 hours of the recipient's last message to the school's number; reaching parents outside that window needs approved message templates, which this application does not send.</p></div>
 
 <h2 id="perms">Permissions</h2>

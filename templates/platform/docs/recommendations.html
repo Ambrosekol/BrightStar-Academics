@@ -17,8 +17,8 @@
 <ul>
   <li><strong>Separate database roles per school.</strong> Today one role connects to every database. Create a role per school and store its URL as <code>env:VARIABLE_NAME</code> in the registry row (supported) so a compromised worker context is limited to one school's data.</li>
   <li><strong>Tighten the Content-Security-Policy</strong> by moving inline scripts to files or adding nonces, then dropping <code>'unsafe-inline'</code> for scripts.</li>
-  <li><strong>A queue for notifications.</strong> {{ file('core/background.py') }} is a thread. If the process restarts mid-send, that message is lost, and there is no retry. When volume grows, or an operator wants to see "queued / failed / sent", introduce a real job queue and keep the same call sites (<code>run_in_background(fn, ...)</code>).</li>
-  <li><strong>Alerting</strong> on the log lines that signal degraded safety (registry unreachable, a refused-delivery burst, a sign-in refusal streak).</li>
+  <li><strong>A dedicated poller for background jobs.</strong> {{ file('core/jobs.py') }} is now durable (a {{ table('background_jobs') }} row survives a restart and is retried) but self-heals only opportunistically, the next time something of the same kind is enqueued. When volume grows, or an operator wants to see "queued / failed / done" across every school at once regardless of traffic, add a small poller against the same table rather than a new mechanism.</li>
+  <li><strong>Alerting</strong> on the log lines that signal degraded safety (registry unreachable, a refused-delivery burst, a sign-in refusal streak, a job that has used up its retries).</li>
   <li><strong>Rotate the platform secrets on a calendar</strong> (with <code>BRIGHTSTARS_DELIVERY_KEY</code> already independent, rotating the session secret costs only a sign-out).</li>
 </ul>
 

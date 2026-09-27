@@ -28,6 +28,7 @@ from core import theme
 from core.branding import receipt_prefix, school_brand, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
 from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
+from core.jobs import job_handler
 from core.notifications import _ng_phone
 from core.security import admin_has_permission, current_admin, is_school_admin
 from core.storage import stored_upload_path, uploads_dir
@@ -292,12 +293,14 @@ def _send_whatsapp_receipt(payment_id):
     except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
     except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
 
+@job_handler('send_payment_receipt')
 def _send_payment_receipt_to_guardian(payment_id, actor_id):
     """Send a newly recorded payment's receipt to the guardian by email and by WhatsApp.
 
     This is what makes telling the parents automatic: nobody has to remember to press "send". Each
     attempt is logged like a hand-sent one, so the bursar can see on the receipt page whether it
-    arrived. Never raises; runs after the payment was committed (see core/background.py).
+    arrived. Never raises; runs after the payment was committed, as the 'send_payment_receipt'
+    job (see core/jobs.py) - durable, so a thread that never finishes leaves it to retry.
     """
     row=_receipt_payload(payment_id)
     if not row or row['status']=='voided': return

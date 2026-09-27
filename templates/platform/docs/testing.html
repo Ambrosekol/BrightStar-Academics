@@ -47,7 +47,7 @@
   <li><strong>{{ file('tests/verification/_pg.py') }}</strong> sets up the throwaway databases. It gives each run a unique prefix and a database-name template with a literal <code>{slug}</code>, so every school under test gets its own database. (An earlier bug percent-encoded those braces, so every test school silently shared one database and isolation checks passed or failed for the wrong reasons; keep that in mind when touching it.)</li>
   <li>The scripts call the Flask application <em>in process</em> through its test client, with hostnames like <code>posts.portal.test</code>, so the real resolver, real sessions and real CSRF are all in play.</li>
   <li><strong>The outside world is stood in for at the last step.</strong> A fake SMTP connection and a fake <code>urlopen</code> catch email and WhatsApp, so the real sending code (including building a PDF) runs but nothing leaves the machine.</li>
-  <li>They set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so messages to parents are sent at once and can be inspected ({{ file('core/background.py') }}).</li>
+  <li>They set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so messages to parents are sent at once and can be inspected ({{ file('core/jobs.py') }}).</li>
   <li>An <code>Actor</code> is one browser with its own cookies; <code>check(name, ok, detail)</code> records a result; <code>sql(...)</code>/<code>one(...)</code> read the school's database directly to confirm a row was written.</li>
 </ul>
 

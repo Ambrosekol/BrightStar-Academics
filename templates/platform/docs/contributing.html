@@ -36,7 +36,7 @@
 <p>School pages use the tokens in <code>static/school-ui.css</code>; do not add colours or sizes. Fonts are self-hosted. The platform console, docs and marketing page have their own stylesheets. Uploads: always show the real limit beside a file box and explain any refusal ({{ file('core/uploads.py') }}, <code>static/upload-limit.js</code>).</p>
 
 <h3 id="r-after-commit">Notify after the commit, never inside it</h3>
-<p>Messages to parents are best-effort and must never roll back or block what triggered them. Call the sender only after your own <code>db.session.commit()</code> succeeded, wrap it so an exception is swallowed and logged, and for anything slow use {{ file('core/background.py') }}. A background job opens its own database session: it cannot see uncommitted changes.</p>
+<p>Messages to parents are best-effort and must never roll back or block what triggered them. Call the sender only after your own <code>db.session.commit()</code> succeeded, and for anything slow register it with <code>@job_handler('name')</code> and call it through <code>enqueue('name', **kwargs)</code> ({{ file('core/jobs.py') }}), never a bare thread: a job's arguments must be JSON-serialisable (ids, not ORM objects), and it opens its own database session, so it cannot see uncommitted changes.</p>
 
 <h3 id="r-audit">Audit significant actions</h3>
 <p>Call <code>audit_log(action, module, target_type, target_id, details)</code> for anything an administrator would want to be able to find later, and add a human sentence for the action to the <code>friendly</code> dictionary in {{ file('core/security.py') }}. Never put a secret in <code>details</code>.</p>

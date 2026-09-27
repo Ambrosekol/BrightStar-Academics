@@ -6,9 +6,10 @@ to them; the guardian contact on the student's record also gets an email and a W
 message names the term and the kind of timetable, not every entry line by line, so it stays short —
 the student and parent open the timetable itself to see the dates.
 
-The messages go out on a thread of their own (``core.background``): releasing a timetable must not
-make an administrator wait on a mail server, and a message that cannot be sent must never undo the
-release, which has already been committed by the time this is called.
+The messages go out as a durable job (``core.jobs``): releasing a timetable must not make an
+administrator wait on a mail server, and a message that cannot be sent - or a thread that never
+finishes sending it - must never undo the release, which has already been committed by the time
+this is called, nor be lost; it is retried the next time a timetable is next released anywhere.
 """
 
 from datetime import datetime, timezone
@@ -16,7 +17,7 @@ from datetime import datetime, timezone
 from flask import current_app, url_for
 from sqlalchemy import select
 
-from core.background import run_in_background
+from core.jobs import job_handler, enqueue
 from core.branding import school_name
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp, _parent_ids_for_student
 from models import SchoolNotification, Student, StudentEnrolment, db
@@ -27,9 +28,11 @@ def announce_timetable_released(class_ids, session_id, term, exam_type, admin_id
     ``session_id``, and their parents. Call only after the release has been committed."""
     class_ids = sorted({int(c) for c in class_ids})
     if class_ids:
-        run_in_background(_announce, class_ids, session_id, term, exam_type, admin_id)
+        enqueue('announce_timetable', class_ids=class_ids, session_id=session_id, term=term,
+                exam_type=exam_type, admin_id=admin_id)
 
 
+@job_handler('announce_timetable')
 def _announce(class_ids, session_id, term, exam_type, admin_id):
     student_ids = sorted({sid for (sid,) in db.session.execute(
         select(StudentEnrolment.student_id).where(

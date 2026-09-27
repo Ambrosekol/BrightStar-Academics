@@ -63,7 +63,7 @@ flag = db.Column(Integer, nullable=False, default=0, server_default=text('0'))</
 <h2 id="notify">Notify parents about something</h2>
 <ol class="steps">
   <li>Write the sender in {{ file('core/notifications.py') }}, modelled on <code>_notify_parents_report_card_ready</code>: look the student up, add in-app <code>SchoolNotification</code> rows for linked parents, then best-effort email and WhatsApp to the guardian, each wrapped so one failure does not stop the other.</li>
-  <li>Call it <strong>after the commit</strong>. If it may be slow or covers many students, call it through <code>run_in_background</code> ({{ file('core/background.py') }}) and build any link with <code>url_for(..., _external=True)</code> inside the job (it runs in a request-like context on the school's own address).</li>
+  <li>Call it <strong>after the commit</strong>. If it may be slow or covers many students, register it with <code>@job_handler('name')</code> and call it through <code>enqueue('name', **kwargs)</code> ({{ file('core/jobs.py') }}) rather than calling it directly, so a restart mid-send is retried instead of lost; build any link with <code>url_for(..., _external=True)</code> inside the handler (it runs in a request-like context on the school's own address), and keep its keyword arguments to plain, JSON-serialisable values (ids, not ORM objects).</li>
   <li>In tests, set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so the work runs immediately and the fake mail server can be inspected.</li>
 </ol>
 

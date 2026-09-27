@@ -612,9 +612,10 @@ Every school gives each student a **report card for each term**, as a page and a
   email (PDF attached) and by WhatsApp, and adds an in-app alert for linked parent accounts; each
   attempt is logged on the receipt page. When a student's last result for a term is released, whether
   by the *Release all results* button, one result at a time, or the session's release date, the
-  parents are told by email, WhatsApp and in-app that the report card is ready. Sending happens on a
-  background thread (`core/background.py`), so nobody waits on a mail server and a failed message never
-  undoes what was saved. WhatsApp Cloud API only delivers free-form messages within 24 hours of the
+  parents are told by email, WhatsApp and in-app that the report card is ready. Sending happens as a
+  durable background job (`core/jobs.py`), so nobody waits on a mail server, a failed message never
+  undoes what was saved, and a thread that never finishes (a restart, a dropped connection) is retried
+  rather than lost. WhatsApp Cloud API only delivers free-form messages within 24 hours of the
   recipient's last message to the school's number; a school that needs to reach parents outside that
   window needs approved message templates, which this application does not send.
 - **Results & Records** is a dialog: choose a class, search its students, choose a student, then a
@@ -773,6 +774,7 @@ python tests/verification/write_paths_timetable.py           # exam/test timetab
 python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
+python tests/verification/write_paths_resilience.py           # durable background jobs: success, retry-then-give-up, a dead thread picked back up, the real payment-receipt job's trail
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies

@@ -5,16 +5,17 @@ A card is ready when *every* official result of the student in that term has bee
 one says it. Every way a result can be released comes here afterwards with the (student, session,
 term) it touched, and only the ones whose card really is ready are announced.
 
-The messages go out on a thread of their own (``core.background``): an administrator releasing a
-class's results must not wait on a mail server, and a message that cannot be sent must never undo
-the release, which has already been committed by the time this is called.
+The messages go out as a durable job (``core.jobs``): an administrator releasing a class's results
+must not wait on a mail server, and a message that cannot be sent - or a thread that never finishes
+sending it - must never undo the release, which has already been committed by the time this is
+called, nor be lost; it is retried the next time anything of this same kind is announced.
 """
 
 from flask import url_for
 from sqlalchemy import select
 
 from blueprints.school.report_card_data import _is_ready, _official_result_counts, term_slug
-from core.background import run_in_background
+from core.jobs import job_handler, enqueue
 from core.notifications import _notify_parents_report_card_ready
 from models import AcademicSession, db
 from core.db_helpers import one_scalar
@@ -27,9 +28,10 @@ def announce_ready_report_cards(periods, admin_id=None):
     """
     periods = sorted({(int(s), int(sess), term or 'Full Session') for s, sess, term in periods})
     if periods:
-        run_in_background(_announce, periods, admin_id)
+        enqueue('announce_report_cards', periods=periods, admin_id=admin_id)
 
 
+@job_handler('announce_report_cards')
 def _announce(periods, admin_id):
     for student_id, session_id, term in periods:
         try:
