@@ -20,9 +20,21 @@ identical click (the same rendered form's hidden `_idempotency_key`) is sent to 
 first attempt ended up without running the write again, while a genuinely different click (its
 own key) still records its own payment.
 
+Exam-taking resilience: the entrance exam's answer-autosave script (templates/exam.html) used to
+treat a dropped connection exactly like the paper being over - a network failure or an unexpected
+server error sent the candidate straight to their result, silently, with no chance to retry. This
+runs that script's own retry logic in a real headless browser (Chrome, skipped if not installed):
+a save that fails twice over the network then succeeds ends up saved; one that always fails over
+the network, or one the server always answers with a transient error, is retried a bounded number
+of times and then says so in plain words - neither ever ends the candidate's paper on its own.
+
 Run:  python tests/verification/write_paths_resilience.py
 """
+import html
+import json
 import os
+import re
+import subprocess
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -53,6 +65,7 @@ from control_plane.context import tenant_context  # noqa: E402
 from control_plane.registry import get_tenant, platform_session, to_info  # noqa: E402
 from control_plane.routing import engine_for  # noqa: E402
 from core import jobs  # noqa: E402
+from core.entrance import _find_chrome  # noqa: E402
 
 results = []
 
@@ -226,6 +239,74 @@ count_after_three = in_school(lambda: sql(
     "SELECT count(*) FROM finance_payments WHERE student_id = :s", s=student_id)[0][0])
 check("…while a genuinely different click (its own key) records its own payment",
       r3.status_code == 302 and count_after_three == count_after_two + 1, (r3.status_code, count_after_three))
+
+# ================================================================ the exam page's own retry logic, in a real browser
+CHROME = str(_find_chrome()) if _find_chrome() else None
+if not CHROME:
+    print("SKIP the exam save-retry script in a real browser: Chrome was not found (set BRIGHTSTARS_CHROME).")
+else:
+    exam_source = open(os.path.join(ROOT, "templates", "exam.html"), encoding="utf-8").read()
+    script_match = re.search(r"<script>\s*\nconst qid=.*?\n</script>", exam_source, re.S)
+    script_body = script_match.group(0)[len("<script>"):-len("</script>")].replace(
+        "{{q.id}}", "1").replace("{{remaining}}", "600")
+    page = f"""<!doctype html><html><body>
+<div class="timer" id="timer">--:--</div><div class="save-status" id="saveStatus"></div>
+<input type="hidden" id="csrfToken" value="test-token">
+<label><input type="radio" name="option" value="0" checked></label>
+<a id="next" href="/exam?q=2">Save &amp; Next</a>
+<pre id="out"></pre>
+<script>
+window.__calls = 0;
+window.__mode = 'retry-then-success';
+window.fetch = function(url, opts) {{
+  window.__calls += 1;
+  if (window.__mode === 'retry-then-success') {{
+    if (window.__calls < 3) return Promise.reject(new TypeError('network error'));
+    return Promise.resolve({{ok: true, status: 200}});
+  }}
+  if (window.__mode === 'always-fail-network') return Promise.reject(new TypeError('network error'));
+  if (window.__mode === 'always-fail-server') return Promise.resolve({{ok: false, status: 500}});
+  return Promise.resolve({{ok: true, status: 200}});
+}};
+</script>
+<script>{script_body}</script>
+<script>
+(async function () {{
+  await save();
+  var afterSuccess = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
+
+  window.__mode = 'always-fail-network'; window.__calls = 0;
+  await save();
+  var afterNetwork = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
+
+  window.__mode = 'always-fail-server'; window.__calls = 0;
+  await save();
+  var afterServer = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
+
+  document.getElementById('out').textContent = JSON.stringify(
+    {{afterSuccess: afterSuccess, afterNetwork: afterNetwork, afterServer: afterServer}});
+}})();
+</script>
+</body></html>"""
+    path = os.path.join(TMP, "exam_retry_check.html")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(page)
+    run = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--allow-file-access-from-files",
+                          "--virtual-time-budget=15000", "--dump-dom",
+                          "file:///" + path.replace(os.sep, "/")], capture_output=True, text=True, timeout=60)
+    found = re.search(r'<pre id="out">(.*?)</pre>', run.stdout, re.S)
+    outcome = json.loads(html.unescape(found.group(1))) if found else {}
+    check("the exam page's retry script ran in a real browser", bool(outcome), run.stderr[-300:] if not outcome else "")
+    if outcome:
+        check("two network failures then a success end up saved, not abandoned",
+              outcome["afterSuccess"]["calls"] == 3 and outcome["afterSuccess"]["status"] == "Saved",
+              outcome["afterSuccess"])
+        check("a save that always fails over the network is retried a bounded number of times, then says so plainly",
+              outcome["afterNetwork"]["calls"] == 4  # the first try plus 3 retries
+              and "Could not save" in outcome["afterNetwork"]["status"], outcome["afterNetwork"])
+        check("a transient server error (not a real end state) is retried the same way, never ending the paper on its own",
+              outcome["afterServer"]["calls"] == 4 and "Could not save" in outcome["afterServer"]["status"],
+              outcome["afterServer"])
 
 print(f"\n{sum(1 for _, ok, _ in results if ok)}/{len(results)} checks passed")
 if DROP_TEST_DATABASES:

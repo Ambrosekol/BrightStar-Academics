@@ -774,7 +774,7 @@ python tests/verification/write_paths_timetable.py           # exam/test timetab
 python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
-python tests/verification/write_paths_resilience.py           # durable background jobs (success, retry-then-give-up, a dead thread picked back up) and retry-safe writes (a resubmitted click never double-records)
+python tests/verification/write_paths_resilience.py           # durable background jobs, retry-safe writes, and the exam page's own connection-drop retry logic in a real browser
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies
