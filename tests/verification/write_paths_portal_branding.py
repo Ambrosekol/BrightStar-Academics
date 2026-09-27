@@ -432,7 +432,13 @@ with A.app.app_context(), tenant_context(info_for("selfserve")):
 check("the branding.manage permission exists in every school", permission_id is not None)
 
 c_clerk, u_clerk = client("selfserve.portal.test")
-c_clerk.post("/login", data={"username": "clerk", "password": "clerk-password-123"}, base_url=u_clerk)
+# A real GET first lets the tenant boundary stamp this brand-new client's session with this
+# school's own tenant_id; only then does a token planted straight into the session (rather than
+# scraped from a page) survive to the next request instead of being wiped as a foreign cookie.
+c_clerk.get("/login", base_url=u_clerk)
+with c_clerk.session_transaction(base_url=u_clerk) as sess:
+    sess["_csrf_token"] = "t" * 32
+c_clerk.post("/login", data={"username": "clerk", "password": "clerk-password-123", "_csrf_token": "t" * 32}, base_url=u_clerk)
 c_clerk.get("/admin/workspace/school", base_url=u_clerk)
 with c_clerk.session_transaction(base_url=u_clerk) as sess:
     sess["_csrf_token"] = "t" * 32

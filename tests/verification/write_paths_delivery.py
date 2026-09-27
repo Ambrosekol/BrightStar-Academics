@@ -470,7 +470,13 @@ with A.app.app_context(), tenant_context(info_alpha):
                              admin_type_id=ordinary.id, active=1, password_must_change=0, created_at="2026-01-01T00:00:00+00:00"))
     A.db.session.commit()
 clerk = A.app.test_client()
-clerk.post("/login", data={"username": "clerk", "password": "clerk-password-123"}, base_url=ALPHA)
+# A real GET first lets the tenant boundary stamp this brand-new client's session with this
+# school's own tenant_id; only then does a token planted straight into the session (rather than
+# scraped from a page) survive to the next request instead of being wiped as a foreign cookie.
+clerk.get("/login", base_url=ALPHA)
+with clerk.session_transaction(base_url=ALPHA) as sess:
+    sess["_csrf_token"] = "t" * 32
+clerk.post("/login", data={"username": "clerk", "password": "clerk-password-123", "_csrf_token": "t" * 32}, base_url=ALPHA)
 clerk.get("/admin/workspace/school", base_url=ALPHA)
 with clerk.session_transaction(base_url=ALPHA) as sess:
     sess["_csrf_token"] = "t" * 32

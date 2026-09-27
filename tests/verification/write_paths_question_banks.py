@@ -154,7 +154,8 @@ def text_of(r):
 
 def sign_in(slug, username, password, entrance_area=True):
     c, u = client(f"{slug}.portal.test")
-    r = c.post("/login", data={"username": username, "password": password}, base_url=u)
+    r = c.post("/login", data={"username": username, "password": password,
+                               "_csrf_token": csrf(c, u, "/login")}, base_url=u)
     if entrance_area:
         # An administrator chooses the entrance-examination area before its pages open.
         c.get("/admin/workspace/entrance", base_url=u)

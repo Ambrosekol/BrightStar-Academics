@@ -116,20 +116,26 @@ def add_admin(info, username, role_name):
 
 # ================================================================ 6. a failed sign-in explains itself
 anon = A.app.test_client()
-r = anon.post("/login", data={"username": "somebody", "password": "wrong-password"}, base_url=ALPHA)
+login_token = csrf(anon, "/login", ALPHA)
+check("a sign-in with no CSRF token at all is refused outright (403), not treated as a wrong password",
+      anon.post("/login", data={"username": "somebody", "password": "wrong-password"}, base_url=ALPHA).status_code == 403)
+check("…and so is one with a wrong token",
+      anon.post("/login", data={"username": "somebody", "password": "wrong-password", "_csrf_token": "wrong"},
+                base_url=ALPHA).status_code == 403)
+r = anon.post("/login", data={"username": "somebody", "password": "wrong-password", "_csrf_token": login_token}, base_url=ALPHA)
 page = r.get_data(as_text=True)
 check("a failed sign-in says why", "We could not verify those login details" in page and 'role="alert"' in page)
 check("…and keeps the username that was typed, but never the password",
       'value="somebody"' in page and "wrong-password" not in page)
-r = anon.post("/login", data={"username": "", "password": ""}, base_url=ALPHA)
+r = anon.post("/login", data={"username": "", "password": "", "_csrf_token": login_token}, base_url=ALPHA)
 check("an empty sign-in says what is missing", "Enter your username" in r.get_data(as_text=True))
-r = anon.post("/login", data={"username": '"><script>alert(1)</script>', "password": "x"}, base_url=ALPHA)
+r = anon.post("/login", data={"username": '"><script>alert(1)</script>', "password": "x", "_csrf_token": login_token}, base_url=ALPHA)
 body = r.get_data(as_text=True)
 check("a hostile username is shown as text, never as markup",
       "<script>alert(1)</script>" not in body and "&lt;script&gt;" in body)
 throttled = None
 for _ in range(10):
-    throttled = anon.post("/login", data={"username": "flood", "password": "x"}, base_url=ALPHA)
+    throttled = anon.post("/login", data={"username": "flood", "password": "x", "_csrf_token": login_token}, base_url=ALPHA)
 check("too many attempts are refused, and the page says so",
       throttled.status_code == 429 and "Too many sign-in attempts" in throttled.get_data(as_text=True))
 check("a normal visit to the sign-in page shows no error", 'role="alert"' not in anon.get("/login", base_url=BETA).get_data(as_text=True))
@@ -172,7 +178,7 @@ message_id = sql(info_alpha, "SELECT id FROM admin_messages ORDER BY id DESC LIM
 
 def signed_in_as(username):
     c = A.app.test_client()
-    c.post("/login", data={"username": username, "password": "staff-password-123"}, base_url=ALPHA)
+    c.post("/login", data={"username": username, "password": "staff-password-123", "_csrf_token": csrf(c, "/login", ALPHA)}, base_url=ALPHA)
     c.get("/admin/workspace/school", base_url=ALPHA)
     return c
 

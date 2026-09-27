@@ -254,7 +254,8 @@ for path in ("/school", "/school/about", "/school/academics", "/school/school-li
 check("the school's portal itself still works",
       c_school.get("/login", base_url=u_school).status_code == 200)
 
-r = c_school.post("/login", data={"username": "alpha_admin", "password": temp_password},
+r = c_school.post("/login", data={"username": "alpha_admin", "password": temp_password,
+                                  "_csrf_token": csrf(c_school, u_school, "/login")},
                   base_url=u_school)
 check("the school's first admin can sign in with the one-time password",
       r.status_code == 302 and "/admin/password" in r.headers["Location"],
@@ -404,7 +405,8 @@ check("a ticket cannot be redeemed on the platform host",
 # ------------------------------------ the reserved account is not a login
 c_try, u_try = client(portal_host)
 r = c_try.post("/login", data={"username": PLATFORM_ADMIN_USERNAME_PREFIX + "ops",
-                               "password": "a-long-platform-password"}, base_url=u_try)
+                               "password": "a-long-platform-password",
+                               "_csrf_token": csrf(c_try, u_try, "/login")}, base_url=u_try)
 check("the operator account cannot be signed into with the platform password",
       r.status_code == 200 and "Location" not in r.headers)
 check("its stored password is not the platform password",

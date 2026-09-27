@@ -147,7 +147,7 @@ check("a candidate is registered for the papers", len(codes) == 2, r.get_data(as
 code, password = codes
 
 cand = A.app.test_client()
-cand.post("/login", data={"username": code, "password": password}, base_url=UA)
+cand.post("/login", data={"username": code, "password": password, "_csrf_token": csrf(cand, "/login", UA)}, base_url=UA)
 dash = cand.get("/candidate/dashboard", base_url=UA).get_data(as_text=True)
 paper_ids = re.findall(r"/candidate/papers/(\d+)/start", dash)
 token = re.search(r'name="_csrf_token" value="([^"]+)"', dash).group(1)

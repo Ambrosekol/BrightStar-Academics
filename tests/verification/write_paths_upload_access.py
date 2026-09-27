@@ -85,9 +85,20 @@ class Person:
     def get(self, path, base=None):
         return self.c.get(path, base_url=base or self.base, environ_base={"REMOTE_ADDR": "10.1.1.1"})
 
+    def token(self):
+        with self.c.session_transaction(base_url=self.base) as sess:
+            if not sess.get("_csrf_token"):
+                sess["_csrf_token"] = "test-token-" + str(id(self))
+            return sess["_csrf_token"]
+
     def sign_in(self, username):
-        return self.c.post("/login", data={"username": username, "password": PASSWORD}, base_url=self.base,
-                           environ_base={"REMOTE_ADDR": next_addr()})
+        # A real GET first lets the tenant boundary stamp this browser's session with this
+        # school's own tenant_id; only then does a token planted straight into the session
+        # (rather than scraped from a page) survive to the login POST instead of being wiped
+        # as a foreign cookie.
+        self.get("/login")
+        return self.c.post("/login", data={"username": username, "password": PASSWORD, "_csrf_token": self.token()},
+                           base_url=self.base, environ_base={"REMOTE_ADDR": next_addr()})
 
     def session(self):
         with self.c.session_transaction(base_url=self.base) as sess:

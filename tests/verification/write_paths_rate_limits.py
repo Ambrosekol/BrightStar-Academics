@@ -274,12 +274,13 @@ console.post("/platform/schools/new", data={
     content_type="multipart/form-data")
 
 anon = A.app.test_client()
-statuses = [anon.post("/login", data={"username": "flood", "password": "x"}, base_url=ALPHA) for _ in range(9)]
+login_token = csrf(anon, "/login", ALPHA)
+statuses = [anon.post("/login", data={"username": "flood", "password": "x", "_csrf_token": login_token}, base_url=ALPHA) for _ in range(9)]
 check("the school sign-in refuses attempt 9 with its error page (429)",
       statuses[-1].status_code == 429 and "Too many sign-in attempts" in statuses[-1].get_data(as_text=True))
 check("…after eight ordinary failed sign-ins (the limit is unchanged)",
       all(s.status_code == 200 and "We could not verify" in s.get_data(as_text=True) for s in statuses[:8]))
-other = anon.post("/login", data={"username": "somebody-else", "password": "x"}, base_url=ALPHA)
+other = anon.post("/login", data={"username": "somebody-else", "password": "x", "_csrf_token": login_token}, base_url=ALPHA)
 check("…and another username from the same address is not caught up in it",
       other.status_code == 200 and "We could not verify" in other.get_data(as_text=True))
 check("the sign-in count is in the registry, under a hash of the key",
@@ -291,7 +292,7 @@ ratelimit.platform_session = broken
 ratelimit._registry_down_until = 0.0
 during = []
 for _ in range(9):
-    during.append(anon.post("/login", data={"username": "flood-down", "password": "x"}, base_url=ALPHA))
+    during.append(anon.post("/login", data={"username": "flood-down", "password": "x", "_csrf_token": login_token}, base_url=ALPHA))
     ratelimit._registry_down_until = 0.0
 ratelimit.platform_session = original_session
 ratelimit._registry_down_until = 0.0
@@ -302,8 +303,9 @@ check("…and the request's own school session is left healthy afterwards",
       anon.get("/login", base_url=ALPHA).status_code == 200)
 
 last = None
+forgot_token = csrf(anon, "/forgot-password", ALPHA)
 for _ in range(6):
-    last = anon.post("/forgot-password", data={"identifier": "nobody"},
+    last = anon.post("/forgot-password", data={"identifier": "nobody", "_csrf_token": forgot_token},
                      base_url=ALPHA, follow_redirects=True)
 check("password recovery refuses the sixth request in a row (limit 5)",
       "Too many password-recovery requests" in last.get_data(as_text=True))

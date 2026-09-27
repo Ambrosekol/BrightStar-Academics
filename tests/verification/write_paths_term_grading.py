@@ -281,7 +281,7 @@ NEW_PASSWORD = "a-brand-new-password-1"
 def student_in(login, temp):
     """A student signs in with the login they were given and lands on their portal."""
     b = Browser(SCHOOL, "/student/password")
-    r = b.post("/login", {"username": login, "password": temp}, token=False)  # the sign-in form carries no token
+    r = b.post("/login", {"username": login, "password": temp}, page="/login")
     check(f"{login} signs in to the student portal", "/student/dashboard" in r.headers.get("Location", ""),
           r.headers.get("Location", ""))
     # A new student's first visit is the page where they choose a private password.
@@ -745,7 +745,7 @@ def add_staff(role_name, permissions, username):
     temp = re.search(r'credential-password">(.+?)</strong>', html.unescape(r.get_data(as_text=True)), re.S)
     check(f"{username} was made, holding only the role '{role_name}'", temp is not None and role is not None)
     b = Browser(SCHOOL, "/admin/password")
-    r = b.post("/login", {"username": username, "password": temp.group(1).strip()}, token=False)
+    r = b.post("/login", {"username": username, "password": temp.group(1).strip()}, page="/login")
     b.post("/admin/password", {"current_password": temp.group(1).strip(), "new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD})
     b.get("/admin/workspace/school")
     return b

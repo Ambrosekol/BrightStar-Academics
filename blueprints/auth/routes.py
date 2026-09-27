@@ -66,6 +66,8 @@ def _send_recovery_email(recipient,name,reset_url):
 @app.route('/forgot-password',methods=['GET','POST'])
 def forgot_password():
     if request.method=='POST':
+        if not csrf_check_request():
+            abort(403, description='Invalid or missing CSRF token.')
         if not _rate_limit(f'forgot-password:{_rate_limit_scope()}:{request.remote_addr or "unknown"}', limit=5, window=900):
             flash('Too many password-recovery requests. Please wait a few minutes and try again.','error')
             return redirect(url_for('forgot_password'))
@@ -101,6 +103,8 @@ def password_reset(token):
     if not row: return render_template('password_reset.html',errors=['This password reset link is invalid or has expired.'],valid=False)
     errors=[]
     if request.method=='POST':
+        if not csrf_check_request():
+            abort(403, description='Invalid or missing CSRF token.')
         new=request.form.get('new_password',''); confirm=request.form.get('confirm_password','')
         if len(new)<8: errors.append('Your new password must be at least 8 characters long.')
         if new!=confirm: errors.append('The new password and confirmation do not match.')
@@ -123,6 +127,8 @@ def password_reset(token):
 @app.route('/login',methods=['GET','POST'])
 def login():
     if request.method=='POST':
+        if not csrf_check_request():
+            abort(403, description='Invalid or missing CSRF token.')
         identifier=request.form.get('username','').strip()
         password=request.form.get('password','')
         # The bucket is per school as well as per IP/identifier: the counter is

@@ -158,7 +158,7 @@ in_school("alpha", seed_people)
 
 def signed_in(username, workspace=None):
     c = A.app.test_client()
-    c.post("/login", data={"username": username, "password": PASSWORD}, base_url=ALPHA)
+    c.post("/login", data={"username": username, "password": PASSWORD, "_csrf_token": csrf(c, "/login", ALPHA)}, base_url=ALPHA)
     if workspace:
         c.get(workspace, base_url=ALPHA)
     return c

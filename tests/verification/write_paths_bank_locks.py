@@ -406,7 +406,7 @@ def add_staff(role_name, permissions, username):
     temp = re.search(r'credential-password">(.+?)</strong>', html.unescape(r.get_data(as_text=True)), re.S)
     check(f"{username} was made, holding only the role '{role_name}'", temp is not None and role is not None)
     b = Browser(SCHOOL, "/admin/password")
-    b.post("/login", {"username": username, "password": temp.group(1).strip()}, token=False)
+    b.post("/login", {"username": username, "password": temp.group(1).strip()}, page="/login")
     b.post("/admin/password", {"current_password": temp.group(1).strip(), "new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD})
     b.get("/admin/workspace/entrance")
     return b

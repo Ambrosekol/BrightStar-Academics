@@ -108,8 +108,13 @@ class Person:
         return self.post(path, {**(data or {}), "_csrf_token": self.token()}, **kw)
 
     def sign_in(self, username, password):
-        return self.c.post("/login", data={"username": username, "password": password}, base_url=self.base,
-                           environ_base={"REMOTE_ADDR": next_addr()})
+        # A real GET first lets the tenant boundary stamp this browser's session with this
+        # school's own tenant_id; only then does a token planted straight into the session
+        # (rather than scraped from a page) survive to the login POST instead of being wiped
+        # as a foreign cookie.
+        self.get("/login")
+        return self.c.post("/login", data={"username": username, "password": password, "_csrf_token": self.token()},
+                           base_url=self.base, environ_base={"REMOTE_ADDR": next_addr()})
 
     def in_(self, path):
         """Whether a page opens for this person (200), rather than sending them to sign in."""
@@ -549,7 +554,9 @@ raw = "reset-token-for-efe-0123456789"
 sql("INSERT INTO password_reset_tokens (account_type, account_id, token_hash, expires_at, created_at) "
     "VALUES ('student', :i, :h, :e, :c)", i=STUDENTS["Efe"], h=hashlib.sha256(raw.encode()).hexdigest(),
     e=iso(NOW + timedelta(minutes=30)), c=iso(NOW))
-r = Person().post(f"/reset-password/{raw}", {"new_password": "efe-reset-pass-1", "confirm_password": "efe-reset-pass-1"})
+efe_reset = Person()
+efe_reset.get(f"/reset-password/{raw}")  # stamps this fresh session with school A's tenant_id first
+r = efe_reset.form(f"/reset-password/{raw}", {"new_password": "efe-reset-pass-1", "confirm_password": "efe-reset-pass-1"})
 check("a student resets their password with an emailed link", r.status_code == 302, str(r.status_code))
 check("…and both browsers that were signed in with the old password are signed out",
       ra.sent_to_sign_in("/student/dashboard") and rb.sent_to_sign_in("/student/dashboard"))
@@ -638,7 +645,7 @@ for label, path in (("a valid link", f"/reset-password/{token}"), ("an invalid o
     r = anon.get(path)
     check(f"the password-reset page ({label}) is never stored and never sends a referrer",
           "no-store" in r.headers.get("Cache-Control", "") and r.headers.get("Referrer-Policy") == "no-referrer")
-r = anon.post(f"/reset-password/{token}", {"new_password": "x", "confirm_password": "y"})
+r = anon.form(f"/reset-password/{token}", {"new_password": "x", "confirm_password": "y"})
 check("…nor is the answer to submitting it", "no-store" in r.headers.get("Cache-Control", ""))
 check("an ordinary page is not marked no-store by that rule", "no-store" not in login_page.headers.get("Cache-Control", ""))
 sources = ""
@@ -653,7 +660,12 @@ check("(why same-origin and not no-referrer) the application really does read th
 # ================================================================ the trusted proxy setting
 def audit_ip_for(person, **environ):
     """Sign in the clerk and read the address the audit log kept for it."""
-    person.c.post("/login", data={"username": "boss", "password": PASSWORD}, base_url=ALPHA, **environ)
+    # A real GET first (an ordinary address, nothing under test) lets the tenant boundary stamp
+    # this session with school A's own tenant_id, so the token planted for the login POST below
+    # survives instead of being wiped as a foreign cookie.
+    person.c.get("/login", base_url=ALPHA)
+    person.c.post("/login", data={"username": "boss", "password": PASSWORD, "_csrf_token": person.token()},
+                  base_url=ALPHA, **environ)
     return sql("SELECT ip_address FROM audit_logs WHERE action = 'admin_login' ORDER BY id DESC LIMIT 1")[0][0]
 
 

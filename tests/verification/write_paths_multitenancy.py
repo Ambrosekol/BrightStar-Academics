@@ -61,6 +61,13 @@ def check(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail and not ok else ""))
 
 
+def csrf(c, path, base):
+    body = c.get(path, base_url=base).get_data(as_text=True)
+    marker = 'name="_csrf_token" value="'
+    start = body.index(marker) + len(marker)
+    return body[start:body.index('"', start)]
+
+
 def info_for(slug):
     with platform_session() as s:
         return to_info(get_tenant(s, slug))
@@ -157,7 +164,8 @@ with A.app.app_context():
 check("a query with no school selected is refused instead of using a default database", raised)
 
 # ---------------------------------------------------------- sessions across schools
-r = c_al.post("/login", data={"username": "alpha_admin", "password": alpha_password}, base_url=u_al)
+r = c_al.post("/login", data={"username": "alpha_admin", "password": alpha_password,
+                              "_csrf_token": csrf(c_al, "/login", u_al)}, base_url=u_al)
 check("a school admin can sign in with the temporary password and is sent to change it",
       r.status_code == 302 and "/admin/password" in r.headers["Location"], f"{r.status_code} {r.headers.get('Location')}")
 r_ok = c_al.get("/admin/password", base_url=u_al)
@@ -174,7 +182,8 @@ check("…and by the existing school too",
       r_y.status_code == 302 and "/login" in r_y.headers["Location"], f"{r_y.status_code}")
 check("school A's own session is unaffected by that", c_al.get("/admin/password", base_url=u_al).status_code == 200)
 c_be_fresh, _ = client("beta.test")
-r_login_b = c_be_fresh.post("/login", data={"username": "alpha_admin", "password": alpha_password}, base_url=u_be)
+r_login_b = c_be_fresh.post("/login", data={"username": "alpha_admin", "password": alpha_password,
+                                            "_csrf_token": csrf(c_be_fresh, "/login", u_be)}, base_url=u_be)
 r_after_b = c_be_fresh.get("/admin/password", base_url=u_be)
 check("school A's admin credentials do not sign in to school B",
       r_login_b.status_code == 200 and "Location" not in r_login_b.headers
