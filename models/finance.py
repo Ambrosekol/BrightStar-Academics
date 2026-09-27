@@ -129,3 +129,40 @@ class FinanceDeliveryLog(db.Model):
     error_message = db.Column(Text)
     sent_by = db.Column(Integer, ForeignKey('admins.id'))
     sent_at = db.Column(Text, nullable=False)
+
+
+class FinanceOnlinePayment(db.Model):
+    """One attempt by a parent to pay online through Paystack, from the moment it is started to
+    however it ends.
+
+    ``reference`` is generated here and sent to Paystack as the transaction's own reference, so it
+    is what ties a webhook, a callback and this row together; it is unique regardless of how many
+    times a parent tries. ``status`` moves pending -> success or failed (Paystack itself decides
+    which) or abandoned (the parent never completed checkout); only a conditional UPDATE that
+    still finds it 'pending' is allowed to move it out of that state, so a callback and a webhook
+    racing to confirm the same payment can never both act on it (core/payments.py).
+
+    A payment confirmed this way still becomes an ordinary FinancePayment (``payment_id``), made
+    through the exact same code a member of staff's manually recorded payment is - the receipt,
+    the notification, the audit trail are all identical either way.
+    """
+
+    __tablename__ = 'finance_online_payments'
+    __table_args__ = (
+        UniqueConstraint('reference'),
+        Index('idx_finance_online_payments_status', 'status', 'created_at'),
+        Index('idx_finance_online_payments_student', 'student_id'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    reference = db.Column(Text, nullable=False)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    parent_id = db.Column(Integer, ForeignKey('parent_accounts.id'))
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    amount = db.Column(Float, nullable=False)
+    status = db.Column(Text, nullable=False, default='pending', server_default=text("'pending'"))
+    paystack_transaction_id = db.Column(Text)
+    payment_id = db.Column(Integer, ForeignKey('finance_payments.id'))
+    failure_reason = db.Column(Text)
+    created_at = db.Column(Text, nullable=False)
+    verified_at = db.Column(Text)

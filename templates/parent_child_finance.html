@@ -51,6 +51,18 @@
     <div class="fp-kpi is-outstanding"><span>Outstanding (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_outstanding or 0) }}</strong></div>
   </div>
 
+  {% if paystack_available and total_outstanding and total_outstanding > 0.005 %}
+  <div class="ui-alert ui-alert--info fp-alert-row">
+    <form method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+      <strong>Pay online</strong>
+      <span>₦</span><input type="number" name="amount" step="0.01" min="0.01" max="{{ '%.2f'|format(total_outstanding) }}" value="{{ '%.2f'|format(total_outstanding) }}" style="width:140px" required>
+      <button class="btn btn-primary btn-small" type="submit">Pay with Paystack</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% if other_sessions_with_balance %}
   <div class="ui-alert ui-alert--warning fp-alert-row">
     <strong>Balance also outstanding in:</strong>

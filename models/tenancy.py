@@ -22,6 +22,23 @@ class SchoolDeliverySetting(db.Model):
     updated_by = db.Column(Integer, ForeignKey('admins.id'))
 
 
+class SchoolPaymentSetting(db.Model):
+    """A school's own Paystack account: its public key, and its secret key, encrypted.
+
+    The same shape as SchoolDeliverySetting, and for the same reason: kept apart from the general
+    settings store, which is read freely to render pages. Only core/payments.py reads this table.
+    """
+
+    __tablename__ = 'school_payment_settings'
+    __table_args__ = (UniqueConstraint('setting_key'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    setting_key = db.Column(Text, nullable=False)
+    setting_value = db.Column(Text)
+    updated_at = db.Column(Text, nullable=False)
+    updated_by = db.Column(Integer, ForeignKey('admins.id'))
+
+
 class School(db.Model):
     __tablename__ = 'schools'
     __table_args__ = (UniqueConstraint('code'),)

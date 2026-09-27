@@ -186,13 +186,17 @@ def parent_child_finance(student_id):
         .where(FinancePayment.student_id==student_id)
         .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc())).all()
 
+    from core import payments as paystack
+    paystack_settings=paystack.payment_settings()
+
     return render_template(
         'parent_child_finance.html',
         student=student,sessions=sessions,session=session_row,account=account,
         total_assessed=lifetime['assessed'],total_paid=lifetime['paid'],
         total_outstanding=lifetime['outstanding'],total_unallocated=lifetime['unallocated'],
         other_sessions_with_balance=other_sessions_with_balance,
-        payments=payments)
+        payments=payments,
+        paystack_available=paystack_settings is not None)
 
 @app.route('/parent/children/<int:student_id>/receipts/<int:payment_id>/pdf')
 @parent_required

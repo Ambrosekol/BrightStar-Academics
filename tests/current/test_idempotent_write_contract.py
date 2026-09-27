@@ -14,6 +14,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "templates"
 
+# A route that only ever redirects (never renders a template of its own) has its form on
+# whatever page links to it instead - named here so the check still knows where to look.
+FORM_ELSEWHERE = {
+    "parent.pay_online": "parent_child_finance.html",
+}
+
 
 def _decorated_routes():
     """{scope: (file, view_name)} for every @idempotent_write('scope') in the codebase."""
@@ -40,13 +46,18 @@ def test_at_least_the_payment_form_is_guarded():
 
 def test_every_guarded_route_has_a_form_carrying_the_hidden_field():
     for scope, (path, view_name) in _decorated_routes().items():
-        source = path.read_text(encoding="utf-8") if path.is_absolute() else (ROOT / path).read_text(encoding="utf-8")
-        # Find the template this view renders (render_template('name.html', ...)) and check it,
-        # not just that *some* template somewhere has the field.
-        func_match = re.search(rf"def {re.escape(view_name)}\(.*?(?=\ndef |\Z)", source, re.S)
-        assert func_match, f"could not isolate {view_name} in {path}"
-        template_names = set(re.findall(r"render_template\(\s*['\"]([\w./-]+\.html)['\"]", func_match.group(0)))
-        assert template_names, f"{path}:{view_name} (scope {scope!r}) renders no template by a literal name"
+        if scope in FORM_ELSEWHERE:
+            template_names = {FORM_ELSEWHERE[scope]}
+        else:
+            source = path.read_text(encoding="utf-8") if path.is_absolute() else (ROOT / path).read_text(encoding="utf-8")
+            # Find the template this view renders (render_template('name.html', ...)) and check
+            # it, not just that *some* template somewhere has the field.
+            func_match = re.search(rf"def {re.escape(view_name)}\(.*?(?=\ndef |\Z)", source, re.S)
+            assert func_match, f"could not isolate {view_name} in {path}"
+            template_names = set(re.findall(r"render_template\(\s*['\"]([\w./-]+\.html)['\"]", func_match.group(0)))
+            assert template_names, (
+                f"{path}:{view_name} (scope {scope!r}) renders no template by a literal name - "
+                f"if its form lives on a different page, add it to FORM_ELSEWHERE above")
         for name in template_names:
             template_source = (TEMPLATES / name).read_text(encoding="utf-8")
             assert 'name="_idempotency_key"' in template_source and "idempotency_key()" in template_source, (

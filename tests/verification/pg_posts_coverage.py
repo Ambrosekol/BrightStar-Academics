@@ -16,6 +16,14 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 # Rules the script cannot submit, each with the reason. Empty is the goal. A rule here is
 # reported in the coverage summary on every run.
 EXEMPT = {
+    # A parent-authenticated write and a signature-verified webhook, not an admin CSRF form:
+    # neither fits this file's generic Actor/junk-submission shape (a "valid" post to either
+    # needs a real outstanding balance and a live fake Paystack server behind it, and the webhook
+    # carries no CSRF token to begin with - the HMAC signature over its raw body is what
+    # authorises it instead). Both are exercised for real, valid and hostile, in
+    # tests/verification/write_paths_paystack.py.
+    "/parent/children/<int:student_id>/finance/pay": "see write_paths_paystack.py",
+    "/paystack/webhook": "see write_paths_paystack.py",
 }
 
 # The rules write_paths_pg_posts.py submits a real, valid form to (and then junk).
@@ -55,6 +63,9 @@ EXERCISED = frozenset({
     "/admin/finance/payments/<int:payment_id>/allocate",
     "/admin/finance/payments/<int:payment_id>/void",
     "/admin/finance/payments/new",
+    "/admin/finance/paystack/clear",
+    "/admin/finance/paystack/save",
+    "/admin/finance/paystack/test",
     "/admin/finance/receipt-settings",
     "/admin/finance/receipts/<int:payment_id>/email",
     "/admin/finance/receipts/<int:payment_id>/whatsapp",

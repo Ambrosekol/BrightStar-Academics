@@ -38,4 +38,16 @@ and a WhatsApp message with the receipt attached — the moment it is saved.</di
 <h2 id="what-parents-see">What a parent sees</h2>
 <p>A linked parent sees their child's full fee account: what has been charged, what has been paid,
 and the outstanding balance, with every receipt available to download again.</p>
+
+<h2 id="online">Letting a parent pay online</h2>
+<p><a href="{{ url_for('admin_finance_paystack_settings') }}">Online Payments</a> connects your
+school's own Paystack account — enter the public and secret keys from your Paystack dashboard, and
+save. Once set up, every parent sees a "Pay online" box on their child's fee account, for any amount
+up to what is outstanding; they pay by card, bank transfer or however Paystack itself offers, and the
+payment appears in your records — with its own receipt and parent notification — automatically, the
+moment Paystack confirms it, exactly as if a member of staff had typed it in. There is no shared
+platform account behind this: until a school sets up its own, parents simply do not see the option.</p>
+<div class="guide-note">Paste the webhook address shown on this page into Paystack's own dashboard.
+It is what lets a payment still be recorded correctly even if the parent closes their browser the
+moment they finish paying, before being sent back to the portal.</div>
 {% endblock %}

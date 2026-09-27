@@ -145,8 +145,9 @@ class FakeSMTP:
 
 
 class FakeHTTPResponse:
-    def __init__(self, payload):
+    def __init__(self, payload, status=200):
         self._payload = payload
+        self.status = status
 
     def read(self):
         return json.dumps(self._payload).encode()
@@ -162,8 +163,16 @@ WHATSAPP_CALLS = []
 
 
 def fake_urlopen(request, timeout=None):
-    """Stands in for the WhatsApp Cloud API: answers each request the way the real one would."""
+    """Stands in for the WhatsApp Cloud API and Paystack: answers each request the way the real
+    one would."""
     url = request.full_url if hasattr(request, "full_url") else str(request)
+    if "api.paystack.co" in url:
+        if "connection-check-does-not-exist" in url:
+            return FakeHTTPResponse({"status": False, "message": "Transaction not found"}, status=404)
+        if url.endswith("/transaction/initialize"):
+            return FakeHTTPResponse({"status": True, "data": {
+                "authorization_url": "https://checkout.paystack.test/fake", "reference": "posts-test-ref"}})
+        return FakeHTTPResponse({"status": True, "data": {"status": "success", "amount": 100000, "id": 1}})
     WHATSAPP_CALLS.append(url)
     if url.endswith("/media"):
         return FakeHTTPResponse({"id": "media-1"})
@@ -731,6 +740,15 @@ check("a drawn signature was stored", (one("SELECT setting_value FROM school_set
 op.post(SIGN, {"action": "upload"}, files={"signature_file": png("sig.png")})
 op.post(SIGN, {"action": "remove"})
 check("a signature can be uploaded and removed", one("SELECT setting_value FROM school_settings WHERE setting_key = 'receipt_authorised_signature'") == "")
+
+# ================================================================ 6b. online payments (Paystack settings)
+PSK = f"{FIN}/paystack"
+op.post(f"{PSK}/save", {"public_key": "pk_test_postskey", "secret_key": "sk_test_postssecret"})
+check("Paystack settings were saved", one("SELECT setting_value FROM school_payment_settings WHERE setting_key = 'paystack_public_key'") == "pk_test_postskey")
+check("the secret key is encrypted at rest", (one("SELECT setting_value FROM school_payment_settings WHERE setting_key = 'paystack_secret_key'") or "").startswith("enc:v1:"))
+op.post(f"{PSK}/test", {})
+op.post(f"{PSK}/clear", {})
+check("Paystack settings can be tested and removed", one("SELECT COUNT(*) FROM school_payment_settings") == 0)
 
 # ================================================================ 7b. report cards: the teacher's comment, signatures and the head's details
 RC = "/admin/school/report-cards"

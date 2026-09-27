@@ -43,6 +43,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [The staff guide](#the-staff-guide)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
+- [Online payments (Paystack)](#online-payments-paystack)
 - [Command line](#command-line)
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
@@ -623,6 +624,31 @@ Every school gives each student a **report card for each term**, as a page and a
   The button releases every *approved* result of the term; results not yet verified or approved stay
   private and hold the report card back.
 
+## Online payments (Paystack)
+
+- **A school's own Paystack account, or none at all.** *Finance → Online Payments* connects a
+  school's own public and secret key; there is no shared platform account, so a school with
+  nothing saved simply has no "Pay online" option for its parents. The secret key is encrypted at
+  rest (`core/payments.py`), under its own key-derivation domain, separate from the one
+  Email & WhatsApp uses for a mail password — a compromise of one says nothing about the other —
+  and is never shown again once saved.
+- **A parent pays from their own fee account**, for any amount up to what is outstanding, and is
+  sent to Paystack's own checkout page — card, bank transfer, USSD, whatever Paystack itself
+  offers. Nothing about how a parent actually pays is built here; only starting the transaction and
+  confirming it are.
+- **Nothing is trusted from a browser alone.** A payment is only ever confirmed by asking Paystack
+  itself what became of it, never by trusting the callback that sends the parent's browser back to
+  the portal, nor a webhook's own claim, on their own. Both the callback and Paystack's own webhook
+  (paste the address shown on the settings page into Paystack's dashboard, so a payment is still
+  confirmed even if the parent closes their browser first) call the same confirmation step, and a
+  conditional database update is what stops both from ever acting on the same payment twice.
+- **Indistinguishable from a payment recorded by hand** once confirmed: the same receipt, the same
+  parent notification (email, WhatsApp, in-app), the same durable `send_payment_receipt` job. A
+  double-click starting a payment is retry-safe (`core/idempotency.py`): it is sent back to the
+  very same Paystack checkout instead of opening a second transaction.
+- Permission: `finance.paystack.manage`, separate from every other finance permission, so a school
+  decides exactly who may connect or change its own payment gateway.
+
 ## Command line
 
 ```
@@ -775,6 +801,7 @@ python tests/verification/write_paths_student_import.py      # bulk CSV student 
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
 python tests/verification/write_paths_resilience.py           # durable background jobs, retry-safe writes, the exam page's connection-drop retry logic, and the connectivity banner, in a real browser
+python tests/verification/write_paths_paystack.py              # online payments: encrypted keys, starting/confirming a payment, callback-vs-webhook idempotency, signature checks, permissions
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies

@@ -43,10 +43,42 @@ Balances are summed across every session, so a debt left from last year is not h
 <p>Steps 2 and 3 run as the durable 'send_payment_receipt' job ({{ file('core/jobs.py') }}) via <code>_send_payment_receipt_to_guardian</code>, and every attempt is written to {{ table('finance_delivery_logs') }}, so the bursar can see on the receipt page whether it arrived and why not. Sending by hand (<em>Send by email</em>, <em>Send by WhatsApp</em>) uses the same senders and logs the same way; who may send is <code>finance.receipt.send</code>.</p>
 <div class="note"><p>Contact details come from the student's record (<code>guardian_email</code>, <code>guardian_phone</code>). Phone numbers are converted to international form (<code>_ng_phone</code>). The WhatsApp Cloud API only delivers free-form messages within 24 hours of the recipient's last message to the school's number; reaching parents outside that window needs approved message templates, which this application does not send.</p></div>
 
+<h2 id="paystack">Online payments (Paystack)</h2>
+<p>A school connects its own Paystack account under <em>Online Payments</em>
+({{ route('admin_finance_paystack_settings') }}); there is no shared platform account, so a
+school with nothing saved simply has no "Pay online" option. Everything lives in
+{{ file('core/payments.py') }} and {{ file('blueprints/finance/paystack.py') }}; the secret key is
+encrypted at rest the same way {{ file('core/delivery.py') }} encrypts a mail password, under its
+own key-derivation domain (a compromise of one says nothing about the other), in
+{{ table('school_payment_settings') }}.</p>
+<p>A parent starting a payment from {{ route('parent_child_finance') }} writes a
+{{ table('finance_online_payments') }} row ('pending', with a reference this application
+generates) <em>before</em> Paystack is ever asked to open a transaction, then is redirected to
+whatever address Paystack's own <code>transaction/initialize</code> gives back. Two independent
+things can report what happened next: Paystack redirecting the browser to
+{{ route('parent_finance_pay_callback') }}, and Paystack calling {{ route('paystack_webhook') }}
+directly, server to server (checked against its HMAC-SHA512 signature, computed with the school's
+own secret key, before anything in its body is read as fact). Both paths call the same
+<code>_finalize</code>, which asks Paystack's own <code>transaction/verify/&lt;reference&gt;</code>
+what really happened — never trusting the callback's query string or the webhook's body on their
+own — and a conditional <code>UPDATE ... WHERE status = 'pending'</code> is the actual claim that
+lets only the first of the two arrivals act on one reference.</p>
+<p>A confirmed online payment becomes an ordinary {{ table('finance_payments') }} row, through the
+same fields a manually recorded payment gets (<code>method='Paystack'</code>, the reference,
+Paystack's own confirmed amount — never what the parent's request claimed), and reuses the exact
+same 'send_payment_receipt' job. <code>FinancePayment.recorded_by</code> is not nullable — no
+member of staff acted on this particular payment, so it is attributed to whoever last configured
+the school's own Paystack settings, which is an honest answer to "who is responsible for this
+channel existing" rather than a claim that they typed it in.</p>
+<div class="why"><p>Starting a payment is <code>@idempotent_write('parent.pay_online')</code>
+({{ file('core/idempotency.py') }}): a resubmitted click is sent to the same Paystack checkout
+address again rather than opening a second transaction for the same click.</p></div>
+
 <h2 id="perms">Permissions</h2>
 <ul>
   <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>
   <li>{{ perm('finance.record') }} records payments. {{ perm('finance.manage') }} manages fee items, voids payments and sets the receipt signature.</li>
   <li>{{ perm('finance.receipt.send') }} sends a receipt by email or WhatsApp.</li>
+  <li>{{ perm('finance.paystack.manage') }} sets up, tests and removes the school's own Paystack account.</li>
 </ul>
 {% endblock %}

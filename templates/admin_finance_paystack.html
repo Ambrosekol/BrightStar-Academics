@@ -1,0 +1,78 @@
+{% extends 'admin_base.html' %}
+{% block title %}Online Payments — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .delivery-state { display: flex; gap: 12px; align-items: flex-start; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #f8fbfe; margin-bottom: 18px; font-size: 13px; line-height: 1.5; }
+  .delivery-state strong { display: block; margin-bottom: 2px; }
+  .delivery-state.ok { background: #effaf4; border-color: #c8ead7; }
+  .delivery-state.warn { background: #fffaf0; border-color: #f1dfb6; }
+  .delivery-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 5px; background: #98a2b3; }
+  .delivery-state.ok .delivery-dot { background: #067647; }
+  .delivery-state.warn .delivery-dot { background: #b7791f; }
+  .secret-note { color: #067647; font-size: 11px; margin-top: 4px; }
+  .webhook-box { display: flex; gap: 8px; align-items: center; background: #f8fbfe; border: 1px solid var(--line); border-radius: 9px; padding: 10px 13px; font-family: monospace; font-size: 12.5px; word-break: break-all; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / FINANCE</div>
+  <h1>Online Payments</h1>
+  <p class="hero-copy">Connect your school's own Paystack account so a parent can pay a fee online, from their own portal, and have it land in your finance records exactly like a payment recorded by hand — same receipt, same notification. There is no shared platform account: until this is set up, parents cannot pay online at all.</p>
+</div></div>
+
+<section class="card modern-form">
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">1</span><div>
+      <h2>Your Paystack keys</h2>
+      <p>Found on your Paystack dashboard, under Settings &rsaquo; API Keys &amp; Webhooks.</p>
+    </div></div>
+
+    {% if settings %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Online payments are set up</strong>Parents can pay online for this school.</div></div>
+    {% else %}
+      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>Not set up yet</strong>Parents will not see a "Pay online" option until you save your keys below.</div></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin_finance_paystack_save') }}" autocomplete="off">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+      <div class="form-grid">
+        <div class="field"><label for="public_key">Public key</label>
+          <input id="public_key" name="public_key" value="{{ settings.public_key if settings else '' }}" placeholder="pk_test_..." required autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="secret_key">Secret key</label>
+          <input type="password" id="secret_key" name="secret_key" autocomplete="new-password" placeholder="{{ 'Saved — leave blank to keep it' if settings else 'sk_test_...' }}">
+          {% if settings %}<div class="secret-note">A secret key is saved. It is not shown again.</div>{% endif %}</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Save Paystack settings</button>
+        {% if settings %}
+        <form method="post" action="{{ url_for('admin_finance_paystack_test') }}" style="display:inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-light" type="submit">Test connection</button>
+        </form>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if settings %}
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">2</span><div>
+      <h2>Webhook address</h2>
+      <p>Paste this into Paystack's dashboard under Settings &rsaquo; API Keys &amp; Webhooks, so Paystack can confirm a payment even if the parent closes their browser before it redirects back.</p>
+    </div></div>
+    <div class="webhook-box">{{ webhook_url }}</div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title"><span class="step">3</span><div>
+      <h2>Removing it</h2>
+      <p>Parents immediately lose the "Pay online" option; nothing already paid is affected.</p>
+    </div></div>
+    <form method="post" action="{{ url_for('admin_finance_paystack_clear') }}" onsubmit="return confirm('Remove this school\'s Paystack settings? Parents will no longer be able to pay online.');">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-light" type="submit">Remove Paystack settings</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

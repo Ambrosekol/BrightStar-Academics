@@ -102,6 +102,7 @@ from .finance import (
     FinanceFeeAssessment,
     FinanceFeeItem,
     FinanceFeeItemClass,
+    FinanceOnlinePayment,
     FinancePayment,
     FinancePaymentAllocation,
 )
@@ -121,6 +122,7 @@ from .tenancy import (
     School,
     SchoolDeliverySetting,
     SchoolNumberingPolicy,
+    SchoolPaymentSetting,
     SchoolSetting,
     StudentNumberAllocation,
 )
@@ -154,7 +156,7 @@ __all__ = [
     'StudentEnrollmentHistory',
     # finance
     'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem',
-    'FinanceFeeItemClass', 'FinancePayment', 'FinancePaymentAllocation',
+    'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
     # library
     'LibraryBook', 'LibraryLoan',
     # parents
@@ -163,7 +165,7 @@ __all__ = [
     # settings
     'SchoolPublicSetting',
     # tenancy
-    'School', 'SchoolDeliverySetting', 'SchoolNumberingPolicy', 'SchoolSetting',
+    'School', 'SchoolDeliverySetting', 'SchoolNumberingPolicy', 'SchoolPaymentSetting', 'SchoolSetting',
     'StudentNumberAllocation',
     # presence / notifications / password recovery
     'PasswordResetToken', 'PresenceSession', 'SchoolNotification',

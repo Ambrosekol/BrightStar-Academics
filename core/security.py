@@ -118,6 +118,7 @@ ADMIN_PERMISSION_DEFS = [
     ('finance.receipt.send','Send receipts','finance','Send receipts by email or WhatsApp and print/download receipts.'),
     ('finance.view_all','View all finance','finance','View school-wide collections, balances, transactions and finance reports.'),
     ('finance.manage','Manage finance','finance','Manage fee assessments, payment corrections and finance controls.'),
+    ('finance.paystack.manage','Manage online payments','finance','Set up and test the school\'s own Paystack account for parents to pay online.'),
     ('library.view','View library','library','View library books, members, loans and availability.'),
     ('library.manage','Manage library','library','Add books, issue/return books and manage library records.'),
     ('student.history.manage','Manage enrollment history','school','Record and review a student historical enrollment including Daycare, Crèche and Nursery.'),
@@ -185,7 +186,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Manager': {
         'description': 'Oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
+        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage','finance.paystack.manage']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
@@ -261,6 +262,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_receipt_settings':'finance.manage',
     'admin_finance_student_account':'finance.view_own',
     'admin_finance_payment_allocate':'finance.record',
+    'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
+    'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
     'admin_library':'library.view',
     'admin_library_book_new':'library.manage',
 'admin_library_book_edit':'library.manage','admin_library_book_toggle':'library.manage',
