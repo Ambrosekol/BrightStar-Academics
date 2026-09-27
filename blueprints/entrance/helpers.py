@@ -144,11 +144,23 @@ def _candidate_results_summary():
         })
     return summaries
 
+# A cell that opens with one of these is read by Excel/Sheets/LibreOffice as the start of a
+# formula, not as text - the classic "CSV injection" trick, using a name typed once (a candidate's,
+# a student's) to run a formula on whoever later opens the exported file. A name is never rejected
+# or altered for this on screen, only defused in a CSV cell, by leading it with a straight quote,
+# which every spreadsheet program then displays as plain text.
+_CSV_FORMULA_TRIGGERS=('=','+','-','@','\t','\r')
+
+def csv_safe(value):
+    """``value`` as a CSV cell that cannot be read as a spreadsheet formula."""
+    text='' if value is None else str(value)
+    return "'"+text if text[:1] in _CSV_FORMULA_TRIGGERS else text
+
 def _csv_response(rows, filename):
     import csv, io
     out=io.StringIO(); w=csv.writer(out)
     w.writerow(['Rank','Candidate','Examination','Bank ID','Status','Score','Max Score','Percentage','Grade','Started At','Submitted At'])
     for i,r in enumerate(rows,1):
         exam_name=r['exam_name'] if ('exam_name' in r.keys() and r['exam_name']) else None
-        w.writerow([i,r['candidate'],exam_name or r['bank_id'],r['bank_id'],r['status'],tidy_mark(r['score']) if r['score'] is not None else '',tidy_mark(r['max_score']) if r['max_score'] is not None else '',f"{r['percentage']:.1f}" if r['percentage'] is not None else '',_grade_label(r['percentage']),r['started_at'],r['submitted_at'] or ''])
+        w.writerow([i,csv_safe(r['candidate']),csv_safe(exam_name or r['bank_id']),r['bank_id'],r['status'],tidy_mark(r['score']) if r['score'] is not None else '',tidy_mark(r['max_score']) if r['max_score'] is not None else '',f"{r['percentage']:.1f}" if r['percentage'] is not None else '',_grade_label(r['percentage']),r['started_at'],r['submitted_at'] or ''])
     return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename={filename}'})

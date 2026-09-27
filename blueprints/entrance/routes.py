@@ -56,7 +56,7 @@ from core.presence import online_presence
 from blueprints.entrance.helpers import (
     _candidate_results_summary, _csv_response,
     _entrance_banks_for, _entrance_config_rows, _generate_bank_id,
-    _grade_label, _result_rows, next_qid, save_bank, validate_bank_payload,
+    _grade_label, _result_rows, csv_safe, next_qid, save_bank, validate_bank_payload,
 )
 
 
@@ -979,7 +979,7 @@ def export_rankings_csv():
     for i,r in enumerate(rows,1):
         key=(r['percentage'],r['score'])
         if key!=last: rank=i; last=key
-        w.writerow([rank,r['candidate'],r['bank_id'],tidy_mark(r['score']),tidy_mark(r['max_score']),f"{r['percentage']:.1f}",_grade_label(r['percentage']),r['status']])
+        w.writerow([rank,csv_safe(r['candidate']),r['bank_id'],tidy_mark(r['score']),tidy_mark(r['max_score']),f"{r['percentage']:.1f}",_grade_label(r['percentage']),r['status']])
     return Response(out.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename={export_slug()}-rankings.csv'})
 
 @app.route('/admin/export/results.json')
