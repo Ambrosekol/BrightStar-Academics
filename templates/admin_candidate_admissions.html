@@ -1,0 +1,94 @@
+{% extends 'admin_base.html' %}
+{% block title %}Admissions — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .adm-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .adm-filter .field { min-width: 170px; }
+  .adm-badge { padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .adm-badge.pending { background: #fff3d6; color: #8a5c00; }
+  .adm-badge.admitted { background: #e2f6ea; color: #167a3f; }
+  .adm-badge.declined { background: #fde3e3; color: #9c1f1f; }
+  .adm-edit summary { cursor: pointer; color: var(--brand, #1674b9); font-size: 13px; }
+  .adm-edit form { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
+  .adm-edit .full { grid-column: 1 / -1; }
+</style>
+
+<div class="page-hero">
+  <div><div class="eyebrow">ENTRANCE EXAMINATION / ADMISSIONS</div><h1>Admissions waitlist</h1>
+  <p class="hero-copy">Every candidate who has sat at least one paper, ranked by score, waiting for a decision. Admitting creates a real, enrolled student with a login of their own; declining simply takes them off this list, and can be undone.</p></div>
+</div>
+
+<section class="card">
+  <form method="get" class="adm-filter" style="padding:16px 16px 0">
+    <div class="field"><label for="entry_group">Entry level</label>
+      <select id="entry_group" name="entry_group" onchange="this.form.submit()">
+        <option value="">All entry levels</option>
+        {% for key, label in entry_groups.items() %}<option value="{{ key }}" {% if key == selected_group %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="admitted" {% if selected_status == 'admitted' %}selected{% endif %}>Admitted</option>
+        <option value="declined" {% if selected_status == 'declined' %}selected{% endif %}>Declined</option>
+      </select></div>
+  </form>
+  <p class="muted" style="padding:12px 16px 0">{{ rows|length }} candidate{{ '' if rows|length == 1 else 's' }} shown, {{ pending }} still pending a decision.</p>
+
+  <div class="table-scroll">
+    <table class="segmented-table">
+      <thead><tr><th>Candidate</th><th>Entry level</th><th>Overall</th><th>Status</th><th>Decision</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><div class="person-cell"><span class="table-avatar image-avatar">{% if r.photo_path %}<img src="{{ url_for('static', filename=r.photo_path) }}" alt="">{% else %}{{ r.candidate_name[:1]|upper }}{% endif %}</span><div><strong>{{ r.candidate_name }}</strong><small>{{ r.candidate_code }}</small></div></div></td>
+        <td>{{ r.entry_group_label }}</td>
+        <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong><small>{{ r.grade }}</small></td>
+        <td><span class="adm-badge {{ r.status }}">{{ r.status|capitalize }}</span>
+          {% if r.status != 'pending' and r.decided_by_name %}<br><small class="muted">by {{ r.decided_by_name }}</small>{% endif %}
+          {% if r.note %}<br><small class="muted">{{ r.note }}</small>{% endif %}</td>
+        <td>
+          {% if current_admin and admin_has_permission(current_admin['id'], 'candidates.admit') %}
+            {% if r.status == 'pending' %}
+            <details class="adm-edit"><summary>Admit…</summary>
+              {% set name_parts = r.candidate_name.split() %}
+              <form method="post" action="{{ url_for('admin_candidate_admit', cid=r.id) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="field"><label>First name</label><input name="first_name" value="{{ name_parts[0] if name_parts else '' }}" required></div>
+                <div class="field"><label>Middle name</label><input name="middle_name" value="{{ name_parts[1:-1]|join(' ') if name_parts|length > 2 else '' }}"></div>
+                <div class="field"><label>Surname</label><input name="last_name" value="{{ name_parts[-1] if name_parts|length > 1 else '' }}" required></div>
+                <div class="field"><label>Gender</label><select name="gender"><option value="">Not set</option><option value="Female">Female</option><option value="Male">Male</option></select></div>
+                <div class="field"><label>Date of birth</label><input type="date" name="date_of_birth"></div>
+                <div class="field"><label>Class</label>
+                  <select name="class_id" required><option value="">Choose</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+                <label class="full" style="display:flex;gap:8px;align-items:center;font-size:13px">
+                  <input type="checkbox" name="create_parent_account" value="1" checked>
+                  Also create a parent portal account from the guardian details on file (only if one was given at registration)
+                </label>
+                <div class="full"><button class="btn btn-primary" type="submit">Confirm admission</button></div>
+              </form>
+            </details>
+            <form method="post" action="{{ url_for('admin_candidate_decline', cid=r.id) }}" style="display:inline;margin-top:6px">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="text" name="note" placeholder="Reason (optional)" style="width:120px;font-size:12px">
+              <button class="btn btn-light btn-small" type="submit">Decline</button>
+            </form>
+            {% elif r.status == 'declined' %}
+            <form method="post" action="{{ url_for('admin_candidate_admission_reset', cid=r.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-light btn-small" type="submit">Put back on waitlist</button>
+            </form>
+            {% else %}
+            <a class="btn btn-light btn-small" href="{{ url_for('admin_candidate_detail', cid=r.id) }}">View student</a>
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5"><div class="empty-state"><strong>No candidate matches this filter.</strong><p>Only candidates who have sat at least one paper appear here.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

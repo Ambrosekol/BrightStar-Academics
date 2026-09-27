@@ -111,6 +111,15 @@ class Candidate(db.Model):
     parent_guardian_email = db.Column(Text)
     photo_path = db.Column(Text)
 
+    # The admissions funnel: entrance exam -> waitlist -> a real student. 'pending' (the default,
+    # the waitlist itself), 'admitted' (terminal: admitted_student_id is set and never cleared) or
+    # 'declined' (reversible back to 'pending'). See blueprints/entrance/admissions.py.
+    admission_status = db.Column(Text, nullable=False, default='pending', server_default=text("'pending'"))
+    admitted_student_id = db.Column(Integer, ForeignKey('students.id'))
+    admission_decided_at = db.Column(Text)
+    admission_decided_by = db.Column(Integer, ForeignKey('admins.id'))
+    admission_note = db.Column(Text)
+
 
 class CandidatePaper(db.Model):
     __tablename__ = 'candidate_papers'

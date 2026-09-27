@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
 <p>The Entrance workspace runs the exam a candidate sits <em>before</em> they are ever a student here —
 kept deliberately apart from the School workspace (see
@@ -25,4 +26,7 @@ can be shared as an image carrying the school's own branding, nothing of another
 try a practice paper for the class they are aiming for — from either the last session's own entrance
 exam, or a custom bank the school sets up for practice. The current session's own live bank is never
 offered for practice, so it cannot reveal an exam that has not been sat yet.</p>
+
+<h2 id="admissions">From candidate to student</h2>
+<p>Once a candidate has sat at least one paper, they move onto the {{ page('admissions', 'admissions waitlist') }} — where an admissions officer decides to admit them into a real, enrolled student account, or decline them.</p>
 {% endblock %}

@@ -39,6 +39,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Attendance](#attendance)
 - [Exam and test timetables](#exam-and-test-timetables)
 - [Bulk student import](#bulk-student-import)
+- [Admissions: candidate to student](#admissions-candidate-to-student)
 - [The staff guide](#the-staff-guide)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
@@ -525,6 +526,30 @@ the generated usernames and one-time passwords are ever shown — download them 
 in the browser, never a second trip to the server) before leaving the page. A file with no header row,
 a missing required column, or one over the size limit is refused outright, before anything is written.
 
+## Admissions: candidate to student
+
+The third way a student arrives, alongside registering one by hand and bulk import: the entrance
+exam. Every active candidate who has attempted at least one paper is on the **admissions waitlist**
+(*Admissions* in the Entrance workspace), ranked by their overall percentage; a candidate who has
+never sat a paper does not appear at all. Two admission columns live directly on the candidate's own
+record, since a candidate has at most one admission decision, ever: `admission_status` ('pending',
+'admitted' or 'declined') and `admitted_student_id`.
+
+- **Admitting** creates exactly what "Register Student" creates by hand — the student record, a class
+  enrolment for the current session, and a login — through the same numbering and account machinery
+  either way, so an admitted candidate is indistinguishable from one registered one at a time. The
+  candidate's one-field name is split onto the form as a starting guess, correctable before
+  confirming. If the candidate has a guardian email or phone on file and the box is left ticked, a
+  linked parent portal account is created from those same details too, so the whole family reaches
+  the portal in one action. **Admitting is terminal**: an admitted candidate can never be admitted
+  again, declined, or reset — by then a real student and a real login exist.
+- **Declining** takes a candidate off the waitlist with an optional reason, and — unlike admitting —
+  can be undone, back to pending, at any time.
+- One permission, `candidates.admit`, separate from `candidates.view`: seeing the waitlist at all,
+  not only deciding it, needs this permission. The *Admissions Officer* role preset carries it;
+  nobody else does by default. An officer limited to one entry level's candidates (by the same class
+  scope every other scoped account uses) can only decide for that level.
+
 ## The staff guide
 
 `/admin/guide` is a plain-language, hand-written user guide for the people who use the portal, not the
@@ -747,6 +772,7 @@ python tests/verification/write_paths_attendance.py         # taking the registe
 python tests/verification/write_paths_timetable.py           # exam/test timetables: draft, release, notifications, scope, portals
 python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
+python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies

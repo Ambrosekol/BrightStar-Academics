@@ -49,6 +49,7 @@ ADMIN_PERMISSION_DEFS = [
     ('candidates.delete','Delete candidates','candidates','Delete candidate records.'),
     ('candidates.credentials_reset','Reset candidate credentials','candidates','Reset candidate passwords.'),
     ('candidates.credentials_print','Print candidate credentials','candidates','Print candidate credentials.'),
+    ('candidates.admit','Admit candidates','candidates','Move a candidate from the admissions waitlist into a real, enrolled student.'),
     ('question_banks.view','View question banks','assessment','View question banks.'),
     ('question_banks.create','Create question banks','assessment','Create question banks.'),
     ('question_banks.edit','Edit question banks','assessment','Edit question-bank settings.'),
@@ -158,6 +159,10 @@ ADMIN_ROLE_PRESETS = {
         'description': 'View-only access to examination information without the ability to change records.',
         'permissions': ['dashboard.view','candidates.view','question_banks.view','attempts.view','results.view','results.print','results.rankings']
     },
+    'Admissions Officer': {
+        'description': 'Reviews the admissions waitlist and decides who moves from candidate to enrolled student.',
+        'permissions': ['dashboard.view','candidates.view','candidates.admit','results.view','results.rankings']
+    },
     'School Records Officer': {
         'description': 'Manages enrolled student records and class information within assigned school scopes.',
         'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.attendance.view','parent.feedback.view']
@@ -229,6 +234,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_candidate_detail':'candidates.view','admin_candidate_delete':'candidates.delete',
     'admin_candidate_result_print':'results.print','admin_candidate_credentials_reset':'candidates.credentials_reset',
     'admin_candidate_credentials_print':'candidates.credentials_print','admin_new_bank':'question_banks.create',
+    'admin_candidate_admissions':'candidates.admit','admin_candidate_admit':'candidates.admit',
+    'admin_candidate_decline':'candidates.admit','admin_candidate_admission_reset':'candidates.admit',
     'admin_question_banks':'question_banks.view','admin_bank':'question_banks.view','admin_edit_bank':'question_banks.edit','admin_new_question':'questions.create',
     'admin_edit_question':'questions.edit','admin_delete_question':'questions.delete','admin_reorder':'questions.reorder',
     'admin_attempts':'attempts.view','admin_export_bank':'question_banks.view','admin_results':'results.view',
@@ -405,7 +412,7 @@ def admin_scope_for_request(kwargs):
     if request.endpoint and request.endpoint.startswith('admin_account_'): return None,None
     # Legacy collection pages currently expose mixed resources, so they require
     # an explicit global scope until resource-aware filtering is added to those pages.
-    if request.endpoint in {'admin_candidates','admin_results','admin_results_summary','admin_results_summary_print','admin_rankings','admin_attempts','export_results_csv','export_rankings_csv','export_results_json'}:
+    if request.endpoint in {'admin_candidates','admin_results','admin_results_summary','admin_results_summary_print','admin_rankings','admin_attempts','export_results_csv','export_rankings_csv','export_results_json','admin_candidate_admissions'}:
         return 'global','*'
     if 'bid' in kwargs: return 'bank',kwargs.get('bid')
     if 'cid' in kwargs:

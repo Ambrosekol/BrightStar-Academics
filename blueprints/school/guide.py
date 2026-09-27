@@ -42,6 +42,7 @@ GUIDE_GROUPS = (
     )),
     ('Entrance workspace', (
         ('entrance', 'Entrance examinations', 'Banks, candidates, the exam and results'),
+        ('admissions', 'Admissions: candidate to student', 'The waitlist, admitting and declining'),
     )),
 )
 GUIDE_PAGES = {slug: (title, blurb, group) for group, items in GUIDE_GROUPS for slug, title, blurb in items}

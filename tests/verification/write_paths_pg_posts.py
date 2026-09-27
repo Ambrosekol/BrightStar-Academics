@@ -1036,6 +1036,7 @@ check("entrance practice leaves nothing recorded", count("attempts") == attempts
 
 # a candidate: register, sign in, sit a paper, be marked; then the administrator's controls over the result
 CANDS = "/admin/candidates"
+ADMISSIONS = "/admin/candidates/admissions"
 CAND_FORM = {"candidate_name": "Emeka Nwosu", "target_class": "JSS 1", "school_attended": "Sunrise Primary",
              "parent_guardian_name": "Ada Nwosu", "parent_guardian_relationship": "Mother", "primary_mobile": "08031112222",
              "alternative_mobile": "08033334444", "parent_guardian_email": "ada.nwosu@example.test"}
@@ -1072,6 +1073,37 @@ candidate.post(f"/candidate/papers/{PAPER}/start", {})
 check("…and the candidate used it to start the paper again", count("attempts", "candidate_id = :c", c=CAND) == 2)
 op.post(f"{CANDS}/{SPARE_CAND}/delete", {})
 check("a candidate can be deleted", count("candidates", "id = :c", c=SPARE_CAND) == 0)
+
+# ================================================================ 12b. the admissions waitlist
+op.post(f"{CANDS}/new", {**CAND_FORM, "candidate_name": "Third Candidate"})
+THIRD_CAND = one("SELECT id FROM candidates WHERE candidate_name = 'Third Candidate'")
+paper_bank = one("SELECT bank_id FROM candidate_papers WHERE candidate_id = :c ORDER BY slot LIMIT 1", c=THIRD_CAND)
+exam_id = one("SELECT id FROM examinations WHERE bank_id = :b", b=paper_bank)
+sql("INSERT INTO attempts (candidate, exam_id, bank_id, started_at, expires_at, submitted_at, score, max_score, percentage, status, candidate_id) "
+    "VALUES ('Third Candidate', :e, :b, :now, :now, :now, 62, 100, 62, 'submitted', :c)",
+    e=exam_id, b=paper_bank, now="2026-09-01T09:00:00+00:00", c=THIRD_CAND)
+# Emeka (CAND) does not appear here: his only attempt was superseded by the retake he started
+# above, which is still in progress, so he is correctly not "completed" for this waitlist.
+waitlist = op.text(f"{ADMISSIONS}?entry_group=year7")
+check("a candidate with a submitted paper appears on the admissions waitlist",
+      "Third Candidate" in waitlist and "Pending" in waitlist)
+op.post(f"{CANDS}/{THIRD_CAND}/decline", {"note": "Did not meet the cut-off"})
+check("a candidate was declined off the waitlist, with a reason",
+      one("SELECT admission_status FROM candidates WHERE id = :c", c=THIRD_CAND) == "declined")
+op.post(f"{CANDS}/{THIRD_CAND}/admission-reset", {})
+check("…and put back on the waitlist", one("SELECT admission_status FROM candidates WHERE id = :c", c=THIRD_CAND) == "pending")
+r = op.post(f"{CANDS}/{THIRD_CAND}/admit", {"first_name": "Third", "last_name": "Candidate", "gender": "Female",
+                                            "class_id": JSS1, "create_parent_account": "1"})
+NEW_STUDENT = one("SELECT admitted_student_id FROM candidates WHERE id = :c", c=THIRD_CAND)
+check("a candidate was admitted: a real, enrolled student now exists with a generated number and a login",
+      one("SELECT admission_status FROM candidates WHERE id = :c", c=THIRD_CAND) == "admitted" and NEW_STUDENT is not None
+      and one("SELECT class_id FROM student_enrolments WHERE student_id = :s AND active = 1", s=NEW_STUDENT) == JSS1
+      and one("SELECT login_username FROM students WHERE id = :s", s=NEW_STUDENT) not in (None, ""))
+check("…and, since the candidate had guardian contact details, a linked parent portal account was created too",
+      count("parent_student_links", "student_id = :s", s=NEW_STUDENT) == 1)
+op.post(f"{STUDENTS}/{NEW_STUDENT}/toggle", {})  # deactivated: later exact-count sections (promotion) assume only Ada and Tunde in JSS 1
+check("…deactivating the newly admitted student afterwards keeps them out of everyone else's counts below",
+      one("SELECT active FROM students WHERE id = :i", i=NEW_STUDENT) == 0)
 
 # ================================================================ 13. staff: roles, accounts, messages
 def permission_ids(*codes):

@@ -26,6 +26,7 @@ The project README's *Testing* section says what each covers.
 | `write_paths_timetable.py` | exam/test timetables: draft entries, releasing (and the notifications it sends), scope, permissions and CSRF, the student and parent portals |
 | `write_paths_student_import.py` | bulk CSV student import: valid rows created, bad rows skipped with a reason, class scope, generated numbers and credentials, permissions and CSRF, isolation |
 | `write_paths_guide.py` | the staff guide (/admin/guide): every real page renders, no permission of its own, either workspace, search, isolation |
+| `write_paths_admissions.py` | the admissions funnel: the waitlist, admitting (student + optional parent account), declining and undoing it, scope, permissions and CSRF, isolation |
 | `report_card_pdf_selfcheck.py` | the report card PDF on its own (layout, pictures, hostile text); needs no database |
 | `write_paths_candidate_results.py` | a candidate's result image and share page: the school's own logo and photo, nothing of another school, nothing left behind |
 | `write_paths_error_pages.py` | the 404, 403 and 500 pages: each school's own, "Go Back" for signed-in people, nothing leaked |

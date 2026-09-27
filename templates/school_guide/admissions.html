@@ -1,0 +1,33 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Once a candidate has sat at least one paper, they are on the admissions waitlist — the bridge
+between the Entrance workspace and the School workspace.</p>
+
+<h2 id="waitlist">The waitlist</h2>
+<p><a href="{{ url_for('admin_candidate_admissions') }}">Admissions</a> lists every candidate who has
+attempted at least one paper, ranked by their overall percentage, filterable by entry level and by
+whether a decision has been made yet. A candidate who has never sat a paper does not appear at all.</p>
+
+<h2 id="admit">Admitting</h2>
+<p>Admitting creates exactly what <a href="{{ url_for('admin_school_student_new') }}">Register
+Student</a> creates by hand: the student record, an enrolment in the class you choose for the current
+session, and a login with a generated admission number and a one-time password. The candidate's name
+is split onto the form as a starting guess — correct it if it split wrongly before confirming. If the
+candidate has a guardian email or phone on file, leaving the box ticked also creates a parent portal
+account from those same details, so the whole family reaches the portal in one action.</p>
+<div class="guide-warn">Admitting is final. An admitted candidate cannot be admitted again, declined,
+or put back on the waitlist — by then a real student and a real login exist. Double-check the class
+and the corrected name before confirming.</div>
+
+<h2 id="decline">Declining</h2>
+<p>Declining takes a candidate off the waitlist, with an optional reason, and — unlike admitting — can
+be undone at any time, putting them straight back to pending.</p>
+
+<h2 id="permission">Who can do this</h2>
+<p>Seeing the waitlist at all, not only deciding it, needs <strong>Admit candidates</strong> — a
+separate permission from simply viewing candidates, so a school decides exactly who is trusted to make
+admission decisions. The <em>Admissions Officer</em> preset carries it; nobody else does by default.
+An officer limited to one entry level's candidates (see
+<a href="{{ url_for('admin_guide_page', slug='roles-permissions') }}">Roles, permissions and scope</a>)
+can only decide for that level.</p>
+{% endblock %}

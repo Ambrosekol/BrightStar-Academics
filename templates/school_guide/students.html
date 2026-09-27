@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
 <p>A student account is never self-registered — staff always create it, one at a time or many at
 once — and it always starts on a one-time password the student must replace at first sign-in.</p>
@@ -20,6 +21,11 @@ number, and every other row in the file is still imported.</p>
 <div class="guide-warn">The generated usernames and one-time passwords for an import are shown once,
 on the results page, and can be downloaded from there as a CSV. They are never stored anywhere in
 readable form afterwards, so copy or download them before you navigate away.</div>
+
+<h2 id="admissions">A third way in: the entrance exam</h2>
+<p>A student can also arrive through the {{ page('admissions', 'admissions waitlist') }}, in the
+Entrance workspace: once a candidate has sat their entrance exam, an admissions officer can admit them
+straight into a real student record, the same way as the other two paths above.</p>
 
 <h2 id="account">A student's account afterwards</h2>
 <p>From a student's own page you can edit their details, deactivate them (which also switches their

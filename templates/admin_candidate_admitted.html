@@ -1,0 +1,34 @@
+{% extends 'admin_base.html' %}
+{% block title %}Admitted — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .cred-card { border: 1px solid #dde5ee; border-radius: 10px; padding: 16px 18px; margin: 14px 0; max-width: 480px; }
+  .cred-card dt { color: #6b7a89; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 10px; }
+  .cred-card dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; }
+  code.pw { background: #fff3d6; padding: 2px 8px; border-radius: 4px; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">ENTRANCE EXAMINATION / ADMISSIONS</div>
+  <h1>{{ candidate.candidate_name }} has been admitted</h1>
+  <p class="hero-copy">Now enrolled in {{ class_name }}. The login shown below is the only place it can be read — copy it now.</p>
+</div></div>
+
+<section class="card">
+  <dl class="cred-card">
+    <dt>Admission number</dt><dd>{{ student.student_number }}</dd>
+    <dt>Student login</dt><dd>{{ username }}</dd>
+    <dt>One-time password</dt><dd><code class="pw">{{ password }}</code></dd>
+  </dl>
+  {% if parent_username %}
+  <dl class="cred-card">
+    <dt>Parent portal account</dt><dd>{{ parent_username }}</dd>
+    <dt>One-time password</dt><dd><code class="pw">{{ parent_password }}</code></dd>
+  </dl>
+  {% endif %}
+  <p style="margin-top:16px">
+    <a class="btn btn-primary" href="{{ url_for('admin_school_student_edit', sid=student.id) }}">Open the student record</a>
+    <a class="btn btn-light" href="{{ url_for('admin_candidate_admissions') }}">Back to the waitlist</a>
+  </p>
+</section>
+{% endblock %}

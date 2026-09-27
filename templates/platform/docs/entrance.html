@@ -35,6 +35,14 @@ of the school portal and everything else (tests, examinations) was modelled on i
   <li>The code is written by the school's <em>numbering pattern</em> ({{ page('branding-numbering', 'Identity and numbering') }}).</li>
 </ul>
 
+<h2 id="admissions">The admissions funnel: candidate to student</h2>
+<p>Every active candidate who has attempted at least one paper is on the admissions waitlist ({{ route('admin_candidate_admissions') }}, {{ file('blueprints/entrance/admissions.py') }}), ranked by overall percentage; one who has never attempted anything does not appear at all. Two admission columns live directly on {{ table('candidates') }} rather than a separate table, since a candidate has at most one admission decision, ever: <code>admission_status</code> ('pending', 'admitted' or 'declined') and <code>admitted_student_id</code>.</p>
+<ul>
+  <li><strong>Admitting</strong> ({{ route('admin_candidate_admit') }}) creates exactly what {{ route('admin_school_student_new') }} creates by hand — a {{ table('students') }} row, a {{ table('student_enrolments') }} row for the current session, and a login — through the same <code>allocate_student_number</code> and <code>_provision_student_account</code> either way, so an admitted candidate is indistinguishable from a student registered one at a time. The candidate's one-field <code>candidate_name</code> is split into first/middle/last as a starting guess on the form, correctable before confirming. If the candidate has a guardian email or phone on file and the box is left ticked, a {{ table('parent_accounts') }} row and a {{ table('parent_student_links') }} row are created too. <strong>Admitting is terminal</strong>: an admitted candidate can never be admitted again, declined, or reset.</li>
+  <li><strong>Declining</strong> ({{ route('admin_candidate_decline') }}) takes a candidate off the waitlist with an optional note, and — unlike admitting — can be undone ({{ route('admin_candidate_admission_reset') }}).</li>
+  <li>Guarded by one permission, {{ perm('candidates.admit') }}, separate from {{ perm('candidates.view') }}: seeing the waitlist at all, not only deciding it, needs this permission. The <em>Admissions Officer</em> role preset carries it; nobody else does by default. A candidate route's scope is the pre-existing generic mechanism in <code>admin_scope_for_request</code> (a <code>cid</code> URL argument resolves to a 'class' scope of the candidate's own <code>target_class</code>), so an officer scoped to one entry level cannot act on the other's candidates.</li>
+</ul>
+
 <h2 id="taking">Sitting a paper</h2>
 <ol class="steps">
   <li>The candidate signs in and sees their dashboard ({{ route('candidate_dashboard') }}), never their scores.</li>
