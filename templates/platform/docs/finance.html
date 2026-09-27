@@ -72,12 +72,37 @@ the school's own Paystack settings, which is an honest answer to "who is respons
 channel existing" rather than a claim that they typed it in.</p>
 <div class="why"><p>Starting a payment is <code>@idempotent_write('parent.pay_online')</code>
 ({{ file('core/idempotency.py') }}): a resubmitted click is sent to the same Paystack checkout
-address again rather than opening a second transaction for the same click.</p></div>
+address again rather than opening a second transaction for the same click. The reference itself
+(<code>new_reference</code>) uses a hyphen, never an underscore, before the random part — Paystack's
+own API only allows <code>-</code>, <code>.</code>, <code>=</code> and alphanumeric characters in a
+transaction reference.</p></div>
+<p><strong>Closing the gap neither path alone can close:</strong> a parent who pays by bank transfer
+or USSD can close the tab before the callback loads, and a webhook can fail to reach a school that
+never pasted the address into its Paystack dashboard, or whose address changed. When both miss,
+Paystack has the money but nothing here would otherwise ever ask about it again.
+<code>reconcile_pending</code> ({{ file('blueprints/finance/paystack.py') }}) closes that gap the
+same way {{ file('core/jobs.py') }}'s own stuck-job retry does: called opportunistically from
+{{ route('admin_finance_dashboard') }} and {{ route('parent_child_finance') }} — ordinary page loads
+a finance admin or the paying parent already makes — it re-asks Paystack about any online payment
+still 'pending' after two minutes, rather than a separate scheduled service of its own to keep
+running and to fail in its own new ways.</p>
+
+<h2 id="unallocated">A payment nobody has said what it is for</h2>
+<p>A posted payment — recorded by hand or confirmed by Paystack — does not by itself say which fee
+it settles; that is still a deliberate second step ({{ route('admin_finance_payment_allocate') }}).
+<code>_finance_unallocated_summary</code> and <code>_finance_unallocated_payments</code>
+({{ file('blueprints/finance/helpers.py') }}) find every posted payment whose amount exceeds its
+non-voided allocations, scoped to one officer's own takings for {{ perm('finance.record') }} without
+{{ perm('finance.view_all') }}, the whole school otherwise. Whenever that count is above zero, every
+matching administrator sees it two ways: a banner injected by <code>inject_csrf_token</code>
+(app.py) on <em>every</em> admin page, not only Finance's own, with no button to dismiss it — it
+disappears on its own, the request after the last one is allocated — and
+{{ route('admin_finance_unallocated') }}, a dedicated list the banner links to.</p>
 
 <h2 id="perms">Permissions</h2>
 <ul>
   <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>
-  <li>{{ perm('finance.record') }} records payments. {{ perm('finance.manage') }} manages fee items, voids payments and sets the receipt signature.</li>
+  <li>{{ perm('finance.record') }} records payments, allocates them, and reads the unallocated-payments list. {{ perm('finance.manage') }} manages fee items, voids payments and sets the receipt signature.</li>
   <li>{{ perm('finance.receipt.send') }} sends a receipt by email or WhatsApp.</li>
   <li>{{ perm('finance.paystack.manage') }} sets up, tests and removes the school's own Paystack account.</li>
 </ul>

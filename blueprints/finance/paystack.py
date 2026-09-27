@@ -22,7 +22,7 @@ core/payments.py:
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from sqlalchemy import select
@@ -259,6 +259,35 @@ def _finalize(settings, row):
     except Exception:
         current_app.logger.exception('Parent payment-recorded notification failed for student %s', row.student_id)
     enqueue('send_payment_receipt', payment_id=payment.id, actor_id=admin_id)
+
+
+def reconcile_pending(max_age_seconds=120, limit=5):
+    """Self-heal any online payment stuck 'pending' longer than a single browser return or a
+    single webhook delivery should ever take.
+
+    Two independent things are supposed to settle every online payment - the parent's own
+    browser coming back to the callback URL, and Paystack's webhook calling us directly - and
+    ordinarily at least one of them does, within seconds. But a parent can pay by bank transfer
+    or USSD and never reopen the tab, and a webhook can fail to reach a school whose address
+    changed or whose webhook was never pasted into the Paystack dashboard at all; when both miss,
+    money has moved on Paystack's side but nothing here would otherwise ever ask about it again.
+
+    This closes that gap the same way core/jobs.py's own stuck-job retry does: opportunistically,
+    from ordinary page loads a finance admin or the paying parent already makes, rather than a
+    separate scheduled service with its own failure modes to worry about.
+    """
+    settings = payments.payment_settings()
+    if settings is None:
+        return
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max_age_seconds)).isoformat()
+    rows = db.session.scalars(select(FinanceOnlinePayment)
+        .where(FinanceOnlinePayment.status == 'pending', FinanceOnlinePayment.created_at < cutoff)
+        .order_by(FinanceOnlinePayment.id).limit(limit)).all()
+    for row in rows:
+        try:
+            _finalize(settings, row)
+        except Exception:
+            current_app.logger.exception('Reconciling stuck online payment %s failed', row.id)
 
 
 def _payments_admin_id():

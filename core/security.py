@@ -263,7 +263,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_receipt_whatsapp':'finance.receipt.send',
     'admin_finance_receipt_settings':'finance.manage',
     'admin_finance_student_account':'finance.view_own',
-    'admin_finance_payment_allocate':'finance.record',
+    'admin_finance_payment_allocate':'finance.record','admin_finance_unallocated':'finance.record',
     'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
     'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
     'admin_library':'library.view',

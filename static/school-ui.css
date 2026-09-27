@@ -514,6 +514,32 @@ html[data-rail="pinned"] .rail .rail-dot { visibility: hidden; }
 html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: var(--rail-open); }
 
 
+/* ---------- 4b. Site-wide banners: connection drops, unallocated payments - */
+
+/* core/connectivity.py writes this element on every admin page; the script (static/connectivity.js)
+   only toggles the two classes below, so a page missing this rule would render an unstyled, static
+   line instead of the animated, colour-coded strip every other surface (static/app.css) already has. */
+.connectivity-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    text-align: center; font-size: var(--fs-sm); font-weight: 700;
+    padding: 0; max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height .25s ease, opacity .25s ease, padding .25s ease;
+    background: var(--success-bg); color: var(--success);
+}
+.connectivity-banner-visible { max-height: 60px; opacity: 1; padding: var(--sp-2) var(--sp-4); }
+.connectivity-banner-offline { background: var(--warning-bg); color: var(--warning); }
+
+/* A plain, always-in-flow strip (nothing to animate, nothing to dismiss): it is there for as long
+   as core/security.py's context processor finds at least one posted payment nobody has allocated
+   yet, and it is gone the moment the last one is, with no button of its own to make it go away. */
+.finance-unallocated-banner {
+    text-align: center; font-size: var(--fs-sm); font-weight: 700;
+    padding: var(--sp-2) var(--sp-4);
+    background: var(--warning-bg); color: var(--warning);
+    border-bottom: 1px solid var(--warning-line);
+}
+.finance-unallocated-banner a { color: inherit; text-decoration: underline; margin-left: var(--sp-2); }
+
 /* ---------- 5. Page header, back link, messages -------------------------- */
 
 .ui-header {

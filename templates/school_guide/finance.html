@@ -18,6 +18,10 @@ particular charge (this term's tuition, say, or the uniform levy) it pays off. O
 student's account page to allocate it across one or more of that student's outstanding charges; a
 payment can cover several charges at once, or only part of one, and what is left unallocated still
 shows as credit on the account.</p>
+<div class="guide-warn">For as long as any posted payment - by any means, including one paid online
+- has not been allocated to a charge, every finance officer sees a banner naming how many and how
+much, on every page, not just Finance. It is not a message you can dismiss: it goes away on its own,
+the moment the last one is allocated, precisely so a payment can never be quietly forgotten.</div>
 
 <h2 id="account">A student's own fee account</h2>
 <p>A student's account (opened from their own page under
@@ -49,5 +53,7 @@ moment Paystack confirms it, exactly as if a member of staff had typed it in. Th
 platform account behind this: until a school sets up its own, parents simply do not see the option.</p>
 <div class="guide-note">Paste the webhook address shown on this page into Paystack's own dashboard.
 It is what lets a payment still be recorded correctly even if the parent closes their browser the
-moment they finish paying, before being sent back to the portal.</div>
+moment they finish paying, before being sent back to the portal. Even without that, the system
+still checks on its own the next time the parent or a finance officer opens a relevant page, so a
+payment Paystack actually took is never simply lost to a missed webhook.</div>
 {% endblock %}

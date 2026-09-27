@@ -146,8 +146,13 @@ def _request(secret_key, method, path, payload=None, timeout=15):
 
 
 def new_reference():
-    """A reference unique enough to give Paystack, and to find our own row by afterwards."""
-    return 'bsa_' + secrets.token_hex(12)
+    """A reference unique enough to give Paystack, and to find our own row by afterwards.
+
+    Paystack's own documentation only allows ``-``, ``.``, ``=`` and alphanumeric characters in a
+    transaction reference - an underscore is not on that list, so a hyphen separates the prefix
+    from the random part rather than the more usual underscore.
+    """
+    return 'bsa-' + secrets.token_hex(12)
 
 
 def initialize_transaction(settings, email, amount_naira, reference, callback_url):

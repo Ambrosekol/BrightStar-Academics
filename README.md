@@ -801,7 +801,7 @@ python tests/verification/write_paths_retired_tables.py    # clearing the remove
 python tests/verification/write_paths_error_pages.py       # the 404, 403 and 500 pages: branded, per school, and never leaking
 python tests/verification/write_paths_term_grading.py      # Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility
 python tests/verification/write_paths_bank_locks.py        # locking a question bank, and what a lock blocks
-python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts
+python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts, the site-wide unallocated-payment banner and list
 python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and WhatsApp, the signature
 python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
 python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, traits, signatures, portals

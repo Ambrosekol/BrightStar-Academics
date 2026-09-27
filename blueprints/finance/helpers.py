@@ -323,6 +323,48 @@ def _log_receipt_delivery(payment_id, channel, recipient, ok, msg, actor_id):
         sent_by=actor_id,sent_at=datetime.now(timezone.utc).isoformat()))
     db.session.commit()
 
+def _finance_unallocated_payments(scope_admin_id=None):
+    """Every posted payment whose full amount has not yet been applied to a fee assessment,
+    oldest first - each one, a school's own money already collected and sitting in the bank, that
+    nobody has yet said what it was for. ``scope_admin_id`` narrows this to one officer's own
+    takings, the same 'view your own' scope a finance.record-only officer sees everywhere else;
+    ``None`` is the whole school, for finance.view_all/finance.manage.
+    """
+    allocated_sq = (select(func.coalesce(func.sum(FinancePaymentAllocation.amount), 0))
+                    .where(FinancePaymentAllocation.payment_id == FinancePayment.id,
+                           FinancePaymentAllocation.voided_at.is_(None))
+                    .correlate(FinancePayment).scalar_subquery())
+    conditions = [FinancePayment.status == 'posted']
+    if scope_admin_id is not None:
+        conditions.append(FinancePayment.recorded_by == scope_admin_id)
+    rows = all_rows(
+        select(FinancePayment.id, FinancePayment.receipt_no, FinancePayment.amount,
+               FinancePayment.paid_at, FinancePayment.method, FinancePayment.student_id,
+               Student.first_name, Student.middle_name, Student.last_name,
+               Student.admission_no, allocated_sq.label('allocated'))
+        .join(Student, Student.id == FinancePayment.student_id)
+        .where(*conditions)
+        .order_by(FinancePayment.paid_at, FinancePayment.id))
+    out = []
+    for r in rows:
+        row = dict(r)
+        allocated = round(float(row['allocated'] or 0), 2)
+        amount = round(float(row['amount'] or 0), 2)
+        unallocated = round(amount - allocated, 2)
+        if unallocated > 0.005:  # a few kobo of float slack, never a real balance
+            row['allocated'] = allocated
+            row['unallocated'] = unallocated
+            out.append(row)
+    return out
+
+
+def _finance_unallocated_summary(scope_admin_id=None):
+    """``{'count', 'total'}`` for the banner and the dashboard card - the same rows
+    _finance_unallocated_payments would list, just how many and how much."""
+    rows = _finance_unallocated_payments(scope_admin_id)
+    return {'count': len(rows), 'total': round(sum(r['unallocated'] for r in rows), 2)}
+
+
 def _finance_payment_allocated(payment_id):
     """How much of one payment has been applied to fee assessments."""
     return round(float(one_scalar(

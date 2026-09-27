@@ -37,6 +37,7 @@
   <li><strong>A notice log per school</strong> ("this report card notice went to these parents on these channels") so a school can answer "did she get it?" without asking a developer. Receipts already have this ({{ table('finance_delivery_logs') }}).</li>
   <li><strong>Bulk release with a preview</strong> for a whole class, to complement the per-student release button.</li>
   <li><strong>Data export for a school leaving</strong>: a supported "give me everything" (database dump plus folder) with documentation, which the per-school layout makes straightforward.</li>
+  <li><strong>A refund for an online payment.</strong> Paystack's <code>POST /refund</code> is not called anywhere yet — today, undoing a Paystack payment means voiding the {{ table('finance_payments') }} row here and refunding the parent outside the system, by hand, from the Paystack dashboard. A real refund button would call that endpoint from {{ file('core/payments.py') }}, record it, and listen for the <code>refund.processed</code>/<code>refund.failed</code> webhook events (already reaching {{ route('paystack_webhook') }}, just not read yet) to know how it turned out.</li>
 </ul>
 
 <h2 id="culture">How to keep the codebase healthy</h2>

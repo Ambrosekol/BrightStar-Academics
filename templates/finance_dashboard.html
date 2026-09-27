@@ -259,6 +259,37 @@
 
             {% endif %}
 
+
+            <!-- Unallocated -->
+
+            {% if unallocated and unallocated.count %}
+
+            <article class="finance-kpi-card finance-kpi-outstanding">
+
+                <div class="finance-kpi-heading">
+
+                    <span class="finance-kpi-label">
+                        Not Yet Allocated
+                    </span>
+
+                    <span class="finance-kpi-icon finance-kpi-warning">
+                        !
+                    </span>
+
+                </div>
+
+                <strong class="finance-kpi-value">
+                    ₦{{ '%.2f'|format(unallocated.total or 0) }}
+                </strong>
+
+                <span class="finance-kpi-note">
+                    <a href="{{ url_for('admin_finance_unallocated') }}">{{ unallocated.count }} payment{{ 's' if unallocated.count != 1 else '' }} to allocate →</a>
+                </span>
+
+            </article>
+
+            {% endif %}
+
         </div>
 
     </section>

@@ -700,8 +700,16 @@ def csrf_token():
 def inject_csrf_token():
     admin=current_admin()
     unread=open_controls=0
+    finance_unallocated=None
     if admin:
         unread,open_controls=_notification_counts(admin['id'])
+        if is_school_admin(admin) or admin_has_permission(admin['id'],'finance.record'):
+            from blueprints.finance.helpers import _finance_can_view_all, _finance_unallocated_summary
+            scope_admin_id=None if _finance_can_view_all(admin) else admin['id']
+            try:
+                finance_unallocated=_finance_unallocated_summary(scope_admin_id)
+            except Exception:
+                app.logger.exception('Could not compute the unallocated-payments banner')
     return {
         'csrf_token': csrf_token,
         'idempotency_key': idempotency_key,
@@ -713,6 +721,7 @@ def inject_csrf_token():
         'admin_unread_message_summaries': _unread_admin_message_summaries(admin['id']) if admin else [],
         'admin_role_names': admin_role_names(admin['id']) if admin else [],
         'is_school_admin_ui': is_school_admin(admin),
+        'finance_unallocated': finance_unallocated,
         'admin_has_permission': admin_has_permission,
         'entrance_subject_label': entrance_subject_label,
         'entrance_paper_label': entrance_paper_label,

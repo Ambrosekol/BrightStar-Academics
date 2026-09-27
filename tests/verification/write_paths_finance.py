@@ -21,6 +21,9 @@ Charging students, paying, and paid / part paid / unpaid
   student's fee, never come from a voided payment, and a fee already paid in full cannot be picked or
   allocated again (the screen hides it and a hand-made POST is refused, writing nothing);
 * voiding a payment gives the fee its balance back, and the fee can be paid again;
+* a payment nobody has allocated yet is named to every admin who can see it - a card on the
+  Finance dashboard, a dedicated list, and a banner on every admin page with nothing to dismiss -
+  and every one of the three goes away on its own, the moment it is allocated;
 * kobo amounts add up exactly (three instalments of a fee are not "part paid" by a hair);
 * Paid / Part Paid / Unpaid is shown the same on the Fee Structure page, the student's account, the
   fee-picker's JSON and the parent's page, and matches the database.
@@ -704,6 +707,29 @@ check("an amount with more than two decimals is kept to the kobo, never stored a
 page = op_alpha.text(f"{FIN_URL}/receipts/{PJ}")
 check("…and the receipt reads ₦101.00, in words too, not ₦100.100",
       "₦101.00" in page and "one hundred and one naira only" in page and "100.100" not in page)
+
+# a payment nobody has said what it was for: shown to admins, and a site-wide banner that goes
+# away on its own once it is allocated - nothing here for anyone to simply dismiss
+A_CLUB_JON = assessment_id(alpha, JON, CLUB, "First Term")
+unallocated_rows = alpha.run(lambda: FIN._finance_unallocated_payments(None))
+check("Jon's still-unallocated payment is listed for admins who can see all of finance",
+      any(r["id"] == PJ and abs(r["unallocated"] - 101) < 0.01 for r in unallocated_rows), str(unallocated_rows))
+summary = alpha.run(lambda: FIN._finance_unallocated_summary(None))
+check("…and counted in the school-wide summary", summary["count"] >= 1 and summary["total"] >= 100.99, str(summary))
+dash = op_alpha.text(FIN_URL)
+check("the finance dashboard shows a card for it", "not yet allocated" in dash.lower())
+home = op_alpha.text("/admin/school")
+check("…and an ordinary page that is not the finance dashboard names it too, in a banner nobody can dismiss",
+      "not yet allocated to a fee item" in home)
+listing = op_alpha.text(f"{FIN_URL}/payments/unallocated")
+check("the dedicated list names Jon's payment and links to allocating it",
+      "₦101.00" in listing and f"/payments/{PJ}/allocate" in listing)
+allocate(op_alpha, PJ, {A_CLUB_JON: 101})
+still_unallocated = alpha.run(lambda: FIN._finance_unallocated_payments(None))
+check("once it is allocated, it is no longer listed", not any(r["id"] == PJ for r in still_unallocated), str(still_unallocated))
+home_after = op_alpha.text("/admin/school")
+check("…and the site-wide banner is gone, since nothing else at Alpha is unallocated yet",
+      "not yet allocated to a fee item" not in home_after)
 
 # kobo amounts add up exactly
 assess(op_alpha, KEMI, CURRENT, [LEVY], term="Full Session")

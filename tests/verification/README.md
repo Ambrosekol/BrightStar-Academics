@@ -12,7 +12,7 @@ The project README's *Testing* section says what each covers.
 | `write_paths_platform_team.py` | the team, roles, removal and activity logs |
 | `write_paths_portal_branding.py` | colours, logo and sign-in photographs |
 | `write_paths_delivery.py` | a school's own email and WhatsApp |
-| `write_paths_finance.py` | fee items, paid / part paid / unpaid, payments and allocations, what a parent sees and is told |
+| `write_paths_finance.py` | fee items, paid / part paid / unpaid, payments and allocations, what a parent sees and is told, the site-wide banner and list for a payment nobody has allocated yet |
 | `write_paths_receipts.py` | the receipt PDF, its email and WhatsApp, the authorised signature, one school never wearing another's |
 | `write_paths_known_gaps.py` | roles, the profile page, uploads, search, sign-in errors |
 | `write_paths_numbering_rules.py` | each school's numbering patterns: the language, the console editor and preview, audit, candidate registration and student creation, a corrupt file |

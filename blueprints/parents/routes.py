@@ -182,6 +182,12 @@ def parent_child_finance(student_id):
     lifetime=_finance_student_lifetime_totals(student_id)
     other_sessions_with_balance=_finance_student_sessions_with_balance(student_id,exclude_session_id=session_id)
 
+    from blueprints.finance.paystack import reconcile_pending
+    try:
+        reconcile_pending()
+    except Exception:
+        app.logger.exception('Online-payment reconciliation failed while a parent viewed finance')
+
     payments=db.session.scalars(select(FinancePayment)
         .where(FinancePayment.student_id==student_id)
         .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc())).all()

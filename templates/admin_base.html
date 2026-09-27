@@ -175,6 +175,14 @@
 </head>
 <body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}">
 {{ connectivity_banner() }}
+{% if finance_unallocated and finance_unallocated.count %}
+<div class="finance-unallocated-banner" role="status">
+    {{ finance_unallocated.count }} payment{{ 's' if finance_unallocated.count != 1 else '' }} totalling
+    ₦{{ '%.2f'|format(finance_unallocated.total or 0) }} {{ 'has' if finance_unallocated.count == 1 else 'have' }}
+    been collected but not yet allocated to a fee item.
+    <a href="{{ url_for('admin_finance_unallocated') }}">Allocate now →</a>
+</div>
+{% endif %}
 <a class="skip-link" href="#main">Skip to main content</a>
 <div class="admin-shell {% if has_rail %}has-rail{% endif %}">
     {% if has_rail %}

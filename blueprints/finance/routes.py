@@ -26,6 +26,7 @@ from blueprints.finance.helpers import (
     _active_classes, _class_group, _finance_assessment_allocated,
     _finance_can_view_all, _finance_payment_allocated,
     _finance_student_lifetime_totals, _finance_student_outstanding,
+    _finance_unallocated_payments, _finance_unallocated_summary,
     _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
     _receipt_payload, _receipt_pdf, _receipt_sheet, _receipt_signature_abspath,
     # importing this module registers _send_payment_receipt_to_guardian as the
@@ -161,6 +162,16 @@ def admin_finance_payment_allocate(payment_id):
         payment_allocated=payment_allocated,
         available_payment=available_payment)
 
+@app.route('/admin/finance/payments/unallocated')
+@admin_required
+def admin_finance_unallocated():
+    """Every posted payment nobody has yet said what it was for - the page the site-wide banner
+    on every admin screen points to for as long as one of these exists."""
+    me=current_admin()
+    rows=_finance_unallocated_payments(None if _finance_can_view_all(me) else me['id'])
+    return render_template('admin_finance_unallocated.html',rows=rows,
+                           total=round(sum(r['unallocated'] for r in rows),2))
+
 @app.route('/admin/finance/students/<int:student_id>/account')
 @admin_required
 def admin_finance_student_account(student_id):
@@ -209,6 +220,11 @@ def admin_finance_student_account(student_id):
 @admin_required
 def admin_finance_dashboard():
     me=current_admin()
+    from blueprints.finance.paystack import reconcile_pending
+    try:
+        reconcile_pending()
+    except Exception:
+        app.logger.exception('Online-payment reconciliation failed while the finance dashboard loaded')
     own=not _finance_can_view_all(me)
     # A cashier without finance.view_all only ever sees their own takings.
     scope=[FinancePayment.status=='posted']
@@ -231,16 +247,15 @@ def admin_finance_dashboard():
     if not own:
         assessed=one_scalar(select(func.coalesce(func.sum(FinanceFeeAssessment.amount),0))
                             .where(FinanceFeeAssessment.active==1), 0)
-        paid=one_scalar(select(func.coalesce(func.sum(FinancePayment.amount),0))
-                        .where(FinancePayment.status=='posted'), 0)
         allocated=one_scalar(
             select(func.coalesce(func.sum(FinancePaymentAllocation.amount),0))
             .select_from(FinancePaymentAllocation)
             .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
             .join(FinanceFeeAssessment,FinanceFeeAssessment.id==FinancePaymentAllocation.assessment_id)
-            .where(FinancePayment.status=='posted',FinanceFeeAssessment.active==1), 0)
+            .where(FinancePayment.status=='posted',FinanceFeeAssessment.active==1,
+                   FinancePaymentAllocation.voided_at.is_(None)), 0)
         outstanding=max(0, float(assessed)-float(allocated))
-        unallocated=max(0, float(paid)-float(allocated))
+    unallocated=_finance_unallocated_summary(None if not own else me['id'])
     rows=[_flatten(r,'FinancePayment','first_name','middle_name','last_name','admission_no')
           for r in all_rows(
         select(FinancePayment,Student.first_name,Student.middle_name,
@@ -248,7 +263,7 @@ def admin_finance_dashboard():
         .join(Student,Student.id==FinancePayment.student_id)
         .where(*scope)
         .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc()).limit(20))]
-    return render_template('finance_dashboard.html',today_total=today_total,month_total=month_total,count_today=count_today,cash=cash,bank=bank,outstanding=outstanding,rows=rows,view_all=not own)
+    return render_template('finance_dashboard.html',today_total=today_total,month_total=month_total,count_today=count_today,cash=cash,bank=bank,outstanding=outstanding,unallocated=unallocated,rows=rows,view_all=not own)
 
 @app.route('/admin/finance/payments/new',methods=['GET','POST'])
 @admin_required
