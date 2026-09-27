@@ -745,6 +745,23 @@ op.post(f"/admin/school/attendance?class_id={ADA_CLASS}&session_id={CURRENT}&ter
         {f"status_{ADA}": "present"})
 check("a student's attendance for a day was recorded",
       one("SELECT status FROM attendance_records WHERE student_id = :s AND date = :d", s=ADA, d=ATT_DATE) == "present")
+
+# ================================================================ 7d. exam timetable
+r = op.post("/admin/school/timetable/new?session_id=%s&term=First Term" % CURRENT,
+            {"class_id": ADA_CLASS, "subject_id": MATHS, "exam_type": "examination", "date": "2026-12-01",
+             "start_time": "09:00", "end_time": "11:00", "venue": "Main Hall"})
+TT_ENTRY = one("SELECT id FROM exam_timetable_entries WHERE class_id = :c AND subject_id = :s", c=ADA_CLASS, s=MATHS)
+check("a timetable entry was added", TT_ENTRY is not None and one("SELECT venue FROM exam_timetable_entries WHERE id = :e", e=TT_ENTRY) == "Main Hall")
+op.post(f"/admin/school/timetable/{TT_ENTRY}/edit?session_id={CURRENT}&term=First Term",
+        {"class_id": ADA_CLASS, "subject_id": MATHS, "exam_type": "examination", "date": "2026-12-02",
+         "start_time": "10:00", "end_time": "12:00", "venue": "Hall B"})
+check("the entry was edited", one("SELECT date FROM exam_timetable_entries WHERE id = :e", e=TT_ENTRY) == "2026-12-02"
+      and one("SELECT venue FROM exam_timetable_entries WHERE id = :e", e=TT_ENTRY) == "Hall B")
+op.post(f"/admin/school/timetable/release?session_id={CURRENT}&term=First Term", {"exam_type": "examination"})
+check("the timetable was released", one("SELECT released_at FROM exam_timetable_entries WHERE id = :e", e=TT_ENTRY) is not None)
+op.post(f"/admin/school/timetable/{TT_ENTRY}/delete?session_id={CURRENT}&term=First Term", {})
+check("the entry was deleted", one("SELECT COUNT(*) FROM exam_timetable_entries WHERE id = :e", e=TT_ENTRY) == 0)
+
 r = op.post(f"{RC}/settings", {"head_title": "Proprietress", "head_name": "Mrs A. B. Okoye", "next_term_begins": "Monday, 4 January"})
 check("the head's title, name and next-term date were saved", one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_name'") == "Mrs A. B. Okoye"
       and one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_title'") == "Proprietress")

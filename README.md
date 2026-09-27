@@ -37,6 +37,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Question banks](#question-banks)
 - [Practice tests](#practice-tests)
 - [Attendance](#attendance)
+- [Exam and test timetables](#exam-and-test-timetables)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
 - [Command line](#command-line)
@@ -493,6 +494,19 @@ classes the staff member may access) and `school.attendance.view` (see the term 
 student and a linked parent each see their own summary and day-by-day history for a chosen session
 and term, on the dashboard under *Attendance*.
 
+## Exam and test timetables
+
+Staff build an exam/test timetable as a **draft** — one entry per class, subject, date and time, with
+an optional venue — under *Exam Timetable* in the school menu, editing and deleting freely. Nothing
+outside staff sees a draft. **Releasing** the whole session-and-term timetable at once turns every
+draft entry into a released one and, in the background, notifies every currently enrolled student of
+the classes it covers and their parents: an in-app alert each, plus an email and a WhatsApp message to
+the guardian contact. Releasing a second time releases nothing more and says so. Three permissions:
+`school.timetable.view` (see the list, read-only), `school.timetable.manage` (add, edit and delete
+entries) and `school.timetable.release` (the sensitive one: only this notifies students and parents).
+A student and a linked parent each see only released entries for their own class, on the dashboard
+under *Exam timetable*, and can download it as a PDF or print it.
+
 ## Report cards
 
 Every school gives each student a **report card for each term**, as a page and as a PDF.
@@ -699,6 +713,7 @@ python tests/verification/write_paths_receipts.py          # the receipt PDF, it
 python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
 python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, traits, signatures, portals
 python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
+python tests/verification/write_paths_timetable.py           # exam/test timetables: draft, release, notifications, scope, portals
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies

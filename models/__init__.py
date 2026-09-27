@@ -70,6 +70,7 @@ from .school import (
     AssignmentStudent,
     AttendanceRecord,
     ClassSubject,
+    ExamTimetableEntry,
     ProjectStudent,
     ReportCardComment, ReportCardTrait, ResultWorkflowEvent,
     SchoolAssessment,
@@ -138,7 +139,7 @@ __all__ = [
     'Permission', 'SecurityEvent', '_LegacyAttachmentColumns',
     # school
     'AcademicPromotionItem', 'AcademicPromotionRun', 'AcademicSession',
-    'AssignmentQuestion', 'AssignmentStudent', 'AttendanceRecord', 'ClassSubject',
+    'AssignmentQuestion', 'AssignmentStudent', 'AttendanceRecord', 'ClassSubject', 'ExamTimetableEntry',
     'ProjectStudent', 'ReportCardComment', 'ReportCardTrait', 'ResultWorkflowEvent', 'SchoolAssessment',
     'SchoolAssessmentAnswer', 'SchoolAssessmentAttempt',
     'SchoolAssessmentAttemptQuestion', 'SchoolAssignment',

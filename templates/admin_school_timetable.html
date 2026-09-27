@@ -1,0 +1,126 @@
+{% extends 'admin_base.html' %}
+{% block title %}Exam timetable — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .tt-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .tt-filter .field { min-width: 170px; }
+  .tt-new { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+  .tt-badge { padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .tt-badge.draft { background: #fff3d6; color: #8a5c00; }
+  .tt-badge.released { background: #e2f6ea; color: #167a3f; }
+  .tt-edit summary { cursor: pointer; color: var(--brand, #1674b9); font-size: 13px; }
+  .tt-edit form { margin-top: 8px; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div>
+  <h1>Exam timetable</h1>
+  <p class="hero-copy">Build the timetable as a draft, then release it all at once. Students and parents are notified only when you release, never before.</p>
+</div></div>
+
+<section class="card modern-form">
+  <form method="get" class="tt-filter">
+    <div class="field"><label for="session_id">Session</label>
+      <select id="session_id" name="session_id" onchange="this.form.submit()">
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="term">Term</label>
+      <select id="term" name="term" onchange="this.form.submit()">
+        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+    {% if rows %}<a class="btn btn-light" href="{{ url_for('admin_school_timetable_pdf', session_id=session_row.id, term=term) }}">Download PDF</a>{% endif %}
+  </form>
+</section>
+
+{% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.manage') and session_row %}
+<section class="card modern-form" style="margin-top:18px">
+  <h3 style="margin-top:0">Add a paper</h3>
+  <form method="post" class="tt-new" action="{{ url_for('admin_school_timetable_new', session_id=session_row.id, term=term) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label>Class</label>
+      <select name="class_id" id="ttClass" required>
+        <option value="">Choose</option>
+        {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label>Subject</label>
+      <select name="subject_id" id="ttSubject" required>
+        <option value="">Choose</option>
+        {% for s in subjects %}<option value="{{ s.id }}" data-classes="{{ s.class_ids or '' }}">{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label>Type</label>
+      <select name="exam_type">{% for key, label in exam_types %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Date</label><input type="date" name="date" required></div>
+    <div class="field"><label>Start time</label><input type="time" name="start_time" required></div>
+    <div class="field"><label>End time</label><input type="time" name="end_time"></div>
+    <div class="field"><label>Venue</label><input type="text" name="venue" maxlength="120" placeholder="e.g. Main Hall"></div>
+    <div class="field"><button class="btn btn-primary" type="submit">Add</button></div>
+  </form>
+</section>
+<script>
+(function(){
+  var cls = document.getElementById('ttClass'), sub = document.getElementById('ttSubject');
+  function filter(){
+    var cid = cls.value;
+    Array.prototype.forEach.call(sub.options, function(o){
+      if (!o.value) return;
+      o.hidden = !!cid && (o.dataset.classes || '').split(',').indexOf(cid) === -1;
+    });
+    if (sub.selectedOptions[0] && sub.selectedOptions[0].hidden) sub.value = '';
+  }
+  cls.addEventListener('change', filter);
+})();
+</script>
+{% endif %}
+
+{% if session_row and rows %}
+<section class="card" style="margin-top:18px">
+  {% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.release') %}
+  <form method="post" action="{{ url_for('admin_school_timetable_release', session_id=session_row.id, term=term) }}"
+        onsubmit="return confirm('Release the whole {{ term }} timetable ({{ draft_count }} entr' + ('{{ draft_count }}' == '1' ? 'y' : 'ies') + ' still in draft)? Every student and parent it covers will be notified at once.');"
+        style="margin-bottom:14px">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="exam_type" value="examination">
+    <button class="btn btn-primary" type="submit" {% if not draft_count %}disabled{% endif %}>Release timetable ({{ draft_count }} draft entr{{ 'y' if draft_count == 1 else 'ies' }})</button>
+  </form>
+  {% endif %}
+  <div class="table-scroll"><table>
+    <tr><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th>Type</th><th>Venue</th><th>Status</th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.date }}</td><td>{{ r.start_time }}{% if r.end_time %} – {{ r.end_time }}{% endif %}</td>
+      <td>{{ r.class_name }}</td><td>{{ r.subject_name }}</td>
+      <td>{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</td><td>{{ r.venue or '—' }}</td>
+      <td><span class="tt-badge {{ 'released' if r.released else 'draft' }}">{{ 'Released' if r.released else 'Draft' }}</span></td>
+      <td>
+        {% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.manage') %}
+        <details class="tt-edit"><summary>Edit</summary>
+          <form method="post" action="{{ url_for('admin_school_timetable_edit', entry_id=r.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div class="field"><label>Class</label>
+              <select name="class_id">{% for c in classes %}<option value="{{ c.id }}" {% if c.id == r.class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+            <div class="field"><label>Subject</label>
+              <select name="subject_id">{% for s in subjects %}<option value="{{ s.id }}" {% if s.id == r.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="field"><label>Type</label>
+              <select name="exam_type">{% for key, label in exam_types %}<option value="{{ key }}" {% if key == r.exam_type %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="field"><label>Date</label><input type="date" name="date" value="{{ r.date }}" required></div>
+            <div class="field"><label>Start</label><input type="time" name="start_time" value="{{ r.start_time }}" required></div>
+            <div class="field"><label>End</label><input type="time" name="end_time" value="{{ r.end_time }}"></div>
+            <div class="field"><label>Venue</label><input type="text" name="venue" maxlength="120" value="{{ r.venue }}"></div>
+            <button class="btn btn-primary btn-sm" type="submit">Save</button>
+          </form>
+        </details>
+        <form method="post" action="{{ url_for('admin_school_timetable_delete', entry_id=r.id) }}"
+              onsubmit="return confirm('Delete this timetable entry?');" style="display:inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-light btn-sm" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% elif session_row %}
+<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">No timetable entry has been added for {{ term }} yet.</p></section>
+{% endif %}
+{% endblock %}

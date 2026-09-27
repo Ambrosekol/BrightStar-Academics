@@ -1,0 +1,74 @@
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
+</head>
+<body class="school-ui">
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ home_url }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">{{ home_kind }}</span>
+    </span>
+  </a>
+  <div class="fp-bar__actions">
+    <span class="fp-bar__person">{{ person_name }}</span>
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+  </div>
+</header>
+
+<main class="fp-main" id="main">
+  <p><a class="fp-row__go" href="{{ back_url }}">&larr; {{ back_label }}</a></p>
+
+  <section class="fp-hero">
+    <div>
+      <p class="fp-hero__eyebrow">Exam timetable</p>
+      <h1>{{ title }}</h1>
+    </div>
+  </section>
+
+  <section class="fp-panel">
+    <form method="get" class="fp-form-grid" style="margin-bottom:0">
+      <label class="ui-field">Session
+        <select class="ui-input" name="session_id" onchange="this.form.submit()">
+          {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+        </select></label>
+      <label class="ui-field">Term
+        <select class="ui-input" name="term" onchange="this.form.submit()">
+          {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select></label>
+    </form>
+  </section>
+
+  {% if rows %}
+  <section class="fp-panel">
+    <div class="fp-panel__head">
+      <div><p class="fp-panel__eyebrow">{{ term }} · {{ session_row.name }}</p><h2>Papers</h2></div>
+      <span class="fp-count">{{ rows|length }}</span>
+    </div>
+    <div class="ui-table-wrap"><table class="ui-table">
+      <tr><th>Date</th><th>Time</th><th>Subject</th><th>Type</th><th>Venue</th></tr>
+      {% for r in rows %}
+      <tr><td>{{ r.date }}</td><td>{{ r.start_time }}{% if r.end_time %} – {{ r.end_time }}{% endif %}</td>
+        <td>{{ r.subject_name }}</td><td>{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</td><td>{{ r.venue or '—' }}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% if pdf_url %}<p style="margin-top:14px"><a class="ui-btn ui-btn--primary" href="{{ pdf_url }}">Download PDF</a>
+    <button type="button" class="ui-btn ui-btn--light" onclick="window.print()">Print</button></p>{% endif %}
+  </section>
+  {% else %}
+  <section class="fp-panel"><p class="fp-panel-note" style="margin:0">No timetable has been released for {{ term }} yet.</p></section>
+  {% endif %}
+</main>
+</body>
+</html>

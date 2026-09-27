@@ -549,6 +549,36 @@ class AttendanceRecord(db.Model):
     updated_at = db.Column(Text)
 
 
+class ExamTimetableEntry(db.Model):
+    """One row of an exam or test timetable: one subject's paper for one class, on one date and time.
+
+    Entries are created freely as a draft and only take effect for students and parents once
+    released (``released_at`` set) — see blueprints/school/timetable.py. Releasing notifies every
+    student and parent of every class the release covers, once, the same day it happens.
+    """
+
+    __tablename__ = 'exam_timetable_entries'
+    __table_args__ = (
+        Index('idx_timetable_session_term', 'session_id', 'term'),
+        Index('idx_timetable_class', 'class_id'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    term = db.Column(Text, nullable=False)
+    class_id = db.Column(Integer, ForeignKey('school_classes.id'), nullable=False)
+    subject_id = db.Column(Integer, ForeignKey('school_subjects.id'), nullable=False)
+    exam_type = db.Column(Text, nullable=False, server_default=text("'examination'"))
+    date = db.Column(Text, nullable=False)
+    start_time = db.Column(Text, nullable=False)
+    end_time = db.Column(Text)
+    venue = db.Column(Text)
+    released_at = db.Column(Text)
+    created_by = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    updated_at = db.Column(Text)
+
+
 class ReportCardTrait(db.Model):
     """A student's affective and psychomotor trait ratings for one term, alongside the class teacher's comment.
 
