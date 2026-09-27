@@ -119,6 +119,10 @@ _install_session_guard(app)
 # (one(...), all_rows(...), etc.) keeps working unchanged.
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert  # noqa: E402
 
+# ---------------- retry-safe writes ----------------
+# Moved to core/idempotency.py (idempotent_write is imported directly from there by routes).
+from core.idempotency import idempotency_key  # noqa: E402
+
 
 # ---------------- presence tracking ----------------
 # Moved to core/presence.py.
@@ -696,6 +700,7 @@ def inject_csrf_token():
         unread,open_controls=_notification_counts(admin['id'])
     return {
         'csrf_token': csrf_token,
+        'idempotency_key': idempotency_key,
         'current_admin': admin,
         'admin_unread_notifications': unread,
         'admin_open_controls': open_controls,

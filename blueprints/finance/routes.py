@@ -17,6 +17,7 @@ from models import (
     StudentEnrolment, db,
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
+from core.idempotency import idempotent_write
 from core.jobs import enqueue
 from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
@@ -252,6 +253,7 @@ def admin_finance_dashboard():
 @app.route('/admin/finance/payments/new',methods=['GET','POST'])
 @admin_required
 @csrf_protect
+@idempotent_write('finance.record_payment')
 def admin_finance_record():
     me=current_admin()
     students=all_rows(select(Student.id,Student.admission_no,Student.first_name,

@@ -1,8 +1,9 @@
-"""Durable background work (core/jobs.py), proven end to end on PostgreSQL.
+"""Two resilience primitives, proven end to end on PostgreSQL: durable background work
+(core/jobs.py) and retry-safe form writes (core/idempotency.py).
 
-A thread started and forgotten (the module this replaces, core/background.py) loses its work
-silently if the process restarts, the thread raises, or a connection drops mid-send: nothing is
-left to say the work was ever meant to happen. This proves the replacement:
+Durable jobs: a thread started and forgotten (the module this replaces, core/background.py)
+loses its work silently if the process restarts, the thread raises, or a connection drops
+mid-send: nothing is left to say the work was ever meant to happen. This proves the replacement:
 
 * a job succeeds, and its row says so (status, completed_at);
 * a job whose handler raises is retried, up to a limit, and then left failed with the reason,
@@ -12,6 +13,12 @@ left to say the work was ever meant to happen. This proves the replacement:
 * an unknown job kind is refused immediately, before anything is written;
 * the real payment-receipt job (blueprints/finance/helpers.py) leaves exactly this trail: a
   background_jobs row, done, for a payment recorded through the real form.
+
+Retry-safe writes: a double-click, two tabs, or a browser silently retrying a POST it never saw
+a reply to must never record the same payment twice. This proves that a resubmission of the
+identical click (the same rendered form's hidden `_idempotency_key`) is sent to wherever the
+first attempt ended up without running the write again, while a genuinely different click (its
+own key) still records its own payment.
 
 Run:  python tests/verification/write_paths_resilience.py
 """
@@ -185,6 +192,40 @@ check("recording a payment through the real form succeeds", r.status_code == 302
 after_jobs = in_school(lambda: sql("SELECT count(*), max(status) FROM background_jobs WHERE kind = 'send_payment_receipt'"))
 check("it leaves exactly one more durable 'send_payment_receipt' job, done",
       after_jobs[0][0] == before_jobs + 1 and after_jobs[0][1] == "done", str(after_jobs[0]))
+
+# ================================================================ a resubmitted click never records the payment twice
+count_before = in_school(lambda: sql(
+    "SELECT count(*) FROM finance_payments WHERE student_id = :s", s=student_id)[0][0])
+idem_key = "same-click-abc123"
+payment_data = {
+    "_csrf_token": csrf(boss, "/admin/finance/payments/new", ALPHA),
+    "_idempotency_key": idem_key,
+    "student_id": student_id, "session_id": session_id, "amount": "7500", "category": "School Fees",
+    "method": "Cash", "reference": "res-idem-1",
+}
+r1 = boss.post("/admin/finance/payments/new", data=payment_data, base_url=ALPHA)
+check("a payment carrying an idempotency key is recorded normally", r1.status_code == 302, r1.status_code)
+count_after_one = in_school(lambda: sql(
+    "SELECT count(*) FROM finance_payments WHERE student_id = :s", s=student_id)[0][0])
+check("…exactly one new payment", count_after_one == count_before + 1, (count_before, count_after_one))
+
+# The exact same click again: same CSRF token (still valid), same idempotency key, same everything.
+r2 = boss.post("/admin/finance/payments/new", data=payment_data, base_url=ALPHA)
+check("resubmitting the identical click is sent to the same place, not refused",
+      r2.status_code == 302 and r2.headers.get("Location") == r1.headers.get("Location"),
+      (r2.status_code, r2.headers.get("Location"), r1.headers.get("Location")))
+count_after_two = in_school(lambda: sql(
+    "SELECT count(*) FROM finance_payments WHERE student_id = :s", s=student_id)[0][0])
+check("…and no second payment was recorded for it", count_after_two == count_after_one, (count_after_one, count_after_two))
+
+# A different click (a new key) for the same student is a genuinely new payment.
+payment_data2 = dict(payment_data, _idempotency_key="a-different-click-xyz789",
+                     _csrf_token=csrf(boss, "/admin/finance/payments/new", ALPHA), reference="res-idem-2")
+r3 = boss.post("/admin/finance/payments/new", data=payment_data2, base_url=ALPHA)
+count_after_three = in_school(lambda: sql(
+    "SELECT count(*) FROM finance_payments WHERE student_id = :s", s=student_id)[0][0])
+check("…while a genuinely different click (its own key) records its own payment",
+      r3.status_code == 302 and count_after_three == count_after_two + 1, (r3.status_code, count_after_three))
 
 print(f"\n{sum(1 for _, ok, _ in results if ok)}/{len(results)} checks passed")
 if DROP_TEST_DATABASES:

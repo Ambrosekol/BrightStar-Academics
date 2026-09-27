@@ -77,6 +77,7 @@ decides, folder by folder, who may open what: a child's photo is visible to staf
   <li><strong>Refusals are explained.</strong> A number too big for a database column, or text containing a NUL byte, is answered with a plain 400 ({{ file('core/request_errors.py') }}), never a 500. A request over the size limit is answered with the limit and the size sent.</li>
   <li><strong>Audit.</strong> Significant actions call <code>audit_log</code>; the entry records who, what, on which target, from which address.</li>
   <li><strong>After the commit.</strong> Messages to parents are sent only after the change they report was committed, as a durable job ({{ file('core/jobs.py') }}) so nobody waits on a mail server, a failed message never undoes what was saved, and a thread that never finishes is retried rather than simply lost.</li>
+  <li><strong>Retry-safe writes.</strong> A form protected with <code>@idempotent_write('name')</code> ({{ file('core/idempotency.py') }}) claims a hidden, per-render token in the database before doing anything else; a resubmission of the same click - a double-click, or a browser silently retrying a POST it never saw a reply to - is sent to wherever the first attempt ended up, without running the write again. Not every form has this yet; it is added where a duplicate would matter, starting with recording a payment.</li>
 </ul>
 
 <h2 id="background">Background work</h2>

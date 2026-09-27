@@ -67,6 +67,9 @@ flag = db.Column(Integer, nullable=False, default=0, server_default=text('0'))</
   <li>In tests, set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so the work runs immediately and the fake mail server can be inspected.</li>
 </ol>
 
+<h2 id="retry-safe">Make a write retry-safe</h2>
+<p>A double-click, two tabs, or a browser silently retrying a POST it never saw a reply to must never run a write twice - recording the same payment, sending the same charge. Add <code>@idempotent_write('a-name-for-this-form')</code> ({{ file('core/idempotency.py') }}) as the innermost decorator (closest to the view, after <code>@csrf_protect</code>), and add <code>{% raw %}<input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">{% endraw %}</code> to the form it protects - the same idea as <code>csrf_token()</code>, a fresh value planted at render time. A resubmission of the exact same rendered form's click is sent to wherever the first attempt ended up, without the write running again; a form with no key on it is simply unprotected, so the two must always be added together (a contract test checks this).</p>
+
 <h2 id="console">Add a page to the platform console</h2>
 <pre><code>@app.route('/platform/thing')
 @platform_host_only
