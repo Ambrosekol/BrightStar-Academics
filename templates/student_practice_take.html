@@ -5,7 +5,7 @@
 <title>{{assessment.title}} — Practice — {{ school_brand.name }}</title>
 <link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
 </head>
-<body class="exam-page student-assessment-page">
+<body class="exam-page student-assessment-page">{{ connectivity_banner() }}
 <header class="top exam-top student-exam-top">
   <div class="portal-brand">
     <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">

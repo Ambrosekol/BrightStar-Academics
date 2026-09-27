@@ -28,6 +28,11 @@ a save that fails twice over the network then succeeds ends up saved; one that a
 the network, or one the server always answers with a transient error, is retried a bounded number
 of times and then says so in plain words - neither ever ends the candidate's paper on its own.
 
+Offline-friendly UX: static/connectivity.js, run in the same browser, shows a banner the moment
+the browser goes offline and says so again when it comes back - the piece every other page in the
+portal (not just the exam) relies on to say out loud what would otherwise be a silent connection
+drop.
+
 Run:  python tests/verification/write_paths_resilience.py
 """
 import html
@@ -307,6 +312,38 @@ window.fetch = function(url, opts) {{
         check("a transient server error (not a real end state) is retried the same way, never ending the paper on its own",
               outcome["afterServer"]["calls"] == 4 and "Could not save" in outcome["afterServer"]["status"],
               outcome["afterServer"])
+
+    # ================================================================ the generic connectivity banner, in the same browser
+    banner_page = f"""<!doctype html><html><body>
+<div class="connectivity-banner" data-connectivity-banner></div>
+<pre id="out"></pre>
+<script src="file:///{os.path.join(ROOT, 'static', 'connectivity.js').replace(os.sep, '/')}"></script>
+<script>
+var el = document.querySelector('[data-connectivity-banner]');
+window.dispatchEvent(new Event('offline'));
+var afterOffline = {{text: el.textContent, offline: el.classList.contains('connectivity-banner-offline'),
+                     visible: el.classList.contains('connectivity-banner-visible')}};
+window.dispatchEvent(new Event('online'));
+var afterOnline = {{text: el.textContent, offline: el.classList.contains('connectivity-banner-offline'),
+                    visible: el.classList.contains('connectivity-banner-visible')}};
+document.getElementById('out').textContent = JSON.stringify({{afterOffline: afterOffline, afterOnline: afterOnline}});
+</script>
+</body></html>"""
+    banner_path = os.path.join(TMP, "connectivity_check.html")
+    with open(banner_path, "w", encoding="utf-8") as fh:
+        fh.write(banner_page)
+    run2 = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--allow-file-access-from-files", "--dump-dom",
+                           "file:///" + banner_path.replace(os.sep, "/")], capture_output=True, text=True, timeout=30)
+    found2 = re.search(r'<pre id="out">(.*?)</pre>', run2.stdout, re.S)
+    banner_outcome = json.loads(html.unescape(found2.group(1))) if found2 else {}
+    check("the connectivity banner ran in a real browser", bool(banner_outcome), run2.stderr[-300:] if not banner_outcome else "")
+    if banner_outcome:
+        check("going offline shows the banner, in its offline colour",
+              banner_outcome["afterOffline"]["visible"] and banner_outcome["afterOffline"]["offline"]
+              and "offline" in banner_outcome["afterOffline"]["text"].lower(), banner_outcome["afterOffline"])
+        check("coming back online says so, no longer in the offline colour",
+              banner_outcome["afterOnline"]["visible"] and not banner_outcome["afterOnline"]["offline"]
+              and "online" in banner_outcome["afterOnline"]["text"].lower(), banner_outcome["afterOnline"])
 
 print(f"\n{sum(1 for _, ok, _ in results if ok)}/{len(results)} checks passed")
 if DROP_TEST_DATABASES:

@@ -1,6 +1,9 @@
 ﻿@import url("fonts/fonts.css");
 *{box-sizing:border-box}
 :root{--navy:#0d2b52;--navy-2:#173e70;--ink:#172033;--muted:#68758a;--line:#dfe5ee;--bg:#f3f6fb;--green:#167447;--green-bg:#eaf8f0;--red:#b42318;--red-bg:#fff0ee;--amber:#9a6700;--amber-bg:#fff8df;--white:#fff;--shadow:0 12px 34px rgba(20,40,80,.07)}
+.connectivity-banner{position:fixed;top:0;left:0;right:0;z-index:9999;text-align:center;font-size:13.5px;font-weight:700;padding:0;max-height:0;overflow:hidden;opacity:0;transition:max-height .25s ease,opacity .25s ease,padding .25s ease;background:var(--green-bg);color:var(--green)}
+.connectivity-banner-visible{max-height:60px;opacity:1;padding:9px 14px}
+.connectivity-banner-offline{background:var(--amber-bg);color:var(--amber)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:8px;padding:9px 13px;text-decoration:none;cursor:pointer;font-weight:650;font-size:14px;font-family:inherit;line-height:1.2}
 .btn-primary{background:#1674b9;color:#fff}
 .btn-primary:hover{background:#125f97}

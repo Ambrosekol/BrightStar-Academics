@@ -123,6 +123,10 @@ from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples,
 # Moved to core/idempotency.py (idempotent_write is imported directly from there by routes).
 from core.idempotency import idempotency_key  # noqa: E402
 
+# ---------------- saying so when the connection drops ----------------
+# Moved to core/connectivity.py.
+from core.connectivity import connectivity_banner  # noqa: E402
+
 
 # ---------------- presence tracking ----------------
 # Moved to core/presence.py.
@@ -701,6 +705,7 @@ def inject_csrf_token():
     return {
         'csrf_token': csrf_token,
         'idempotency_key': idempotency_key,
+        'connectivity_banner': connectivity_banner,
         'current_admin': admin,
         'admin_unread_notifications': unread,
         'admin_open_controls': open_controls,
