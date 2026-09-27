@@ -21,7 +21,8 @@ The project README's *Testing* section says what each covers.
 | `write_paths_retired_tables.py` | clearing the removed website editor's leftover tables |
 | `write_paths_term_grading.py` | the Exam 60 + CA 40 term result: weights, scaling, rounding, released-only visibility, who may do what |
 | `write_paths_bank_locks.py` | locking a question bank and everything a lock must block, per school |
-| `write_paths_report_cards.py` | report cards: when one is ready, what it shows, comments, signatures, branding, the student and parent portals |
+| `write_paths_report_cards.py` | report cards: when one is ready, what it shows, comments, traits, signatures, branding, the student and parent portals |
+| `write_paths_attendance.py` | taking the daily register, scope, re-marking and clearing, the term summary, permissions and CSRF, the student and parent portals |
 | `report_card_pdf_selfcheck.py` | the report card PDF on its own (layout, pictures, hostile text); needs no database |
 | `write_paths_candidate_results.py` | a candidate's result image and share page: the school's own logo and photo, nothing of another school, nothing left behind |
 | `write_paths_error_pages.py` | the 404, 403 and 500 pages: each school's own, "Go Back" for signed-in people, nothing leaked |

@@ -88,6 +88,7 @@ EXERCISED = frozenset({
     "/admin/school/report-cards/traits",
     "/admin/school/report-cards/my-signature",
     "/admin/school/report-cards/settings",
+    "/admin/school/attendance",
     "/admin/school/delivery/email/test",
     "/admin/school/delivery/whatsapp/check",
     "/admin/school/delivery/whatsapp/clear",

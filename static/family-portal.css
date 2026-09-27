@@ -183,6 +183,7 @@ a.fp-row:hover .fp-row__title { color: var(--brand-dark); text-decoration: under
 .fp-status.is-done { background: var(--success-bg); color: var(--success); }
 .fp-status.is-pending, .fp-status.is-in_progress, .fp-status.is-not_done { background: var(--warning-bg); color: var(--warning); }
 .fp-status.is-overdue { background: var(--danger-bg); color: var(--danger); }
+.fp-status.is-excused { background: var(--brand-tint); color: var(--brand-dark); }
 .fp-score { flex: none; padding-top: 2px; color: var(--brand-dark); font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .fp-empty { padding: var(--sp-4) 0; color: var(--ink-3); }

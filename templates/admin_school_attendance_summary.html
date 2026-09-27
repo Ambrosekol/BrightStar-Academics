@@ -1,0 +1,54 @@
+{% extends 'admin_base.html' %}
+{% block title %}Attendance summary — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<style>
+  .at-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .at-filter .field { min-width: 170px; }
+  table.at-summary { width: 100%; border-collapse: collapse; }
+  table.at-summary th, table.at-summary td { padding: 8px 10px; border-bottom: 1px solid #e4ebf2; text-align: center; }
+  table.at-summary th { text-align: center; color: #45566a; font-size: 12.5px; text-transform: uppercase; letter-spacing: .3px; }
+  table.at-summary td.left, table.at-summary th.left { text-align: left; }
+</style>
+
+<div class="page-hero"><div>
+  <div class="eyebrow">SCHOOL PORTAL / ATTENDANCE</div>
+  <h1>Attendance summary</h1>
+  <p class="hero-copy">How many days each student was present, late, absent or excused this term, out of the days the register was actually taken.</p>
+</div></div>
+
+<section class="card modern-form">
+  <form method="get" class="at-filter">
+    <div class="field"><label for="class_id">Class</label>
+      <select id="class_id" name="class_id" onchange="this.form.submit()">
+        <option value="">Choose a class</option>
+        {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="session_id">Session</label>
+      <select id="session_id" name="session_id" onchange="this.form.submit()">
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="term">Term</label>
+      <select id="term" name="term" onchange="this.form.submit()">
+        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+    <a class="btn btn-light" href="{{ url_for('admin_school_attendance', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Take attendance</a>
+  </form>
+</section>
+
+{% if class_row and rows %}
+<section class="card" style="margin-top:18px">
+  <div class="table-scroll"><table class="at-summary">
+    <tr><th class="left">Student</th><th>Present</th><th>Late</th><th>Absent</th><th>Excused</th><th>Days recorded</th><th>%</th></tr>
+    {% for r in rows %}
+    <tr><td class="left">{{ r.name }}<br><small class="muted">{{ r.admission_no }}</small></td>
+      <td>{{ r.present }}</td><td>{{ r.late }}</td><td>{{ r.absent }}</td><td>{{ r.excused }}</td>
+      <td>{{ r.total }}</td><td>{{ '%.1f'|format(r.percentage) + '%' if r.percentage is not none else '—' }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% elif class_row %}
+<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">No student is enrolled in {{ class_row.name }} for this session.</p></section>
+{% else %}
+<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">Choose a class to see its attendance summary.</p></section>
+{% endif %}
+{% endblock %}

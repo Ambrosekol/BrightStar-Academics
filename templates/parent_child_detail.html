@@ -131,6 +131,18 @@
   </section>
   {% endif %}
 
+  <section class="fp-panel" id="attendance">
+    <div class="fp-panel__head">
+      <div><p class="fp-panel__eyebrow">Every day</p><h2>Attendance</h2></div>
+    </div>
+    <div class="fp-list">
+      <div class="fp-row">
+        <span class="fp-row__body"><span class="fp-row__title">See how many days {{ child.first_name }} has been present, late, absent or excused</span></span>
+        <span class="fp-row__aside"><a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('parent_child_attendance', student_id=child.id) }}">View</a></span>
+      </div>
+    </div>
+  </section>
+
   <section class="fp-panel" id="assignments">
     <div class="fp-panel__head">
       <div><p class="fp-panel__eyebrow">Assignments</p><h2>Assignment performance</h2></div>

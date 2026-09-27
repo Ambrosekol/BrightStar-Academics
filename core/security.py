@@ -102,6 +102,8 @@ ADMIN_PERMISSION_DEFS = [
     ('school.results.enter','Enter student results','school','Enter approved manual or offline student results.'),
     ('school.results.verify','Verify student results','school','Verify compiled student result components.'),
     ('school.results.approve','Approve student results','school','Approve student result components for release.'),
+    ('school.attendance.view','View attendance','school','View student attendance records and term summaries for the classes you may access.'),
+    ('school.attendance.mark','Mark attendance','school','Take the daily register for the classes you may access.'),
     ('parent.view','View parent accounts','school','View parent account relationships.'),
     ('parent.manage','Manage parent accounts','school','Create and manage parent accounts and relationships.'),
     ('parent.feedback.view','View parent feedback','school','View parent messages and feedback assigned to the school academic team.'),
@@ -155,19 +157,19 @@ ADMIN_ROLE_PRESETS = {
     },
     'School Records Officer': {
         'description': 'Manages enrolled student records and class information within assigned school scopes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','parent.feedback.view']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.attendance.view','parent.feedback.view']
     },
     'Primary Class Teacher': {
         'description': 'Manages students, subjects and assessments for assigned primary classes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','parent.feedback.view','report_cards.view','report_cards.comment']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.attendance.view','school.attendance.mark','parent.feedback.view','report_cards.view','report_cards.comment']
     },
     'College Subject Teacher': {
         'description': 'Manages the assigned subject across permitted college classes.',
-        'permissions': ['school.view','school.students.view','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view']
+        'permissions': ['school.view','school.students.view','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.attendance.view','school.attendance.mark']
     },
     'School Academic Administrator': {
         'description': 'Full school-portal academic administration without access to entrance-examination operations.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage']
     },
     'Finance Records Officer': {
         'description': 'Records student payments, issues receipts and sees only collections recorded by the officer.',
@@ -208,6 +210,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_report_card_traits':'report_cards.comment','admin_school_report_card_traits_save':'report_cards.comment',
     'admin_my_signature':'report_cards.comment','admin_my_signature_save':'report_cards.comment',
     'admin_school_report_card_settings':'report_cards.manage','admin_school_report_card_settings_save':'report_cards.manage',
+    'admin_school_attendance':'school.attendance.mark','admin_school_attendance_save':'school.attendance.mark',
+    'admin_school_attendance_summary':'school.attendance.view',
     'admin_school_delivery':'delivery.manage','admin_school_delivery_email_save':'delivery.manage',
     'admin_school_delivery_email_clear':'delivery.manage','admin_school_delivery_email_test':'delivery.manage',
     'admin_school_delivery_whatsapp_save':'delivery.manage','admin_school_delivery_whatsapp_clear':'delivery.manage',

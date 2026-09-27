@@ -521,6 +521,34 @@ class ReportCardComment(db.Model):
     updated_at = db.Column(Text)
 
 
+class AttendanceRecord(db.Model):
+    """One student's attendance status for one calendar day.
+
+    Recorded once per student per day (not per subject): whichever class teacher takes the
+    register for that class marks it. ``status`` is one of 'present', 'late', 'absent' or 'excused'
+    (blueprints/school/attendance_data.py, ``STATUSES``). A day nobody has taken the register for
+    simply has no row, so a summary only ever counts days the school actually recorded.
+    """
+
+    __tablename__ = 'attendance_records'
+    __table_args__ = (
+        UniqueConstraint('student_id', 'date'),
+        Index('idx_attendance_class_date', 'class_id', 'date'),
+        Index('idx_attendance_student_session_term', 'student_id', 'session_id', 'term'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id'), nullable=False)
+    class_id = db.Column(Integer, ForeignKey('school_classes.id'), nullable=False)
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    term = db.Column(Text, nullable=False)
+    date = db.Column(Text, nullable=False)
+    status = db.Column(Text, nullable=False)
+    marked_by_admin_id = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    updated_at = db.Column(Text)
+
+
 class ReportCardTrait(db.Model):
     """A student's affective and psychomotor trait ratings for one term, alongside the class teacher's comment.
 

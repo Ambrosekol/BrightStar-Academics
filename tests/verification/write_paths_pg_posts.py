@@ -738,6 +738,13 @@ check("the class teacher's affective/psychomotor trait ratings on a student's re
       == '{"neatness": 3, "punctuality": 5}')
 op.post(f"{RC}/traits?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {})
 check("clearing every trait removes the row", one("SELECT COUNT(*) FROM report_card_traits WHERE student_id = :s", s=ADA) == 0)
+
+# ================================================================ 7c. attendance
+ATT_DATE = "2026-09-15"
+op.post(f"/admin/school/attendance?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term&date={ATT_DATE}",
+        {f"status_{ADA}": "present"})
+check("a student's attendance for a day was recorded",
+      one("SELECT status FROM attendance_records WHERE student_id = :s AND date = :d", s=ADA, d=ATT_DATE) == "present")
 r = op.post(f"{RC}/settings", {"head_title": "Proprietress", "head_name": "Mrs A. B. Okoye", "next_term_begins": "Monday, 4 January"})
 check("the head's title, name and next-term date were saved", one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_name'") == "Mrs A. B. Okoye"
       and one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_title'") == "Proprietress")

@@ -30,11 +30,13 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Creating a school](#creating-a-school)
 - [Giving a school its own domain](#giving-a-school-its-own-domain)
 - [The platform team and its activity log](#the-platform-team-and-its-activity-log)
-- [Documentation and the marketing page](#documentation-and-the-marketing-page)
+- [Documentation, the marketing page and the privacy statement](#documentation-the-marketing-page-and-the-privacy-statement)
+- [The new-school setup checklist](#the-new-school-setup-checklist)
 - [Email and WhatsApp](#email-and-whatsapp)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
 - [Practice tests](#practice-tests)
+- [Attendance](#attendance)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
 - [Command line](#command-line)
@@ -477,6 +479,20 @@ result or a report card. Every run serves the questions in a fresh random order.
   current session's own bank is never offered, so practice cannot reveal an examination that has not
   been sat.
 
+## Attendance
+
+A class teacher takes the register for one class on one date under *Attendance* in the school menu:
+present, late, absent or excused for each enrolled student, or left blank for "not yet marked"
+(`blueprints/school/attendance_data.py`, table `attendance_records`). One row per student per day,
+never per subject. Saving the same statuses again changes nothing and keeps the original marker's
+name; changing a status re-attributes the row to whoever changed it, the same "last honest edit wins"
+rule report card comments use, and a status for a student outside the class roster is silently
+ignored. A term summary totals present/late/absent/excused and a percentage (late counts as present)
+for a whole class. Two permissions: `school.attendance.mark` (take the register, limited to the
+classes the staff member may access) and `school.attendance.view` (see the term summary only). A
+student and a linked parent each see their own summary and day-by-day history for a chosen session
+and term, on the dashboard under *Attendance*.
+
 ## Report cards
 
 Every school gives each student a **report card for each term**, as a page and as a PDF.
@@ -491,9 +507,12 @@ Every school gives each student a **report card for each term**, as a page and a
   name, motto, address, phone, email and brand colour; the student's name, admission number, class and
   photograph; each subject as CA out of 40 plus Exam out of 60, with the total, a grade and a remark;
   the overall percentage and grade; the **class average percentage** (and each subject's class
-  average); the **class teacher's comment with that teacher's own signature**; the **head's title,
-  name and signature** (Head Teacher, Headmistress, Proprietress, Proprietor and so on); the grading
-  key; the date it was issued and, if set, when the next term begins.
+  average); **affective and psychomotor trait ratings** (Punctuality, Neatness, Leadership and the
+  like under Affective Domain; Handwriting, Sports, Drawing and the like under Psychomotor Domain),
+  on a five-point scale, shown only once at least one has been rated so a school that never uses this
+  sees no change to its cards; the **class teacher's comment with that teacher's own signature**; the
+  **head's title, name and signature** (Head Teacher, Headmistress, Proprietress, Proprietor and so
+  on); the grading key; the date it was issued and, if set, when the next term begins.
 - **Same numbers as everywhere else.** A card is worked out when it is asked for, from the term result
   the school already has (the same arithmetic the admin's Term Results uses), so it can never disagree
   with the results. Grades: A 70-100 Excellent, B 60-69 Very Good, C 50-59 Good, D 45-49 Fair,
@@ -502,8 +521,9 @@ Every school gives each student a **report card for each term**, as a page and a
   see which cards are ready (and which are waiting on how many results), open a card, download its
   PDF, or download every ready card in the class as one PDF. Three permissions: `report_cards.view`
   (see and download, limited to the classes the staff member may access), `report_cards.comment`
-  (write the class teacher's comment, and keep **your own signature** under *My signature*) and
-  `report_cards.manage` (set the head's title, name and signature, and when the next term begins). The
+  (write the class teacher's comment, rate affective/psychomotor traits, and keep **your own
+  signature** under *My signature*) and `report_cards.manage` (set the head's title, name and
+  signature, and when the next term begins). The
   *Primary Class Teacher* and *School Academic Administrator* roles have them, and there is a
   *Report Card Officer* role. A comment can be written before results are released; a card with no
   comment still appears on release, with an empty comment box. Whoever last changes a comment is its
@@ -677,7 +697,8 @@ python tests/verification/write_paths_bank_locks.py        # locking a question 
 python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts
 python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and WhatsApp, the signature
 python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
-python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, signatures, portals
+python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, traits, signatures, portals
+python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies
