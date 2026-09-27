@@ -1,0 +1,33 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Everything in the School workspace — students, subjects, assignments, results, attendance,
+timetables — is organised around <strong>classes</strong>, <strong>sessions</strong> and
+<strong>terms</strong>.</p>
+
+<h2 id="classes">Classes</h2>
+<p>Every school starts with the standard list already in place — Primary 1 to 6, JSS 1 to 3, SSS 1 to
+3 — under <a href="{{ url_for('admin_school_classes') }}">Classes</a>, so this is usually the one step
+already done on the setup checklist. You can rename, reorder or add to this list if your school uses
+different names.</p>
+
+<h2 id="sessions">Sessions and terms</h2>
+<p>An <strong>academic session</strong> is a school year, e.g. "2025/2026" — set up and switched under
+<a href="{{ url_for('admin_school_sessions') }}">Academic Sessions</a>. One session is always the
+<em>current</em> one; new enrolments, results and attendance are filed against it. A
+<strong>term</strong> is First, Second or Third Term (or "Full Session" for an annual view) — terms are
+just a choice on a form, not something you create.</p>
+
+<h2 id="subjects">Subjects</h2>
+<p><a href="{{ url_for('admin_school_subjects') }}">Subjects</a> are not seeded: a brand-new school has
+none, which is the second step of the setup checklist. Creating a subject attaches it to one or more
+classes at the same time, so it only ever shows up where it is actually taught. A subject can be
+<strong>locked</strong> once its results are being finalised, which stops further changes to it for
+that class.</p>
+
+<h2 id="promotion">Moving a class up a session</h2>
+<p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> generates a
+draft of who moves where — promote, repeat, transfer, graduate, hold or withdraw — one student at a
+time or as a batch, using progression rules you set once (e.g. "JSS 1 → JSS 2"). A draft must be
+approved before it can be committed, and committing is what actually moves everyone's enrolment into
+the new session.</p>
+{% endblock %}

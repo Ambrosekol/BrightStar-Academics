@@ -1,0 +1,21 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Build the exam or test timetable as a draft, check it, then release it all at once.</p>
+
+<h2 id="draft">Building the draft</h2>
+<p>Under <a href="{{ url_for('admin_school_timetable') }}">Exam Timetable</a>, add one entry per
+class, subject, date and time, with an optional venue. Entries can be edited or deleted freely while
+they are a draft — nothing outside staff sees them yet.</p>
+
+<h2 id="release">Releasing</h2>
+<p>Releasing turns every not-yet-released entry for the session and term into a released one, in one
+action, and — in the background, so you are not left waiting — notifies every currently enrolled
+student of the classes it covers, and their parents: an in-app alert each, plus an email and a WhatsApp
+message to the guardian contact. Releasing again releases nothing more, and tells you so.</p>
+<div class="guide-note">Releasing is its own permission, separate from adding or editing entries, so a
+school can decide exactly who is trusted to notify everyone at once.</div>
+
+<h2 id="portal">What students and parents see</h2>
+<p>A student sees only the released entries for their own class; a linked parent sees the same for
+their child. Either can download it as a PDF or print it directly from the page.</p>
+{% endblock %}

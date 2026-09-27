@@ -1,0 +1,36 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Every account has one or more <strong>roles</strong>, each a named bundle of individual
+<strong>permissions</strong> (things like "View students" or "Release timetables"). Whether you see a
+link in the navigation, or can open a page, or get refused with "you don't have permission" — all of
+it comes down to which permissions your roles give you.</p>
+
+<h2 id="school-admin">The School Admin role</h2>
+<p>Every school has a School Admin role that holds <strong>every</strong> permission and is never
+limited to particular classes or subjects. If you can see everything described in this guide and more,
+you probably hold this role, or you are a platform operator visiting the school (see below).</p>
+
+<h2 id="presets">Ready-made roles</h2>
+<p>A new school starts with seventeen ready-made roles under
+<a href="{{ url_for('admin_administration') }}">Administration</a> — Primary Class Teacher, Finance
+Manager, Librarian, Report Card Officer, Parents' Feedback Officer and more — each already carrying a
+sensible bundle of permissions for that job. You can edit what a role carries, or build your own from
+scratch, but you can only ever hand out a permission you hold yourself: nobody can promote themselves,
+or a colleague, past their own reach.</p>
+
+<h2 id="scope">Scope: limited to some classes or subjects</h2>
+<p>A class teacher is usually limited to their own class; a subject teacher can be limited to a class
+<em>and</em> a subject together; someone managing question banks can be limited to particular banks.
+This is set under Administration too, per account. It is why two teachers looking at the same page —
+Students, Attendance, Results — see different rows: each sees only what their scope allows.</p>
+
+<div class="guide-tip">If a page or a button you expect to see is missing, it is almost always a
+permission or a scope, not a fault. Ask whoever manages Administration at your school to check what
+your account's role and scope allow.</div>
+
+<h2 id="temporary-password">New accounts and temporary passwords</h2>
+<p>A new staff, student or parent account is always created with a one-time password, shown once when
+the account is made. The first sign-in forces a real password to be chosen before anything else opens.
+Nobody — not even the School Admin — can see what that password was afterwards, only reset it to a new
+one-time password.</p>
+{% endblock %}

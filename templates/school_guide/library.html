@@ -1,0 +1,13 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p><a href="{{ url_for('admin_library') }}">Library</a> keeps books, who has borrowed what, and when
+it is due back.</p>
+
+<h2 id="books">Books</h2>
+<p>Add a book with its title, author, ISBN and however many copies the school owns; editing it can add
+or remove copies. A book with any copy currently on loan cannot be archived — return every copy first.</p>
+
+<h2 id="loans">Issuing and returning</h2>
+<p>A book can be issued to a student or to a staff member, for however many days the school allows,
+which sets its due date. Returning it makes that copy available again immediately.</p>
+{% endblock %}

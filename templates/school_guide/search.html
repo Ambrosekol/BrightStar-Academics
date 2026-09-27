@@ -1,0 +1,37 @@
+{% extends 'admin_base.html' %}
+{% block title %}Search the guide — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="guide-shell">
+  <nav class="guide-nav" aria-label="Guide pages">
+    <form class="guide-search" action="{{ url_for('admin_guide_search') }}" method="get" role="search">
+      <input type="search" name="q" value="{{ query or '' }}" placeholder="Search the guide" aria-label="Search the guide" autocomplete="off">
+    </form>
+    {% for group_name, items in groups %}
+      <div class="guide-nav-group">{{ group_name }}</div>
+      {% for page_slug, page_title, page_blurb in items %}
+        <a href="{{ url_for('admin_guide_home') if page_slug == 'welcome' else url_for('admin_guide_page', slug=page_slug) }}" title="{{ page_blurb }}">{{ page_title }}</a>
+      {% endfor %}
+    {% endfor %}
+  </nav>
+
+  <main class="guide-main">
+    <article class="guide-article">
+      <p class="guide-crumb">Search</p>
+      <h1>{{ 'Results for “%s”'|format(query) if query else 'Search the guide' }}</h1>
+      {% if query and query|length < 2 %}
+      <p class="guide-lede">Type at least two characters.</p>
+      {% elif query and not results %}
+      <p class="guide-lede">Nothing in the guide matches “{{ query }}”. Try a different word.</p>
+      {% elif results %}
+      <ul class="guide-results">
+        {% for r in results %}
+        <li><a href="{{ r.url }}">{{ r.title }}</a><small>{{ r.where }}</small>{% if r.snippet %}<p>{{ r.snippet }}</p>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="guide-lede">Search for a word or phrase — a feature's name, a permission, anything you're not sure how to do.</p>
+      {% endif %}
+    </article>
+  </main>
+</div>
+{% endblock %}

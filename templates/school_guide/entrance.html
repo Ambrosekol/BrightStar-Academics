@@ -1,0 +1,28 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>The Entrance workspace runs the exam a candidate sits <em>before</em> they are ever a student here —
+kept deliberately apart from the School workspace (see
+<a href="{{ url_for('admin_guide_home') }}">Welcome</a>).</p>
+
+<h2 id="banks">Question banks and exam configuration</h2>
+<p><a href="{{ url_for('admin_question_banks') }}">Question Banks</a> hold the questions themselves;
+<a href="{{ url_for('admin_entrance_config') }}">Exam Configuration</a> decides which bank is the live
+paper for each entry class and subject, for the current academic period. A bank being used by a live
+exam can be locked to stop it changing mid-way.</p>
+
+<h2 id="candidates">Candidates</h2>
+<p><a href="{{ url_for('admin_candidates') }}">Candidates</a> registers who is sitting the exam and
+prints or resets their sign-in credentials. A candidate signs in with those credentials, sits the
+paper once, and their attempt is recorded automatically as they go.</p>
+
+<h2 id="results">Results and rankings</h2>
+<p><a href="{{ url_for('admin_results') }}">Results &amp; Analytics</a> shows every candidate's
+outcome; <a href="{{ url_for('admin_rankings') }}">Rankings</a> orders them. A candidate's own result
+can be shared as an image carrying the school's own branding, nothing of another school's.</p>
+
+<h2 id="practice">Entrance practice</h2>
+<p><a href="{{ url_for('admin_practice_tests') }}">Practice Tests</a> lets anyone, with no registration,
+try a practice paper for the class they are aiming for — from either the last session's own entrance
+exam, or a custom bank the school sets up for practice. The current session's own live bank is never
+offered for practice, so it cannot reveal an exam that has not been sat yet.</p>
+{% endblock %}

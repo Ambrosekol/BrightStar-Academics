@@ -63,6 +63,9 @@ what the school has actually done. A school may dismiss it early ({{ route('admi
 every step is done.</p>
 <p>The Entrance workspace is described in {{ page('entrance', 'Entrance examinations') }}.</p>
 
+<h2 id="staff-guide">The staff guide</h2>
+<p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Thirteen pages, grouped and ordered the same way {{ route('docs_home') }} is, with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>
+
 <h2 id="accounts">Accounts other people get</h2>
 <p>Students, parents and entrance candidates are created by staff, never self-registered. Each receives a generated one-time password and must change it at first sign-in (students and parents; candidates use the credentials printed for them). Student sign-in names come from the admission number; numbers themselves come from the school's numbering rules.</p>
 {% endblock %}

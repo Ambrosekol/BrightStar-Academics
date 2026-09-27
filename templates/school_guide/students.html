@@ -1,0 +1,29 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>A student account is never self-registered — staff always create it, one at a time or many at
+once — and it always starts on a one-time password the student must replace at first sign-in.</p>
+
+<h2 id="one-at-a-time">Registering one student</h2>
+<p><a href="{{ url_for('admin_school_student_new') }}">Register Student</a> creates the student
+record, enrols them in the class and session you choose, and generates their admission number and
+login in one step. The admission number is always generated from your school's own numbering rules —
+nobody types one in by hand, so it can never clash with another student's.</p>
+
+<h2 id="bulk">Bringing in existing students at once</h2>
+<p>If your school already has students in a spreadsheet, use
+<a href="{{ url_for('admin_school_students_import') }}">Bulk import (CSV)</a> from the Students page
+instead of typing each one in. Download the template, fill in a row per student (name, gender, class,
+and optionally a guardian's name, email and phone), and upload it. Each row that is valid becomes
+exactly what registering one student by hand would create; a row that is not — a missing name, an
+unrecognised gender, a class that does not exist, a bad email — is skipped and reported by line
+number, and every other row in the file is still imported.</p>
+<div class="guide-warn">The generated usernames and one-time passwords for an import are shown once,
+on the results page, and can be downloaded from there as a CSV. They are never stored anywhere in
+readable form afterwards, so copy or download them before you navigate away.</div>
+
+<h2 id="account">A student's account afterwards</h2>
+<p>From a student's own page you can edit their details, deactivate them (which also switches their
+login off), reset their password to a new one-time password, or switch their login on or off without
+touching anything else about their record. Enrolment history — previous schools, earlier levels — is
+kept separately and can be corrected with a reason if it was entered wrong.</p>
+{% endblock %}

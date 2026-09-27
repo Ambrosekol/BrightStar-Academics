@@ -1038,6 +1038,7 @@ import blueprints.school.onboarding  # noqa: F401,E402
 import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402
+import blueprints.school.guide  # noqa: F401,E402
 import blueprints.student_portal.report_cards  # noqa: F401,E402
 import blueprints.parents.report_cards  # noqa: F401,E402
 import blueprints.student_portal.attendance  # noqa: F401,E402

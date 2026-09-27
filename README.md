@@ -39,6 +39,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Attendance](#attendance)
 - [Exam and test timetables](#exam-and-test-timetables)
 - [Bulk student import](#bulk-student-import)
+- [The staff guide](#the-staff-guide)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
 - [Command line](#command-line)
@@ -524,6 +525,19 @@ the generated usernames and one-time passwords are ever shown — download them 
 in the browser, never a second trip to the server) before leaving the page. A file with no header row,
 a missing required column, or one over the size limit is refused outright, before anything is written.
 
+## The staff guide
+
+`/admin/guide` is a plain-language, hand-written user guide for the people who use the portal, not the
+platform's own documentation (`/docs`, generated from the code for platform operators) and not a
+public site (schools have none). Any signed-in admin can read it, in either workspace — it carries no
+permission of its own, so it falls back to `admin.access`, which nearly every staff account holds.
+Thirteen pages, grouped Getting started / Academics / Finance and families / Running the school /
+Entrance workspace, each linking straight to the real pages it describes, with a search box and an
+on-this-page outline. It is the same guide for every school; only what a reader can see in the pages
+it links to depends on their own account. `tests/current/test_guide_contract.py` checks every page
+links to something real (a page, a route) the same way `test_docs_contract.py` checks `/docs`; the
+end-to-end behaviour is `tests/verification/write_paths_guide.py`.
+
 ## Report cards
 
 Every school gives each student a **report card for each term**, as a page and as a PDF.
@@ -732,6 +746,7 @@ python tests/verification/write_paths_report_cards.py      # report cards: when 
 python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
 python tests/verification/write_paths_timetable.py           # exam/test timetables: draft, release, notifications, scope, portals
 python tests/verification/write_paths_student_import.py      # bulk CSV student import: valid/skipped rows, scope, credentials, limits
+python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)
 python tests/verification/write_paths_rate_limits.py       # limits shared by every worker process
 python tests/verification/write_paths_session_guard.py     # restart sign-out (exam sitters kept), password changes, headers, trusted proxies

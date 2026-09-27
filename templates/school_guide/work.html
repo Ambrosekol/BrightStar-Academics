@@ -1,0 +1,29 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Four kinds of work sit under the School workspace, and they all feed the same term result once
+marked.</p>
+
+<h2 id="assignments">Assignments</h2>
+<p><a href="{{ url_for('admin_school_assignments') }}">Assignments</a> can be written work you mark by
+hand, or a quiz taken on-screen and marked automatically, timed or not. Set the class, subject,
+session and term, choose which students it applies to, and — for a quiz — the questions.</p>
+
+<h2 id="projects">Projects</h2>
+<p><a href="{{ url_for('admin_school_projects') }}">Projects</a> are practical, longer-running tasks
+with their own due date, scored and remarked individually once submitted or assessed.</p>
+
+<h2 id="tests">Tests and examinations</h2>
+<p><a href="{{ url_for('admin_school_tests') }}">Tests</a> and examinations are formal, question-based
+assessments whose results become part of a student's official record — unlike practice, below.</p>
+
+<h2 id="practice">Practice tests</h2>
+<p><a href="{{ url_for('admin_school_practice_tests') }}">Practice</a> is a self-study bank: nothing a
+student does there is ever written to the database — no attempt, no answers, no score — so it can
+never reach a term result or hold back a report card. Students can take and retake it as often as they
+like, and every run serves the questions in a fresh order.</p>
+
+<h2 id="notices">Telling parents</h2>
+<p>New work and graded work notify the student and every linked parent in-app automatically; a
+guardian's email and WhatsApp are also used where the school has set those up (see
+<a href="{{ url_for('admin_school_delivery') }}">Email &amp; WhatsApp</a>).</p>
+{% endblock %}

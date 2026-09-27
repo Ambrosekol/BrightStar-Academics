@@ -139,10 +139,16 @@
          'show': signed and admin_has_permission(aid,'presence.view'),
          'active': ep == 'admin_presence'},
     ] %}
+    {% set help_items = [
+        {'label':'Guide','endpoint':'admin_guide_home','icon':'book',
+         'show': signed,
+         'active': path.startswith('/admin/guide')},
+    ] %}
     {% set sections = [
         {'label':'Workspace','items':[{'label':'Exit Workspace','endpoint':'admin_workspace_home','icon':'exit','show': true,'active': false}]},
         {'label': workspace_label,'items': workspace_items},
         {'label':'Administration','items': administration_items},
+        {'label':'Help','items': help_items},
     ] %}
 {% endif %}
 <!doctype html>

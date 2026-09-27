@@ -1,0 +1,28 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Attendance is taken once per student per day — not per subject — by whoever teaches that class.</p>
+
+<h2 id="register">Taking the register</h2>
+<p>Open <a href="{{ url_for('admin_school_attendance') }}">Attendance</a>, choose the class, session,
+term and date, and mark each student present, late, absent or excused. A student left blank simply has
+no record for that day — nothing assumes a student was present by default. Saving the same marks again
+changes nothing; changing a mark re-attributes it to whoever changed it, so the record always shows
+who last touched it.</p>
+
+<h2 id="summary">The term summary</h2>
+<p><a href="{{ url_for('admin_school_attendance_summary') }}">Term summary</a> totals present, late,
+absent and excused for every student in a class over a term, with a percentage that counts late as
+present. It only ever counts days the register was actually taken — a day nobody marked is not counted
+either way.</p>
+
+<h2 id="permissions">Who can do what</h2>
+<p>Taking the register needs <strong>Mark attendance</strong>; seeing the term summary only needs
+<strong>View attendance</strong>. A class teacher preset carries both, limited to their own class, as
+described in <a href="{{ url_for('admin_guide_page', slug='roles-permissions') }}">Roles, permissions
+and scope</a>.</p>
+
+<h2 id="portal">What students and parents see</h2>
+<p>A student sees their own attendance summary and day-by-day history on their dashboard, for whichever
+session and term they choose; a linked parent sees the same for their child. Neither ever sees another
+student's record.</p>
+{% endblock %}

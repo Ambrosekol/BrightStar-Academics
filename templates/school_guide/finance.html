@@ -1,0 +1,26 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>Finance covers what a student is charged, what has been paid, and the receipt that proves it.</p>
+
+<h2 id="fee-items">Fee items</h2>
+<p><a href="{{ url_for('admin_finance_fee_items') }}">Fee Structure</a> is where a school defines what
+it charges — tuition, a term's dues, a one-off charge — and which classes each applies to. This is the
+fourth step of the new-school setup checklist.</p>
+
+<h2 id="payments">Recording a payment</h2>
+<p>From <a href="{{ url_for('admin_finance_dashboard') }}">Finance</a>, recording a payment updates the
+student's balance and generates a receipt at once. A payment can be voided, with a reason, if it was
+entered wrong; voiding never deletes it, it just stops it counting.</p>
+
+<h2 id="receipts">The receipt</h2>
+<p>Every school's receipt carries its own branding — logo, colours, name, address, phone, a signature
+and, if set, the bursar's own notes — drawn from the same description on screen, in print and in the
+PDF a parent is sent, so all three always agree. A receipt can be re-sent by email or WhatsApp, or
+downloaded again, at any time.</p>
+<div class="guide-note">Recording a payment automatically tells the parent — an in-app alert, an email
+and a WhatsApp message with the receipt attached — the moment it is saved.</div>
+
+<h2 id="what-parents-see">What a parent sees</h2>
+<p>A linked parent sees their child's full fee account: what has been charged, what has been paid,
+and the outstanding balance, with every receipt available to download again.</p>
+{% endblock %}

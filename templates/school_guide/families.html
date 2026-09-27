@@ -1,0 +1,28 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>A parent account exists to link to one or more students — never self-registered, same as a
+student's own account.</p>
+
+<h2 id="accounts">Parent accounts</h2>
+<p>From <a href="{{ url_for('admin_school_parents') }}">Parents</a>, create an account and link it to
+one or more of a family's children in one step — useful for siblings, who then share the same parent
+account rather than getting two. A parent's password can be reset to a new one-time password at any
+time.</p>
+
+<h2 id="feedback">Parent feedback</h2>
+<p>A parent can send feedback or a question from their own portal; it appears under
+<a href="{{ url_for('admin_school_parent_feedback') }}">Parents' Feedback</a> to be assigned, replied
+to and resolved by whoever holds that permission.</p>
+
+<h2 id="notices">What a parent is told, automatically</h2>
+<p>A linked parent is told, without anyone at the school having to remember to tell them, whenever:</p>
+<ul>
+  <li>new work is set, or work is marked;</li>
+  <li>a fee is charged, or a payment is recorded (with the receipt);</li>
+  <li>a term's report card becomes ready;</li>
+  <li>an exam or test timetable is released.</li>
+</ul>
+<p>Each of these goes out as an in-app alert on the parent's own dashboard, and — where the school has
+set up its own mail server and WhatsApp account under
+<a href="{{ url_for('admin_school_delivery') }}">Email &amp; WhatsApp</a> — by email and WhatsApp too.</p>
+{% endblock %}

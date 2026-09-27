@@ -1,0 +1,4 @@
+{# A link to another page of the guide. #}
+{% macro page(slug, label) -%}
+<a href="{{ url_for('admin_guide_home') if slug == 'welcome' else url_for('admin_guide_page', slug=slug) }}">{{ label }}</a>
+{%- endmacro %}

@@ -1,0 +1,34 @@
+{% extends 'school_guide/_layout.html' %}
+{% block guide %}
+<p>A mark goes through the same journey everywhere it comes from — a test, an assignment, a manually
+entered score — before it ever reaches a student or parent.</p>
+
+<h2 id="workflow">Entered, verified, approved, released</h2>
+<p>Under <a href="{{ url_for('admin_school_results') }}">Results &amp; Records</a>, a result moves
+through four stages: entered, verified, approved, released. Only <strong>released</strong> results
+count toward a student's official term result and their report card; the earlier stages let more than
+one person check a mark before it becomes visible to anyone outside staff. A school can release a
+whole class's results in one action, with a confirmation, instead of one subject at a time.</p>
+
+<h2 id="term-result">How a term result is worked out</h2>
+<p>Each subject's term result is Continuous Assessment (test, assignment and project, out of 40
+between them, in shares your school sets once) plus an exam out of 60. Work that has been removed
+stops counting; the arithmetic is worked out fresh every time it is needed, from the results
+themselves, so it can never disagree with what is actually on record.</p>
+
+<h2 id="cards">Report cards</h2>
+<p>A student's report card for a term appears — to the student, a linked parent, and staff — the
+moment <strong>every</strong> one of that student's results for the term has been released, whether by
+hand or by a session's own release date. One result still waiting holds the whole card back. It shows
+the school's own branding, each subject's marks and grade, the overall percentage, the class average,
+and (once at least one has been rated) affective and psychomotor trait ratings, alongside the class
+teacher's comment and the head's signature.</p>
+<p>A class teacher writes the <a href="{{ url_for('admin_school_report_card_comments') }}">comment</a>
+and rates <a href="{{ url_for('admin_school_report_card_traits') }}">traits</a> — Punctuality,
+Neatness, Leadership and the like — from the same page, and can do so before results are even
+released. Whoever last changes a comment or a rating is credited for it; saving the page unchanged
+never takes over someone else's.</p>
+<div class="guide-tip">When a card becomes ready, the parent is told automatically — an in-app alert,
+an email and a WhatsApp message — that it is ready to view and download. Nobody has to remember to
+announce it.</div>
+{% endblock %}

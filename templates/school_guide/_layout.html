@@ -1,0 +1,49 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ title }} — Guide — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="guide-shell">
+  <nav class="guide-nav" aria-label="Guide pages">
+    <form class="guide-search" action="{{ url_for('admin_guide_search') }}" method="get" role="search">
+      <input type="search" name="q" value="{{ query or '' }}" placeholder="Search the guide" aria-label="Search the guide" autocomplete="off">
+    </form>
+    {% for group_name, items in groups %}
+      <div class="guide-nav-group">{{ group_name }}</div>
+      {% for page_slug, page_title, page_blurb in items %}
+        <a href="{{ url_for('admin_guide_home') if page_slug == 'welcome' else url_for('admin_guide_page', slug=page_slug) }}"
+           title="{{ page_blurb }}" {% if page_slug == slug %}aria-current="page"{% endif %}>{{ page_title }}</a>
+      {% endfor %}
+    {% endfor %}
+  </nav>
+
+  <main class="guide-main">
+    <article class="guide-article" id="guideArticle">
+      <p class="guide-crumb">{% if group %}{{ group }} &rsaquo; {% endif %}{{ title }}</p>
+      <h1>{{ title }}</h1>
+      {% if blurb %}<p class="guide-lede">{{ blurb }}</p>{% endif %}
+      {% block guide %}{% endblock %}
+    </article>
+    {% if before or after %}
+    <nav class="guide-pager" aria-label="Previous and next page">
+      {% if before %}<a href="{{ url_for('admin_guide_home') if before.slug == 'welcome' else url_for('admin_guide_page', slug=before.slug) }}"><small>Previous</small>{{ before.title }}</a>{% else %}<span></span>{% endif %}
+      {% if after %}<a class="next" href="{{ url_for('admin_guide_page', slug=after.slug) }}"><small>Next</small>{{ after.title }}</a>{% endif %}
+    </nav>
+    {% endif %}
+  </main>
+
+  <aside class="guide-toc" aria-label="On this page"><div class="guide-toc-title">On this page</div><div id="guideToc"></div></aside>
+</div>
+<script>
+(function () {
+  var article = document.getElementById('guideArticle'), toc = document.getElementById('guideToc');
+  if (!article || !toc) return;
+  var heads = article.querySelectorAll('h2[id], h3[id]');
+  if (!heads.length) { toc.parentNode.style.display = 'none'; return; }
+  heads.forEach(function (h) {
+    var a = document.createElement('a');
+    a.href = '#' + h.id; a.textContent = h.textContent;
+    if (h.tagName === 'H3') a.className = 'sub';
+    toc.appendChild(a);
+  });
+})();
+</script>
+{% endblock %}
