@@ -6,10 +6,12 @@ Students and parents get their own cards from blueprints/student_portal/report_c
 blueprints/parents/report_cards.py; all three draw the same card from blueprints/school/report_card_data.py.
 
 Who may do what is the permission catalogue's job (core/security.py): ``report_cards.view`` to see and
-download, ``report_cards.comment`` to write comments and keep a signature, ``report_cards.manage`` for
-the head's details. A staff member who is limited to some classes only ever sees those classes.
+download, ``report_cards.comment`` to write comments, rate affective/psychomotor traits and keep a
+signature, ``report_cards.manage`` for the head's details. A staff member who is limited to some
+classes only ever sees those classes.
 """
 
+import json
 import os
 import re
 from datetime import datetime, timezone
@@ -21,8 +23,8 @@ from app import ACADEMIC_TERMS, _release_due_school_results, _school_current_ses
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.school.report_card_data import (
     HEAD_TITLES, MAX_COMMENT_LENGTH, SETTING_HEAD_NAME, SETTING_HEAD_SIGNATURE, SETTING_HEAD_TITLE,
-    SETTING_NEXT_TERM, build_card, build_cards, card_for_web, class_overview, report_settings, save_report_settings,
-    term_from_slug, term_slug,
+    SETTING_NEXT_TERM, TRAIT_GROUPS, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
+    report_settings, save_report_settings, term_from_slug, term_slug, traits_overview,
 )
 from blueprints.finance.helpers import _save_signature_data_url
 from core.report_card_pdf import render_report_cards_pdf
@@ -30,7 +32,7 @@ from core.security import admin_required, audit_log, csrf_protect, current_admin
 from core.storage import stored_upload_path
 from core.uploads import _save_image_upload
 from models import (
-    AcademicSession, Admin, ReportCardComment, SchoolClass, Student, StudentEnrolment, db,
+    AcademicSession, Admin, ReportCardComment, ReportCardTrait, SchoolClass, Student, StudentEnrolment, db,
 )
 
 TERMS = (*ACADEMIC_TERMS, 'Full Session')
@@ -260,6 +262,63 @@ def admin_school_report_card_comments_save():
         flash(f'{saved} comment{"" if saved == 1 else "s"} saved' + (f', {cleared} cleared' if cleared else '') + '.'
               if (saved or cleared) else 'No comment was changed.', 'success')
     return redirect(url_for('admin_school_report_card_comments', class_id=class_row.id, session_id=session_row.id, term=term))
+
+
+# ---------------------------------------------------------------------------------------------
+# Affective and psychomotor traits (same class teacher, same class/session/term)
+@app.route('/admin/school/report-cards/traits')
+@admin_required
+def admin_school_report_card_traits():
+    classes, sessions, class_row, session_row, term = _choice()
+    rows = traits_overview(class_row.id, session_row.id, term) if class_row and session_row else []
+    return render_template('admin_school_report_card_traits.html', classes=classes, sessions=sessions, terms=TERMS,
+                           class_row=class_row, session_row=session_row, term=term, rows=rows, trait_groups=TRAIT_GROUPS)
+
+
+@app.post('/admin/school/report-cards/traits')
+@admin_required
+@csrf_protect
+def admin_school_report_card_traits_save():
+    me = current_admin()
+    classes, sessions, class_row, session_row, term = _choice()
+    if not class_row or not session_row:
+        flash('Choose a class, a session and a term first.', 'error')
+        return redirect(url_for('admin_school_report_card_traits'))
+    enrolled = {r['student_id'] for r in traits_overview(class_row.id, session_row.id, term)}
+    existing = {t.student_id: t for t in db.session.scalars(select(ReportCardTrait).where(
+        ReportCardTrait.session_id == session_row.id, ReportCardTrait.term == term,
+        ReportCardTrait.student_id.in_(list(enrolled) or [0])))}
+    trait_keys = {key for _, items in TRAIT_GROUPS for key, _ in items}
+    now = datetime.now(timezone.utc).isoformat()
+    saved = cleared = 0
+    for student_id in enrolled:
+        ratings = {}
+        for key in trait_keys:
+            value = request.form.get(f'trait_{student_id}_{key}', '').strip()
+            if value.isdigit() and 1 <= int(value) <= 5:
+                ratings[key] = int(value)
+        new_json = json.dumps(ratings, sort_keys=True)
+        old = existing.get(student_id)
+        if old is not None and json.dumps(_parse_ratings(old.ratings), sort_keys=True) == new_json:
+            continue      # nothing changed: saving the page never takes over someone else's ratings
+        if not ratings:
+            if old is not None:
+                db.session.delete(old)
+                cleared += 1
+        elif old is None:
+            db.session.add(ReportCardTrait(student_id=student_id, session_id=session_row.id, term=term,
+                                           ratings=new_json, author_admin_id=me['id'], created_at=now, updated_at=now))
+            saved += 1
+        else:
+            old.ratings, old.author_admin_id, old.updated_at = new_json, me['id'], now
+            saved += 1
+    db.session.commit()
+    if saved or cleared:
+        audit_log('report_card_traits_saved', 'school', 'class', class_row.id,
+                  {'term': term, 'session_id': session_row.id, 'saved': saved, 'cleared': cleared})
+    flash(f'{saved} student{"" if saved == 1 else "s"} updated' + (f', {cleared} cleared' if cleared else '') + '.'
+          if (saved or cleared) else 'No rating was changed.', 'success')
+    return redirect(url_for('admin_school_report_card_traits', class_id=class_row.id, session_id=session_row.id, term=term))
 
 
 # ---------------------------------------------------------------------------------------------

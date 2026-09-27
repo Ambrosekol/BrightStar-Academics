@@ -731,6 +731,13 @@ check("the class teacher's comment on a student's report card was saved",
 op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": ""})
 check("clearing the box removes the comment", one("SELECT COUNT(*) FROM report_card_comments WHERE student_id = :s", s=ADA) == 0)
 op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": "Shows great promise."})
+op.post(f"{RC}/traits?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term",
+        {f"trait_{ADA}_punctuality": "5", f"trait_{ADA}_neatness": "3"})
+check("the class teacher's affective/psychomotor trait ratings on a student's report card were saved",
+      one("SELECT ratings FROM report_card_traits WHERE student_id = :s AND term = 'First Term'", s=ADA)
+      == '{"neatness": 3, "punctuality": 5}')
+op.post(f"{RC}/traits?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {})
+check("clearing every trait removes the row", one("SELECT COUNT(*) FROM report_card_traits WHERE student_id = :s", s=ADA) == 0)
 r = op.post(f"{RC}/settings", {"head_title": "Proprietress", "head_name": "Mrs A. B. Okoye", "next_term_begins": "Monday, 4 January"})
 check("the head's title, name and next-term date were saved", one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_name'") == "Mrs A. B. Okoye"
       and one("SELECT setting_value FROM school_settings WHERE setting_key = 'report_head_title'") == "Proprietress")

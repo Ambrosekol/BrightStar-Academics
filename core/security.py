@@ -205,6 +205,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_report_cards':'report_cards.view','admin_school_report_card_view':'report_cards.view',
     'admin_school_report_card_pdf':'report_cards.view','admin_school_report_cards_class_pdf':'report_cards.view',
     'admin_school_report_card_comments':'report_cards.comment','admin_school_report_card_comments_save':'report_cards.comment',
+    'admin_school_report_card_traits':'report_cards.comment','admin_school_report_card_traits_save':'report_cards.comment',
     'admin_my_signature':'report_cards.comment','admin_my_signature_save':'report_cards.comment',
     'admin_school_report_card_settings':'report_cards.manage','admin_school_report_card_settings_save':'report_cards.manage',
     'admin_school_delivery':'delivery.manage','admin_school_delivery_email_save':'delivery.manage',

@@ -34,6 +34,7 @@
         {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></div>
     <a class="btn btn-light" href="{{ url_for('admin_school_report_cards', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Back to report cards</a>
+    <a class="btn btn-light" href="{{ url_for('admin_school_report_card_traits', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Rate traits</a>
   </form>
   {% if not has_signature %}
   <div class="rc-note">You have not saved a signature yet, so your comments print with a blank signature line. <a href="{{ url_for('admin_my_signature') }}">Add your signature</a>.</div>

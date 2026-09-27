@@ -39,8 +39,16 @@
   .rc-summary span { display: block; font-size: 11px; color: #4d5b69; text-transform: uppercase; letter-spacing: .4px; }
   .rc-summary strong { font-size: 17px; color: var(--rc-primary); }
   .rc-comment { border: 1px solid var(--rc-line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .rc-comment h3, .rc-grading h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--rc-primary); }
+  .rc-comment h3, .rc-grading h3, .rc-traits h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--rc-primary); }
   .rc-comment p { margin: 0; min-height: 16mm; white-space: pre-line; line-height: 1.5; }
+  .rc-traits { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .rc-traits > div { border: 1px solid var(--rc-line); border-radius: 8px; padding: 8px 10px; }
+  .rc-traits h4 { margin: 0 0 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: #4d5b69; }
+  .rc-traits table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rc-traits td { padding: 3px 2px; border-top: 1px solid var(--rc-line); }
+  .rc-traits tr:first-child td { border-top: 0; }
+  .rc-traits td.rating { text-align: right; font-weight: 600; }
+  @media (max-width: 720px) { .rc-traits { grid-template-columns: 1fr; } }
   .rc-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 14px 0 12px; }
   .rc-sign { text-align: center; }
   .rc-sign .line { height: 16mm; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid #4d5b69; }
@@ -132,6 +140,21 @@
     {% endif %}
     <div><span>Subjects</span><strong>{{ card.summary.subjects_count }}</strong></div>
   </section>
+
+  {% if card.traits %}
+  <section class="rc-traits">
+    {% for group in card.traits %}
+    <div>
+      <h4>{{ group.name }}</h4>
+      <table>
+        {% for item in group.entries %}
+        <tr><td>{{ item.label }}</td><td class="rating">{{ item.rating_label or '—' }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <section class="rc-comment">
     <h3>Class Teacher's Comment</h3>

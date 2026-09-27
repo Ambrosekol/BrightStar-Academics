@@ -47,6 +47,7 @@
     {% if class_row and ready %}<a class="btn btn-primary" href="{{ url_for('admin_school_report_cards_class_pdf', class_id=class_row.id, session_id=session_row.id, term=term) }}">Download all ready cards (PDF)</a>{% endif %}
     {% if current_admin and admin_has_permission(current_admin['id'], 'report_cards.comment') %}
       <a class="btn btn-light" href="{{ url_for('admin_school_report_card_comments', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Write comments</a>
+      <a class="btn btn-light" href="{{ url_for('admin_school_report_card_traits', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Rate traits</a>
       <a class="btn btn-light" href="{{ url_for('admin_my_signature') }}">My signature</a>
     {% endif %}
     {% if current_admin and admin_has_permission(current_admin['id'], 'report_cards.manage') %}<a class="btn btn-light" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature &amp; settings</a>{% endif %}

@@ -47,6 +47,7 @@ import atexit
 import base64
 import html
 import io
+import json
 import logging
 import os
 import re
@@ -740,6 +741,25 @@ def boxes(person, class_id, term=TERM):
             for sid, text in re.findall(r'<textarea name="comment_(\d+)"[^>]*>(.*?)</textarea>', body, re.S)}
 
 
+def traits_url(class_id, session_id=None, term=TERM):
+    return f"{RC}/traits?class_id={class_id}&session_id={session_id or CUR}&term={urllib.parse.quote(term)}"
+
+
+def post_traits(person, class_id, values, term=TERM, session_id=None):
+    """Save trait ratings the way the page does. ``values`` maps a student id to {trait key: 1..5}."""
+    data = {}
+    for student_id, ratings in values.items():
+        for key, rating in ratings.items():
+            data[f"trait_{student_id}_{key}"] = str(rating)
+    return person.post(traits_url(class_id, session_id, term), data, page=traits_url(class_id, session_id, term))
+
+
+def trait_row(student, term=TERM, session_id=None):
+    rows = alpha.sql("SELECT ratings, author_admin_id FROM report_card_traits WHERE student_id = :s AND term = :t AND session_id = :c",
+                     s=student, t=term, c=session_id or CUR)
+    return (json.loads(rows[0][0]), rows[0][1]) if rows else None
+
+
 def head_setting(school, key):
     return school.one("SELECT setting_value FROM school_settings WHERE setting_key = :k", k=key)
 
@@ -1413,6 +1433,70 @@ check("the signature page shows the current signature and can only ever show one
       "Current signature" in page_text and "Remove signature" in page_text and (admin_signature(TEACHER_A) or "x") in page_text
       and (B_FILE or "y") not in page_text)
 
+# ================================================================ C2. affective and psychomotor traits
+def trait_pairs(body):
+    """{trait label: rating text} from the rc-traits section of a report card page."""
+    return dict(re.findall(r'<td>([^<]*)</td><td class="rating">([^<]*)</td>', body))
+
+
+before_ada, before_pdf = ada_portal.text(s_view(CUR)), ada_portal.get(s_view(CUR) + "/pdf").data
+check("before any trait is rated, a card shows no traits section at all (a school that never uses this sees no change)",
+      "Affective Domain" not in before_ada and "Affective Domain" not in pdf_read(before_pdf)["text"])
+
+traits_page = html.unescape(teacher_a.text(traits_url(J1)))
+check("the traits page lists Ada and every catalogued trait with its five ratings",
+      "Ada Obi" in traits_page and "Punctuality" in traits_page and "Psychomotor Domain" in traits_page
+      and all(w in traits_page for w in ("Excellent", "Very Good", "Good", "Fair", "Poor")))
+
+r = post_traits(teacher_a, J1, {ADA: {"punctuality": 5, "neatness": 3}})
+check("teacher A rates two of Ada's traits; the rest stay unrated, and it is recorded under her name",
+      r.status_code == 302 and trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and "1 student" in teacher_a.said())
+
+after_ada = ada_portal.text(s_view(CUR))
+after_pairs = trait_pairs(after_ada)
+after_pdf_text = pdf_read(ada_portal.get(s_view(CUR) + "/pdf").data)["text"]
+check("Ada's card now shows both domains: the two rated traits with their labels, and everything else as unrated",
+      after_pairs.get("Punctuality") == "Excellent" and after_pairs.get("Neatness") == "Good"
+      and after_pairs.get("Honesty") == "—" and after_pairs.get("Handwriting") == "—"
+      and "Affective Domain" in after_ada and "Psychomotor Domain" in after_ada
+      and all(w in after_pdf_text for w in ("Affective Domain", "Psychomotor Domain", "Punctuality", "Excellent")))
+
+r = post_traits(teacher_b, J1, {ADA: {"punctuality": 5, "neatness": 3}})
+check("teacher B saves the same ratings unchanged: the row keeps teacher A as its rater",
+      trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and "no rating was changed" in teacher_b.said())
+
+r = post_traits(teacher_b, J1, {ADA: {"punctuality": 4, "neatness": 3}})
+check("teacher B changes one rating: the row now takes over under her name",
+      trait_row(ADA) == ({"punctuality": 4, "neatness": 3}, TEACHER_B) and "1 student" in teacher_b.said())
+
+kept_tobi_before = trait_row(SID["TOBI"])
+r = post_traits(teacher_a, J2, {SID["TOBI"]: {"punctuality": 5}})
+check("teacher A (JSS 1 only) cannot rate a JSS 2 student: nothing is written for Tobi",
+      trait_row(SID["TOBI"]) == kept_tobi_before)
+
+r = post_traits(teacher_b, J1, {ADA: {}})
+check("clearing every trait removes the row entirely, and the card goes back to showing nothing",
+      trait_row(ADA) is None and "1 cleared" in teacher_b.said()
+      and "Affective Domain" not in ada_portal.text(s_view(CUR)))
+
+check("viewer (report_cards.view only) is refused (403) opening and posting to the traits page, and nothing is written",
+      viewer.get(traits_url(J1)).status_code == 403
+      and viewer.post(traits_url(J1), {f"trait_{ADA}_punctuality": "5"}, page="/admin/password").status_code == 403
+      and trait_row(ADA) is None)
+check("a member of staff with no report card permission at all is refused (403) too",
+      nobody.get(traits_url(J1)).status_code == 403)
+check("the traits routes carry the same permission as comments in the endpoint map",
+      ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_report_card_traits") == "report_cards.comment"
+      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_report_card_traits_save") == "report_cards.comment")
+early_visitor = Person(ALPHA, label="signed-out visitor (traits)")
+check("a signed-out visitor is sent to sign in, never shown the traits page, and a student cannot open it",
+      early_visitor.get(traits_url(J1)).status_code == 302 and "login" in early_visitor.get(traits_url(J1)).headers["Location"]
+      and ada_portal.get(traits_url(J1)).status_code in (302, 403, 404))
+check("a POST to the traits page without a CSRF token is refused (403), and nothing changes",
+      op.post(traits_url(J1), {f"trait_{ADA}_punctuality": "5"}, token=False).status_code == 403 and trait_row(ADA) is None)
+# Ada is left unrated again here (trait_row(ADA) is None), so every later section sees exactly the same
+# card it always saw, undisturbed by this new feature.
+
 # ================================================================ D. the head
 op.said()
 r = op.post(RC + "/settings", {"head_title": "Proprietress", "head_name": "Mrs A. B. Okoye", "next_term_begins": "Monday, 4 January 2027"},
@@ -1683,9 +1767,10 @@ check("junk in the address (letters, negative, zero, a number too big for the da
 # ================================================================ F. who can see what
 check("staff: the School Admin and the other holders of report_cards.view open the list",
       all(p.get(f"{RC}?class_id={J1}").status_code == 200 for p in (op, teacher_a, teacher_b, viewer, officer, academic)))
-check("…a member of staff with no report card permission is refused (403) everywhere: list, card, PDF, class bundle, comments, signature, settings",
+check("…a member of staff with no report card permission is refused (403) everywhere: list, card, PDF, class bundle, comments, traits, signature, settings",
       all(nobody.get(u).status_code == 403 for u in (f"{RC}?class_id={J1}", staff_view(ADA), staff_view(ADA) + "/pdf",
-                                                     f"{RC}/class.pdf?class_id={J1}&session_id={CUR}&term=First%20Term", RC + "/comments", RC + "/my-signature", RC + "/settings")))
+                                                     f"{RC}/class.pdf?class_id={J1}&session_id={CUR}&term=First%20Term",
+                                                     RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings")))
 check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in nobody.text("/admin/school") and "report-cards" in op.text("/admin/school"))
 kept_comment = comment_row(ADA)
 kept_sigs = (admin_signature(TEACHER_A), signature_files(alpha))
@@ -1703,7 +1788,7 @@ check("a class teacher (view + comment, no manage) may not open the head's setti
       and head_setting(alpha, "report_head_name") == "Mrs A. B. Okoye")
 check("…but may write comments and keep a signature", teacher_a.get(RC + "/comments").status_code == 200 and teacher_a.get(RC + "/my-signature").status_code == 200)
 check("the Report Card Officer and the School Academic Administrator presets can use every report card page",
-      all(p.get(u).status_code == 200 for p in (officer, academic) for u in (RC, RC + "/comments", RC + "/my-signature", RC + "/settings")))
+      all(p.get(u).status_code == 200 for p in (officer, academic) for u in (RC, RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings")))
 perms = lambda role: {r[0] for r in alpha.sql("SELECT p.code FROM admin_types t JOIN admin_type_permissions x ON x.admin_type_id = t.id "  # noqa: E731
                                               "JOIN permissions p ON p.id = x.permission_id WHERE t.name = :n", n=role)}
 check("the presets carry what they should: Primary Class Teacher view + comment (not manage); School Academic Administrator and Report Card Officer all three",
@@ -1715,7 +1800,8 @@ check("every staff route for report cards has its permission in the endpoint map
       all(ADMIN_ENDPOINT_PERMISSIONS.get(e, "").startswith("report_cards.") for e in (
           "admin_school_report_cards", "admin_school_report_card_view", "admin_school_report_card_pdf", "admin_school_report_cards_class_pdf",
           "admin_school_report_card_comments", "admin_school_report_card_comments_save", "admin_my_signature", "admin_my_signature_save",
-          "admin_school_report_card_settings", "admin_school_report_card_settings_save")))
+          "admin_school_report_card_settings", "admin_school_report_card_settings_save",
+          "admin_school_report_card_traits", "admin_school_report_card_traits_save")))
 
 # ---- a class teacher sees only her own class
 listing_a = teacher_a.text(f"{RC}?class_id={J1}")
@@ -1908,12 +1994,13 @@ import pg_posts_coverage as coverage  # noqa: E402
 
 card_writes = {rule.rule for rule in A.app.url_map.iter_rules()
                if rule.methods & {"POST"} and ("report-cards" in rule.rule)}
-check("the three report card form routes (comments, my-signature, settings) are in the form suite's list of exercised routes",
-      card_writes == {RC + "/comments", RC + "/my-signature", RC + "/settings"} and card_writes <= set(coverage.EXERCISED), str(card_writes))
+check("the four report card form routes (comments, traits, my-signature, settings) are in the form suite's list of exercised routes",
+      card_writes == {RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings"} and card_writes <= set(coverage.EXERCISED),
+      str(card_writes))
 check("…and no write route of the application is unaccounted for", coverage.unaccounted(A.app.url_map) == [] and coverage.stale(A.app.url_map) == ([], []))
 posts_source = open(os.path.join(HERE, "write_paths_pg_posts.py"), encoding="utf-8").read()
-check("…and write_paths_pg_posts.py really submits those three (comments, my-signature, settings)",
-      all(s in posts_source for s in ('{RC}/comments', '{RC}/my-signature', '{RC}/settings')))
+check("…and write_paths_pg_posts.py really submits those four (comments, traits, my-signature, settings)",
+      all(s in posts_source for s in ('{RC}/comments', '{RC}/traits', '{RC}/my-signature', '{RC}/settings')))
 gets_rules = {rule.rule for rule in A.app.url_map.iter_rules() if "GET" in rule.methods and "report-cards" in rule.rule}
 check("the readiness, card, PDF and bundle pages are all real routes the smoke crawl will find (staff, student, parent)",
       {RC, RC + "/<int:student_id>/<int:session_id>/<slug>", RC + "/<int:student_id>/<int:session_id>/<slug>/pdf", RC + "/class.pdf",

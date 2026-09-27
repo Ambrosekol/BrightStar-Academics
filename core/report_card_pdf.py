@@ -739,6 +739,56 @@ def _signature_block(pictures, styles, image_path, name, subtitle):
     return table
 
 
+def _traits_block(card, theme, styles):
+    """The affective/psychomotor rating tables, side by side. Omitted entirely when the card has
+    none (``card['traits']`` is falsy) — a school that never rates traits sees no change at all."""
+    groups = _get(card, 'traits')
+    if not groups or not isinstance(groups, (list, tuple)):
+        return []
+    parsed = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        name = _line(group.get('name'), 40)
+        rows = []
+        for item in (group.get('entries') or []) if isinstance(group.get('entries'), (list, tuple)) else []:
+            if not isinstance(item, dict):
+                continue
+            label = _line(item.get('label'), 40)
+            rating = _line(item.get('rating_label'), 20) or '-'
+            rows.append([_p(label, styles['td']), _p(rating, styles['td_rb'])])
+        if rows:
+            parsed.append((name, rows))
+    if not parsed:
+        return []
+
+    n = len(parsed)
+    gutter = 4 * mm if n > 1 else 0
+    block_w = (CONTENT_W - gutter * (n - 1)) / n
+    rating_col = 26 * mm
+
+    blocks = []
+    for name, rows in parsed:
+        table = Table(rows, colWidths=[block_w - 16 * mm - rating_col, rating_col])
+        table.setStyle(TableStyle([('LINEBELOW', (0, 0), (-1, -2), 0.4, theme.line),
+                                   ('TOPPADDING', (0, 0), (-1, -1), 2), ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                                   ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                                   ('ALIGN', (1, 0), (1, -1), 'RIGHT')]))
+        boxed = Table([[_p(name, styles['head'])], [table]], colWidths=[block_w])
+        boxed.setStyle(TableStyle([('BOX', (0, 0), (-1, -1), 0.6, theme.line), ('TOPPADDING', (0, 0), (-1, -1), 6),
+                                   ('BOTTOMPADDING', (0, 0), (-1, -1), 6), ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                                   ('RIGHTPADDING', (0, 0), (-1, -1), 8)]))
+        blocks.append(boxed)
+
+    row = Table([blocks], colWidths=[block_w] * n)
+    style = [('VALIGN', (0, 0), (-1, -1), 'TOP'), ('TOPPADDING', (0, 0), (-1, -1), 0),
+             ('BOTTOMPADDING', (0, 0), (-1, -1), 0), ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0)]
+    if n > 1:
+        style += [('LEFTPADDING', (i, 0), (i, 0), gutter) for i in range(1, n)]
+    row.setStyle(TableStyle(style))
+    return [row, Spacer(1, 4 * mm)]
+
+
 def _comment_and_signatures(card, theme, styles, pictures):
     """The class teacher's comment box, then the teacher's and the head's signature blocks side by side."""
     comment = _get(card, 'comment')
@@ -816,6 +866,7 @@ def _card_story(card, number, state, pictures):
     story += table
     if has_subjects:
         story += _summary_strip(card, theme, styles)
+    story += _traits_block(card, theme, styles)
     story += _comment_and_signatures(card, theme, styles, pictures)
     story += _grading_key(card, theme, styles)
     return story
@@ -832,8 +883,10 @@ def render_report_cards_pdf(cards):
     gender, photo_path), ``subjects`` (name, test, assignment, project, ca, ca_max, exam, exam_max,
     total, total_max, grade, remark, class_average), ``summary`` (total, total_max, percentage, grade,
     remark, class_average_percentage, class_size, subjects_count), ``comment`` (None or text,
-    teacher_name, teacher_signature_path), ``head`` (title, name, signature_path), ``grading_key``
-    (range, grade, remark), ``issued_on`` and ``next_term_begins``.
+    teacher_name, teacher_signature_path), ``traits`` (None, or a list of {name, entries: [{label,
+    rating_label}]} — the affective/psychomotor ratings, omitted entirely when None so a school that
+    never rates traits sees no change to its card), ``head`` (title, name, signature_path),
+    ``grading_key`` (range, grade, remark), ``issued_on`` and ``next_term_begins``.
 
     Missing or unreadable pictures are left out (a missing logo is replaced by the school's name).
     A card that does not fit on one page carries on onto the next. An empty list gives a one-page

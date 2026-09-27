@@ -519,3 +519,28 @@ class ReportCardComment(db.Model):
     author_admin_id = db.Column(Integer, ForeignKey('admins.id'))
     created_at = db.Column(Text, nullable=False)
     updated_at = db.Column(Text)
+
+
+class ReportCardTrait(db.Model):
+    """A student's affective and psychomotor trait ratings for one term, alongside the class teacher's comment.
+
+    One row per student, session and term, written by the same class teacher on the same page as the
+    comment. ``ratings`` is a small JSON object mapping a trait key (the catalogue lives in
+    blueprints/school/report_card_data.py, ``TRAIT_GROUPS``) to a rating from 1 (Poor) to 5 (Excellent);
+    a trait the teacher has not rated is simply missing from the object, never stored as a null.
+    """
+
+    __tablename__ = 'report_card_traits'
+    __table_args__ = (
+        UniqueConstraint('student_id', 'session_id', 'term'),
+        Index('idx_report_card_traits_session', 'session_id', 'term'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id'), nullable=False)
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    term = db.Column(Text, nullable=False)
+    ratings = db.Column(Text, nullable=False)
+    author_admin_id = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    updated_at = db.Column(Text)

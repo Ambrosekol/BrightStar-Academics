@@ -10,14 +10,16 @@ tests are not part of the official record, so they neither count nor hold a card
 
 **What is on it?** The school's own logo, name, address and contact details in its own colours; the
 student's details; each subject as CA (out of 40) plus Exam (out of 60); a grade and remark; the
-overall percentage; the class average; the class teacher's comment with that teacher's own
-signature; and the head's title, name and signature. The marks are the term result the school
-already works out (blueprints/school/helpers.py), so the arithmetic exists in one place only.
+overall percentage; the class average; affective and psychomotor trait ratings, once a teacher has
+rated at least one; the class teacher's comment with that teacher's own signature; and the head's
+title, name and signature. The marks are the term result the school already works out
+(blueprints/school/helpers.py), so the arithmetic exists in one place only.
 
 ``build_cards`` returns plain dictionaries. The PDF (core/report_card_pdf.py) and the web page
 (templates/report_card.html) are both drawn from the same dictionary, so they say the same thing.
 """
 
+import json
 import os
 import re
 from datetime import datetime, timezone
@@ -30,7 +32,7 @@ from core.branding import school_brand
 from core.db_helpers import tuples
 from core.storage import stored_upload_path
 from models import (
-    AcademicSession, Admin, ReportCardComment, SchoolAssessment, SchoolClass, SchoolSetting,
+    AcademicSession, Admin, ReportCardComment, ReportCardTrait, SchoolAssessment, SchoolClass, SchoolSetting,
     SchoolStudentResult, SchoolSubject, Student, StudentEnrolment, db,
 )
 
@@ -55,6 +57,58 @@ SETTING_NEXT_TERM = 'report_next_term_begins'
 MAX_COMMENT_LENGTH = 1000
 
 _KNOWN_TERMS = (*ACADEMIC_TERMS, 'Full Session')
+
+# ---------------------------------------------------------------------------------------------
+# Affective and psychomotor traits. A fixed catalogue (unlike the free-text comment) so every
+# report card in the school rates the same things, and so a rating can be stored as a small
+# {key: 1..5} JSON object rather than a row per trait.
+TRAIT_SCALE = ((5, 'Excellent'), (4, 'Very Good'), (3, 'Good'), (2, 'Fair'), (1, 'Poor'))
+
+TRAIT_GROUPS = (
+    ('Affective Domain', (
+        ('punctuality', 'Punctuality'),
+        ('attentiveness', 'Attentiveness'),
+        ('honesty', 'Honesty'),
+        ('neatness', 'Neatness'),
+        ('politeness', 'Politeness'),
+        ('cooperation', 'Cooperation with others'),
+        ('leadership', 'Leadership'),
+        ('self_control', 'Self-control'),
+    )),
+    ('Psychomotor Domain', (
+        ('handwriting', 'Handwriting'),
+        ('verbal_fluency', 'Verbal fluency'),
+        ('sports_games', 'Sports & games'),
+        ('musical_skills', 'Musical skills'),
+        ('drawing_painting', 'Drawing & painting'),
+        ('handling_tools', 'Handling of tools/instruments'),
+    )),
+)
+
+_TRAIT_LABELS = {key: label for _, items in TRAIT_GROUPS for key, label in items}
+_TRAIT_KEYS = set(_TRAIT_LABELS)
+_TRAIT_RATING_LABELS = dict(TRAIT_SCALE)
+
+
+def trait_rating_label(value):
+    """'Excellent', ... for 1..5, or '' for anything else (unrated)."""
+    return _TRAIT_RATING_LABELS.get(value, '')
+
+
+def _parse_ratings(raw):
+    """A trait row's JSON text as ``{key: 1..5}``, dropping anything that is not a known trait or a
+    valid rating. Never raises: bad or missing JSON is simply "nothing rated yet"."""
+    try:
+        parsed = json.loads(raw) if raw else {}
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    out = {}
+    for key, value in parsed.items():
+        if key in _TRAIT_KEYS and isinstance(value, int) and 1 <= value <= 5:
+            out[key] = value
+    return out
 
 
 def grade_for(percentage):
@@ -264,6 +318,9 @@ def build_cards(student_ids, session_id, term):
     comments = {c.student_id: c for c in db.session.scalars(select(ReportCardComment).where(
         ReportCardComment.student_id.in_(ready_ids), ReportCardComment.session_id == session_id,
         ReportCardComment.term == term))}
+    trait_rows = {t.student_id: _parse_ratings(t.ratings) for t in db.session.scalars(select(ReportCardTrait).where(
+        ReportCardTrait.student_id.in_(ready_ids), ReportCardTrait.session_id == session_id,
+        ReportCardTrait.term == term))}
     authors = {a.id: a for a in db.session.scalars(select(Admin).where(
         Admin.id.in_({c.author_admin_id for c in comments.values() if c.author_admin_id})))} if comments else {}
     subject_names = {sid: name for sid, name in tuples(select(SchoolSubject.id, SchoolSubject.name))}
@@ -320,6 +377,16 @@ def build_cards(student_ids, session_id, term):
                              'teacher_name': author.display_name if author else '',
                              'teacher_signature_path': _file(author.signature_path) if author else None}
 
+        ratings = trait_rows.get(student_id) or {}
+        # Only shown once the school has rated at least one trait for this student: a school that
+        # never uses this stays with the card it always had, with no empty grid appearing on it.
+        # 'entries', never 'items': a dict key called 'items' collides with Python's own dict.items()
+        # method when Jinja resolves 'group.items' in the template.
+        traits_block = [{'name': group_name, 'entries': [
+                            {'label': label, 'rating_label': trait_rating_label(ratings.get(key))}
+                            for key, label in items]}
+                        for group_name, items in TRAIT_GROUPS] if ratings else None
+
         full_name = ' '.join(p for p in (student.first_name, student.middle_name, student.last_name) if p and str(p).strip())
         cards.append({
             'school': school,
@@ -334,6 +401,7 @@ def build_cards(student_ids, session_id, term):
                         'class_average_percentage': (stats or {}).get('class_average'),
                         'class_size': (stats or {}).get('class_size') or 0, 'subjects_count': len(rows)},
             'comment': comment_block,
+            'traits': traits_block,
             'head': head,
             'grading_key': key,
             'issued_on': _issued_on(counts[(student_id, session_id, term)]['released_at']),
@@ -379,6 +447,36 @@ def class_overview(class_id, session_id, term):
                     'state': state, 'pending': c['pending'] if c else 0,
                     'comment': comment.comment if comment else '',
                     'comment_by': authors.get(comment.author_admin_id, '') if comment else ''})
+    out.sort(key=lambda x: x['name'].casefold())
+    return out
+
+
+def traits_overview(class_id, session_id, term):
+    """What the traits page shows for a class: each enrolled student and their current ratings.
+
+    ``[{'student_id', 'name', 'admission_no', 'ratings': {key: 1..5}, 'rated_by': name or ''}]``
+    ordered by name. A student with no ``ReportCardTrait`` row yet simply has an empty ``ratings``.
+    """
+    rows = db.session.execute(
+        select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
+               Student.student_number)
+        .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
+        .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
+               StudentEnrolment.active == 1, Student.active == 1)).all()
+    ids = [r.id for r in rows]
+    traits = {t.student_id: t for t in db.session.scalars(select(ReportCardTrait).where(
+        ReportCardTrait.student_id.in_(ids), ReportCardTrait.session_id == session_id,
+        ReportCardTrait.term == term))} if ids else {}
+    authors = {a.id: a.display_name for a in db.session.scalars(select(Admin).where(
+        Admin.id.in_({t.author_admin_id for t in traits.values() if t.author_admin_id})))} if traits else {}
+    out = []
+    for r in rows:
+        t = traits.get(r.id)
+        out.append({'student_id': r.id,
+                    'name': ' '.join(p for p in (r.first_name, r.middle_name, r.last_name) if p and str(p).strip()),
+                    'admission_no': r.student_number or r.admission_no or '',
+                    'ratings': _parse_ratings(t.ratings) if t else {},
+                    'rated_by': authors.get(t.author_admin_id, '') if t else ''})
     out.sort(key=lambda x: x['name'].casefold())
     return out
 
