@@ -37,10 +37,13 @@
 <tr><td><code>write_paths_term_grading.py</code></td><td>Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility.</td></tr>
 <tr><td><code>write_paths_report_cards.py</code></td><td>When a report card is ready, its content, comments, signatures, both portals.</td></tr>
 <tr><td><code>write_paths_finance.py</code>, <code>_receipts.py</code></td><td>Fees, paid/unpaid, payments, allocations, parents' alerts; the receipt PDF, its email and WhatsApp, the signature, one design per school.</td></tr>
+<tr><td><code>write_paths_paystack.py</code></td><td>A school's own Paystack account end to end: starting a payment, the callback and the webhook (including a racing pair, and a bad signature), reconciling one stuck 'pending'; refunding a payment made online - the permission gate, a duplicate-attempt refusal, a webhook confirming or failing the refund, and reconciling a refund whose webhook never arrived - all against a fake Paystack.</td></tr>
 <tr><td><code>write_paths_candidate_results.py</code></td><td>A candidate's result image carries the right school and leaks nothing. Needs Chrome or Chromium.</td></tr>
 <tr><td><code>write_paths_session_guard.py</code>, <code>_rate_limits.py</code>, <code>_upload_access.py</code>, <code>_upload_limits.py</code></td><td>Restart sign-out (exam sitters kept), password changes, headers, trusted proxies; shared limits; who may open which files; every upload's limit and explanations.</td></tr>
 <tr><td><code>write_paths_fractional_marks.py</code>, <code>_retired_tables.py</code>, <code>_error_pages.py</code>, <code>_known_gaps.py</code></td><td>Decimal marks and upgrading older schools; clearing removed features' tables; the 404/403/500 pages; a set of previously found gaps.</td></tr>
+<tr><td><code>write_paths_resilience.py</code></td><td>The things that only show up outside a request: the dedicated job poller running from a separate CLI process; <code>static/interactions.js</code>'s delegated listeners, driven in a real headless browser; the four alerting signals; the CSP's own nonce on every remaining inline script.</td></tr>
 </table></div>
+<p>Alongside these, {{ file('tests/verification/load_test_exam_answers.py') }} is not a correctness suite: it fires the exact upsert <code>/answer</code> performs, concurrently, against a real database, and reports writes per second and per-write latency (no built-in pass/fail - hardware varies) - run it against a throwaway database by default, or a real school's own with <code>--school CODE</code>, before its first big entrance day.</p>
 
 <h2 id="harness">How the scripts work</h2>
 <ul>

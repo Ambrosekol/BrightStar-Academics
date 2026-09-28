@@ -24,13 +24,14 @@
 <tr><td>Forged client addresses</td><td>Forwarded headers ignored unless a trusted proxy count is set; never the host, only address and scheme</td><td><code>apply_trusted_proxies</code> in {{ file('app.py') }}</td></tr>
 <tr><td>Crashing on hostile input</td><td>Huge numbers and NUL bytes answered with a plain 400; the test suite sends every route hostile input and fails on any 500</td><td>{{ file('core/request_errors.py') }}</td></tr>
 <tr><td>Leaking internals in errors</td><td>Designed error pages that show no detail; per school, in its colours</td><td>{{ file('app.py') }}, {{ tpl('error_5xx.html') }}</td></tr>
+<tr><td>Degraded safety going unnoticed</td><td>The registry being unreachable, a job that used up its retries, a burst of delivery failures for one school, and a sign-in rate limit being hit all log <em>and</em>, if <code>BRIGHTSTARS_ALERT_WEBHOOK</code> is set, post to it - a single honest bounce never pages anyone, only a burst does</td><td>{{ file('core/alerting.py') }}</td></tr>
 </table></div>
 
 <h2 id="headers">Headers and cookies</h2>
 <p>Every response gets (in <code>apply_security_headers</code>, {{ file('app.py') }}): <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: same-origin</code> (the application does read its own Referer for "go back"), a restrictive <code>Permissions-Policy</code>, HSTS in production, and this Content-Security-Policy:</p>
 <pre><code>default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';
-script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'</code></pre>
-<div class="note"><p><strong>Consequences you will hit.</strong> No external fonts, scripts, images or stylesheets: everything is self-hosted, which is why fonts live in <code>static/fonts/</code>. Inline scripts and styles are allowed (a deliberate trade-off for the many small page scripts); tightening to nonces would be a sensible hardening step. Password-reset pages are never cached and send no referrer.</p></div>
+script-src 'self' 'nonce-&lt;random per request&gt;'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'</code></pre>
+<div class="note"><p><strong>Consequences you will hit.</strong> No external fonts, scripts, images or stylesheets: everything is self-hosted, which is why fonts live in <code>static/fonts/</code>. <code>script-src</code> allows no inline script at all except one carrying that request's own nonce (<code>csp_nonce()</code>, {{ file('app.py') }}): every <code>onclick</code>/<code>onchange</code>/<code>onsubmit</code> attribute a template used to carry was moved to delegated, <code>data-*</code>-driven listeners in {{ file('static/interactions.js') }}, since an inline event-handler attribute is exactly as dangerous to CSP as an inline <code>&lt;script&gt;</code> block. <code>style-src</code> keeps <code>'unsafe-inline'</code> deliberately: a school's own brand colours are already restricted to <code>#rrggbb</code> before they reach a <code>&lt;style&gt;</code> block, where a nonce would buy nothing. Password-reset pages are never cached and send no referrer.</p></div>
 
 <h2 id="roles">Who is trusted with what</h2>
 <div class="table-scroll"><table>
@@ -47,6 +48,7 @@ script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-anc
 <ul>
   <li><code>BRIGHTSTARS_SECRET</code> signs every session cookie. Anyone with it can forge a sign-in for any school. Keep it out of source control and logs; rotate it only knowing everyone will be signed out (and that, without <code>BRIGHTSTARS_DELIVERY_KEY</code>, saved school credentials become unreadable).</li>
   <li><code>BRIGHTSTARS_PLATFORM_DB</code> holds a database credential that can create databases. Store it as a secret.</li>
+  <li><code>BRIGHTSTARS_DELIVERY_KEY</code> can be changed on a calendar, safely: <code>python -m control_plane rotate-delivery-key OLD NEW [CODE]</code> ({{ file('core/secrets_rotation.py') }}) decrypts every school's own mail password, WhatsApp token and Paystack secret key under the old key and re-encrypts them under the new one first, school by school, so the environment variable itself is only ever changed once every school shows nothing unreadable - never the other way round.</li>
   <li>Flask sessions are <em>signed, not encrypted</em>: the person can read their own cookie. Never store anything in a session that they must not see.</li>
   <li>Never log a password, token, or a school's stored credential. Audit entries record <em>which</em> fields changed, not their values.</li>
 </ul>
@@ -56,9 +58,7 @@ script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-anc
 <ul>
   <li><strong>No two-factor authentication</strong> for any account, including platform admins.</li>
   <li><strong>Databases are not encrypted per school</strong> beyond stored delivery credentials; rely on disk and PostgreSQL-level encryption and access control.</li>
-  <li><strong>A shared PostgreSQL role.</strong> By default the same role connects to every school's database; a compromised application process can read every school. Isolation is by design and by test, not by database privileges. Separate roles per school are possible but not set up.</li>
-  <li><strong>The CSP allows inline scripts and styles.</strong></li>
-  <li><strong>Background messaging runs on threads</strong> in the web process, without persistence or retry.</li>
+  <li><strong>A shared PostgreSQL role, by default.</strong> Out of the box the same role connects to every school's database; a compromised application process can read every school. Isolation is by design and by test, not by database privileges. A separate, database-owning role per school is a command away rather than a manual DBA task (<code>python -m control_plane create-db-role CODE</code>, {{ file('control_plane/provisioning.py') }}) but is opt-in, not the default, and pointing a school at it (<code>set-db-url</code>) is a deliberate second step.</li>
 </ul>
 <p>Each is a candidate for the hardening list in {{ page('recommendations', 'Recommendations') }}.</p>
 {% endblock %}

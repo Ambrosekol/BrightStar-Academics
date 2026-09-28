@@ -10,7 +10,9 @@ fourth step of the new-school setup checklist.</p>
 <h2 id="payments">Recording a payment</h2>
 <p>From <a href="{{ url_for('admin_finance_dashboard') }}">Finance</a>, recording a payment updates the
 student's balance and generates a receipt at once. A payment can be voided, with a reason, if it was
-entered wrong; voiding never deletes it, it just stops it counting.</p>
+entered wrong; voiding never deletes it, it just stops it counting. Voiding is only ever a correction
+to the record - for a payment a parent actually made online, see <em>Refunding an online payment</em>
+below, which is the action that sends the money itself back.</p>
 
 <h2 id="allocation">Deciding what a payment covers</h2>
 <p>A payment on its own is just an amount received — <strong>allocating</strong> it is what says which
@@ -57,4 +59,15 @@ It is what lets a payment still be recorded correctly even if the parent closes 
 moment they finish paying, before being sent back to the portal. Even without that, the system
 still checks on its own the next time the parent or a finance officer opens a relevant page, so a
 payment Paystack actually took is never simply lost to a missed webhook.</div>
+
+<h2 id="refunds">Refunding an online payment</h2>
+<p>A payment a parent made online has its own <strong>Refund via Paystack</strong> button on the
+receipt page, alongside Void - the same finance permission, but a different action: this one asks
+Paystack itself to send the money back, rather than just correcting the record. Give a reason and
+confirm; the payment is not marked refunded straight away, because starting a refund is not the same
+as Paystack having actually sent the money back yet. Once Paystack confirms it, the payment is voided
+automatically, with a note that it was refunded, not just corrected by hand - and if Paystack instead
+reports the refund failed, the payment is left exactly as it was, so nothing is ever marked refunded
+that did not really happen. A payment recorded by hand, or already refunded, does not offer this
+button - void it instead, and settle the parent outside the system, the same way as always.</p>
 {% endblock %}
