@@ -76,10 +76,12 @@
   ({{ file('control_plane/provisioning.py') }}'s <code>export_tenant_data</code>) writes a plain-SQL
   <code>pg_dump</code> of the school's own database, a copy of its own uploads folder, and a README
   explaining how to bring both back elsewhere - one new directory, nothing else to assemble by hand.</li>
-  <li><strong>Let a question bank's questions be reordered from the screen.</strong> The route already
-  exists ({{ route('admin_reorder') }}, permission {{ perm('questions.reorder') }}) but nothing in
-  {{ tpl('admin_bank.html') }} calls it - a bank's question order is fixed at creation today. A small
-  up/down control per question, or drag handles, would finish what the backend already supports.</li>
+  <li><strong>Let a question bank's questions be reordered from the screen.</strong> Done:
+  {{ tpl('admin_bank.html') }} now has an up/down button on every question, each carrying the
+  whole new order (computed once, server-side, in the template - no client-side arithmetic to get
+  wrong) to the route that already existed ({{ route('admin_reorder') }},
+  permission {{ perm('questions.reorder') }}); a small admin.js function posts it and reloads on
+  success, so no page navigation is needed for what used to be a fixed order at creation.</li>
   <li><strong>A refund for an online payment.</strong> Paystack's <code>POST /refund</code> is not called anywhere yet — today, undoing a Paystack payment means voiding the {{ table('finance_payments') }} row here and refunding the parent outside the system, by hand, from the Paystack dashboard. A real refund button would call that endpoint from {{ file('core/payments.py') }}, record it, and listen for the <code>refund.processed</code>/<code>refund.failed</code> webhook events (already reaching {{ route('paystack_webhook') }}, just not read yet) to know how it turned out.</li>
 </ul>
 

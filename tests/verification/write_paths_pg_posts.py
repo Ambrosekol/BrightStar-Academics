@@ -1021,6 +1021,25 @@ op.post(f"{BANKS}/{MY_BANK}/questions/{questions[1]}/edit", {"text": "What is 10
 check("a bank question was edited", next(q for q in banks_here()[MY_BANK]["questions"] if q["id"] == questions[1])["text"] == "What is 10 - 3?")
 r = op.post(f"{BANKS}/{MY_BANK}/questions/reorder", {"order": ",".join(str(q) for q in reversed(questions))})
 check("bank questions were reordered (JSON)", r.json.get("ok") is True and [q["id"] for q in banks_here()[MY_BANK]["questions"]] == list(reversed(questions)))
+# The up/down reorder buttons themselves (recommendations.html's Product section: "let a question
+# bank's questions be reordered from the screen") - each button's data-call-arg is the WHOLE new
+# order with that one swap already applied, computed once, server-side, in the template; no
+# JavaScript ever has to compute it. With the bank now in [q2, q1, q0] order, moving the middle
+# question (q1) up should read q1,q2,q0 and moving it down should read q2,q0,q1.
+bank_page = op.text(f"{BANKS}/{MY_BANK}")
+reordered = list(reversed(questions))  # [q2, q1, q0]
+mid = reordered[1]
+expected_up = f"{reordered[1]},{reordered[0]},{reordered[2]}"
+expected_down = f"{reordered[0]},{reordered[2]},{reordered[1]}"
+check("the middle question's move-up button carries the whole swapped order",
+      f'data-call-arg="{expected_up}"' in bank_page)
+check("the middle question's move-down button carries the whole swapped order",
+      f'data-call-arg="{expected_down}"' in bank_page)
+check("the first question's move-up button is disabled (nothing above it)",
+      re.search(r'data-call-arg="[^"]*"[^>]*title="Move up"[^>]*disabled', bank_page) is not None
+      or re.search(r'disabled[^>]*data-call-arg="[^"]*"[^>]*title="Move up"', bank_page) is not None)
+check("every reorder button points at the real reorder route",
+      bank_page.count(f'data-reorder-url="{BANKS}/{MY_BANK}/questions/reorder"') == 6)
 op.post(f"{BANKS}/{MY_BANK}/questions/{questions[0]}/delete", {})
 check("a bank question was deleted", len(banks_here()[MY_BANK]["questions"]) == 2)
 

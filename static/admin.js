@@ -471,7 +471,35 @@ const decimalPlaces = decimalPart.length;
 
 
 
-
+// A question bank's up/down reorder buttons (admin_bank.html) each carry the whole new
+// question order in data-call-arg, and the reorder URL in data-reorder-url; this is the one
+// named function that data-call in interactions.js dispatches them to. It posts the same
+// comma-separated "order" the server-side admin_reorder route already expected before anything
+// called it, and reloads the page on success so the new order is what actually renders.
+window.reorderBankQuestion = function (button, order) {
+    if (!order) return;
+    const url = button.dataset.reorderUrl;
+    if (!url) return;
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const body = new URLSearchParams();
+    body.set('_csrf_token', meta ? meta.content : '');
+    body.set('order', order);
+    button.disabled = true;
+    fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' }, body: body })
+        .then((r) => r.json().catch(() => null).then((data) => ({ ok: r.ok, data: data })))
+        .then((result) => {
+            if (result.ok && result.data && result.data.ok) {
+                window.location.reload();
+                return;
+            }
+            button.disabled = false;
+            alert((result.data && result.data.error) || 'Could not reorder — the bank may be locked, or the page may need a refresh.');
+        })
+        .catch(() => {
+            button.disabled = false;
+            alert('Could not reorder. Check your connection and try again.');
+        });
+};
 
 (function () {
     const nav = document.querySelector('[data-live-messages-nav]');
