@@ -39,6 +39,7 @@ The project README's *Testing* section says what each covers.
 | `write_paths_upload_limits.py` | every picture upload (staff, student, candidate, question, signature, branding, console): the 5 MB limit printed beside the box, a refusal that names the file and both sizes, a friendly answer to an over-8 MB submission, and the browser script run in Chrome |
 | `write_paths_pg_smoke.py` | every page, opened with data behind it |
 | `write_paths_pg_posts.py` | every form submission, valid and hostile |
+| `load_test_exam_answers.py` | not a correctness suite: writes/second and per-write latency for the real exam-answer upsert, under concurrency, against a throwaway database or (`--school CODE`) a real one - run before a school's first big entrance day |
 
 Helpers: `_pg.py` (creates and drops the throwaway databases; several scripts may run at once
 without deleting each other's) and `pg_posts_coverage.py` (the list of write routes the form

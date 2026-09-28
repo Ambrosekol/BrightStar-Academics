@@ -794,6 +794,7 @@ python tests/verification/write_paths_delivery.py          # a school's own emai
 python tests/verification/write_paths_known_gaps.py        # roles, profile page, uploads, search, sign-in errors
 python tests/verification/write_paths_pg_smoke.py          # every page, opened on PostgreSQL
 python tests/verification/write_paths_pg_posts.py          # every form submission, sent on PostgreSQL
+python tests/verification/load_test_exam_answers.py        # not a correctness check: writes/second and latency for the exam-answer upsert, under real concurrency - run before a school's first big entrance day (--school CODE for a real one)
 python tests/verification/write_paths_numbering_rules.py   # each school's numbering patterns: the console, the language, candidates and students
 python tests/verification/write_paths_question_banks.py    # the standard banks, importing banks, a new school's first exam
 python tests/verification/write_paths_fractional_marks.py  # a 40-question paper is 100 marks; older schools upgraded
