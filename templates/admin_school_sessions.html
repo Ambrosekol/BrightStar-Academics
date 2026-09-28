@@ -128,7 +128,7 @@
                             </form>
                             {% endif %}
                             {% if s.active %}
-                            <form method="post" onsubmit="return {% if s.is_current %}false{% else %}confirm('Archive {{ s.name }}? It will no longer appear as a selectable session.'){% endif %}">
+                            <form method="post" {% if not s.is_current %}data-confirm="Archive {{ s.name }}? It will no longer appear as a selectable session."{% endif %}>
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="archive">
                                 <input type="hidden" name="session_id" value="{{ s.id }}">

@@ -40,12 +40,12 @@
                 <div class="row-actions">
                   {% if not a.is_super %}
                     <form method="post" action="{{ url_for('platform_team_reset', admin_id=a.id) }}"
-                          data-confirm="Give {{ a.display_name }} a new temporary password? Their current password stops working." onsubmit="return confirm(this.dataset.confirm);">
+                          data-confirm="Give {{ a.display_name }} a new temporary password? Their current password stops working.">
                       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm" type="submit">Reset password</button>
                     </form>
                     <form method="post" action="{{ url_for('platform_team_remove', admin_id=a.id) }}"
-                          data-confirm="Remove {{ a.display_name }}? They are signed out everywhere, including inside schools, straight away. Their activity log is kept." onsubmit="return confirm(this.dataset.confirm);">
+                          data-confirm="Remove {{ a.display_name }}? They are signed out everywhere, including inside schools, straight away. Their activity log is kept.">
                       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm btn-danger" type="submit">Remove</button>
                     </form>
@@ -76,7 +76,7 @@
                 <td>
                   <div class="row-actions">
                     <form method="post" action="{{ url_for('platform_team_restore', admin_id=a.id) }}"
-                          data-confirm="Restore {{ a.display_name }}? They get a new temporary password and must choose their own." onsubmit="return confirm(this.dataset.confirm);">
+                          data-confirm="Restore {{ a.display_name }}? They get a new temporary password and must choose their own.">
                       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm" type="submit">Restore</button>
                     </form>

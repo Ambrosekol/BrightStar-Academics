@@ -16,7 +16,7 @@
       <h2>{{selected_class}} Students</h2>
       <p>Current session: {{school_session.name if school_session else 'Not configured'}} · {{students|length}} student{{'' if students|length==1 else 's'}} shown</p>
     </div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('studentsModal').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="studentsModal">×</button>
   </div>
   <div class="cr-modal-body">
     <form class="register-search" method="get" style="margin-bottom:16px">
@@ -47,6 +47,6 @@
     </div>
   </div>
 </dialog>
-<script>document.getElementById('studentsModal')?.showModal();</script>
+<script nonce="{{ csp_nonce() }}">document.getElementById('studentsModal')?.showModal();</script>
 {% endif %}
 {% endblock %}

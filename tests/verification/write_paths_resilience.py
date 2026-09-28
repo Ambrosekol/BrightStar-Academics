@@ -251,8 +251,8 @@ if not CHROME:
     print("SKIP the exam save-retry script in a real browser: Chrome was not found (set BRIGHTSTARS_CHROME).")
 else:
     exam_source = open(os.path.join(ROOT, "templates", "exam.html"), encoding="utf-8").read()
-    script_match = re.search(r"<script>\s*\nconst qid=.*?\n</script>", exam_source, re.S)
-    script_body = script_match.group(0)[len("<script>"):-len("</script>")].replace(
+    script_match = re.search(r"<script[^>]*>\s*\nconst qid=.*?\n</script>", exam_source, re.S)
+    script_body = re.sub(r"^<script[^>]*>|</script>$", "", script_match.group(0)).replace(
         "{{q.id}}", "1").replace("{{remaining}}", "600")
     page = f"""<!doctype html><html><body>
 <div class="timer" id="timer">--:--</div><div class="save-status" id="saveStatus"></div>
@@ -344,6 +344,110 @@ document.getElementById('out').textContent = JSON.stringify({{afterOffline: afte
         check("coming back online says so, no longer in the offline colour",
               banner_outcome["afterOnline"]["visible"] and not banner_outcome["afterOnline"]["offline"]
               and "online" in banner_outcome["afterOnline"]["text"].lower(), banner_outcome["afterOnline"])
+
+    # ================================================================ static/interactions.js, in the same browser
+    # This one script is what every onclick/onchange/onsubmit attribute in every template was
+    # moved to (see recommendations.html's Hardening section: script-src no longer allows
+    # 'unsafe-inline'), so proving this ONE shared mechanism works in a real browser stands in for
+    # separately testing it on each of the ~90 pages that now depend on it.
+    interactions_page = f"""<!doctype html><html><body>
+<form id="confirmForm" data-confirm="are you sure?">
+  <button type="submit" id="confirmBtn">Delete</button>
+</form>
+<form><select id="autoSubmitSelect" data-autosubmit><option value="a">a</option><option value="b">b</option></select></form>
+<dialog id="theDialog"></dialog>
+<button id="openBtn" data-modal-open="theDialog">Open</button>
+<button id="closeBtn" data-modal-close="theDialog">Close</button>
+<button id="toggleBtn" data-toggle-class="nav-open">Toggle</button>
+<button id="callBtn" data-call="myNamedFunction" data-call-arg="42">Call</button>
+<button id="printBtn" data-print>Print</button>
+<pre id="out"></pre>
+<script src="file:///{os.path.join(ROOT, 'static', 'interactions.js').replace(os.sep, '/')}"></script>
+<script>
+// Registered on document, same as interactions.js's own delegated listener, and after it (this
+// script loads after interactions.js) - so for the SAME target, this one runs second and sees
+// whatever interactions.js already decided, the same way two document-level listeners genuinely
+// would (a form-level listener would run first, during the bubble phase, before interactions.js
+// ever saw the event, and so would prove nothing).
+window.__submitDefaultPrevented = null;
+document.addEventListener('submit', function (e) {{
+  window.__submitDefaultPrevented = e.defaultPrevented; e.preventDefault();
+}});
+window.__autosubmitCalled = false;
+document.getElementById('autoSubmitSelect').form.submit = function () {{ window.__autosubmitCalled = true; }};
+window.__namedCallArgs = null;
+window.myNamedFunction = function (el, arg) {{ window.__namedCallArgs = [el.id, arg]; }};
+window.__printCalled = false;
+window.print = function () {{ window.__printCalled = true; }};
+
+var errors = [];
+function step(name, fn) {{ try {{ return fn(); }} catch (e) {{ errors.push(name + ': ' + e); return null; }} }}
+
+window.confirm = function () {{ return false; }};
+document.getElementById('confirmBtn').click();
+var declined = {{defaultPrevented: window.__submitDefaultPrevented}};
+
+window.__submitDefaultPrevented = null;
+window.confirm = function () {{ return true; }};
+document.getElementById('confirmBtn').click();
+var accepted = {{defaultPrevented: window.__submitDefaultPrevented}};
+
+document.getElementById('autoSubmitSelect').value = 'b';
+document.getElementById('autoSubmitSelect').dispatchEvent(new Event('change', {{bubbles: true}}));
+var autosubmit = {{called: window.__autosubmitCalled}};
+
+var openedState = step('open', function () {{
+  document.getElementById('openBtn').click();
+  return document.getElementById('theDialog').open;
+}});
+var closedState = step('close', function () {{
+  document.getElementById('closeBtn').click();
+  return document.getElementById('theDialog').open;
+}});
+
+document.getElementById('toggleBtn').click();
+var toggledOnState = document.body.classList.contains('nav-open');
+document.getElementById('toggleBtn').click();
+var toggledOffState = document.body.classList.contains('nav-open');
+
+document.getElementById('callBtn').click();
+var calledArgs = window.__namedCallArgs;
+
+document.getElementById('printBtn').click();
+var printedState = window.__printCalled;
+
+document.getElementById('out').textContent = JSON.stringify({{
+  declined: declined, accepted: accepted, autosubmit: autosubmit,
+  openedState: openedState, closedState: closedState,
+  toggledOnState: toggledOnState, toggledOffState: toggledOffState,
+  calledArgs: calledArgs, printedState: printedState, errors: errors
+}});
+</script>
+</body></html>"""
+    interactions_path = os.path.join(TMP, "interactions_check.html")
+    with open(interactions_path, "w", encoding="utf-8") as fh:
+        fh.write(interactions_page)
+    run3 = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--allow-file-access-from-files", "--dump-dom",
+                           "file:///" + interactions_path.replace(os.sep, "/")], capture_output=True, text=True, timeout=30)
+    found3 = re.search(r'<pre id="out">(.*?)</pre>', run3.stdout, re.S)
+    js_outcome = json.loads(html.unescape(found3.group(1))) if found3 else {}
+    check("interactions.js ran in a real browser", bool(js_outcome), run3.stderr[-300:] if not js_outcome else "")
+    if js_outcome:
+        check("no unexpected error was thrown while exercising it", not js_outcome.get("errors"), js_outcome.get("errors"))
+        check("a declined confirm on a button never lets its form submit",
+              js_outcome["declined"]["defaultPrevented"] is True, js_outcome["declined"])
+        check("an accepted confirm lets the very same form submit reach its handler",
+              js_outcome["accepted"]["defaultPrevented"] is False, js_outcome["accepted"])
+        check("a data-autosubmit field submits its form on change",
+              js_outcome["autosubmit"]["called"] is True, js_outcome["autosubmit"])
+        check("data-modal-open opens the named <dialog>, data-modal-close closes it",
+              js_outcome["openedState"] is True and js_outcome["closedState"] is False, js_outcome)
+        check("data-toggle-class toggles a class on <body>, on and off",
+              js_outcome["toggledOnState"] is True and js_outcome["toggledOffState"] is False, js_outcome)
+        check("data-call dispatches to the named global function with its data-call-arg",
+              js_outcome["calledArgs"] == ["callBtn", "42"], js_outcome["calledArgs"])
+        check("data-print calls window.print()",
+              js_outcome["printedState"] is True, js_outcome["printedState"])
 
 print(f"\n{sum(1 for _, ok, _ in results if ok)}/{len(results)} checks passed")
 if DROP_TEST_DATABASES:

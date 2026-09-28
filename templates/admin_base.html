@@ -166,7 +166,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ school_brand.name }} Administration{% endblock %}</title>
-    <script>(function(d){d.classList.add('js');try{if(window.localStorage.getItem('bs-rail')==='pinned'){d.setAttribute('data-rail','pinned');}}catch(e){}})(document.documentElement);</script>
+    <script nonce="{{ csp_nonce() }}">(function(d){d.classList.add('js');try{if(window.localStorage.getItem('bs-rail')==='pinned'){d.setAttribute('data-rail','pinned');}}catch(e){}})(document.documentElement);</script>
     <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-600-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
@@ -253,7 +253,7 @@
         {% endwith %}
         {% if request.endpoint != 'admin_workspace_home' %}
         <div class="ui-backbar">
-            <button class="ui-back" type="button" onclick="portalGoBack('{{ url_for('admin_school_home') if active_workspace == 'school' else url_for('admin_dashboard') }}')" title="Go back one step">
+            <button class="ui-back" type="button" data-go-back="{{ url_for('admin_school_home') if active_workspace == 'school' else url_for('admin_dashboard') }}" title="Go back one step">
                 {{ icon('arrow-left', 'ico-sm') }}
                 <span>Back</span>
             </button>
@@ -264,7 +264,8 @@
     </main>
 </div>
 <div id="live-message-toast" class="live-message-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-<script>window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
+<script nonce="{{ csp_nonce() }}">window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
+<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>
 <script src="{{ url_for('static', filename='admin.js', v='6K-live-messages') }}"></script>
 <script src="{{ url_for('static', filename='school-nav.js', v='1') }}"></script>
 </body>

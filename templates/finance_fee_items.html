@@ -395,7 +395,7 @@
               <td><strong>{{ b.last_name }} {{ b.first_name }}</strong><small>{{ b.admission_no }}</small></td>
               <td class="numeric">{{ b.item_count }}</td>
               <td class="numeric"><strong>₦{{ "{:,.2f}".format(b.total_assessed) }}</strong></td>
-              <td class="actions"><button type="button" class="cr-finance-row-action" onclick="document.getElementById('assessmentHistoryModal-{{ b.student_id }}').showModal()">Browse assessments</button></td>
+              <td class="actions"><button type="button" class="cr-finance-row-action" data-modal-open="assessmentHistoryModal-{{ b.student_id }}">Browse assessments</button></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -408,7 +408,7 @@
     <dialog class="cr-modal" id="assessmentHistoryModal-{{ b.student_id }}">
       <div class="cr-modal-head">
         <div><div class="section-label">STUDENT ASSESSMENTS</div><h2>{{ b.last_name }} {{ b.first_name }}</h2><p>{{ b.admission_no }} · {{ b.item_count }} item{{ '' if b.item_count==1 else 's' }} · ₦{{ "{:,.2f}".format(b.total_assessed) }} total assessed</p></div>
-        <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('assessmentHistoryModal-{{ b.student_id }}').close()">×</button>
+        <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assessmentHistoryModal-{{ b.student_id }}">×</button>
       </div>
       <div class="cr-modal-body">
         {% for session_name, terms in b.sessions.items() %}
@@ -448,7 +448,7 @@
 </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function(){
   const studentSelect=document.getElementById('financeStudent');
   const sessionSelect=document.getElementById('financeSession');
@@ -576,7 +576,7 @@
 })();
 </script>
 
-<script id="cr-finance-v7-1-controller">
+<script id="cr-finance-v7-1-controller" nonce="{{ csp_nonce() }}">
 /* ============================================================
    {{ school_brand.name|upper }} FEE STRUCTURE V7.1
    TAB CONTROLLER
@@ -645,7 +645,7 @@
 })();
 </script>
 
-<script id="cr-finance-history-search">
+<script id="cr-finance-history-search" nonce="{{ csp_nonce() }}">
 (function () {
   const search = document.getElementById('financeHistorySearch');
   if (!search) return;

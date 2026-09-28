@@ -18,7 +18,7 @@
     <form method="get" class="cr-finance-form-grid" style="margin:0">
       <div class="cr-finance-field">
         <label for="session_id">Academic session</label>
-        <select id="session_id" name="session_id" onchange="this.form.submit()">
+        <select id="session_id" name="session_id" data-autosubmit>
           {% for s in sessions %}
           <option value="{{ s.id }}" {% if session and s.id==session.id %}selected{% endif %}>{{ s.name }}</option>
           {% endfor %}

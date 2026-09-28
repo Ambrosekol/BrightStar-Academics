@@ -53,14 +53,14 @@
                 {% elif run.status == 'approved' %}
                 <button name="action" value="commit"
                         class="btn btn-primary"
-                        onclick="return confirm('Commit this promotion run? This will create the destination-session enrolments.');">
+                        data-confirm="Commit this promotion run? This will create the destination-session enrolments.">
                     Commit Rollover
                 </button>
                 {% endif %}
 
                 <button name="action" value="cancel"
                         class="btn btn-danger"
-                        onclick="return confirm('Cancel this promotion draft?');">
+                        data-confirm="Cancel this promotion draft?">
                     Cancel
                 </button>
             </div>

@@ -258,6 +258,6 @@
   </section>
 
 </main>
-<script>setInterval(function(){fetch('{{url_for("presence_heartbeat")}}',{credentials:'same-origin'}).catch(function(){});},30000);</script>
+<script nonce="{{ csp_nonce() }}">setInterval(function(){fetch('{{url_for("presence_heartbeat")}}',{credentials:'same-origin'}).catch(function(){});},30000);</script>
 </body>
 </html>

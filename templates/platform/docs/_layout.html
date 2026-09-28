@@ -23,7 +23,7 @@
     <a href="{{ url_for('platform_dashboard') }}">Console</a>
     <a href="{{ url_for('marketing') }}">Marketing page</a>
   </nav>
-  <button class="docs-menu" type="button" aria-label="Show the page list" onclick="document.body.classList.toggle('nav-open')">Pages</button>
+  <button class="docs-menu" type="button" aria-label="Show the page list" data-toggle-class="nav-open">Pages</button>
 </header>
 
 <div class="docs-shell">
@@ -55,7 +55,7 @@
   <aside class="docs-toc" aria-label="On this page"><div class="docs-toc-title">On this page</div><div id="toc"></div></aside>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var article = document.getElementById('article'), toc = document.getElementById('toc');
   if (!article || !toc) return;
@@ -79,5 +79,6 @@
   });
 })();
 </script>
+<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>
 </body>
 </html>

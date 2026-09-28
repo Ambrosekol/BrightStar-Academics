@@ -21,12 +21,12 @@
 <section class="card">
   <form method="get" class="adm-filter" style="padding:16px 16px 0">
     <div class="field"><label for="entry_group">Entry level</label>
-      <select id="entry_group" name="entry_group" onchange="this.form.submit()">
+      <select id="entry_group" name="entry_group" data-autosubmit>
         <option value="">All entry levels</option>
         {% for key, label in entry_groups.items() %}<option value="{{ key }}" {% if key == selected_group %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select></div>
     <div class="field"><label for="status">Status</label>
-      <select id="status" name="status" onchange="this.form.submit()">
+      <select id="status" name="status" data-autosubmit>
         <option value="">All</option>
         <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
         <option value="admitted" {% if selected_status == 'admitted' %}selected{% endif %}>Admitted</option>

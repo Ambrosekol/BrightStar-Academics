@@ -33,7 +33,7 @@
 <p style="margin-top:14px"><a class="btn btn-light" href="{{ url_for('admin_school_students') }}">Back to students</a>
 <a class="btn btn-light" href="{{ url_for('admin_school_students_import') }}">Import another file</a></p>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function(){
   var btn = document.getElementById('downloadCreds');
   if (!btn) return;

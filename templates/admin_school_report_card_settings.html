@@ -15,7 +15,7 @@
     <div class="form-grid">
       <div class="field"><label for="head_title">Title</label>
         {% set known = settings.head_title in titles %}
-        <select id="head_title" name="head_title" onchange="document.getElementById('customTitle').hidden = this.value !== '__other__'">
+        <select id="head_title" name="head_title" data-show-when="__other__" data-show-target="customTitle">
           <option value="">Head of School (default)</option>
           {% for t in titles %}<option value="{{ t }}" {% if settings.head_title == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
           <option value="__other__" {% if settings.head_title and not known %}selected{% endif %}>Another title…</option>

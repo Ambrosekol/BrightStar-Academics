@@ -68,7 +68,7 @@
       <h2>Removing it</h2>
       <p>Parents immediately lose the "Pay online" option; nothing already paid is affected.</p>
     </div></div>
-    <form method="post" action="{{ url_for('admin_finance_paystack_clear') }}" onsubmit="return confirm('Remove this school\'s Paystack settings? Parents will no longer be able to pay online.');">
+    <form method="post" action="{{ url_for('admin_finance_paystack_clear') }}" data-confirm="Remove this school\'s Paystack settings? Parents will no longer be able to pay online.">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-light" type="submit">Remove Paystack settings</button>
     </form>

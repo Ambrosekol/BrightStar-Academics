@@ -15,9 +15,9 @@
   </div>
   <div class="assessment-question-actions">
     <a class="btn btn-light btn-small" href="{{url_for('admin_school_assessment_question_edit',assessment_id=assessment.id,question_id=q.id)}}">Edit</a>
-    <button type="button" class="btn btn-light btn-small" onclick="moveSchoolQuestion(this,-1)" {% if loop.first %}disabled{% endif %}>↑</button>
-    <button type="button" class="btn btn-light btn-small" onclick="moveSchoolQuestion(this,1)" {% if loop.last %}disabled{% endif %}>↓</button>
-    <form method="post" action="{{url_for('admin_school_assessment_question_delete',assessment_id=assessment.id,question_id=q.id)}}" onsubmit="return confirm('Delete this question?');">
+    <button type="button" class="btn btn-light btn-small" data-call="moveSchoolQuestion" data-call-arg="-1" {% if loop.first %}disabled{% endif %}>↑</button>
+    <button type="button" class="btn btn-light btn-small" data-call="moveSchoolQuestion" data-call-arg="1" {% if loop.last %}disabled{% endif %}>↓</button>
+    <form method="post" action="{{url_for('admin_school_assessment_question_delete',assessment_id=assessment.id,question_id=q.id)}}" data-confirm="Delete this question?">
       <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
       <button class="btn btn-danger btn-small" type="submit">Delete</button>
     </form>
@@ -31,7 +31,7 @@
   <input type="hidden" name="order" id="schoolQuestionOrder">
   <div class="form-actions" style="margin-top:14px"><button class="btn btn-light" type="submit">Save Question Order</button></div>
 </form>
-<script>
+<script nonce="{{ csp_nonce() }}">
 function moveSchoolQuestion(button,direction){
   const item=button.closest('.school-assessment-question');
   const list=document.getElementById('schoolQuestionList');

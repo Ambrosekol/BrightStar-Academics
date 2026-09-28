@@ -1,7 +1,7 @@
 {% extends 'admin_base.html' %}
 {% block title %}Student — {{student.first_name}} {{student.last_name}}{% endblock %}
 {% block content %}
-<div class="profile-hero"><div><a class="text-back" href="{{url_for('admin_school_students',class=current_enrol.class_name if current_enrol else '')}}">← Back to Students</a><div class="eyebrow">STUDENT PROFILE</div><h1>{{student.first_name}} {{student.middle_name or ''}} {{student.last_name}}</h1><div class="profile-subline"><span class="level-badge">{{current_enrol.class_name if current_enrol else 'Not enrolled'}}</span><span class="candidate-code">{{student.admission_no}}</span></div></div><div class="hero-actions"><a class="btn btn-light" href="{{url_for('admin_school_student_edit',sid=student.id)}}">Edit Student</a><button type="button" class="btn btn-primary" onclick="document.getElementById('modal-academic-record').showModal()">Check Performance →</button></div></div>
+<div class="profile-hero"><div><a class="text-back" href="{{url_for('admin_school_students',class=current_enrol.class_name if current_enrol else '')}}">← Back to Students</a><div class="eyebrow">STUDENT PROFILE</div><h1>{{student.first_name}} {{student.middle_name or ''}} {{student.last_name}}</h1><div class="profile-subline"><span class="level-badge">{{current_enrol.class_name if current_enrol else 'Not enrolled'}}</span><span class="candidate-code">{{student.admission_no}}</span></div></div><div class="hero-actions"><a class="btn btn-light" href="{{url_for('admin_school_student_edit',sid=student.id)}}">Edit Student</a><button type="button" class="btn btn-primary" data-modal-open="modal-academic-record">Check Performance →</button></div></div>
 
 <div class="profile-grid-3">
   <section class="card profile-card">
@@ -58,38 +58,38 @@
     <span class="qa-label">ACADEMIC</span>
     <h3>Term Results</h3>
     <p class="qa-stat">{{term_reports|length}} term{{'' if term_reports|length==1 else 's'}} recorded — Exam + CA out of 100 per subject.</p>
-    <button type="button" class="btn btn-light" onclick="document.getElementById('modal-term-results').showModal()">View</button>
+    <button type="button" class="btn btn-light" data-modal-open="modal-term-results">View</button>
   </div>
   <div class="quick-access-tile">
     <span class="qa-label">ACADEMIC</span>
     <h3>Academic Record</h3>
     <p class="qa-stat">{{completed}} result{{'' if completed==1 else 's'}} recorded{% if total_max %} · {{'%.1f'|format(pct)}}% overall{% endif %}.</p>
-    <button type="button" class="btn btn-light" id="modal-academic-record-btn" onclick="document.getElementById('modal-academic-record').showModal()">View</button>
+    <button type="button" class="btn btn-light" id="modal-academic-record-btn" data-modal-open="modal-academic-record">View</button>
   </div>
   <div class="quick-access-tile">
     <span class="qa-label">ACADEMIC</span>
     <h3>Assignments</h3>
     <p class="qa-stat">{{assignments|length}} assigned{% if assignment_avg is not none %} · {{'%.1f'|format(assignment_avg)}}% average{% else %} · not graded yet{% endif %}.</p>
-    <button type="button" class="btn btn-light" onclick="document.getElementById('modal-assignments').showModal()">View</button>
+    <button type="button" class="btn btn-light" data-modal-open="modal-assignments">View</button>
   </div>
   <div class="quick-access-tile">
     <span class="qa-label">ACADEMIC</span>
     <h3>Projects</h3>
     <p class="qa-stat">{{projects|length}} project{{'' if projects|length==1 else 's'}} assigned to this student.</p>
-    <button type="button" class="btn btn-light" onclick="document.getElementById('modal-projects').showModal()">View</button>
+    <button type="button" class="btn btn-light" data-modal-open="modal-projects">View</button>
   </div>
   <div class="quick-access-tile">
     <span class="qa-label">RECORD</span>
     <h3>Enrolment History</h3>
     <p class="qa-stat">{{enrollment_history|length}} school-journey entr{{'y' if enrollment_history|length==1 else 'ies'}} recorded.</p>
-    <button type="button" class="btn btn-light" onclick="document.getElementById('modal-enrolment-history').showModal()">View</button>
+    <button type="button" class="btn btn-light" data-modal-open="modal-enrolment-history">View</button>
   </div>
 </div>
 
 <dialog class="cr-modal" id="modal-term-results">
   <div class="cr-modal-head">
     <div><div class="section-label">TERM RESULTS</div><h2>Exam + Continuous Assessment, by term</h2><p>Each subject's term result is Continuous Assessment (tests, assignments and projects) plus the term's Exam, out of 100.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('modal-term-results').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-term-results">×</button>
   </div>
   <div class="cr-modal-body">
     {% for t in term_reports %}
@@ -115,7 +115,7 @@
 <dialog class="cr-modal" id="modal-academic-record">
   <div class="cr-modal-head">
     <div><div class="section-label">ACADEMIC RECORD</div><h2>Check performance</h2><p>All recorded academic results for this student, grouped by subject and assessment.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('modal-academic-record').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-academic-record">×</button>
   </div>
   <div class="cr-modal-body">
     <div class="mini-metric-grid">
@@ -137,7 +137,7 @@
 <dialog class="cr-modal" id="modal-assignments">
   <div class="cr-modal-head">
     <div><div class="section-label">ASSIGNMENTS</div><h2>Assignment performance</h2><p>{{assignments|length}} assigned · {% if assignment_avg is not none %}{{'%.1f'|format(assignment_avg)}}% average{% else %}No graded assignments yet{% endif %}</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('modal-assignments').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-assignments">×</button>
   </div>
   <div class="cr-modal-body">
     <div class="activity-list">
@@ -153,7 +153,7 @@
 <dialog class="cr-modal" id="modal-projects">
   <div class="cr-modal-head">
     <div><div class="section-label">PROJECTS</div><h2>Project performance</h2></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('modal-projects').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-projects">×</button>
   </div>
   <div class="cr-modal-body">
     <div class="activity-list">
@@ -169,7 +169,7 @@
 <dialog class="cr-modal" id="modal-enrolment-history">
   <div class="cr-modal-head">
     <div><div class="section-label">ENROLMENT HISTORY</div><h2>School journey</h2><p>Manual school-journal record. Early years use the school's own terms. CBT is not required for these history entries.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('modal-enrolment-history').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-enrolment-history">×</button>
   </div>
   <div class="cr-modal-body">
     <form method="post" action="{{url_for('admin_school_student_history_add',sid=student.id)}}" style="margin-bottom:18px;padding:16px;background:#f7f9fc;border-radius:12px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid two"><label><span>Enrollment level</span><select name="level_name" required><option value="">Select level</option><optgroup label="Daycare / Playgroup"><option>Daycare</option><option>Toddler 1</option><option>Toddler 2</option><option>Crèche</option></optgroup><optgroup label="Nursery"><option>Junior Reception</option><option>Middle Reception</option><option>Senior Reception</option></optgroup><optgroup label="Primary">{% for level in ['Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6'] %}<option>{{level}}</option>{% endfor %}</optgroup><optgroup label="College">{% for level in ['JSS 1','JSS 2','JSS 3','SSS 1','SSS 2','SSS 3'] %}<option>{{level}}</option>{% endfor %}</optgroup></select></label><label><span>Academic session</span><select name="session_id"><option value="">Not specified</option>{% for s in sessions %}<option value="{{s.id}}">{{s.name}}</option>{% endfor %}</select></label><label><span>Enrolled date</span><input type="date" name="enrolled_at"></label><label><span>Completed date</span><input type="date" name="completed_at"></label><label style="grid-column:1/-1"><span>Reason / movement note</span><input type="text" name="notes" placeholder="e.g. Promoted after assessment; remained in Senior Reception by school-parent agreement"></label></div><button class="btn btn-light" type="submit">Record class movement</button></form>
@@ -183,7 +183,7 @@
   </div>
 </dialog>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function(){
   var hashToModal={'#enrolment-history':'modal-enrolment-history','#academic-record':'modal-academic-record','#term-results':'modal-term-results'};
   var id=hashToModal[window.location.hash];

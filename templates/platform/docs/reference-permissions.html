@@ -28,7 +28,7 @@ the others or create its own.</p>
   {% endfor %}
 </section>
 {% endfor %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var box = document.getElementById('filter');
   box.addEventListener('input', function () {

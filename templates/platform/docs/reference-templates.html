@@ -21,7 +21,7 @@ colours; a page never hard-codes a school's name or logo, it reads <code>school_
 <div class="table-scroll"><table><tr><th>File</th><th>Size</th></tr>
 {% for s in ref.static_files() %}<tr class="ref-item" data-text="{{ s.path|lower }}"><td><code>{{ s.path }}</code></td><td class="ref-meta">{{ s.kb }} KB</td></tr>{% endfor %}
 </table></div></section>
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var box = document.getElementById('filter');
   box.addEventListener('input', function () {

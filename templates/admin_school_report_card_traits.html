@@ -24,16 +24,16 @@
 <section class="card modern-form">
   <form method="get" class="rc-filter">
     <div class="field"><label for="class_id">Class</label>
-      <select id="class_id" name="class_id" onchange="this.form.submit()">
+      <select id="class_id" name="class_id" data-autosubmit>
         <option value="">Choose a class</option>
         {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
       </select></div>
     <div class="field"><label for="session_id">Session</label>
-      <select id="session_id" name="session_id" onchange="this.form.submit()">
+      <select id="session_id" name="session_id" data-autosubmit>
         {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
       </select></div>
     <div class="field"><label for="term">Term</label>
-      <select id="term" name="term" onchange="this.form.submit()">
+      <select id="term" name="term" data-autosubmit>
         {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></div>
     <a class="btn btn-light" href="{{ url_for('admin_school_report_cards', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Back to report cards</a>

@@ -166,7 +166,7 @@
      <a class="btn" href="{{ url_for('platform_dashboard') }}">Cancel</a></p>
 </form>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
   // Suggest the code from the name until the operator types their own, and keep
   // the portal address preview in step with it.
   (function () {

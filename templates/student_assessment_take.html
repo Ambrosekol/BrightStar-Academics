@@ -65,7 +65,7 @@
     </form>
   </section>
 </main>
-<script>
+<script nonce="{{ csp_nonce() }}">
 let remaining={{remaining}};
 const timer=document.getElementById('studentTimer');
 const form=document.getElementById('studentAssessmentForm');

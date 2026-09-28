@@ -696,6 +696,20 @@ def csrf_token():
         session['_csrf_token']=token
     return token
 
+
+def csp_nonce():
+    """A fresh, unguessable value for this response's own inline <script> tags.
+
+    Generated once per request and reused by every template that calls it, so it matches the
+    single value apply_security_headers puts in the Content-Security-Policy header. An inline
+    script without this exact value cannot run, which is what lets script-src drop 'unsafe-inline'
+    (see recommendations.html's Hardening section) while inline scripts still work: the handful
+    left after static/interactions.js took over every plain onclick/onchange/onsubmit attribute.
+    """
+    if 'csp_nonce' not in g:
+        g.csp_nonce=secrets.token_urlsafe(16)
+    return g.csp_nonce
+
 @app.context_processor
 def inject_csrf_token():
     admin=current_admin()
@@ -712,6 +726,7 @@ def inject_csrf_token():
                 app.logger.exception('Could not compute the unallocated-payments banner')
     return {
         'csrf_token': csrf_token,
+        'csp_nonce': csp_nonce,
         'idempotency_key': idempotency_key,
         'connectivity_banner': connectivity_banner,
         'current_admin': admin,
@@ -845,7 +860,12 @@ def apply_security_headers(response):
         response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma']='no-cache'
     response.headers.setdefault('Permissions-Policy','camera=(), microphone=(), geolocation=()')
-    response.headers.setdefault('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
+    # script-src trusts only 'self' (external files) and this one response's own nonce - never
+    # 'unsafe-inline' - so an injected <script> a browser was not handed this exact, unguessable
+    # value for can never run. style-src keeps 'unsafe-inline': every page's colours come from a
+    # school's own choice rendered into a <style> block (core/theme.py), already restricted to
+    # #rrggbb before it ever reaches one, where a nonce would buy nothing extra.
+    response.headers.setdefault('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-" + csp_nonce() + "'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
     if ENVIRONMENT in ('production','prod'):
         response.headers.setdefault('Strict-Transport-Security','max-age=31536000; includeSubDomains')
     # The heartbeat only exists on a school's portal. A stale school sign-in can still be in
@@ -855,7 +875,7 @@ def apply_security_headers(response):
         try:
             body=response.get_data(as_text=True)
             if 'presence_heartbeat' not in body:
-                body=body.replace('</body>', "<script>setInterval(function(){fetch('/presence/heartbeat',{credentials:'same-origin'}).catch(function(){});},30000);</script></body>")
+                body=body.replace('</body>', f"<script nonce=\"{csp_nonce()}\">setInterval(function(){{fetch('/presence/heartbeat',{{credentials:'same-origin'}}).catch(function(){{}});}},30000);</script></body>")
                 response.set_data(body)
         except Exception:
             pass

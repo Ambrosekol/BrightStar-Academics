@@ -10,7 +10,7 @@
 <dialog class="cr-modal" id="projectsModal">
   <div class="cr-modal-head">
     <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} Projects</h2><p>{{projects|length}} project{{'' if projects|length==1 else 's'}} shown.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('projectsModal').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="projectsModal">×</button>
   </div>
   <div class="cr-modal-body">
     <form class="register-search" method="get" style="margin-bottom:16px">
@@ -41,6 +41,6 @@
     </div>
   </div>
 </dialog>
-<script>document.getElementById('projectsModal')?.showModal();</script>
+<script nonce="{{ csp_nonce() }}">document.getElementById('projectsModal')?.showModal();</script>
 {% endif %}
 {% endblock %}

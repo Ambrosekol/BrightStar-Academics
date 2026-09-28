@@ -68,13 +68,13 @@
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="entry_group" value="{{ r.group }}">
                 <input type="hidden" name="subject" value="{{ r.subject }}">
-                <select name="source" onchange="this.form.querySelector('.custom-fields').hidden = this.value !== 'custom'">
+                <select name="source" data-show-when="custom" data-show-target="admin-practice-custom-fields-{{ loop.index }}">
                   <option value="last_session" {% if r.setting.source == 'last_session' %}selected{% endif %}>
                     Last session&rsquo;s examination{% if r.last_session %} ({{ r.last_session }}){% else %} (none yet){% endif %}
                   </option>
                   <option value="custom" {% if r.setting.source == 'custom' %}selected{% endif %}>Custom questions</option>
                 </select>
-                <span class="custom-fields" {% if r.setting.source != 'custom' %}hidden{% endif %}>
+                <span class="custom-fields" id="admin-practice-custom-fields-{{ loop.index }}" {% if r.setting.source != 'custom' %}hidden{% endif %}>
                   <select name="bank_id">
                     <option value="">Choose a question bank</option>
                     {% for b in r.banks %}

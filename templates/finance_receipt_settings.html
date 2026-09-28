@@ -22,7 +22,7 @@
     <div class="sig-current">
       {% if signature_path %}
         <img src="{{ url_for('static',filename=signature_path) }}" alt="Authorised signature">
-        <form method="post" action="{{ url_for('admin_finance_receipt_settings') }}" onsubmit="return confirm('Remove the authorised signature? Receipts will show a blank signature line until a new one is set.');">
+        <form method="post" action="{{ url_for('admin_finance_receipt_settings') }}" data-confirm="Remove the authorised signature? Receipts will show a blank signature line until a new one is set.">
           <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="action" value="remove">
           <button class="btn btn-light" type="submit">Remove signature</button>
@@ -66,7 +66,7 @@
 
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function(){
   var canvas=document.getElementById('sigPad');
   var ctx=canvas.getContext('2d');

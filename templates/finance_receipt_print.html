@@ -9,6 +9,6 @@
 </head>
 <body>
 {% include 'includes/_receipt_sheet.html' %}
-<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));</script>
+<script nonce="{{ csp_nonce() }}">window.addEventListener('load',()=>setTimeout(()=>window.print(),250));</script>
 </body>
 </html>

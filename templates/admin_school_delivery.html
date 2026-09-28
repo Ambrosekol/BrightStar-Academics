@@ -71,7 +71,7 @@
       {% endif %}
       {% if email.own_set %}
       <form method="post" action="{{ url_for('admin_school_delivery_email_clear') }}"
-            data-confirm="Remove your school's own email settings? The school will use the platform's shared account, if there is one." onsubmit="return confirm(this.dataset.confirm);">
+            data-confirm="Remove your school's own email settings? The school will use the platform's shared account, if there is one.">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-light" type="submit">Remove my settings</button>
       </form>
@@ -118,7 +118,7 @@
       {% endif %}
       {% if wa.own_set %}
       <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_clear') }}"
-            data-confirm="Remove your school's own WhatsApp settings? The school will use the platform's shared account, if there is one." onsubmit="return confirm(this.dataset.confirm);">
+            data-confirm="Remove your school's own WhatsApp settings? The school will use the platform's shared account, if there is one.">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-light" type="submit">Remove my settings</button>
       </form>

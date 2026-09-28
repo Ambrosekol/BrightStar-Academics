@@ -44,7 +44,7 @@
   </form>
 </main>
 {% if seconds %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 let remaining={{seconds}};
 const timer=document.getElementById('practiceTimer'), form=document.getElementById('practiceForm');
 function tick(){

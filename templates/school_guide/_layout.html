@@ -32,7 +32,7 @@
 
   <aside class="guide-toc" aria-label="On this page"><div class="guide-toc-title">On this page</div><div id="guideToc"></div></aside>
 </div>
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var article = document.getElementById('guideArticle'), toc = document.getElementById('guideToc');
   if (!article || !toc) return;

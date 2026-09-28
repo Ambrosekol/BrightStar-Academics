@@ -17,7 +17,7 @@
   <div class="sig-current">
     {% if signature_path %}
       <img src="{{ url_for('static', filename=signature_path) }}" alt="{{ sig_subject }}">
-      <form method="post" action="{{ sig_action }}" onsubmit="return confirm('Remove this signature? Report cards will show a blank signature line until a new one is added.');">
+      <form method="post" action="{{ sig_action }}" data-confirm="Remove this signature? Report cards will show a blank signature line until a new one is added.">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="remove">
         <button class="btn btn-light" type="submit">Remove signature</button>
@@ -54,7 +54,7 @@
   </form>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var canvas = document.getElementById('sigPad'), ctx = canvas.getContext('2d'), drawing = false, hasDrawn = false;
   ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12233a';

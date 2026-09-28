@@ -352,7 +352,7 @@
   </form>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function(){
   // Live character sanitisers: strip a character the moment it's typed rather
   // than waiting for a submit-time error, so the field is never briefly wrong.

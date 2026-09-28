@@ -25,7 +25,7 @@ Blueprint objects, so every endpoint name is simply the function's name and neve
   {% endfor %}
 </section>
 {% endfor %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var box = document.getElementById('filter');
   box.addEventListener('input', function () {

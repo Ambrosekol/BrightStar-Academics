@@ -24,7 +24,7 @@ docstring (the paragraph its author wrote at the top) and its top-level classes 
   {% endfor %}
 </section>
 {% endfor %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var box = document.getElementById('filter');
   box.addEventListener('input', function () {

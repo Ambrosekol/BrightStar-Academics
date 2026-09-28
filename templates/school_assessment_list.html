@@ -10,7 +10,7 @@
 <dialog class="cr-modal" id="assessmentListModal">
   <div class="cr-modal-head">
     <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} {{title}}</h2><p>{{assessments|length}} shown.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" onclick="document.getElementById('assessmentListModal').close()">×</button>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assessmentListModal">×</button>
   </div>
   <div class="cr-modal-body">
     <form class="register-search" method="get" style="margin-bottom:16px">
@@ -31,7 +31,7 @@
             <td>{{a.question_count}}</td>
             <td>{{a.duration_minutes}} min</td>
             <td><span class="role-chip">{{'Active' if a.active else 'Draft / Closed'}}</span></td>
-            <td><div class="row-actions"><a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=a.id)}}">Open</a><form method="post" action="{{url_for('admin_school_assessment_delete',assessment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" onclick="return confirm('Delete this assessment?');">Delete</button></form></div></td>
+            <td><div class="row-actions"><a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=a.id)}}">Open</a><form method="post" action="{{url_for('admin_school_assessment_delete',assessment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" data-confirm="Delete this assessment?">Delete</button></form></div></td>
           </tr>
           {% else %}
           <tr><td colspan="6"><div class="empty-state">No {{title|lower}} found in {{selected_class}}.</div></td></tr>
@@ -41,6 +41,6 @@
     </div>
   </div>
 </dialog>
-<script>document.getElementById('assessmentListModal')?.showModal();</script>
+<script nonce="{{ csp_nonce() }}">document.getElementById('assessmentListModal')?.showModal();</script>
 {% endif %}
 {% endblock %}

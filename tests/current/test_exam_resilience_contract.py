@@ -15,7 +15,7 @@ EXAM_HTML = (ROOT / "templates" / "exam.html").read_text(encoding="utf-8")
 
 
 def _script():
-    match = re.search(r"<script>\s*\nconst qid=.*?\n</script>", EXAM_HTML, re.S)
+    match = re.search(r"<script[^>]*>\s*\nconst qid=.*?\n</script>", EXAM_HTML, re.S)
     assert match, "templates/exam.html lost its answer-autosave script"
     return match.group(0)
 

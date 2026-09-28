@@ -59,7 +59,7 @@
     </p>
     <div class="err-actions">
       {% if logged_in %}
-      <button type="button" class="err-btn err-btn-primary" onclick="crGoBack('{{ fallback_url }}')">← Go Back</button>
+      <button type="button" class="err-btn err-btn-primary" data-go-back="{{ fallback_url }}">← Go Back</button>
       {% else %}
       <a class="err-btn err-btn-primary" href="{{ url_for('index') }}">← Back to Homepage</a>
       {% endif %}
@@ -70,7 +70,7 @@
     </div>
     <div class="err-footer">{{school_title}}</div>
   </div>
-<script>
+<script nonce="{{ csp_nonce() }}">
   function crGoBack(fallback){
     var ref=document.referrer;
     if(ref && ref.indexOf(window.location.origin)===0 && ref!==window.location.href){
@@ -82,5 +82,5 @@
     }
   }
 </script>
-</body>
+<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
 </html>
