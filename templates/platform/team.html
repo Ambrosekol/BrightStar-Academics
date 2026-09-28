@@ -14,7 +14,7 @@
   <section aria-label="Admins">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
+        <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Settings</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
         <tbody>
           {% for a in admins if a.active %}
             <tr>
@@ -32,6 +32,25 @@
                     <input type="hidden" name="allow" value="{{ 0 if a.docs_access else 1 }}">
                     <button class="btn btn-sm" type="submit" title="{{ 'Withdraw' if a.docs_access else 'Grant' }} access to the documentation">{{ 'Can read · withdraw' if a.docs_access else 'No access · grant' }}</button>
                   </form>
+                {% endif %}
+              </td>
+              <td>
+                {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always, fully</span>
+                {% else %}
+                  <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+                    <form method="post" action="{{ url_for('platform_team_settings_access', admin_id=a.id) }}" style="margin:0">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="field" value="access">
+                      <input type="hidden" name="allow" value="{{ 0 if a.settings_access else 1 }}">
+                      <button class="btn btn-sm" type="submit" title="{{ 'Withdraw' if a.settings_access else 'Grant' }} access to Settings">{{ 'Settings · withdraw' if a.settings_access else 'No Settings · grant' }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('platform_team_settings_access', admin_id=a.id) }}" style="margin:0">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="field" value="high_trust">
+                      <input type="hidden" name="allow" value="{{ 0 if a.settings_high_trust else 1 }}">
+                      <button class="btn btn-sm" type="submit" title="{{ 'Withdraw' if a.settings_high_trust else 'Grant' }} highly-trusted access (High/Critical settings, key actions)">{{ 'Highly trusted · withdraw' if a.settings_high_trust else 'Not highly trusted · grant' }}</button>
+                    </form>
+                  </div>
                 {% endif %}
               </td>
               <td class="muted">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>

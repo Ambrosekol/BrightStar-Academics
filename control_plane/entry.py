@@ -40,10 +40,13 @@ def _hash_token(raw):
 
 
 def _as_dict(row):
+    is_super = row.role == ROLE_SUPER
     return {'id': row.id, 'username': row.username, 'display_name': row.display_name,
             'email': row.email, 'password_must_change': row.password_must_change,
-            'role': row.role, 'is_super': row.role == ROLE_SUPER,
-            'docs_access': row.role == ROLE_SUPER or bool(row.docs_access)}
+            'role': row.role, 'is_super': is_super,
+            'docs_access': is_super or bool(row.docs_access),
+            'settings_access': is_super or bool(row.settings_access),
+            'settings_high_trust': is_super or bool(row.settings_high_trust)}
 
 
 def authenticate_platform_admin(username, password, ip=None):

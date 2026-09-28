@@ -1,0 +1,168 @@
+{% extends "platform/base.html" %}
+{% block title %}Terminal actions{% endblock %}
+{% block body %}
+<p class="crumb"><a href="{{ url_for('platform_settings') }}">&larr; Settings</a></p>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Platform settings</div>
+    <h1>Terminal actions</h1>
+    <p class="lede">Everything <code>python -m control_plane</code> can do, from here, except creating the
+      registry and creating the super admin — those stay a one-time, terminal-only bootstrap. Actions about a key
+      or a database connection string need the highly-trusted tier; the rest are open to anyone with Settings
+      access.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('platform_settings_rotate_key') }}">Rotate the delivery key &rarr;</a>
+</div>
+
+<div class="panel">
+  <div class="action-panel">
+    <h3>Upgrade schemas</h3>
+    <p class="muted">Bring one school's tables up to date, or every school's at once. Upgrading every school also
+      records a new launch (everyone signed in must sign in again, except people mid-exam) — the same as a normal
+      deploy step.</p>
+    <form method="post" action="{{ url_for('platform_settings_upgrade') }}"
+          data-confirm="Upgrade the selected school(s)? Upgrading every school also signs everyone out, except people mid-exam.">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div><label for="upgrade-code">School</label>
+        <select id="upgrade-code" name="code">
+          <option value="">Every school</option>
+          {% for i in infos %}<option value="{{ i.slug }}">{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn" type="submit">Upgrade</button>
+    </form>
+  </div>
+
+  <div class="action-panel">
+    <h3>Record a new launch</h3>
+    <p class="muted">Sign everyone out, everywhere, except people in the middle of an exam — without restarting
+      the application.</p>
+    <form method="post" action="{{ url_for('platform_settings_new_launch') }}"
+          data-confirm="Sign everyone out, except people mid-exam?">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Record new launch</button>
+    </form>
+  </div>
+
+  <div class="action-panel">
+    <h3>Sweep stuck jobs</h3>
+    <p class="muted">Give every stuck background job in one school (or every school) another try. Safe to run any
+      time — ordinary traffic already does this opportunistically; this is only needed for a school quiet enough
+      that nothing else would.</p>
+    <form method="post" action="{{ url_for('platform_settings_sweep_jobs') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div><label for="sweep-code">School</label>
+        <select id="sweep-code" name="code">
+          <option value="">Every school</option>
+          {% for i in infos %}<option value="{{ i.slug }}">{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn" type="submit">Sweep</button>
+    </form>
+  </div>
+
+  <div class="action-panel">
+    <h3>Drop retired tables</h3>
+    <p class="muted">The removed website editor left three tables behind in older school databases. An empty one
+      is dropped automatically on upgrade; one that still holds rows waits here for a decision. Check first —
+      nothing is dropped until you ask for it specifically.</p>
+    <form method="get" action="{{ url_for('platform_settings_actions') }}">
+      <div><label for="check-code">School</label>
+        <select id="check-code" name="dropcheck">
+          <option value="all">Every school</option>
+          {% for i in infos %}<option value="{{ i.slug }}" {% if dropcheck == i.slug %}selected{% endif %}>{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-sm" type="submit">Check what's there</button>
+    </form>
+    {% if drop_results %}
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>School</th><th>Retired tables</th><th></th></tr></thead>
+          <tbody>
+            {% for info, held in drop_results %}
+              <tr>
+                <td>{{ info.name }} <span class="muted mono">({{ info.slug }})</span></td>
+                <td>{% if held %}{% for table, rows in held.items() %}<div class="mono">{{ table }}: {{ rows }} row(s)</div>{% endfor %}{% else %}<span class="muted">nothing left over</span>{% endif %}</td>
+                <td>
+                  {% if held %}
+                    <form method="post" action="{{ url_for('platform_settings_drop_retired') }}"
+                          data-confirm="Drop {{ info.name }}'s retired tables for good? Their rows are lost.">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="code" value="{{ info.slug }}">
+                      <button class="btn btn-sm btn-danger" type="submit">Drop for good</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="action-panel">
+    <h3>Export a school's data</h3>
+    <p class="muted">Everything one school owns — a full database dump plus its own uploads folder — in one new
+      folder on the server, with a README on restoring it. What a school leaving is owed. Contains sensitive data:
+      copy it somewhere safe and remove it from the server afterwards.</p>
+    <form method="post" action="{{ url_for('platform_settings_export') }}"
+          data-confirm="Export this school's complete data to the server's disk? It will contain everything the school owns, including secrets — treat the export folder as sensitive.">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div><label for="export-code">School</label>
+        <select id="export-code" name="code" required>
+          {% for i in infos %}<option value="{{ i.slug }}">{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn" type="submit">Export</button>
+    </form>
+  </div>
+
+  <div class="action-panel">
+    <h3>Database role <span class="tag tag-critical" style="margin-left:6px">Highly trusted</span></h3>
+    <p class="muted">Create (or rotate the password of) a PostgreSQL role that owns exactly one school's own
+      database, separate from every other school's. Creating or rotating this alone changes nothing about which
+      role the school actually uses — set that below afterwards.</p>
+    {% if high_trust %}
+      <form method="post" action="{{ url_for('platform_settings_create_db_role') }}"
+            data-confirm="Create or rotate this school's own database role? The new connection URL is shown once.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div><label for="role-code">School</label>
+          <select id="role-code" name="code" required>
+            {% for i in infos %}<option value="{{ i.slug }}">{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+          </select>
+        </div>
+        <div><label for="role-rotate" style="display:flex;align-items:center;gap:8px;margin-top:1.6rem">
+            <input type="checkbox" id="role-rotate" name="rotate" value="1"> Give it a new password (it already exists)</label></div>
+        <button class="btn" type="submit">Create / rotate</button>
+      </form>
+    {% else %}
+      <p class="muted">Only the super admin or a highly-trusted admin may run this.</p>
+    {% endif %}
+  </div>
+
+  <div class="action-panel">
+    <h3>Point a school at a database <span class="tag tag-critical" style="margin-left:6px">Highly trusted</span></h3>
+    <p class="muted">Change which connection string a school uses — a literal PostgreSQL URL, or
+      <code>env:VARIABLE_NAME</code> to read one from the environment instead of storing it here. Get this wrong
+      and the school cannot be reached until it is fixed.</p>
+    {% if high_trust %}
+      <form method="post" action="{{ url_for('platform_settings_set_db_url') }}"
+            data-confirm="Point this school at a different database? It stops using its current one immediately.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div><label for="dburl-code">School</label>
+          <select id="dburl-code" name="code" required>
+            {% for i in infos %}<option value="{{ i.slug }}">{{ i.name }} ({{ i.slug }})</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:2;min-width:260px"><label for="dburl-url">Connection URL or env:NAME</label>
+          <input type="text" id="dburl-url" name="url" class="mono" autocomplete="off" spellcheck="false" required></div>
+        <button class="btn" type="submit">Point school here</button>
+      </form>
+    {% else %}
+      <p class="muted">Only the super admin or a highly-trusted admin may run this.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

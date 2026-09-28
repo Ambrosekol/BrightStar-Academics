@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Console{% endblock %} &middot; Brightstars Academics</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='4') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='5') }}">
 </head>
 <body>
 {% from "platform/_icons.html" import icon %}
@@ -25,6 +25,7 @@
         <a href="{{ url_for('platform_team') }}" {% if here.startswith('platform_team') %}aria-current="page"{% endif %}>{{ icon('team') }}Team</a>
       {% endif %}
       <a href="{{ url_for('platform_activity') }}" {% if here == 'platform_activity' %}aria-current="page"{% endif %}>{{ icon('activity') }}Activity</a>
+      {% if me and me.settings_access %}<a href="{{ url_for('platform_settings') }}" {% if here.startswith('platform_settings') %}aria-current="page"{% endif %}>{{ icon('settings') }}Settings</a>{% endif %}
       {% if me and me.docs_access %}<a href="{{ url_for('docs_home') }}" {% if here.startswith('docs_') %}aria-current="page"{% endif %}>{{ icon('docs') }}Docs</a>{% endif %}
       <a href="{{ url_for('platform_password') }}" {% if here == 'platform_password' %}aria-current="page"{% endif %}>{{ icon('key') }}Password</a>
     </nav>

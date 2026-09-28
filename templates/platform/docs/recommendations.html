@@ -21,7 +21,8 @@
   one school's database and nothing else and prints its connection string;
   <code>set-db-url CODE URL</code> is the separate, deliberate step that actually points the registry
   at it (a literal URL, or the already-supported <code>env:VARIABLE_NAME</code> indirection, so a live
-  password need not sit in the registry's own database). {{ file('control_plane/provisioning.py') }}.</li>
+  password need not sit in the registry's own database). {{ file('control_plane/provisioning.py') }}.
+  Both are also on the Settings page's Terminal actions, for a highly-trusted admin.</li>
   <li><strong>script-src no longer allows <code>'unsafe-inline'</code>.</strong> Every onclick/onchange/onsubmit
   attribute in every template - about a hundred of them - was moved to {{ file('static/interactions.js') }}
   (a handful of delegated, data-*-attribute-driven listeners); every inline <code>&lt;script&gt;</code>
@@ -45,7 +46,10 @@
   school's own secrets under the old key and re-encrypts them under the new one first;
   <code>python -m control_plane rotate-delivery-key OLD NEW [CODE]</code> runs it across every school (or
   one), so the environment variable itself is only ever changed once every school shows nothing
-  unreadable.</li>
+  unreadable. The Settings page's rotation wizard (a highly-trusted admin only) is the same operation from
+  the portal: it runs the move, will not offer to set the variable until every school shows 0 skipped, and
+  re-checks that itself at the moment the variable is actually set, rather than trusting an earlier click.
+  {{ file('control_plane/settings_console.py') }}.</li>
 </ul>
 
 <h2 id="scale">Scale</h2>

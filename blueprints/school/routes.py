@@ -37,6 +37,7 @@ from core.security import (
 )
 from core.uploads import _save_image_upload
 from core.notifications import _notify_guardians_of_school_work
+from blueprints.school.report_card_data import class_term_stats, grade_for
 from blueprints.school.result_notices import announce_ready_report_cards
 from blueprints.school.results_records import results_return_url
 from blueprints.parents.helpers import _new_parent_password
@@ -73,7 +74,43 @@ def admin_school_home():
         'tests':count(SchoolAssessment, SchoolAssessment.assessment_type=='test'),
         'examinations':count(SchoolAssessment, SchoolAssessment.assessment_type=='examination'),
     }
-    return render_template('admin_school_home.html',stats=stats,onboarding=onboarding_status())
+    # Top of the Class: the highest-scoring student per class this term, scoped the same way
+    # every other class-facing page in this portal is (School Admin sees every class; a
+    # class-scoped teacher only sees their own). Skipped entirely when there is nothing to show,
+    # so a teacher with no classes (or a school with no current session) never pays for it.
+    admin=current_admin()
+    session_row=_school_current_session()
+    term=request.args.get('term','').strip()
+    term=term if term in ACADEMIC_TERMS else ACADEMIC_TERMS[0]
+    top_of_class=[]
+    pending_classes=[]
+    if admin and session_row:
+        visible_classes=[c for c in db.session.scalars(
+            select(SchoolClass).where(SchoolClass.active==1).order_by(SchoolClass.level_order)).all()
+            if _school_class_allowed(admin['id'],c.id)]
+        for cls in visible_classes:
+            class_stats=class_term_stats(cls.id,session_row.id,term)
+            best_id,best_pct=None,None
+            for sid,entry in class_stats['students'].items():
+                pct=entry.get('percentage')
+                if pct is None:
+                    continue
+                if best_pct is None or pct>best_pct:
+                    best_id,best_pct=sid,pct
+            if best_id is None:
+                pending_classes.append(cls.name)
+                continue
+            student=db.session.get(Student,best_id)
+            student_name=' '.join(p for p in (student.first_name,student.middle_name,student.last_name)
+                                  if p and str(p).strip()) if student else ''
+            letter,_remark=grade_for(best_pct)
+            top_of_class.append({'class_id':cls.id,'class_name':cls.name,'student_name':student_name,
+                                 'percentage':best_pct,'grade':letter})
+        top_of_class.sort(key=lambda r:r['percentage'],reverse=True)
+    return render_template('admin_school_home.html',stats=stats,onboarding=onboarding_status(),
+                           top_of_class=top_of_class,top_of_class_pending=pending_classes,
+                           top_of_class_term=term,
+                           top_of_class_session=session_row.name if session_row else '')
 
 @app.route('/admin/school/students')
 @admin_required

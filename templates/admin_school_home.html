@@ -159,5 +159,42 @@
 
 </div>
 
+<section class="wd-section">
+  <div class="wd-section__head">
+    <div>
+      <h2 class="wd-section__title">Top of the Class — {{ top_of_class_term }}{% if top_of_class_session %}, {{ top_of_class_session }}{% endif %}</h2>
+      <p class="wd-section__desc">The highest-scoring student in each class this term, once its report card results are released.</p>
+    </div>
+  </div>
+  <div class="ui-panel">
+    {% if top_of_class %}
+    <ol class="wd-rank-list">
+      {% for row in top_of_class %}
+      {% set cls = 'good' if row.percentage >= 70 else ('fair' if row.percentage >= 50 else 'poor') %}
+      <li class="wd-rank-row{% if loop.index == 1 %} wd-rank-row--1{% endif %}">
+        <span class="wd-rank-pos">{{ loop.index }}</span>
+        <span class="wd-rank-avatar">{{ row.student_name[:1]|upper if row.student_name else '?' }}</span>
+        <span class="wd-rank-main">
+          <span class="wd-rank-name">{{ row.student_name }}</span>
+          <span class="wd-rank-meta">{{ row.class_name }}</span>
+        </span>
+        <span class="wd-rank-score">
+          <strong class="tone-{{ cls }}">{{ '%.1f'|format(row.percentage) }}%</strong>
+          <small>Grade {{ row.grade }}</small>
+        </span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% if top_of_class_pending %}
+    <div class="ui-panel__body">
+      <p class="ui-panel__desc">No released results yet for: {{ top_of_class_pending|join(', ') }}.</p>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="ui-empty">{{ icon('podium') }}<p>{% if top_of_class_pending %}No class has a released report card for {{ top_of_class_term }} yet.{% else %}No classes to show yet.{% endif %}</p></div>
+    {% endif %}
+  </div>
+</section>
+
 <div class="ui-alert"><strong>Portal boundary.</strong> This workspace is for enrolled school students; entrance-examination candidates stay in the separate Entrance Examination workspace. Students sign in through the shared school sign-in page, which routes them to the Student Portal.</div>
 {% endblock %}

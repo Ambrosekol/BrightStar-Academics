@@ -110,6 +110,13 @@ class PlatformAdmin(PlatformBase):
     # Whether this admin may read /docs. The super admin always may; the super admin grants it to
     # anyone else, one admin at a time, from the Team page.
     docs_access = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    # Whether this admin may open /platform/settings at all, and edit its Low/Medium-risk
+    # environment variables and run its non-key terminal actions. The super admin always may.
+    settings_access = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    # Whether this admin (given settings_access) may also edit High/Critical-risk environment
+    # variables and run the key-related actions (rotate-delivery-key, create-db-role --rotate,
+    # set-db-url) — the platform's "highly trusted admin" tier. The super admin always may.
+    settings_high_trust = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     active = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     password_must_change = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     created_at = mapped_column(Text, nullable=False)

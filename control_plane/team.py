@@ -62,13 +62,17 @@ ACTION_LABELS = {
     'platform_admin.restore': 'Restored a platform admin',
     'platform_admin.password_reset': "Reset an admin's password",
     'platform_admin.docs_access': "Changed an admin's access to the documentation",
+    'platform_admin.settings_access': "Changed an admin's access to Settings",
+    'platform_config.variable_changed': 'Changed an environment variable',
+    'platform_config.action_run': 'Ran a terminal action from the portal',
     'platform_admin.school_access_revoked': "Revoked a removed admin's access inside schools",
     'platform_admin.promote': 'Became the super admin',
     'platform_admin.adopt': 'Adopted admins from an installation',
 }
 # Entries a super admin should notice at a glance.
 ALERT_ACTIONS = {'tenant.suspended', 'platform_admin.login_failed', 'platform_admin.login_refused',
-                 'platform_admin.remove', 'platform_admin.school_access_revoked'}
+                 'platform_admin.remove', 'platform_admin.school_access_revoked',
+                 'platform_config.variable_changed', 'platform_config.action_run'}
 
 
 def category_of(action):
@@ -113,6 +117,8 @@ def list_admins():
             'id': a.id, 'username': a.username, 'display_name': a.display_name, 'email': a.email,
             'role': a.role, 'is_super': a.role == ROLE_SUPER, 'active': bool(a.active),
             'docs_access': a.role == ROLE_SUPER or bool(a.docs_access),
+            'settings_access': a.role == ROLE_SUPER or bool(a.settings_access),
+            'settings_high_trust': a.role == ROLE_SUPER or bool(a.settings_high_trust),
             'created_at': a.created_at, 'last_login_at': a.last_login_at,
             'removed_at': a.removed_at, 'removed_by': a.removed_by,
             'must_change': bool(a.password_must_change),
@@ -249,6 +255,37 @@ def set_docs_access(admin_id, allowed, actor, actor_id):
         admin.docs_access = 1 if allowed else 0
         audit(session, 'platform_admin.docs_access', f'{admin.username}: {"granted" if allowed else "withdrawn"}',
               None, actor, actor_id)
+        username = admin.username
+        session.commit()
+    return username
+
+
+def set_settings_access(admin_id, access=None, high_trust=None, actor='cli', actor_id=None):
+    """Grant or withdraw one admin's access to Settings (``/platform/settings``), and/or their
+    "highly trusted" tier within it. Either argument left ``None`` leaves that flag as it is.
+
+    The super admin always has both, so there is nothing to grant or revoke for them. Withdrawing
+    plain access also withdraws high trust (there is no page left to be trusted with); granting
+    high trust also grants plain access (being trusted with more implies being let in at all).
+    Returns the admin's username.
+    """
+    with platform_session() as session:
+        admin = _target(session, admin_id)
+        if admin.role == ROLE_SUPER:
+            raise ProvisioningError('The super admin always has full access to Settings.')
+        if not admin.active:
+            raise ProvisioningError(f'{admin.username} has been removed; restore them first.')
+        if access is not None:
+            admin.settings_access = 1 if access else 0
+            if not access:
+                admin.settings_high_trust = 0
+        if high_trust is not None:
+            admin.settings_high_trust = 1 if high_trust else 0
+            if high_trust:
+                admin.settings_access = 1
+        now_state = 'highly trusted' if admin.settings_high_trust else (
+            'granted' if admin.settings_access else 'withdrawn')
+        audit(session, 'platform_admin.settings_access', f'{admin.username}: {now_state}', None, actor, actor_id)
         username = admin.username
         session.commit()
     return username

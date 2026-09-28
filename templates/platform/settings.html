@@ -1,0 +1,49 @@
+{% extends "platform/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Platform settings</div>
+    <h1>Settings</h1>
+    <p class="lede">Every system-wide environment variable this deployment reads, what each is for, and what
+      changing it actually does. Low and Medium risk are yours to edit; High and Critical need the highly-trusted
+      tier. Every change here is written to <a href="{{ url_for('platform_activity') }}">Activity</a>.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('platform_settings_actions') }}">Terminal actions &amp; key rotation &rarr;</a>
+</div>
+
+{% for category in categories %}
+  <h2>{{ category }}</h2>
+  <div class="panel">
+    {% for v in grouped[category] %}
+      {% set r = rows[v.name] %}
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">{{ v.name }}</div>
+          <p class="setting-purpose">{{ v.purpose }}</p>
+          <div class="setting-meta">
+            <span class="tag tag-{{ 'ok' if v.risk == 'low' else ('warn' if v.risk == 'medium' else ('critical' if v.risk == 'critical' else 'bad')) }}">{{ v.risk }} risk</span>
+            {% if v.effect == 'restart' %}<span class="badge-restart">Restart required</span>{% else %}<span class="muted" style="font-size:.78rem">Takes effect instantly</span>{% endif %}
+            {% if v.secret %}<span class="muted" style="font-size:.78rem">&middot; secret, never shown once saved</span>{% endif %}
+            {% if r.overridden %}<span class="pill pill-warn" title="The running application is using a value that did not come from .env — editing it here will not take effect until that other source changes too.">Overridden outside .env</span>{% endif %}
+          </div>
+        </div>
+        <div class="setting-value">
+          {% if v.secret %}
+            <span class="mono muted">{{ 'saved' if r.saved else 'not set' }}</span>
+          {% else %}
+            <span class="mono">{{ r.value if r.value else '(not set)' }}</span>
+          {% endif %}
+          <div style="margin-top:8px">
+            {% if r.editable %}
+              <a class="btn btn-sm" href="{{ url_for('platform_settings_variable', name=v.name) }}">{{ 'Rotate' if v.name == 'BRIGHTSTARS_DELIVERY_KEY' else 'Edit' }}</a>
+            {% else %}
+              <a class="btn btn-sm" href="{{ url_for('platform_settings_variable', name=v.name) }}">View</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endblock %}

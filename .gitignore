@@ -22,6 +22,10 @@ instance/
 # Multi-tenant deployments: each school's database, question banks and uploads
 tenants/
 
+# A school's full data export (Settings > Terminal actions > Export a school's data) - contains
+# real student data and secrets, and is meant to be copied off the server and removed, never committed
+exports/
+
 # OS/editor cruft
 .DS_Store
 Thumbs.db
@@ -33,3 +37,6 @@ cbt.db.backup-*
 # Uploads and generated files live in each school's own folder under tenants/, never here
 static/uploads/
 static/generated/
+
+CLAUDE.md
+graphify-out/

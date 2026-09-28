@@ -1,0 +1,55 @@
+{% extends "platform/base.html" %}
+{% block title %}{{ v.name }}{% endblock %}
+{% block body %}
+<p class="crumb"><a href="{{ url_for('platform_settings') }}">&larr; Settings</a></p>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">{{ v.category }}</div>
+    <h1 class="mono" style="font-family:var(--mono)">{{ v.name }}</h1>
+    <p class="lede">{{ v.purpose }}</p>
+  </div>
+  <span class="tag tag-{{ 'ok' if v.risk == 'low' else ('warn' if v.risk == 'medium' else ('critical' if v.risk == 'critical' else 'bad')) }}">{{ v.risk }} risk</span>
+</div>
+
+<div class="panel" style="max-width:50rem">
+  <dl class="fact-grid">
+    <dt>When to change it</dt><dd>{{ v.when_to_change }}</dd>
+    <dt>What it affects</dt><dd>{{ v.affects }}</dd>
+    <dt>If it's wrong</dt><dd>{{ v.breaks_if_wrong }}</dd>
+    <dt>Default</dt><dd class="mono">{{ v.default or '(none)' }}</dd>
+    {% if v.aliases %}<dt>Also read as</dt><dd class="mono">{{ v.aliases|join(', ') }}</dd>{% endif %}
+    <dt>Takes effect</dt><dd>{% if v.effect == 'restart' %}Only after the application is restarted{% else %}Immediately, on its next read{% endif %}</dd>
+  </dl>
+
+  {% if overridden %}
+    <div class="errors" role="alert">The running application is currently using a value that did not come from
+      <code>.env</code> — it was already set in the real environment before the process started. Saving a new
+      value here will update <code>.env</code>, but will not take effect until that other source is changed too.</div>
+  {% endif %}
+
+  <h3 style="margin-top:26px">Current value</h3>
+  {% if v.secret %}
+    <p class="mono">{{ 'A value is saved (never shown once set).' if saved else 'Not set.' }}</p>
+  {% else %}
+    <p class="mono">{{ value if value else '(not set)' }}</p>
+  {% endif %}
+
+  {% if v.name == 'BRIGHTSTARS_DELIVERY_KEY' %}
+    <div class="flash" style="margin-top:18px">This key cannot be changed directly — doing so would make every
+      school's saved mail, WhatsApp and payment secrets unreadable at once. Use the
+      <a href="{{ url_for('platform_settings_rotate_key') }}">rotation wizard</a> instead, which moves every
+      school's secrets to the new key first.</div>
+  {% elif editable %}
+    <form method="post" style="margin-top:18px;max-width:32rem">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label for="value">New value{% if v.secret %} <span class="hint">Leave blank to clear it.</span>{% endif %}</label>
+      <input type="{{ 'password' if v.secret else 'text' }}" id="value" name="value" class="mono" autocomplete="off" spellcheck="false">
+      <p style="margin-top:18px"><button class="btn btn-primary" type="submit"
+          data-confirm="Save a new value for {{ v.name }}?{% if v.effect == 'restart' %} This will not take effect until the application is restarted.{% endif %}">Save</button></p>
+    </form>
+  {% else %}
+    <p class="muted" style="margin-top:18px">{{ 'High' if v.risk == 'high' else 'Critical' }}-risk — only the
+      super admin or a highly-trusted admin may change this.</p>
+  {% endif %}
+</div>
+{% endblock %}

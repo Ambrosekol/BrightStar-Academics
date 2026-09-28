@@ -496,6 +496,16 @@ def create_school_role(slug, rotate=False):
     context (one bad query, one leaked connection string) is limited to one school's data rather
     than reaching every school through the one role every database is created with today.
 
+    ``ALTER DATABASE ... OWNER TO`` alone only changes who may drop or alter the *database itself*;
+    the tables inside it (already created, under ``upgrade_tenant``, by whatever role the school
+    used before this) stay owned by that role, and the new role could connect but not read a single
+    row. So on first creation (never on a plain ``--rotate``, which only changes an existing role's
+    password and already owns everything) this also hands every existing table and sequence to the
+    new role individually (``ALTER TABLE/SEQUENCE ... OWNER TO``) - not the coarser
+    ``REASSIGN OWNED BY``, which PostgreSQL refuses when the previous owner is a superuser role such
+    as the shared ``postgres`` account this codebase's own default setup connects as, since some of
+    what it owns is tied to the database system itself.
+
     Returns ``(role_name, connection_url)``. Nothing is written to the registry: set_db_url does
     that, deliberately as a second, separate step, since the registry's own db_url already avoids
     holding a live password in the clear (an ``env:VARIABLE_NAME`` reference) and this function has
@@ -506,6 +516,7 @@ def create_school_role(slug, rotate=False):
         if not tenant:
             raise ProvisioningError(f'No school with code "{slug}".')
         current_url = tenant.db_url
+        schema = tenant.db_schema or 'public'
     url = make_url(resolve_db_url(current_url))
     if url.get_backend_name() != 'postgresql':
         raise ProvisioningError('A separate database role only applies to a school on PostgreSQL.')
@@ -526,6 +537,28 @@ def create_school_role(slug, rotate=False):
             conn.execute(sa.text(f'ALTER DATABASE "{url.database}" OWNER TO "{role_name}"'))
     finally:
         admin_engine.dispose()
+    if not exists:
+        # Connects to the school's actual database (not the "postgres" maintenance one) with the
+        # same credentials the school already uses today - needed to hand over ownership of what
+        # already exists there.
+        db_engine = sa.create_engine(url)
+        try:
+            with db_engine.begin() as conn:
+                conn.execute(sa.text(f'GRANT ALL PRIVILEGES ON SCHEMA "{schema}" TO "{role_name}"'))
+                tables = conn.execute(sa.text(
+                    'SELECT tablename FROM pg_tables WHERE schemaname = :s'), {'s': schema}).scalars().all()
+                for name in tables:
+                    conn.execute(sa.text(f'ALTER TABLE "{schema}"."{name}" OWNER TO "{role_name}"'))
+                sequences = conn.execute(sa.text(
+                    'SELECT sequencename FROM pg_sequences WHERE schemaname = :s'), {'s': schema}).scalars().all()
+                for name in sequences:
+                    conn.execute(sa.text(f'ALTER SEQUENCE "{schema}"."{name}" OWNER TO "{role_name}"'))
+                views = conn.execute(sa.text(
+                    'SELECT viewname FROM pg_views WHERE schemaname = :s'), {'s': schema}).scalars().all()
+                for name in views:
+                    conn.execute(sa.text(f'ALTER VIEW "{schema}"."{name}" OWNER TO "{role_name}"'))
+        finally:
+            db_engine.dispose()
     new_url = url.set(username=role_name, password=password)
     return role_name, new_url.render_as_string(hide_password=False)
 

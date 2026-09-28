@@ -3,7 +3,7 @@
 {% block content %}
 
 <h2 id="env">Environment variables</h2>
-<p>Read lazily, on each use ({{ file('control_plane/config.py') }}), so a test can set them after importing. Loaded from <code>.env</code> at start; a real environment variable always wins. <code>.env.example</code> documents every one with its reasoning.</p>
+<p>Read lazily, on each use ({{ file('control_plane/config.py') }}), so a test can set them after importing. Loaded from <code>.env</code> at start; a real environment variable already set outside <code>.env</code> always wins. <code>.env.example</code> documents every one with its reasoning, and so does the Settings page in the console itself, with a risk level, when to change it, what it affects and what breaks if it's wrong for each one ({{ file('control_plane/settings_registry.py') }}, {{ file('control_plane/settings_console.py') }}) — Low and Medium risk are editable by anyone with Settings access, High and Critical need the highly-trusted tier, and each one is written to <code>.env</code> directly, the same file this table is drawn from.</p>
 <div class="table-scroll"><table>
 <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
 <tr><td><code>BRIGHTSTARS_PLATFORM_DB</code></td><td><strong>none (required)</strong></td><td>PostgreSQL URL of the registry. No default, because a wrong guess would silently create an empty registry.</td></tr>
@@ -58,5 +58,11 @@
 <tr><td><code>add-domain</code> / <code>remove-domain</code></td><td>A school's own domain. The portal address can never be removed.</td></tr>
 <tr><td><code>suspend</code> / <code>activate</code></td><td>Take a school offline, or bring it back.</td></tr>
 <tr><td><code>drop-retired-tables [CODE] [--yes]</code></td><td>Show, or drop, leftovers of a removed feature.</td></tr>
+<tr><td><code>sweep-jobs [CODE]</code></td><td>Give every stuck background job another try, for a cron/systemd timer.</td></tr>
+<tr><td><code>create-db-role CODE [--rotate]</code></td><td>A PostgreSQL role owning exactly one school's database.</td></tr>
+<tr><td><code>set-db-url CODE URL</code></td><td>Point a school at a different connection string.</td></tr>
+<tr><td><code>rotate-delivery-key OLD NEW [CODE]</code></td><td>Move every school's saved secrets to a new <code>BRIGHTSTARS_DELIVERY_KEY</code> before it is changed. See {{ page('recommendations', 'Recommendations') }}'s Hardening section.</td></tr>
+<tr><td><code>export-tenant CODE [--output DIR]</code></td><td>A school's whole database plus its own files, in one folder — what a school leaving is owed.</td></tr>
 </table></div>
+<p>Every command above except <code>init</code> and <code>create-platform-admin</code> creating the <em>super</em> admin is also on the console's Settings page, under Terminal actions — see {{ page('platform-console', 'The platform console') }}.</p>
 {% endblock %}
