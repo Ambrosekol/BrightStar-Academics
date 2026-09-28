@@ -486,6 +486,66 @@ def create_platform_admin(username, display_name, password, actor='cli', superad
     return role
 
 
+def create_school_role(slug, rotate=False):
+    """A PostgreSQL role that owns exactly this school's own database, and nothing else - the
+    separation recommendations.html's Hardening section asks for, so that a compromised worker
+    context (one bad query, one leaked connection string) is limited to one school's data rather
+    than reaching every school through the one role every database is created with today.
+
+    Returns ``(role_name, connection_url)``. Nothing is written to the registry: set_db_url does
+    that, deliberately as a second, separate step, since the registry's own db_url already avoids
+    holding a live password in the clear (an ``env:VARIABLE_NAME`` reference) and this function has
+    no way to know what an operator wants to call that variable.
+    """
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if not tenant:
+            raise ProvisioningError(f'No school with code "{slug}".')
+        current_url = tenant.db_url
+    url = make_url(resolve_db_url(current_url))
+    if url.get_backend_name() != 'postgresql':
+        raise ProvisioningError('A separate database role only applies to a school on PostgreSQL.')
+    role_name = 'school_' + re.sub(r'[^a-z0-9]+', '_', slug.lower()).strip('_')
+    import secrets as _secrets
+    password = _secrets.token_urlsafe(24)  # letters, digits, -, _ only: safe to inline in DDL
+    admin_engine = sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+    try:
+        with admin_engine.connect() as conn:
+            exists = conn.execute(sa.text('SELECT 1 FROM pg_roles WHERE rolname = :n'),
+                                  {'n': role_name}).scalar()
+            if exists and not rotate:
+                raise ProvisioningError(
+                    f'Role "{role_name}" already exists. Pass rotate=True to give it a new password.')
+            verb = 'ALTER' if exists else 'CREATE'
+            conn.execute(sa.text(f'{verb} ROLE "{role_name}" WITH LOGIN PASSWORD \'{password}\''))
+            conn.execute(sa.text(f'GRANT ALL PRIVILEGES ON DATABASE "{url.database}" TO "{role_name}"'))
+            conn.execute(sa.text(f'ALTER DATABASE "{url.database}" OWNER TO "{role_name}"'))
+    finally:
+        admin_engine.dispose()
+    new_url = url.set(username=role_name, password=password)
+    return role_name, new_url.render_as_string(hide_password=False)
+
+
+def set_db_url(slug, db_url, actor='cli'):
+    """Point a school at a different connection string (a literal URL, or ``env:VARIABLE_NAME``
+    to read one from the environment instead of storing it, in the clear, in the registry).
+
+    Takes effect the next time this worker resolves the tenant (control_plane/routing.py caches
+    engines per URL); other workers pick it up once their own registry cache expires.
+    """
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if not tenant:
+            raise ProvisioningError(f'No school with code "{slug}".')
+        tenant.db_url = db_url
+        tenant.updated_at = now_iso()
+        # An env:NAME reference is shown as-is; a literal URL never shows its password.
+        shown = db_url if db_url.lower().startswith('env:') else make_url(db_url).render_as_string(hide_password=True)
+        audit(session, 'tenant.db_url_changed', shown, tenant.id, actor)
+        session.commit()
+    clear_cache()
+
+
 def set_status(slug, status, reason=None, actor='cli'):
     if status not in (TENANT_ACTIVE, TENANT_SUSPENDED):
         raise ProvisioningError('Unknown status.')

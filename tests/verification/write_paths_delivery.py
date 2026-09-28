@@ -508,6 +508,45 @@ check("test messages are rate-limited", "Too many tests just now" in last)
 check("another school is unaffected by all of this",
       stored(info_beta, "smtp_host") is None and in_school(info_beta, delivery.email_settings).source == "platform")
 
+# ================================================================ rotating BRIGHTSTARS_DELIVERY_KEY (Hardening)
+from core.secrets_rotation import rotate_one_tenant  # noqa: E402
+
+before_password = in_school(info_alpha, delivery.email_settings).password
+old_key = A.app.secret_key  # BRIGHTSTARS_DELIVERY_KEY was stripped from the environment at setup,
+                            # so everything so far was actually encrypted under this fallback.
+new_key = "a-brand-new-delivery-key-" + "z" * 20
+
+with A.app.app_context(), tenant_context(info_alpha):
+    rotated, skipped = rotate_one_tenant(old_key, new_key)
+check("rotating with the real old key moves the school's own secret (WhatsApp's own was cleared above)",
+      rotated == 1 and skipped == [], (rotated, skipped))
+
+os.environ["BRIGHTSTARS_DELIVERY_KEY"] = new_key
+try:
+    check("after rotation, the same plaintext still comes back - under the new key",
+          in_school(info_alpha, delivery.email_settings).password == before_password, before_password)
+finally:
+    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+
+os.environ["BRIGHTSTARS_DELIVERY_KEY"] = old_key
+try:
+    check("…and the old key can no longer read it at all",
+          in_school(info_alpha, delivery.email_settings).password != before_password)
+finally:
+    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+
+# A wrong old key must never blank a setting it cannot actually read.
+with A.app.app_context(), tenant_context(info_alpha):
+    rotated2, skipped2 = rotate_one_tenant("definitely-the-wrong-old-key", "yet-another-new-key")
+check("a wrong old key rotates nothing and reports exactly what it could not read",
+      rotated2 == 0 and skipped2 == ["smtp_password"], (rotated2, skipped2))
+os.environ["BRIGHTSTARS_DELIVERY_KEY"] = new_key
+try:
+    check("…and the real setting, under its real key, is untouched by that failed attempt",
+          in_school(info_alpha, delivery.email_settings).password == before_password)
+finally:
+    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+
 school_mail and school_mail.shutdown()
 platform_mail.shutdown()
 dispose_engines()

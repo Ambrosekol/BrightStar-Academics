@@ -13,6 +13,14 @@
                                   this is only needed for a school quiet enough that nothing else would)
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
+    create-db-role CODE [--rotate]  create (or, with --rotate, give a new password to) a PostgreSQL
+                                  role that owns exactly this school's own database - prints the new
+                                  connection URL, but changes nothing in the registry (see set-db-url)
+    set-db-url CODE URL            point a school at a different connection string (a literal URL, or
+                                  env:VARIABLE_NAME to read one from the environment instead)
+    rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/WhatsApp/Paystack secret
+                                  from OLD to NEW - run this, then set BRIGHTSTARS_DELIVERY_KEY=NEW
+                                  everywhere and restart; never change the environment variable first
     list
 
 Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the
@@ -80,6 +88,19 @@ def _parser():
 
     s = sub.add_parser('activate')
     s.add_argument('code')
+
+    s = sub.add_parser('create-db-role')
+    s.add_argument('code')
+    s.add_argument('--rotate', action='store_true')
+
+    s = sub.add_parser('set-db-url')
+    s.add_argument('code')
+    s.add_argument('url')
+
+    s = sub.add_parser('rotate-delivery-key')
+    s.add_argument('old')
+    s.add_argument('new')
+    s.add_argument('code', nargs='?')
 
     sub.add_parser('list')
     return p
@@ -196,6 +217,41 @@ def main(argv=None):
         elif args.command == 'activate':
             pv.set_status(args.code, 'active')
             print(f'{args.code} activated.')
+        elif args.command == 'create-db-role':
+            role_name, url = pv.create_school_role(args.code, rotate=args.rotate)
+            print(f'Role {role_name} {"rotated" if args.rotate else "created"} and now owns its database.')
+            print(f'Connection URL (shown once): {url}')
+            print('Set this as an environment variable on every worker, then point the school at it:')
+            print(f'  set-db-url {args.code} env:YOUR_CHOSEN_VARIABLE_NAME')
+        elif args.command == 'set-db-url':
+            pv.set_db_url(args.code, args.url)
+            print(f'{args.code} now uses this connection string on its next resolution.')
+        elif args.command == 'rotate-delivery-key':
+            from .context import tenant_context
+            from core.secrets_rotation import rotate_one_tenant
+            import app as A  # deferred: app.py registers every route at import time
+
+            with platform_session() as session:
+                if args.code:
+                    tenant = get_tenant(session, args.code)
+                    if not tenant:
+                        raise pv.ProvisioningError(f'No school with code "{args.code}".')
+                    infos = [to_info(tenant)]
+                else:
+                    infos = pv.list_tenant_infos()
+            if not infos:
+                print('No schools registered.')
+            for info in infos:
+                try:
+                    with A.app.app_context(), tenant_context(info):
+                        rotated, skipped = rotate_one_tenant(args.old, args.new)
+                except Exception as exc:
+                    print(f'{info.slug:<16} could not be rotated: {exc}')
+                    continue
+                note = f', could not read: {", ".join(skipped)}' if skipped else ''
+                print(f'{info.slug:<16} {rotated} secret(s) rotated{note}')
+            print('Once every school above shows 0 unreadable, set BRIGHTSTARS_DELIVERY_KEY to NEW '
+                  'everywhere and restart - not before.')
         elif args.command == 'list':
             rows = pv.list_tenants()
             for slug, name, status, portal, customs, url in rows:

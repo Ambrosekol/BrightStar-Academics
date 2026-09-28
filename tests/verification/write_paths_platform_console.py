@@ -466,6 +466,42 @@ check("signing out clears the platform session",
                 base_url=u_pl).status_code == 302
       and c_pl.get("/platform", base_url=u_pl).status_code == 302)
 
+# ------------------------------------------------- a separate PostgreSQL role per school (Hardening)
+role_info, _ = pv.create_tenant("roletest", "Role Test School", actor="test")
+role_name, role_url = pv.create_school_role(role_info.slug)
+check("create_school_role names a role after the school, not the shared connecting one",
+      role_name == "school_roletest", role_name)
+check("…and hands back a usable connection string carrying that role and password",
+      f"{role_name}:" in role_url and "@" in role_url, role_url)
+
+role_engine = sa.create_engine(make_url(role_url))
+try:
+    with role_engine.connect() as conn:
+        owner = conn.execute(sa.text(
+            "SELECT pg_catalog.pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database()"
+        )).scalar()
+    check("the new role actually owns the school's own database, not merely a grant on it",
+          owner == role_name, owner)
+finally:
+    role_engine.dispose()
+
+raised = None
+try:
+    pv.create_school_role(role_info.slug)  # already exists, no --rotate
+except pv.ProvisioningError:
+    raised = True
+check("creating it again without asking to rotate is refused, not silently overwritten", raised is True)
+
+_, rotated_url = pv.create_school_role(role_info.slug, rotate=True)
+check("…but --rotate gives the very same role a new password",
+      rotated_url != role_url and f"{role_name}:" in rotated_url, (role_url, rotated_url))
+
+pv.set_db_url(role_info.slug, rotated_url)
+with platform_session() as session:
+    stored = get_tenant(session, role_info.slug).db_url
+check("set_db_url actually changes the registry's own row",
+      stored == rotated_url, stored)
+
 dispose_engines()
 DROP_TEST_DATABASES()
 shutil.rmtree(TMP, ignore_errors=True)
