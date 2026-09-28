@@ -43,6 +43,12 @@
 <tr><td><strong>A term's results released, so the report card is ready</strong></td><td>in-app, email, WhatsApp</td><td><code>_notify_parents_report_card_ready</code>, {{ file('blueprints/school/result_notices.py') }}</td></tr>
 </table></div>
 <p>All in {{ file('core/notifications.py') }}. They share one contract: <strong>best effort, and never blocks the change that triggered it</strong>. A missing channel, an unset contact or a failed delivery for one child never stops the others and never rolls anything back. Each sender is called only after its own commit has succeeded.</p>
+<p>Every attempt through the two guardian-contact senders (<code>_notify_guardian_email</code>,
+<code>_notify_guardian_whatsapp</code>) is also recorded to {{ table('notification_delivery_logs') }} -
+student, kind, channel, recipient, sent or failed, and why - so a school can answer "did she get it?"
+itself from {{ route('admin_notification_log') }} ({{ file('blueprints/school/notice_log.py') }}),
+without asking a developer to read a server log. Payment receipts keep their own, older version of
+this ({{ table('finance_delivery_logs') }}).</p>
 <p>Because delivery can be slow, the payment receipt and the report card notices are sent as a durable background job ({{ file('core/jobs.py') }}), so a restart mid-send is retried rather than lost. The in-app alerts are written synchronously so they are there when the page reloads.</p>
 <div class="note"><p><strong>Idempotence.</strong> The report card notice fires when a term <em>becomes</em> complete, and only then: releasing one subject of several says nothing (the term is not ready yet), and releasing the last one sends it. If a result is later edited and the term released again, the parents are told again; that is a real new event.</p></div>
 

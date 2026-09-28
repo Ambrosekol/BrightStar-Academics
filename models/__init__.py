@@ -127,7 +127,7 @@ from .tenancy import (
     StudentNumberAllocation,
 )
 
-from .presence import PasswordResetToken, PresenceSession, SchoolNotification
+from .presence import NotificationDeliveryLog, PasswordResetToken, PresenceSession, SchoolNotification
 
 from .resilience import BackgroundJob, IdempotencyKey
 
@@ -168,7 +168,7 @@ __all__ = [
     'School', 'SchoolDeliverySetting', 'SchoolNumberingPolicy', 'SchoolPaymentSetting', 'SchoolSetting',
     'StudentNumberAllocation',
     # presence / notifications / password recovery
-    'PasswordResetToken', 'PresenceSession', 'SchoolNotification',
+    'NotificationDeliveryLog', 'PasswordResetToken', 'PresenceSession', 'SchoolNotification',
     # resilience: durable background work, and forms that must never run twice
     'BackgroundJob', 'IdempotencyKey',
 ]

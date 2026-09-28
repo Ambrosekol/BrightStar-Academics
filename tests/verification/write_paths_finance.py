@@ -877,6 +877,14 @@ check("…and sent the guardian's WhatsApp number a message with the school's ow
       len(texts) == 1 and texts[0][0] == "Bearer token-alpha", str(Outbox.whatsapp))
 check("…mentioning the school, the child, the fee and the amount",
       texts and all(s in texts[0][1]["text"]["body"] for s in ("Alpha School", "Bola Eze", "Bus Transport (JSS 1)", "₦30,000.00")))
+notice_rows = alpha.sql(
+    "SELECT channel, status FROM notification_delivery_logs WHERE student_id = :s AND kind = 'fee_assessed'", s=BOLA)
+check("the school's own notice log recorded both attempts, both sent",
+      sorted(notice_rows) == [("email", "sent"), ("whatsapp", "sent")], notice_rows)
+notice_page = op_alpha.text(f"/admin/school/notice-log?student_id={BOLA}")
+check("…and the notice log page itself names the student, the notice and both channels",
+      "Bola Eze" in notice_page and "Fee charged" in notice_page and ">email<" in notice_page and ">whatsapp<" in notice_page,
+      notice_page[:2000])
 check("…and left one in-app alert for that child's parent, and none for another family's",
       bola_alerts() == n_before + 1
       and "New fee charged for Bola Eze" in mum_eze.text("/parent/dashboard")

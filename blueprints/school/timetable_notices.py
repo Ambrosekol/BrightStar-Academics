@@ -69,10 +69,10 @@ def _announce(class_ids, session_id, term, exam_type, admin_id):
                f'Sign in to the parent portal to view and download it.\n\nThank you,\n{school_name()}')
         text = f'{school_name()}: the {label} is ready. Sign in to the parent portal to view and download it.'
         try:
-            _notify_guardian_email(r.guardian_email, subject, body)
+            _notify_guardian_email(r.guardian_email, subject, body, student_id=r.id, kind='timetable_released')
         except Exception:
             current_app.logger.exception('Guardian email (timetable released) failed for student %s', r.id)
         try:
-            _notify_guardian_whatsapp(r.guardian_phone, text)
+            _notify_guardian_whatsapp(r.guardian_phone, text, student_id=r.id, kind='timetable_released')
         except Exception:
             current_app.logger.exception('Guardian WhatsApp (timetable released) failed for student %s', r.id)

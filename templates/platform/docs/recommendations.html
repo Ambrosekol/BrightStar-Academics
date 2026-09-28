@@ -60,7 +60,11 @@
 <h2 id="product">Product recommendations</h2>
 <ul>
   <li><strong>Offer parents a "notify me" choice</strong> (channels and quiet hours). Today every parent with a contact on file gets every notice.</li>
-  <li><strong>A notice log per school</strong> ("this report card notice went to these parents on these channels") so a school can answer "did she get it?" without asking a developer. Receipts already have this ({{ table('finance_delivery_logs') }}).</li>
+  <li><strong>A notice log per school.</strong> Done: every guardian email/WhatsApp attempt (a new
+  assignment, a fee charged, a released report card or exam timetable) is recorded to
+  {{ table('notification_delivery_logs') }} and viewable at {{ route('admin_notification_log') }},
+  linked from the Activity Log and from a student's own page. Receipts already had their own,
+  older version of this ({{ table('finance_delivery_logs') }}).</li>
   <li><strong>Bulk release with a preview</strong> for a whole class, to complement the per-student release button.</li>
   <li><strong>Data export for a school leaving</strong>: a supported "give me everything" (database dump plus folder) with documentation, which the per-school layout makes straightforward.</li>
   <li><strong>Let a question bank's questions be reordered from the screen.</strong> The route already

@@ -77,7 +77,7 @@ A.app.config['BACKGROUND_INLINE'] = True  # release notices run at once, so they
 SENT_EMAILS = []
 
 
-def fake_email(guardian_email, subject, body):
+def fake_email(guardian_email, subject, body, **kwargs):
     SENT_EMAILS.append((guardian_email, subject, body))
     return True, guardian_email
 
@@ -86,7 +86,7 @@ import blueprints.school.timetable_notices as _tt_notices  # noqa: E402
 # Patched on the module that imported the name (a `from x import y` binds its own reference), not
 # on core.notifications itself, or the patch would never be seen by the code under test.
 _tt_notices._notify_guardian_email = fake_email
-_tt_notices._notify_guardian_whatsapp = lambda phone, text: (False, 'not configured in this test')
+_tt_notices._notify_guardian_whatsapp = lambda phone, text, **kwargs: (False, 'not configured in this test')
 
 results = []
 PL = "http://platform.test"

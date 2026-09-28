@@ -18,7 +18,7 @@ import os
 
 from core.branding import school_name
 from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
-from models import ParentStudentLink, SchoolNotification, Student, db
+from models import NotificationDeliveryLog, ParentStudentLink, SchoolNotification, Student, db
 from core.db_helpers import all_rows, one, tuples
 
 
@@ -36,41 +36,72 @@ def _parent_ids_for_student(student_id):
         .where(ParentStudentLink.student_id==student_id,ParentStudentLink.active==1))]
 
 
-def _notify_guardian_email(guardian_email, subject, body):
+def _log_notification_delivery(student_id,kind,channel,recipient,ok,detail):
+    """Record one guardian-notification delivery attempt, so a school can answer "did she get
+    it?" itself from the notice log (blueprints/school/notice_log.py) instead of asking a
+    developer to read a server log. Never raises: a logging failure must not turn a delivered
+    notice into a lost one."""
+    if not kind: return
+    try:
+        db.session.add(NotificationDeliveryLog(
+            student_id=student_id,kind=kind,channel=channel,recipient=recipient,
+            status='sent' if ok else 'failed',detail=None if ok else str(detail)[:500],
+            created_at=datetime.now(timezone.utc).isoformat()))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Could not record a notification-delivery log entry')
+
+
+def _notify_guardian_email(guardian_email, subject, body, *, student_id=None, kind=None):
     """Best-effort plain-text email to a parent/guardian. Never raises."""
     settings=email_settings()
-    if settings is None: return False,'Email delivery is not configured.'
+    if settings is None:
+        _log_notification_delivery(student_id,kind,'email',guardian_email,False,'Email delivery is not configured.')
+        return False,'Email delivery is not configured.'
     recipient=(guardian_email or '').strip()
-    if not recipient: return False,'No guardian email address on file.'
+    if not recipient:
+        _log_notification_delivery(student_id,kind,'email',recipient,False,'No guardian email address on file.')
+        return False,'No guardian email address on file.'
     from email.message import EmailMessage
     msg=EmailMessage(); msg['Subject']=subject; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(body)
     try:
         send_email(settings,msg)
+        _log_notification_delivery(student_id,kind,'email',recipient,True,None)
         return True,recipient
     except Exception as exc:
         from core.alerting import note_delivery_failure
         note_delivery_failure('email',exc)
+        _log_notification_delivery(student_id,kind,'email',recipient,False,exc)
         return False,f'Email delivery failed: {exc}'
 
 
-def _notify_guardian_whatsapp(guardian_phone, text):
+def _notify_guardian_whatsapp(guardian_phone, text, *, student_id=None, kind=None):
     """Best-effort plain-text WhatsApp message to a parent/guardian. Never raises."""
     settings=whatsapp_settings(); token,phone_id,version=((settings.token,settings.phone_id,settings.version) if settings else ('','','')); recipient=_ng_phone(guardian_phone)
-    if settings is None: return False,'WhatsApp Business Cloud API is not configured.'
-    if not recipient: return False,'No valid guardian WhatsApp number on file.'
+    if settings is None:
+        _log_notification_delivery(student_id,kind,'whatsapp',recipient,False,'WhatsApp Business Cloud API is not configured.')
+        return False,'WhatsApp Business Cloud API is not configured.'
+    if not recipient:
+        _log_notification_delivery(student_id,kind,'whatsapp',recipient,False,'No valid guardian WhatsApp number on file.')
+        return False,'No valid guardian WhatsApp number on file.'
     payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'text','text':{'body':text}}).encode()
     req=urllib.request.Request(f'{GRAPH_URL}/{version}/{phone_id}/messages',data=payload,method='POST',
         headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
     try:
         with urllib.request.urlopen(req,timeout=8) as resp: result=json.loads(resp.read().decode())
+        _log_notification_delivery(student_id,kind,'whatsapp',recipient,True,None)
         return True,result.get('messages',[{}])[0].get('id',recipient)
     except urllib.error.HTTPError as exc:
         from core.alerting import note_delivery_failure
         note_delivery_failure('whatsapp',exc)
-        return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
+        detail=f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
+        _log_notification_delivery(student_id,kind,'whatsapp',recipient,False,detail)
+        return False,detail
     except Exception as exc:
         from core.alerting import note_delivery_failure
         note_delivery_failure('whatsapp',exc)
+        _log_notification_delivery(student_id,kind,'whatsapp',recipient,False,exc)
         return False,f'WhatsApp delivery failed: {exc}'
 
 
@@ -95,9 +126,9 @@ def _notify_guardians_of_school_work(student_ids, kind, title, due_date):
               f'Due: {due_text}.\n\nPlease check the student/parent portal for details.\n\n'
               f'{school_name()}')
         text=f'{school_name()}: {child} has a new {kind} - "{title}". Due: {due_text}.'
-        try: _notify_guardian_email(r['guardian_email'],subject,body)
+        try: _notify_guardian_email(r['guardian_email'],subject,body,student_id=r['id'],kind='work')
         except Exception: current_app.logger.exception('Guardian email notification failed for student %s',r['id'])
-        try: _notify_guardian_whatsapp(r['guardian_phone'],text)
+        try: _notify_guardian_whatsapp(r['guardian_phone'],text,student_id=r['id'],kind='work')
         except Exception: current_app.logger.exception('Guardian WhatsApp notification failed for student %s',r['id'])
 
 
@@ -134,9 +165,9 @@ def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, sess
           'Please check the parent portal for your full fee account and outstanding balance.\n\n'
           f'{school_name()}')
     text=f'{school_name()}: {child} has been charged {items_text} — ₦{total_amount:,.2f} for {term}. Check the parent portal for details.'
-    try: _notify_guardian_email(student['guardian_email'],subject,body)
+    try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='fee_assessed')
     except Exception: current_app.logger.exception('Guardian email (fee assessed) failed for student %s',student_id)
-    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
+    try: _notify_guardian_whatsapp(student['guardian_phone'],text,student_id=student_id,kind='fee_assessed')
     except Exception: current_app.logger.exception('Guardian WhatsApp (fee assessed) failed for student %s',student_id)
 
 
@@ -173,9 +204,9 @@ def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, a
           'Please check the parent portal for your full fee account and outstanding balance.\n\n'
           f'Thank you,\n{school_name()}')
     text=f'{school_name()}: payment of ₦{amount:,.2f} received for {child} ({category}). Receipt {receipt_no}.'
-    try: _notify_guardian_email(student['guardian_email'],subject,body)
+    try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='payment_recorded')
     except Exception: current_app.logger.exception('Guardian email (payment recorded) failed for student %s',student_id)
-    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
+    try: _notify_guardian_whatsapp(student['guardian_phone'],text,student_id=student_id,kind='payment_recorded')
     except Exception: current_app.logger.exception('Guardian WhatsApp (payment recorded) failed for student %s',student_id)
 
 
@@ -213,7 +244,7 @@ def _notify_parents_report_card_ready(student_id, session_name, term, view_url, 
           f'Thank you,\n{school_name()}')
     text=(f'{school_name()}: {child}’s {label} report card ({session_name}) is ready. '
           f'Sign in to the parent portal to view and download it: {view_url}')
-    try: _notify_guardian_email(student['guardian_email'],subject,body)
+    try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='report_card_ready')
     except Exception: current_app.logger.exception('Guardian email (report card ready) failed for student %s',student_id)
-    try: _notify_guardian_whatsapp(student['guardian_phone'],text)
+    try: _notify_guardian_whatsapp(student['guardian_phone'],text,student_id=student_id,kind='report_card_ready')
     except Exception: current_app.logger.exception('Guardian WhatsApp (report card ready) failed for student %s',student_id)

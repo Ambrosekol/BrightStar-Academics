@@ -40,6 +40,26 @@ class SchoolNotification(db.Model):
     created_by = db.Column(Integer, ForeignKey('admins.id'))
 
 
+class NotificationDeliveryLog(db.Model):
+    """Every attempt to email or WhatsApp a guardian about a school notice - a new assignment, a
+    fee charged, a released report card or exam timetable - successful or not, so a school can
+    answer "did she get it?" itself instead of asking a developer to read a server log. Payment
+    receipts already have their own version of this (finance_delivery_logs); this is everything
+    else that goes through core/notifications.py's two guardian-contact senders."""
+
+    __tablename__ = 'notification_delivery_logs'
+    __table_args__ = (Index('idx_notification_delivery_student', 'student_id', 'created_at'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'))
+    kind = db.Column(Text, nullable=False)  # 'work' | 'fee_assessed' | 'payment_recorded' | 'report_card_ready' | 'timetable_released'
+    channel = db.Column(Text, nullable=False)  # 'email' | 'whatsapp'
+    recipient = db.Column(Text)
+    status = db.Column(Text, nullable=False)  # 'sent' | 'failed'
+    detail = db.Column(Text)
+    created_at = db.Column(Text, nullable=False)
+
+
 class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
     __table_args__ = (
