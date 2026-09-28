@@ -287,8 +287,9 @@ def platform_settings_export():
 def platform_settings_create_db_role():
     code = request.form.get('code', '').strip()
     rotate = request.form.get('rotate') == '1'
+    password = request.form.get('password', '').strip()
     try:
-        role_name, conn_url = pv.create_school_role(code, rotate=rotate)
+        role_name, conn_url = pv.create_school_role(code, rotate=rotate, password=password or None)
     except pv.ProvisioningError as exc:
         flash(str(exc), 'error')
         return redirect(url_for('platform_settings_actions'))

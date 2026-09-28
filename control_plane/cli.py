@@ -13,9 +13,11 @@
                                   this is only needed for a school quiet enough that nothing else would)
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
-    create-db-role CODE [--rotate]  create (or, with --rotate, give a new password to) a PostgreSQL
-                                  role that owns exactly this school's own database - prints the new
-                                  connection URL, but changes nothing in the registry (see set-db-url)
+    create-db-role CODE [--rotate] [--password PW]  create (or, with --rotate, give a new password to)
+                                  a PostgreSQL role that owns exactly this school's own database -
+                                  prints the new connection URL, but changes nothing in the registry
+                                  (see set-db-url). --password sets it yourself; left out, one is
+                                  generated.
     set-db-url CODE URL            point a school at a different connection string (a literal URL, or
                                   env:VARIABLE_NAME to read one from the environment instead)
     rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/WhatsApp/Paystack secret
@@ -94,6 +96,7 @@ def _parser():
     s = sub.add_parser('create-db-role')
     s.add_argument('code')
     s.add_argument('--rotate', action='store_true')
+    s.add_argument('--password', help='Set it yourself (at least 10 characters) instead of generating one.')
 
     s = sub.add_parser('set-db-url')
     s.add_argument('code')
@@ -224,7 +227,7 @@ def main(argv=None):
             pv.set_status(args.code, 'active')
             print(f'{args.code} activated.')
         elif args.command == 'create-db-role':
-            role_name, url = pv.create_school_role(args.code, rotate=args.rotate)
+            role_name, url = pv.create_school_role(args.code, rotate=args.rotate, password=args.password)
             print(f'Role {role_name} {"rotated" if args.rotate else "created"} and now owns its database.')
             print(f'Connection URL (shown once): {url}')
             print('Set this as an environment variable on every worker, then point the school at it:')

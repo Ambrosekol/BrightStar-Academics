@@ -498,18 +498,55 @@ _, rotated_url = pv.create_school_role(role_info.slug, rotate=True)
 check("…but --rotate gives the very same role a new password",
       rotated_url != role_url and f"{role_name}:" in rotated_url, (role_url, rotated_url))
 
-pv.set_db_url(role_info.slug, rotated_url)
+raised = None
+try:
+    pv.create_school_role(role_info.slug, rotate=True, password="short")
+except pv.ProvisioningError:
+    raised = True
+check("a self-chosen password under 10 characters is refused", raised is True)
+
+chosen = "it's a very 'quoted' password 1"  # deliberately carries single quotes
+role_name2, chosen_url = pv.create_school_role(role_info.slug, rotate=True, password=chosen)
+check("a self-chosen password carrying quotes is accepted, not a SQL error",
+      role_name2 == role_name and f"{role_name}:" in chosen_url, chosen_url)
+chosen_engine = sa.create_engine(make_url(chosen_url))
+try:
+    with chosen_engine.connect() as conn:
+        conn.execute(sa.text("SELECT 1"))
+    check("…and the role can actually sign in with exactly that password", True)
+finally:
+    chosen_engine.dispose()
+
+pv.set_db_url(role_info.slug, chosen_url)
 with platform_session() as session:
     stored = get_tenant(session, role_info.slug).db_url
 check("set_db_url actually changes the registry's own row",
-      stored == rotated_url, stored)
+      stored == chosen_url, stored)
 
-# The role this test made owns the school's database; reclaim ownership and drop the role, so
-# a second run of this same script (the role name is derived from the slug, not this run's own
-# unique prefix) does not find it already there.
+# The role this test made owns the school's database *and every table in it* (create_school_role
+# hands both over, since ALTER DATABASE OWNER TO alone does not reach what is already inside it) -
+# reclaim both and drop the role, so a second run of this same script (the role name is derived
+# from the slug, not this run's own unique prefix) does not find it already there.
+original_owner = original_admin_url.username
+db_engine = sa.create_engine(original_admin_url)
+with db_engine.begin() as conn:
+    for name in conn.execute(sa.text(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")).scalars().all():
+        conn.execute(sa.text(f'ALTER TABLE "public"."{name}" OWNER TO "{original_owner}"'))
+    for name in conn.execute(sa.text(
+            "SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")).scalars().all():
+        conn.execute(sa.text(f'ALTER SEQUENCE "public"."{name}" OWNER TO "{original_owner}"'))
+    for name in conn.execute(sa.text(
+            "SELECT viewname FROM pg_views WHERE schemaname = 'public'")).scalars().all():
+        conn.execute(sa.text(f'ALTER VIEW "public"."{name}" OWNER TO "{original_owner}"'))
+    # create_school_role also GRANTs the role privileges on the schema itself (not ownership, so
+    # the loop above never touches it) - DROP ROLE refuses while that grant still exists, same as
+    # it would for ownership, so it has to be revoked too.
+    conn.execute(sa.text(f'REVOKE ALL PRIVILEGES ON SCHEMA "public" FROM "{role_name}"'))
+db_engine.dispose()
 admin_engine = sa.create_engine(original_admin_url.set(database='postgres'), isolation_level='AUTOCOMMIT')
 with admin_engine.connect() as conn:
-    conn.execute(sa.text(f'ALTER DATABASE "{original_admin_url.database}" OWNER TO "{original_admin_url.username}"'))
+    conn.execute(sa.text(f'ALTER DATABASE "{original_admin_url.database}" OWNER TO "{original_owner}"'))
     conn.execute(sa.text(f'DROP ROLE IF EXISTS "{role_name}"'))
 admin_engine.dispose()
 

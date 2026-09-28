@@ -490,11 +490,17 @@ def create_platform_admin(username, display_name, password, actor='cli', superad
     return role
 
 
-def create_school_role(slug, rotate=False):
+def create_school_role(slug, rotate=False, password=None):
     """A PostgreSQL role that owns exactly this school's own database, and nothing else - the
     separation recommendations.html's Hardening section asks for, so that a compromised worker
     context (one bad query, one leaked connection string) is limited to one school's data rather
     than reaching every school through the one role every database is created with today.
+
+    ``password`` is optional: leave it out for a strong, randomly generated one (the usual
+    choice); give one to set it yourself instead, e.g. to match a policy of your own. Either way it
+    is safely escaped as a standard SQL string literal before being sent (PostgreSQL refuses a bound
+    parameter in this position, since CREATE/ALTER ROLE is DDL), so a quote in it cannot break out
+    of the statement.
 
     ``ALTER DATABASE ... OWNER TO`` alone only changes who may drop or alter the *database itself*;
     the tables inside it (already created, under ``upgrade_tenant``, by whatever role the school
@@ -521,8 +527,14 @@ def create_school_role(slug, rotate=False):
     if url.get_backend_name() != 'postgresql':
         raise ProvisioningError('A separate database role only applies to a school on PostgreSQL.')
     role_name = 'school_' + re.sub(r'[^a-z0-9]+', '_', slug.lower()).strip('_')
-    import secrets as _secrets
-    password = _secrets.token_urlsafe(24)  # letters, digits, -, _ only: safe to inline in DDL
+    if password:
+        if len(password) < 10:
+            raise ProvisioningError('A password you choose yourself must be at least 10 characters.')
+        if '\x00' in password:
+            raise ProvisioningError('A password cannot contain a NUL character.')
+    else:
+        import secrets as _secrets
+        password = _secrets.token_urlsafe(24)
     admin_engine = sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
     try:
         with admin_engine.connect() as conn:
@@ -532,7 +544,13 @@ def create_school_role(slug, rotate=False):
                 raise ProvisioningError(
                     f'Role "{role_name}" already exists. Pass rotate=True to give it a new password.')
             verb = 'ALTER' if exists else 'CREATE'
-            conn.execute(sa.text(f'{verb} ROLE "{role_name}" WITH LOGIN PASSWORD \'{password}\''))
+            # PostgreSQL does not accept a bound parameter in this position (CREATE/ALTER ROLE is
+            # DDL - confirmed against a real server, not assumed), so the password is quoted as a
+            # standard SQL string literal by hand instead: a single quote is escaped by doubling it,
+            # which is all standard_conforming_strings (PostgreSQL's default since 9.1) requires -
+            # a backslash is not special there, only inside an E'...' literal, which this never uses.
+            escaped = password.replace("'", "''")
+            conn.execute(sa.text(f"{verb} ROLE \"{role_name}\" WITH LOGIN PASSWORD '{escaped}'"))
             conn.execute(sa.text(f'GRANT ALL PRIVILEGES ON DATABASE "{url.database}" TO "{role_name}"'))
             conn.execute(sa.text(f'ALTER DATABASE "{url.database}" OWNER TO "{role_name}"'))
     finally:

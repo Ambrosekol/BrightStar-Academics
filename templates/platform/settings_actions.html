@@ -135,6 +135,8 @@
         </div>
         <div><label for="role-rotate" style="display:flex;align-items:center;gap:8px;margin-top:1.6rem">
             <input type="checkbox" id="role-rotate" name="rotate" value="1"> Give it a new password (it already exists)</label></div>
+        <div><label for="role-password">Password <span class="hint">Optional — leave blank to generate a strong random one. At least 10 characters if you set your own.</span></label>
+          <input type="text" id="role-password" name="password" class="mono" autocomplete="off" spellcheck="false"></div>
         <button class="btn" type="submit">Create / rotate</button>
       </form>
     {% else %}
