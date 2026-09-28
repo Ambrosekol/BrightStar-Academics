@@ -166,3 +166,34 @@ class FinanceOnlinePayment(db.Model):
     failure_reason = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
     verified_at = db.Column(Text)
+
+
+class FinanceRefund(db.Model):
+    """One attempt to refund a payment that was made online, through Paystack, back to the payer.
+
+    Started here as 'pending' the moment Paystack *accepts the request to refund* - which is not
+    the same as the money having actually moved back yet, the same distinction core/payments.py
+    already draws for a payment itself. Only the ``refund.processed`` webhook (paystack_webhook,
+    blueprints/finance/paystack.py) moves this to 'processed' and, at that same moment, voids the
+    original FinancePayment - so a payment never shows as both posted and refunded, and never
+    shows as refunded before Paystack has actually confirmed it. ``refund.failed`` moves it to
+    'failed' and leaves the original payment exactly as it was, untouched.
+    """
+
+    __tablename__ = 'finance_refunds'
+    __table_args__ = (
+        Index('idx_finance_refunds_payment', 'payment_id'),
+        Index('idx_finance_refunds_status', 'status'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    payment_id = db.Column(Integer, ForeignKey('finance_payments.id'), nullable=False)
+    online_payment_id = db.Column(Integer, ForeignKey('finance_online_payments.id'), nullable=False)
+    amount = db.Column(Float, nullable=False)
+    reason = db.Column(Text)
+    status = db.Column(Text, nullable=False, default='pending', server_default=text("'pending'"))
+    paystack_refund_id = db.Column(Text)
+    requested_by = db.Column(Integer, ForeignKey('admins.id'), nullable=False)
+    requested_at = db.Column(Text, nullable=False)
+    resolved_at = db.Column(Text)
+    failure_reason = db.Column(Text)

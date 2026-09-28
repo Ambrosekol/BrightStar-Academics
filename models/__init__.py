@@ -105,6 +105,7 @@ from .finance import (
     FinanceOnlinePayment,
     FinancePayment,
     FinancePaymentAllocation,
+    FinanceRefund,
 )
 
 from .library import LibraryBook, LibraryLoan
@@ -157,6 +158,7 @@ __all__ = [
     # finance
     'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem',
     'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
+    'FinanceRefund',
     # library
     'LibraryBook', 'LibraryLoan',
     # parents

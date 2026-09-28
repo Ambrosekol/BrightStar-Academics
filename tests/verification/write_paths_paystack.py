@@ -27,7 +27,7 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -57,6 +57,7 @@ from control_plane import provisioning as pv  # noqa: E402
 from control_plane.context import tenant_context  # noqa: E402
 from control_plane.routing import engine_for  # noqa: E402
 from core import payments  # noqa: E402
+from blueprints.finance.paystack import reconcile_pending_refunds  # noqa: E402
 
 results = []
 
@@ -347,6 +348,119 @@ check("a signed-out visitor is sent to sign in", r.status_code == 302 and "/logi
 r = boss.post("/admin/finance/paystack/save", data={"public_key": "pk_test_nope", "secret_key": "sk_test_nope"}, base_url=ALPHA)
 check("a save without a form token is refused, and nothing changes",
       r.status_code == 403 and in_school(lambda: payments.payment_settings()).public_key == "pk_test_alphakey")
+
+# ================================================================ 4b. refunding an online payment
+# The very first payment confirmed above (row[1], reference) is still 'posted' and untouched by
+# anything since - a real Paystack payment, made through this same flow, is what gets refunded.
+refund_payment_id = row[1]
+boss_admin_id = in_school(lambda: sql("SELECT id FROM admins WHERE username = 'boss'")[0][0])
+
+REFUNDS = {"next_id": 9001}
+
+
+def fake_urlopen_refunds(request, timeout=0):
+    CALLS.append(request.full_url)
+    if request.full_url.endswith("/refund") and request.method == "POST":
+        if MODE["value"] == "refund-refused":
+            return FakeResponse(400, {"status": False, "message": "This transaction cannot be refunded."})
+        assert json.loads(request.data)["transaction"], "a refund must name the transaction to refund"
+        refund_id = REFUNDS["next_id"]
+        REFUNDS["next_id"] += 1
+        return FakeResponse(200, {"status": True, "data": {"id": refund_id, "status": "pending"}})
+    if "/refund/" in request.full_url and request.method == "GET":
+        refund_id = int(request.full_url.rsplit("/", 1)[-1])
+        status = MODE["value"] if MODE["value"] in ("processed", "failed", "pending") else "pending"
+        return FakeResponse(200, {"status": True, "data": {
+            "id": refund_id, "status": status, "failure_reason": "Bank declined the refund" if status == "failed" else None}})
+    raise AssertionError(f"unexpected fake Paystack call: {request.full_url}")
+
+
+urllib.request.urlopen = fake_urlopen_refunds
+try:
+    MODE["value"] = "pending"
+    r = clerk.post(f"/admin/finance/payments/{refund_payment_id}/refund", data={
+        "_csrf_token": csrf(clerk, "/admin/password"), "reason": "Parent asked for their money back"}, base_url=ALPHA)
+    check("an ordinary staff account without the finance permission cannot start a refund",
+          in_school(lambda: sql("SELECT count(*) FROM finance_refunds WHERE payment_id = :p", p=refund_payment_id)[0][0]) == 0)
+
+    r = boss.post(f"/admin/finance/payments/{refund_payment_id}/refund", data={
+        "_csrf_token": csrf(boss, "/admin/finance/paystack"), "reason": "Parent asked for their money back"}, base_url=ALPHA)
+    check("the school's own admin can start a refund, which asks Paystack (not just voids the row)",
+          r.status_code == 302)
+    refund_row = in_school(lambda: sql(
+        "SELECT status, paystack_refund_id, amount FROM finance_refunds WHERE payment_id = :p", p=refund_payment_id)[0])
+    check("a FinanceRefund row was written, pending, with Paystack's own refund id",
+          refund_row[0] == "pending" and refund_row[1] and float(refund_row[2]) == 20000.0, refund_row)
+    check("the payment itself is not voided yet - only Paystack's own confirmation does that",
+          in_school(lambda: sql("SELECT status FROM finance_payments WHERE id = :i", i=refund_payment_id)[0][0]) == "posted")
+
+    again = boss.post(f"/admin/finance/payments/{refund_payment_id}/refund", data={
+        "_csrf_token": csrf(boss, "/admin/finance/paystack"), "reason": "Trying a second time"}, base_url=ALPHA)
+    check("a second refund attempt while one is already pending is refused, not a second Paystack call",
+          in_school(lambda: sql("SELECT count(*) FROM finance_refunds WHERE payment_id = :p", p=refund_payment_id)[0][0]) == 1)
+
+    refund_id = refund_row[1]
+    body = json.dumps({"event": "refund.processed", "data": {"id": int(refund_id), "status": "processed"}}).encode()
+    sig = hmac.new(b"sk_test_alphasecret", body, hashlib.sha512).hexdigest()
+    r = A.app.test_client().post("/paystack/webhook", data=body, base_url=ALPHA,
+                                 headers={"x-paystack-signature": sig, "Content-Type": "application/json"})
+    check("Paystack's refund.processed webhook is accepted", r.status_code == 200)
+    check("…and only then is the refund marked processed and the original payment voided",
+          in_school(lambda: sql("SELECT status FROM finance_refunds WHERE payment_id = :p", p=refund_payment_id)[0][0]) == "processed"
+          and in_school(lambda: sql("SELECT status, void_reason FROM finance_payments WHERE id = :i", i=refund_payment_id)[0])[0] == "voided")
+    check("the void reason on the payment says it was refunded through Paystack, not a plain void",
+          "Refunded via Paystack" in in_school(lambda: sql(
+              "SELECT void_reason FROM finance_payments WHERE id = :i", i=refund_payment_id)[0][0]))
+
+    # ---- a second, separate online payment, whose refund Paystack later reports as failed
+    now2 = datetime.now(timezone.utc).isoformat()
+    payment2_id = in_school(lambda: sql(
+        "INSERT INTO finance_payments (receipt_no, student_id, session_id, amount, category, method, "
+        "reference, paid_at, recorded_by, status, created_at) VALUES ('PS-REFUND-2', :s, :sess, 15000, "
+        "'School Fees', 'Paystack', 'bsa-refundtest2', :now, :admin, 'posted', :now) RETURNING id",
+        s=student_id, sess=session_id, now=now2, admin=boss_admin_id)[0][0])
+    online2_id = in_school(lambda: sql(
+        "INSERT INTO finance_online_payments (reference, student_id, session_id, amount, status, "
+        "payment_id, created_at, verified_at) VALUES ('bsa-refundtest2', :s, :sess, 15000, 'success', "
+        ":pid, :now, :now) RETURNING id", s=student_id, sess=session_id, pid=payment2_id, now=now2)[0][0])
+    boss.post(f"/admin/finance/payments/{payment2_id}/refund", data={
+        "_csrf_token": csrf(boss, "/admin/finance/paystack"), "reason": "Wrong student, refund and redo"}, base_url=ALPHA)
+    refund2_id = in_school(lambda: sql(
+        "SELECT paystack_refund_id FROM finance_refunds WHERE payment_id = :p", p=payment2_id)[0][0])
+    body2 = json.dumps({"event": "refund.failed", "data": {
+        "id": int(refund2_id), "status": "failed", "failure_reason": "Bank declined the refund"}}).encode()
+    sig2 = hmac.new(b"sk_test_alphasecret", body2, hashlib.sha512).hexdigest()
+    A.app.test_client().post("/paystack/webhook", data=body2, base_url=ALPHA,
+                             headers={"x-paystack-signature": sig2, "Content-Type": "application/json"})
+    check("a refund Paystack reports as failed is recorded as failed, with its reason kept",
+          in_school(lambda: sql("SELECT status, failure_reason FROM finance_refunds WHERE payment_id = :p", p=payment2_id)[0])
+          == ("failed", "Bank declined the refund"))
+    check("…and the original payment is left exactly as it was - no money actually moved",
+          in_school(lambda: sql("SELECT status FROM finance_payments WHERE id = :i", i=payment2_id)[0][0]) == "posted")
+
+    # ---- the same self-heal reconcile_pending() already gives a stuck payment, for a stuck refund
+    now3 = datetime.now(timezone.utc).isoformat()
+    old = (datetime.now(timezone.utc) - timedelta(seconds=600)).isoformat()
+    payment3_id = in_school(lambda: sql(
+        "INSERT INTO finance_payments (receipt_no, student_id, session_id, amount, category, method, "
+        "reference, paid_at, recorded_by, status, created_at) VALUES ('PS-REFUND-3', :s, :sess, 8000, "
+        "'School Fees', 'Paystack', 'bsa-refundtest3', :now, :admin, 'posted', :now) RETURNING id",
+        s=student_id, sess=session_id, now=now3, admin=boss_admin_id)[0][0])
+    online3_id = in_school(lambda: sql(
+        "INSERT INTO finance_online_payments (reference, student_id, session_id, amount, status, "
+        "payment_id, created_at, verified_at) VALUES ('bsa-refundtest3', :s, :sess, 8000, 'success', "
+        ":pid, :now, :now) RETURNING id", s=student_id, sess=session_id, pid=payment3_id, now=now3)[0][0])
+    in_school(lambda: sql(
+        "INSERT INTO finance_refunds (payment_id, online_payment_id, amount, reason, status, "
+        "paystack_refund_id, requested_by, requested_at) VALUES (:p, :o, 8000, 'Stuck refund test', "
+        "'pending', '9999', :admin, :old)", p=payment3_id, o=online3_id, admin=boss_admin_id, old=old))
+    MODE["value"] = "processed"
+    in_school(lambda: reconcile_pending_refunds(max_age_seconds=120))
+    check("a refund whose webhook never arrived is still resolved, by asking Paystack directly",
+          in_school(lambda: sql("SELECT status FROM finance_refunds WHERE payment_id = :p", p=payment3_id)[0][0]) == "processed"
+          and in_school(lambda: sql("SELECT status FROM finance_payments WHERE id = :i", i=payment3_id)[0][0]) == "voided")
+finally:
+    urllib.request.urlopen = real_urlopen
 
 # ================================================================ 5. removing it
 boss.post("/admin/finance/paystack/clear", data={"_csrf_token": csrf(boss, "/admin/finance/paystack")}, base_url=ALPHA)

@@ -24,6 +24,10 @@ EXEMPT = {
     # tests/verification/write_paths_paystack.py.
     "/parent/children/<int:student_id>/finance/pay": "see write_paths_paystack.py",
     "/paystack/webhook": "see write_paths_paystack.py",
+    # A refund needs a real Paystack transaction reference and a fake Paystack /refund endpoint
+    # behind it, same as the two rules above - exercised for real, both accepted and refused,
+    # webhook-confirmed and webhook-failed, in tests/verification/write_paths_paystack.py.
+    "/admin/finance/payments/<int:payment_id>/refund": "see write_paths_paystack.py",
 }
 
 # The rules write_paths_pg_posts.py submits a real, valid form to (and then junk).

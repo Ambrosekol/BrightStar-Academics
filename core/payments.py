@@ -200,6 +200,39 @@ def check_connection(settings):
     return False, body.get('message') or f'Paystack answered unexpectedly (status {status}).'
 
 
+def request_refund(settings, transaction_reference, amount_naira=None, customer_note=None, merchant_note=None):
+    """Ask Paystack to refund a transaction, in whole or in part. Returns Paystack's own data dict.
+
+    Accepting this request only means Paystack has *started* the refund - its own ``status`` in
+    the response is ordinarily 'pending', not 'processed'; the money has not moved yet. Only the
+    ``refund.processed``/``refund.failed`` webhook (paystack_webhook) settles it, the same way a
+    payment itself is only settled by verify_transaction or that same webhook, never by trusting
+    what starting the request returned.
+    """
+    payload = {'transaction': transaction_reference}
+    if amount_naira is not None:
+        payload['amount'] = int(round(amount_naira * 100))  # kobo, not naira - same as everywhere else
+    if customer_note:
+        payload['customer_note'] = customer_note
+    if merchant_note:
+        payload['merchant_note'] = merchant_note
+    status, body = _request(settings.secret_key, 'POST', '/refund', payload)
+    if status not in (200, 201) or not body.get('status'):
+        raise PaystackError(body.get('message') or 'Paystack refused to start this refund.')
+    return body['data']
+
+
+def fetch_refund(settings, paystack_refund_id):
+    """Ask Paystack for a refund's own current status, by its id - a self-heal for a school whose
+    webhook never arrives or was never set up, the same purpose reconcile_pending() serves for a
+    payment itself.
+    """
+    status, body = _request(settings.secret_key, 'GET', f'/refund/{paystack_refund_id}')
+    if status != 200 or not body.get('status'):
+        raise PaystackError(body.get('message') or 'Paystack could not find this refund.')
+    return body['data']
+
+
 def verify_webhook_signature(secret_key, raw_body, signature_header):
     """Whether a webhook's signature matches its body, computed with the school's own secret key.
 

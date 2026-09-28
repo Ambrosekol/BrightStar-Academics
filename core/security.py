@@ -261,7 +261,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_students_import_history':'student.history.manage','admin_school_students_import_history_template':'student.history.manage',
     'admin_school_students_import_history_run':'student.history.manage',
     'admin_finance_dashboard':'finance.view_own',
-'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_student_assessed_items':'finance.manage',
+'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_payment_refund':'finance.manage','admin_finance_student_assessed_items':'finance.manage',
     'admin_finance_record':'finance.record',
     'admin_finance_receipt':'finance.view_own',
     'admin_finance_receipt_print':'finance.view_own',

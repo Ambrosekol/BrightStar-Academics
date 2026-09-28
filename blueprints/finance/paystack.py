@@ -28,7 +28,7 @@ from flask import abort, current_app, flash, redirect, render_template, request,
 from sqlalchemy import select
 
 from app import app, _school_current_session
-from blueprints.finance.helpers import _next_receipt_no
+from blueprints.finance.helpers import _finance_can_view_all, _next_receipt_no
 from blueprints.parents.helpers import parent_required, _parent_owns_student
 from core import payments
 from core.db_helpers import obj, one_scalar
@@ -36,7 +36,7 @@ from core.idempotency import idempotent_write
 from core.jobs import enqueue
 from core.notifications import _notify_parents_payment_recorded
 from core.security import admin_access_error, admin_required, audit_log, csrf_protect, current_admin, is_school_admin
-from models import FinanceOnlinePayment, FinancePayment, Student, db
+from models import FinanceOnlinePayment, FinancePayment, FinanceRefund, Student, db
 
 
 # =================================================================== the school's own settings
@@ -98,6 +98,70 @@ def admin_finance_paystack_test():
     audit_log('school_paystack_test', 'finance', 'settings', 'paystack', {'ok': ok}, success=ok)
     flash(detail, 'success' if ok else 'error')
     return redirect(url_for('admin_finance_paystack_settings'))
+
+
+@app.post('/admin/finance/payments/<int:payment_id>/refund')
+@admin_required
+@csrf_protect
+def admin_finance_payment_refund(payment_id):
+    """Refund a payment that was made online, through Paystack, back to the payer - the online
+    complement to admin_finance_payment_void for a payment recorded by hand. Same permission and
+    reason requirement as a void; unlike a void, this actually moves money, through Paystack's own
+    /refund endpoint, and the payment is only marked voided once Paystack's webhook confirms the
+    refund really went through (see FinanceRefund and paystack_webhook, below).
+    """
+    me = current_admin()
+    if not _finance_can_view_all(me): return admin_access_error('finance.manage')
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required to refund a payment.', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    payment = obj(FinancePayment, payment_id)
+    if not payment: abort(404)
+    if payment.status != 'posted':
+        flash('Only a posted payment can be refunded.', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    online = db.session.scalars(select(FinanceOnlinePayment).where(
+        FinanceOnlinePayment.payment_id == payment.id, FinanceOnlinePayment.status == 'success')).first()
+    if not online:
+        flash('This payment was not made through online payments, so it cannot be refunded here - '
+              'void it instead and refund the payer by hand.', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    already = db.session.scalars(select(FinanceRefund).where(
+        FinanceRefund.payment_id == payment.id, FinanceRefund.status.in_(('pending', 'processed')))).first()
+    if already:
+        flash(f'A refund for this payment already exists (status: {already.status}).', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    try:
+        amount = float(request.form.get('amount', '') or payment.amount)
+    except (TypeError, ValueError):
+        amount = payment.amount
+    if amount <= 0 or amount > payment.amount + 0.01:
+        flash('Enter a refund amount up to the amount of the payment.', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    settings = payments.payment_settings()
+    if settings is None:
+        flash('Online payments are not set up for this school any more, so Paystack cannot be asked for a refund.', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    try:
+        data = payments.request_refund(settings, online.reference, amount_naira=amount,
+                                        customer_note=reason, merchant_note=reason)
+    except payments.PaystackError as exc:
+        audit_log('finance_payment_refund_failed', 'finance', 'payment', payment.id, {'reason': reason, 'detail': exc.detail}, False)
+        flash(f'Could not start the refund: {exc.detail}', 'error')
+        return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
+    now = datetime.now(timezone.utc).isoformat()
+    refund = FinanceRefund(
+        payment_id=payment.id, online_payment_id=online.id, amount=amount, reason=reason,
+        status='pending', paystack_refund_id=str(data.get('id') or ''),
+        requested_by=me['id'], requested_at=now)
+    db.session.add(refund)
+    db.session.commit()
+    audit_log('finance_payment_refund_requested', 'finance', 'payment', payment.id,
+              {'refund_id': refund.id, 'paystack_refund_id': refund.paystack_refund_id, 'amount': amount, 'reason': reason})
+    flash('Refund requested from Paystack. The payment will be marked refunded automatically once '
+          'Paystack confirms the money has actually moved.', 'success')
+    return redirect(url_for('admin_finance_receipt', payment_id=payment_id))
 
 
 # =================================================================== a parent paying online
@@ -199,7 +263,12 @@ def paystack_webhook():
         event = json.loads(raw_body.decode())
     except (ValueError, UnicodeDecodeError):
         return '', 400
-    reference = (event.get('data') or {}).get('reference', '')
+    data = event.get('data') or {}
+    event_type = event.get('event', '')
+    if event_type in ('refund.processed', 'refund.failed'):
+        _finalize_refund(event_type, data)
+        return '', 200
+    reference = data.get('reference', '')
     row = db.session.scalars(select(FinanceOnlinePayment).where(
         FinanceOnlinePayment.reference == reference)).first()
     if row and row.status == 'pending':
@@ -263,6 +332,74 @@ def _finalize(settings, row):
     except Exception:
         current_app.logger.exception('Parent payment-recorded notification failed for student %s', row.student_id)
     enqueue('send_payment_receipt', payment_id=payment.id, actor_id=admin_id)
+
+
+def _finalize_refund(event_type, data):
+    """Act on a refund's outcome exactly once, whether it arrived by webhook or by
+    reconcile_pending_refunds() asking Paystack directly. The conditional UPDATE is the actual
+    claim, the same idea as _finalize()'s for a payment: two reports of the same outcome arriving
+    close together can never both act. 'settling' is a deliberately distinct in-between state (not
+    the final one) so a process that crashed between the claim and finishing the work is visibly
+    incomplete rather than silently marked done.
+    """
+    refund_id = str(data.get('id') or '')
+    if not refund_id:
+        return
+    claimed = db.session.execute(
+        FinanceRefund.__table__.update()
+        .where(FinanceRefund.paystack_refund_id == refund_id, FinanceRefund.status == 'pending')
+        .values(status='settling')).rowcount == 1
+    db.session.commit()
+    if not claimed:
+        return
+    row = db.session.scalars(select(FinanceRefund).where(FinanceRefund.paystack_refund_id == refund_id)).first()
+    if not row:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    row.resolved_at = now
+
+    if event_type != 'refund.processed':
+        row.status = 'failed'
+        row.failure_reason = (data.get('failure_reason') or data.get('message')
+                              or 'Paystack could not process this refund.')[:500]
+        db.session.commit()
+        return
+
+    row.status = 'processed'
+    payment = obj(FinancePayment, row.payment_id)
+    if payment and payment.status == 'posted':
+        payment.status = 'voided'
+        payment.voided_at = now
+        payment.voided_by = row.requested_by
+        payment.void_reason = f'Refunded via Paystack: {row.reason}' if row.reason else 'Refunded via Paystack.'
+    db.session.commit()
+    audit_log('finance_payment_refunded', 'finance', 'payment', row.payment_id,
+              {'refund_id': row.id, 'paystack_refund_id': refund_id, 'amount': row.amount})
+
+
+def reconcile_pending_refunds(max_age_seconds=120, limit=5):
+    """The same self-heal reconcile_pending() gives a payment, for a refund instead: a school
+    whose webhook address changed, or was never pasted into the Paystack dashboard at all, would
+    otherwise never learn that a refund it started actually finished - or failed."""
+    settings = payments.payment_settings()
+    if settings is None:
+        return
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max_age_seconds)).isoformat()
+    rows = db.session.scalars(select(FinanceRefund)
+        .where(FinanceRefund.status == 'pending', FinanceRefund.requested_at < cutoff)
+        .order_by(FinanceRefund.id).limit(limit)).all()
+    for row in rows:
+        if not row.paystack_refund_id:
+            continue
+        try:
+            data = payments.fetch_refund(settings, row.paystack_refund_id)
+        except payments.PaystackError:
+            continue
+        status = data.get('status')
+        if status == 'processed':
+            _finalize_refund('refund.processed', data)
+        elif status == 'failed':
+            _finalize_refund('refund.failed', data)
 
 
 def reconcile_pending(max_age_seconds=120, limit=5):

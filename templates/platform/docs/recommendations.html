@@ -82,7 +82,18 @@
   wrong) to the route that already existed ({{ route('admin_reorder') }},
   permission {{ perm('questions.reorder') }}); a small admin.js function posts it and reloads on
   success, so no page navigation is needed for what used to be a fixed order at creation.</li>
-  <li><strong>A refund for an online payment.</strong> Paystack's <code>POST /refund</code> is not called anywhere yet — today, undoing a Paystack payment means voiding the {{ table('finance_payments') }} row here and refunding the parent outside the system, by hand, from the Paystack dashboard. A real refund button would call that endpoint from {{ file('core/payments.py') }}, record it, and listen for the <code>refund.processed</code>/<code>refund.failed</code> webhook events (already reaching {{ route('paystack_webhook') }}, just not read yet) to know how it turned out.</li>
+  <li><strong>A refund for an online payment.</strong> Done: a Paystack-made payment's own receipt
+  page now has a <em>Refund via Paystack</em> button (the same permission as voiding a payment,
+  {{ perm('finance.manage') }}), which calls Paystack's own <code>POST /refund</code>
+  ({{ file('core/payments.py') }}) and records it in {{ table('finance_refunds') }} as 'pending' -
+  starting a refund is not the same as it having actually happened. Only Paystack's own
+  <code>refund.processed</code>/<code>refund.failed</code> webhook (now read at
+  {{ route('paystack_webhook') }}) settles it: 'processed' is the one moment the original payment
+  is voided, with a void reason that says so; 'failed' leaves it exactly as it was, since no money
+  moved. A school whose webhook was never set up is not stuck either -
+  <code>reconcile_pending_refunds()</code> asks Paystack directly for a refund still 'pending'
+  after two minutes, opportunistically, the same self-heal {{ route('admin_finance_dashboard') }}
+  already gave a stuck payment.</li>
 </ul>
 
 <h2 id="culture">How to keep the codebase healthy</h2>

@@ -13,8 +13,8 @@ from sqlalchemy import and_, func, select, update as sa_update
 from app import app, FINANCE_FEE_APPLICABILITY, FINANCE_FEE_CATEGORIES, _active_sessions, _school_current_session
 from models import (
     AcademicSession, FinanceFeeAssessment, FinanceFeeItem, FinanceFeeItemClass,
-    FinancePayment, FinancePaymentAllocation, SchoolClass, Student,
-    StudentEnrolment, db,
+    FinanceOnlinePayment, FinancePayment, FinancePaymentAllocation, FinanceRefund,
+    SchoolClass, Student, StudentEnrolment, db,
 )
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.idempotency import idempotent_write
@@ -220,11 +220,15 @@ def admin_finance_student_account(student_id):
 @admin_required
 def admin_finance_dashboard():
     me=current_admin()
-    from blueprints.finance.paystack import reconcile_pending
+    from blueprints.finance.paystack import reconcile_pending, reconcile_pending_refunds
     try:
         reconcile_pending()
     except Exception:
         app.logger.exception('Online-payment reconciliation failed while the finance dashboard loaded')
+    try:
+        reconcile_pending_refunds()
+    except Exception:
+        app.logger.exception('Online-refund reconciliation failed while the finance dashboard loaded')
     own=not _finance_can_view_all(me)
     # A cashier without finance.view_all only ever sees their own takings.
     scope=[FinancePayment.status=='posted']
@@ -315,7 +319,15 @@ def admin_finance_receipt(payment_id):
     me=current_admin(); row=_receipt_payload(payment_id)
     if not row: abort(404)
     if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
-    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id),signature_path=_receipt_signature_relpath())
+    # Whether this payment was made through online payments (only those can be refunded here), and
+    # the latest refund attempt against it, if any - drives the Refund button on the receipt page.
+    is_online_payment=db.session.scalars(select(FinanceOnlinePayment.id).where(
+        FinanceOnlinePayment.payment_id==payment_id,FinanceOnlinePayment.status=='success')).first() is not None
+    refund=db.session.scalars(select(FinanceRefund).where(FinanceRefund.payment_id==payment_id)
+                              .order_by(FinanceRefund.id.desc())).first()
+    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id),
+                           signature_path=_receipt_signature_relpath(),
+                           is_online_payment=is_online_payment,refund=refund)
 
 @app.route('/admin/finance/receipts/<int:payment_id>/print')
 @admin_required
