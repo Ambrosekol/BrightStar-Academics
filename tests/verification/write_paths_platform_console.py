@@ -517,11 +517,42 @@ try:
 finally:
     chosen_engine.dispose()
 
+# A school's own dedicated role must reach only its own database - not the platform registry,
+# and not another school's - even though PostgreSQL grants CONNECT everywhere by default unless
+# told otherwise (the exact gap create_school_role/init_platform_db now close).
+registry_as_role = make_url(chosen_url).set(database=make_url(os.environ["BRIGHTSTARS_PLATFORM_DB"]).database)
+registry_engine = sa.create_engine(registry_as_role)
+denied = None
+try:
+    with registry_engine.connect() as conn:
+        conn.execute(sa.text("SELECT 1"))
+except Exception:
+    denied = True
+finally:
+    registry_engine.dispose()
+check("…but that same role is refused a connection to the platform registry", denied is True)
+
 pv.set_db_url(role_info.slug, chosen_url)
 with platform_session() as session:
     stored = get_tenant(session, role_info.slug).db_url
 check("set_db_url actually changes the registry's own row",
       stored == chosen_url, stored)
+
+# The school is now registered to connect as its own dedicated role, not the shared one - so
+# rotating that same role again has to authenticate as something with real privileges (the
+# registry's own connection), not the school's current, deliberately unprivileged one, or every
+# rotation after the first would fail.
+_, rerotated_url = pv.create_school_role(role_info.slug, rotate=True)
+check("rotating a role again after the school is already pointed at it still works",
+      rerotated_url != chosen_url and f"{role_name}:" in rerotated_url, rerotated_url)
+reroated_engine = sa.create_engine(make_url(rerotated_url))
+try:
+    with reroated_engine.connect() as conn:
+        conn.execute(sa.text("SELECT 1"))
+    check("…and the freshly rotated password actually works", True)
+finally:
+    reroated_engine.dispose()
+pv.set_db_url(role_info.slug, rerotated_url)
 
 # The role this test made owns the school's database *and every table in it* (create_school_role
 # hands both over, since ALTER DATABASE OWNER TO alone does not reach what is already inside it) -

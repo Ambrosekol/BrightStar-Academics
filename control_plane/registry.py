@@ -74,7 +74,25 @@ def init_platform_db():
     engine = platform_engine()
     PlatformBase.metadata.create_all(engine)
     _add_missing_columns(engine)
+    _revoke_public_connect(engine)
     ensure_superadmin()
+
+
+def _revoke_public_connect(engine):
+    """Stop every role on the server, by default, being able to open a connection to the registry.
+
+    PostgreSQL grants CONNECT on a new database to the special ``PUBLIC`` pseudo-role unless told
+    otherwise, so a school's own dedicated role (``create_school_role`` in provisioning.py) could
+    open a connection here - not read anything, since it is never granted a single table, but
+    connecting at all is more than a role scoped to one school's own database should ever be able
+    to do. Revoking a grant nobody holds is a harmless no-op, so this is safe to run on every start.
+    A role that is a superuser (this deployment's own configured registry connection, in the
+    ordinary case) is entirely unaffected: PostgreSQL never checks privileges for one.
+    """
+    if engine.url.get_backend_name() != 'postgresql':
+        return
+    with engine.begin() as conn:
+        conn.execute(sa.text(f'REVOKE CONNECT ON DATABASE "{engine.url.database}" FROM PUBLIC'))
 
 
 def _add_missing_columns(engine):

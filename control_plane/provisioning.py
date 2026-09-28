@@ -535,7 +535,20 @@ def create_school_role(slug, rotate=False, password=None):
     else:
         import secrets as _secrets
         password = _secrets.token_urlsafe(24)
-    admin_engine = sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+    # CREATE/ALTER ROLE, GRANT and ALTER DATABASE OWNER all need real server-wide privileges. The
+    # very first time this runs for a school, its own current connection still carries them (the
+    # shared one every school starts on) - but rotating a role that set_db_url has already pointed
+    # the school at does not: that connection is deliberately scoped down to just this one
+    # database and was never a superuser. The platform registry's own connection is the one
+    # credential this deployment already trusts with that authority (it must be able to CREATE
+    # DATABASE for every new school), so admin operations authenticate as it instead, whenever it
+    # reaches the same server the school's database is actually on.
+    registry_url = make_url(resolve_db_url(config.platform_db_url()))
+    if registry_url.host == url.host and (registry_url.port or 5432) == (url.port or 5432):
+        admin_url = url.set(username=registry_url.username, password=registry_url.password)
+    else:
+        admin_url = url
+    admin_engine = sa.create_engine(admin_url.set(database='postgres'), isolation_level='AUTOCOMMIT')
     try:
         with admin_engine.connect() as conn:
             exists = conn.execute(sa.text('SELECT 1 FROM pg_roles WHERE rolname = :n'),
@@ -553,6 +566,13 @@ def create_school_role(slug, rotate=False, password=None):
             conn.execute(sa.text(f"{verb} ROLE \"{role_name}\" WITH LOGIN PASSWORD '{escaped}'"))
             conn.execute(sa.text(f'GRANT ALL PRIVILEGES ON DATABASE "{url.database}" TO "{role_name}"'))
             conn.execute(sa.text(f'ALTER DATABASE "{url.database}" OWNER TO "{role_name}"'))
+            if not exists:
+                # PostgreSQL grants every role on the server CONNECT to a new database by default
+                # (the implicit PUBLIC grant) - otherwise unrelated, so a school's own role could
+                # still open a connection to another school's database, or the other way round,
+                # despite owning neither. The new owner keeps its own access regardless of this:
+                # a database's owner can always connect to it, PUBLIC grant or not.
+                conn.execute(sa.text(f'REVOKE CONNECT ON DATABASE "{url.database}" FROM PUBLIC'))
     finally:
         admin_engine.dispose()
     if not exists:
