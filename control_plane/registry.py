@@ -6,6 +6,8 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
+import os
+
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
@@ -43,7 +45,12 @@ def platform_engine():
         if _engine is None or _engine_url != url:
             if _engine is not None:
                 _engine.dispose()
-            _engine = build_engine(url, connect_timeout=REGISTRY_CONNECT_TIMEOUT)
+            # One engine shared by every request, regardless of school, so its own pool defaults
+            # much larger than a single tenant's (control_plane/routing.py's build_engine).
+            _engine = build_engine(
+                url, connect_timeout=REGISTRY_CONNECT_TIMEOUT,
+                pool_size=int(os.environ.get('BRIGHTSTARS_REGISTRY_POOL_SIZE', '10')),
+                max_overflow=int(os.environ.get('BRIGHTSTARS_REGISTRY_MAX_OVERFLOW', '20')))
             _engine_url = url
         return _engine
 

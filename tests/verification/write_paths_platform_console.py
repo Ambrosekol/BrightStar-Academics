@@ -53,7 +53,8 @@ from control_plane.entry import (  # noqa: E402
 )
 from control_plane.models import PlatformEntryToken  # noqa: E402
 from control_plane.registry import get_tenant, platform_session, tenant_for_host, to_info  # noqa: E402
-from control_plane.routing import dispose_engines  # noqa: E402
+from control_plane.routing import dispose_engines, engine_for  # noqa: E402
+from werkzeug.security import generate_password_hash  # noqa: E402
 from models import Admin, School, SchoolPublicSetting  # noqa: E402
 
 results = []
@@ -468,6 +469,7 @@ check("signing out clears the platform session",
 
 # ------------------------------------------------- a separate PostgreSQL role per school (Hardening)
 role_info, _ = pv.create_tenant("roletest", "Role Test School", actor="test")
+original_admin_url = make_url(role_info.db_url)
 role_name, role_url = pv.create_school_role(role_info.slug)
 check("create_school_role names a role after the school, not the shared connecting one",
       role_name == "school_roletest", role_name)
@@ -501,6 +503,44 @@ with platform_session() as session:
     stored = get_tenant(session, role_info.slug).db_url
 check("set_db_url actually changes the registry's own row",
       stored == rotated_url, stored)
+
+# The role this test made owns the school's database; reclaim ownership and drop the role, so
+# a second run of this same script (the role name is derived from the slug, not this run's own
+# unique prefix) does not find it already there.
+admin_engine = sa.create_engine(original_admin_url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+with admin_engine.connect() as conn:
+    conn.execute(sa.text(f'ALTER DATABASE "{original_admin_url.database}" OWNER TO "{original_admin_url.username}"'))
+    conn.execute(sa.text(f'DROP ROLE IF EXISTS "{role_name}"'))
+admin_engine.dispose()
+
+# ------------------------------------------------- server-side paging past a few thousand (Scale)
+page_info, _ = pv.create_tenant("pagetest", "Page Test School", admin_username="boss",
+                                admin_display_name="Boss", starter_banks=False, actor="test")
+page_engine = engine_for(page_info)
+with page_engine.begin() as conn:
+    conn.execute(sa.text("UPDATE admins SET password_hash = :h, password_must_change = 0 WHERE username = 'boss'"),
+                {"h": generate_password_hash("boss-password-1")})
+    role_id = conn.execute(sa.text("SELECT admin_type_id FROM admins WHERE username = 'boss'")).scalar_one()
+    now = "2026-01-01T00:00:00+00:00"
+    conn.execute(sa.text(
+        "INSERT INTO admins (username, display_name, password_hash, admin_type_id, active, "
+        "password_must_change, created_at) SELECT 'staff' || n, 'Staff ' || n, :h, :r, 1, 0, :now "
+        "FROM generate_series(1, 60) AS n"
+    ), {"h": generate_password_hash("irrelevant"), "r": role_id, "now": now})
+
+boss2 = A.app.test_client()
+u_page = f"http://{page_info.slug}.portal.test"
+boss2.post("/login", data={"username": "boss", "password": "boss-password-1",
+                           "_csrf_token": csrf(boss2, u_page, "/login")}, base_url=u_page)
+boss2.get("/admin/workspace/school", base_url=u_page)
+list1 = boss2.get("/admin/administration/admins", base_url=u_page).get_data(as_text=True)
+check("61 administrators (60 seeded plus Boss) is paged, not dumped onto one page",
+      "Page 1 of 2" in list1 and list1.count("<tr>") - 1 == 50, list1.count("<tr>"))
+list2 = boss2.get("/admin/administration/admins?page=2", base_url=u_page).get_data(as_text=True)
+check("…and the second page holds exactly the rest",
+      "Page 2 of 2" in list2 and list2.count("<tr>") - 1 == 11, list2.count("<tr>"))
+check("a page number past the end is clamped rather than shown empty or erroring",
+      boss2.get("/admin/administration/admins?page=99", base_url=u_page).status_code == 200)
 
 dispose_engines()
 DROP_TEST_DATABASES()

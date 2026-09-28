@@ -14,12 +14,38 @@
 </ol>
 
 <h2 id="hardening">Hardening</h2>
+<p>Five items that used to sit here as advice are done; this is now what each of them actually is.</p>
 <ul>
-  <li><strong>Separate database roles per school.</strong> Today one role connects to every database. Create a role per school and store its URL as <code>env:VARIABLE_NAME</code> in the registry row (supported) so a compromised worker context is limited to one school's data.</li>
-  <li><strong>Tighten the Content-Security-Policy</strong> by moving inline scripts to files or adding nonces, then dropping <code>'unsafe-inline'</code> for scripts.</li>
-  <li><strong>A dedicated poller for background jobs.</strong> {{ file('core/jobs.py') }} is now durable (a {{ table('background_jobs') }} row survives a restart and is retried) but self-heals only opportunistically, the next time something of the same kind is enqueued. When volume grows, or an operator wants to see "queued / failed / done" across every school at once regardless of traffic, add a small poller against the same table rather than a new mechanism.</li>
-  <li><strong>Alerting</strong> on the log lines that signal degraded safety (registry unreachable, a refused-delivery burst, a sign-in refusal streak, a job that has used up its retries).</li>
-  <li><strong>Rotate the platform secrets on a calendar</strong> (with <code>BRIGHTSTARS_DELIVERY_KEY</code> already independent, rotating the session secret costs only a sign-out).</li>
+  <li><strong>A separate database role per school</strong> is a command away, not a manual DBA task.
+  <code>python -m control_plane create-db-role CODE [--rotate]</code> creates a role that owns exactly
+  one school's database and nothing else and prints its connection string;
+  <code>set-db-url CODE URL</code> is the separate, deliberate step that actually points the registry
+  at it (a literal URL, or the already-supported <code>env:VARIABLE_NAME</code> indirection, so a live
+  password need not sit in the registry's own database). {{ file('control_plane/provisioning.py') }}.</li>
+  <li><strong>script-src no longer allows <code>'unsafe-inline'</code>.</strong> Every onclick/onchange/onsubmit
+  attribute in every template - about a hundred of them - was moved to {{ file('static/interactions.js') }}
+  (a handful of delegated, data-*-attribute-driven listeners); every inline <code>&lt;script&gt;</code>
+  left carries a fresh per-request nonce (<code>csp_nonce()</code>, app.py). style-src keeps
+  <code>'unsafe-inline'</code> deliberately: a school's own colours are already restricted to
+  <code>#rrggbb</code> before they reach a <code>&lt;style&gt;</code> block, where a nonce buys nothing.</li>
+  <li><strong>A dedicated poller for background jobs.</strong> {{ file('core/jobs.py') }}'s own retry is
+  opportunistic (a stuck job waits for something of the same kind to be enqueued again); <code>jobs.sweep_all_kinds()</code>
+  gives every stuck job, of any kind, another try, and <code>python -m control_plane sweep-jobs [CODE]</code>
+  runs it across every school - meant for a cron/systemd timer, with no new service to deploy.</li>
+  <li><strong>Alerting</strong> ({{ file('core/alerting.py') }}) on the four log lines that signal degraded
+  safety: the registry being unreachable ({{ file('control_plane/launch.py') }}), a job that has used up
+  its retries ({{ file('core/jobs.py') }}), a burst of delivery failures for one school (not a single
+  honest bounce), and a sign-in rate limit actually being hit. Set <code>BRIGHTSTARS_ALERT_WEBHOOK</code>
+  to have each one also post to it (Slack's own incoming-webhook format works as-is); with nothing set,
+  they only log, exactly as before.</li>
+  <li><strong>Rotating the platform secrets on a calendar</strong> was already safe for the session secret
+  (a sign-out is the only cost) but not for <code>BRIGHTSTARS_DELIVERY_KEY</code>: every school's mail
+  password, WhatsApp token and Paystack secret key are encrypted under it, so changing it outright would
+  have silently broken every one of them at once. {{ file('core/secrets_rotation.py') }} decrypts a
+  school's own secrets under the old key and re-encrypts them under the new one first;
+  <code>python -m control_plane rotate-delivery-key OLD NEW [CODE]</code> runs it across every school (or
+  one), so the environment variable itself is only ever changed once every school shows nothing
+  unreadable.</li>
 </ul>
 
 <h2 id="scale">Scale</h2>

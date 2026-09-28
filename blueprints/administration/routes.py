@@ -202,6 +202,8 @@ def admin_administration():
     }
     return render_template('admin_administration.html',counts=counts,admin=me,is_school_admin=is_school_admin(me))
 
+ADMIN_ACCOUNTS_PER_PAGE=50
+
 @app.route('/admin/administration/admins')
 @admin_required
 def admin_accounts():
@@ -221,14 +223,22 @@ def admin_accounts():
         .join(AdminType,AdminType.id==AdminRoleAssignment.admin_type_id)
         .where(AdminRoleAssignment.admin_id==Admin.id,AdminType.active==1)
         .scalar_subquery().label('role_names'))
+    # Fine for hundreds without paging at all; this is what a school past a few thousand accounts needs.
+    total=one_scalar(select(func.count()).select_from(Admin),0)
+    total_pages=max(1,-(-total//ADMIN_ACCOUNTS_PER_PAGE))
+    try: page=int(request.args.get('page','1'))
+    except (TypeError,ValueError): page=1
+    page=min(max(page,1),total_pages)
     rows=all_rows(select(Admin.id,Admin.username,Admin.display_name,Admin.active,
                          Admin.created_at,Admin.last_login_at,Admin.email,Admin.phone,
                          Admin.whatsapp,Admin.photo_path,
                          AdminType.name.label('admin_type_name'),
                          scope_count,direct_permission_count,role_names)
         .join(AdminType,AdminType.id==Admin.admin_type_id)
-        .order_by(Admin.id))
-    return render_template('admin_accounts.html',admins=rows)
+        .order_by(Admin.id)
+        .limit(ADMIN_ACCOUNTS_PER_PAGE).offset((page-1)*ADMIN_ACCOUNTS_PER_PAGE))
+    return render_template('admin_accounts.html',admins=rows,page=page,total_pages=total_pages,
+                           total_count=total,per_page=ADMIN_ACCOUNTS_PER_PAGE)
 
 @app.route('/admin/administration/admins/new',methods=['GET','POST'])
 @admin_required

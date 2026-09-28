@@ -39,12 +39,21 @@ def resolve_db_url(value):
     return value
 
 
-def build_engine(db_url, db_schema=None, connect_timeout=None):
+def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, max_overflow=None):
     """Create an engine with the options appropriate to the database backend.
 
     ``connect_timeout`` (seconds, PostgreSQL only) stops a database that is not
     answering from holding a request for minutes: without it the operating system
     decides how long a connection attempt may hang, which can be over two minutes.
+
+    One engine (with its own connection pool) is cached per school - see ``engine_for`` - so
+    SQLAlchemy's own single-app defaults (a pool of 5, up to 10 more on top) would let a hundred
+    schools open a thousand-plus connections per worker process just sitting idle. Every school
+    here is one admin office at a time, not a high-traffic site of its own, so a school's own pool
+    defaults small (BRIGHTSTARS_DB_POOL_SIZE / BRIGHTSTARS_DB_MAX_OVERFLOW raise it for a deployment
+    that genuinely needs more); the one shared registry engine, asked on nearly every request
+    regardless of school (control_plane/registry.py), passes its own larger numbers explicitly
+    instead. Per recommendations.html's Scale table.
     """
     url = make_url(resolve_db_url(db_url))
     options = {}
@@ -53,6 +62,10 @@ def build_engine(db_url, db_schema=None, connect_timeout=None):
         options['connect_args'] = {'timeout': 10, 'check_same_thread': False}
     else:
         options['pool_pre_ping'] = True
+        options['pool_size'] = pool_size if pool_size is not None else int(
+            os.environ.get('BRIGHTSTARS_DB_POOL_SIZE', '2'))
+        options['max_overflow'] = max_overflow if max_overflow is not None else int(
+            os.environ.get('BRIGHTSTARS_DB_MAX_OVERFLOW', '3'))
         if db_schema:
             if not _SCHEMA_RE.match(db_schema):
                 raise ValueError(f'Invalid database schema name: {db_schema!r}')
