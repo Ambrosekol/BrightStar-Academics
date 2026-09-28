@@ -188,6 +188,7 @@ def admin_unlock_resource(resource_type,resource_id):
 @admin_required
 def admin_administration():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     def _count(model, *conditions):
         return one_scalar(select(func.count()).select_from(model).where(*conditions),0)
     counts={
@@ -205,6 +206,7 @@ def admin_administration():
 @admin_required
 def admin_accounts():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.view'): return admin_access_error('admins.view')
     # A system School Admin is unrestricted, so its boundary count reads as zero
     # rather than as however many stale scope rows may exist.
@@ -232,6 +234,7 @@ def admin_accounts():
 @admin_required
 def admin_account_new():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.create'): return admin_access_error('admins.create')
     roles=_admin_role_options()
     perms=db.session.scalars(select(Permission)
@@ -328,6 +331,7 @@ def admin_account_new():
 @admin_required
 def admin_account_edit(aid):
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.edit'): return admin_access_error('admins.edit')
     row=db.session.scalars(select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
                            .where(Admin.id==aid)).first()
@@ -422,6 +426,7 @@ def admin_account_edit(aid):
 @csrf_protect
 def admin_account_credentials_reset(aid):
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.edit'): return admin_access_error('admins.edit')
     row=db.session.scalars(select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
                            .where(Admin.id==aid,Admin.active==1)).first()
@@ -441,6 +446,7 @@ def admin_account_credentials_reset(aid):
 @csrf_protect
 def admin_account_toggle(aid):
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.deactivate'): return admin_access_error('admins.deactivate')
     if aid==me['id']: flash('You cannot deactivate your own administrator account.','error'); return redirect(url_for('admin_accounts'))
     row=one(select(Admin.id,Admin.username,Admin.active).where(Admin.id==aid))
@@ -669,6 +675,7 @@ def admin_message_attachment(message_id):
 @admin_required
 def admin_roles():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'roles.view'): return admin_access_error('roles.view')
     roles=db.session.scalars(select(AdminType)
         .where(AdminType.active==1,AdminType.is_system==0,AdminType.name!='Ordinary Admin')
@@ -735,6 +742,7 @@ def admin_role_edit(rid):
 @admin_required
 def admin_permissions_catalogue():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'permissions.view'): return admin_access_error('permissions.view')
     perms=db.session.scalars(select(Permission).order_by(Permission.module,Permission.name)).all()
     return render_template('admin_permissions.html',permissions=perms)
@@ -743,6 +751,7 @@ def admin_permissions_catalogue():
 @admin_required
 def admin_scopes():
     me=current_admin()
+    if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'scopes.view'): return admin_access_error('scopes.view')
     scopes=[_flatten(r,'AdminScope','username','display_name') for r in all_rows(
         select(AdminScope,Admin.username,Admin.display_name)

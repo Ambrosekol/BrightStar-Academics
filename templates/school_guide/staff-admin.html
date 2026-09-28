@@ -6,8 +6,13 @@
 <h2 id="administration-hub">The Administration page</h2>
 <p><a href="{{ url_for('admin_administration') }}">Administration</a> is a hub, not one page of its
 own content: it shows a few counts (how many staff accounts, how many roles, how many unread control
-items) and links into the real pages described below. If you cannot see this link at all, your
-account does not hold any administration permission — that is normal for most teaching staff.</p>
+items) and links into the real pages described below.</p>
+<div class="guide-warn">Administration is one of four areas kept for the School Admin alone — the
+account created when the school itself was set up, never a role you build or grant. Email &amp;
+WhatsApp, Online Payments and School Profile, further down this page, are the other three. Nobody
+else can be given access to any of the four, no matter what permissions their role carries; if you
+cannot see this link at all, that is why, and it is normal for every account except the School
+Admin's own.</div>
 
 <h2 id="staff">Staff accounts</h2>
 <p><a href="{{ url_for('admin_accounts') }}">Accounts</a> lists every member of staff. From here you
@@ -20,8 +25,7 @@ password is, only reset it.</p>
 <h2 id="roles">Roles</h2>
 <p><a href="{{ url_for('admin_roles') }}">Roles</a> is where the named bundles of permissions
 described in {{ page('roles-permissions', 'Roles, permissions and scope') }} are actually built and
-edited — pick which permissions a role carries by ticking them, from the full list. You can only ever
-tick a permission you hold yourself.</p>
+edited — pick which permissions a role carries by ticking them, from the full list.</p>
 <p>Two further pages exist mainly for checking your own work, reached by typing their address rather
 than a button in the menu (so do not worry if you never notice them):
 <a href="{{ url_for('admin_permissions_catalogue') }}">the permissions catalogue</a> lists every
@@ -53,10 +57,13 @@ frozen against changes, with a reason, until it is unlocked.</p>
 <h2 id="branding">How the portal looks</h2>
 <p><a href="{{ url_for('admin_school_branding') }}">School Profile</a> sets the school's name, motto,
 logo, brand colours and sign-in photographs — everything a receipt, a report card and every page of
-the portal wear as their own.</p>
+the portal wear as their own. School Admin only, like Administration above: changing what the school
+is called or how it looks is kept out of ordinary staff reach.</p>
 
 <h2 id="delivery">Email and WhatsApp</h2>
 <p><a href="{{ url_for('admin_school_delivery') }}">Email &amp; WhatsApp</a> is where the school
 connects its own mail server and WhatsApp Business account, so every automatic notice — a new report
-card, a payment, a released timetable — reaches a guardian on those channels too, not only in-app.</p>
+card, a payment, a released timetable — reaches a guardian on those channels too, not only in-app.
+School Admin only, since whoever holds these accounts can send a message that looks like it comes
+from the school.</p>
 {% endblock %}

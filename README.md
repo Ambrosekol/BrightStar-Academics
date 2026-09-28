@@ -199,10 +199,9 @@ the school's branding and logo:
 Colours, logo and photographs can all be changed afterwards, by either side:
 
 - **Platform operators**, from the school's page in the console (**Look of the portal**).
-- **The school's own administrators**, from **Branding** in their admin area's menu. It is
-  guarded by the `branding.manage` permission, which the school's top-level administrator holds
-  and can grant to any role. A school that existed before the permission was introduced gains it
-  on the next start; no other role is given it automatically.
+- **The school's own top-level administrator**, from **School profile** in the admin area's menu.
+  Restricted to that one admin type, the same as Academic Sessions and Promotion - not a
+  permission any other role can be granted, since it changes what the portal claims to be.
 
 Both use the same rules (`core/branding.py`), so they cannot disagree about what is allowed.
 Images must be PNG, JPG, GIF or WEBP, each up to `BRIGHTSTARS_MAX_UPLOAD_BYTES` (5 MB by
@@ -328,10 +327,11 @@ other admin sees only their own log.
 ## Email and WhatsApp
 
 What parents receive — payment receipts, password-recovery emails, alerts about school work — is
-sent from **the school's own accounts**. A school's administrators set them up under **Email &
-WhatsApp** in their admin area (guarded by the `delivery.manage` permission, which the school's
-top-level administrator holds and can grant to a role): a mail server, or a WhatsApp Business
-(Cloud API) account, each with a button to test it before relying on it.
+sent from **the school's own accounts**. The school's top-level administrator sets them up under
+**Email & WhatsApp** in the admin area - restricted to that one admin type, not a permission any
+other role can be granted, since these accounts can send messages that look like they come from the
+school: a mail server, or a WhatsApp Business (Cloud API) account, each with a button to test it
+before relying on it.
 
 - **The platform's shared account is the fallback.** A school that has set up nothing sends through
   the `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` account, if the deployment has one, and its
@@ -656,8 +656,8 @@ Every school gives each student a **report card for each term**, as a page and a
   parent notification (email, WhatsApp, in-app), the same durable `send_payment_receipt` job. A
   double-click starting a payment is retry-safe (`core/idempotency.py`): it is sent back to the
   very same Paystack checkout instead of opening a second transaction.
-- Permission: `finance.paystack.manage`, separate from every other finance permission, so a school
-  decides exactly who may connect or change its own payment gateway.
+- Restricted to the school's own top-level administrator: connecting or changing the school's own
+  payment gateway is not a permission any other role can be granted.
 
 ## Command line
 

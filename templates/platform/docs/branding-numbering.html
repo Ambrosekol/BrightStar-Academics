@@ -3,7 +3,7 @@
 {% block content %}
 
 <h2 id="identity">A school's identity</h2>
-<p>Each school has its own <strong>name, motto, tagline, phone, email, address, logo, two brand colours and up to eight sign-in photographs</strong>. They are set on the platform's <em>Create a school</em> form, so nobody ever sees a portal wearing another school's name, and can be changed afterwards by platform operators (from the school's page in the console) or by the school's own administrators with {{ perm('branding.manage') }} ({{ route('admin_school_branding') }}).</p>
+<p>Each school has its own <strong>name, motto, tagline, phone, email, address, logo, two brand colours and up to eight sign-in photographs</strong>. They are set on the platform's <em>Create a school</em> form, so nobody ever sees a portal wearing another school's name, and can be changed afterwards by platform operators (from the school's page in the console) or by the school's own top-level administrator ({{ route('admin_school_branding') }}) - restricted to that one admin type, not a permission any other role can be granted.</p>
 <ul>
   <li><strong>Where it is kept.</strong> As key/value rows in {{ table('school_public_settings') }} (read by {{ file('core/public_settings.py') }}); the school's own row is in {{ table('schools') }}. Files (logo, photos) are under the school's <code>uploads/branding/</code>, which is the one folder anyone may open, because the sign-in page needs it.</li>
   <li><strong>How code reads it.</strong> Always through <code>school_brand()</code> and <code>school_name()</code> ({{ file('core/branding.py') }}), and in templates through <code>school_brand</code>. <strong>Never hard-code a school's name, motto or logo.</strong> A contract test fails the build on any occurrence.</li>

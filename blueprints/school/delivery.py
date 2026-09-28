@@ -5,9 +5,10 @@ should come from the school. This page lets the school's administrators enter th
 server and WhatsApp Business account, check that they work, and remove them again (the school
 then goes back to the platform's shared account, if there is one).
 
-Guarded by the ``delivery.manage`` permission. The rules, the encryption of the secrets and the
-limits on where the server may connect are in core/delivery.py; nothing on this page ever shows a
-saved password or token again.
+Restricted to the school's own top-level administrator (``is_school_admin``) - not a permission a
+custom role can be given, since these accounts can send messages that look like they come from the
+school. The rules, the encryption of the secrets and the limits on where the server may connect are
+in core/delivery.py; nothing on this page ever shows a saved password or token again.
 """
 
 import re
@@ -20,7 +21,7 @@ from control_plane.context import current_tenant
 from core import delivery
 from core.accounts import _rate_limit
 from core.branding import school_name
-from core.security import admin_required, audit_log, csrf_protect, current_admin
+from core.security import admin_access_error, admin_required, audit_log, csrf_protect, current_admin, is_school_admin
 from models import db
 
 _ADDRESS = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -33,6 +34,7 @@ def _back():
 @app.route('/admin/school/delivery')
 @admin_required
 def admin_school_delivery():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     return render_template('admin_school_delivery.html', state=delivery.status(),
                            security_choices=delivery.SECURITY_CHOICES, ports=delivery.ALLOWED_SMTP_PORTS,
                            production=config.is_production(), default_version=delivery.DEFAULT_GRAPH_VERSION)
@@ -42,6 +44,7 @@ def admin_school_delivery():
 @admin_required
 @csrf_protect
 def admin_school_delivery_email_save():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     try:
         fields = delivery.save_email(request.form, current_admin()['id'])
     except ValueError as exc:
@@ -58,6 +61,7 @@ def admin_school_delivery_email_save():
 @admin_required
 @csrf_protect
 def admin_school_delivery_email_clear():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     delivery.clear_channel('email')
     audit_log('school_delivery_cleared', 'school', 'settings', 'email')
     flash("Your own email settings were removed. The school now uses the platform's shared account, if there is one.",
@@ -69,6 +73,7 @@ def admin_school_delivery_email_clear():
 @admin_required
 @csrf_protect
 def admin_school_delivery_email_test():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     to = request.form.get('to', '').strip()
     if not _ADDRESS.match(to) or len(to) > 200:
         flash('Enter an email address to send the test message to.', 'error')
@@ -91,6 +96,7 @@ def admin_school_delivery_email_test():
 @admin_required
 @csrf_protect
 def admin_school_delivery_whatsapp_save():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     try:
         fields = delivery.save_whatsapp(request.form, current_admin()['id'])
     except ValueError as exc:
@@ -106,6 +112,7 @@ def admin_school_delivery_whatsapp_save():
 @admin_required
 @csrf_protect
 def admin_school_delivery_whatsapp_clear():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     delivery.clear_channel('whatsapp')
     audit_log('school_delivery_cleared', 'school', 'settings', 'whatsapp')
     flash("Your own WhatsApp settings were removed. The school now uses the platform's shared account, if there is one.",
@@ -117,6 +124,7 @@ def admin_school_delivery_whatsapp_clear():
 @admin_required
 @csrf_protect
 def admin_school_delivery_whatsapp_check():
+    if not is_school_admin(): return admin_access_error('Email & WhatsApp settings')
     if not _rate_limit(f'delivery-test:{current_tenant().slug}', limit=5, window=600):
         flash('Too many checks just now. Please wait a few minutes.', 'error')
         return _back()

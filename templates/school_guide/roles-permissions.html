@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
 <p>Every account has one or more <strong>roles</strong>, each a named bundle of individual
 <strong>permissions</strong> (things like "View students" or "Release timetables"). Whether you see a
@@ -15,10 +16,10 @@ you probably hold this role, or you are a platform operator visiting the school 
 <a href="{{ url_for('admin_roles') }}">Roles</a> — Primary Class Teacher, Finance
 Manager, Librarian, Report Card Officer, Parents' Feedback Officer and more — each already carrying a
 sensible bundle of permissions for that job. You can edit what a role carries, or build your own from
-scratch, but you can only ever hand out a permission you hold yourself: nobody can promote themselves,
-or a colleague, past their own reach. A member of staff is given one or more roles from
-<a href="{{ url_for('admin_accounts') }}">Accounts</a>, when their account is created or at any time
-after.</p>
+scratch. Roles and accounts are themselves managed under
+{{ page('staff-admin', 'Administration') }}, which — like Email &amp; WhatsApp, Online Payments and
+School Profile — is kept for the School Admin alone, so nobody can hand themselves or a colleague a
+permission they should not have.</p>
 
 <h2 id="scope">Scope: limited to some classes or subjects</h2>
 <p>A class teacher is usually limited to their own class; a subject teacher can be limited to a class

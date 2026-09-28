@@ -24,7 +24,7 @@
 </ul>
 
 <h2 id="delivery">Email and WhatsApp: a school's own accounts</h2>
-<p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. Staff with {{ perm('delivery.manage') }} set them up on <em>Email &amp; WhatsApp</em> ({{ route('admin_school_delivery') }}), each with a button to test before relying on it.</p>
+<p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. The school's own top-level administrator sets them up on <em>Email &amp; WhatsApp</em> ({{ route('admin_school_delivery') }}) - restricted to that one admin type, not a permission any other role can be granted - each with a button to test before relying on it.</p>
 <div class="table-scroll"><table>
 <tr><th>Rule</th><th>Why</th></tr>
 <tr><td><strong>The platform's shared account is the fallback.</strong> A school that has set up nothing sends through the <code>BRIGHTSTARS_SMTP_*</code> / <code>BRIGHTSTARS_WHATSAPP_*</code> account if the deployment has one. With neither, it cannot send, and says so.</td><td>New schools work at once, but nothing is ever sent from a place nobody chose.</td></tr>

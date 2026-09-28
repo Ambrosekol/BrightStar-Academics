@@ -6,8 +6,9 @@ the school's own administrators from their admin area. The rules (which colours
 are allowed, which images, how many) live in core/branding.py and are shared with
 the platform console, so the two can never disagree.
 
-Guarded by the ``branding.manage`` permission, which the school's top-level
-administrator holds and can grant to a role.
+Restricted to the school's own top-level administrator (``is_school_admin``) - not a permission a
+custom role can be given, since the school's identity and where its contact details point is not
+something an ordinary staff account should be able to change.
 """
 
 from functools import wraps
@@ -21,7 +22,7 @@ from core.branding import (
     IDENTITY_FIELDS, branding_settings, check_branding_inputs, max_branding_request_bytes,
     school_brand, store_branding,
 )
-from core.security import admin_required, audit_log, csrf_protect
+from core.security import admin_access_error, admin_required, audit_log, csrf_protect, is_school_admin
 from models import School, db
 from sqlalchemy import select
 
@@ -42,6 +43,7 @@ def _allow_branding_upload(fn):
 @app.route('/admin/school/branding')
 @admin_required
 def admin_school_branding():
+    if not is_school_admin(): return admin_access_error('School profile')
     brand = school_brand()
     settings = branding_settings()
     gallery = theme.parse_gallery(settings.get(theme.GALLERY_KEY))
@@ -68,6 +70,7 @@ def admin_school_branding():
 @admin_required
 @csrf_protect
 def admin_school_branding_save():
+    if not is_school_admin(): return admin_access_error('School profile')
     colours = {key: request.form.get(key, '') for key in (theme.PRIMARY_KEY, theme.ACCENT_KEY)}
     # Only what the form actually sent: a field that is missing is left as it is, not blanked.
     colours.update({key: request.form[key] for key, _, _, _ in IDENTITY_FIELDS if key in request.form})

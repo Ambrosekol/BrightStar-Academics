@@ -186,7 +186,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Manager': {
         'description': 'Oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage','finance.paystack.manage']
+        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
@@ -200,9 +200,16 @@ ADMIN_ROLE_PRESETS = {
         'description': "Writes class teachers' comments and prepares report cards for the classes assigned, and sets the head's signature.",
         'permissions': ['school.view','school.students.view','school.classes.view','report_cards.view','report_cards.comment','report_cards.manage']
     },
+    # Kept as a preset (with no exclusive permission of its own) rather than removed outright:
+    # RENAMED_PRESET_ROLES still renames an existing school's old "Website & Content Manager" role
+    # into this one by name, and that rename looks up this very entry's description.  Managing the
+    # school's own name, colours, logo and sign-in photographs is now restricted to the school's own
+    # top-level administrator (branding.py) rather than a grantable permission, so this role has
+    # nothing left that only it can do.
     'School Profile Manager': {
-        'description': "Maintains the school's name, contact details, colours, logo and sign-in photographs.",
-        'permissions': ['school.view','branding.manage']
+        'description': "A legacy role kept for schools that already assigned it; managing the school's "
+                        "profile is now restricted to the school's own top-level administrator.",
+        'permissions': ['school.view']
     },
     'Parents\' Feedback Officer': {
         'description': 'Receives and manages parent feedback submitted through the Parent Portal.',

@@ -35,7 +35,7 @@ from core.db_helpers import obj, one_scalar
 from core.idempotency import idempotent_write
 from core.jobs import enqueue
 from core.notifications import _notify_parents_payment_recorded
-from core.security import admin_required, audit_log, csrf_protect, current_admin
+from core.security import admin_access_error, admin_required, audit_log, csrf_protect, current_admin, is_school_admin
 from models import FinanceOnlinePayment, FinancePayment, Student, db
 
 
@@ -44,6 +44,7 @@ from models import FinanceOnlinePayment, FinancePayment, Student, db
 @app.route('/admin/finance/paystack')
 @admin_required
 def admin_finance_paystack_settings():
+    if not is_school_admin(): return admin_access_error('Online Payments')
     settings = payments.payment_settings()
     return render_template('admin_finance_paystack.html', settings=settings,
                            webhook_url=url_for('paystack_webhook', _external=True))
@@ -53,6 +54,7 @@ def admin_finance_paystack_settings():
 @admin_required
 @csrf_protect
 def admin_finance_paystack_save():
+    if not is_school_admin(): return admin_access_error('Online Payments')
     public_key = request.form.get('public_key', '').strip()
     secret_key = request.form.get('secret_key', '').strip()
     if not public_key.startswith(('pk_test_', 'pk_live_')):
@@ -76,6 +78,7 @@ def admin_finance_paystack_save():
 @admin_required
 @csrf_protect
 def admin_finance_paystack_clear():
+    if not is_school_admin(): return admin_access_error('Online Payments')
     payments.clear_payment_settings()
     audit_log('school_paystack_cleared', 'finance', 'settings', 'paystack')
     flash('Your Paystack settings were removed. Parents can no longer pay online until they are set up again.', 'success')
@@ -86,6 +89,7 @@ def admin_finance_paystack_clear():
 @admin_required
 @csrf_protect
 def admin_finance_paystack_test():
+    if not is_school_admin(): return admin_access_error('Online Payments')
     settings = payments.payment_settings()
     if settings is None:
         flash('Paystack is not set up yet. Save your keys first.', 'error')

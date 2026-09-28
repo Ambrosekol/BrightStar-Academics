@@ -104,6 +104,6 @@ disappears on its own, the request after the last one is allocated — and
   <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>
   <li>{{ perm('finance.record') }} records payments, allocates them, and reads the unallocated-payments list. {{ perm('finance.manage') }} manages fee items, voids payments and sets the receipt signature.</li>
   <li>{{ perm('finance.receipt.send') }} sends a receipt by email or WhatsApp.</li>
-  <li>{{ perm('finance.paystack.manage') }} sets up, tests and removes the school's own Paystack account.</li>
+  <li>Setting up, testing and removing the school's own Paystack account is restricted to the school's own top-level administrator ({{ route('admin_finance_paystack_settings') }}) - not a permission any other role can be granted, since it decides where the school's money goes.</li>
 </ul>
 {% endblock %}
