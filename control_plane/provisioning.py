@@ -9,7 +9,11 @@ lazily, so importing this module (or running registry-only commands such as
 ``list`` or ``suspend``) never starts the app.
 """
 
+import os
 import re
+import shutil
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -544,6 +548,67 @@ def set_db_url(slug, db_url, actor='cli'):
         audit(session, 'tenant.db_url_changed', shown, tenant.id, actor)
         session.commit()
     clear_cache()
+
+
+def export_tenant_data(slug, output_dir):
+    """Everything one school owns, in one folder: a database dump plus its own uploads - the "give
+    me everything" a school leaving is owed, made straightforward by every school already having
+    exactly one database and one folder of its own (recommendations.html's product recommendations).
+
+    Writes ``<output_dir>/<slug>-<date>/database.sql`` (via ``pg_dump``, which must be on the
+    machine running this - the same PostgreSQL install already needed to run the application does
+    not always ship it on the application server itself) and a copy of the school's own files
+    folder, plus a short README explaining what is here and how to bring it back with
+    ``create-tenant --db-url ... && psql ... < database.sql``. Returns the export's own folder path.
+    """
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if not tenant:
+            raise ProvisioningError(f'No school with code "{slug}".')
+        info = to_info(tenant)
+    url = make_url(resolve_db_url(info.db_url))
+    if url.get_backend_name() != 'postgresql':
+        raise ProvisioningError('Exporting only supports a school on PostgreSQL.')
+    if shutil.which('pg_dump') is None:
+        raise ProvisioningError(
+            'pg_dump was not found on this machine. Install the PostgreSQL client tools (the '
+            'server package is not required) and try again.')
+
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
+    export_dir = Path(output_dir) / f'{slug}-{stamp}'
+    export_dir.mkdir(parents=True, exist_ok=False)
+
+    dump_path = export_dir / 'database.sql'
+    env = {**os.environ, 'PGPASSWORD': url.password or ''}
+    args = ['pg_dump', '--no-owner', '--no-privileges',
+            '-h', url.host or 'localhost', '-p', str(url.port or 5432),
+            '-U', url.username or '', '-d', url.database, '-f', str(dump_path)]
+    if info.db_schema:
+        args[-2:-2] = ['-n', info.db_schema]
+    result = subprocess.run(args, env=env, capture_output=True, text=True)
+    if result.returncode != 0:
+        shutil.rmtree(export_dir, ignore_errors=True)
+        raise ProvisioningError(f'pg_dump failed: {result.stderr[-2000:]}')
+
+    from core import storage as _storage
+    files_source = _storage.tenant_root(info)
+    files_dest = export_dir / 'files'
+    if Path(files_source).exists():
+        shutil.copytree(files_source, files_dest)
+    else:
+        files_dest.mkdir()
+
+    (export_dir / 'README.txt').write_text(
+        f'Export of {info.name} ({info.slug}), made {stamp} UTC.\n\n'
+        'database.sql - a plain-SQL pg_dump of this school\'s own database (--no-owner, so it can\n'
+        'be restored into any role\'s database with a plain: psql -d your_new_database -f database.sql\n\n'
+        'files/ - an exact copy of this school\'s own uploads folder (question bank images, student,\n'
+        'candidate and staff photographs, signatures, branding, receipt attachments).\n\n'
+        'To bring this school up again elsewhere: create its database, restore database.sql into it,\n'
+        'point a new tenant at that database (control_plane create-tenant --db-url ...), then copy\n'
+        'files/ back into that new tenant\'s own folder under BRIGHTSTARS_TENANTS_DIR.\n',
+        encoding='utf-8')
+    return str(export_dir)
 
 
 def set_status(slug, status, reason=None, actor='cli'):

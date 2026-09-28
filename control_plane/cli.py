@@ -21,6 +21,8 @@
     rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/WhatsApp/Paystack secret
                                   from OLD to NEW - run this, then set BRIGHTSTARS_DELIVERY_KEY=NEW
                                   everywhere and restart; never change the environment variable first
+    export-tenant CODE [--output DIR]   a school's whole database (pg_dump) plus its own uploads
+                                  folder, in one new directory - what a school leaving is owed
     list
 
 Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the
@@ -101,6 +103,10 @@ def _parser():
     s.add_argument('old')
     s.add_argument('new')
     s.add_argument('code', nargs='?')
+
+    s = sub.add_parser('export-tenant')
+    s.add_argument('code')
+    s.add_argument('--output', default='.', help='directory to create the export folder in (default: here)')
 
     sub.add_parser('list')
     return p
@@ -252,6 +258,12 @@ def main(argv=None):
                 print(f'{info.slug:<16} {rotated} secret(s) rotated{note}')
             print('Once every school above shows 0 unreadable, set BRIGHTSTARS_DELIVERY_KEY to NEW '
                   'everywhere and restart - not before.')
+        elif args.command == 'export-tenant':
+            path = pv.export_tenant_data(args.code, args.output)
+            print(f'Exported {args.code} to {path}')
+            print('  database.sql - a plain-SQL dump of the school\'s own database')
+            print('  files/       - a copy of the school\'s own uploads folder')
+            print('  README.txt   - what is here, and how to restore it')
         elif args.command == 'list':
             rows = pv.list_tenants()
             for slug, name, status, portal, customs, url in rows:

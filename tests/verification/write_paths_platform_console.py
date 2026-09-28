@@ -542,6 +542,33 @@ check("…and the second page holds exactly the rest",
 check("a page number past the end is clamped rather than shown empty or erroring",
       boss2.get("/admin/administration/admins?page=99", base_url=u_page).status_code == 200)
 
+# ------------------------------------------------- data export for a school leaving (Product)
+from pathlib import Path as _Path  # noqa: E402
+from core.storage import tenant_root  # noqa: E402
+
+with A.app.app_context(), tenant_context(page_info):
+    marker_dir = _Path(tenant_root(page_info)) / "branding"
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / "a-real-uploaded-file.txt").write_text("this is a school's own file", encoding="utf-8")
+
+export_root = os.path.join(TMP, "export")
+os.makedirs(export_root, exist_ok=True)
+export_path = pv.export_tenant_data(page_info.slug, export_root)
+check("export_tenant_data writes a plain-SQL dump naming a real table from this school",
+      os.path.isfile(os.path.join(export_path, "database.sql"))
+      and "admins" in open(os.path.join(export_path, "database.sql"), encoding="utf-8", errors="replace").read(),
+      export_path)
+check("…and a copy of the school's own uploads folder, files included",
+      os.path.isfile(os.path.join(export_path, "files", "branding", "a-real-uploaded-file.txt")))
+check("…and a README explaining what is here",
+      os.path.isfile(os.path.join(export_path, "README.txt")))
+raised_export = None
+try:
+    pv.export_tenant_data("no-such-school-at-all", export_root)
+except pv.ProvisioningError:
+    raised_export = True
+check("exporting a school that does not exist is refused, not a crash", raised_export is True)
+
 dispose_engines()
 DROP_TEST_DATABASES()
 shutil.rmtree(TMP, ignore_errors=True)

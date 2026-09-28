@@ -71,7 +71,11 @@
   already released, how many still waiting - before anything changes, then releases only the
   students who actually have something approved in one step, exactly complementing the existing
   one-student-at-a-time button.</li>
-  <li><strong>Data export for a school leaving</strong>: a supported "give me everything" (database dump plus folder) with documentation, which the per-school layout makes straightforward.</li>
+  <li><strong>Data export for a school leaving.</strong> Done:
+  <code>python -m control_plane export-tenant CODE [--output DIR]</code>
+  ({{ file('control_plane/provisioning.py') }}'s <code>export_tenant_data</code>) writes a plain-SQL
+  <code>pg_dump</code> of the school's own database, a copy of its own uploads folder, and a README
+  explaining how to bring both back elsewhere - one new directory, nothing else to assemble by hand.</li>
   <li><strong>Let a question bank's questions be reordered from the screen.</strong> The route already
   exists ({{ route('admin_reorder') }}, permission {{ perm('questions.reorder') }}) but nothing in
   {{ tpl('admin_bank.html') }} calls it - a bank's question order is fixed at creation today. A small
