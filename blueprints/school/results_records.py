@@ -195,3 +195,80 @@ def admin_school_results_release_term():
         flash(f'Released all {len(due)} result{"" if len(due) == 1 else "s"} for the term. The report card '
               'is ready, and the parents are being told by email and WhatsApp.', 'success')
     return redirect(back)
+
+
+@app.route('/admin/school/results/release-class', methods=['GET', 'POST'])
+@admin_required
+@csrf_protect
+def admin_school_results_release_class():
+    """Preview, then release, every student's approved results for one class's term at once -
+    the bulk complement to the one-student-at-a-time release button above."""
+    me = current_admin()
+    if not admin_has_permission(me['id'], 'school.results.release'):
+        return admin_access_error('school.results.release')
+    class_name = request.values.get('class', '').strip()
+    class_row = db.session.scalars(select(SchoolClass).where(
+        SchoolClass.name == class_name, SchoolClass.active == 1)).first()
+    if not class_row:
+        abort(404)
+    if not _school_class_allowed(me['id'], class_row.id):
+        return admin_access_error('school.results.release')
+    sessions = db.session.scalars(select(AcademicSession).where(AcademicSession.active == 1)
+                                  .order_by(AcademicSession.id.desc())).all()
+
+    session_id = request.values.get('session', type=int)
+    term = request.values.get('term', '')
+    if not session_id or term not in TERMS:
+        # Nothing chosen yet: offer the picker, the same shape as the per-student flow's own.
+        return render_template('admin_school_results_release_class.html', class_row=class_row,
+                               sessions=sessions, terms=TERMS, session_id=None, term=None, preview=None)
+
+    students = [dict(r) for r in all_rows(
+        select(Student.id, Student.admission_no, Student.first_name, Student.last_name)
+        .join(StudentEnrolment, and_(StudentEnrolment.student_id == Student.id,
+                                     StudentEnrolment.active == 1, StudentEnrolment.class_id == class_row.id))
+        .where(Student.active == 1).distinct()
+        .order_by(Student.last_name, Student.first_name, Student.id))]
+
+    preview = []
+    for s in students:
+        rows = _term_rows(s['id'], session_id, term, me)
+        if not rows:
+            continue
+        preview.append({**s, **_summary(rows)})
+
+    if request.method == 'POST':
+        released_students = released_total = 0
+        for row in preview:
+            if not row['approved']:
+                continue
+            due = db.session.scalars(
+                select(SchoolStudentResult)
+                .outerjoin(SchoolAssessment, SchoolAssessment.id == SchoolStudentResult.assessment_id)
+                .where(SchoolStudentResult.student_id == row['id'], SchoolStudentResult.session_id == session_id,
+                       _term_of() == term, SchoolStudentResult.status == 'approved', _official())).all()
+            due = [r for r in due if _school_subject_allowed(me['id'], r.subject_id)]
+            if not due:
+                continue
+            now = datetime.now(timezone.utc).isoformat()
+            for r in due:
+                r.status, r.released_at, r.updated_at, r.updated_by = 'released', now, now, me['id']
+                db.session.add(ResultWorkflowEvent(
+                    result_id=r.id, from_status='approved', to_status='released', actor_admin_id=me['id'],
+                    reason=f'Released with the whole class ({class_name})', created_at=now))
+            db.session.commit()
+            audit_log('school_results_term_released', 'school', 'student', row['id'],
+                      {'session_id': session_id, 'term': term, 'released': len(due), 'bulk_class': class_name})
+            announce_ready_report_cards([(row['id'], session_id, term)], me['id'])
+            released_students += 1
+            released_total += len(due)
+        if released_students:
+            flash(f'Released {released_total} result(s) across {released_students} student(s) in {class_name}. '
+                  'Parents of any student whose term is now fully released are being told.', 'success')
+        else:
+            flash('Nothing was ready to release for this class and term.', 'error')
+        return redirect(url_for('admin_school_results_release_class', **{'class': class_name},
+                                session=session_id, term=term))
+
+    return render_template('admin_school_results_release_class.html', class_row=class_row, sessions=sessions,
+                           terms=TERMS, session_id=session_id, term=term, preview=preview)

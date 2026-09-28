@@ -1,0 +1,83 @@
+{% extends 'admin_base.html' %}
+{% block title %}Release {{ class_row.name }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<div class="page-hero">
+    <div>
+        <div class="eyebrow">RESULTS &amp; RECORDS</div>
+        <h1>Release {{ class_row.name }}'s term at once</h1>
+        <p class="hero-copy">
+            The bulk complement to releasing one student's term at a time: choose a session and
+            term, see exactly who is ready before anything changes, then release every student
+            whose results for it are fully approved, in one step.
+        </p>
+    </div>
+    <div class="hero-actions">
+        <a class="btn btn-light" href="{{ url_for('admin_school_results', **{'class': class_row.name}) }}">← Back to {{ class_row.name }}</a>
+    </div>
+</div>
+
+<section class="card" style="padding:24px;margin-bottom:20px">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <input type="hidden" name="class" value="{{ class_row.name }}">
+        <label>Session<br>
+            <select name="session">
+                {% for s in sessions %}
+                <option value="{{ s.id }}" {% if session_id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} — Current{% endif %}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Term<br>
+            <select name="term">
+                <option value="">Choose a term</option>
+                {% for t in terms %}
+                <option value="{{ t }}" {% if term == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="btn btn-primary" type="submit">Show who is ready</button>
+    </form>
+</section>
+
+{% if preview is not none %}
+<section class="card table-card" style="padding:0">
+    <div class="table-toolbar" style="padding:20px 24px 0">
+        <div>
+            <strong>{{ term }}, {{ sessions|selectattr('id','equalto',session_id)|map(attribute='name')|first }}</strong>
+            <span class="muted">{{ preview|length }} student{{ '' if preview|length == 1 else 's' }} with results recorded for this term</span>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead><tr><th>Student</th><th>Subjects</th><th>Released already</th><th>Ready to release</th><th>Still waiting</th></tr></thead>
+            <tbody>
+                {% for p in preview %}
+                <tr>
+                    <td><strong>{{ p.first_name }} {{ p.last_name }}</strong><small>{{ p.admission_no or '' }}</small></td>
+                    <td>{{ p.subjects }}</td>
+                    <td>{{ p.released }}</td>
+                    <td>{% if p.approved %}<strong>{{ p.approved }}</strong>{% else %}—{% endif %}</td>
+                    <td>{{ p.waiting }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="muted">No student in {{ class_row.name }} has a result recorded for this term yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set releasable = preview|selectattr('approved','greaterthan',0)|list %}
+    <div style="padding:20px 24px">
+        {% if releasable %}
+        <form method="post" data-confirm="Release {{ releasable|sum(attribute='approved') }} approved result(s) across {{ releasable|length }} student(s) in {{ class_row.name }}? Parents of anyone whose term becomes fully released will be told immediately.">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="class" value="{{ class_row.name }}">
+            <input type="hidden" name="session" value="{{ session_id }}">
+            <input type="hidden" name="term" value="{{ term }}">
+            <button class="btn btn-primary" type="submit">Release for {{ releasable|length }} student{{ '' if releasable|length == 1 else 's' }}</button>
+        </form>
+        {% else %}
+        <p class="muted">Nothing in {{ class_row.name }} is ready to release for this term yet - every recorded result is either already released or still waiting on verification/approval.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

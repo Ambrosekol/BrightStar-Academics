@@ -68,7 +68,8 @@
 
     {% if not student %}
       <h2 id="rrTitle">Students in {{ class_row.name }}</h2>
-      <p class="rr-sub">{{ students|length }} student{{ '' if students|length==1 else 's' }}. Choose one to see their results.</p>
+      <p class="rr-sub">{{ students|length }} student{{ '' if students|length==1 else 's' }}. Choose one to see their results.
+      {% if can_release %}<a href="{{ url_for('admin_school_results_release_class',**{'class':class_row.name}) }}">Release the whole class's term at once →</a>{% endif %}</p>
       {% if students %}
       <input class="rr-search" id="rrSearch" type="search" placeholder="Search by name or admission number" autocomplete="off" autofocus aria-label="Search students">
       <div class="rr-students" id="rrList">

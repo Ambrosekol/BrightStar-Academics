@@ -697,6 +697,32 @@ check("a release date in the past released the rest",
       and one("SELECT result_release_at FROM academic_sessions WHERE id = :s", s=CURRENT) is not None)
 op.post(f"{RESULTS}/release-schedule", {"result_release_at": ""})
 
+# a fresh term, kept apart from the First Term scope every test above already relies on, so the
+# bulk class-release below cannot pick up anything those tests still assume is untouched.
+op.post(f"{RESULTS}/manual/new", {"class_id": JSS1, "session_id": CURRENT, "student_id": ADA, "subject_id": MATHS,
+                                  "term": "Second Term", "took_test": "yes", "test_score": "10", "test_max": "20",
+                                  "exam_score": "20", "exam_max": "60"})
+SECOND_TERM_RESULTS = [r[0] for r in sql(
+    "SELECT id FROM school_student_results WHERE student_id = :s AND term = 'Second Term'", s=ADA)]
+check("(set-up) a fresh Second Term result was entered for the class-release test", len(SECOND_TERM_RESULTS) == 2)
+for result_id in SECOND_TERM_RESULTS:
+    for action in ("verify", "approve"):
+        op.post(f"{RESULTS}/{result_id}/workflow", {"action": action, "reason": "Checked against the script"})
+page = op.text(f"{RESULTS}/release-class?class=JSS%201")
+check("results: the class-release page asks for a session and term before it shows anyone",
+      "Show who is ready" in page and "Release for" not in page)
+page = op.text(f"{RESULTS}/release-class?class=JSS%201&session={CURRENT}&term=Second%20Term")
+check("results: choosing a session and term previews who is ready before anything changes",
+      "Ada" in page
+      and count("school_student_results", "id = ANY(:ids) AND status <> 'approved'", ids=SECOND_TERM_RESULTS) == 0,
+      "the preview must not itself release anything")
+op.post(f"{RESULTS}/release-class", {"class": "JSS 1", "session": CURRENT, "term": "Second Term"})
+check("results: releasing the whole class released the student who actually had something approved",
+      count("school_student_results", "id = ANY(:ids) AND status = 'released'", ids=SECOND_TERM_RESULTS) == len(SECOND_TERM_RESULTS))
+r = op.post(f"{RESULTS}/release-class", {"class": "JSS 1", "session": CURRENT, "term": "Second Term"}, valid=False)
+check("releasing the same class and term again finds nothing left to release, and says so",
+      r.said("Nothing was ready to release"))
+
 # ================================================================ 7. finance
 FIN = "/admin/finance"
 FEE = {"name": "Tuition (JSS 1)", "category": "School Fees", "applicability": "First Term", "amount": "50000",

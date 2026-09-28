@@ -65,7 +65,12 @@
   {{ table('notification_delivery_logs') }} and viewable at {{ route('admin_notification_log') }},
   linked from the Activity Log and from a student's own page. Receipts already had their own,
   older version of this ({{ table('finance_delivery_logs') }}).</li>
-  <li><strong>Bulk release with a preview</strong> for a whole class, to complement the per-student release button.</li>
+  <li><strong>Bulk release with a preview, for a whole class.</strong> Done:
+  {{ route('admin_school_results_release_class') }} shows every student in the class with an
+  approved-but-unreleased result for the chosen session and term - how many subjects, how many
+  already released, how many still waiting - before anything changes, then releases only the
+  students who actually have something approved in one step, exactly complementing the existing
+  one-student-at-a-time button.</li>
   <li><strong>Data export for a school leaving</strong>: a supported "give me everything" (database dump plus folder) with documentation, which the per-school layout makes straightforward.</li>
   <li><strong>Let a question bank's questions be reordered from the screen.</strong> The route already
   exists ({{ route('admin_reorder') }}, permission {{ perm('questions.reorder') }}) but nothing in
