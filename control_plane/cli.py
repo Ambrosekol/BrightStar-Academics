@@ -8,6 +8,9 @@
     new-launch                    record a new launch of the server: everyone signed in must sign in
                                   again, except people in the middle of an exam
     drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
+    sweep-jobs [CODE]              give every school's stuck background jobs another try (run this on a
+                                  cron/systemd timer; ordinary traffic already does it opportunistically,
+                                  this is only needed for a school quiet enough that nothing else would)
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
     list
@@ -59,6 +62,9 @@ def _parser():
     s.add_argument('code', nargs='?')
     s.add_argument('--yes', action='store_true',
                    help='really drop them, including any that still hold rows. Without it nothing changes.')
+
+    s = sub.add_parser('sweep-jobs')
+    s.add_argument('code', nargs='?')
 
     s = sub.add_parser('add-domain')
     s.add_argument('code')
@@ -152,6 +158,32 @@ def main(argv=None):
                     pv.record('tenant.retired_tables_dropped', ', '.join(sorted(held)), tenant_id=info.id)
             if leftovers and not args.yes:
                 print('Nothing was changed. Add --yes to drop these tables for good (their rows are lost).')
+        elif args.command == 'sweep-jobs':
+            from .context import tenant_context
+            from core import jobs
+            import app as A  # deferred: app.py registers every route at import time
+
+            with platform_session() as session:
+                if args.code:
+                    tenant = get_tenant(session, args.code)
+                    if not tenant:
+                        raise pv.ProvisioningError(f'No school with code "{args.code}".')
+                    infos = [to_info(tenant)]
+                else:
+                    infos = pv.list_tenant_infos()
+            if not infos:
+                print('No schools registered.')
+            total = 0
+            for info in infos:
+                try:
+                    with A.app.app_context(), tenant_context(info):
+                        restarted = jobs.sweep_all_kinds()
+                except Exception as exc:  # a school mid-upgrade, or unreachable, must not stop the rest
+                    print(f'{info.slug:<16} could not be swept: {exc}')
+                    continue
+                total += restarted
+                print(f'{info.slug:<16} {restarted} job(s) restarted' if restarted else f'{info.slug:<16} nothing stuck')
+            print(f'Total: {total} job(s) restarted across {len(infos)} school(s).')
         elif args.command == 'add-domain':
             pv.add_domain(args.code, args.hostname, args.primary)
             print('Domain added.')

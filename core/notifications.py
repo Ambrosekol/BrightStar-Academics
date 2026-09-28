@@ -47,7 +47,10 @@ def _notify_guardian_email(guardian_email, subject, body):
     try:
         send_email(settings,msg)
         return True,recipient
-    except Exception as exc: return False,f'Email delivery failed: {exc}'
+    except Exception as exc:
+        from core.alerting import note_delivery_failure
+        note_delivery_failure('email',exc)
+        return False,f'Email delivery failed: {exc}'
 
 
 def _notify_guardian_whatsapp(guardian_phone, text):
@@ -61,8 +64,14 @@ def _notify_guardian_whatsapp(guardian_phone, text):
     try:
         with urllib.request.urlopen(req,timeout=8) as resp: result=json.loads(resp.read().decode())
         return True,result.get('messages',[{}])[0].get('id',recipient)
-    except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
-    except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
+    except urllib.error.HTTPError as exc:
+        from core.alerting import note_delivery_failure
+        note_delivery_failure('whatsapp',exc)
+        return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
+    except Exception as exc:
+        from core.alerting import note_delivery_failure
+        note_delivery_failure('whatsapp',exc)
+        return False,f'WhatsApp delivery failed: {exc}'
 
 
 def _notify_guardians_of_school_work(student_ids, kind, title, due_date):

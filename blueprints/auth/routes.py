@@ -136,6 +136,9 @@ def login():
         # school would lock the same username out at every other school.
         rate_key=f"login:{_rate_limit_scope()}:{request.remote_addr or 'unknown'}:{identifier.lower()[:120]}"
         if not _rate_limit(rate_key, limit=8, window=300):
+            from core.alerting import alert
+            alert('sign_in_refusal_streak','Repeated sign-in attempts were refused for one address/identifier.',
+                  address=request.remote_addr,identifier=identifier[:120])
             return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.',identifier=identifier), 429
         if not identifier or not password:
             return render_template('login.html',error='Enter your username, Student ID or Candidate ID and password.',identifier=identifier)

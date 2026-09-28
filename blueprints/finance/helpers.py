@@ -322,6 +322,9 @@ def _log_receipt_delivery(payment_id, channel, recipient, ok, msg, actor_id):
         error_message=None if ok else msg,
         sent_by=actor_id,sent_at=datetime.now(timezone.utc).isoformat()))
     db.session.commit()
+    if not ok:
+        from core.alerting import note_delivery_failure
+        note_delivery_failure(channel, msg)
 
 def _finance_unallocated_payments(scope_admin_id=None):
     """Every posted payment whose full amount has not yet been applied to a fee assessment,

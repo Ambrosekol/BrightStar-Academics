@@ -90,6 +90,9 @@ def current_launch_id():
             reason = (str(exc).strip().splitlines() or [''])[0][:200]
             log.warning('The server launch id could not be read (%s: %s); nobody is signed out for '
                         'a restart until the registry answers again.', type(exc).__name__, reason)
+            from core.alerting import alert
+            alert('registry_unreachable', 'The platform registry could not be read.',
+                  error_type=type(exc).__name__, reason=reason)
         return _value
     with _lock:
         _value = found

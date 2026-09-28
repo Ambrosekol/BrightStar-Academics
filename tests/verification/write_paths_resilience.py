@@ -158,6 +158,50 @@ in_school(lambda: jobs.enqueue("test_resilience_ping", who="filler-2"))
 row = in_school(lambda: job_row(fail_id))
 check("…and staying failed does not get swept again", row["attempts"] == before)
 
+# ================================================================ alerting on the four things worth paging on
+import core.alerting as alerting  # noqa: E402
+
+ALERTS = []
+_real_alert = alerting.alert
+alerting.alert = lambda category, message, **details: ALERTS.append((category, message, details))
+
+fail2_id = in_school(lambda: jobs.enqueue("test_resilience_ping", who="alert-check", fail=True))
+for _ in range(jobs.MAX_ATTEMPTS - 1):
+    in_school(lambda: sql("UPDATE background_jobs SET created_at = :c WHERE id = :i", c=old, i=fail2_id))
+    in_school(lambda: jobs.enqueue("test_resilience_ping", who="alert-check-filler", fail=True))
+row = in_school(lambda: job_row(fail2_id))
+check("(set-up) this second job also exhausted its retries", row["status"] == "failed", str(row))
+check("a job exhausting its retries alerts, once, naming the job",
+      sum(1 for c, m, d in ALERTS if c == "job_exhausted_retries" and d.get("job_id") == fail2_id) == 1,
+      ALERTS)
+
+in_school(lambda: alerting.note_delivery_failure("email", "SMTP said no"))
+check("a single delivery failure on its own does not alert (only a burst does)",
+      not any(c == "delivery_failure_burst" for c, m, d in ALERTS), ALERTS)
+for _ in range(5):  # the burst limit itself (see core/alerting.py: limit=5, window=600)
+    in_school(lambda: alerting.note_delivery_failure("email", "SMTP said no"))
+check("a burst of delivery failures (not a single one) alerts",
+      any(c == "delivery_failure_burst" and d.get("channel") == "email" for c, m, d in ALERTS), ALERTS)
+
+alert_client = A.app.test_client()
+alert_base = "http://alpha.portal.test"
+
+
+def _login_page_csrf():
+    body = alert_client.get("/login", base_url=alert_base).get_data(as_text=True)
+    marker = 'name="_csrf_token" value="'
+    start = body.index(marker) + len(marker)
+    return body[start:body.index('"', start)]
+
+
+for i in range(9):  # the login limit itself is 8 tries per 5 minutes (blueprints/auth/routes.py)
+    alert_client.post("/login", data={"username": "nobody-at-all", "password": "wrong",
+                                      "_csrf_token": _login_page_csrf()}, base_url=alert_base)
+check("a sign-in refusal streak (the rate limit itself being hit) alerts",
+      any(c == "sign_in_refusal_streak" for c, m, d in ALERTS), ALERTS)
+
+alerting.alert = _real_alert
+
 # ================================================================ a thread that died mid-flight is picked up again
 stuck_id = in_school(lambda: jobs.enqueue("test_resilience_ping", who="will-be-stuck"))
 CALLS.clear()
@@ -210,6 +254,27 @@ check("recording a payment through the real form succeeds", r.status_code == 302
 after_jobs = in_school(lambda: sql("SELECT count(*), max(status) FROM background_jobs WHERE kind = 'send_payment_receipt'"))
 check("it leaves exactly one more durable 'send_payment_receipt' job, done",
       after_jobs[0][0] == before_jobs + 1 and after_jobs[0][1] == "done", str(after_jobs[0]))
+
+# ================================================================ the dedicated poller (python -m control_plane sweep-jobs)
+# A real kind (send_payment_receipt), not a test-only handler: the poller runs as its own process,
+# which never registered this script's own in-process test handlers.
+payment_id = in_school(lambda: sql(
+    "SELECT id FROM finance_payments WHERE student_id = :s ORDER BY id LIMIT 1", s=student_id)[0][0])
+admin_id = in_school(lambda: sql("SELECT id FROM admins ORDER BY id LIMIT 1")[0][0])
+cli_stuck_id = in_school(lambda: jobs.enqueue("send_payment_receipt", payment_id=payment_id, actor_id=admin_id))
+old_created = (datetime.now(timezone.utc) - timedelta(seconds=jobs.RETRY_FAILED_AFTER_SECONDS + 5)).isoformat()
+in_school(lambda: sql("UPDATE background_jobs SET status = 'failed', attempts = 1, created_at = :c WHERE id = :i",
+                       c=old_created, i=cli_stuck_id))
+row = in_school(lambda: job_row(cli_stuck_id))
+check("(set-up) a failed job old enough to be worth retrying, with no traffic of its own kind to trigger it",
+      row["status"] == "failed")
+cli = subprocess.run([sys.executable, "-m", "control_plane", "sweep-jobs", "alpha"],
+                     cwd=ROOT, capture_output=True, text=True, timeout=60)
+row = in_school(lambda: job_row(cli_stuck_id))
+check("the dedicated poller (recommendations.html's Hardening section) restarts it from outside any request",
+      row["status"] == "done", (cli.stdout[-500:], cli.stderr[-500:], str(row)))
+check("…and its own report names the school and how many it restarted",
+      "alpha" in cli.stdout and "1 job(s) restarted" in cli.stdout, cli.stdout)
 
 # ================================================================ a resubmitted click never records the payment twice
 count_before = in_school(lambda: sql(

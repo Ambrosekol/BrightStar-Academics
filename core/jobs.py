@@ -113,6 +113,10 @@ def _execute(job_id):
         job.last_error = str(exc)[:2000]
         job.status = 'failed' if job.attempts >= MAX_ATTEMPTS else 'pending'
         current_app.logger.exception('Job %s (%s) failed (attempt %s)', job_id, job.kind, job.attempts)
+        if job.status == 'failed':
+            from core.alerting import alert
+            alert('job_exhausted_retries', f'A {job.kind!r} background job used up its retries.',
+                  job_id=job_id, attempts=job.attempts, last_error=job.last_error)
     db.session.commit()
 
 
@@ -136,3 +140,35 @@ def _retry_stuck(kind):
         ), {'i': job_id})
         db.session.commit()
         _spawn(job_id)
+
+
+def sweep_all_kinds(limit=50):
+    """Give every stuck job in this tenant's database - of any kind - another try.
+
+    Ordinary traffic already does this opportunistically (``_retry_stuck``, above) for whichever
+    kind was just enqueued again; a school quiet enough to have nothing of that kind happen for a
+    while would otherwise leave a stuck job stuck. This is the dedicated poller recommended in
+    recommendations.html's Hardening section - one indexed query, callable from
+    ``python -m control_plane sweep-jobs`` on a cron/systemd timer across every school, without a
+    new service of its own to deploy or keep running. Returns how many jobs it restarted.
+    """
+    now = datetime.now(timezone.utc)
+    running_cutoff = (now - timedelta(seconds=STUCK_RUNNING_AFTER_SECONDS)).isoformat()
+    failed_cutoff = (now - timedelta(seconds=RETRY_FAILED_AFTER_SECONDS)).isoformat()
+    stuck = db.session.execute(sa.text(
+        "SELECT id FROM background_jobs WHERE "
+        "(status = 'running' AND started_at < :running_cutoff) OR "
+        "(status IN ('pending', 'failed') AND attempts < :max_attempts AND created_at < :failed_cutoff) "
+        "ORDER BY id LIMIT :limit"
+    ), {'running_cutoff': running_cutoff, 'failed_cutoff': failed_cutoff,
+        'max_attempts': MAX_ATTEMPTS, 'limit': limit}).fetchall()
+    for (job_id,) in stuck:
+        db.session.execute(sa.text(
+            "UPDATE background_jobs SET status = 'pending' WHERE id = :i AND status = 'running'"
+        ), {'i': job_id})
+        db.session.commit()
+        # Run and wait, not _spawn's own thread: a short-lived CLI process that spawned a
+        # daemon thread and then exited would kill it before it ever finished, leaving the very
+        # row this was meant to unstick just as stuck. A poller is expected to block until done.
+        _execute(job_id)
+    return len(stuck)
