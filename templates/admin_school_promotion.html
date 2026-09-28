@@ -72,6 +72,59 @@
     <section class="cr-promo-card">
         <div class="cr-promo-card-head">
             <div>
+                <span class="cr-promo-kicker">HISTORY</span>
+                <h2>Promotion Runs</h2>
+                <p>Every draft ever generated, including one already committed - opening it
+                   again shows exactly what happened and to how many students.</p>
+            </div>
+        </div>
+
+        <div class="cr-promo-table-wrap">
+            <table class="cr-promo-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Students</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>By</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in runs %}
+                    <tr>
+                        <td>{{ r.id }}</td>
+                        <td>{{ r.from_session_name }}</td>
+                        <td>{{ r.to_session_name }}</td>
+                        <td>{{ r.student_count }}</td>
+                        <td><span class="cr-promo-status">{{ r.status|capitalize }}</span></td>
+                        <td>{{ r.created_at[:10] if r.created_at else '—' }}</td>
+                        <td>{{ r.created_by_name or '—' }}</td>
+                        <td>
+                            <a class="btn btn-secondary"
+                               href="{{ url_for('admin_school_promotion_run', run_id=r.id) }}">
+                                Open
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="cr-promo-empty">
+                            No promotion run has been generated yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="cr-promo-card">
+        <div class="cr-promo-card-head">
+            <div>
                 <span class="cr-promo-kicker">CONFIGURATION</span>
                 <h2>Current Class Progression</h2>
                 <p>

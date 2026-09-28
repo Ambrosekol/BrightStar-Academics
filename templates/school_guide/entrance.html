@@ -9,21 +9,29 @@ kept deliberately apart from the School workspace (see
 <p><a href="{{ url_for('admin_question_banks') }}">Question Banks</a> hold the questions themselves;
 <a href="{{ url_for('admin_entrance_config') }}">Exam Configuration</a> decides which bank is the live
 paper for each entry class and subject, for the current academic period. A bank being used by a live
-exam can be locked to stop it changing mid-way.</p>
+exam can be locked to stop it changing mid-way. Opening a bank has an <em>Export JSON</em> button, so
+its exact questions and answer key can be kept outside the portal, or copied into another school.</p>
 
 <h2 id="candidates">Candidates</h2>
 <p><a href="{{ url_for('admin_candidates') }}">Candidates</a> registers who is sitting the exam and
 prints or resets their sign-in credentials. A candidate signs in with those credentials, sits the
 paper once, and their attempt is recorded automatically as they go.</p>
+<div class="guide-warn">A candidate's own record has a <em>Delete Candidate</em> button, for School
+Admin only. It permanently removes the person and every attempt and answer they ever made — there is
+no undo, and it is meant for a genuine mistake (a duplicate registration, say), not for someone who
+simply did not get in; declining them from the admissions waitlist keeps their record intact
+instead.</div>
 
 <h2 id="results">Results and rankings</h2>
 <p><a href="{{ url_for('admin_results') }}">Results &amp; Analytics</a> shows every candidate's
 outcome, one subject at a time, so you can compare how everyone did in Mathematics, or in English,
 without the other subjects in the way. <a href="{{ url_for('admin_rankings') }}">Rankings</a> instead
 orders every candidate by their overall score, highest first — the list a school actually uses to
-decide who is offered admission. A candidate's own result can be shared as an image carrying the
-school's own branding, nothing of another school's, and both pages can export what they show as a
-CSV spreadsheet or a JSON file for further work outside the portal.</p>
+decide who is offered admission; it can export what it shows as a CSV spreadsheet, and export the
+underlying raw attempts as CSV or JSON, for further work outside the portal. A candidate's own record
+has a <em>Share Result Image</em> button once they have completed all three papers: a single branded
+picture of their cumulative result, carrying the school's own logo and colours and nothing of another
+school's, ready to send however is easiest.</p>
 
 <h2 id="activity">Examination Activity</h2>
 <p><a href="{{ url_for('admin_attempts') }}">Examination Activity</a> is a plain, newest-first list of

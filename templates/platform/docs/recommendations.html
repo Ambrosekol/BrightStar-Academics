@@ -37,12 +37,17 @@
   <li><strong>A notice log per school</strong> ("this report card notice went to these parents on these channels") so a school can answer "did she get it?" without asking a developer. Receipts already have this ({{ table('finance_delivery_logs') }}).</li>
   <li><strong>Bulk release with a preview</strong> for a whole class, to complement the per-student release button.</li>
   <li><strong>Data export for a school leaving</strong>: a supported "give me everything" (database dump plus folder) with documentation, which the per-school layout makes straightforward.</li>
+  <li><strong>Let a question bank's questions be reordered from the screen.</strong> The route already
+  exists ({{ route('admin_reorder') }}, permission {{ perm('questions.reorder') }}) but nothing in
+  {{ tpl('admin_bank.html') }} calls it - a bank's question order is fixed at creation today. A small
+  up/down control per question, or drag handles, would finish what the backend already supports.</li>
   <li><strong>A refund for an online payment.</strong> Paystack's <code>POST /refund</code> is not called anywhere yet — today, undoing a Paystack payment means voiding the {{ table('finance_payments') }} row here and refunding the parent outside the system, by hand, from the Paystack dashboard. A real refund button would call that endpoint from {{ file('core/payments.py') }}, record it, and listen for the <code>refund.processed</code>/<code>refund.failed</code> webhook events (already reaching {{ route('paystack_webhook') }}, just not read yet) to know how it turned out.</li>
 </ul>
 
 <h2 id="culture">How to keep the codebase healthy</h2>
 <ul>
   <li><strong>Every write route gets a real submission in the PostgreSQL script</strong> ({{ page('testing', 'Testing') }}). The guard enforces it; do not work around it by listing a route as exempt without a reason.</li>
+  <li><strong>A real admin route needs a real link, not just a permission.</strong> Nothing enforces this one automatically: a route can be fully built, correctly permissioned and exercised by the PostgreSQL script, and still be unreachable by an actual person because nothing in the UI ever points to it - the promotion feature, two of the three result exports, a bank's JSON export, and the candidate/project delete buttons were all found in exactly this state in one pass. When adding a page or action, follow it back to where a person would actually click to reach it, the same way the nav-coverage contract already does for the navigation rail itself ({{ file('tests/current/test_guide_covers_every_nav_page.py') }}).</li>
   <li><strong>Update the docs with the code.</strong> A page that is wrong is worse than none. The contract test catches a renamed file, not a wrong sentence.</li>
   <li><strong>Read a school's data only through <code>db.session</code></strong> so the routing keeps its guarantee.</li>
   <li><strong>Do not add a public page to a school's address.</strong> It is a portal, deliberately.</li>

@@ -1823,12 +1823,30 @@ def admin_school_promotion():
             flash(f'Promotion draft #{run.id} created for {len(enrolments)} student(s).','success')
             return redirect(url_for('admin_school_promotion_run',run_id=run.id))
 
+    RunFromSession=sa.orm.aliased(AcademicSession)
+    RunToSession=sa.orm.aliased(AcademicSession)
+    item_count_sq=(select(func.count(AcademicPromotionItem.id))
+        .where(AcademicPromotionItem.run_id==AcademicPromotionRun.id)
+        .correlate(AcademicPromotionRun).scalar_subquery())
+    runs=[_flatten(r,'AcademicPromotionRun','from_session_name','to_session_name',
+                   'created_by_name','student_count')
+          for r in all_rows(
+        select(AcademicPromotionRun,RunFromSession.name.label('from_session_name'),
+               RunToSession.name.label('to_session_name'),
+               Admin.display_name.label('created_by_name'),
+               item_count_sq.label('student_count'))
+        .join(RunFromSession,RunFromSession.id==AcademicPromotionRun.from_session_id)
+        .join(RunToSession,RunToSession.id==AcademicPromotionRun.to_session_id)
+        .outerjoin(Admin,Admin.id==AcademicPromotionRun.created_by)
+        .order_by(AcademicPromotionRun.id.desc()))]
+
     return render_template(
         'admin_school_promotion.html',
         sessions=sessions,
         classes=classes,
         progressions=progressions,
-        current_session=current)
+        current_session=current,
+        runs=runs)
 
 @app.route('/admin/school/promotion/<int:run_id>', methods=['GET','POST'])
 @admin_required

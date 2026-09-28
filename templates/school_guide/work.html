@@ -17,7 +17,9 @@ assignment from the list shows every student's own answer or score, ready to mar
 <p><a href="{{ url_for('admin_school_projects') }}">Projects</a> are practical, longer-running tasks —
 a model to build, a report to write — with their own due date. There is no on-screen quiz for a
 project: a student is simply marked as having completed it or not, with a score and a remark you add
-by hand once you have seen the work.</p>
+by hand once you have seen the work. Opening a project has a <em>Delete</em> button, for whoever may
+edit that class and subject's projects; it removes the project from this list, but every student's
+already-recorded score and remark against it are kept.</p>
 
 <h2 id="tests-and-examinations">Tests and Examinations: two separate shelves for the same kind of work</h2>
 <p><a href="{{ url_for('admin_school_tests') }}">Tests</a> and
