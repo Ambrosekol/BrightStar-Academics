@@ -8,7 +8,7 @@
 
 <h2 id="shape">What you are deploying</h2>
 <div class="flow"><span class="node">Browser</span><span class="arrow">&rarr;</span><span class="node">TLS-terminating reverse proxy<br><small>nginx, Caddy, a load balancer</small></span><span class="arrow">&rarr;</span><span class="node">WSGI server<br><small>several worker processes</small></span><span class="arrow">&rarr;</span><span class="node">PostgreSQL<br><small>registry + one database per school</small></span></div>
-<p>Plus a folder of school files (<code>BRIGHTSTARS_TENANTS_DIR</code>), which must be on disk that every worker sees.</p>
+<p>Plus a school's files, on disk that every worker sees (<code>BRIGHTSTARS_TENANTS_DIR</code>) or in an S3-compatible bucket (<code>BRIGHTSTARS_STORAGE_BACKEND=s3</code>) — see "5. Files" below.</p>
 
 <h2 id="dns">1. Names and certificates</h2>
 <ul>
@@ -23,6 +23,7 @@
 <ul>
   <li>PostgreSQL 14 or newer (tested on 18). One server can hold the registry and every school's database.</li>
   <li>A role that can <code>CREATE DATABASE</code>. Schools' databases are created on demand. A separate, less privileged role for schools is possible with <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code> when the databases are created elsewhere.</li>
+  <li>Creating a database that does not exist yet needs a connection to one that already does, first (<code>CREATE DATABASE</code> cannot run inside a transaction). A stock install always has one called <code>postgres</code>, the default; a managed provider that does not ship one under that name (Aiven's default database is <code>defaultdb</code>, for instance) needs <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> set to whichever one is guaranteed to exist. This only matters the first time — the registry's own database and an already-created school's database are tried directly first.</li>
   <li><strong>Connections multiply.</strong> Each school has its own connection pool, so total connections are roughly <em>schools &times; pool size &times; workers</em>. Size <code>max_connections</code> accordingly, or put a pooler in front. With PgBouncer in transaction mode use a <em>database per school</em>, not a schema per school.</li>
   <li>Back up the registry and every school's database. Restoring one school never touches another.</li>
 </ul>
@@ -59,7 +60,12 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <div class="why"><p><strong>Why "upgrade" is a deploy step.</strong> The launch id (which signs everyone out after a restart) must be written once, before any worker serves a request; workers only read it. If you start workers directly, nothing writes it, and nobody is ever signed out for a restart. Also, a new release may add columns; upgrade adds them to every school's database before requests arrive.</p></div>
 
 <h2 id="storage">5. Files</h2>
-<p>A school's question banks and uploads are files under <code>BRIGHTSTARS_TENANTS_DIR/&lt;code&gt;/</code>. With more than one application server this folder <strong>must be shared storage</strong> visible to every server (or you swap the two functions in {{ file('core/storage.py') }} for an object-store backend). Back it up together with the databases; a school is its database plus its folder.</p>
+<p>A school's uploads, question banks and numbering rules live under one of two storage backends, chosen with <code>BRIGHTSTARS_STORAGE_BACKEND</code> ({{ file('core/storage.py') }}):</p>
+<ul>
+  <li><strong><code>local</code></strong> (the default): a folder on disk, <code>BRIGHTSTARS_TENANTS_DIR/&lt;code&gt;/</code>. Simplest for one application server with persistent disk. With more than one server this folder <strong>must be shared storage</strong> visible to every one of them.</li>
+  <li><strong><code>s3</code></strong>: an S3-compatible object store ({{ file('core/object_store.py') }}) — real AWS S3, or Cloudflare R2, Backblaze B2, DigitalOcean Spaces or MinIO by also setting <code>BRIGHTSTARS_S3_ENDPOINT_URL</code>. Needed whenever the application server's own disk is not persistent (many hosting platforms wipe it on every redeploy or restart) or more than one server must share the same files, with no shared disk to arrange at all. Requires <code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ACCESS_KEY_ID</code> and <code>BRIGHTSTARS_S3_SECRET_ACCESS_KEY</code> (see the {{ page('reference-config', 'configuration reference') }}), and <code>boto3</code> installed (already in <code>requirements.txt</code>).</li>
+</ul>
+<p>Every stored database value (<code>uploads/&lt;folder&gt;/&lt;file&gt;</code>) is identical under either backend, so switching later does not touch a school's database — it does mean moving existing files into the new backend by hand. A school's <code>generated/</code> folder (Chrome-rendered result images) is always local under either backend: nothing in it is ever served beyond the one request that made it. Back it up together with the databases; a school is its database plus its files.</p>
 
 <h2 id="health">6. Health and monitoring</h2>
 <ul>
@@ -76,7 +82,7 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <tr><td>Proxy passes <code>Host</code> unchanged; <code>BRIGHTSTARS_TRUSTED_PROXIES</code> matches the proxy count</td><td>School selection; true client addresses.</td></tr>
 <tr><td>Wildcard DNS and certificate for the portal domain</td><td>Every new school works the moment it is created.</td></tr>
 <tr><td><code>upgrade</code> runs before workers start, on every release</td><td>Schema and launch id.</td></tr>
-<tr><td>Tenants folder on shared storage (if more than one server)</td><td>Every server sees every school's files.</td></tr>
+<tr><td>Tenants folder on shared storage, or <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (if more than one server)</td><td>Every server sees every school's files.</td></tr>
 <tr><td>Backups of the registry, each school database and <code>tenants/</code></td><td>A school is a database plus a folder.</td></tr>
 <tr><td>PostgreSQL <code>max_connections</code> sized for schools &times; pool &times; workers</td><td>Otherwise new connections fail as schools are added.</td></tr>
 <tr><td>Shared mail and WhatsApp accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>

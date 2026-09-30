@@ -7,7 +7,7 @@
 <tr><th>Requirement</th><th>Notes</th></tr>
 <tr><td><strong>Python 3.10 or newer</strong></td><td>Developed and tested on 3.13.</td></tr>
 <tr><td><strong>PostgreSQL 14 or newer</strong></td><td>Required in development as well as production. There is no SQLite mode and never will be: a bug that only PostgreSQL reveals must be found on your laptop, not at a school. Tested on PostgreSQL 18.</td></tr>
-<tr><td>A database role that may <code>CREATE DATABASE</code></td><td>Each school's database is created when the school is. Locally the <code>postgres</code> superuser is fine.</td></tr>
+<tr><td>A database role that may <code>CREATE DATABASE</code></td><td>Each school's database is created when the school is. Locally the <code>postgres</code> superuser is fine. On a managed provider with no database literally named <code>postgres</code> (Aiven's default is <code>defaultdb</code>, for instance), set <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> to whichever one is guaranteed to exist — see the {{ page('reference-config', 'configuration reference') }}.</td></tr>
 <tr><td>Nothing else</td><td>No message queue, cache server or build toolchain. The PostgreSQL driver installs from <code>requirements.txt</code>. (Drawing a candidate's result <em>image</em> needs Chrome or Chromium; that one feature only.)</td></tr>
 </table></div>
 
@@ -34,7 +34,8 @@ copy .env.example .env         # Windows
 <tr><td><code>BRIGHTSTARS_PORTAL_DOMAIN</code></td><td><code>localhost</code> for development.</td></tr>
 </table></div>
 <div class="note"><p>You do not create any database by hand. <code>python -m control_plane init</code> creates the registry, and every school's database is created with the school.
-Browsers resolve <code>*.localhost</code> to your own machine, so a school called <code>demo</code> is reachable at <code>http://demo.localhost:5000</code> with no hosts-file editing.</p></div>
+Browsers resolve <code>*.localhost</code> to your own machine, so a school called <code>demo</code> is reachable at <code>http://demo.localhost:5000</code> with no hosts-file editing.
+A school's uploads and question banks default to a local folder (<code>BRIGHTSTARS_TENANTS_DIR</code>); if your host's disk is not persistent, see <code>BRIGHTSTARS_STORAGE_BACKEND</code> in the {{ page('reference-config', 'configuration reference') }} for an S3-compatible alternative.</p></div>
 
 <h2 id="first-run">First run</h2>
 <pre><code>python -m control_plane init                        # create the registry database
@@ -65,7 +66,7 @@ end-to-end scripts in <code>tests/verification/</code> create throwaway database
 <h2 id="stuck">If something does not work</h2>
 <div class="table-scroll"><table>
 <tr><th>Symptom</th><th>Usually</th></tr>
-<tr><td>"Could not reach PostgreSQL to create the platform registry"</td><td>The URL in <code>BRIGHTSTARS_PLATFORM_DB</code> is wrong, or the server is not running, or the role may not create databases.</td></tr>
+<tr><td>"Could not reach PostgreSQL to create the platform registry"</td><td>The URL in <code>BRIGHTSTARS_PLATFORM_DB</code> is wrong, the server is not running, or the role may not create databases. If the underlying error says a database called <code>postgres</code> does not exist, your provider does not ship one under that name (Aiven's default is <code>defaultdb</code>) — set <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> to whichever one is guaranteed to exist.</td></tr>
 <tr><td>A page that says "Address not found"</td><td>You used <code>localhost</code> or an IP address. Use <code>platform.localhost</code> for the console and <code>&lt;code&gt;.localhost</code> for a school. The <em>address</em> chooses the school.</td></tr>
 <tr><td>You are signed out every time you restart</td><td>By design: a restart signs everyone out (except people in the middle of an exam). See {{ page('operations', 'Operating it') }}.</td></tr>
 <tr><td>Startup refuses with a message about the secret</td><td>In production the secret must be at least 32 characters.</td></tr>

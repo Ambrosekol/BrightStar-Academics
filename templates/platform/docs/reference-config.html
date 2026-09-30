@@ -9,11 +9,18 @@
 <tr><td><code>BRIGHTSTARS_PLATFORM_DB</code></td><td><strong>none (required)</strong></td><td>PostgreSQL URL of the registry. No default, because a wrong guess would silently create an empty registry.</td></tr>
 <tr><td><code>BRIGHTSTARS_PLATFORM_HOSTS</code></td><td><code>platform.localhost</code></td><td>Comma-separated hostnames (no ports) that serve the console, <code>/marketing</code> and <code>/docs</code>.</td></tr>
 <tr><td><code>BRIGHTSTARS_PORTAL_DOMAIN</code></td><td><code>localhost</code></td><td>The domain schools' portal addresses are issued under.</td></tr>
-<tr><td><code>BRIGHTSTARS_TENANTS_DIR</code></td><td><code>tenants</code></td><td>Where each school's <code>data/</code>, <code>uploads/</code> and <code>numbering.json</code> live.</td></tr>
+<tr><td><code>BRIGHTSTARS_TENANTS_DIR</code></td><td><code>tenants</code></td><td>Where each school's <code>data/</code>, <code>uploads/</code> and <code>numbering.json</code> live, when <code>BRIGHTSTARS_STORAGE_BACKEND</code> is <code>local</code>.</td></tr>
+<tr><td><code>BRIGHTSTARS_STORAGE_BACKEND</code></td><td><code>local</code></td><td><code>local</code> (a folder on disk, above) or <code>s3</code> (an S3-compatible object store — {{ file('core/object_store.py') }}). See the <code>BRIGHTSTARS_S3_*</code> rows below.</td></tr>
+<tr><td><code>BRIGHTSTARS_S3_BUCKET</code></td><td><strong>required if <code>s3</code></strong></td><td>The bucket a school's files are stored in.</td></tr>
+<tr><td><code>BRIGHTSTARS_S3_ACCESS_KEY_ID</code>, <code>_SECRET_ACCESS_KEY</code></td><td><strong>required if <code>s3</code></strong></td><td>Credentials for the bucket above. Store them as secrets.</td></tr>
+<tr><td><code>BRIGHTSTARS_S3_ENDPOINT_URL</code></td><td>unset (real AWS S3)</td><td>Set for an S3-compatible provider that is not AWS: Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO.</td></tr>
+<tr><td><code>BRIGHTSTARS_S3_REGION</code></td><td><code>auto</code></td><td>The bucket's region. Some S3-compatible providers ignore this and expect <code>auto</code>.</td></tr>
+<tr><td><code>BRIGHTSTARS_S3_PREFIX</code></td><td>none</td><td>An optional prefix every school's files are namespaced under, so one bucket can be shared with other uses.</td></tr>
 <tr><td><code>BRIGHTSTARS_SECRET</code></td><td>random per start</td><td>Session-signing secret. Blank signs everyone out on every restart. In production must be at least 32 characters or the app will not start.</td></tr>
 <tr><td><code>BRIGHTSTARS_ENV</code></td><td><code>development</code></td><td><code>production</code> makes cookies Secure, adds HSTS and enforces the secret's length.</td></tr>
 <tr><td><code>PORT</code></td><td><code>5000</code></td><td>Port of the built-in server (<code>python app.py</code>).</td></tr>
 <tr><td><code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code></td><td>beside the registry</td><td>Where new schools' databases go: a URL with <code>{slug}</code> (the code) and/or <code>{db}</code> (the full name).</td></tr>
+<tr><td><code>BRIGHTSTARS_PG_MAINTENANCE_DB</code></td><td><code>postgres</code></td><td>Which database <code>CREATE DATABASE</code> connects to when a school's (or the registry's) own database does not exist yet. Set this on a managed provider that does not ship one called <code>postgres</code> (Aiven's default is <code>defaultdb</code>, for instance). Only matters the first time — an already-existing database is used directly.</td></tr>
 <tr><td><code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code></td><td><code>10</code></td><td>How long a hostname lookup is cached per worker; bounds how fast a suspension takes effect. <code>0</code> disables.</td></tr>
 <tr><td><code>BRIGHTSTARS_TRUSTED_PROXIES</code></td><td><code>0</code></td><td>How many reverse proxies are in front (0 to 5). See {{ page('deployment', 'Deployment') }}.</td></tr>
 <tr><td><code>BRIGHTSTARS_MAX_UPLOAD_BYTES</code></td><td><code>5242880</code></td><td>Largest single image.</td></tr>

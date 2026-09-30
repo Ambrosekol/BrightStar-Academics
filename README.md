@@ -82,6 +82,10 @@ the selected school (a ContextVar, for this request only)
         └─ /static/uploads ► tenants/theschool/uploads
 ```
 
+`core/storage`'s `tenants/theschool/...` paths are the default, local storage backend
+(`BRIGHTSTARS_STORAGE_BACKEND=local`); set it to `s3` to keep a school's uploads, question banks
+and numbering rules in an S3-compatible bucket instead — see [Configuration](#configuration).
+
 **It fails closed.** A query made with no school selected raises rather than falling back to a
 default database, because guessing a school could show one school's data to another.
 
@@ -129,7 +133,7 @@ is created and shown across its portal, result cards and receipts. A school also
 |---|---|
 | **Python 3.10+** | Developed and tested on 3.13. |
 | **PostgreSQL 14+** | Required, in development as well as production. Tested against PostgreSQL 18. |
-| A role that may `CREATE DATABASE` | Schools' databases are created on demand. Locally, the `postgres` superuser is fine. |
+| A role that may `CREATE DATABASE` | Schools' databases are created on demand. Locally, the `postgres` superuser is fine. On a managed provider with no database literally named `postgres` (Aiven's default is `defaultdb`, for instance), set `BRIGHTSTARS_PG_MAINTENANCE_DB` to whichever one is guaranteed to exist. |
 
 No build toolchain, message queue or other service is needed. The PostgreSQL driver
 (`psycopg[binary]`) installs from `requirements.txt`, so no client libraries need to be on the
@@ -687,10 +691,12 @@ variable; the ones that shape the deployment:
 | `BRIGHTSTARS_PLATFORM_DB` | PostgreSQL URL of the platform registry. Required — there is no default, because a wrong guess would silently create an empty registry and make every school look as though it did not exist. |
 | `BRIGHTSTARS_PLATFORM_HOSTS` | Hostnames serving the platform console (`/` there opens its sign-in page). |
 | `BRIGHTSTARS_PORTAL_DOMAIN` | Domain each school's portal address is issued under. |
-| `BRIGHTSTARS_TENANTS_DIR` | Folder holding each school's files. |
+| `BRIGHTSTARS_TENANTS_DIR` | Folder holding each school's files, when `BRIGHTSTARS_STORAGE_BACKEND` is `local` (the default). |
+| `BRIGHTSTARS_STORAGE_BACKEND` | `local` (the default) or `s3` — an S3-compatible object store for a school's uploads, question banks and numbering rules. See `.env.example` for the `BRIGHTSTARS_S3_*` settings it needs. |
 | `BRIGHTSTARS_SECRET` | Session-signing secret. In production it must be at least 32 characters or the app refuses to start. |
 | `BRIGHTSTARS_ENV` | `development` or `production`. |
 | `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` | Optional: place schools' databases on another server. |
+| `BRIGHTSTARS_PG_MAINTENANCE_DB` | Optional, default `postgres`. Which database `CREATE DATABASE` connects to when a school's (or the registry's) own database does not exist yet. Set this on a managed provider that does not ship one called `postgres` (Aiven's default is `defaultdb`, for instance). |
 | `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
 | `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
 | `BRIGHTSTARS_CHROME` | Optional. The Chrome or Chromium program that draws a candidate's result image; found automatically on Windows and under the usual names on Linux and macOS. |
@@ -733,7 +739,8 @@ Academics/
 │   ├── security.py           #   RBAC, admin_required, csrf_protect, audit_log
 │   ├── branding.py           #   the school's own name, motto, logo, colours, gallery, receipt prefix
 │   ├── theme.py              #   brand-colour and gallery rules: validation, contrast, theme CSS
-│   ├── storage.py            #   the school's data/ and uploads/ folders
+│   ├── storage.py            #   the school's data/ and uploads/ folders — local disk or an S3-compatible object store
+│   ├── object_store.py       #   the S3-compatible client used when BRIGHTSTARS_STORAGE_BACKEND=s3
 │   ├── accounts.py           #   shared sign-in/out helpers
 │   ├── entrance.py           #   question banks, grading, result rendering
 │   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
@@ -761,7 +768,8 @@ Academics/
 ├── starter_banks/            # The standard entrance question banks copied into a new school
 ├── templates/                # Jinja templates; templates/platform/ is the console and site
 ├── static/                   # CSS/JS/images shared by every school
-├── tenants/                  # Per school: <code>/data, <code>/uploads and numbering.json (gitignored)
+├── tenants/                  # Per school: <code>/data, <code>/uploads and numbering.json (gitignored;
+│                             #   local storage backend only — see BRIGHTSTARS_STORAGE_BACKEND)
 ├── tests/
 │   ├── current/              #   the authoritative contract suite
 │   ├── verification/         #   end-to-end scripts against real databases
@@ -925,8 +933,9 @@ schools × pool size × workers. Size PostgreSQL's `max_connections` accordingly
 in front. With PgBouncer in transaction mode, use a database per school rather than a schema per
 school.
 
-**More than one application server** needs `BRIGHTSTARS_TENANTS_DIR` on shared storage, or an
-object-store backend behind `core/storage.py`.
+**More than one application server** needs `BRIGHTSTARS_TENANTS_DIR` on shared storage, or
+`BRIGHTSTARS_STORAGE_BACKEND=s3` (an S3-compatible object store — `core/object_store.py`) instead,
+which needs no shared disk at all.
 
 ## Notes for contributors
 
@@ -950,8 +959,11 @@ object-store backend behind `core/storage.py`.
 - **The schema is declared in `models/` alone.** `create_all()` builds a school's tables and a
   column-diffing helper at start-up adds any column an older database lacks; there are no migration
   scripts to keep in step.
-- **Question banks are JSON files** under `tenants/<code>/data/`, owned by the school. A new school is
-  given the platform's standard set, and can import its own (see *Question banks* below).
+- **Question banks are JSON files** under `tenants/<code>/data/` (or the equivalent key prefix in an
+  S3-compatible bucket, see `BRIGHTSTARS_STORAGE_BACKEND`), owned by the school. A new school is
+  given the platform's standard set, and can import its own (see *Question banks* below). Code that
+  reads or writes a school's files should go through `core/storage.py`'s functions, never `os.path`
+  directly, so it works under either backend.
 
 ## Known gaps
 
