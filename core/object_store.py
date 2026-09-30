@@ -104,6 +104,16 @@ def list_names(prefix):
     return names
 
 
+def delete_all(prefix):
+    """Delete every object under ``prefix``, recursively. Used only for a full tenant deletion."""
+    client = _client()
+    paginator = client.get_paginator('list_objects_v2')
+    for page in paginator.paginate(Bucket=_bucket(), Prefix=prefix):
+        keys = [{'Key': obj['Key']} for obj in page.get('Contents', [])]
+        if keys:
+            client.delete_objects(Bucket=_bucket(), Delete={'Objects': keys})
+
+
 def list_all(prefix):
     """(key relative to prefix, size in bytes) for every object under ``prefix``, recursively."""
     paginator = _client().get_paginator('list_objects_v2')

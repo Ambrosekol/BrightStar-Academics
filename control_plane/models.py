@@ -117,6 +117,12 @@ class PlatformAdmin(PlatformBase):
     # variables and run the key-related actions (rotate-delivery-key, create-db-role --rotate,
     # set-db-url) — the platform's "highly trusted admin" tier. The super admin always may.
     settings_high_trust = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    # Whether this admin may permanently delete a school (its database, its files, and its place
+    # in the registry) - far more severe than anything else a platform admin can do to a school
+    # (create, brand, suspend, enter: all either routine or reversible), so it needs its own,
+    # narrower grant rather than riding on ordinary platform-admin status. The super admin always
+    # may, and grants it to anyone else, one admin at a time, from the Team page.
+    can_delete_schools = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     active = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     password_must_change = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     created_at = mapped_column(Text, nullable=False)

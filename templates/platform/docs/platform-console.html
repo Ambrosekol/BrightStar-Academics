@@ -27,6 +27,7 @@ calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider 
 <tr><td>Read <code>/docs</code></td><td>only if the super admin grants it</td><td><strong>always</strong></td></tr>
 <tr><td>Open <code>/platform/settings</code>, edit Low/Medium-risk variables, run non-key actions</td><td>only if the super admin grants <code>settings_access</code></td><td><strong>always</strong></td></tr>
 <tr><td>Edit High/Critical-risk variables, run key-related actions (rotate the delivery key, create/rotate a school's database role, point a school at a different database)</td><td>only if the super admin also grants <code>settings_high_trust</code></td><td><strong>always</strong></td></tr>
+<tr><td>Permanently delete a school (its database, its files, its registry row)</td><td>only if the super admin individually grants <code>can_delete_schools</code></td><td><strong>always</strong></td></tr>
 <tr><td>Can be removed</td><td>by the super admin</td><td><strong>never</strong></td></tr>
 </table></div>
 <p>The first admin created becomes the super admin. The console can never create another (do it deliberately from the command line with <code>--super</code>). A registry that had admins before roles existed promotes its earliest admin automatically on start ({{ file('control_plane/registry.py') }}, <code>ensure_superadmin</code>).</p>
@@ -36,6 +37,7 @@ calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider 
   <li><strong>Resetting a password</strong> ({{ route('platform_team_reset') }}) gives a new temporary password.</li>
   <li><strong>Documentation access</strong> ({{ route('platform_team_docs_access') }}). On the Team page each non-super admin has a <em>grant / withdraw</em> button. It changes a single flag, <code>platform_admins.docs_access</code> ({{ table('platform_admins') }}), and is written to the activity log. There is no bulk grant and no self-service: only the super admin decides who reads these pages.</li>
   <li><strong>Settings access and high trust</strong> ({{ route('platform_team_settings_access') }}). Two more flags on the same row, <code>settings_access</code> and <code>settings_high_trust</code> ({{ table('platform_admins') }}), each its own <em>grant / withdraw</em> button. Granting high trust also grants plain access (there is no page left to be trusted further inside); withdrawing plain access also withdraws high trust. See <a href="#settings">Settings and terminal actions</a>.</li>
+  <li><strong>Access to permanently delete a school</strong> ({{ route('platform_team_delete_access') }}). Its own flag, <code>can_delete_schools</code> ({{ table('platform_admins') }}), separate from every grant above: unlike suspend, brand or entering a school (routine or reversible), deletion destroys a school's database, files and registry row all at once, for good, so it is never bundled with a broader grant. The two delete buttons on a school's own page ({{ route('platform_school_delete') }}, {{ route('platform_school_force_delete') }}) only appear for the super admin or an admin holding this flag.</li>
 </ul>
 
 <h2 id="schools">Creating and running a school</h2>

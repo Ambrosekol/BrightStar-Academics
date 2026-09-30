@@ -14,7 +14,7 @@
   <section aria-label="Admins">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Settings</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
+        <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Settings</th><th>Delete a school</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
         <tbody>
           {% for a in admins if a.active %}
             <tr>
@@ -51,6 +51,17 @@
                       <button class="btn btn-sm" type="submit" title="{{ 'Withdraw' if a.settings_high_trust else 'Grant' }} highly-trusted access (High/Critical settings, key actions)">{{ 'Highly trusted · withdraw' if a.settings_high_trust else 'Not highly trusted · grant' }}</button>
                     </form>
                   </div>
+                {% endif %}
+              </td>
+              <td>
+                {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always</span>
+                {% else %}
+                  <form method="post" action="{{ url_for('platform_team_delete_access', admin_id=a.id) }}" style="margin:0"
+                        data-confirm="{{ 'Withdraw' if a.can_delete_schools else 'Grant' }} {{ a.display_name }}'s access to permanently delete a school? {{ 'They can no longer permanently delete a school.' if a.can_delete_schools else 'They will be able to permanently delete any school - its database, its files, everything. This cannot be undone once they do it.' }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="allow" value="{{ 0 if a.can_delete_schools else 1 }}">
+                    <button class="btn btn-sm {{ 'btn-danger' if not a.can_delete_schools else '' }}" type="submit" title="{{ 'Withdraw' if a.can_delete_schools else 'Grant' }} access to permanently delete a school">{{ 'Can delete · withdraw' if a.can_delete_schools else 'No access · grant' }}</button>
+                  </form>
                 {% endif %}
               </td>
               <td class="muted">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>

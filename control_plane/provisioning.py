@@ -34,7 +34,7 @@ from .registry import (
     clear_cache, get_tenant, init_platform_db, now_iso, platform_session, to_info,
     validate_hostname, validate_slug,
 )
-from .routing import build_engine, engine_for, ensure_database_exists, resolve_db_url
+from .routing import build_engine, dispose_engines, engine_for, ensure_database_exists, resolve_db_url
 
 
 class ProvisioningError(Exception):
@@ -707,6 +707,104 @@ def export_tenant_data(slug, output_dir):
         'key prefix in the bucket if BRIGHTSTARS_STORAGE_BACKEND=s3).\n',
         encoding='utf-8')
     return str(export_dir)
+
+
+def _drop_school_database(info):
+    """Remove everything that is physically this school's own on its database server.
+
+    A database-per-school school (the common case) has its whole database dropped, after
+    terminating any other connection to it - CREATE DATABASE's mirror image, and for the same
+    reason PostgreSQL refuses to drop a database anyone is still connected to. A schema-per-school
+    school shares its database with others, so only its own schema is dropped; the database, and
+    every other school in it, is left alone.
+    """
+    url = make_url(resolve_db_url(info.db_url))
+    if url.get_backend_name() != 'postgresql':
+        return
+    if info.db_schema:
+        engine = build_engine(info.db_url)  # deliberately without this school's own search_path
+        try:
+            with engine.begin() as conn:
+                conn.execute(sa.text(f'DROP SCHEMA IF EXISTS "{info.db_schema}" CASCADE'))
+        finally:
+            engine.dispose()
+        return
+    engine = sa.create_engine(url.set(database=config.pg_maintenance_db()), isolation_level='AUTOCOMMIT')
+    try:
+        with engine.connect() as conn:
+            conn.execute(sa.text(
+                'SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
+                'WHERE datname = :n AND pid <> pg_backend_pid()'), {'n': url.database})
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{url.database}"'))
+    finally:
+        engine.dispose()
+
+
+def _delete_school_files(info):
+    """Remove everything that is physically this school's own uploads, question banks and
+    numbering rules: the local folder, or everything under its key prefix in the bucket."""
+    from core import storage as _storage
+    if config.storage_backend() == 's3':
+        from core import object_store
+        object_store.delete_all(f'{_storage.tenant_root(info)}/')
+    else:
+        path = _storage.tenant_root(info)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+
+
+def delete_tenant(slug, backup=True, backup_dir=None, actor='cli'):
+    """Permanently remove one school: its database, its files, and its place in the registry.
+
+    Nothing here can be undone once it runs. With ``backup`` (the default - the command line's
+    ``delete-tenant``), a full export (the same work as :func:`export_tenant_data`) is taken
+    first, into ``backup_dir`` (default: an ``exports`` folder beside the application) - a way
+    back, if this turns out to be a mistake. ``backup=False`` (``force-delete-tenant``) skips
+    straight to deletion, for a school that has already been exported or was never real to begin
+    with. Returns the backup's own folder path, or None when none was taken.
+
+    The registry row (and its domains - ``ondelete='CASCADE'``, control_plane/models.py) is
+    removed *first*, before the database is dropped or a single file is deleted: a request for
+    this school arriving mid-deletion must meet a plain "address not found", never a school whose
+    database has already half-vanished under it. The platform audit trail keeps its own record of
+    the deletion (with the school's name and code in the entry's own text) even though the entry's
+    ``tenant_id`` itself is cleared the moment the row it pointed at is gone
+    (``ondelete='SET NULL'``) - the same way a removed platform admin's own log entries outlive
+    the account.
+    """
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if not tenant:
+            raise ProvisioningError(f'No school with code "{slug}".')
+        info = to_info(tenant)
+
+    backup_path = export_tenant_data(slug, backup_dir or os.path.join(config.BASE, 'exports')) if backup else None
+
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if not tenant:
+            raise ProvisioningError(f'No school with code "{slug}".')
+        detail = f'{info.name} ({slug})' + (f', backed up to {backup_path}' if backup_path else ', no backup taken')
+        audit(session, 'tenant.deleted', detail, tenant.id, actor)
+        session.delete(tenant)
+        session.commit()
+    clear_cache()
+    dispose_engines()
+
+    problems = []
+    try:
+        _drop_school_database(info)
+    except Exception as exc:
+        problems.append(f'its database could not be dropped ({exc})')
+    try:
+        _delete_school_files(info)
+    except Exception as exc:
+        problems.append(f'its files could not be deleted ({exc})')
+    if problems:
+        raise ProvisioningError(
+            f'{slug} was removed from the registry, but ' + ' and '.join(problems) +
+            ' - clean this up by hand; the school itself is already gone and unreachable.')
+    return backup_path
 
 
 def set_status(slug, status, reason=None, actor='cli'):

@@ -46,7 +46,8 @@ def _as_dict(row):
             'role': row.role, 'is_super': is_super,
             'docs_access': is_super or bool(row.docs_access),
             'settings_access': is_super or bool(row.settings_access),
-            'settings_high_trust': is_super or bool(row.settings_high_trust)}
+            'settings_high_trust': is_super or bool(row.settings_high_trust),
+            'can_delete_schools': is_super or bool(row.can_delete_schools)}
 
 
 def authenticate_platform_admin(username, password, ip=None):

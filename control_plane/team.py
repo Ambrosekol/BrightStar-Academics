@@ -119,6 +119,7 @@ def list_admins():
             'docs_access': a.role == ROLE_SUPER or bool(a.docs_access),
             'settings_access': a.role == ROLE_SUPER or bool(a.settings_access),
             'settings_high_trust': a.role == ROLE_SUPER or bool(a.settings_high_trust),
+            'can_delete_schools': a.role == ROLE_SUPER or bool(a.can_delete_schools),
             'created_at': a.created_at, 'last_login_at': a.last_login_at,
             'removed_at': a.removed_at, 'removed_by': a.removed_by,
             'must_change': bool(a.password_must_change),
@@ -255,6 +256,26 @@ def set_docs_access(admin_id, allowed, actor, actor_id):
         admin.docs_access = 1 if allowed else 0
         audit(session, 'platform_admin.docs_access', f'{admin.username}: {"granted" if allowed else "withdrawn"}',
               None, actor, actor_id)
+        username = admin.username
+        session.commit()
+    return username
+
+
+def set_delete_access(admin_id, allowed, actor, actor_id):
+    """Let a platform admin permanently delete a school, or take that away again.
+
+    The super admin can always delete a school, so there is nothing to grant or revoke for them.
+    Returns the admin's username.
+    """
+    with platform_session() as session:
+        admin = _target(session, admin_id)
+        if admin.role == ROLE_SUPER:
+            raise ProvisioningError('The super admin can always delete a school.')
+        if not admin.active:
+            raise ProvisioningError(f'{admin.username} has been removed; restore them first.')
+        admin.can_delete_schools = 1 if allowed else 0
+        audit(session, 'platform_admin.delete_access',
+              f'{admin.username}: {"granted" if allowed else "withdrawn"}', None, actor, actor_id)
         username = admin.username
         session.commit()
     return username

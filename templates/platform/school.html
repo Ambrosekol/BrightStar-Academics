@@ -223,5 +223,26 @@
 <div class="panel">
   {% include "platform/_audit_table.html" %}
 </div>
+
+{% if g.platform_admin.is_super or g.platform_admin.can_delete_schools %}
+<h2>Danger zone</h2>
+<div class="panel">
+  <p class="muted" style="margin-top:0">Permanently deleting a school removes its database, its files, and its place in
+    the registry, all at once. Everything it holds — students, staff, results, payments — is gone for good unless you
+    export it first. Neither button below can be undone.</p>
+  <div class="row-actions">
+    <form method="post" action="{{ url_for('platform_school_delete', slug=info.slug) }}"
+          data-confirm="Export {{ info.name }}'s complete data to the server's disk, then permanently delete it — its database, its files, and its place in the registry? This cannot be undone; the export is the way back.">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger" type="submit">Export &amp; Delete Permanently</button>
+    </form>
+    <form method="post" action="{{ url_for('platform_school_force_delete', slug=info.slug) }}"
+          data-confirm="Permanently delete {{ info.name }} right now, with NO backup taken first? Its database, its files and every record it holds — students, staff, results, payments — are gone for good, immediately, with no way back.">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger" type="submit">Permanently delete school from brightstars</button>
+    </form>
+  </div>
+</div>
+{% endif %}
 <script src="{{ url_for('static', filename='brand-form.js') }}"></script>
 {% endblock %}

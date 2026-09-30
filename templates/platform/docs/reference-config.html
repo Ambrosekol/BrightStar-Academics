@@ -16,6 +16,7 @@
 <tr><td><code>BRIGHTSTARS_S3_ENDPOINT_URL</code></td><td>unset (real AWS S3)</td><td>Set for an S3-compatible provider that is not AWS: Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO.</td></tr>
 <tr><td><code>BRIGHTSTARS_S3_REGION</code></td><td><code>auto</code></td><td>The bucket's region. Some S3-compatible providers ignore this and expect <code>auto</code>.</td></tr>
 <tr><td><code>BRIGHTSTARS_S3_PREFIX</code></td><td>none</td><td>An optional prefix every school's files are namespaced under, so one bucket can be shared with other uses.</td></tr>
+<tr><td><code>BRIGHTSTARS_UPLOAD_CACHE_BYTES</code></td><td><code>67108864</code> (64&nbsp;MB)</td><td>Bytes of uploaded-file content each worker keeps in memory ({{ file('core/storage.py') }}), so a second request for the same file — by any visitor — skips the bucket. Least-recently-used eviction, no expiry: an upload's path never changes what it holds. <code>0</code> disables it.</td></tr>
 <tr><td><code>BRIGHTSTARS_SECRET</code></td><td>random per start</td><td>Session-signing secret. Blank signs everyone out on every restart. In production must be at least 32 characters or the app will not start.</td></tr>
 <tr><td><code>BRIGHTSTARS_ENV</code></td><td><code>development</code></td><td><code>production</code> makes cookies Secure, adds HSTS and enforces the secret's length.</td></tr>
 <tr><td><code>PORT</code></td><td><code>5000</code></td><td>Port of the built-in server (<code>python app.py</code>).</td></tr>
@@ -70,6 +71,8 @@
 <tr><td><code>set-db-url CODE URL</code></td><td>Point a school at a different connection string.</td></tr>
 <tr><td><code>rotate-delivery-key OLD NEW [CODE]</code></td><td>Move every school's saved secrets to a new <code>BRIGHTSTARS_DELIVERY_KEY</code> before it is changed. See {{ page('recommendations', 'Recommendations') }}'s Hardening section.</td></tr>
 <tr><td><code>export-tenant CODE [--output DIR]</code></td><td>A school's whole database plus its own files, in one folder — what a school leaving is owed.</td></tr>
+<tr><td><code>delete-tenant CODE [--output DIR]</code></td><td>Permanently remove a school — its database, its files, and its place in the registry — after exporting it first. Cannot be undone; the export is the way back.</td></tr>
+<tr><td><code>force-delete-tenant CODE</code></td><td>The same permanent removal, with no export taken first. For a school already exported, or one that was never real to begin with.</td></tr>
 </table></div>
 <p>Every command above except <code>init</code> and <code>create-platform-admin</code> creating the <em>super</em> admin is also on the console's Settings page, under Terminal actions — see {{ page('platform-console', 'The platform console') }}.</p>
 {% endblock %}

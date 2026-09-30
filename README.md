@@ -259,6 +259,7 @@ brand, suspend, and enter any of them.
 | | Platform admin | Super admin |
 |---|---|---|
 | Create, brand, suspend and enter schools | yes | yes |
+| Permanently delete a school | only if granted | **yes** |
 | Add, remove, restore and reset other admins | no | **yes** |
 | Read what each admin has done | only their own log | **everyone's** |
 | Can be removed | by the super admin | **never** |
@@ -267,6 +268,11 @@ The super admin is the overall admin who can always look over and protect the sy
 admin created becomes one; the console can never create another (do that deliberately from the
 command line with `--super`). A platform that already had admins before roles existed promotes
 its earliest admin automatically, so upgrading needs no manual step.
+
+**Permanently deleting a school is its own, narrower grant**, separate from ordinary platform-admin
+status — unlike suspend/brand/enter (routine or reversible), deletion destroys a school's database,
+files and registry row all at once, for good. The super admin always may; granting it to another
+admin (Team page, per admin, like `/docs` access) is a deliberate, individual decision.
 
 **Adding an admin** (Team page, super admin only) generates a one-time password that is shown once.
 The new admin must replace it the first time they sign in, and nothing else in the console opens
@@ -679,6 +685,10 @@ python -m control_plane <command>
   drop-retired-tables [CODE] [--yes]   show, or with --yes drop, tables left by the removed website editor
   add-domain CODE HOST [--primary] / remove-domain HOST
   suspend CODE [--reason TEXT] / activate CODE
+  export-tenant CODE [--output DIR]   a school's whole database plus its own files, in one folder
+  delete-tenant CODE [--output DIR]   permanently remove a school (database, files, registry row),
+                                after exporting it first — cannot be undone; the export is the way back
+  force-delete-tenant CODE     the same permanent removal, with no export taken first
 ```
 
 ## Configuration

@@ -44,6 +44,13 @@ EXEMPT = {
     "/platform/settings/actions/set-db-url": "repoints a school's live database connection string",
     "/platform/settings/rotate-key/run": "re-encrypts a live dry run of every school's stored secrets",
     "/platform/settings/rotate-key/apply": "re-encrypts every school's stored secrets under a new key",
+    # Permanently deleting a school (control_plane/console.py): drops a real database, deletes real
+    # files, and removes the registry row - a throwaway "valid junk" submission from this file's
+    # generic fuzzer would destroy whatever school it hit. Exercised deliberately, end to end,
+    # against a real throwaway school - see the session that added it.
+    "/platform/schools/<slug>/delete": "permanently deletes a school (exports first)",
+    "/platform/schools/<slug>/force-delete": "permanently deletes a school (no export)",
+    "/platform/team/<int:admin_id>/delete-access": "grants/withdraws an admin's access to delete a school",
 }
 
 # The rules write_paths_pg_posts.py submits a real, valid form to (and then junk).

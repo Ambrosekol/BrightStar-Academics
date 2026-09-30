@@ -12,6 +12,7 @@ __pycache__/
 .env
 .env.old
 .env.local
+.env.prod
 .env.backup-*
 .claude/
 

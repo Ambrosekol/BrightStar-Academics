@@ -25,6 +25,11 @@
                                   everywhere and restart; never change the environment variable first
     export-tenant CODE [--output DIR]   a school's whole database (pg_dump) plus its own uploads
                                   folder, in one new directory - what a school leaving is owed
+    delete-tenant CODE [--output DIR]   permanently remove a school - its database, its files, and
+                                  its place in the registry - after exporting it first (see
+                                  export-tenant). Cannot be undone; the export is the way back.
+    force-delete-tenant CODE      the same permanent removal, with no export taken first. For a
+                                  school already exported, or one that was never real to begin with.
     list
 
 Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the
@@ -110,6 +115,13 @@ def _parser():
     s = sub.add_parser('export-tenant')
     s.add_argument('code')
     s.add_argument('--output', default='.', help='directory to create the export folder in (default: here)')
+
+    s = sub.add_parser('delete-tenant')
+    s.add_argument('code')
+    s.add_argument('--output', default='.', help='directory to create the backup export folder in (default: here)')
+
+    s = sub.add_parser('force-delete-tenant')
+    s.add_argument('code')
 
     sub.add_parser('list')
     return p
@@ -267,6 +279,14 @@ def main(argv=None):
             print('  database.sql - a plain-SQL dump of the school\'s own database')
             print('  files/       - a copy of the school\'s own uploads folder')
             print('  README.txt   - what is here, and how to restore it')
+        elif args.command == 'delete-tenant':
+            path = pv.delete_tenant(args.code, backup=True, backup_dir=args.output)
+            print(f'{args.code} exported to {path}, then permanently deleted: its database, its '
+                  'files, and its place in the registry are gone.')
+        elif args.command == 'force-delete-tenant':
+            pv.delete_tenant(args.code, backup=False)
+            print(f'{args.code} permanently deleted, with no backup taken: its database, its '
+                  'files, and its place in the registry are gone.')
         elif args.command == 'list':
             rows = pv.list_tenants()
             for slug, name, status, portal, customs, url in rows:

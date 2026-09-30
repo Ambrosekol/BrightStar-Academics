@@ -116,6 +116,22 @@ def superadmin_required(fn):
     return wrapper
 
 
+def delete_access_required(fn):
+    """Only the super admin, or an admin the super admin has explicitly trusted to delete
+    schools. Use after ``platform_required``.
+
+    Permanently deleting a school is far more severe than anything else a platform admin can do
+    to one (create, brand, suspend, enter - all either routine or reversible), so it needs its
+    own, narrower grant rather than riding on ordinary platform-admin status.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not (g.platform_admin['is_super'] or g.platform_admin.get('can_delete_schools')):
+            abort(403)
+        return fn(*args, **kwargs)
+    return wrapper
+
+
 def allow_branding_upload(fn):
     """Raise the request-size limit for a view that takes a logo and photographs.
 
@@ -466,9 +482,15 @@ def platform_school_photo(slug, filename):
             abort(404)
         import mimetypes
         mime = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-        return Response(data, mimetype=mime)
-    folder = pv.tenant_folder(info) / 'uploads' / 'branding'
-    return send_from_directory(folder, filename)
+        response = Response(data, mimetype=mime)
+    else:
+        folder = pv.tenant_folder(info) / 'uploads' / 'branding'
+        response = send_from_directory(folder, filename)
+    # This route itself requires a signed-in platform admin, so 'private' regardless of the fact
+    # that the same file is also public at /static/uploads/branding/... on the school's own
+    # address; its stored name is random and never reused, so the bytes never change.
+    response.headers['Cache-Control'] = 'private, max-age=31536000, immutable'
+    return response
 
 
 @app.post('/platform/schools/<slug>/status')
@@ -484,6 +506,44 @@ def platform_school_status(slug):
                   actor=g.platform_admin['username'])
     flash(f'{info.name} is now {wanted}.', 'success')
     return redirect(url_for('platform_school', slug=slug))
+
+
+@app.post('/platform/schools/<slug>/delete')
+@platform_host_only
+@platform_required
+@delete_access_required
+@csrf_protect
+def platform_school_delete(slug):
+    """Export, then permanently delete, one school: its database, its files, and its place in
+    the registry. Cannot be undone; the export is the way back."""
+    info, _, _ = _tenant_or_404(slug)
+    try:
+        path = pv.delete_tenant(slug, backup=True, actor=g.platform_admin['username'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('platform_school', slug=slug))
+    flash(f"{info.name} was exported to {path} on the server, then permanently deleted. Copy the "
+          "export somewhere safe and remove it from the server afterwards - it holds that "
+          "school's complete data.", 'success')
+    return redirect(url_for('platform_dashboard'))
+
+
+@app.post('/platform/schools/<slug>/force-delete')
+@platform_host_only
+@platform_required
+@delete_access_required
+@csrf_protect
+def platform_school_force_delete(slug):
+    """Permanently delete one school - its database, its files, and its place in the registry -
+    with no export taken first. Cannot be undone."""
+    info, _, _ = _tenant_or_404(slug)
+    try:
+        pv.delete_tenant(slug, backup=False, actor=g.platform_admin['username'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('platform_school', slug=slug))
+    flash(f'{info.name} was permanently deleted, with no backup taken.', 'success')
+    return redirect(url_for('platform_dashboard'))
 
 
 @app.post('/platform/schools/<slug>/domains')
@@ -678,6 +738,26 @@ def platform_team_docs_access(admin_id):
     else:
         flash(f'{username} can now read the documentation.' if allowed
               else f'{username} can no longer read the documentation.', 'success')
+    return redirect(url_for('platform_team'))
+
+
+@app.post('/platform/team/<int:admin_id>/delete-access')
+@platform_host_only
+@platform_required
+@superadmin_required
+@csrf_protect
+def platform_team_delete_access(admin_id):
+    """Grant or withdraw one admin's access to permanently delete a school. Only the super admin
+    decides who else may."""
+    me = g.platform_admin
+    allowed = request.form.get('allow') == '1'
+    try:
+        username = team.set_delete_access(admin_id, allowed, me['username'], me['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+    else:
+        flash(f'{username} can now permanently delete a school.' if allowed
+              else f'{username} can no longer permanently delete a school.', 'success')
     return redirect(url_for('platform_team'))
 
 
