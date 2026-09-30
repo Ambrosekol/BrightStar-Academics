@@ -328,6 +328,9 @@ def _message_attachment_response(attachment_path,attachment_name):
     mime=mimetypes.guess_type(filename)[0] or 'application/octet-stream'
     response=Response(data,mimetype=mime)
     response.headers['Content-Disposition']=f'inline; filename="{attachment_name or filename}"'
+    # Each attachment's stored name is random and never reused (core/storage.py), so the bytes at
+    # this path never change; 'private' since access is re-checked above on every request.
+    response.headers['Cache-Control']='private, max-age=31536000, immutable'
     return response
 
 @app.get('/parent/feedback/<int:feedback_id>/attachment')

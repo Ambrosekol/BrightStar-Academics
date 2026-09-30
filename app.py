@@ -1202,10 +1202,20 @@ def uploaded_file(filename):
     folder=clean.split('/',1)[0].lower()
     if folder in PRIVATE_UPLOAD_FOLDERS:
         abort(404)
-    if folder not in PUBLIC_UPLOAD_FOLDERS and not may_open_upload(folder,clean):
+    publicly_cacheable=folder in PUBLIC_UPLOAD_FOLDERS
+    if not publicly_cacheable and not may_open_upload(folder,clean):
         # A school whose logo predates the branding folder still has to show it on its sign-in page.
         if f'uploads/{clean}'!=school_brand().get('logo_path'):
             abort(404)
+        publicly_cacheable=True
+    # Every stored upload gets a fresh, random name the moment it is saved (core/storage.py) and
+    # is never changed in place - a new upload is a new path, and replacing one deletes the old
+    # path outright rather than overwriting it - so the bytes at this exact path never change
+    # while it exists. Safe to tell every cache, including the visitor's own browser, to keep it
+    # indefinitely instead of asking again on every page that shows it. 'private' for anything
+    # access-controlled (may_open_upload had to say yes), so a shared cache - a proxy, not the
+    # visitor's own browser - never serves it to a different visitor who asks for the same path.
+    cache_control=f"{'public' if publicly_cacheable else 'private'}, max-age=31536000, immutable"
     if control_plane_config.storage_backend()=='s3':
         import mimetypes
         from flask import Response
@@ -1213,8 +1223,11 @@ def uploaded_file(filename):
         if data is None:
             abort(404)
         mime=mimetypes.guess_type(clean)[0] or 'application/octet-stream'
-        return Response(data,mimetype=mime)
-    return send_from_directory(uploads_dir(),clean)
+        response=Response(data,mimetype=mime)
+    else:
+        response=send_from_directory(uploads_dir(),clean)
+    response.headers['Cache-Control']=cache_control
+    return response
 
 
 if __name__=='__main__':

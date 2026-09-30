@@ -83,6 +83,22 @@ def branding_cache_seconds():
         return 10.0
 
 
+def upload_cache_bytes():
+    """How many bytes of uploaded-file content each worker process keeps in memory
+    (``BRIGHTSTARS_STORAGE_BACKEND=s3`` only), so a second request for the same image - by any
+    visitor, not just the one who asked first - is answered without going back to the bucket.
+
+    An upload's own path never changes what it holds (core/storage.py never overwrites one in
+    place - a new upload is a new path), so unlike the other two caches there is nothing to
+    expire on a timer here: only least-recently-used eviction once this many bytes are held, and
+    deleting an upload drops its own entry immediately. 0 disables it.
+    """
+    try:
+        return max(0, int(os.environ.get('BRIGHTSTARS_UPLOAD_CACHE_BYTES', str(64 * 1024 * 1024))))
+    except ValueError:
+        return 64 * 1024 * 1024
+
+
 def is_production():
     return os.environ.get('BRIGHTSTARS_ENV',
                           os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')

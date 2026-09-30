@@ -12,12 +12,54 @@ between application servers and no need to keep a copy anywhere else.
 """
 
 import os
+import threading
+from collections import OrderedDict
 
 from control_plane import config
 from control_plane.context import current_tenant
 from control_plane.registry import SLUG_RE
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# S3 backend only: recently-served upload bytes, per process, so a second request for the same
+# image - by any visitor, not just the one who asked first - never goes back to the bucket.
+# Least-recently-used eviction by total size (BRIGHTSTARS_UPLOAD_CACHE_BYTES), not a TTL: an
+# upload's path never changes what it holds, so there is nothing here that goes stale on its own.
+_upload_cache = OrderedDict()  # key -> bytes, ordered oldest-used to newest-used
+_upload_cache_size = 0
+_upload_cache_lock = threading.Lock()
+
+
+def _upload_cache_get(key):
+    with _upload_cache_lock:
+        data = _upload_cache.get(key)
+        if data is not None:
+            _upload_cache.move_to_end(key)
+        return data
+
+
+def _upload_cache_put(key, data):
+    global _upload_cache_size
+    cap = config.upload_cache_bytes()
+    if not cap or len(data) > cap:
+        return
+    with _upload_cache_lock:
+        existing = _upload_cache.pop(key, None)
+        if existing is not None:
+            _upload_cache_size -= len(existing)
+        _upload_cache[key] = data
+        _upload_cache_size += len(data)
+        while _upload_cache_size > cap:
+            _, evicted = _upload_cache.popitem(last=False)
+            _upload_cache_size -= len(evicted)
+
+
+def _upload_cache_evict(key):
+    global _upload_cache_size
+    with _upload_cache_lock:
+        evicted = _upload_cache.pop(key, None)
+        if evicted is not None:
+            _upload_cache_size -= len(evicted)
 
 
 def tenant_root(tenant):
@@ -128,8 +170,15 @@ def read_upload_bytes(relative):
         sanitized = _sanitize_upload_relative(relative)
         if sanitized is None:
             return None
+        key = _tenant_key('uploads') + sanitized
+        cached = _upload_cache_get(key)
+        if cached is not None:
+            return cached
         from core import object_store
-        return object_store.get_bytes(_tenant_key('uploads') + sanitized)
+        data = object_store.get_bytes(key)
+        if data is not None:
+            _upload_cache_put(key, data)
+        return data
     path = stored_upload_path(relative)
     if not path or not os.path.isfile(path):
         return None
@@ -143,8 +192,10 @@ def delete_upload(relative):
         sanitized = _sanitize_upload_relative(relative)
         if sanitized is None:
             return
+        key = _tenant_key('uploads') + sanitized
         from core import object_store
-        object_store.delete(_tenant_key('uploads') + sanitized)
+        object_store.delete(key)
+        _upload_cache_evict(key)
         return
     path = stored_upload_path(relative)
     if path and os.path.isfile(path):
@@ -159,7 +210,9 @@ def save_upload_bytes(subdir, filename, data, content_type=None):
     value, under either backend."""
     if config.storage_backend() == 's3':
         from core import object_store
-        object_store.put_bytes(f'{_tenant_key("uploads")}{subdir}/{filename}', data, content_type)
+        key = f'{_tenant_key("uploads")}{subdir}/{filename}'
+        object_store.put_bytes(key, data, content_type)
+        _upload_cache_put(key, data)  # already in memory - save the guaranteed-miss re-fetch
     else:
         folder = os.path.join(uploads_dir(), subdir)
         os.makedirs(folder, exist_ok=True)

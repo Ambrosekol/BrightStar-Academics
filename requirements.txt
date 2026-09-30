@@ -2,6 +2,9 @@ Flask>=3.0,<4
 Flask-SQLAlchemy>=3.1,<4
 SQLAlchemy>=2.0,<3
 reportlab>=4.0,<5
+# Resizes and re-compresses an upload before it is stored (core/uploads.py) and draws a report
+# card's embedded pictures (core/report_card_pdf.py). Was previously only an indirect dependency.
+Pillow>=10,<13
 python-dotenv>=1.0,<2
 # PostgreSQL driver. Required: PostgreSQL is the only supported database.
 psycopg[binary]>=3.1,<4

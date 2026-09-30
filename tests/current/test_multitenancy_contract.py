@@ -517,7 +517,7 @@ def test_the_uploads_route_decides_on_the_path_it_will_actually_serve():
     assert "PUBLIC_UPLOAD_FOLDERS=frozenset({'branding'})" in app
     # Normalised first, judged second, and the normalised path is what is served: otherwise
     # "students/../messages/x" is judged as a student photo and served as a message.
-    assert route.index("posixpath.normpath") < route.index("PRIVATE_UPLOAD_FOLDERS") < route.index("return send_from_directory")
+    assert route.index("posixpath.normpath") < route.index("PRIVATE_UPLOAD_FOLDERS") < route.index("send_from_directory(uploads_dir(),clean)")
     assert "send_from_directory(uploads_dir(),clean)" in route
     assert "send_from_directory(uploads_dir(),filename)" not in route
 

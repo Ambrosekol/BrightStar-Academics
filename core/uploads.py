@@ -14,11 +14,13 @@ it from the page (:func:`upload_attrs`) so the person is told *before* they
 submit. Nothing else in the application spells the number out.
 """
 
+import io
 import math
 import os
 import re
 import secrets
 
+from PIL import Image, ImageOps
 from werkzeug.utils import secure_filename
 
 from core.storage import save_upload_bytes
@@ -301,11 +303,57 @@ def validate_image_upload(file_obj):
 
 _IMAGE_CONTENT_TYPES={'png':'image/png','jpg':'image/jpeg','jpeg':'image/jpeg','gif':'image/gif','webp':'image/webp'}
 
+# core/report_card_pdf.py already draws exactly this distinction when it embeds a picture in a
+# PDF - "photographs: small files… logos and signatures: exact pixels" - this applies the same
+# rule to what is actually stored, not just what is embedded. A folder here holds a photograph of
+# a person, where JPEG's compression is a fair trade for the space it saves; everywhere else
+# (signatures, branding, question and assignment pictures) keeps PNG, because JPEG's softened
+# edges are exactly wrong for a signature that ends up on an official document, or a diagram that
+# needs to stay legible.
+_PHOTO_SUBDIRS={'students','candidates','admins'}
+MAX_STORED_PX=1600
+STORED_JPEG_QUALITY=85
+
+
+def _reencode_for_storage(raw, subdir):
+    """Shrink and re-compress a validated image before it is stored, so a phone photo does not
+    sit in the bucket (or on disk) at full camera resolution. Returns (bytes, ext, content_type),
+    or None if it cannot be re-encoded - validate_image_upload has already refused anything that
+    is not a real image, so that is only a defensive fallback, never the expected path.
+    """
+    try:
+        with Image.open(io.BytesIO(raw)) as opened:
+            opened.load()
+            try:
+                picture=ImageOps.exif_transpose(opened)  # honour a phone's rotation flag
+            except Exception:
+                picture=opened
+            see_through=picture.mode in ('RGBA','LA','PA') or (
+                picture.mode=='P' and 'transparency' in picture.info)
+            as_photo=subdir in _PHOTO_SUBDIRS and not see_through
+            picture=picture.convert('RGBA' if see_through else 'RGB')
+            if max(picture.size) > MAX_STORED_PX:
+                picture.thumbnail((MAX_STORED_PX, MAX_STORED_PX), Image.LANCZOS)
+            out=io.BytesIO()
+            if as_photo:
+                picture.save(out, 'JPEG', quality=STORED_JPEG_QUALITY)
+                return out.getvalue(), 'jpg', 'image/jpeg'
+            picture.save(out, 'PNG')
+            return out.getvalue(), 'png', 'image/png'
+    except Exception:
+        return None
+
 
 def _save_image_upload(file_obj, subdir, prefix='image'):
     if not file_obj or not getattr(file_obj, 'filename', ''):
         return None
     ext=validate_image_upload(file_obj)
     safe_prefix=secure_filename(str(prefix))[:80] or 'image'
+    raw=file_obj.stream.read()
+    reencoded=_reencode_for_storage(raw, subdir)
+    if reencoded:
+        data, ext, content_type=reencoded
+    else:
+        data, content_type=raw, _IMAGE_CONTENT_TYPES.get(ext)
     filename=f"{safe_prefix}_{secrets.token_hex(10)}.{ext}"
-    return save_upload_bytes(subdir, filename, file_obj.stream.read(), _IMAGE_CONTENT_TYPES.get(ext))
+    return save_upload_bytes(subdir, filename, data, content_type)

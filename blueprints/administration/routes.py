@@ -668,6 +668,9 @@ def admin_message_attachment(message_id):
     mime=mimetypes.guess_type(filename)[0] or 'application/octet-stream'
     response=Response(data,mimetype=mime)
     response.headers['Content-Disposition']=f'inline; filename="{row["attachment_name"] or filename}"'
+    # Each attachment's stored name is random and never reused (core/storage.py), so the bytes at
+    # this path never change; 'private' since access is re-checked above on every request.
+    response.headers['Cache-Control']='private, max-age=31536000, immutable'
     return response
 
 @app.route('/admin/administration/roles')

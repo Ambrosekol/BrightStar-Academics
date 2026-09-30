@@ -194,7 +194,7 @@ def test_every_folder_the_application_writes_uploads_to_has_a_rule_for_who_may_o
 def test_the_uploads_route_asks_the_folder_rule_after_cleaning_the_path_and_refuses_with_a_plain_404():
     route = APP[APP.index("def uploaded_file"):APP.index("if __name__=='__main__'")]
     assert route.index("posixpath.normpath") < route.index("PRIVATE_UPLOAD_FOLDERS") < route.index("may_open_upload(folder,clean)")
-    assert route.index("may_open_upload(folder,clean)") < route.index("return send_from_directory")
+    assert route.index("may_open_upload(folder,clean)") < route.index("send_from_directory(uploads_dir(),clean)")
     assert route.count("abort(404)") >= 3 and "abort(403)" not in route
     assert "signed_in_to_school" not in APP          # the blanket "any signed-in account" rule is gone
 
