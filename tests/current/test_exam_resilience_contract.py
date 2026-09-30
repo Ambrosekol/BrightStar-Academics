@@ -50,3 +50,14 @@ def test_a_giving_up_message_is_shown_in_plain_words():
 def test_the_page_carries_a_visible_status_the_person_can_read():
     assert 'id="saveStatus"' in EXAM_HTML and 'role="status"' in EXAM_HTML
     assert ".save-status" in (ROOT / "static" / "app.css").read_text(encoding="utf-8")
+
+
+def test_the_submit_form_carries_its_own_csrf_token():
+    """/submit is a plain HTML form POST (form.submit() in the script above, not fetch), so it
+    carries no header and no hand-built FormData for the autosave code to attach a token to - the
+    token has to be a hidden field inside the form itself, or csrf_protect (core/security.py)
+    rejects the candidate's final submission with a 403 they cannot recover from."""
+    match = re.search(r'<form method="post" action="/submit"[^>]*>.*?</form>', EXAM_HTML, re.S)
+    assert match, "templates/exam.html lost its /submit form"
+    assert re.search(r'name="_csrf_token"\s+value="\{\{csrf_token\(\)\}\}"', match.group(0)), (
+        "the /submit form has no hidden _csrf_token field: every submission would be refused")
