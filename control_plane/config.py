@@ -70,6 +70,19 @@ def pg_maintenance_db():
     return os.environ.get('BRIGHTSTARS_PG_MAINTENANCE_DB', '').strip() or 'postgres'
 
 
+def branding_cache_seconds():
+    """How long a school's computed branding (``core/branding.py``'s ``school_brand()``) is
+    cached in each process. Read on every page but rarely changed, so caching it cuts several
+    database round-trips off every request. Saving a school's branding clears that one school's
+    entry immediately in the worker that handled the save; this bounds how long a *different*
+    worker process, which never saw the save, keeps serving the old values. Zero disables it.
+    """
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_BRANDING_CACHE_SECONDS', '10')))
+    except ValueError:
+        return 10.0
+
+
 def is_production():
     return os.environ.get('BRIGHTSTARS_ENV',
                           os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')

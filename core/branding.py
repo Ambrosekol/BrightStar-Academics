@@ -16,10 +16,12 @@ platform host where there is no school at all, and on a database mid-upgrade.
 """
 
 import logging
+import time
 
 from flask import g, has_request_context, url_for
 from sqlalchemy import delete, select
 
+from control_plane import config
 from control_plane.context import current_tenant
 from core import theme
 from core.public_settings import _public_settings
@@ -30,6 +32,18 @@ PLATFORM_NAME = 'Brightstars Academics'
 # Used only until a school uploads its own logo.
 PLACEHOLDER_LOGO = 'images/school_placeholder_logo.svg'
 RECEIPT_PREFIX_KEY = 'receipt_prefix'
+
+# A school's computed branding, per process, the same pattern as the hostname cache in
+# control_plane/registry.py: a plain dict of tenant id -> (expiry, brand dict), no extra
+# infrastructure. store_branding() clears one school's own entry the moment it saves a change;
+# the TTL (BRIGHTSTARS_BRANDING_CACHE_SECONDS) only bounds how long a *different* worker
+# process, which never saw that save, keeps serving the old values.
+_brand_cache = {}
+_BRAND_CACHE_MAX = 2048
+
+
+def clear_brand_cache(tenant_id):
+    _brand_cache.pop(tenant_id, None)
 
 
 def _setting(key):
@@ -117,6 +131,17 @@ def school_brand():
     if has_request_context() and '_school_brand' in g:
         return g._school_brand
 
+    # Cached per process across requests (not for a call made outside one, e.g. from a script:
+    # logo_url and gallery below are deliberately never computed there, and this cache must not
+    # hand back an older request's values for them instead).
+    tenant_id = current_tenant().id
+    ttl = config.branding_cache_seconds() if has_request_context() else 0
+    if ttl:
+        hit = _brand_cache.get(tenant_id)
+        if hit and hit[0] > time.monotonic():
+            g._school_brand = hit[1]
+            return hit[1]
+
     logo = _setting('school_logo')
     primary = _brand_colour(theme.PRIMARY_KEY, 'main')
     accent = _brand_colour(theme.ACCENT_KEY, 'accent')
@@ -140,6 +165,10 @@ def school_brand():
     }
     if has_request_context():
         g._school_brand = brand
+        if ttl:
+            if len(_brand_cache) >= _BRAND_CACHE_MAX:
+                _brand_cache.clear()
+            _brand_cache[tenant_id] = (time.monotonic() + ttl, brand)
     return brand
 
 
@@ -304,6 +333,7 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
             row.setting_value = value
             row.updated_at = now()
     db.session.commit()
+    clear_brand_cache(current_tenant().id)
 
     # Only once the new list is safely stored: a failure above must not have
     # already deleted a photograph the school still shows.
