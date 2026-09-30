@@ -102,7 +102,8 @@ uploads are never served there either.
 | `control_plane/console.py` | The platform console: sign-in, dashboard, create school, addresses, administrators, suspend, activity, "Enter school" |
 | `control_plane/entry.py` | Platform-admin sign-in, entry tickets, the reserved operator account inside a school |
 | `control_plane/cli.py` | `python -m control_plane …` |
-| `core/storage.py` | `data_dir()`, `uploads_dir()`, `stored_upload_path()` — per school |
+| `core/storage.py` | `data_dir()`, `uploads_dir()`, `stored_upload_path()` (local backend) and the backend-aware `read_upload_bytes()`, `upload_exists()`, `delete_upload()`, `save_upload_bytes()`, `list_data_names()`, `read_data_text()`, `write_data_bytes()` — per school |
+| `core/object_store.py` | The S3-compatible client used when `BRIGHTSTARS_STORAGE_BACKEND=s3` |
 | `core/branding.py` | The school's own name/motto/logo, exposed to every template as `school_brand` |
 | `core/numbering.py`, `core/numbering_pattern.py` | Each school's numbering rules: a pattern per school in `tenants/<code>/numbering.json`, set on the console, read and checked and never run |
 | `templates/platform/` | The console and the platform website |
@@ -226,10 +227,13 @@ header gets a 404, not a school.
   is read and checked (`core/numbering_pattern.py`), never executed, so being able to set one does
   not let anyone run code on a server that can reach every school's database. Every save is in the
   platform audit trail with the old and the new pattern.
-* **Files are per school.** Uploads and question banks live under
-  `BRIGHTSTARS_TENANTS_DIR/<code>/`; `/static/uploads/…` is served from the
-  requesting school's folder, `send_from_directory` refuses traversal, and stored
-  upload paths are confined to the school's folder (`stored_upload_path`).
+* **Files are per school.** Uploads, question banks and numbering rules live under
+  `BRIGHTSTARS_TENANTS_DIR/<code>/` (the default `local` storage backend) or under
+  that school's own key prefix in an S3-compatible bucket (`BRIGHTSTARS_STORAGE_BACKEND=s3`
+  — see "Storage backend" below); `/static/uploads/…` is served from the requesting
+  school's folder either way, and a stored upload value is confined to the school's
+  own folder or prefix under either backend (`core/storage.py`'s
+  `_sanitize_upload_relative`, shared by both).
 * **Suspending a school** takes effect within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS`
   (default 10 s) on each worker process; `0` disables the cache.
 * **No credential in the registry (optional).** A school's `db_url` may be
@@ -284,6 +288,17 @@ later is a data move, not a code change.
 The platform registry (`BRIGHTSTARS_PLATFORM_DB`) is its own database, e.g.
 `postgresql+psycopg://user:pass@host/brightstars_platform`.
 
+**Managed providers without a database called `postgres`.** Creating a school's database
+(or the registry's own, the first time) runs `CREATE DATABASE` against the server's
+maintenance database, which a stock PostgreSQL install always has one of, named
+`postgres`. Some managed providers don't ship one under that name — Aiven's default
+database is `defaultdb`, for instance — so `ensure_database_exists()`
+(`control_plane/routing.py`) tries the target database directly first (already there,
+the common case, needs nothing else), and only falls back to a maintenance connection
+for a database that is genuinely missing. Set `BRIGHTSTARS_PG_MAINTENANCE_DB` to whatever
+database is guaranteed to exist on your server when it isn't `postgres` (`defaultdb` on
+Aiven).
+
 ```bash
 pip install "psycopg[binary]>=3.1"
 python -m control_plane create-tenant theschool "The School" \
@@ -324,7 +339,34 @@ its column, which the form-submission suite provokes on every route.
 * Backups are per database (or per schema) — one school can be restored without
   touching another.
 * More than one application server needs `BRIGHTSTARS_TENANTS_DIR` on shared
-  storage (or an object-store backend behind `core/storage.py`).
+  storage, or `BRIGHTSTARS_STORAGE_BACKEND=s3` (see "Storage backend" below).
+
+## Storage backend
+
+`BRIGHTSTARS_STORAGE_BACKEND` chooses where a school's uploads, question banks and
+numbering rules live:
+
+* **`local`** (the default): a folder on this machine, `BRIGHTSTARS_TENANTS_DIR/<code>/`.
+  Simplest for a single application server with a persistent disk.
+* **`s3`**: an S3-compatible object store (`core/object_store.py`) — real AWS S3, or
+  Cloudflare R2, Backblaze B2, DigitalOcean Spaces or MinIO by also setting
+  `BRIGHTSTARS_S3_ENDPOINT_URL`. Needed whenever the application server's disk is not
+  persistent (many hosting platforms wipe it on every redeploy or restart), or more
+  than one application server must share the same files. Requires
+  `BRIGHTSTARS_S3_BUCKET`, `BRIGHTSTARS_S3_ACCESS_KEY_ID` and
+  `BRIGHTSTARS_S3_SECRET_ACCESS_KEY`; see `.env.example` for the full list, and
+  `pip install boto3` (or uncomment it in `requirements.txt`).
+
+Every stored database value (`uploads/<folder>/<file>`) is identical under either
+backend — only where the bytes physically live changes — so switching backends does
+not touch a school's database. It does mean *moving* existing files into the new
+backend by hand if switching after schools already have uploads; there is no
+migration command for that yet.
+
+A school's `generated/` folder (Chrome-rendered result images) is always local,
+under either backend: nothing in it is ever served to more than the one request that
+made it, so there is nothing to share between application servers or keep in an
+object store.
 
 ## Roles
 
@@ -352,6 +394,7 @@ re-activates it and re-randomises its password.
   strictness, `date('now')`). Form submissions are covered by the feature suites, not exhaustively.
 * Rate limiting and presence caches are per process; put a limit at the reverse proxy as well.
 * Databases that predate the retirement of the school website editor keep its three tables, unused.
-* Question banks are still per-school JSON files under `tenants/<code>/data/`.
+* Question banks are still per-school JSON files (under `tenants/<code>/data/`, or
+  that school's own key prefix in the bucket with `BRIGHTSTARS_STORAGE_BACKEND=s3`).
   A new school starts with none, so its entrance examinations cannot run until
   banks are imported for it.

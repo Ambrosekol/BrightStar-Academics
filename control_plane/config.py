@@ -58,9 +58,74 @@ def school_db_name(slug):
     return 'brightstars_' + slug.replace('-', '_')
 
 
+def pg_maintenance_db():
+    """The database CREATE DATABASE runs against when a school's (or the registry's) own
+    database does not exist yet (control_plane/routing.py's ``ensure_database_exists``).
+
+    A stock PostgreSQL install always has one called ``postgres``, which is the default
+    here. A managed provider does not always ship one under that name - Aiven's default
+    database is ``defaultdb``, for instance - so set this to whatever database is
+    guaranteed to exist on your server when ``postgres`` is not it.
+    """
+    return os.environ.get('BRIGHTSTARS_PG_MAINTENANCE_DB', '').strip() or 'postgres'
+
+
 def is_production():
     return os.environ.get('BRIGHTSTARS_ENV',
                           os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')
+
+
+def storage_backend():
+    """Where a school's uploads, question banks and numbering rules are kept:
+    ``'local'`` (the default), a folder on this machine under ``tenants_dir()``, or
+    ``'s3'``, an S3-compatible object store (AWS S3 itself, or Cloudflare R2, Backblaze B2,
+    DigitalOcean Spaces and MinIO by pointing ``BRIGHTSTARS_S3_ENDPOINT_URL`` at them).
+    See docs/architecture/MULTI_TENANCY.md.
+    """
+    value = os.environ.get('BRIGHTSTARS_STORAGE_BACKEND', 'local').strip().lower()
+    if value not in ('local', 's3'):
+        raise RuntimeError(
+            f'BRIGHTSTARS_STORAGE_BACKEND is "{value}", but only "local" or "s3" is understood.')
+    return value
+
+
+def s3_bucket():
+    value = os.environ.get('BRIGHTSTARS_S3_BUCKET', '').strip()
+    if not value:
+        raise RuntimeError('BRIGHTSTARS_S3_BUCKET is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+    return value
+
+
+def s3_endpoint_url():
+    """None for real AWS S3; a URL for an S3-compatible provider (Cloudflare R2, Backblaze
+    B2, DigitalOcean Spaces, MinIO, ...)."""
+    return os.environ.get('BRIGHTSTARS_S3_ENDPOINT_URL', '').strip() or None
+
+
+def s3_region():
+    return os.environ.get('BRIGHTSTARS_S3_REGION', '').strip() or 'auto'
+
+
+def s3_access_key_id():
+    value = os.environ.get('BRIGHTSTARS_S3_ACCESS_KEY_ID', '').strip()
+    if not value:
+        raise RuntimeError('BRIGHTSTARS_S3_ACCESS_KEY_ID is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+    return value
+
+
+def s3_secret_access_key():
+    value = os.environ.get('BRIGHTSTARS_S3_SECRET_ACCESS_KEY', '').strip()
+    if not value:
+        raise RuntimeError(
+            'BRIGHTSTARS_S3_SECRET_ACCESS_KEY is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+    return value
+
+
+def s3_key_prefix():
+    """An optional prefix every school's files are namespaced under in the bucket, so one
+    bucket can be shared with other uses. Empty, or ending in '/'."""
+    prefix = os.environ.get('BRIGHTSTARS_S3_PREFIX', '').strip().strip('/')
+    return f'{prefix}/' if prefix else ''
 
 
 def platform_hosts():

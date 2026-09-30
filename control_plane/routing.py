@@ -19,6 +19,7 @@ import sqlalchemy as sa
 from flask_sqlalchemy.session import Session
 from sqlalchemy.engine import make_url
 
+from . import config
 from .context import current_tenant
 
 _SCHEMA_RE = re.compile(r'^[a-z_][a-z0-9_]{0,62}$')
@@ -79,14 +80,33 @@ def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, m
 def ensure_database_exists(db_url):
     """Create the PostgreSQL database named in ``db_url`` if it is missing.
 
-    CREATE DATABASE cannot run inside a transaction, so this connects to the
-    server's maintenance database with autocommit. Every database name here is
-    built from our own validated slug, and is quoted regardless.
+    Tried directly first: the large majority of the time the database is already
+    there (every deployment's registry database, and a school's own database once
+    it has been created once), and connecting to it needs nothing else to exist on
+    the server. Only a database that is genuinely missing falls through to
+    CREATE DATABASE, which cannot run inside a transaction, so that goes through a
+    separate connection to the server's maintenance database, in autocommit.
+
+    A stock PostgreSQL install always has one built in, named ``postgres`` (the
+    default here), but a managed provider does not always ship one under that
+    name - Aiven's default database is ``defaultdb``, for instance - so
+    ``BRIGHTSTARS_PG_MAINTENANCE_DB`` names it when it is not called ``postgres``.
+    Every database name here is built from our own validated slug, and is quoted
+    regardless.
     """
     url = make_url(resolve_db_url(db_url))
     if url.get_backend_name() != 'postgresql':
         return
-    engine = sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+    try:
+        probe = sa.create_engine(url, isolation_level='AUTOCOMMIT')
+        try:
+            with probe.connect():
+                return  # already there - no maintenance connection needed at all
+        finally:
+            probe.dispose()
+    except sa.exc.OperationalError:
+        pass
+    engine = sa.create_engine(url.set(database=config.pg_maintenance_db()), isolation_level='AUTOCOMMIT')
     try:
         with engine.connect() as conn:
             exists = conn.execute(sa.text('SELECT 1 FROM pg_database WHERE datname = :n'),

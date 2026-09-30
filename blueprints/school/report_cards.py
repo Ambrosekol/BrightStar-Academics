@@ -12,7 +12,6 @@ classes only ever sees those classes.
 """
 
 import json
-import os
 import re
 from datetime import datetime, timezone
 
@@ -29,7 +28,7 @@ from blueprints.school.report_card_data import (
 from blueprints.finance.helpers import _save_signature_data_url
 from core.report_card_pdf import render_report_cards_pdf
 from core.security import admin_required, audit_log, csrf_protect, current_admin
-from core.storage import stored_upload_path
+from core.storage import delete_upload, upload_exists
 from core.uploads import _save_image_upload
 from models import (
     AcademicSession, Admin, ReportCardComment, ReportCardTrait, SchoolClass, Student, StudentEnrolment, db,
@@ -96,12 +95,7 @@ def _pdf_response(cards, name):
 
 
 def _remove_file(stored):
-    found = stored_upload_path(stored or '')
-    if found and os.path.isfile(found):
-        try:
-            os.remove(found)
-        except OSError:
-            pass
+    delete_upload(stored or '')
 
 
 def signature_action(current_stored):
@@ -208,7 +202,7 @@ def admin_school_report_card_comments():
     mine = db.session.scalar(select(Admin.signature_path).where(Admin.id == me['id']))
     return render_template('admin_school_report_card_comments.html', classes=classes, sessions=sessions, terms=TERMS,
                            class_row=class_row, session_row=session_row, term=term, rows=rows,
-                           max_length=MAX_COMMENT_LENGTH, has_signature=bool(stored_upload_path(mine or '')))
+                           max_length=MAX_COMMENT_LENGTH, has_signature=bool(upload_exists(mine or '')))
 
 
 @app.post('/admin/school/report-cards/comments')
@@ -328,7 +322,7 @@ def admin_school_report_card_traits_save():
 def admin_my_signature():
     me = current_admin()
     stored = db.session.scalar(select(Admin.signature_path).where(Admin.id == me['id']))
-    current = stored if stored_upload_path(stored or '') else ''
+    current = stored if upload_exists(stored or '') else ''
     return render_template('admin_report_card_signature.html', signature_path=current, errors=[])
 
 
@@ -356,7 +350,7 @@ def admin_my_signature_save():
 @admin_required
 def admin_school_report_card_settings():
     settings = report_settings()
-    signature = settings['head_signature'] if stored_upload_path(settings['head_signature']) else ''
+    signature = settings['head_signature'] if upload_exists(settings['head_signature']) else ''
     return render_template('admin_school_report_card_settings.html', settings=settings, signature_path=signature,
                            titles=HEAD_TITLES, errors=[])
 
@@ -392,7 +386,7 @@ def admin_school_report_card_settings_save():
     if errors:
         db.session.rollback()
         return render_template('admin_school_report_card_settings.html', settings=settings,
-                               signature_path=settings['head_signature'] if stored_upload_path(settings['head_signature']) else '',
+                               signature_path=settings['head_signature'] if upload_exists(settings['head_signature']) else '',
                                titles=HEAD_TITLES, errors=errors), 400
     db.session.commit()
     audit_log('report_card_settings_updated', 'school', 'school_setting', 'report_cards', {'action': request.form.get('action') or 'details'})

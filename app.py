@@ -17,10 +17,11 @@ from dotenv import load_dotenv
 import sqlalchemy as sa
 from sqlalchemy import and_, or_, func, select, delete as sa_delete, update as sa_update
 
+import control_plane.config as control_plane_config
 from control_plane.config import platform_db_url, trusted_proxies
 from control_plane.routing import current_engine
 from core.branding import school_brand
-from core.storage import uploads_dir
+from core.storage import read_upload_bytes, uploads_dir
 from services.date_format import format_display_date
 from services.student_number_generator import (
     allocate_student_number,
@@ -1205,6 +1206,14 @@ def uploaded_file(filename):
         # A school whose logo predates the branding folder still has to show it on its sign-in page.
         if f'uploads/{clean}'!=school_brand().get('logo_path'):
             abort(404)
+    if control_plane_config.storage_backend()=='s3':
+        import mimetypes
+        from flask import Response
+        data=read_upload_bytes(f'uploads/{clean}')
+        if data is None:
+            abort(404)
+        mime=mimetypes.guess_type(clean)[0] or 'application/octet-stream'
+        return Response(data,mimetype=mime)
     return send_from_directory(uploads_dir(),clean)
 
 

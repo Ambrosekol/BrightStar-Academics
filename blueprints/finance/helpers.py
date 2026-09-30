@@ -9,7 +9,6 @@ repo) and were dropped rather than moved.
 import base64
 import json
 import math
-import os
 import secrets
 import textwrap
 import urllib.error
@@ -31,7 +30,7 @@ from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settin
 from core.jobs import job_handler
 from core.notifications import _ng_phone
 from core.security import admin_has_permission, current_admin, is_school_admin
-from core.storage import stored_upload_path, uploads_dir
+from core.storage import read_upload_bytes, save_upload_bytes
 from core.uploads import STATIC
 
 
@@ -140,27 +139,24 @@ def _receipt_signature_setting_row():
         SchoolSetting.school_id==school_id,
         SchoolSetting.setting_key==RECEIPT_SIGNATURE_SETTING_KEY)).first()
 
-def _school_logo_path():
-    """The school's own logo, stored when the school was created, or None."""
+def _school_logo_bytes():
+    """The school's own logo, stored when the school was created, as bytes, or None."""
     try:
         stored=one_scalar(select(SchoolPublicSetting.setting_value)
                           .where(SchoolPublicSetting.setting_key=='school_logo'))
     except Exception:
         db.session.rollback(); return None
-    path=stored_upload_path(stored) if stored else None
-    return path if path and os.path.exists(path) else None
+    return read_upload_bytes(stored) if stored else None
 
 
 def _receipt_signature_relpath():
     row=_receipt_signature_setting_row()
     return (row.setting_value or '').strip() if row and row.setting_value else ''
 
-def _receipt_signature_abspath():
-    """Filesystem path to the configured authorised-signature image, or None."""
+def _receipt_signature_bytes():
+    """The configured authorised-signature image, as bytes, or None."""
     rel=_receipt_signature_relpath()
-    if not rel: return None
-    path=stored_upload_path(rel)
-    return path if path and os.path.exists(path) else None
+    return read_upload_bytes(rel) if rel else None
 
 def _set_receipt_signature(rel_path, admin_id):
     school_id=_primary_school_id()
@@ -185,10 +181,8 @@ def _save_signature_data_url(data_url):
     if len(raw) > max_bytes: raise ValueError(f'The drawn signature is {format_size_over(len(raw),max_bytes)}. The limit is {format_limit(max_bytes)}. Clear the pad and draw it again, a little smaller.')
     if not raw.startswith(b'\x89PNG\r\n\x1a\n'):
         raise ValueError('The drawn signature could not be read. Please try drawing it again.')
-    folder=os.path.join(uploads_dir(),'signatures'); os.makedirs(folder,exist_ok=True)
-    filename=f"authorised_{secrets.token_hex(10)}.png"; path=os.path.join(folder,filename)
-    with open(path,'wb') as fh: fh.write(raw)
-    return f"uploads/signatures/{filename}"
+    filename=f"authorised_{secrets.token_hex(10)}.png"
+    return save_upload_bytes('signatures', filename, raw, 'image/png')
 
 def _receipt_summary(row):
     """What the student owes for the session, as it stood when this receipt was issued.
@@ -224,7 +218,7 @@ def _receipt_sheet(payment_id):
     student_line=' · '.join(x for x in (_student_display(row),row.get('admission_no'),row.get('class_name')) if x)
     purpose=(row.get('category') or 'School Fees')+(f" — {row['session_name']} session" if row.get('session_name') else '')
     received_by=one_scalar(select(Admin.display_name).where(Admin.id==row['recorded_by']),'')
-    logo=_school_logo_path()
+    logo=_school_logo_bytes()
     from core.receipt_pdf import _initials
     return {
         'payment_id':payment_id,'initials':_initials(school_name()),'status':row['status'],'voided':row['status']=='voided',
@@ -232,7 +226,7 @@ def _receipt_sheet(payment_id):
                   'phone':brand.get('phone') or '','email':brand.get('email') or ''},
         'primary':primary,'accent':accent,'tint':theme.shade(primary,0.92),'soft':theme.shade(primary,0.8),
         'logo':logo,'logo_url':brand.get('logo_url') if logo else None,
-        'signature':_receipt_signature_abspath(),'signature_relpath':_receipt_signature_relpath(),
+        'signature':_receipt_signature_bytes(),'signature_relpath':_receipt_signature_relpath(),
         'number':row['receipt_no'],'date':date_text,'payer':row['payer_name'],'student':student_line,
         'purpose':purpose,'method':method+(f' · Ref {reference}' if reference else '') if method or reference else '—',
         'amount':float(row.get('amount') or 0),'amount_words':row['amount_words'],

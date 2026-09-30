@@ -16,7 +16,6 @@ platform host where there is no school at all, and on a database mid-upgrade.
 """
 
 import logging
-import os
 
 from flask import g, has_request_context, url_for
 from sqlalchemy import delete, select
@@ -253,7 +252,7 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
     """
     from datetime import datetime, timezone
 
-    from core.storage import stored_upload_path
+    from core.storage import delete_upload
     from core.uploads import _save_image_upload
     from models import School, SchoolPublicSetting, db
 
@@ -309,13 +308,11 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
     # Only once the new list is safely stored: a failure above must not have
     # already deleted a photograph the school still shows.
     for path in removed:
-        target = stored_upload_path(path)
         try:
-            if target and os.path.isfile(target):
-                os.remove(target)
-        except OSError:
+            delete_upload(path)
+        except Exception:
             # The change is already saved and the school no longer shows the
             # picture. A file still open elsewhere (Windows will not delete one
-            # that is being served) must not turn that into an error; the orphan
-            # is harmless and is logged for clean-up.
+            # that is being served), or a transient object-store error, must not
+            # turn that into an error; the orphan is harmless and is logged for clean-up.
             logger.warning('Could not delete the removed photograph %s of %s', path, slug)

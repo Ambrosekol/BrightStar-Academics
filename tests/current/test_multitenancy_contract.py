@@ -92,7 +92,9 @@ def test_files_are_scoped_per_school():
     core_entrance = (ROOT / "core" / "entrance.py").read_text(encoding="utf-8")
     assert "data_dir()" in core_entrance and "from app import DATA" not in core_entrance
     uploads = (ROOT / "core" / "uploads.py").read_text(encoding="utf-8")
-    assert "uploads_dir()" in uploads
+    # save_upload_bytes() (core/storage.py) is the per-school-scoping entry point every upload
+    # goes through, under either storage backend (BRIGHTSTARS_STORAGE_BACKEND).
+    assert "save_upload_bytes(" in uploads
     assert "@app.route('/static/uploads/<path:filename>')" in APP
 
 

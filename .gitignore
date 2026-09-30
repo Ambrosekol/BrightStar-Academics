@@ -10,6 +10,8 @@ __pycache__/
 
 # Secrets and local config (.env.example is deliberately tracked)
 .env
+.env.old
+.env.local
 .env.backup-*
 .claude/
 

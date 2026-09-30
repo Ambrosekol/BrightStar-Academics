@@ -21,7 +21,7 @@ import secrets
 
 from werkzeug.utils import secure_filename
 
-from core.storage import uploads_dir
+from core.storage import save_upload_bytes
 
 BASE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC=os.path.join(BASE,'static')
@@ -299,14 +299,13 @@ def validate_image_upload(file_obj):
     return ext
 
 
+_IMAGE_CONTENT_TYPES={'png':'image/png','jpg':'image/jpeg','jpeg':'image/jpeg','gif':'image/gif','webp':'image/webp'}
+
+
 def _save_image_upload(file_obj, subdir, prefix='image'):
     if not file_obj or not getattr(file_obj, 'filename', ''):
         return None
     ext=validate_image_upload(file_obj)
-    folder=os.path.join(uploads_dir(),subdir)
-    os.makedirs(folder,exist_ok=True)
     safe_prefix=secure_filename(str(prefix))[:80] or 'image'
     filename=f"{safe_prefix}_{secrets.token_hex(10)}.{ext}"
-    path=os.path.join(folder,filename)
-    file_obj.save(path)
-    return f"uploads/{subdir}/{filename}"
+    return save_upload_bytes(subdir, filename, file_obj.stream.read(), _IMAGE_CONTENT_TYPES.get(ext))

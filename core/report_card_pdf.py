@@ -284,21 +284,27 @@ class _Pictures:
     def __init__(self):
         self._cache = {}
 
-    def load(self, path, max_px=600, photo=False):
-        """(png-or-jpeg bytes, width, height) for a readable picture file, else None."""
-        if not path or not isinstance(path, (str, os.PathLike)):
+    def load(self, stored, max_px=600, photo=False):
+        """(png-or-jpeg bytes, width, height) for a readable stored upload, else None.
+
+        ``stored`` is a database-stored ``uploads/...`` value, not a filesystem path: it is
+        resolved through core/storage.py, so this works under either storage backend.
+        """
+        if not stored or not isinstance(stored, str):
             return None
-        key = (os.fspath(path), max_px, photo)
+        key = (stored, max_px, photo)
         if key not in self._cache:
-            self._cache[key] = self._read(os.fspath(path), max_px, photo)
+            self._cache[key] = self._read(stored, max_px, photo)
         return self._cache[key]
 
     @staticmethod
-    def _read(path, max_px, photo):
+    def _read(stored, max_px, photo):
+        from core.storage import read_upload_bytes
         try:
-            if not os.path.isfile(path):
+            raw = read_upload_bytes(stored)
+            if raw is None:
                 return None
-            with Image.open(path) as opened:
+            with Image.open(io.BytesIO(raw)) as opened:
                 opened.load()
                 picture = opened
                 try:

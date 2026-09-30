@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
-from flask import Response, abort, flash, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Response, abort, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import and_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -35,7 +35,7 @@ from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_school_admin
 from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
 from core.session_guard import refresh_password_stamp
-from core.storage import uploads_dir
+from core.storage import delete_upload, read_upload_bytes, save_upload_bytes
 from core.uploads import ATTACHMENT_EXTENSIONS, attachment_kind
 from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
@@ -247,7 +247,6 @@ def parent_feedback():
 
         # An attachment is optional; the "Attach" button on the form posts it as "attachment".
         attachment_path=attachment_type=attachment_name=None
-        saved_file=None
         file_obj=request.files.get('attachment')
         if file_obj and file_obj.filename:
             original_name=secure_filename(file_obj.filename)
@@ -262,17 +261,12 @@ def parent_feedback():
             attachment_type=attachment_kind(fext)
             attachment_name=original_name
             uname=f'{uuid.uuid4().hex}{fext}'
-            udir=os.path.join(uploads_dir(),'messages')
-            os.makedirs(udir,exist_ok=True)
-            saved_file=os.path.join(udir,uname)
-            file_obj.save(saved_file)
-            attachment_path=f'uploads/messages/{uname}'
+            attachment_path=save_upload_bytes('messages', uname, file_obj.stream.read())
 
         def discard_upload():
             """Do not leave an orphaned file behind when the send fails."""
-            if saved_file and os.path.exists(saved_file):
-                try: os.remove(saved_file)
-                except OSError: pass
+            if attachment_path:
+                delete_upload(attachment_path)
 
         now=datetime.now(timezone.utc).isoformat(); target_class=None
         if student_id:
@@ -325,6 +319,17 @@ def parent_feedback():
     replies=_feedback_replies([x['id'] for x in feedback])
     return render_template('parent_feedback.html',parent=parent,children=children,feedback=feedback,replies=replies,errors=[],form={})
 
+def _message_attachment_response(attachment_path,attachment_name):
+    """A feedback attachment's bytes as a downloadable response, or 404 if it is gone."""
+    filename=os.path.basename(attachment_path)
+    data=read_upload_bytes(f'uploads/messages/{filename}') if filename else None
+    if data is None: abort(404)
+    import mimetypes
+    mime=mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    response=Response(data,mimetype=mime)
+    response.headers['Content-Disposition']=f'inline; filename="{attachment_name or filename}"'
+    return response
+
 @app.get('/parent/feedback/<int:feedback_id>/attachment')
 @parent_required
 def parent_feedback_attachment(feedback_id):
@@ -334,11 +339,7 @@ def parent_feedback_attachment(feedback_id):
     row=one(select(ParentFeedback.parent_id,ParentFeedback.attachment_path,
                    ParentFeedback.attachment_name).where(ParentFeedback.id==feedback_id))
     if not row or not row['attachment_path'] or row['parent_id']!=pid: abort(404)
-    filename=os.path.basename(row['attachment_path'])
-    directory=os.path.join(uploads_dir(),'messages')
-    if not filename or not os.path.isfile(os.path.join(directory,filename)): abort(404)
-    return send_from_directory(directory,filename,as_attachment=False,
-                               download_name=row['attachment_name'] or filename)
+    return _message_attachment_response(row['attachment_path'],row['attachment_name'])
 
 @app.get('/admin/school/parent-feedback/<int:feedback_id>/attachment')
 @admin_required
@@ -357,11 +358,7 @@ def admin_school_parent_feedback_attachment(feedback_id):
             .order_by(StudentEnrolment.id.desc()).limit(1))
         if target_class and not me['admin_type_system'] and not _school_class_allowed(me['id'],target_class['id']):
             return admin_access_error('parent feedback scope')
-    filename=os.path.basename(row['attachment_path'])
-    directory=os.path.join(uploads_dir(),'messages')
-    if not filename or not os.path.isfile(os.path.join(directory,filename)): abort(404)
-    return send_from_directory(directory,filename,as_attachment=False,
-                               download_name=row['attachment_name'] or filename)
+    return _message_attachment_response(row['attachment_path'],row['attachment_name'])
 
 @app.post('/parent/feedback/<int:feedback_id>/reply')
 @parent_required

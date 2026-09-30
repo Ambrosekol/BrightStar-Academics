@@ -12,7 +12,7 @@ web page (templates/includes/_receipt_sheet.html, static/receipt.css) uses the v
 so the page on screen, the printout and the PDF sent to a parent are the same receipt.
 
 ``receipt`` keys: ``school`` (name, motto, address, phone, email), ``primary`` and ``accent`` (#rrggbb),
-``logo`` and ``signature`` (file paths or None), ``number``, ``date``, ``payer``, ``student`` (one line),
+``logo`` and ``signature`` (image bytes or None), ``number``, ``date``, ``payer``, ``student`` (one line),
 ``purpose``, ``method`` (one line), ``amount`` (float), ``amount_words``, ``notes``, ``received_by``,
 ``summary`` (None, or ``{'charged', 'paid', 'balance'}``) and ``voided`` (bool).
 """
@@ -112,7 +112,7 @@ def render_receipt_pdf(receipt):
     drawn = False
     if receipt.get('logo'):
         try:
-            c.drawImage(ImageReader(receipt['logo']), M + 0.8 * EM, y(11.5) + 0.8 * EM, width=8.4 * EM,
+            c.drawImage(ImageReader(io.BytesIO(receipt['logo'])), M + 0.8 * EM, y(11.5) + 0.8 * EM, width=8.4 * EM,
                         height=8.4 * EM, preserveAspectRatio=True, mask='auto')
             drawn = True
         except Exception:
@@ -212,7 +212,7 @@ def render_receipt_pdf(receipt):
     sign_top = 48.6
     if receipt.get('signature'):
         try:
-            c.drawImage(ImageReader(receipt['signature']), col_x + 3 * EM, y(sign_top + 6), width=21 * EM,
+            c.drawImage(ImageReader(io.BytesIO(receipt['signature'])), col_x + 3 * EM, y(sign_top + 6), width=21 * EM,
                         height=6 * EM, preserveAspectRatio=True, anchor='s', mask='auto')
         except Exception:
             pass

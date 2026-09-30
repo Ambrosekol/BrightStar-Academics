@@ -20,7 +20,6 @@ title, name and signature. The marks are the term result the school already work
 """
 
 import json
-import os
 import re
 from datetime import datetime, timezone
 
@@ -30,7 +29,7 @@ from app import ACADEMIC_TERMS
 from blueprints.school.helpers import _primary_school_id, _term_reports_bulk
 from core.branding import school_brand
 from core.db_helpers import tuples
-from core.storage import stored_upload_path
+from core.storage import upload_exists
 from models import (
     AcademicSession, Admin, ReportCardComment, ReportCardTrait, SchoolAssessment, SchoolClass, SchoolSetting,
     SchoolStudentResult, SchoolSubject, Student, StudentEnrolment, db,
@@ -241,9 +240,9 @@ def save_report_settings(values, admin_id):
 
 
 def _file(stored_path):
-    """A stored upload's real file inside this school's own folder, or None."""
-    found = stored_upload_path(stored_path or '')
-    return found if found and os.path.isfile(found) else None
+    """A stored upload value that actually points at a real file inside this school's own
+    folder, or None."""
+    return stored_path if stored_path and upload_exists(stored_path) else None
 
 
 # ---------------------------------------------------------------------------------------------

@@ -4,7 +4,6 @@ assessments.
 """
 
 import json
-import os
 from datetime import datetime, timezone
 
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
@@ -21,6 +20,7 @@ from core.idempotency import idempotent_write
 from core.jobs import enqueue
 from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
+from core.storage import delete_upload
 from core.uploads import _save_image_upload
 from blueprints.finance.helpers import (
     _active_classes, _class_group, _finance_assessment_allocated,
@@ -28,7 +28,7 @@ from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
     _finance_unallocated_payments, _finance_unallocated_summary,
     _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
-    _receipt_payload, _receipt_pdf, _receipt_sheet, _receipt_signature_abspath,
+    _receipt_payload, _receipt_pdf, _receipt_sheet,
     # importing this module registers _send_payment_receipt_to_guardian as the
     # 'send_payment_receipt' job handler (core/jobs.py); it is only ever called through enqueue().
     _send_payment_receipt_to_guardian,  # noqa: F401
@@ -376,25 +376,19 @@ def admin_finance_receipt_settings():
         action=request.form.get('action','').strip()
         try:
             if action=='remove':
-                old=_receipt_signature_abspath(); _set_receipt_signature('',me['id'])
-                if old:
-                    try: os.remove(old)
-                    except OSError: pass
+                old=_receipt_signature_relpath(); _set_receipt_signature('',me['id'])
+                if old: delete_upload(old)
                 flash('Authorised signature removed.','success')
             elif action=='draw':
                 rel=_save_signature_data_url(request.form.get('signature_data_url',''))
-                old=_receipt_signature_abspath(); _set_receipt_signature(rel,me['id'])
-                if old:
-                    try: os.remove(old)
-                    except OSError: pass
+                old=_receipt_signature_relpath(); _set_receipt_signature(rel,me['id'])
+                if old: delete_upload(old)
                 flash('Signature saved.','success')
             elif action=='upload':
                 rel=_save_image_upload(request.files.get('signature_file'),'signatures','authorised')
                 if not rel: raise ValueError('Choose an image file to upload.')
-                old=_receipt_signature_abspath(); _set_receipt_signature(rel,me['id'])
-                if old:
-                    try: os.remove(old)
-                    except OSError: pass
+                old=_receipt_signature_relpath(); _set_receipt_signature(rel,me['id'])
+                if old: delete_upload(old)
                 flash('Signature saved.','success')
             else:
                 errors.append('Unrecognised action.')

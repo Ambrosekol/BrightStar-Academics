@@ -19,7 +19,8 @@ import os
 import re
 import tempfile
 
-from core.storage import BASE, data_dir
+from control_plane import config
+from core.storage import BASE, data_dir, list_data_names, read_data_text, write_data_bytes
 
 STARTER_DIR = os.path.join(BASE, 'starter_banks')
 
@@ -259,6 +260,17 @@ def read_bank_upload(file_storage):
 
 def _bank_files():
     """(file name, decoded bank or None) for each .json file in this school's folder."""
+    if config.storage_backend() == 's3':
+        for name in list_data_names():
+            if not name.endswith('.json') or name == 'manifest.json':
+                continue
+            text = read_data_text(name)
+            try:
+                loaded = json.loads(text) if text is not None else None
+            except ValueError:
+                loaded = None
+            yield name, loaded if isinstance(loaded, dict) else None
+        return
     folder = data_dir()
     for name in sorted(os.listdir(folder)):
         if not name.endswith('.json') or name == 'manifest.json':
@@ -284,7 +296,15 @@ def find_bank_files(bank_id):
 def _write_file(folder, name, payload, replace):
     """Write ``payload`` to ``folder/name`` all at once: a reader sees the old file or the
     complete new one, never half of it. Without ``replace`` an existing file is never touched
-    (FileExistsError)."""
+    (FileExistsError).
+
+    S3 backend: ``folder`` is unused (None); the object store's own conditional-write and
+    single-PUT atomicity give the same two guarantees.
+    """
+    if config.storage_backend() == 's3':
+        if not write_data_bytes(name, payload, overwrite=replace):
+            raise FileExistsError(name)
+        return
     dest = os.path.join(folder, name)
     if os.path.islink(dest):
         raise BankError(f'{name} is not an ordinary file, so it will not be written to.')
@@ -327,7 +347,8 @@ def save_bank_file(bank, replace=False):
     reason = check_bank_id(bank.get('id'))
     if reason:
         raise BankError(reason)
-    folder = data_dir()
+    s3 = config.storage_backend() == 's3'
+    folder = None if s3 else data_dir()
     ids = existing_bank_ids()
     bank_id = bank['id']
     clash = [i for i in ids if i.casefold() == bank_id.casefold() and i != bank_id]
@@ -343,7 +364,8 @@ def save_bank_file(bank, replace=False):
             _write_file(folder, name, payload, replace=True)
         return 'replaced'
     name = bank_id + '.json'
-    if any(existing.casefold() == name.casefold() for existing in os.listdir(folder)):
+    existing_names = list_data_names() if s3 else os.listdir(folder)
+    if any(existing.casefold() == name.casefold() for existing in existing_names):
         raise BankError(f'A file called {name} is already in this school\'s folder, so this bank was not saved.')
     try:
         _write_file(folder, name, payload, replace=False)
@@ -406,13 +428,15 @@ def install_starter_banks():
     Safe to run again: a bank the school already has (by id or by file name) is left exactly
     as it is, and nothing is ever overwritten. Returns ``{'created': [ids], 'skipped': [ids]}``.
     """
-    folder = data_dir()
+    s3 = config.storage_backend() == 's3'
+    folder = None if s3 else data_dir()
     have = {i.casefold() for i in existing_bank_ids()}
     created, skipped = [], []
     for entry in starter_entries():
         bank = read_starter_bank(entry)
         name = bank['id'] + '.json'
-        if bank['id'].casefold() in have or any(n.casefold() == name.casefold() for n in os.listdir(folder)):
+        existing_names = list_data_names() if s3 else os.listdir(folder)
+        if bank['id'].casefold() in have or any(n.casefold() == name.casefold() for n in existing_names):
             skipped.append(bank['id'])
             continue
         try:

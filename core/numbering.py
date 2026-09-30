@@ -32,6 +32,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from control_plane import config
 from control_plane.context import current_tenant
 from core.numbering_pattern import (  # noqa: F401  (some are re-exported for callers and tests)
     CANDIDATE, CANDIDATE_CODE, DEFAULT_CANDIDATE_PATTERN, DEFAULT_FIRST_NUMBER, DEFAULT_STUDENT_PATTERN,
@@ -131,7 +132,29 @@ def _inside(root, path):
 
 def read_rules(root):
     """The rules kept in a school's folder. The default if there is no file; a plain refusal
-    (:class:`RulesFileError`) if there is one that is wrong."""
+    (:class:`RulesFileError`) if there is one that is wrong.
+
+    S3 backend: ``root`` is a key prefix, not a filesystem path.
+    """
+    if config.storage_backend() == 's3':
+        from core import object_store
+        raw = object_store.get_bytes(f'{root}/{RULES_FILE}')
+        if raw is None:
+            return DEFAULT_RULES
+        if len(raw) > MAX_FILE_BYTES:
+            raise _rules_error('the file is far larger than a numbering file can be')
+        try:
+            data = json.loads(raw.decode('utf-8'))
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise _rules_error(f'it is not readable ({type(exc).__name__})') from None
+        if not isinstance(data, dict) or set(data) != _KEYS:
+            raise _rules_error('it does not have the expected entries')
+        if data['version'] != SCHEMA_VERSION or isinstance(data['version'], bool):
+            raise _rules_error('it is from a newer or unknown version of the platform')
+        try:
+            return check_rules(data['candidate_pattern'], data['student_pattern'], data['first_number'])
+        except PatternError as exc:
+            raise _rules_error(str(exc).rstrip('.')) from None
     root = Path(root)
     path = root / RULES_FILE
     if not path.exists() and not path.is_symlink():
@@ -160,6 +183,11 @@ def read_rules(root):
 
 
 def _write(root, rules):
+    if config.storage_backend() == 's3':
+        from core import object_store
+        text = json.dumps(rules.as_file(), indent=2) + '\n'
+        object_store.put_bytes(f'{root}/{RULES_FILE}', text.encode('utf-8'))
+        return
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     text = json.dumps(rules.as_file(), indent=2) + '\n'
@@ -201,6 +229,15 @@ def save_rules(root, rules, facts=None):
     except RulesFileError as exc:
         old, unreadable = None, str(exc)
     checked = check_rules(rules.candidate_pattern, rules.student_pattern, rules.first_number, facts)
+    if config.storage_backend() == 's3':
+        from core import object_store
+        key = f'{root}/{RULES_FILE}'
+        if unreadable:
+            raw = object_store.get_bytes(key)
+            if raw is not None:
+                object_store.put_bytes(f'{root}/numbering.unreadable-{datetime.now():%Y%m%d-%H%M%S}.json', raw)
+        _write(root, checked)
+        return old, unreadable
     path = Path(root) / RULES_FILE
     if unreadable and path.is_file() and not path.is_symlink():
         try:

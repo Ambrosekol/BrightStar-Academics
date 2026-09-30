@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from flask import (
-    abort, flash, jsonify, redirect, render_template, request, send_from_directory,
+    Response, abort, flash, jsonify, redirect, render_template, request,
     session, url_for,
 )
 from sqlalchemy import and_, or_, select, func, delete as sa_delete, update as sa_update
@@ -44,7 +44,7 @@ from core.security import (
     audit_display_detail, audit_log, current_admin, csrf_protect, is_school_admin,
     _notify_school_admins,
 )
-from core.storage import uploads_dir
+from core.storage import delete_upload, read_upload_bytes, save_upload_bytes
 from core.uploads import ATTACHMENT_EXTENSIONS, _save_image_upload
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
@@ -566,7 +566,6 @@ def admin_message_send():
     attachment_path=None
     attachment_type=None
     attachment_name=None
-    saved_file=None
 
     allowed_extensions=ATTACHMENT_EXTENSIONS  # the same list the message box tells the person about
 
@@ -597,20 +596,12 @@ def admin_message_send():
             attachment_type='file'
 
         uname=f"{uuid.uuid4().hex}{fext}"
-        udir=os.path.join(uploads_dir(),'messages')
-        os.makedirs(udir,exist_ok=True)
-
-        saved_file=os.path.join(udir,uname)
-        file_obj.save(saved_file)
-        attachment_path=f"uploads/messages/{uname}"
+        attachment_path=save_upload_bytes('messages', uname, file_obj.stream.read())
 
     def discard_upload():
         """Do not leave an orphaned file behind when the send fails."""
-        if saved_file and os.path.exists(saved_file):
-            try:
-                os.remove(saved_file)
-            except OSError:
-                pass
+        if attachment_path:
+            delete_upload(attachment_path)
 
     # SQLite serialises writers, so a brief lock is retried rather than failed.
     # The session owns the transaction; there is no explicit BEGIN IMMEDIATE.
@@ -668,18 +659,16 @@ def admin_message_attachment(message_id):
         abort(403)
 
     filename=os.path.basename(row['attachment_path'])
-    directory=os.path.join(uploads_dir(),'messages')
-    full_path=os.path.join(directory,filename)
-
-    if not filename or not os.path.isfile(full_path):
+    stored=f'uploads/messages/{filename}'
+    data=read_upload_bytes(stored) if filename else None
+    if data is None:
         abort(404)
 
-    return send_from_directory(
-        directory,
-        filename,
-        as_attachment=False,
-        download_name=row['attachment_name'] or filename
-    )
+    import mimetypes
+    mime=mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    response=Response(data,mimetype=mime)
+    response.headers['Content-Disposition']=f'inline; filename="{row["attachment_name"] or filename}"'
+    return response
 
 @app.route('/admin/administration/roles')
 @admin_required

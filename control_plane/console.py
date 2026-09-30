@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 import sqlalchemy as sa
 from flask import (
-    abort, flash, g, jsonify, redirect, render_template, request, send_from_directory, session, url_for,
+    Response, abort, flash, g, jsonify, redirect, render_template, request, send_from_directory, session, url_for,
 )
 from werkzeug.utils import secure_filename
 
@@ -455,10 +455,19 @@ def platform_school_photo(slug, filename):
     one folder, image files only.
     """
     info, _, _ = _tenant_or_404(slug)
-    folder = pv.tenant_folder(info) / 'uploads' / 'branding'
     if (filename != secure_filename(filename)
             or filename.rsplit('.', 1)[-1].lower() not in IMAGE_EXTENSIONS):
         abort(404)
+    if config.storage_backend() == 's3':
+        from core import object_store
+        from core import storage as _storage
+        data = object_store.get_bytes(f'{_storage.tenant_root(info)}/uploads/branding/{filename}')
+        if data is None:
+            abort(404)
+        import mimetypes
+        mime = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        return Response(data, mimetype=mime)
+    folder = pv.tenant_folder(info) / 'uploads' / 'branding'
     return send_from_directory(folder, filename)
 
 

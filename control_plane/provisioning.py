@@ -78,12 +78,15 @@ def tenant_folder(slug_or_info):
 
 
 def ensure_tenant_folders(slug_or_info):
-    """Create the school's container folder and its standard subfolders.
+    """Create the school's container folder and its standard subfolders. Local backend only:
+    an S3-compatible object store has no empty folders to create, so this is a no-op there.
 
     The school's numbering rules (``numbering.json``) are not made here: a school that has no
     such file numbers by the default pattern, and a new school is given its file, from the form
     the operator filled in, by ``create_tenant``.
     """
+    if config.storage_backend() == 's3':
+        return None
     root = tenant_folder(slug_or_info)
     for sub in TENANT_SUBFOLDERS:
         (root / sub).mkdir(parents=True, exist_ok=True)
@@ -91,7 +94,21 @@ def ensure_tenant_folders(slug_or_info):
 
 
 def tenant_folder_listing(info):
-    """What is actually on disk for one school, for the platform console."""
+    """What is actually on disk (or in the bucket) for one school, for the platform console."""
+    if config.storage_backend() == 's3':
+        from core import object_store
+        from core import storage as _storage
+        prefix = f'{_storage.tenant_root(info)}/'
+        subfolders, root_files = {}, []
+        for relative, size in object_store.list_all(prefix):
+            if '/' in relative:
+                top = relative.split('/', 1)[0]
+                subfolders[top] = subfolders.get(top, 0) + 1
+            else:
+                root_files.append((relative, size))
+        entries = [{'name': f'{name}/', 'detail': f'{count} file(s)'} for name, count in sorted(subfolders.items())]
+        entries += [{'name': name, 'detail': f'{size / 1024:.0f} KB'} for name, size in sorted(root_files)]
+        return {'root': prefix, 'exists': bool(entries), 'entries': entries}
     root = tenant_folder(info)
     entries = []
     if root.is_dir():
@@ -245,8 +262,9 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
     try:
         upgrade_tenant(info)
         apply_branding(info, branding or {'school_name': name}, logo, gallery)
+        from core import storage as _storage
         try:
-            numbering.write_rules(tenant_folder(info), rules, rule_facts)  # written even if it is the default
+            numbering.write_rules(_storage.tenant_root(info), rules, rule_facts)  # written even if it is the default
         except numbering.NumberingRuleError as exc:
             raise ProvisioningError(str(exc)) from None
         if not numbering.is_default(rules):
@@ -375,8 +393,9 @@ def _describe_rules(old, new):
 def numbering_of(info):
     """``(rules, problem)``: a school's numbering rules, or the default and a plain message if its
     numbering.json cannot be used (which the school's page shows, and never hides)."""
+    from core import storage as _storage
     try:
-        return numbering.read_rules(tenant_folder(info)), None
+        return numbering.read_rules(_storage.tenant_root(info)), None
     except numbering.NumberingRuleError as exc:
         return numbering.DEFAULT_RULES, str(exc)
 
@@ -424,10 +443,12 @@ def update_numbering(info, candidate_pattern, student_pattern, first_number, act
     touched. Returns the new :class:`numbering.Rules`."""
     school = _read_school(info)
     facts = numbering.Facts(school_code=school['code'], school_name=school['name'])
+    from core import storage as _storage
+    root = _storage.tenant_root(info)
     try:
         old, unreadable = numbering.save_rules(
-            tenant_folder(info), numbering.Rules(candidate_pattern, student_pattern, first_number), facts)
-        new = numbering.read_rules(tenant_folder(info))
+            root, numbering.Rules(candidate_pattern, student_pattern, first_number), facts)
+        new = numbering.read_rules(root)
     except numbering.NumberingRuleError as exc:
         raise ProvisioningError(str(exc)) from None
     detail = _describe_rules(old, new) if old is not None else (
@@ -662,12 +683,17 @@ def export_tenant_data(slug, output_dir):
         raise ProvisioningError(f'pg_dump failed: {result.stderr[-2000:]}')
 
     from core import storage as _storage
-    files_source = _storage.tenant_root(info)
     files_dest = export_dir / 'files'
-    if Path(files_source).exists():
-        shutil.copytree(files_source, files_dest)
-    else:
+    if config.storage_backend() == 's3':
+        from core import object_store
         files_dest.mkdir()
+        object_store.download_all(f'{_storage.tenant_root(info)}/', str(files_dest))
+    else:
+        files_source = _storage.tenant_root(info)
+        if Path(files_source).exists():
+            shutil.copytree(files_source, files_dest)
+        else:
+            files_dest.mkdir()
 
     (export_dir / 'README.txt').write_text(
         f'Export of {info.name} ({info.slug}), made {stamp} UTC.\n\n'
@@ -677,7 +703,8 @@ def export_tenant_data(slug, output_dir):
         'candidate and staff photographs, signatures, branding, receipt attachments).\n\n'
         'To bring this school up again elsewhere: create its database, restore database.sql into it,\n'
         'point a new tenant at that database (control_plane create-tenant --db-url ...), then copy\n'
-        'files/ back into that new tenant\'s own folder under BRIGHTSTARS_TENANTS_DIR.\n',
+        'files/ back into that new tenant\'s own folder (under BRIGHTSTARS_TENANTS_DIR, or into its\n'
+        'key prefix in the bucket if BRIGHTSTARS_STORAGE_BACKEND=s3).\n',
         encoding='utf-8')
     return str(export_dir)
 

@@ -16,8 +16,9 @@ from core.db_helpers import all_rows, _flatten
 from core.marks import tidy as tidy_mark
 from core.security import admin_scope_allows
 from app import _entrance_config_select
+from control_plane import config
 from core.entrance import bank, bank_subject, load_banks, sync_examinations
-from core.storage import data_dir
+from core.storage import data_dir, write_data_bytes
 
 
 def _generate_bank_id(name, level=''):
@@ -42,10 +43,14 @@ def validate_bank_payload(data, existing_id=None):
     return errors
 
 def save_bank(b):
-    path=os.path.join(data_dir(),b['id']+'.json')
-    tmp=path+'.tmp'
-    with open(tmp,'w',encoding='utf-8') as f: json.dump(b,f,ensure_ascii=False,indent=2)
-    os.replace(tmp,path)
+    payload=json.dumps(b,ensure_ascii=False,indent=2).encode('utf-8')
+    if config.storage_backend()=='s3':
+        write_data_bytes(b['id']+'.json', payload, overwrite=True)
+    else:
+        path=os.path.join(data_dir(),b['id']+'.json')
+        tmp=path+'.tmp'
+        with open(tmp,'wb') as f: f.write(payload)
+        os.replace(tmp,path)
     sync_examinations()
 
 def next_qid(b): return max([int(q['id']) for q in b.get('questions',[])],default=0)+1

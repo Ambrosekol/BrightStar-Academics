@@ -25,9 +25,10 @@ from models import (
     AcademicSession, EntranceBankConfig, EntrancePracticeSetting, Examination,
     RetakeGrant, db,
 )
+from control_plane import config
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.marks import total as total_marks
-from core.storage import data_dir, generated_dir, stored_upload_path
+from core.storage import data_dir, generated_dir, list_data_names, read_data_text, read_upload_bytes, upload_exists
 
 
 def _answers_for_attempt(aid):
@@ -53,6 +54,17 @@ def _candidate_papers(candidate_id):
 
 def load_banks():
     banks={}
+    if config.storage_backend()=='s3':
+        for fn in list_data_names():
+            if fn.endswith('.json') and fn!='manifest.json':
+                text=read_data_text(fn)
+                try:
+                    b=json.loads(text) if text is not None else None
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(b,dict) and b.get('id') and isinstance(b.get('questions'),list):
+                    banks[b['id']]=b
+        return banks
     folder=data_dir()
     for fn in os.listdir(folder):
         if fn.endswith('.json') and fn!='manifest.json':
@@ -309,27 +321,29 @@ def candidate_cumulative(cid):
     pct=(total_score/total_max*100) if total_max else 0
     return enriched,total_score,total_max,pct,completed
 
-def _result_file_data_uri(path):
-    """Return a local image file as a browser-safe data URI."""
+def _result_file_data_uri(stored):
+    """Return a stored upload as a browser-safe data URI."""
+    if not stored:
+        return ''
     try:
-        p=Path(path)
-        if not p.exists() or not p.is_file():
+        raw=read_upload_bytes(stored)
+        if raw is None:
             return ''
-        mime=mimetypes.guess_type(str(p))[0] or 'application/octet-stream'
-        encoded=base64.b64encode(p.read_bytes()).decode('ascii')
+        mime=mimetypes.guess_type(stored)[0] or 'application/octet-stream'
+        encoded=base64.b64encode(raw).decode('ascii')
         return f'data:{mime};base64,{encoded}'
     except Exception:
         return ''
 
-def _candidate_photo_filesystem_path(candidate):
-    """The candidate's stored photograph, or None. Only ever a file inside the current school's own
-    uploads folder: a path that leads anywhere else resolves to nothing."""
+def _candidate_photo_stored_value(candidate):
+    """The candidate's stored photograph value, or None. Only ever a file inside the current
+    school's own uploads folder: a value that leads anywhere else resolves to nothing."""
     keys=list(candidate.keys())
     for key in ('photo_path','photo','candidate_photo','passport_photo','image_path'):
         if key in keys and candidate[key]:
-            found=stored_upload_path(str(candidate[key]).strip())
-            if found and os.path.isfile(found):
-                return Path(found)
+            value=str(candidate[key]).strip()
+            if upload_exists(value):
+                return value
     return None
 
 def _school_logo_data_uri():
@@ -340,8 +354,7 @@ def _school_logo_data_uri():
     """
     from core.branding import school_brand  # deferred: core.branding imports the app
 
-    found=stored_upload_path(school_brand().get('logo_path') or '')
-    return _result_file_data_uri(found) if found else ''
+    return _result_file_data_uri(school_brand().get('logo_path') or '')
 
 def _find_chrome():
     """The Chrome or Chromium program that draws result images, or None.
@@ -410,7 +423,7 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
         f"result_{candidate['id']}_{token}.html"
     )
 
-    photo_path = _candidate_photo_filesystem_path(
+    photo_stored = _candidate_photo_stored_value(
         candidate
     )
 
@@ -419,8 +432,8 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
     logo_data = _school_logo_data_uri()
 
     photo_data = _result_file_data_uri(
-        photo_path
-    ) if photo_path else ""
+        photo_stored
+    ) if photo_stored else ""
 
     render_kwargs = {
         "candidate": candidate,
