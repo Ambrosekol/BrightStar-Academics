@@ -45,14 +45,18 @@ def test_a_launch_id_is_written_once_at_start_in_the_registry_and_only_read_per_
     assert "class PlatformState" in (ROOT / "control_plane" / "models.py").read_text(encoding="utf-8")
     assert "def record_new_launch" in LAUNCH and "def current_launch_id" in LAUNCH
     assert "secrets.token_hex" in LAUNCH
-    # Written by `python app.py` after the schools are upgraded and before it serves, and by the
-    # deploy commands, never by a request.
+    # Written by `python app.py` after the schools are upgraded and before it serves, by the
+    # deploy commands, and by the platform Settings page's own gated Terminal actions (an
+    # authorised, highly-trusted admin's deliberate equivalent of running the CLI command,
+    # audited the same way every other console action is) - never by an ordinary request.
     main = APP[APP.index("if __name__=='__main__':"):]
     assert main.index("upgrade_all_tenants()") < main.index("record_new_launch()") < main.index("app.run(")
     cli = (ROOT / "control_plane" / "cli.py").read_text(encoding="utf-8")
     assert "record_new_launch" in cli and "'new-launch'" in cli
+    settings_console = (ROOT / "control_plane" / "settings_console.py").read_text(encoding="utf-8")
+    assert "record_new_launch" in settings_console and "@settings_required" in settings_console
     for path in _code_files():
-        if path.name in ("launch.py", "cli.py") or path == ROOT / "app.py":
+        if path.name in ("launch.py", "cli.py", "settings_console.py") or path == ROOT / "app.py":
             continue
         assert "record_new_launch" not in path.read_text(encoding="utf-8"), path.name
 
@@ -175,6 +179,9 @@ def test_every_folder_the_application_writes_uploads_to_has_a_rule_for_who_may_o
         text = path.read_text(encoding="utf-8", errors="ignore")
         written.update(re.findall(r"_save_image_upload\([^()]*?(?:\([^()]*\)[^()]*?)*,\s*'([a-z_]+)'", text))
         written.update(re.findall(r"os\.path\.join\(uploads_dir\(\),\s*'([a-z_]+)'\)", text))
+        # save_upload_bytes(subdir, filename, data, ...) (core/storage.py) is the backend-aware
+        # entry point every upload goes through now, including a literal subdir like 'messages'.
+        written.update(re.findall(r"save_upload_bytes\(\s*'([a-z_]+)'", text))
     assert written >= {"admins", "candidates", "students", "questions", "signatures", "assignments", "branding", "messages"}, written
     assert written <= set(FOLDER_RULES), f"no rule for: {sorted(written - set(FOLDER_RULES))}"
     assert FOLDER_RULES["branding"] == PUBLIC and FOLDER_RULES["messages"] == NEVER

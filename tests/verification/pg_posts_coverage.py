@@ -28,6 +28,22 @@ EXEMPT = {
     # behind it, same as the two rules above - exercised for real, both accepted and refused,
     # webhook-confirmed and webhook-failed, in tests/verification/write_paths_paystack.py.
     "/admin/finance/payments/<int:payment_id>/refund": "see write_paths_paystack.py",
+    # The platform Settings / Terminal-actions area (control_plane/settings_console.py): system
+    # operations, not an ordinary admin CSRF form this file's generic Actor/junk-submission shape
+    # fits. Several are one-way or state-changing in ways this fuzzer cannot safely cover: a new
+    # launch id signs everyone out mid test run, rotating a role or the delivery key changes live
+    # connection/encryption state, and export shells out to pg_dump and writes to disk.
+    "/platform/settings/<name>": "editing a system-wide environment variable",
+    "/platform/settings/team/<int:admin_id>/access": "granting an admin Settings access",
+    "/platform/settings/actions/upgrade": "brings schema up to date and/or records a new launch id, signing everyone out",
+    "/platform/settings/actions/new-launch": "records a new launch id, signing everyone out mid test run",
+    "/platform/settings/actions/sweep-jobs": "restarts stuck background jobs across every school",
+    "/platform/settings/actions/drop-retired-tables": "drops real tables from a school's database",
+    "/platform/settings/actions/export-tenant": "shells out to pg_dump and writes a real export to disk",
+    "/platform/settings/actions/create-db-role": "creates a real PostgreSQL role owning a school's database",
+    "/platform/settings/actions/set-db-url": "repoints a school's live database connection string",
+    "/platform/settings/rotate-key/run": "re-encrypts a live dry run of every school's stored secrets",
+    "/platform/settings/rotate-key/apply": "re-encrypts every school's stored secrets under a new key",
 }
 
 # The rules write_paths_pg_posts.py submits a real, valid form to (and then junk).

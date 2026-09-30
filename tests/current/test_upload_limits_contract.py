@@ -57,9 +57,14 @@ def test_no_page_spells_the_limit_out_by_hand():
 
 
 def test_the_limit_is_read_in_one_place():
+    # core/uploads.py is the source of truth. settings_registry.py is a plain-data catalogue of
+    # every setting's name for the console's Settings page (its own docstring: "nothing here
+    # reads or writes a value") - it names this variable exactly like every other one it lists,
+    # never reads or computes its value, so it is not a second place the limit is read from.
+    exempt = {ROOT / "core" / "uploads.py", ROOT / "control_plane" / "settings_registry.py"}
     for path in list(ROOT.glob("*.py")) + [p for folder in ("blueprints", "core", "control_plane", "services", "models")
                                           for p in (ROOT / folder).rglob("*.py")]:
-        if path == ROOT / "core" / "uploads.py":
+        if path in exempt:
             continue
         source = path.read_text(encoding="utf-8")
         assert "BRIGHTSTARS_MAX_UPLOAD_BYTES" not in source, f"{path.relative_to(ROOT)} reads the upload limit itself"
