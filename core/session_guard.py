@@ -23,11 +23,13 @@ it. Nothing here runs for ``/health`` or for shared static files.
 """
 
 import hashlib
+import time
 from datetime import datetime, timedelta, timezone
 
 import sqlalchemy as sa
 from flask import flash, g, request, session
 
+from control_plane import config
 from control_plane.launch import current_launch_id
 from models import (
     Admin, Attempt, Candidate, ParentAccount, SchoolAssessmentAttempt,
@@ -83,10 +85,10 @@ def hash_of(kind, account):
     return account['password_hash']
 
 
-def _current_fingerprint(kind, account_id):
-    """The fingerprint of the account's password now, or None when the account cannot be found
-    (which is then left to the ordinary checks, that already treat a missing account as signed
-    out)."""
+def _read_fingerprint(kind, account_id):
+    """The fingerprint of the account's password now, read straight from the database, or None
+    when the account cannot be found (which is then left to the ordinary checks, that already
+    treat a missing account as signed out)."""
     if kind == 'platform':
         from control_plane.models import PlatformAdmin
         from control_plane.registry import platform_session
@@ -108,6 +110,46 @@ def _current_fingerprint(kind, account_id):
     owner = {'student': Student, 'parent': ParentAccount, 'candidate': Candidate}[kind]
     stored = db.session.execute(sa.select(column).where(owner.id == account_id)).first()
     return None if stored is None else password_fingerprint(stored[0])
+
+
+# Every request from a signed-in person used to read this straight from the database (see
+# _read_fingerprint above); on a remote database that is one extra round-trip on nearly every
+# request in the app, most of which did not otherwise need one. Cached per (school, kind,
+# account) for BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS, the same way core/branding.py caches a
+# school's branding. The tradeoff this buys: a password change (by the person, an administrator,
+# or a reset link) can take up to that long to sign out a *different* session; the person's own
+# session is exempted by _invalidate_fingerprint_cache below, called from refresh_password_stamp,
+# so changing your own password still ends your own old sign-in immediately, as documented at the
+# top of this file.
+_fingerprint_cache = {}
+_FINGERPRINT_CACHE_MAX = 5000
+
+
+def _fingerprint_cache_key(kind, account_id):
+    tenant = g.get('tenant')
+    return (tenant.id if (kind != 'platform' and tenant is not None) else None, kind, account_id)
+
+
+def _invalidate_fingerprint_cache(kind, account_id):
+    _fingerprint_cache.pop(_fingerprint_cache_key(kind, account_id), None)
+
+
+def _current_fingerprint(kind, account_id):
+    """``_read_fingerprint``, cached briefly per process (see above). Zero-second caching (the
+    default's floor) reads the database every time, exactly like before this cache existed."""
+    ttl = config.password_check_cache_seconds()
+    if ttl <= 0:
+        return _read_fingerprint(kind, account_id)
+    key = _fingerprint_cache_key(kind, account_id)
+    hit = _fingerprint_cache.get(key)
+    now = time.monotonic()
+    if hit and hit[0] > now:
+        return hit[1]
+    value = _read_fingerprint(kind, account_id)
+    if len(_fingerprint_cache) >= _FINGERPRINT_CACHE_MAX:
+        _fingerprint_cache.clear()
+    _fingerprint_cache[key] = (now + ttl, value)
+    return value
 
 
 # ---------------------------------------------------------------- who is sitting an exam
@@ -207,6 +249,11 @@ def refresh_password_stamp():
     kind, account_id = _identity()
     if kind is None:
         return
+    # The request that got here already ran guard_session with the *old* password, which may
+    # have just (re)populated the fingerprint cache with it. Drop that entry so the read below
+    # goes to the database and picks up the change just made, instead of serving the stale value
+    # back and stamping this very session with the password it no longer has.
+    _invalidate_fingerprint_cache(kind, account_id)
     fingerprint = _current_fingerprint(kind, account_id)
     if fingerprint is not None:
         session[PASSWORD_KEY] = fingerprint

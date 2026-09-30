@@ -191,6 +191,24 @@ def tenants_dir():
     return os.environ.get('BRIGHTSTARS_TENANTS_DIR', '').strip() or os.path.join(BASE, 'tenants')
 
 
+def password_check_cache_seconds():
+    """How long a signed-in person's password fingerprint (``core/session_guard.py``) is cached
+    in each process, once read from the database.
+
+    Every request from a signed-in person is checked against this so a changed password ends
+    their other sign-ins; done on every single request with no caching, that is a database
+    round-trip most pages did not otherwise need. Caching it means a password change (by the
+    person, an administrator, or a reset link) can take up to this long to sign out a session
+    other than the one that changed it; the person's own session is refreshed the moment they
+    change it (``refresh_password_stamp``), so they are never caught by their own change. Zero
+    disables the cache.
+    """
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS', '30')))
+    except ValueError:
+        return 30.0
+
+
 def registry_cache_seconds():
     """How long a hostname -> school lookup is cached in each process.
 
