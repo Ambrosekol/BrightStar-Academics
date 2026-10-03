@@ -1,10 +1,14 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Candidate Dashboard — {{ school_brand.name }}</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head>
 <body>{{ connectivity_banner() }}
-<header class="top"><div class="portal-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Candidate Examination Portal</span></div></div><div class="candidate-top"><span>{{candidate.candidate_name}}</span><a href="{{url_for('candidate_logout')}}">Sign out</a></div></header>
+<header class="top"><a class="portal-brand" href="{{url_for('candidate_dashboard')}}"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Candidate Examination Portal</span></div></a><div class="candidate-top"><span>{{candidate.candidate_name}}</span><a href="{{url_for('candidate_logout')}}">Sign out</a></div></header>
 <main class="candidate-dashboard">
   {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="dashboard-flash {{category}}">{{message}}</div>{% endfor %}{% endwith %}
-  <section class="dashboard-hero"><div class="candidate-hero-identity">{% if candidate.photo_path %}<div class="candidate-dashboard-photo"><img src="{{url_for('static',filename=candidate.photo_path)}}" alt="{{candidate.candidate_name}}"></div>{% endif %}<div><p class="eyebrow">Candidate Dashboard</p><h1>Welcome, {{candidate.candidate_name}}</h1><p class="muted">Target class: <strong>{{candidate.target_class}}</strong> · Candidate ID: <strong>{{candidate.candidate_code}}</strong></p></div></div><div class="privacy-note"><strong>Results are withheld.</strong><br>The school will provide your result.</div></section>
+  <section class="dashboard-hero"><div class="candidate-hero-identity">{% if candidate.photo_path %}<div class="candidate-dashboard-photo"><img src="{{url_for('static',filename=candidate.photo_path)}}" alt="{{candidate.candidate_name}}"></div>{% endif %}<div><p class="eyebrow">Candidate Dashboard</p><h1>Welcome, {{candidate.candidate_name}}</h1><p class="muted">Target class: <strong>{{candidate.target_class}}</strong> · Candidate ID: <strong>{{candidate.candidate_code}}</strong></p></div></div>
+  {% if not candidate.results_released_at %}<div class="privacy-note"><strong>Results are withheld.</strong><br>The school will provide your result.</div>
+  {% elif candidate.admission_status=='admitted' %}<div class="privacy-note"><strong>Congratulations — you have been admitted.</strong><br>Overall score: <strong>{{total_score}}/{{total_max}} ({{'%.1f'|format(overall_percentage)}}%, {{grade_label}})</strong></div>
+  {% else %}<div class="privacy-note"><strong>Admission decision: not offered a place this time.</strong><br>Overall score: <strong>{{total_score}}/{{total_max}} ({{'%.1f'|format(overall_percentage)}}%, {{grade_label}})</strong>{% if candidate.admission_note %}<br><em>{{candidate.admission_note}}</em>{% endif %}</div>
+  {% endif %}</section>
   <section class="paper-grid">
     {% for p in papers %}
     <article class="paper-card">
@@ -17,5 +21,16 @@
     </article>
     {% endfor %}
   </section>
-  <section class="dashboard-info"><div class="info-card"><strong>{{completed}} of 3 papers completed</strong><p>You may take the three papers in any order. Each paper has its own timer and can only be taken once unless the administrator grants a retake.</p></div><div class="info-card"><strong>Result release</strong><p>Your individual paper scores and cumulative result are available to the administrator only. They are not shown here.</p></div></section>
+  <section class="dashboard-info"><div class="info-card"><strong>{{completed}} of 3 papers completed</strong><p>You may take the three papers in any order. Each paper has its own timer and can only be taken once unless the administrator grants a retake.</p></div>
+  {% if not candidate.results_released_at %}<div class="info-card"><strong>Result release</strong><p>Your individual paper scores and cumulative result are available to the administrator only. They are not shown here.</p></div>
+  {% elif released_student %}<div class="info-card"><strong>Your student login</strong>
+    {% if released_student.password_must_change and candidate.released_password %}
+    <div class="credential-grid" style="margin:12px 0 10px"><div><span>Login ID</span><strong class="credential-code">{{released_student.login_username}}</strong></div><div><span>One-time password</span><strong class="credential-code">{{candidate.released_password}}</strong></div></div>
+    <div class="credential-warning">This password is shown only here — copy it now. You will be asked to set your own password the first time you sign in.</div>
+    {% else %}
+    <p>Login ID: <strong class="credential-code">{{released_student.login_username}}</strong>. You have already set your own password; use it to sign in, or Forgot Password on the sign-in page if you no longer have it.</p>
+    {% endif %}
+    <p style="margin-top:10px"><a class="btn btn-primary full" href="{{url_for('login')}}">Go to student sign-in</a></p>
+  </div>
+  {% endif %}</section>
 </main></body></html>

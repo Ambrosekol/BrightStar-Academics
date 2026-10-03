@@ -6,9 +6,9 @@
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Console{% endblock %} &middot; Brightstars Academics</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='5') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='6') }}">
 </head>
-<body>
+<body{% block bodyattrs %}{% endblock %}>
 {% from "platform/_icons.html" import icon %}
 {% block shell %}
 {% set me = g.get('platform_admin') %}
@@ -18,27 +18,36 @@
     <a class="rail-logo" href="{{ url_for('platform_dashboard') }}" aria-label="Brightstars Academics">
       <img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics">
     </a>
-    <div class="rail-label">Console</div>
-    <nav aria-label="Console">
-      <a href="{{ url_for('platform_dashboard') }}" {% if here == 'platform_dashboard' or here.startswith('platform_school') %}aria-current="page"{% endif %}>{{ icon('school') }}Schools</a>
-      {% if me and me.is_super %}
-        <a href="{{ url_for('platform_team') }}" {% if here.startswith('platform_team') %}aria-current="page"{% endif %}>{{ icon('team') }}Team</a>
+    <details class="nav-disclosure">
+      <summary class="nav-toggle" aria-label="Open the console menu">
+        <span class="nav-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+      </summary>
+    </details>
+    <div class="rail-body">
+      <div class="rail-label">Console</div>
+      <nav aria-label="Console">
+        <a href="{{ url_for('platform_dashboard') }}" {% if here == 'platform_dashboard' or here.startswith('platform_school') %}aria-current="page"{% endif %}>{{ icon('school') }}Schools</a>
+        {% if me and me.is_super %}
+          <a href="{{ url_for('platform_team') }}" {% if here.startswith('platform_team') %}aria-current="page"{% endif %}>{{ icon('team') }}Team</a>
+        {% endif %}
+        <a href="{{ url_for('platform_activity') }}" {% if here == 'platform_activity' %}aria-current="page"{% endif %}>{{ icon('activity') }}Activity</a>
+        {% if me and me.settings_access %}<a href="{{ url_for('platform_settings') }}" {% if here.startswith('platform_settings') %}aria-current="page"{% endif %}>{{ icon('settings') }}Settings</a>{% endif %}
+        {% if me and me.docs_access %}<a href="{{ url_for('docs_home') }}" {% if here.startswith('docs_') %}aria-current="page"{% endif %}>{{ icon('docs') }}Docs</a>{% endif %}
+        <a href="{{ url_for('platform_password') }}" {% if here == 'platform_password' %}aria-current="page"{% endif %}>{{ icon('key') }}Password</a>
+      </nav>
+      {% if me %}
+      <div class="rail-foot">
+        <div>
+          <div class="me-name">{{ me.display_name }}</div>
+          <div class="me-role {% if me.is_super %}is-super{% endif %}">{{ 'Super admin' if me.is_super else 'Platform admin' }}</div>
+        </div>
+        <form method="post" action="{{ url_for('platform_logout') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="linklike" type="submit">Sign out</button>
+        </form>
+      </div>
       {% endif %}
-      <a href="{{ url_for('platform_activity') }}" {% if here == 'platform_activity' %}aria-current="page"{% endif %}>{{ icon('activity') }}Activity</a>
-      {% if me and me.settings_access %}<a href="{{ url_for('platform_settings') }}" {% if here.startswith('platform_settings') %}aria-current="page"{% endif %}>{{ icon('settings') }}Settings</a>{% endif %}
-      {% if me and me.docs_access %}<a href="{{ url_for('docs_home') }}" {% if here.startswith('docs_') %}aria-current="page"{% endif %}>{{ icon('docs') }}Docs</a>{% endif %}
-      <a href="{{ url_for('platform_password') }}" {% if here == 'platform_password' %}aria-current="page"{% endif %}>{{ icon('key') }}Password</a>
-    </nav>
-    {% if me %}
-    <div class="rail-foot">
-      <div class="me-name">{{ me.display_name }}</div>
-      <div class="me-role {% if me.is_super %}is-super{% endif %}">{{ 'Super admin' if me.is_super else 'Platform admin' }}</div>
-      <form method="post" action="{{ url_for('platform_logout') }}">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <button class="linklike" type="submit">Sign out</button>
-      </form>
     </div>
-    {% endif %}
   </aside>
   <main class="main">
     {% with messages = get_flashed_messages(with_categories=true) %}

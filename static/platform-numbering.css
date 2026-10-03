@@ -33,13 +33,13 @@
   border: 1px solid var(--rule-strong); border-radius: 99px;
 }
 .np-chip:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
-.np-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.np-chip:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .np-chip[aria-disabled="true"] { opacity: .38; cursor: not-allowed; }
 .np-chip[aria-disabled="true"]:hover { background: var(--surface); border-color: var(--rule-strong); color: var(--ink-soft); }
 .np-default { margin-left: 8px; font-size: .84rem; }
 
 .np-reference { margin-top: 18px; }
-.np-reference summary { color: var(--blue); }
+.np-reference summary { color: var(--teal); }
 .np-rules { margin: 14px 0 0; padding-left: 1.2rem; color: var(--ink-soft); font-size: .9rem; }
 .np-rules li { margin: .3rem 0; }
 .np-warning {

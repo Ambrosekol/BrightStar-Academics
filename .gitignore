@@ -12,6 +12,7 @@ __pycache__/
 .env
 .env.old
 .env.local
+.env.real
 .env.prod
 .env.backup-*
 .claude/
@@ -24,6 +25,7 @@ instance/
 
 # Multi-tenant deployments: each school's database, question banks and uploads
 tenants/
+bstenant/
 
 # A school's full data export (Settings > Terminal actions > Export a school's data) - contains
 # real student data and secrets, and is meant to be copied off the server and removed, never committed

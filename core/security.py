@@ -17,7 +17,7 @@ from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy import select
-from flask import abort, redirect, render_template, request, session, url_for
+from flask import abort, g, has_request_context, redirect, render_template, request, session, url_for
 
 from models import (
     Admin, AdminNotification, AdminPermission, AdminRoleAssignment,
@@ -50,6 +50,7 @@ ADMIN_PERMISSION_DEFS = [
     ('candidates.credentials_reset','Reset candidate credentials','candidates','Reset candidate passwords.'),
     ('candidates.credentials_print','Print candidate credentials','candidates','Print candidate credentials.'),
     ('candidates.admit','Admit candidates','candidates','Move a candidate from the admissions waitlist into a real, enrolled student.'),
+    ('candidates.release_results','Release results to candidates','candidates','Release admission decisions and scores to entrance exam candidates in their own portal.'),
     ('question_banks.view','View question banks','assessment','View question banks.'),
     ('question_banks.create','Create question banks','assessment','Create question banks.'),
     ('question_banks.edit','Edit question banks','assessment','Edit question-bank settings.'),
@@ -162,7 +163,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Admissions Officer': {
         'description': 'Reviews the admissions waitlist and decides who moves from candidate to enrolled student.',
-        'permissions': ['dashboard.view','candidates.view','candidates.admit','results.view','results.rankings']
+        'permissions': ['dashboard.view','candidates.view','candidates.admit','candidates.release_results','results.view','results.rankings']
     },
     'School Records Officer': {
         'description': 'Manages enrolled student records and class information within assigned school scopes.',
@@ -244,6 +245,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_candidate_credentials_print':'candidates.credentials_print','admin_new_bank':'question_banks.create',
     'admin_candidate_admissions':'candidates.admit','admin_candidate_admit':'candidates.admit',
     'admin_candidate_decline':'candidates.admit','admin_candidate_admission_reset':'candidates.admit',
+    'admin_candidate_release_result':'candidates.release_results','admin_candidate_release_results_bulk':'candidates.release_results',
     'admin_question_banks':'question_banks.view','admin_bank':'question_banks.view','admin_edit_bank':'question_banks.edit','admin_new_question':'questions.create',
     'admin_edit_question':'questions.edit','admin_delete_question':'questions.delete','admin_reorder':'questions.reorder',
     'admin_attempts':'attempts.view','admin_export_bank':'question_banks.view','admin_results':'results.view',
@@ -296,21 +298,32 @@ ADMIN_ENDPOINT_PERMISSIONS = {
 
 # ---------------- identity and permission checks ----------------
 
-def _active_admin(admin_id):
-    """Load an active administrator whose role is also active, else None."""
+def _load_active_admin(admin_id):
     return db.session.scalars(
         select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
                      .where(Admin.id==admin_id,Admin.active==1,AdminType.active==1)
     ).first()
 
 
+def _active_admin(admin_id):
+    """Load an active administrator whose role is also active, else None.
+
+    Memoised for the rest of the request: one page asks for the same administrator several times
+    (the workspace decorator, the permission check, the scope check and the page's own context), and
+    each ask used to be a database round-trip. Requests are short, so nothing stale survives one.
+    """
+    if not has_request_context():
+        return _load_active_admin(admin_id)
+    memo = g.setdefault('_active_admins', {})
+    if admin_id not in memo:
+        memo[admin_id] = _load_active_admin(admin_id)
+    return memo[admin_id]
+
+
 def current_admin():
     aid=session.get('admin_id')
     if not aid: return None
-    return db.session.scalars(
-        select(Admin).join(AdminType,AdminType.id==Admin.admin_type_id)
-                     .where(Admin.id==aid,Admin.active==1,AdminType.active==1)
-    ).first()
+    return _active_admin(aid)
 
 
 # A school's top-level role: unrestricted inside its own school and the only one that can

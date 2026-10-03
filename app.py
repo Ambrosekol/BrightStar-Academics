@@ -131,7 +131,7 @@ from core.connectivity import connectivity_banner  # noqa: E402
 
 # ---------------- presence tracking ----------------
 # Moved to core/presence.py.
-from core.presence import _presence_identity, touch_presence, online_presence  # noqa: E402
+from core.presence import _presence_identity, touch_presence, touch_presence_if_due, online_presence  # noqa: E402
 
 
 # ---------------- admin RBAC / audit ----------------
@@ -797,7 +797,7 @@ def track_live_presence():
         return
     if _presence_identity()[0]:
         try:
-            touch_presence()
+            touch_presence_if_due()
         except Exception:
             app.logger.exception('Presence update failed')
 

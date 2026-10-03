@@ -35,7 +35,7 @@
       </div>
     </div>
     <div class="table-wrap">
-      <table class="schools" id="schools">
+      <table class="schools table-stack" id="schools">
         <thead><tr>
           <th>School</th><th>Portal address</th>
           <th class="num">Students</th><th class="num">Classes</th><th class="num">Staff</th>
@@ -45,7 +45,7 @@
           {% for school in schools %}
           {% set info = school.info %}
           <tr data-status="{{ info.status }}" data-search="{{ (info.name ~ ' ' ~ info.slug ~ ' ' ~ (school.portal or '') ~ ' ' ~ (school.customs|join(' ')))|lower }}">
-            <td>
+            <td data-label="School">
               <div class="school-cell">
                 <span class="tile" {% if school.colour and not school.logo %}style="background:{{ school.colour }}"{% endif %}>
                   {%- if school.logo -%}
@@ -58,22 +58,22 @@
                 </div>
               </div>
             </td>
-            <td>
+            <td data-label="Portal address">
               <div class="addr">{{ school.portal }}</div>
               {% for domain in school.customs %}<div class="addr muted">{{ domain }}</div>{% endfor %}
             </td>
             {% if school.stats %}
-              <td class="num">{{ school.stats.students if school.stats.students is not none else '—' }}</td>
-              <td class="num">{{ school.stats.classes if school.stats.classes is not none else '—' }}</td>
-              <td class="num">{{ school.stats.admins if school.stats.admins is not none else '—' }}</td>
+              <td class="num" data-label="Students">{{ school.stats.students if school.stats.students is not none else '—' }}</td>
+              <td class="num" data-label="Classes">{{ school.stats.classes if school.stats.classes is not none else '—' }}</td>
+              <td class="num" data-label="Staff">{{ school.stats.admins if school.stats.admins is not none else '—' }}</td>
             {% else %}
-              <td colspan="3" class="muted">Database could not be read</td>
+              <td colspan="3" class="muted" data-label="">Database could not be read</td>
             {% endif %}
-            <td>
+            <td data-label="Status">
               <span class="pill pill-{{ info.status }}">{{ 'Live' if info.is_active else 'Suspended' }}</span>
               {% if school.suspended_reason %}<div class="muted" style="font-size:.78rem;margin-top:2px">{{ school.suspended_reason }}</div>{% endif %}
             </td>
-            <td>
+            <td data-label="">
               <div class="row-actions">
                 <a class="btn btn-sm" href="{{ url_for('platform_school', slug=info.slug) }}">Manage</a>
                 {% if info.is_active and school.portal %}

@@ -14,6 +14,7 @@ base needs to know which one a school uses.
 import os
 import re
 import threading
+import time
 
 import sqlalchemy as sa
 from flask_sqlalchemy.session import Session
@@ -117,16 +118,47 @@ def ensure_database_exists(db_url):
         engine.dispose()
 
 
+_engine_last_used = {}
+_last_eviction_check = [0.0]
+EVICTION_CHECK_SECONDS = 60
+
+
 def engine_for(tenant):
-    """The (cached) engine for one school."""
+    """The (cached) engine for one school. Also closes the engines of schools that have been quiet
+    for longer than ``BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS``; see ``evict_idle_engines``."""
     key = (tenant.db_url, tenant.db_schema)
+    now = time.monotonic()
     engine = _engines.get(key)
     if engine is None:
         with _engines_lock:
             engine = _engines.get(key)
             if engine is None:
                 engine = _engines[key] = build_engine(tenant.db_url, tenant.db_schema)
+    _engine_last_used[key] = now
+    if now - _last_eviction_check[0] >= EVICTION_CHECK_SECONDS:
+        evict_idle_engines(now)
     return engine
+
+
+def evict_idle_engines(now=None):
+    """Close the engine (and so its idle connections) of every school unused for a while.
+
+    A school's next request simply builds its engine again. A request already holding the old engine
+    keeps working: disposing only closes connections that are not in use, and one returned later is
+    closed then.
+    """
+    now = time.monotonic() if now is None else now
+    _last_eviction_check[0] = now
+    idle_seconds = config.school_engine_idle_seconds()
+    if not idle_seconds:
+        return
+    with _engines_lock:
+        for key, used in list(_engine_last_used.items()):
+            if now - used > idle_seconds:
+                engine = _engines.pop(key, None)
+                _engine_last_used.pop(key, None)
+                if engine is not None:
+                    engine.dispose()
 
 
 def dispose_engines():
@@ -135,6 +167,7 @@ def dispose_engines():
         for engine in _engines.values():
             engine.dispose()
         _engines.clear()
+        _engine_last_used.clear()
 
 
 class TenantSession(Session):

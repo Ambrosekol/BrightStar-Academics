@@ -27,15 +27,15 @@
 
 <h2>Addresses</h2>
 <div class="panel">
-  <table>
+  <table class="table-stack">
     <thead><tr><th>Hostname</th><th>Kind</th><th>Primary</th><th></th></tr></thead>
     <tbody>
       {% for domain in domains %}
         <tr>
-          <td class="mono">{{ domain.hostname }}</td>
-          <td class="muted">{{ 'Portal (issued by the platform)' if domain.portal else "The school's own" }}</td>
-          <td>{{ 'Yes' if domain.primary else '' }}</td>
-          <td style="text-align:right">
+          <td class="mono" data-label="Hostname">{{ domain.hostname }}</td>
+          <td class="muted" data-label="Kind">{{ 'Portal (issued by the platform)' if domain.portal else "The school's own" }}</td>
+          <td data-label="Primary">{{ 'Yes' if domain.primary else '' }}</td>
+          <td style="text-align:right" data-label="">
             {% if not domain.portal %}
               <form method="post" action="{{ url_for('platform_school_domains', slug=info.slug) }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -156,18 +156,18 @@
 
 <h2>Administrators</h2>
 <div class="panel">
-  <table>
+  <table class="table-stack">
     <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Last signed in</th></tr></thead>
     <tbody>
       {% for admin in admins %}
         <tr>
-          <td class="mono">{{ admin.username }}</td>
-          <td>{{ admin.display_name }}{% if not admin.active %} <span class="muted">(suspended)</span>{% endif %}</td>
-          <td class="muted">{{ admin.role or '' }}</td>
-          <td class="muted">{{ (admin.last_login_at or '')[:16].replace('T', ' ') }}</td>
+          <td class="mono" data-label="Username">{{ admin.username }}</td>
+          <td data-label="Name">{{ admin.display_name }}{% if not admin.active %} <span class="muted">(suspended)</span>{% endif %}</td>
+          <td class="muted" data-label="Role">{{ admin.role or '' }}</td>
+          <td class="muted" data-label="Last signed in">{{ (admin.last_login_at or '')[:16].replace('T', ' ') }}</td>
         </tr>
       {% else %}
-        <tr><td colspan="4" class="muted">Nobody can sign in to this school yet.</td></tr>
+        <tr><td colspan="4" class="muted" data-label="">Nobody can sign in to this school yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

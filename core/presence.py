@@ -4,6 +4,7 @@ PresenceSession, and the aggregate counts/roster the admin dashboard reads.
 
 import hashlib
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 import sqlalchemy as sa
@@ -55,6 +56,29 @@ def touch_presence():
                (datetime.now(timezone.utc)-timedelta(seconds=PRESENCE_TIMEOUT_SECONDS)).isoformat())
         .values(active=0))
     db.session.commit()
+
+# Ordinary page requests used to write a presence row each time (an upsert, a sweep of the table
+# and a commit) - on every page of every signed-in person. The heartbeat (every 30 seconds, see
+# app.py) already keeps a session fresh, so an ordinary request only needs to write when its last
+# write is older than PRESENCE_REQUEST_INTERVAL_SECONDS. Per process, like the other short caches.
+PRESENCE_REQUEST_INTERVAL_SECONDS = 20
+_last_request_touch = {}
+_LAST_TOUCH_MAX = 5000
+
+
+def touch_presence_if_due():
+    """``touch_presence``, but skipped while this session's last write is still fresh."""
+    token = session.get('_presence_token')
+    now = time.monotonic()
+    if token and now - _last_request_touch.get(token, float('-inf')) < PRESENCE_REQUEST_INTERVAL_SECONDS:
+        return
+    touch_presence()
+    token = session.get('_presence_token')
+    if token:
+        if len(_last_request_touch) >= _LAST_TOUCH_MAX:
+            _last_request_touch.clear()
+        _last_request_touch[token] = now
+
 
 def end_presence():
     token=session.get('_presence_token')

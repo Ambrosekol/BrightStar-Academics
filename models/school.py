@@ -243,6 +243,11 @@ class SchoolAssessmentAttempt(db.Model):
     score = db.Column(Integer)
     max_score = db.Column(Integer)
     percentage = db.Column(Float)
+    # Connectivity-grace bookkeeping (core/entrance.py:apply_connectivity_grace) - last_seen_at is
+    # bumped by a periodic client heartbeat while the paper is open; grace_extended_seconds tracks
+    # how much of the capped allowance has already been granted to this attempt.
+    last_seen_at = db.Column(Text)
+    grace_extended_seconds = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
 
 
 class SchoolAssessmentAttemptQuestion(db.Model):

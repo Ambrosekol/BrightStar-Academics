@@ -77,14 +77,14 @@
     </form>
     {% if drop_results %}
       <div class="table-wrap" style="margin-top:14px">
-        <table>
+        <table class="table-stack">
           <thead><tr><th>School</th><th>Retired tables</th><th></th></tr></thead>
           <tbody>
             {% for info, held in drop_results %}
               <tr>
-                <td>{{ info.name }} <span class="muted mono">({{ info.slug }})</span></td>
-                <td>{% if held %}{% for table, rows in held.items() %}<div class="mono">{{ table }}: {{ rows }} row(s)</div>{% endfor %}{% else %}<span class="muted">nothing left over</span>{% endif %}</td>
-                <td>
+                <td data-label="School">{{ info.name }} <span class="muted mono">({{ info.slug }})</span></td>
+                <td data-label="Retired tables">{% if held %}{% for table, rows in held.items() %}<div class="mono">{{ table }}: {{ rows }} row(s)</div>{% endfor %}{% else %}<span class="muted">nothing left over</span>{% endif %}</td>
+                <td data-label="">
                   {% if held %}
                     <form method="post" action="{{ url_for('platform_settings_drop_retired') }}"
                           data-confirm="Drop {{ info.name }}'s retired tables for good? Their rows are lost.">

@@ -13,7 +13,7 @@ from sqlalchemy import select, update as sa_update
 
 from app import app, _school_current_session, csrf_token
 from core.entrance import (
-    _answers_for_attempt, _valid_question_configuration, bank,
+    _answers_for_attempt, _valid_question_configuration, apply_connectivity_grace, bank,
     candidate_cumulative, candidate_has_unused_retake, candidate_record,
     ENTRANCE_SUBJECT_LABELS, ENTRY_GROUP_LABELS, entrance_paper_label,
     entrance_practice_paper, entrance_subject_label, get_attempt, grade, remaining,
@@ -21,7 +21,7 @@ from core.entrance import (
 from models import (
     AcademicSession, Answer, Attempt, AttemptQuestion, CandidatePaper,
     EntranceBankConfig, Examination, RetakeGrant, SchoolAssessment,
-    SchoolClass, SchoolQuestion, SchoolSubject, db,
+    SchoolClass, SchoolQuestion, SchoolSubject, Student, db,
 )
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, _flatten
 from core.security import csrf_protect
@@ -157,6 +157,15 @@ def practice_take(assessment_id):
     session.pop('practice_questions',None); session.pop('practice_assessment',None)
     return render_template('practice_result.html',assessment=a,score=score,max_score=max_score,percentage=pct,results=result_questions)
 
+def _candidate_grade_label(pct):
+    if pct is None: return '—'
+    if pct >= 80: return 'Excellent'
+    if pct >= 70: return 'Very Good'
+    if pct >= 60: return 'Good'
+    if pct >= 50: return 'Pass'
+    return 'Needs Improvement'
+
+
 @app.route('/candidate/dashboard')
 def candidate_dashboard():
     c=candidate_record(session.get('candidate_id'))
@@ -181,7 +190,21 @@ def candidate_dashboard():
                        'exam_name':r['exam_name'],'subject_label':subject_label,
                        'paper_label':entrance_paper_label(r['slot'], r['bank_id'], r['exam_name'] or ''),
                        'status':status,'display_status':label, 'retake_available':retake})
-    response=Response(render_template('candidate_dashboard.html',candidate=c,papers=papers,completed=completed))
+
+    # Nothing below is computed, let alone shown, unless an administrator has released this
+    # candidate's result (c.results_released_at) — see blueprints/entrance/admissions.py.
+    released_student=None
+    if c.results_released_at and c.admission_status=='admitted' and c.admitted_student_id:
+        released_student=db.session.get(Student,c.admitted_student_id)
+        if released_student and not released_student.password_must_change and c.released_password:
+            # The password has already been changed once; it has done its job, so stop keeping
+            # a plaintext copy around.
+            c.released_password=None; db.session.commit()
+
+    response=Response(render_template('candidate_dashboard.html',candidate=c,papers=papers,completed=completed,
+                                      total_score=total_score,total_max=total_max,overall_percentage=pct,
+                                      grade_label=_candidate_grade_label(pct) if completed else None,
+                                      released_student=released_student))
     response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'; response.headers['Pragma']='no-cache'
     return response
 
@@ -272,6 +295,7 @@ def exam():
     if not a: return redirect(url_for('candidate_dashboard') if session.get('candidate_id') else url_for('login'))
     if session.get('candidate_id') and a['candidate_id'] != session.get('candidate_id'): abort(403)
     if a['status']!='active': return redirect(url_for('result'))
+    apply_connectivity_grace(a)
     if remaining(a)<=0: grade(a['id'],auto=True); return redirect(url_for('result'))
     rows=db.session.scalars(select(AttemptQuestion)
         .where(AttemptQuestion.attempt_id==a['id'])
@@ -298,6 +322,7 @@ def answer():
     a=get_attempt(session.get('attempt_id'))
     if session.get('candidate_id') and (not a or a['candidate_id'] != session.get('candidate_id')): return jsonify(ok=False,error='Invalid candidate session.'),403
     if not a or a['status']!='active': return jsonify(ok=False,error='Session is no longer active.'),403
+    apply_connectivity_grace(a)
     if remaining(a)<=0: grade(a['id'],auto=True); return jsonify(ok=False,expired=True),410
     try: qid=int(request.form.get('question_id',0)); opt=int(request.form.get('option_index',-1))
     except (TypeError,ValueError): return jsonify(ok=False,error='Invalid answer.'),400
@@ -320,8 +345,20 @@ def submit():
     a=get_attempt(session.get('attempt_id'))
     if not a: return redirect(url_for('login'))
     if session.get('candidate_id') and a['candidate_id'] != session.get('candidate_id'): abort(403)
+    if a['status']=='active': apply_connectivity_grace(a)
     grade(a['id'],auto=remaining(a)<=0)
     return redirect(url_for('candidate_dashboard') if session.get('candidate_id') else url_for('result'))
+
+@app.post('/exam/heartbeat')
+@csrf_protect
+def exam_heartbeat():
+    """A periodic ping from the exam page, used only to measure how long an attempt has gone
+    unreachable (see apply_connectivity_grace) - it carries no exam state of its own."""
+    a=get_attempt(session.get('attempt_id'))
+    if session.get('candidate_id') and (not a or a['candidate_id'] != session.get('candidate_id')): return jsonify(ok=False),403
+    if not a or a['status']!='active': return jsonify(ok=False),403
+    apply_connectivity_grace(a)
+    return jsonify(ok=True)
 
 @app.route('/result')
 def result():

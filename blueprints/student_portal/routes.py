@@ -7,13 +7,13 @@ from datetime import datetime, timedelta, timezone
 import random
 
 import sqlalchemy as sa
-from flask import abort, flash, redirect, render_template, request, session, url_for
+from flask import abort, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import or_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import app, csrf_token, _release_due_school_results, _student_with_enrolment
 from blueprints.school.report_card_data import student_periods
-from core.entrance import remaining
+from core.entrance import apply_connectivity_grace, remaining
 from models import (
     AssignmentQuestion, AssignmentStudent, ProjectStudent,
     SchoolAssessment, SchoolAssessmentAnswer, SchoolAssessmentAttempt,
@@ -357,6 +357,7 @@ def student_assessment_take(assessment_id):
         SchoolAssessmentAttempt.assessment_id==assessment_id)).first()
     if not attempt:
         return render_template('student_assessment_start.html',student=student,assessment=a)
+    if attempt['status']=='active': apply_connectivity_grace(attempt)
     if attempt['status']=='active' and remaining(attempt)<=0:
         student_assessment_grade(attempt['id'], auto=True)
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
@@ -395,6 +396,7 @@ def student_assessment_answer(assessment_id):
         abort(404)
     if attempt['status']!='active':
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
+    apply_connectivity_grace(attempt)
     if remaining(attempt)<=0:
         student_assessment_grade(attempt['id'],auto=True)
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
@@ -424,6 +426,21 @@ def student_assessment_answer(assessment_id):
         student_assessment_grade(attempt['id'],auto=False)
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
     return redirect(url_for('student_assessment_take',assessment_id=assessment_id,q=max(1,next_q)))
+
+@app.post('/student/assessments/<int:assessment_id>/heartbeat')
+@student_required
+@csrf_protect
+def student_assessment_heartbeat(assessment_id):
+    """A periodic ping from the test/examination-taking page, used only to measure how long an
+    attempt has gone unreachable (see core.entrance.apply_connectivity_grace)."""
+    sid=session.get('student_id')
+    attempt=db.session.scalars(select(SchoolAssessmentAttempt).where(
+        SchoolAssessmentAttempt.student_id==sid,
+        SchoolAssessmentAttempt.assessment_id==assessment_id)).first()
+    if not attempt or attempt.status!='active':
+        return jsonify(ok=False),403
+    apply_connectivity_grace(attempt)
+    return jsonify(ok=True)
 
 @app.route('/student/assessments/<int:assessment_id>/result')
 @student_required

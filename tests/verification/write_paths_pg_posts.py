@@ -952,6 +952,14 @@ check("the quiz was answered and marked from the frozen copy",
 student.post(f"/student/assessments/{TEST}/start", {})
 TRY = one("SELECT id FROM school_assessment_attempts WHERE assessment_id = :a AND student_id = :s", a=TEST, s=ADA)
 check("a student started a test (its questions were frozen)", TRY is not None and count("school_assessment_attempt_questions", "attempt_id = :t", t=TRY) == 3)
+student.post(f"/student/assessments/{TEST}/heartbeat", {})
+check("a heartbeat recorded liveness for the attempt", one("SELECT last_seen_at FROM school_assessment_attempts WHERE id = :t", t=TRY) is not None)
+before_grace = one("SELECT expires_at FROM school_assessment_attempts WHERE id = :t", t=TRY)
+sql("UPDATE school_assessment_attempts SET last_seen_at = :old WHERE id = :t", old="2020-01-01T00:00:00+00:00", t=TRY)
+student.post(f"/student/assessments/{TEST}/heartbeat", {})
+check("a long-unreachable gap (a real outage) pushes the deadline out instead of costing exam time, capped per attempt",
+      one("SELECT expires_at FROM school_assessment_attempts WHERE id = :t", t=TRY) > before_grace
+      and one("SELECT grace_extended_seconds FROM school_assessment_attempts WHERE id = :t", t=TRY) == 300)
 frozen = sql("SELECT question_id, correct_option FROM school_assessment_attempt_questions WHERE attempt_id = :t ORDER BY question_order", t=TRY)
 for position, (qid, right) in enumerate(frozen, 1):
     last = position == len(frozen)
@@ -1134,6 +1142,14 @@ PAPER = one("SELECT id FROM candidate_papers WHERE candidate_id = :c ORDER BY sl
 candidate.post(f"/candidate/papers/{PAPER}/start", {})
 ATT = one("SELECT id FROM attempts WHERE candidate_id = :c", c=CAND)
 check("a candidate started a paper (its questions were frozen)", ATT is not None and count("attempt_questions", "attempt_id = :a", a=ATT) >= 25)
+candidate.post("/exam/heartbeat", {})
+check("a heartbeat recorded liveness for the attempt", one("SELECT last_seen_at FROM attempts WHERE id = :a", a=ATT) is not None)
+before_grace = one("SELECT expires_at FROM attempts WHERE id = :a", a=ATT)
+sql("UPDATE attempts SET last_seen_at = :old WHERE id = :a", old="2020-01-01T00:00:00+00:00", a=ATT)
+candidate.post("/exam/heartbeat", {})
+check("a long-unreachable gap (a real outage) pushes the deadline out instead of costing exam time, capped per attempt",
+      one("SELECT expires_at FROM attempts WHERE id = :a", a=ATT) > before_grace
+      and one("SELECT grace_extended_seconds FROM attempts WHERE id = :a", a=ATT) == 300)
 served = sql("SELECT question_id, correct_option FROM attempt_questions WHERE attempt_id = :a ORDER BY question_order LIMIT 4", a=ATT)
 for qid, right in served:
     r = candidate.post("/answer", {"question_id": qid, "option_index": right})
@@ -1178,6 +1194,19 @@ check("a candidate was admitted: a real, enrolled student now exists with a gene
       and one("SELECT login_username FROM students WHERE id = :s", s=NEW_STUDENT) not in (None, ""))
 check("…and, since the candidate had guardian contact details, a linked parent portal account was created too",
       count("parent_student_links", "student_id = :s", s=NEW_STUDENT) == 1)
+check("a decided candidate's result is not released by admitting alone - releasing is a separate step",
+      one("SELECT results_released_at FROM candidates WHERE id = :c", c=THIRD_CAND) is None)
+op.post(f"{CANDS}/{THIRD_CAND}/release-result", {})
+check("releasing an admitted candidate's result stamps when/who, and issues a fresh password for the portal to show",
+      one("SELECT results_released_at FROM candidates WHERE id = :c", c=THIRD_CAND) is not None
+      and one("SELECT released_password FROM candidates WHERE id = :c", c=THIRD_CAND) not in (None, ""))
+op.post(f"{CANDS}/new", {**CAND_FORM, "candidate_name": "Fourth Candidate"})
+FOURTH_CAND = one("SELECT id FROM candidates WHERE candidate_name = 'Fourth Candidate'")
+op.post(f"{CANDS}/{FOURTH_CAND}/decline", {})
+check("a fourth candidate was declined, unreleased", one("SELECT results_released_at FROM candidates WHERE id = :c", c=FOURTH_CAND) is None)
+op.post("/admin/candidates/release-results", {})
+check("the bulk release picks up every decided-but-unreleased candidate, declined ones included",
+      one("SELECT results_released_at FROM candidates WHERE id = :c", c=FOURTH_CAND) is not None)
 op.post(f"{STUDENTS}/{NEW_STUDENT}/toggle", {})  # deactivated: later exact-count sections (promotion) assume only Ada and Tunde in JSS 1
 check("…deactivating the newly admitted student afterwards keeps them out of everyone else's counts below",
       one("SELECT active FROM students WHERE id = :i", i=NEW_STUDENT) == 0)

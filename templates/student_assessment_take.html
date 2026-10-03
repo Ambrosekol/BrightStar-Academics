@@ -79,6 +79,14 @@ function tick(){
   remaining--;
 }
 setInterval(tick,1000); tick();
+// A liveness ping, not an answer save: tells the server this paper is still open, so a real
+// connectivity or power outage (a gap much bigger than this interval) can be credited back to the
+// student's time instead of silently costing them minutes they never got to use.
+setInterval(function(){
+  const fd=new FormData();
+  fd.append('_csrf_token',document.getElementById('csrfToken').value);
+  fetch("{{url_for('student_assessment_heartbeat',assessment_id=assessment.id)}}",{method:'POST',body:fd}).catch(function(){});
+},10000);
 form.addEventListener('submit',e=>{
   const choice=form.querySelector('input[name="option_index"]:checked');
   if(!choice && !confirm('No answer is selected. Continue without saving an answer?')) e.preventDefault();

@@ -24,7 +24,7 @@ from sqlalchemy import delete, select
 from control_plane import config
 from control_plane.context import current_tenant
 from core import theme
-from core.public_settings import _public_settings
+from core.public_settings import _public_settings, forget_public_settings
 
 logger = logging.getLogger(__name__)
 
@@ -333,6 +333,7 @@ def store_branding(slug, branding=None, logo=None, gallery=(), remove_gallery=()
             row.setting_value = value
             row.updated_at = now()
     db.session.commit()
+    forget_public_settings()
     clear_brand_cache(current_tenant().id)
 
     # Only once the new list is safely stored: a failure above must not have

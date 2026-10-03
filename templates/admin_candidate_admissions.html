@@ -15,7 +15,14 @@
 
 <div class="page-hero">
   <div><div class="eyebrow">ENTRANCE EXAMINATION / ADMISSIONS</div><h1>Admissions waitlist</h1>
-  <p class="hero-copy">Every candidate who has sat at least one paper, ranked by score, waiting for a decision. Admitting creates a real, enrolled student with a login of their own; declining simply takes them off this list, and can be undone.</p></div>
+  <p class="hero-copy">Every candidate who has sat at least one paper, ranked by score, waiting for a decision. Admitting creates a real, enrolled student with a login of their own; declining simply takes them off this list, and can be undone. A candidate only sees their outcome and score once it is released below — deciding and releasing are separate steps.</p>
+  {% if current_admin and admin_has_permission(current_admin['id'], 'candidates.release_results') %}
+  <form method="post" action="{{ url_for('admin_candidate_release_results_bulk') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary" type="submit" data-confirm="Release every decided result that has not been released yet? Candidates will see their outcome and score, and admitted candidates will see a new login password, the next time they sign in.">Release all decided results</button>
+  </form>
+  {% endif %}
+  </div>
 </div>
 
 <section class="card">
@@ -46,7 +53,8 @@
         <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong><small>{{ r.grade }}</small></td>
         <td><span class="adm-badge {{ r.status }}">{{ r.status|capitalize }}</span>
           {% if r.status != 'pending' and r.decided_by_name %}<br><small class="muted">by {{ r.decided_by_name }}</small>{% endif %}
-          {% if r.note %}<br><small class="muted">{{ r.note }}</small>{% endif %}</td>
+          {% if r.note %}<br><small class="muted">{{ r.note }}</small>{% endif %}
+          {% if r.status != 'pending' %}<br><small class="muted">{% if r.released_at %}Released to candidate{% else %}Not yet released{% endif %}</small>{% endif %}</td>
         <td>
           {% if current_admin and admin_has_permission(current_admin['id'], 'candidates.admit') %}
             {% if r.status == 'pending' %}
@@ -81,6 +89,12 @@
             {% else %}
             <a class="btn btn-light btn-small" href="{{ url_for('admin_candidate_detail', cid=r.id) }}">View student</a>
             {% endif %}
+          {% endif %}
+          {% if r.status != 'pending' and not r.released_at and current_admin and admin_has_permission(current_admin['id'], 'candidates.release_results') %}
+          <form method="post" action="{{ url_for('admin_candidate_release_result', cid=r.id) }}" style="display:inline;margin-top:6px">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-light btn-small" type="submit">Release result</button>
+          </form>
           {% endif %}
         </td>
       </tr>

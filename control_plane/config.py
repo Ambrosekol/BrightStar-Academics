@@ -209,6 +209,21 @@ def password_check_cache_seconds():
         return 30.0
 
 
+def school_engine_idle_seconds():
+    """How long a school's database engine may go unused before its pooled connections are closed.
+
+    Each school has its own engine and pool (control_plane/routing.py). A pool keeps its idle
+    connections open indefinitely, so a school that is quiet for a day still holds its connections
+    on the database server; across many schools and worker processes that, not the queries, is what
+    exhausts PostgreSQL's max_connections. A school's engine is closed and rebuilt on its next use.
+    Zero disables this.
+    """
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', '600')))
+    except ValueError:
+        return 600.0
+
+
 def registry_cache_seconds():
     """How long a hostname -> school lookup is cached in each process.
 

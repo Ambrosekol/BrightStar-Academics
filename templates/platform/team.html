@@ -13,18 +13,18 @@
 <div class="dash">
   <section aria-label="Admins">
     <div class="table-wrap">
-      <table>
+      <table class="table-stack">
         <thead><tr><th>Admin</th><th>Role</th><th>Docs</th><th>Settings</th><th>Delete a school</th><th>Last signed in</th><th class="num">Entries</th><th></th></tr></thead>
         <tbody>
           {% for a in admins if a.active %}
             <tr>
-              <td>
+              <td data-label="Admin">
                 <div style="font-weight:600">{{ a.display_name }}</div>
                 <div class="muted mono" style="font-size:.78rem">{{ a.username }}{% if a.email %} &middot; {{ a.email }}{% endif %}</div>
                 {% if a.must_change %}<div class="pill pill-quiet" style="margin-top:4px">Has not chosen a password yet</div>{% endif %}
               </td>
-              <td>{% if a.is_super %}<span class="tag tag-super">Super admin</span>{% else %}<span class="tag tag-quiet">Platform admin</span>{% endif %}</td>
-              <td>
+              <td data-label="Role">{% if a.is_super %}<span class="tag tag-super">Super admin</span>{% else %}<span class="tag tag-quiet">Platform admin</span>{% endif %}</td>
+              <td data-label="Docs">
                 {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always</span>
                 {% else %}
                   <form method="post" action="{{ url_for('platform_team_docs_access', admin_id=a.id) }}" style="margin:0">
@@ -34,7 +34,7 @@
                   </form>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Settings">
                 {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always, fully</span>
                 {% else %}
                   <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
@@ -53,7 +53,7 @@
                   </div>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Delete a school">
                 {% if a.is_super %}<span class="muted" style="font-size:.8rem">Always</span>
                 {% else %}
                   <form method="post" action="{{ url_for('platform_team_delete_access', admin_id=a.id) }}" style="margin:0"
@@ -64,9 +64,9 @@
                   </form>
                 {% endif %}
               </td>
-              <td class="muted">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>
-              <td class="num"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
-              <td>
+              <td class="muted" data-label="Last signed in">{{ a.last_login_at|platform_time if a.last_login_at else 'Never' }}</td>
+              <td class="num" data-label="Entries"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
+              <td data-label="">
                 <div class="row-actions">
                   {% if not a.is_super %}
                     <form method="post" action="{{ url_for('platform_team_reset', admin_id=a.id) }}"
@@ -95,15 +95,15 @@
       <h2>Removed</h2>
       <p class="muted" style="margin-top:-.4rem">Their access is switched off, but the account and its activity log are kept.</p>
       <div class="table-wrap">
-        <table>
+        <table class="table-stack">
           <thead><tr><th>Admin</th><th>Removed</th><th class="num">Entries</th><th></th></tr></thead>
           <tbody>
             {% for a in removed %}
               <tr>
-                <td><div style="font-weight:600">{{ a.display_name }}</div><div class="muted mono" style="font-size:.78rem">{{ a.username }}</div></td>
-                <td class="muted">{{ a.removed_at|platform_time if a.removed_at else '' }}{% if a.removed_by %}<div style="font-size:.78rem">by {{ a.removed_by }}</div>{% endif %}</td>
-                <td class="num"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
-                <td>
+                <td data-label="Admin"><div style="font-weight:600">{{ a.display_name }}</div><div class="muted mono" style="font-size:.78rem">{{ a.username }}</div></td>
+                <td class="muted" data-label="Removed">{{ a.removed_at|platform_time if a.removed_at else '' }}{% if a.removed_by %}<div style="font-size:.78rem">by {{ a.removed_by }}</div>{% endif %}</td>
+                <td class="num" data-label="Entries"><a href="{{ url_for('platform_activity', admin=a.id) }}">{{ a.entries }}</a></td>
+                <td data-label="">
                   <div class="row-actions">
                     <form method="post" action="{{ url_for('platform_team_restore', admin_id=a.id) }}"
                           data-confirm="Restore {{ a.display_name }}? They get a new temporary password and must choose their own.">

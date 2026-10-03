@@ -575,7 +575,8 @@ with db_engine.begin() as conn:
     # it would for ownership, so it has to be revoked too.
     conn.execute(sa.text(f'REVOKE ALL PRIVILEGES ON SCHEMA "public" FROM "{role_name}"'))
 db_engine.dispose()
-admin_engine = sa.create_engine(original_admin_url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+from control_plane import config as _config
+admin_engine = sa.create_engine(original_admin_url.set(database=_config.pg_maintenance_db()), isolation_level='AUTOCOMMIT')
 with admin_engine.connect() as conn:
     conn.execute(sa.text(f'ALTER DATABASE "{original_admin_url.database}" OWNER TO "{original_owner}"'))
     conn.execute(sa.text(f'DROP ROLE IF EXISTS "{role_name}"'))

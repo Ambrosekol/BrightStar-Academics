@@ -26,7 +26,7 @@ from flask import abort, g, render_template, request
 from app import app
 
 from . import docsgen
-from .console import platform_host_only, platform_required
+from .console import current_platform_admin, platform_host_only, platform_required
 
 # (slug, title, one line). The order is the reading order and the order of the sidebar.
 DOC_GROUPS = (
@@ -195,8 +195,12 @@ def _search(query):
 @app.route('/marketing')
 @platform_host_only
 def marketing():
-    """The public marketing page. ``BRIGHTSTARS_CONTACT_EMAIL``, when set, is where its buttons write to."""
-    return render_template('marketing.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip())
+    """The public marketing page. ``BRIGHTSTARS_CONTACT_EMAIL``, when set, is where its buttons write to.
+
+    Reachable signed out, so the logo goes to the console dashboard only for a platform admin who
+    happens to already be signed in; everyone else gets the page's own top, same as before."""
+    return render_template('marketing.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip(),
+                           signed_in_admin=bool(current_platform_admin()))
 
 
 @app.route('/privacy')

@@ -616,6 +616,25 @@ async function fetchResultFile(){
 }
 
 
+// Fetched as soon as the page loads, not on click: iOS Safari and some Android browsers only
+// allow navigator.share() to run when it is called with no `await` ahead of it inside the click
+// handler, otherwise the click's user-activation has expired by the time share() runs and it
+// throws (or silently does nothing). Prefetching means the file is already in hand by the time
+// the person taps "Share", so the click handler can call share() with nothing awaited first.
+let resultFile = null;
+const resultFilePromise = fetchResultFile().then(function(file){
+
+    resultFile = file;
+
+    return file;
+
+});
+
+resultFilePromise.catch(function(){
+    // Swallow here; shareActualImage() awaits the same promise and reports the error there.
+});
+
+
 function downloadBlob(file){
 
     const objectUrl =
@@ -676,8 +695,10 @@ async function shareActualImage(){
 
     try{
 
+        // When the prefetch has already resolved, this reads the cached file with no `await`,
+        // so the navigator.share() call below stays inside the click's user-activation window.
         const file =
-            await fetchResultFile();
+            resultFile || await resultFilePromise;
 
 
         /*

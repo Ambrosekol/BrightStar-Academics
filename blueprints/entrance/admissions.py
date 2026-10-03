@@ -73,7 +73,7 @@ def _waitlist_rows(entry_group=None, status=None):
         rows.append({**r, 'entry_group': group, 'entry_group_label': entry_group_label(group) or r['target_class'],
                     'status': c.admission_status, 'admitted_student_id': c.admitted_student_id,
                     'decided_at': c.admission_decided_at, 'decided_by_name': deciders.get(c.admission_decided_by, ''),
-                    'note': c.admission_note or ''})
+                    'note': c.admission_note or '', 'released_at': c.results_released_at})
     rows.sort(key=lambda r: (r['status'] != 'pending', -r['overall_percentage']))
     return rows
 
@@ -207,6 +207,64 @@ def admin_candidate_decline(cid):
     return redirect(url_for(ADMISSIONS))
 
 
+def _release_candidate_result(candidate, admin_id, now):
+    """Release one decided candidate's outcome and score to their own portal.
+
+    For an admitted candidate this also issues a fresh student login password: the one shown at
+    admission time was shown once to the admin and never persisted, so the candidate needs their
+    own copy, generated now and stored only until they change it (see candidate_dashboard)."""
+    candidate.results_released_at = now
+    candidate.results_released_by = admin_id
+    if candidate.admission_status == 'admitted' and candidate.admitted_student_id:
+        student = db.session.get(Student, candidate.admitted_student_id)
+        if student is not None:
+            _, password = _provision_student_account(student.id, student.admission_no)
+            candidate.released_password = password
+
+
+@app.post('/admin/candidates/<int:cid>/release-result')
+@admin_required
+@csrf_protect
+def admin_candidate_release_result(cid):
+    candidate = db.session.get(Candidate, cid)
+    if candidate is None or not candidate.active:
+        abort(404)
+    if candidate.admission_status == 'pending':
+        flash('A decision must be made before releasing a result.', 'error')
+        return redirect(url_for(ADMISSIONS))
+    if candidate.results_released_at:
+        flash(f'{candidate.candidate_name}’s result was already released.', 'error')
+        return redirect(url_for(ADMISSIONS))
+    me = current_admin()
+    now = datetime.now(timezone.utc).isoformat()
+    _release_candidate_result(candidate, me['id'], now)
+    db.session.commit()
+    audit_log('candidate_result_released', 'assessment', 'candidate', cid,
+              {'admission_status': candidate.admission_status})
+    flash(f'{candidate.candidate_name}’s result was released.', 'success')
+    return redirect(url_for(ADMISSIONS))
+
+
+@app.post('/admin/candidates/release-results')
+@admin_required
+@csrf_protect
+def admin_candidate_release_results_bulk():
+    me = current_admin()
+    now = datetime.now(timezone.utc).isoformat()
+    due = db.session.scalars(select(Candidate).where(
+        Candidate.active == 1, Candidate.admission_status.in_(('admitted', 'declined')),
+        Candidate.results_released_at.is_(None))).all()
+    for candidate in due:
+        _release_candidate_result(candidate, me['id'], now)
+    db.session.commit()
+    if due:
+        audit_log('candidate_results_released_bulk', 'assessment', 'candidate', None, {'count': len(due)})
+        flash(f'Released {len(due)} result{"" if len(due) == 1 else "s"} to candidates.', 'success')
+    else:
+        flash('There are no decided results waiting to be released.', 'error')
+    return redirect(url_for(ADMISSIONS))
+
+
 @app.post('/admin/candidates/<int:cid>/admission-reset')
 @admin_required
 @csrf_protect
@@ -218,6 +276,9 @@ def admin_candidate_admission_reset(cid):
         flash('An admitted candidate cannot be put back on the waitlist.', 'error')
         return redirect(url_for(ADMISSIONS))
     candidate.admission_status = 'pending'
+    candidate.results_released_at = None
+    candidate.results_released_by = None
+    candidate.released_password = None
     candidate.admission_decided_at = None
     candidate.admission_decided_by = None
     candidate.admission_note = None

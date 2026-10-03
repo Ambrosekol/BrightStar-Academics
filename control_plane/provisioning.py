@@ -569,7 +569,7 @@ def create_school_role(slug, rotate=False, password=None):
         admin_url = url.set(username=registry_url.username, password=registry_url.password)
     else:
         admin_url = url
-    admin_engine = sa.create_engine(admin_url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+    admin_engine = sa.create_engine(admin_url.set(database=config.pg_maintenance_db()), isolation_level='AUTOCOMMIT')
     try:
         with admin_engine.connect() as conn:
             exists = conn.execute(sa.text('SELECT 1 FROM pg_roles WHERE rolname = :n'),

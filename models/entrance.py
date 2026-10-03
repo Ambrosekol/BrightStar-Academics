@@ -43,6 +43,11 @@ class Attempt(db.Model):
     percentage = db.Column(Float)
     status = db.Column(Text, nullable=False)
     candidate_id = db.Column(Integer)
+    # Connectivity-grace bookkeeping (core/entrance.py:apply_connectivity_grace) - last_seen_at is
+    # bumped by a periodic client heartbeat while the paper is open; grace_extended_seconds tracks
+    # how much of the capped allowance has already been granted to this attempt.
+    last_seen_at = db.Column(Text)
+    grace_extended_seconds = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
 
 
 class Answer(db.Model):
@@ -119,6 +124,16 @@ class Candidate(db.Model):
     admission_decided_at = db.Column(Text)
     admission_decided_by = db.Column(Integer, ForeignKey('admins.id'))
     admission_note = db.Column(Text)
+
+    # Set only once an admissions decision (admitted/declined) has been made AND an administrator
+    # has separately chosen to release it: a candidate never sees their outcome or score before
+    # this is set, however long ago the decision itself was made. See blueprints/entrance/admissions.py.
+    results_released_at = db.Column(Text)
+    results_released_by = db.Column(Integer, ForeignKey('admins.id'))
+    # A fresh student login password, generated and stored only at release time (the one shown at
+    # admission time is shown once to the admin and never persisted). Shown to the candidate on
+    # their own dashboard until they change it, then cleared.
+    released_password = db.Column(Text)
 
 
 class CandidatePaper(db.Model):

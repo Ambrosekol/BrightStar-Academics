@@ -92,7 +92,8 @@ with open(os.path.join(pv.tenant_folder(gamma), "data", "gamma_own_bank.json"), 
 
 names = {make_url(i.db_url).database for i in (gamma, alpha, beta)}
 check("each school has its own PostgreSQL database", len(names) == 3, str(sorted(names)))
-with sa.create_engine(make_url(gamma.db_url).set(database="postgres"),
+from control_plane import config as _config
+with sa.create_engine(make_url(gamma.db_url).set(database=_config.pg_maintenance_db()),
                       isolation_level="AUTOCOMMIT").connect() as _c:
     live = {r[0] for r in _c.execute(sa.text(
         "SELECT datname FROM pg_database WHERE datname = ANY(:n)"), {"n": list(names)})}

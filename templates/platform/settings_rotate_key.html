@@ -39,14 +39,14 @@
 <div class="panel">
   <h3 style="margin-top:0">Result</h3>
   <div class="table-wrap">
-    <table>
+    <table class="table-stack">
       <thead><tr><th>School</th><th class="num">Moved</th><th>Still unreadable</th></tr></thead>
       <tbody>
         {% for r in result %}
           <tr>
-            <td>{{ r.name }} <span class="muted mono">({{ r.slug }})</span></td>
-            <td class="num">{{ r.rotated }}</td>
-            <td>
+            <td data-label="School">{{ r.name }} <span class="muted mono">({{ r.slug }})</span></td>
+            <td class="num" data-label="Moved">{{ r.rotated }}</td>
+            <td data-label="Still unreadable">
               {% if r.error %}<span class="pill pill-bad">{{ r.error }}</span>
               {% elif r.skipped %}<span class="pill pill-bad">{{ r.skipped|join(', ') }}</span>
               {% else %}<span class="pill pill-ok">0 skipped</span>{% endif %}

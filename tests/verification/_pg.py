@@ -41,7 +41,9 @@ def _configured_url():
 
 
 def _admin_engine(url):
-    return sa.create_engine(url.set(database='postgres'), isolation_level='AUTOCOMMIT')
+    # The server's maintenance database: "postgres" on a stock install, but e.g. "defaultdb" on Aiven.
+    from control_plane import config
+    return sa.create_engine(url.set(database=config.pg_maintenance_db()), isolation_level='AUTOCOMMIT')
 
 
 # A run's databases are named ``bs_test_<tag>_<minutes since 1970, hex>_<random>``. The time

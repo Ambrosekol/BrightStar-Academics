@@ -13,7 +13,7 @@ import mimetypes
 import os
 import secrets
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -216,6 +216,36 @@ def get_attempt(aid):
     return obj(Attempt, aid)
 
 def remaining(a): return max(0,int((datetime.fromisoformat(a['expires_at'])-datetime.now(timezone.utc)).total_seconds()))
+
+# A heartbeat ping (see /exam/heartbeat and /student/assessments/<id>/heartbeat) arrives roughly
+# every 10 seconds while a timed CBT paper is open. A gap bigger than this is more than ordinary
+# network jitter explains, so it is treated as a real connectivity/power outage.
+HEARTBEAT_GAP_SECONDS = 20
+# The most an attempt's deadline can be pushed out in total, so a candidate who stays disconnected
+# on purpose (to look something up without the clock running) cannot buy more than a few minutes -
+# a genuine longer outage is a matter for an administrator to grant a retake for, not for this to
+# absorb automatically.
+CONNECTIVITY_GRACE_CAP_SECONDS = 300
+
+def apply_connectivity_grace(attempt):
+    """Push an active timed attempt's deadline out by however long it went unreachable beyond a
+    normal heartbeat gap, so a genuine connectivity or power outage does not cost the candidate or
+    student real exam time. Works on any attempt-like row with expires_at/last_seen_at/
+    grace_extended_seconds/status columns - used by both the entrance exam (Attempt) and the
+    school CBT test/examination flow (SchoolAssessmentAttempt)."""
+    if attempt.status != 'active':
+        return
+    now = datetime.now(timezone.utc)
+    if attempt.last_seen_at:
+        gap = (now - datetime.fromisoformat(attempt.last_seen_at)).total_seconds()
+        if gap > HEARTBEAT_GAP_SECONDS:
+            already = attempt.grace_extended_seconds or 0
+            grant = min(gap - HEARTBEAT_GAP_SECONDS, CONNECTIVITY_GRACE_CAP_SECONDS - already)
+            if grant > 0:
+                attempt.expires_at = (datetime.fromisoformat(attempt.expires_at) + timedelta(seconds=grant)).isoformat()
+                attempt.grace_extended_seconds = already + grant
+    attempt.last_seen_at = now.isoformat()
+    db.session.commit()
 
 def grade(aid, auto=False, force=False):
     a=obj(Attempt, aid)

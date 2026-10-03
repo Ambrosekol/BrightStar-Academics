@@ -16,7 +16,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from flask import abort, current_app
-from sqlalchemy import and_, func, select
+from sqlalchemy import Numeric, and_, cast, func, select
 
 from models import (
     AcademicSession, Admin, FinanceDeliveryLog, FinanceFeeAssessment,
@@ -320,6 +320,21 @@ def _log_receipt_delivery(payment_id, channel, recipient, ok, msg, actor_id):
         from core.alerting import note_delivery_failure
         note_delivery_failure(channel, msg)
 
+def _payment_allocated_sq():
+    """How much of each payment (the outer query's row) still stands as applied to fee assessments."""
+    return (select(func.coalesce(func.sum(FinancePaymentAllocation.amount), 0))
+            .where(FinancePaymentAllocation.payment_id == FinancePayment.id,
+                   FinancePaymentAllocation.voided_at.is_(None))
+            .correlate(FinancePayment).scalar_subquery())
+
+
+def _unallocated_conditions(scope_admin_id=None):
+    conditions = [FinancePayment.status == 'posted']
+    if scope_admin_id is not None:
+        conditions.append(FinancePayment.recorded_by == scope_admin_id)
+    return conditions
+
+
 def _finance_unallocated_payments(scope_admin_id=None):
     """Every posted payment whose full amount has not yet been applied to a fee assessment,
     oldest first - each one, a school's own money already collected and sitting in the bank, that
@@ -327,20 +342,13 @@ def _finance_unallocated_payments(scope_admin_id=None):
     takings, the same 'view your own' scope a finance.record-only officer sees everywhere else;
     ``None`` is the whole school, for finance.view_all/finance.manage.
     """
-    allocated_sq = (select(func.coalesce(func.sum(FinancePaymentAllocation.amount), 0))
-                    .where(FinancePaymentAllocation.payment_id == FinancePayment.id,
-                           FinancePaymentAllocation.voided_at.is_(None))
-                    .correlate(FinancePayment).scalar_subquery())
-    conditions = [FinancePayment.status == 'posted']
-    if scope_admin_id is not None:
-        conditions.append(FinancePayment.recorded_by == scope_admin_id)
     rows = all_rows(
         select(FinancePayment.id, FinancePayment.receipt_no, FinancePayment.amount,
                FinancePayment.paid_at, FinancePayment.method, FinancePayment.student_id,
                Student.first_name, Student.middle_name, Student.last_name,
-               Student.admission_no, allocated_sq.label('allocated'))
+               Student.admission_no, _payment_allocated_sq().label('allocated'))
         .join(Student, Student.id == FinancePayment.student_id)
-        .where(*conditions)
+        .where(*_unallocated_conditions(scope_admin_id))
         .order_by(FinancePayment.paid_at, FinancePayment.id))
     out = []
     for r in rows:
@@ -357,9 +365,24 @@ def _finance_unallocated_payments(scope_admin_id=None):
 
 def _finance_unallocated_summary(scope_admin_id=None):
     """``{'count', 'total'}`` for the banner and the dashboard card - the same rows
-    _finance_unallocated_payments would list, just how many and how much."""
-    rows = _finance_unallocated_payments(scope_admin_id)
-    return {'count': len(rows), 'total': round(sum(r['unallocated'] for r in rows), 2)}
+    _finance_unallocated_payments would list, just how many and how much.
+
+    Counted and summed by the database rather than by loading every row: this runs on every page
+    render for a finance officer, and a school's payment history only grows. Each amount is rounded
+    to pennies before the subtraction, exactly as _finance_unallocated_payments does, so the two
+    always agree on which payments are unallocated.
+    """
+    amount = cast(FinancePayment.amount, Numeric(14, 2))
+    allocated = cast(_payment_allocated_sq(), Numeric(14, 2))
+    per_payment = (select((func.round(amount, 2) - func.round(allocated, 2)).label('unallocated'))
+                   .select_from(FinancePayment)
+                   .join(Student, Student.id == FinancePayment.student_id)
+                   .where(*_unallocated_conditions(scope_admin_id))
+                   .subquery())
+    count, total = db.session.execute(
+        select(func.count(), func.coalesce(func.sum(per_payment.c.unallocated), 0))
+        .where(per_payment.c.unallocated > 0.005)).one()
+    return {'count': int(count or 0), 'total': round(float(total or 0), 2)}
 
 
 def _finance_payment_allocated(payment_id):

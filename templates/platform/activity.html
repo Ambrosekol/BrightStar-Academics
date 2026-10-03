@@ -81,18 +81,18 @@
     {% endif %}
 
     <div class="table-wrap">
-      <table class="log">
+      <table class="log table-stack">
         <thead><tr><th>When</th><th>Action</th><th>School</th><th>Details</th></tr></thead>
         <tbody>
           {% for row in log.rows %}
             <tr class="{{ 'alert' if row.alert }}">
-              <td class="when">{{ row.created_at|platform_time }}{% if is_super and row.ip %}<div>from {{ row.ip }}</div>{% endif %}</td>
-              <td><span class="what">{{ row.label }}</span>{% if selected == 'all' %}<div class="detail">{{ row.actor }}</div>{% endif %}</td>
-              <td>{% if row.slug %}<a href="{{ url_for('platform_school', slug=row.slug) }}">{{ row.school }}</a>{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
-              <td class="detail">{{ row.detail or '' }}</td>
+              <td class="when" data-label="When">{{ row.created_at|platform_time }}{% if is_super and row.ip %}<div>from {{ row.ip }}</div>{% endif %}</td>
+              <td data-label="Action"><span class="what">{{ row.label }}</span>{% if selected == 'all' %}<div class="detail">{{ row.actor }}</div>{% endif %}</td>
+              <td data-label="School">{% if row.slug %}<a href="{{ url_for('platform_school', slug=row.slug) }}">{{ row.school }}</a>{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+              <td class="detail" data-label="Details">{{ row.detail or '' }}</td>
             </tr>
           {% else %}
-            <tr><td colspan="4" class="empty">Nothing recorded {% if category != 'all' %}in this category {% endif %}yet.</td></tr>
+            <tr><td colspan="4" class="empty" data-label="">Nothing recorded {% if category != 'all' %}in this category {% endif %}yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
