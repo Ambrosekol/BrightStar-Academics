@@ -104,18 +104,6 @@
   display:none !important;
 }
 
-.cr-finance-tab-panel-v7 .cr-finance-assessment-footer{
-  position:sticky;
-  bottom:16px;
-  z-index:30;
-  margin-top:18px;
-  border:1px solid #b8d8eb;
-  border-radius:13px;
-  background:rgba(255,255,255,.97);
-  box-shadow:0 12px 30px rgba(25,65,95,.14);
-  backdrop-filter:blur(8px);
-}
-
 .cr-finance-tab-panel-v7 .cr-finance-catalogue-card{
   box-shadow:0 8px 24px rgba(26,62,91,.045);
 }
@@ -144,10 +132,6 @@
   .cr-finance-tab-v7 small{
     font-size:10px;
   }
-
-  .cr-finance-tab-panel-v7 .cr-finance-assessment-footer{
-    bottom:8px;
-  }
 }
 
 @media (min-width:761px) and (max-width:980px){
@@ -157,6 +141,798 @@
 
   .cr-finance-tab-v7 small{
     display:none;
+  }
+}
+/* Confirmation dialogs: a narrow card, not the wide record viewer used for history. */
+dialog.cr-finance-confirm{
+  width:min(540px,94vw);
+}
+
+.cr-finance-review-summary{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 18px;
+  margin:0 0 16px;
+}
+
+.cr-finance-review-summary dt{
+  color:#8a9cad;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.cr-finance-review-summary dd{
+  margin:3px 0 0;
+  color:#1d3850;
+  font-size:14px;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.cr-finance-review-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  max-height:260px;
+  overflow-y:auto;
+  border:1px solid #e3ebf2;
+  border-radius:12px;
+}
+
+.cr-finance-review-list li{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  padding:10px 14px;
+  border-bottom:1px solid #eef3f7;
+  font-size:13px;
+  color:#1d3850;
+}
+
+.cr-finance-review-list li:last-child{
+  border-bottom:none;
+}
+
+.cr-finance-review-list li span:last-child{
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.cr-finance-review-total{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-top:14px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:#f3f8fc;
+  color:#1d3850;
+}
+
+.cr-finance-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:20px;
+}
+
+.cr-finance-toggle-consequence{
+  margin:0;
+  color:#657388;
+  font-size:13px;
+  line-height:1.5;
+}
+
+@media (max-width:600px){
+  .cr-finance-review-summary{
+    grid-template-columns:1fr;
+  }
+}
+/* ------------------------------------------------------------
+   Student billing
+   Two columns: the steps on the left, a summary on the right that
+   stays in view while the list is long. Below 980px the summary
+   becomes a bar pinned to the bottom of the screen.
+   ------------------------------------------------------------ */
+.cr-bill{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 330px;
+  gap:20px;
+  align-items:start;
+}
+
+.cr-bill[hidden],
+.cr-bill [hidden]{
+  display:none !important;
+}
+
+.cr-bill-card{
+  padding:20px 22px;
+  margin-bottom:16px;
+  border:1px solid #dce6ee;
+  border-radius:14px;
+  background:#ffffff;
+  box-shadow:0 8px 24px rgba(26,62,91,.045);
+}
+
+.cr-bill-card:last-child{
+  margin-bottom:0;
+}
+
+.cr-bill-card-head{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.cr-bill-step{
+  display:grid;
+  place-items:center;
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  background:#eaf3f9;
+  color:#126da5;
+  font-size:13px;
+  font-weight:850;
+}
+
+.cr-bill-card-head h3{
+  margin:2px 0 4px;
+  color:#1d3850;
+  font-size:15px;
+  font-weight:800;
+}
+
+.cr-bill-card-head p{
+  margin:0;
+  color:#637b91;
+  font-size:12.5px;
+  line-height:1.5;
+}
+
+.cr-bill-fields{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr);
+  gap:14px;
+}
+
+.cr-bill-field-wide{
+  grid-column:auto;
+}
+
+.cr-bill-field label{
+  display:block;
+  margin-bottom:6px;
+  color:#637b91;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+.cr-bill-field label span{
+  color:#9aabbb;
+  font-weight:600;
+  text-transform:none;
+}
+
+.cr-bill-field select,
+.cr-bill-field input{
+  width:100%;
+  height:42px;
+  padding:0 12px;
+  border:1px solid #d4e0ea;
+  border-radius:10px;
+  background:#ffffff;
+  color:#1d3850;
+  font:inherit;
+  font-size:13.5px;
+}
+
+.cr-bill-field select:focus,
+.cr-bill-field input:focus,
+.cr-bill-search input:focus{
+  outline:3px solid rgba(20,127,193,.18);
+  outline-offset:0;
+  border-color:#7fb3d6;
+}
+
+.cr-bill-class{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-top:16px;
+  padding:12px 14px;
+  border:1px solid #e3ebf2;
+  border-radius:10px;
+  background:#f5f8fb;
+}
+
+.cr-bill-class-label{
+  color:#637b91;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+.cr-bill-class strong{
+  display:block;
+  color:#1d3850;
+  font-size:14px;
+}
+
+.cr-bill-class small{
+  display:block;
+  margin-top:2px;
+  color:#7a8ea1;
+  font-size:12px;
+}
+
+.cr-bill-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.cr-bill-search{
+  position:relative;
+  flex:1 1 220px;
+  max-width:340px;
+}
+
+.cr-bill-search span{
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#8a9cad;
+  pointer-events:none;
+}
+
+.cr-bill-search input{
+  width:100%;
+  height:38px;
+  padding:0 12px 0 34px;
+  border:1px solid #d4e0ea;
+  border-radius:10px;
+  background:#ffffff;
+  color:#1d3850;
+  font:inherit;
+  font-size:13px;
+}
+
+.cr-bill-toolbar-actions{
+  display:flex;
+  gap:8px;
+}
+
+.cr-bill-btn{
+  height:38px;
+  padding:0 14px;
+  border:1px solid #d4e0ea;
+  border-radius:10px;
+  background:#ffffff;
+  color:#126da5;
+  font:inherit;
+  font-size:12.5px;
+  font-weight:750;
+  cursor:pointer;
+}
+
+.cr-bill-btn:hover{
+  background:#f5f9fc;
+}
+
+.cr-bill-btn:focus-visible{
+  outline:3px solid rgba(20,127,193,.18);
+  outline-offset:2px;
+}
+
+.cr-bill-list{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid #e3ebf2;
+  border-radius:12px;
+}
+
+.cr-bill-row{
+  position:relative;
+  display:grid;
+  margin:0;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  align-items:center;
+  gap:4px 14px;
+  padding:13px 16px;
+  border-bottom:1px solid #eef3f7;
+  background:#ffffff;
+  cursor:pointer;
+}
+
+.cr-bill-row:last-child{
+  border-bottom:none;
+}
+
+.cr-bill-row:hover{
+  background:#f8fbfd;
+}
+
+.cr-bill-row.is-selected{
+  background:#f1f8fd;
+}
+
+.cr-bill-row input[type="checkbox"]{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+
+.cr-bill-box{
+  display:grid;
+  place-items:center;
+  width:22px;
+  height:22px;
+  border:1.5px solid #bfd0de;
+  border-radius:6px;
+  background:#ffffff;
+  color:transparent;
+  font-size:13px;
+  font-weight:900;
+}
+
+.cr-bill-row input:checked + .cr-bill-box{
+  border-color:#147fc1;
+  background:#147fc1;
+  color:#ffffff;
+}
+
+.cr-bill-row input:focus-visible + .cr-bill-box{
+  outline:3px solid rgba(20,127,193,.25);
+  outline-offset:2px;
+}
+
+.cr-bill-row input:disabled + .cr-bill-box{
+  border-color:#dfe7ee;
+  background:#f4f7fa;
+}
+
+.cr-bill-row-main{
+  min-width:0;
+}
+
+.cr-bill-row-name{
+  display:block;
+  color:#1d3850;
+  font-size:13.5px;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+
+.cr-bill-row-meta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  margin-top:4px;
+  color:#7a8ea1;
+  font-size:11.5px;
+}
+
+.cr-bill-row-note{
+  display:block;
+  margin-top:6px;
+  color:#a15c00;
+  font-size:11.5px;
+  font-weight:650;
+}
+
+.cr-bill-row-note.is-paid{
+  color:#17794a;
+}
+
+.cr-bill-row.is-already-assessed{
+  background:#fafbfc;
+}
+
+.cr-bill-row.is-already-assessed .cr-bill-row-name,
+.cr-bill-row.is-already-assessed .cr-bill-row-amount{
+  color:#8a9cad;
+}
+
+.cr-bill-row-amount{
+  color:#1d3850;
+  font-size:13.5px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.cr-bill-empty{
+  margin-top:14px;
+  padding:16px;
+  border:1px dashed #d4e0ea;
+  border-radius:12px;
+  color:#637b91;
+  font-size:13px;
+  text-align:center;
+}
+
+.cr-bill-empty-static{
+  margin:0 0 12px;
+}
+
+.cr-bill-aside{
+  position:sticky;
+  top:24px;
+  padding:20px;
+  border:1px solid #b8d8eb;
+  border-radius:14px;
+  background:#ffffff;
+  box-shadow:0 12px 30px rgba(25,65,95,.12);
+}
+
+.cr-bill-aside h3{
+  margin:0 0 6px;
+  color:#1d3850;
+  font-size:15px;
+  font-weight:800;
+}
+
+.cr-bill-sum-count{
+  margin:0 0 12px;
+  color:#637b91;
+  font-size:12.5px;
+}
+
+.cr-bill-sum-count strong{
+  color:#1d3850;
+}
+
+.cr-bill-sum-items{
+  list-style:none;
+  max-height:240px;
+  margin:0 0 16px;
+  padding:0;
+  overflow-y:auto;
+}
+
+.cr-bill-sum-items li{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 0;
+  border-bottom:1px dashed #e3ebf2;
+  color:#1d3850;
+  font-size:13px;
+}
+
+.cr-bill-sum-items li:last-child{
+  border-bottom:none;
+}
+
+.cr-bill-sum-items li span:last-child{
+  font-weight:750;
+  white-space:nowrap;
+}
+
+.cr-bill-sum-empty{
+  color:#8a9cad;
+  font-style:italic;
+}
+
+.cr-bill-total{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 0;
+  border-top:1px solid #e3ebf2;
+}
+
+.cr-bill-total > div span{
+  display:block;
+  color:#637b91;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+.cr-bill-total > div small{
+  display:block;
+  margin-top:2px;
+  color:#7a8ea1;
+  font-size:12px;
+}
+
+.cr-bill-total strong{
+  color:#126da5;
+  font-size:22px;
+  font-weight:850;
+  white-space:nowrap;
+}
+
+.cr-bill-review{
+  width:100%;
+  justify-content:center;
+}
+
+.cr-bill-aside-note{
+  margin:12px 0 0;
+  color:#8a9cad;
+  font-size:11.5px;
+  text-align:center;
+}
+
+@media (max-width:980px){
+  .cr-bill{
+    grid-template-columns:minmax(0,1fr);
+    padding-bottom:86px;
+  }
+
+  .cr-bill-aside{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    top:auto;
+    z-index:40;
+    padding:12px 16px;
+    border-radius:14px 14px 0 0;
+    box-shadow:0 -10px 30px rgba(25,65,95,.16);
+  }
+
+  .cr-bill-aside-detail{
+    display:none;
+  }
+
+  .cr-bill-aside-foot{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .cr-bill-aside-foot .cr-bill-total{
+    flex:1 1 auto;
+    padding:0;
+    border-top:none;
+  }
+
+  .cr-bill-review{
+    width:auto;
+    flex:0 0 auto;
+  }
+
+  .cr-bill-fields{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  }
+
+  .cr-bill-field-wide{
+    grid-column:1 / -1;
+  }
+}
+
+@media (max-width:600px){
+  .cr-bill-card{
+    padding:16px;
+  }
+
+  .cr-bill-fields{
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .cr-bill-toolbar-actions{
+    width:100%;
+  }
+
+  .cr-bill-btn{
+    flex:1 1 0;
+  }
+
+  .cr-bill-total strong{
+    font-size:18px;
+  }
+}
+
+/* Page header: the two actions share a row, the note sits under them, and the title keeps its width. */
+.cr-finance-hero{
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+
+.cr-finance-hero > div:first-child{
+  flex:1 1 440px;
+  min-width:0;
+}
+
+.cr-finance-hero-actions{
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+
+.cr-fee-hero-buttons{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.cr-finance-hero-actions .cr-finance-primary-btn,
+.cr-finance-hero-actions .cr-finance-secondary-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:46px;
+  min-height:46px;
+  padding:0 20px;
+  box-sizing:border-box;
+  font-size:14px;
+  white-space:nowrap;
+}
+
+.cr-fee-hero-note{
+  margin:0;
+  color:#6c829b;
+  font-size:12.5px;
+  text-align:right;
+}
+
+@media (max-width:760px){
+  .cr-finance-hero{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .cr-finance-hero > div:first-child{
+    flex:none;
+  }
+
+  .cr-finance-hero-actions{
+    align-items:stretch;
+    width:100%;
+  }
+
+  .cr-fee-hero-buttons{
+    flex-direction:column;
+    align-items:stretch;
+    width:100%;
+  }
+
+  .cr-fee-hero-note{
+    text-align:left;
+  }
+}
+
+/* What to bill: a student, or a whole class. */
+.cr-bill-modes{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 16px;
+}
+
+.cr-bill-mode{
+  padding:14px 16px;
+  border:1px solid #dce6ee;
+  border-radius:14px;
+  background:#ffffff;
+  color:#637b91;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+
+.cr-bill-mode strong{
+  display:block;
+  color:#1d3850;
+  font-size:14px;
+  font-weight:800;
+}
+
+.cr-bill-mode small{
+  display:block;
+  margin-top:3px;
+  font-size:12px;
+  line-height:1.4;
+}
+
+.cr-bill-mode:hover{
+  background:#fbfdff;
+}
+
+.cr-bill-mode.is-active{
+  border-color:#7fb3d6;
+  background:#f1f8fd;
+  box-shadow:0 5px 14px rgba(26,62,91,.08);
+}
+
+.cr-bill-mode:focus-visible{
+  outline:3px solid rgba(20,127,193,.18);
+  outline-offset:2px;
+}
+
+/* Progress while a class is billed. */
+.cr-bill-progress{
+  height:12px;
+  overflow:hidden;
+  border-radius:99px;
+  background:#e8eef4;
+}
+
+.cr-bill-progress span{
+  display:block;
+  width:0;
+  height:100%;
+  background:#147fc1;
+  transition:width .3s ease;
+}
+
+.cr-bill-progress-count{
+  margin:12px 0 4px;
+  color:#1d3850;
+  font-size:14px;
+  font-weight:750;
+}
+
+.cr-bill-progress-status{
+  margin:0 0 16px;
+  color:#637b91;
+  font-size:13px;
+}
+
+.cr-bill-result{
+  padding:14px 16px;
+  border:1px solid #bfe3cf;
+  border-radius:12px;
+  background:#f1fbf5;
+  color:#17603a;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.cr-bill-issues{
+  max-height:240px;
+  margin:0 0 16px;
+  padding:0;
+  overflow-y:auto;
+  list-style:none;
+  border:1px solid #f1d6a8;
+  border-radius:12px;
+  background:#fffaf0;
+}
+
+.cr-bill-issues li{
+  padding:10px 14px;
+  border-bottom:1px solid #f6e6c6;
+  color:#7a4b00;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.cr-bill-issues li:last-child{
+  border-bottom:none;
+}
+
+.cr-bill-issues strong{
+  color:#5c3800;
+}
+
+@media (max-width:600px){
+  .cr-bill-modes{
+    grid-template-columns:1fr;
   }
 }
 </style>
@@ -169,8 +945,11 @@
       <p>Manage the school's editable fee catalogue and create accurate student obligations from the class-specific fee structure.</p>
     </div>
     <div class="cr-finance-hero-actions">
-      <a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_dashboard') }}">← Finance Dashboard</a>
-      <a class="cr-finance-primary-btn" href="{{ url_for('admin_finance_fee_item_new') }}" title="Create a new fee item in the editable fee catalogue">+ Add Item to Catalogue</a><div class="finance-catalogue-action-note">Add a new charge here when the school introduces a new fee.</div>
+      <div class="cr-fee-hero-buttons">
+        <a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_dashboard') }}">← Finance Dashboard</a>
+        <a class="cr-finance-primary-btn" href="{{ url_for('admin_finance_fee_item_new') }}" title="Create a new fee item in the editable fee catalogue">+ Add Item to Catalogue</a>
+      </div>
+      <p class="cr-fee-hero-note">Add a new charge here when the school introduces a new fee.</p>
     </div>
   </div>
 
@@ -235,118 +1014,249 @@
 
 </div>
 <div id="financePanelBilling" class="cr-finance-tab-panel-v7 is-active" role="tabpanel" aria-labelledby="financeTabBilling" data-finance-panel="billing">
-<div class="cr-finance-section-intro">
-    <div>
-      <span class="cr-finance-section-kicker">STUDENT BILLING</span>
-      <h2>Create Student Assessment</h2>
-      <p>Select the student and academic session. The system resolves the student's actual class and displays only fee items assigned to that class.</p>
-    </div>
-    <div class="cr-finance-integrity-note">
-      <span class="cr-finance-integrity-icon">✓</span>
-      <div><strong>Class-controlled applicability</strong><small>Fee visibility and server-side assessment validation follow the student's session enrolment.</small></div>
-    </div>
+  <div class="cr-bill-modes" role="group" aria-label="What to bill">
+    <button type="button" class="cr-bill-mode is-active" data-bill-mode="student" aria-pressed="true">
+      <strong>Bill a student</strong>
+      <small>One child at a time, choosing their fees</small>
+    </button>
+    <button type="button" class="cr-bill-mode" data-bill-mode="class" aria-pressed="false">
+      <strong>Bill a class</strong>
+      <small>Everyone enrolled in a class, in one go</small>
+    </button>
   </div>
-
-  <form id="financeAssessmentForm" class="cr-finance-assessment-workspace" method="post" action="{{ url_for('admin_finance_assessment_new') }}">
+  <div id="billModeStudent">
+  <form id="financeAssessmentForm" class="cr-bill" method="post" action="{{ url_for('admin_finance_assessment_new') }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-    <div class="cr-finance-assessment-top">
-      <div class="cr-finance-field">
-        <label for="financeStudent">Student</label>
-        <select id="financeStudent" name="student_id" required>
-          <option value="">Select a student</option>
-          {% for s in students %}
-          <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>
+    <div class="cr-bill-main">
+
+      <section class="cr-bill-card" aria-labelledby="billStep1Title">
+        <div class="cr-bill-card-head">
+          <span class="cr-bill-step" aria-hidden="true">1</span>
+          <div>
+            <h3 id="billStep1Title">Who is being billed</h3>
+            <p>Choose the student and session. The student's class comes from their enrolment in that session.</p>
+          </div>
+        </div>
+
+        <div class="cr-bill-fields">
+          <div class="cr-bill-field cr-bill-field-wide">
+            <label for="financeStudent">Student</label>
+            <select id="financeStudent" name="student_id" required>
+              <option value="">Select a student</option>
+              {% for s in students %}
+              <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cr-bill-field">
+            <label for="financeSession">Session</label>
+            <select id="financeSession" name="session_id" required>
+              <option value="">Select session</option>
+              {% for session in sessions %}
+              <option value="{{ session.id }}" {% if current_session and session.id == current_session.id %}selected{% endif %}>{{ session.name }}{% if current_session and session.id == current_session.id %} (current){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cr-bill-field">
+            <label for="financeTerm">Billing period</label>
+            <select id="financeTerm" name="term" required>
+              <option value="Full Session">Full Session</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+          </div>
+          <div class="cr-bill-field">
+            <label for="financeDueDate">Due date <span>optional</span></label>
+            <input id="financeDueDate" type="date" name="due_date">
+          </div>
+        </div>
+
+        <div id="financeClassContext" class="cr-bill-class" hidden>
+          <span class="cr-bill-class-label">Class</span>
+          <div>
+            <strong id="financeStudentClass">—</strong>
+            <small id="financeClassStatus"></small>
+          </div>
+        </div>
+      </section>
+
+      <section class="cr-bill-card" aria-labelledby="billStep2Title">
+        <div class="cr-bill-card-head">
+          <span class="cr-bill-step" aria-hidden="true">2</span>
+          <div>
+            <h3 id="billStep2Title">Choose fees</h3>
+            <p>Only fees assigned to this student's class are shown. Fees already charged for the billing period are marked and cannot be picked again.</p>
+          </div>
+        </div>
+
+        <div class="cr-bill-toolbar">
+          <label class="cr-bill-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="financeFeeSearch" type="search" placeholder="Search fees" autocomplete="off">
+          </label>
+          <div class="cr-bill-toolbar-actions">
+            <button type="button" class="cr-bill-btn" id="financeSelectAll">Select all shown</button>
+            <button type="button" class="cr-bill-btn" id="financeClearAll">Clear</button>
+          </div>
+        </div>
+
+        {% if not items %}
+        <div class="cr-bill-empty cr-bill-empty-static">No fee items are configured. Add approved fee items to the catalogue first.</div>
+        {% endif %}
+
+        <div id="financeFeeGrid" class="cr-bill-list" hidden>
+          {% for item in items %}
+          <label class="cr-bill-row" data-fee-card data-fee-item-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-category="{{ (item.category or 'School Fees')|lower }}" data-active="{{ item.active }}" data-amount="{{ item.amount|float }}" data-applicable="{{ fee_class_map.get(item.id|string, [])|map(attribute='id')|join(',') }}" hidden>
+            <input type="checkbox" name="fee_item_id" value="{{ item.id }}" data-fee-checkbox {% if not item.active %}disabled{% endif %}>
+            <span class="cr-bill-box" aria-hidden="true">✓</span>
+            <span class="cr-bill-row-main">
+              <span class="cr-bill-row-name">{{ item.name }}</span>
+              <span class="cr-bill-row-meta">
+                <span>{{ item.category or 'School Fees' }}</span>
+                <span aria-hidden="true">·</span>
+                {% if item.optional %}<span class="cr-finance-badge optional">Optional</span>{% else %}<span class="cr-finance-badge required">Required</span>{% endif %}
+                <span aria-hidden="true">·</span>
+                <span>{{ item.applicability or 'Annual' }}</span>
+                {% if not item.active %}<span class="cr-finance-inactive">Archived</span>{% endif %}
+              </span>
+              <span class="cr-bill-row-note" data-fee-already hidden></span>
+            </span>
+            <span class="cr-bill-row-amount">₦{{ "{:,.2f}".format(item.amount|float) }}</span>
+          </label>
           {% endfor %}
-        </select>
-      </div>
-      <div class="cr-finance-field">
-        <label for="financeSession">Academic Session</label>
-        <select id="financeSession" name="session_id" required>
-          <option value="">Select session</option>
-          {% for session in sessions %}
-          <option value="{{ session.id }}" {% if current_session and session.id == current_session.id %}selected{% endif %}>{{ session.name }}{% if current_session and session.id == current_session.id %} — Current{% endif %}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="cr-finance-field">
-        <label for="financeTerm">Billing Period</label>
-        <select id="financeTerm" name="term" required>
-          <option value="Full Session">Full Session</option>
-          <option value="First Term">First Term</option>
-          <option value="Second Term">Second Term</option>
-          <option value="Third Term">Third Term</option>
-        </select>
-      </div>
-      <div class="cr-finance-field">
-        <label for="financeDueDate">Due Date <span>Optional</span></label>
-        <input id="financeDueDate" type="date" name="due_date">
-      </div>
+        </div>
+
+        <div id="financeNoStudent" class="cr-bill-empty">Choose a student and session to see the fees for their class.</div>
+        <div id="financeNoClass" class="cr-bill-empty" hidden>This student has no active class in the selected session, so no fees can be assessed. Enrol them in a class first.</div>
+        <div id="financeNoMatches" class="cr-bill-empty" hidden>No fees match your search.</div>
+      </section>
+
     </div>
 
-    <div id="financeClassContext" class="cr-finance-class-context" hidden>
-      <div>
-        <span class="cr-finance-context-label">STUDENT'S SESSION CLASS · AUTO-RESOLVED</span>
-        <strong id="financeStudentClass">—</strong>
+    <aside class="cr-bill-aside" aria-label="Assessment summary">
+      <div class="cr-bill-aside-detail">
+        <h3>Assessment summary</h3>
+        <p class="cr-bill-sum-count"><strong id="financeSelectedCount">0</strong> fee item(s) selected</p>
+        <ul class="cr-bill-sum-items" id="financeSummaryItems">
+          <li class="cr-bill-sum-empty">No fees selected yet.</li>
+        </ul>
       </div>
-      <div id="financeClassStatus" class="cr-finance-context-status">Automatically resolved from the student's session enrolment. This is informational and cannot be changed here.</div>
-    </div>
-
-    <div class="cr-finance-class-selector">
-      <div class="cr-finance-class-selector-head">
-        <div><span class="cr-finance-section-kicker">FEE FILTER</span><h3>Choose Class</h3><p>Start with the school section, then select the exact class. The student's class is selected automatically when available.</p></div>
+      <div class="cr-bill-aside-foot">
+        <div class="cr-bill-total">
+          <div>
+            <span>Total</span>
+            <small id="financeFooterSummary">Choose a student and session</small>
+          </div>
+          <strong id="financeAssessmentTotal">₦0.00</strong>
+        </div>
+        <button type="button" class="cr-finance-primary-btn cr-bill-review" id="financeCreateAssessment" disabled>Review assessment →</button>
       </div>
-      <div class="cr-finance-stage-tabs" role="tablist" aria-label="School sections">
-        <button type="button" class="cr-finance-stage-tab" data-stage="nursery">Nursery</button>
-        <button type="button" class="cr-finance-stage-tab" data-stage="primary">Primary</button>
-        <button type="button" class="cr-finance-stage-tab" data-stage="college">College</button>
-      </div>
-      <div class="cr-finance-class-pills" id="financeClassPills"></div>
-    </div>
-
-    <div class="cr-finance-selection-toolbar">
-      <div><div class="cr-finance-toolbar-title">Select Fee Items</div><div class="cr-finance-toolbar-copy">Only fees assigned to the selected class are shown. Shared fees assigned to all active classes remain available.</div></div>
-      <div class="cr-finance-toolbar-actions">
-        <label class="cr-finance-search"><span aria-hidden="true">⌕</span><input id="financeFeeSearch" type="search" placeholder="Search fee items..." autocomplete="off"></label>
-        <button type="button" class="cr-finance-tool-btn" id="financeSelectAll">Select visible</button>
-        <button type="button" class="cr-finance-tool-btn" id="financeClearAll">Clear</button>
-      </div>
-    </div>
-
-    <div class="cr-finance-selection-meta">
-      <span><strong id="financeSelectedCount">0</strong> fee item(s) selected</span>
-      <span class="cr-finance-selection-total">Assessment total <strong id="financeAssessmentTotal">₦0.00</strong></span>
-    </div>
-
-    <div id="financeFeeGrid" class="cr-finance-fee-grid">
-      {% for item in items %}
-      <label class="cr-finance-fee-card" data-fee-card data-fee-item-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-category="{{ (item.category or 'School Fees')|lower }}" data-active="{{ item.active }}" data-amount="{{ item.amount|float }}" data-applicable="{{ fee_class_map.get(item.id|string, [])|map(attribute='id')|join(',') }}" hidden>
-        <input type="checkbox" name="fee_item_id" value="{{ item.id }}" data-fee-checkbox {% if not item.active %}disabled{% endif %}>
-        <span class="cr-finance-fee-check" aria-hidden="true">✓</span>
-        <span class="cr-finance-fee-main">
-          <span class="cr-finance-fee-topline"><span class="cr-finance-fee-category">{{ item.category or 'School Fees' }}</span>{% if item.optional %}<span class="cr-finance-badge optional">Optional</span>{% else %}<span class="cr-finance-badge required">Required</span>{% endif %}</span>
-          <span class="cr-finance-fee-name">{{ item.name }}</span>
-          <span class="cr-finance-fee-meta"><span class="cr-finance-applicability-text">Class-specific</span><span>•</span><span>{{ item.applicability or 'Annual' }}</span></span>
-          <span class="cr-finance-fee-bottom"><span class="cr-finance-fee-amount">₦{{ "{:,.2f}".format(item.amount|float) }}</span>{% if item.active %}<span class="cr-finance-active">Active</span>{% else %}<span class="cr-finance-inactive">Archived</span>{% endif %}</span>
-          <span class="cr-finance-fee-already" data-fee-already hidden></span>
-        </span>
-      </label>
-      {% else %}
-      <div class="cr-finance-empty"><div class="cr-finance-empty-icon">₦</div><strong>No fee items are configured.</strong><p>Add approved fee items to the fee catalogue before creating assessments.</p></div>
-      {% endfor %}
-    </div>
-
-    <div id="financeNoStudent" class="cr-finance-no-matches">Select a student and session to load the applicable fee structure.</div>
-    <div id="financeNoClass" class="cr-finance-no-matches" hidden>The selected student has no active class enrolment for this academic session.</div>
-    <div id="financeNoMatches" class="cr-finance-no-matches" hidden>No fee items match the current search.</div>
-
-    <div class="cr-finance-assessment-footer">
-      <div><span class="cr-finance-footer-label">Ready to assess</span><strong id="financeFooterSummary">Select a student and class</strong></div>
-      <button type="submit" class="cr-finance-primary-btn" id="financeCreateAssessment" disabled>Create Student Assessment →</button>
-    </div>
+      <p class="cr-bill-aside-note cr-bill-aside-detail">Nothing is charged until you confirm on the next screen.</p>
+    </aside>
   </form>
+</div>
 
-  
+<div id="billModeClass" class="cr-bill" hidden>
+  <div class="cr-bill-main">
+
+    <section class="cr-bill-card" aria-labelledby="billClassStep1Title">
+      <div class="cr-bill-card-head">
+        <span class="cr-bill-step" aria-hidden="true">1</span>
+        <div>
+          <h3 id="billClassStep1Title">Which class is being billed</h3>
+          <p>Every student enrolled in the class for the session is billed the fees you choose. A student already charged for a fee in this billing period is skipped, so nobody is charged twice.</p>
+        </div>
+      </div>
+
+      <div class="cr-bill-fields">
+        <div class="cr-bill-field">
+          <label for="classBillSession">Session</label>
+          <select id="classBillSession">
+            {% for session in sessions %}
+            <option value="{{ session.id }}" {% if current_session and session.id == current_session.id %}selected{% endif %}>{{ session.name }}{% if current_session and session.id == current_session.id %} (current){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="cr-bill-field cr-bill-field-wide">
+          <label for="classBillClass">Class</label>
+          <select id="classBillClass">
+            <option value="">Select a class</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="cr-bill-field">
+          <label for="classBillTerm">Billing period</label>
+          <select id="classBillTerm">
+            <option value="Full Session">Full Session</option>
+            <option value="First Term">First Term</option>
+            <option value="Second Term">Second Term</option>
+            <option value="Third Term">Third Term</option>
+          </select>
+        </div>
+        <div class="cr-bill-field">
+          <label for="classBillDue">Due date <span>optional</span></label>
+          <input id="classBillDue" type="date">
+        </div>
+      </div>
+
+      <div id="classBillRoster" class="cr-bill-class" hidden>
+        <span class="cr-bill-class-label">Students</span>
+        <div>
+          <strong id="classBillRosterCount">0 students</strong>
+          <small id="classBillRosterNote"></small>
+        </div>
+      </div>
+      <div id="classBillRosterError" class="cr-bill-empty" hidden></div>
+    </section>
+
+    <section class="cr-bill-card" aria-labelledby="billClassStep2Title">
+      <div class="cr-bill-card-head">
+        <span class="cr-bill-step" aria-hidden="true">2</span>
+        <div>
+          <h3 id="billClassStep2Title">Choose fees for the class</h3>
+          <p>Only fees assigned to the chosen class are shown. The note under each fee counts the students already charged it for this billing period.</p>
+        </div>
+      </div>
+
+      <div class="cr-bill-toolbar">
+        <div></div>
+        <div class="cr-bill-toolbar-actions">
+          <button type="button" class="cr-bill-btn" id="classBillSelectAll">Select all shown</button>
+          <button type="button" class="cr-bill-btn" id="classBillClear">Clear</button>
+        </div>
+      </div>
+
+      <div id="classBillEmpty" class="cr-bill-empty">Choose a class to see the fees assigned to it.</div>
+      <div id="classBillList" class="cr-bill-list" hidden></div>
+    </section>
+
+  </div>
+
+  <aside class="cr-bill-aside" aria-label="Class billing summary">
+    <div class="cr-bill-aside-detail">
+      <h3>Class billing summary</h3>
+      <p class="cr-bill-sum-count"><strong id="classBillSelected">0</strong> fee item(s) selected</p>
+      <ul class="cr-bill-sum-items" id="classBillItems">
+        <li class="cr-bill-sum-empty">No fees selected yet.</li>
+      </ul>
+    </div>
+    <div class="cr-bill-aside-foot">
+      <div class="cr-bill-total">
+        <div>
+          <span>Per student</span>
+          <small id="classBillStudents">Choose a class</small>
+        </div>
+        <strong id="classBillTotal">₦0.00</strong>
+      </div>
+      <button type="button" class="cr-finance-primary-btn cr-bill-review" id="classBillReview" disabled>Review class billing →</button>
+    </div>
+    <p class="cr-bill-aside-note cr-bill-aside-detail">Nothing is charged until you confirm on the next screen.</p>
+  </aside>
+</div>
 </div>
 <div id="financePanelCatalogue" class="cr-finance-tab-panel-v7" role="tabpanel" aria-labelledby="financeTabCatalogue" data-finance-panel="catalogue" hidden>
 <section class="cr-finance-catalogue-section">
@@ -369,7 +1279,7 @@
             <td>{% if item.optional %}<span class="cr-finance-badge optional">Optional</span>{% else %}<span class="cr-finance-badge required">Required</span>{% endif %}</td>
             <td class="numeric"><strong>₦{{ "{:,.2f}".format(item.amount|float) }}</strong></td>
             <td>{% if item.active %}<span class="cr-finance-status active">Active</span>{% else %}<span class="cr-finance-status archived">Archived</span>{% endif %}</td>
-            <td class="actions"><div class="cr-finance-row-actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_fee_item_edit', item_id=item.id) }}">Edit</a><form method="post" action="{{ url_for('admin_finance_fee_item_toggle', item_id=item.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button type="submit" class="cr-finance-row-action">{{ 'Archive' if item.active else 'Activate' }}</button></form></div></td>
+            <td class="actions"><div class="cr-finance-row-actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_fee_item_edit', item_id=item.id) }}">Edit</a><button type="button" class="cr-finance-row-action" data-toggle-fee-item data-item-name="{{ item.name }}" data-item-active="{{ item.active }}" data-item-action="{{ url_for('admin_finance_fee_item_toggle', item_id=item.id) }}">{{ 'Archive' if item.active else 'Activate' }}</button></div></td>
           </tr>
           {% else %}<tr><td colspan="8" class="cr-finance-table-empty">No fee items configured.</td></tr>{% endfor %}
           </tbody>
@@ -377,6 +1287,26 @@
       </div>
     </div>
   </section>
+
+  <dialog class="cr-modal cr-finance-confirm" id="financeToggleModal" aria-labelledby="financeToggleTitle">
+    <div class="cr-modal-head">
+      <div>
+        <div class="section-label" id="financeToggleKicker">FEE CATALOGUE</div>
+        <h2 id="financeToggleTitle">Archive fee item</h2>
+      </div>
+      <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="financeToggleModal">×</button>
+    </div>
+    <div class="cr-modal-body">
+      <p class="cr-finance-toggle-consequence" id="financeToggleConsequence"></p>
+      <form id="financeToggleForm" method="post" action="">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="cr-finance-modal-actions">
+          <button type="button" class="cr-finance-secondary-btn" data-modal-close="financeToggleModal">Cancel</button>
+          <button type="submit" class="cr-finance-primary-btn" id="financeToggleSubmit">Archive item</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 </div>
 <div id="financePanelHistory" class="cr-finance-tab-panel-v7" role="tabpanel" aria-labelledby="financeTabHistory" data-finance-panel="history" hidden>
 <section class="cr-finance-assessments-section">
@@ -449,6 +1379,8 @@
 </div>
 
 <script nonce="{{ csp_nonce() }}">
+/* Student billing: one student and session resolve one class (from the enrolment, never chosen by hand);
+   the fee list is filtered to that class, and the summary follows every change. */
 (function(){
   const studentSelect=document.getElementById('financeStudent');
   const sessionSelect=document.getElementById('financeSession');
@@ -465,15 +1397,12 @@
   const classContext=document.getElementById('financeClassContext');
   const studentClass=document.getElementById('financeStudentClass');
   const classStatus=document.getElementById('financeClassStatus');
-  const classPills=document.getElementById('financeClassPills');
+  const feeList=document.getElementById('financeFeeGrid');
+  const summaryItems=document.getElementById('financeSummaryItems');
   const createButton=document.getElementById('financeCreateAssessment');
   const form=document.getElementById('financeAssessmentForm');
   const cards=Array.from(document.querySelectorAll('[data-fee-card]'));
-  const stageTabs=Array.from(document.querySelectorAll('.cr-finance-stage-tab'));
   const classMap={{ student_class_map|tojson }};
-  const groups={{ class_groups|tojson }};
-  let activeStage='primary';
-  let activeClassId=null;
   let resolvedClass=null;
   let assessedMap={};
   let assessedFetchToken=0;
@@ -481,15 +1410,17 @@
   function money(v){return '₦'+Number(v||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2});}
   function contextKey(){return (studentSelect.value||'')+':'+(sessionSelect.value||'');}
   function applicable(card){
-    if(!activeClassId)return false;
-    return (','+(card.dataset.applicable||'')+',').includes(','+String(activeClassId)+',');
+    if(!resolvedClass)return false;
+    return (','+(card.dataset.applicable||'')+',').includes(','+String(resolvedClass.class_id)+',');
   }
+  function checkboxOf(card){return card.querySelector('[data-fee-checkbox]');}
+
   function applyAssessedState(){
     const term=termSelect.value||'Full Session';
     const forTerm=assessedMap[term]||{};
     cards.forEach(card=>{
       const already=forTerm[card.dataset.feeItemId];
-      const cb=card.querySelector('[data-fee-checkbox]');
+      const cb=checkboxOf(card);
       const label=card.querySelector('[data-fee-already]');
       if(already){
         if(cb){cb.checked=false;cb.disabled=true;}
@@ -506,6 +1437,7 @@
       }
     });
   }
+
   function loadAssessedMap(){
     const studentId=studentSelect.value,sessionId=sessionSelect.value;
     assessedMap={};
@@ -516,63 +1448,89 @@
       .then(data=>{if(token!==assessedFetchToken)return;assessedMap=data||{};applyAssessedState();refresh();})
       .catch(()=>{if(token!==assessedFetchToken)return;assessedMap={};applyAssessedState();refresh();});
   }
+
+  function summaryRow(name, amount){
+    const li=document.createElement('li');
+    const label=document.createElement('span');
+    label.textContent=name;
+    const value=document.createElement('span');
+    value.textContent=money(amount);
+    li.append(label,value);
+    return li;
+  }
+
   function refresh(){
     const query=(search.value||'').trim().toLowerCase();
+    const haveClass=!!resolvedClass;
     let visible=0,selected=0,total=0;
+    summaryItems.textContent='';
     cards.forEach(card=>{
-      const matches=!!resolvedClass && applicable(card) && ((card.dataset.name||'').includes(query)||(card.dataset.category||'').includes(query));
+      const matches=haveClass && applicable(card) && ((card.dataset.name||'').includes(query)||(card.dataset.category||'').includes(query));
       card.hidden=!matches;
       if(matches)visible++;
-      const cb=card.querySelector('[data-fee-checkbox]');
-      if(cb && cb.checked){selected++;total+=Number(card.dataset.amount||0);card.classList.add('is-selected');}
-      else card.classList.remove('is-selected');
+      const cb=checkboxOf(card);
+      const checked=!!(cb && cb.checked);
+      card.classList.toggle('is-selected',checked);
+      if(checked){
+        selected++;
+        total+=Number(card.dataset.amount||0);
+        summaryItems.appendChild(summaryRow(card.querySelector('.cr-bill-row-name').textContent,Number(card.dataset.amount||0)));
+      }
     });
+    if(!selected){
+      const empty=document.createElement('li');
+      empty.className='cr-bill-sum-empty';
+      empty.textContent='No fees selected yet.';
+      summaryItems.appendChild(empty);
+    }
+    feeList.hidden=!haveClass;
     selectedCount.textContent=selected;
     totalEl.textContent=money(total);
-    noStudent.hidden=!!(studentSelect.value&&sessionSelect.value);
-    noClass.hidden=true;
-    if(!resolvedClass && studentSelect.value && sessionSelect.value) noClass.hidden=false;
-    noMatches.hidden=!(resolvedClass && visible===0 && !!query);
-    createButton.disabled=!resolvedClass || selected===0;
-    footerSummary.textContent=resolvedClass?(selected?selected+' fee item'+(selected===1?'':'s')+' • '+money(total):'Select one or more applicable fee items'):'Select a student and class';
+    const hasStudentAndSession=!!(studentSelect.value&&sessionSelect.value);
+    noStudent.hidden=hasStudentAndSession;
+    noClass.hidden=!(hasStudentAndSession && !haveClass);
+    noMatches.hidden=!(haveClass && visible===0 && !!query);
+    createButton.disabled=!haveClass || selected===0;
+    footerSummary.textContent=haveClass
+      ?(selected?selected+' fee item'+(selected===1?'':'s')+' for '+(studentClass.textContent||'this class'):'Select one or more fees')
+      :'Choose a student and session';
   }
-  function renderPills(){
-    classPills.innerHTML='';
-    (groups[activeStage]||[]).forEach(c=>{
-      const b=document.createElement('button');b.type='button';b.className='cr-finance-class-pill';b.textContent=c.name;b.dataset.classId=c.id;
-      if(resolvedClass && Number(resolvedClass.class_id)===Number(c.id)) b.classList.add('active');
-      b.addEventListener('click',()=>{activeClassId=Number(c.id);resolvedClass={class_id:Number(c.id),class_name:c.name,stage:c.stage};studentClass.textContent=c.name;classStatus.textContent='Fee items assigned to this class are now available below.';classContext.hidden=false;stageTabs.forEach(x=>x.classList.toggle('active',x.dataset.stage===activeStage));renderPills();refresh();});
-      classPills.appendChild(b);
-    });
-  }
-  function setStageForClass(classId){
-    for(const key of Object.keys(groups)) if((groups[key]||[]).some(c=>Number(c.id)===Number(classId))){activeStage=key;break;}
-    stageTabs.forEach(x=>x.classList.toggle('active',x.dataset.stage===activeStage));renderPills();
-  }
+
   function resolve(){
     resolvedClass=classMap[contextKey()]||null;
-    activeClassId=resolvedClass?Number(resolvedClass.class_id):null;
-    cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.checked=false;});
+    cards.forEach(card=>{const cb=checkboxOf(card);if(cb)cb.checked=false;});
     if(resolvedClass){
-      classContext.hidden=false;studentClass.textContent=resolvedClass.class_name;classStatus.textContent='Automatically resolved from the student’s session enrolment.';setStageForClass(activeClassId);
+      classContext.hidden=false;
+      studentClass.textContent=resolvedClass.class_name;
+      classStatus.textContent='From the student\'s enrolment in this session';
     }else if(studentSelect.value&&sessionSelect.value){
-      classContext.hidden=false;studentClass.textContent='No active class';classStatus.textContent='This student has no active enrolment in the selected session.';classPills.innerHTML='';
+      classContext.hidden=false;
+      studentClass.textContent='No active class';
+      classStatus.textContent='Enrol the student in a class for this session first.';
     }else{
-      classContext.hidden=true;classPills.innerHTML='';
+      classContext.hidden=true;
     }
     loadAssessedMap();
   }
-  stageTabs.forEach(tab=>tab.addEventListener('click',()=>{activeStage=tab.dataset.stage;stageTabs.forEach(x=>x.classList.toggle('active',x===tab));renderPills();}));
+
   studentSelect.addEventListener('change',resolve);
   sessionSelect.addEventListener('change',resolve);
   termSelect.addEventListener('change',()=>{applyAssessedState();refresh();});
   search.addEventListener('input',refresh);
-  cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.addEventListener('change',refresh);});
-  selectAll.addEventListener('click',()=>{cards.forEach(card=>{if(!card.hidden&&card.dataset.active!=='0'){const cb=card.querySelector('[data-fee-checkbox]');if(cb&&!cb.disabled)cb.checked=true;}});refresh();});
-  clearAll.addEventListener('click',()=>{cards.forEach(card=>{const cb=card.querySelector('[data-fee-checkbox]');if(cb)cb.checked=false;});refresh();});
-  form.addEventListener('submit',e=>{const checked=form.querySelectorAll('input[name="fee_item_id"]:checked');if(!resolvedClass||!checked.length){e.preventDefault();alert(!resolvedClass?'Select a student with an active class enrolment first.':'Please select at least one fee item.');}});
-  setStageForClass(resolvedClass?resolvedClass.class_id:'');
-  refresh();
+  cards.forEach(card=>{const cb=checkboxOf(card);if(cb)cb.addEventListener('change',refresh);});
+  selectAll.addEventListener('click',()=>{
+    cards.forEach(card=>{if(!card.hidden&&card.dataset.active!=='0'){const cb=checkboxOf(card);if(cb&&!cb.disabled)cb.checked=true;}});
+    refresh();
+  });
+  clearAll.addEventListener('click',()=>{cards.forEach(card=>{const cb=checkboxOf(card);if(cb)cb.checked=false;});refresh();});
+  form.addEventListener('submit',e=>{
+    const checked=form.querySelectorAll('input[name="fee_item_id"]:checked');
+    if(!resolvedClass||!checked.length){
+      e.preventDefault();
+      alert(!resolvedClass?'Select a student with an active class enrolment first.':'Please select at least one fee item.');
+    }
+  });
+  resolve();
 })();
 </script>
 
@@ -642,6 +1600,599 @@
   });
 
   activateTab("billing");
+})();
+</script>
+
+
+<dialog class="cr-modal cr-finance-confirm" id="classReviewModal" aria-labelledby="classReviewTitle">
+  <div class="cr-modal-head">
+    <div>
+      <div class="section-label">REVIEW CLASS BILLING</div>
+      <h2 id="classReviewTitle">Bill the class?</h2>
+      <p>Every student enrolled in this class is charged the fees below. Anyone already charged for a fee in this billing period is skipped.</p>
+    </div>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="classReviewModal">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <dl class="cr-finance-review-summary">
+      <div><dt>Class</dt><dd id="classReviewClass">—</dd></div>
+      <div><dt>Students</dt><dd id="classReviewStudents">—</dd></div>
+      <div><dt>Session</dt><dd id="classReviewSession">—</dd></div>
+      <div><dt>Billing period</dt><dd id="classReviewTerm">—</dd></div>
+      <div><dt>Due date</dt><dd id="classReviewDue">Not set</dd></div>
+    </dl>
+    <ul class="cr-finance-review-list" id="classReviewItems"></ul>
+    <div class="cr-finance-review-total">
+      <span id="classReviewCount">0 items</span>
+      <strong id="classReviewTotal">₦0.00 per student</strong>
+    </div>
+    <div class="cr-finance-modal-actions">
+      <button type="button" class="cr-finance-secondary-btn" data-modal-close="classReviewModal">← Back to edit</button>
+      <button type="button" class="cr-finance-primary-btn" id="classConfirmBilling">Bill the class</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="cr-modal cr-finance-confirm" id="billProgressModal" aria-labelledby="billProgressTitle">
+  <div class="cr-modal-head">
+    <div>
+      <div class="section-label" id="billProgressKicker">BILLING IN PROGRESS</div>
+      <h2 id="billProgressTitle">Billing the class</h2>
+      <p id="billProgressNote">Keep this window open. It closes only once every student has been confirmed as billed.</p>
+    </div>
+    <button type="button" class="cr-modal-close" id="billProgressX" aria-label="Close" hidden>×</button>
+  </div>
+  <div class="cr-modal-body">
+    <div class="cr-bill-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="billProgressBar">
+      <span id="billProgressFill"></span>
+    </div>
+    <p class="cr-bill-progress-count" id="billProgressCount">0 of 0 students confirmed</p>
+    <p class="cr-bill-progress-status" id="billProgressStatus">Preparing…</p>
+    <div class="cr-bill-result" id="billProgressSummary" hidden></div>
+    <ul class="cr-bill-issues" id="billProgressIssues" hidden></ul>
+    <div class="cr-finance-modal-actions">
+      <button type="button" class="cr-finance-secondary-btn" id="billProgressRetry" hidden>Retry the students not yet billed</button>
+      <button type="button" class="cr-finance-primary-btn" id="billProgressDone" hidden>Done</button>
+    </div>
+  </div>
+</dialog>
+
+
+<script id="cr-finance-class-billing" nonce="{{ csp_nonce() }}">
+/* Bill a class: the roster is fetched once, then billed in batches. A student counts as billed only
+   when the server says so for that student, and the progress window closes only when every student on
+   the roster is confirmed. A retry sends just the students not yet confirmed, and the server skips
+   anyone already charged, so a retry can never charge twice. */
+(function () {
+  const BATCH_SIZE = 50;
+  const ROSTER_URL = '/admin/finance/class-roster.json';
+  const BATCH_URL = '/admin/finance/class-assessments/batch';
+
+  const modeButtons = Array.from(document.querySelectorAll('[data-bill-mode]'));
+  const studentPanel = document.getElementById('billModeStudent');
+  const classPanel = document.getElementById('billModeClass');
+  if (!modeButtons.length || !studentPanel || !classPanel) return;
+
+  const sessionSel = document.getElementById('classBillSession');
+  const classSel = document.getElementById('classBillClass');
+  const termSel = document.getElementById('classBillTerm');
+  const dueInput = document.getElementById('classBillDue');
+  const rosterBox = document.getElementById('classBillRoster');
+  const rosterCount = document.getElementById('classBillRosterCount');
+  const rosterNote = document.getElementById('classBillRosterNote');
+  const rosterError = document.getElementById('classBillRosterError');
+  const listEl = document.getElementById('classBillList');
+  const emptyEl = document.getElementById('classBillEmpty');
+  const selectAllBtn = document.getElementById('classBillSelectAll');
+  const clearBtn = document.getElementById('classBillClear');
+  const selectedEl = document.getElementById('classBillSelected');
+  const itemsEl = document.getElementById('classBillItems');
+  const totalEl = document.getElementById('classBillTotal');
+  const studentsEl = document.getElementById('classBillStudents');
+  const reviewBtn = document.getElementById('classBillReview');
+
+  const reviewModal = document.getElementById('classReviewModal');
+  const confirmBtn = document.getElementById('classConfirmBilling');
+  const progressModal = document.getElementById('billProgressModal');
+  const progressTitle = document.getElementById('billProgressTitle');
+  const progressKicker = document.getElementById('billProgressKicker');
+  const progressNote = document.getElementById('billProgressNote');
+  const progressFill = document.getElementById('billProgressFill');
+  const progressBar = document.getElementById('billProgressBar');
+  const progressCount = document.getElementById('billProgressCount');
+  const progressStatus = document.getElementById('billProgressStatus');
+  const progressSummary = document.getElementById('billProgressSummary');
+  const progressIssues = document.getElementById('billProgressIssues');
+  const progressX = document.getElementById('billProgressX');
+  const progressRetry = document.getElementById('billProgressRetry');
+  const progressDone = document.getElementById('billProgressDone');
+
+  const studentCards = Array.from(document.querySelectorAll('[data-fee-card]'));
+  const csrfInput = document.querySelector('#financeAssessmentForm input[name="_csrf_token"]');
+
+  let roster = [];
+  let rosterById = {};
+  let already = {};
+  let rosterToken = 0;
+  let rows = [];
+  let running = false;
+  let finished = false;
+  let confirmed = new Set();
+  let failures = new Map();
+  let counts = { billed: 0, already: 0, items: 0 };
+  let runTotal = 0;
+
+  function money(v) {
+    return '₦' + Number(v || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function setText(el, value) {
+    if (el) el.textContent = value;
+  }
+  function plural(n, one, many) {
+    return n + ' ' + (n === 1 ? one : many);
+  }
+
+  /* Build one fee row per student-list fee, so the two modes always show the same fees. */
+  function buildRows() {
+    listEl.textContent = '';
+    rows = studentCards.map(function (card) {
+      const label = document.createElement('label');
+      label.className = 'cr-bill-row';
+      label.dataset.classFee = card.dataset.feeItemId;
+      label.dataset.applicable = card.dataset.applicable || '';
+      label.dataset.amount = card.dataset.amount || '0';
+      label.dataset.active = card.dataset.active || '1';
+      label.hidden = true;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = card.dataset.feeItemId;
+      cb.disabled = card.dataset.active === '0';
+      cb.addEventListener('change', refresh);
+
+      const box = document.createElement('span');
+      box.className = 'cr-bill-box';
+      box.setAttribute('aria-hidden', 'true');
+      box.textContent = '✓';
+
+      const main = document.createElement('span');
+      main.className = 'cr-bill-row-main';
+      const name = document.createElement('span');
+      name.className = 'cr-bill-row-name';
+      name.textContent = card.querySelector('.cr-bill-row-name').textContent;
+      const meta = card.querySelector('.cr-bill-row-meta');
+      main.append(name);
+      if (meta) main.append(meta.cloneNode(true));
+      const note = document.createElement('span');
+      note.className = 'cr-bill-row-note';
+      note.dataset.classNote = '';
+      note.hidden = true;
+      main.append(note);
+
+      const amount = document.createElement('span');
+      amount.className = 'cr-bill-row-amount';
+      amount.textContent = money(card.dataset.amount || 0);
+
+      label.append(cb, box, main, amount);
+      listEl.append(label);
+      return { id: card.dataset.feeItemId, label: label, cb: cb, note: note };
+    });
+  }
+
+  function chosenClass() {
+    return classSel.value ? Number(classSel.value) : null;
+  }
+  function applicableTo(row, classId) {
+    return (',' + (row.label.dataset.applicable || '') + ',').includes(',' + String(classId) + ',');
+  }
+  function selectedRows() {
+    return rows.filter(function (row) { return row.cb.checked && !row.cb.disabled; });
+  }
+
+  function refresh() {
+    const classId = chosenClass();
+    const ready = !!classId && roster.length > 0;
+    let total = 0;
+    itemsEl.textContent = '';
+
+    rows.forEach(function (row) {
+      const shown = !!classId && applicableTo(row, classId);
+      row.label.hidden = !shown;
+      if (row.cb.checked && !shown) row.cb.checked = false;
+      row.label.classList.toggle('is-selected', row.cb.checked);
+    });
+
+    const chosen = selectedRows().filter(function (row) { return !row.label.hidden; });
+    chosen.forEach(function (row) {
+      const amount = Number(row.label.dataset.amount || 0);
+      total += amount;
+      const li = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = row.label.querySelector('.cr-bill-row-name').textContent;
+      const value = document.createElement('span');
+      value.textContent = money(amount);
+      li.append(label, value);
+      itemsEl.append(li);
+    });
+    if (!chosen.length) {
+      const empty = document.createElement('li');
+      empty.className = 'cr-bill-sum-empty';
+      empty.textContent = 'No fees selected yet.';
+      itemsEl.append(empty);
+    }
+
+    listEl.hidden = !classId;
+    emptyEl.hidden = !!classId;
+    rosterBox.hidden = !classId || !!rosterError.textContent;
+    setText(selectedEl, chosen.length);
+    setText(totalEl, money(total));
+    setText(studentsEl, ready
+      ? plural(roster.length, 'student', 'students') + ' in this class · ' + money(total) + ' each'
+      : (classId ? 'No students to bill' : 'Choose a class'));
+    reviewBtn.disabled = !(ready && chosen.length > 0) || running;
+  }
+
+  function loadRoster() {
+    const sessionId = sessionSel.value;
+    const classId = chosenClass();
+    const term = termSel.value || 'Full Session';
+    const token = ++rosterToken;
+    roster = [];
+    rosterById = {};
+    already = {};
+    rosterError.hidden = true;
+    rosterError.textContent = '';
+    if (!sessionId || !classId) { refresh(); return; }
+    setText(rosterCount, 'Loading…');
+    setText(rosterNote, '');
+    rosterBox.hidden = false;
+    refresh();
+    const url = ROSTER_URL + '?session_id=' + encodeURIComponent(sessionId) +
+      '&class_id=' + encodeURIComponent(classId) + '&term=' + encodeURIComponent(term);
+    fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, data: data }; }); })
+      .then(function (res) {
+        if (token !== rosterToken) return;
+        if (!res.ok) {
+          rosterError.textContent = res.data.error || 'The class list could not be loaded. Try again.';
+          rosterError.hidden = false;
+          refresh();
+          return;
+        }
+        roster = res.data.students || [];
+        roster.forEach(function (s) { rosterById[s.id] = s; });
+        already = res.data.already || {};
+        setText(rosterCount, plural(roster.length, 'student', 'students'));
+        setText(rosterNote, (res.data.class_name || '') + ' · ' + (res.data.session_name || '') + ' · ' + term);
+        rows.forEach(function (row) {
+          const n = already[row.id];
+          if (n) {
+            row.note.textContent = n + ' of ' + roster.length + ' already charged for ' + term + ' (they will be skipped)';
+            row.note.hidden = false;
+          } else {
+            row.note.textContent = '';
+            row.note.hidden = true;
+          }
+        });
+        refresh();
+      })
+      .catch(function () {
+        if (token !== rosterToken) return;
+        rosterError.textContent = 'The class list could not be loaded. Check your connection and try again.';
+        rosterError.hidden = false;
+        refresh();
+      });
+  }
+
+  /* ---------------------------------------------------------------- the review */
+  reviewBtn.addEventListener('click', function () {
+    const chosen = selectedRows().filter(function (row) { return !row.label.hidden; });
+    if (!chosenClass() || !roster.length || !chosen.length || running) return;
+    const list = document.getElementById('classReviewItems');
+    list.textContent = '';
+    let total = 0;
+    chosen.forEach(function (row) {
+      const amount = Number(row.label.dataset.amount || 0);
+      total += amount;
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = row.label.querySelector('.cr-bill-row-name').textContent;
+      const value = document.createElement('span');
+      value.textContent = money(amount);
+      li.append(name, value);
+      list.append(li);
+    });
+    setText(document.getElementById('classReviewClass'), classSel.options[classSel.selectedIndex].textContent.trim());
+    setText(document.getElementById('classReviewStudents'), plural(roster.length, 'student', 'students'));
+    setText(document.getElementById('classReviewSession'), sessionSel.options[sessionSel.selectedIndex].textContent.trim());
+    setText(document.getElementById('classReviewTerm'), termSel.value);
+    setText(document.getElementById('classReviewDue'), dueInput.value || 'Not set');
+    setText(document.getElementById('classReviewCount'), plural(chosen.length, 'fee item', 'fee items'));
+    setText(document.getElementById('classReviewTotal'), money(total) + ' per student');
+    confirmBtn.disabled = false;
+    reviewModal.showModal();
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    reviewModal.close();
+    startBilling();
+  });
+
+  /* ---------------------------------------------------------------- the progress window */
+  function showProgress(running_) {
+    progressBar.setAttribute('aria-valuenow', String(Math.round(100 * confirmed.size / Math.max(runTotal, 1))));
+    progressFill.style.width = Math.round(100 * confirmed.size / Math.max(runTotal, 1)) + '%';
+    setText(progressCount, confirmed.size + ' of ' + runTotal + ' ' + (runTotal === 1 ? 'student' : 'students') + ' confirmed');
+    if (running_) {
+      setText(progressKicker, 'BILLING IN PROGRESS');
+      setText(progressNote, 'Keep this window open. It closes only once every student has been confirmed as billed.');
+    }
+  }
+
+  function renderIssues() {
+    progressIssues.textContent = '';
+    failures.forEach(function (reason, id) {
+      const li = document.createElement('li');
+      const who = rosterById[id] ? rosterById[id].name + (rosterById[id].admission_no ? ' (' + rosterById[id].admission_no + ')' : '') : 'Student ' + id;
+      const name = document.createElement('strong');
+      name.textContent = who;
+      const why = document.createElement('span');
+      why.textContent = ' — ' + reason;
+      li.append(name, why);
+      progressIssues.append(li);
+    });
+    progressIssues.hidden = failures.size === 0;
+  }
+
+  function finishRun() {
+    running = false;
+    finished = runTotal > 0 && confirmed.size === runTotal;
+    progressX.hidden = !finished;
+    progressDone.hidden = !finished;
+    progressRetry.hidden = finished;
+    progressFill.parentElement.setAttribute('aria-busy', 'false');
+    if (finished) {
+      setText(progressKicker, 'COMPLETE');
+      setText(progressTitle, 'Every student has been billed');
+      setText(progressNote, 'Confirmed for every student on the class list.');
+      setText(progressStatus, 'Finished.');
+      progressSummary.textContent = counts.billed + ' ' + (counts.billed === 1 ? 'student' : 'students') + ' billed, ' +
+        counts.items + ' ' + (counts.items === 1 ? 'charge' : 'charges') + ' created' +
+        (counts.already ? '. ' + counts.already + ' already charged for this billing period and skipped.' : '.');
+      progressSummary.hidden = false;
+      progressIssues.textContent = '';
+      progressIssues.hidden = true;
+    } else {
+      setText(progressKicker, 'NOT FINISHED');
+      setText(progressTitle, 'Some students were not billed');
+      setText(progressNote, 'The window stays open until every student is confirmed. Review the reasons below, then retry.');
+      setText(progressStatus, failures.size + ' ' + (failures.size === 1 ? 'student' : 'students') + ' still need billing.');
+      progressSummary.hidden = true;
+      renderIssues();
+    }
+    showProgress(false);
+  }
+
+  async function runBatches(ids) {
+    const classId = chosenClass();
+    const term = termSel.value || 'Full Session';
+    const feeIds = selectedRows().filter(function (row) { return !row.label.hidden; }).map(function (row) { return row.id; });
+    for (let start = 0; start < ids.length; start += BATCH_SIZE) {
+      const chunk = ids.slice(start, start + BATCH_SIZE);
+      setText(progressStatus, 'Billing students ' + (start + 1) + '–' + (start + chunk.length) + ' of ' + ids.length + '…');
+      const body = new FormData();
+      body.append('_csrf_token', csrfInput ? csrfInput.value : '');
+      body.append('session_id', sessionSel.value);
+      body.append('class_id', String(classId));
+      body.append('term', term);
+      body.append('due_date', dueInput.value || '');
+      feeIds.forEach(function (fid) { body.append('fee_item_id', fid); });
+      chunk.forEach(function (sid) { body.append('student_id', String(sid)); });
+      try {
+        const response = await fetch(BATCH_URL, { method: 'POST', credentials: 'same-origin', body: body,
+                                                  headers: { Accept: 'application/json' } });
+        const data = await response.json().catch(function () { return {}; });
+        if (!response.ok) {
+          const why = data.error || ('The server did not accept this batch (status ' + response.status + ').');
+          chunk.forEach(function (sid) { if (!confirmed.has(sid)) failures.set(sid, why); });
+        } else {
+          const seen = new Set();
+          (data.results || []).forEach(function (r) {
+            seen.add(r.student_id);
+            if (r.status === 'billed') {
+              confirmed.add(r.student_id); failures.delete(r.student_id);
+              counts.billed += 1; counts.items += r.items || 0;
+            } else if (r.status === 'already') {
+              confirmed.add(r.student_id); failures.delete(r.student_id);
+              counts.already += 1;
+            } else {
+              failures.set(r.student_id, r.reason || 'This student was not billed.');
+            }
+          });
+          chunk.forEach(function (sid) {
+            if (!seen.has(sid) && !confirmed.has(sid)) failures.set(sid, 'No result came back for this student.');
+          });
+        }
+      } catch (err) {
+        chunk.forEach(function (sid) { if (!confirmed.has(sid)) failures.set(sid, 'The connection was lost. Retry to continue.'); });
+      }
+      showProgress(true);
+    }
+  }
+
+  function startBilling() {
+    running = true;
+    finished = false;
+    confirmed = new Set();
+    failures = new Map();
+    counts = { billed: 0, already: 0, items: 0 };
+    runTotal = roster.length;
+    const classRow = classSel.options[classSel.selectedIndex].textContent.trim();
+    setText(progressTitle, 'Billing ' + classRow);
+    progressSummary.hidden = true;
+    progressIssues.hidden = true;
+    progressRetry.hidden = true;
+    progressDone.hidden = true;
+    progressX.hidden = true;
+    showProgress(true);
+    progressModal.showModal();
+    reviewBtn.disabled = true;
+    const ids = roster.map(function (s) { return s.id; });
+    runBatches(ids).then(finishRun);
+  }
+
+  progressRetry.addEventListener('click', function () {
+    if (running) return;
+    const pending = roster.map(function (s) { return s.id; }).filter(function (id) { return !confirmed.has(id); });
+    if (!pending.length) { finishRun(); return; }
+    running = true;
+    progressRetry.hidden = true;
+    setText(progressTitle, 'Billing the students not yet confirmed');
+    progressIssues.hidden = true;
+    showProgress(true);
+    runBatches(pending).then(finishRun);
+  });
+
+  progressDone.addEventListener('click', function () {
+    if (!finished) return;
+    progressModal.close();
+    reviewBtn.disabled = false;
+    refresh();
+  });
+  progressX.addEventListener('click', function () {
+    if (!finished) return;
+    progressModal.close();
+  });
+
+  /* While billing runs the window cannot be dismissed, by Escape or by leaving the page. */
+  progressModal.addEventListener('cancel', function (event) {
+    if (!finished) event.preventDefault();
+  });
+  window.addEventListener('beforeunload', function (event) {
+    if (running) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
+
+  /* ---------------------------------------------------------------- the mode switch and the controls */
+  function setMode(mode) {
+    modeButtons.forEach(function (button) {
+      const active = button.dataset.billMode === mode;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    studentPanel.hidden = mode !== 'student';
+    classPanel.hidden = mode !== 'class';
+  }
+  modeButtons.forEach(function (button) {
+    button.addEventListener('click', function () { setMode(button.dataset.billMode); });
+  });
+
+  sessionSel.addEventListener('change', loadRoster);
+  classSel.addEventListener('change', loadRoster);
+  termSel.addEventListener('change', loadRoster);
+  selectAllBtn.addEventListener('click', function () {
+    rows.forEach(function (row) { if (!row.label.hidden && !row.cb.disabled) row.cb.checked = true; });
+    refresh();
+  });
+  clearBtn.addEventListener('click', function () {
+    rows.forEach(function (row) { row.cb.checked = false; });
+    refresh();
+  });
+
+  buildRows();
+  refresh();
+})();
+</script>
+
+<script id="cr-finance-confirm-dialogs" nonce="{{ csp_nonce() }}">
+/* Review before a student is charged, and confirm before a fee item is archived or reactivated.
+   Both dialogs are filled with textContent, never HTML, so a fee or student name cannot inject markup. */
+(function () {
+  function money(v) {
+    return '₦' + Number(v || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  const form = document.getElementById('financeAssessmentForm');
+  const reviewButton = document.getElementById('financeCreateAssessment');
+  const reviewModal = document.getElementById('financeReviewModal');
+  const confirmButton = document.getElementById('financeConfirmAssessment');
+
+  if (form && reviewButton && reviewModal && confirmButton) {
+    const studentSelect = document.getElementById('financeStudent');
+    const sessionSelect = document.getElementById('financeSession');
+    const termSelect = document.getElementById('financeTerm');
+    const dueInput = document.getElementById('financeDueDate');
+    const cards = Array.from(form.querySelectorAll('[data-fee-card]'));
+
+    reviewButton.addEventListener('click', function () {
+      const checked = cards.filter(function (card) {
+        const cb = card.querySelector('[data-fee-checkbox]');
+        return cb && cb.checked;
+      });
+      if (!checked.length || !studentSelect.value || !sessionSelect.value) return;
+
+      const list = document.getElementById('financeReviewItems');
+      list.textContent = '';
+      let total = 0;
+      checked.forEach(function (card) {
+        const amount = Number(card.dataset.amount || 0);
+        total += amount;
+        const row = document.createElement('li');
+        const name = document.createElement('span');
+        name.textContent = card.querySelector('.cr-bill-row-name').textContent;
+        const value = document.createElement('span');
+        value.textContent = money(amount);
+        row.append(name, value);
+        list.appendChild(row);
+      });
+
+      setText('financeReviewStudent', studentSelect.selectedOptions[0].textContent.trim());
+      setText('financeReviewClass', document.getElementById('financeStudentClass').textContent.trim());
+      setText('financeReviewSession', sessionSelect.selectedOptions[0].textContent.trim());
+      setText('financeReviewTerm', termSelect.value);
+      setText('financeReviewDue', dueInput && dueInput.value ? dueInput.value : 'Not set');
+      setText('financeReviewCount', checked.length + ' fee item' + (checked.length === 1 ? '' : 's'));
+      setText('financeReviewTotal', money(total));
+
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'Create Student Assessment';
+      reviewModal.showModal();
+    });
+
+    confirmButton.addEventListener('click', function () {
+      // A double click must not post the same assessment twice.
+      confirmButton.disabled = true;
+      confirmButton.textContent = 'Creating…';
+      reviewModal.close();
+      form.requestSubmit();
+    });
+  }
+
+  const toggleModal = document.getElementById('financeToggleModal');
+  const toggleForm = document.getElementById('financeToggleForm');
+  const toggleSubmit = document.getElementById('financeToggleSubmit');
+  if (toggleModal && toggleForm && toggleSubmit) {
+    Array.from(document.querySelectorAll('[data-toggle-fee-item]')).forEach(function (button) {
+      button.addEventListener('click', function () {
+        const archiving = button.dataset.itemActive === '1';
+        const name = button.dataset.itemName;
+        toggleForm.action = button.dataset.itemAction;
+        setText('financeToggleKicker', archiving ? 'ARCHIVE FEE ITEM' : 'ACTIVATE FEE ITEM');
+        setText('financeToggleTitle', (archiving ? 'Archive ' : 'Activate ') + '“' + name + '”?');
+        setText('financeToggleConsequence', archiving
+          ? 'It will no longer be offered when creating new student assessments. Assessments already made stay exactly as they are, and payments are unaffected.'
+          : 'It will be offered again when creating new student assessments. Assessments already made are unchanged.');
+        toggleSubmit.textContent = archiving ? 'Archive item' : 'Activate item';
+        toggleModal.showModal();
+      });
+    });
+  }
 })();
 </script>
 

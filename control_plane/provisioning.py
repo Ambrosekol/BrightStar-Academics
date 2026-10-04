@@ -642,6 +642,42 @@ def set_db_url(slug, db_url, actor='cli'):
     clear_cache()
 
 
+def _installs_newest_first(root, program):
+    """``root``'s version folders (``18``, ``9.6``...) newest first, each joined to ``program``."""
+    if not root.is_dir():
+        return []
+
+    def version_key(folder):
+        return tuple(int(part) if part.isdigit() else 0 for part in re.split(r'[.\-]', folder.name))
+
+    folders = sorted((f for f in root.iterdir() if f.is_dir()), key=version_key, reverse=True)
+    return [folder / program for folder in folders]
+
+
+def find_pg_dump():
+    """The ``pg_dump`` program to run for an export, or None if this machine has none.
+
+    In order: ``BRIGHTSTARS_PG_DUMP`` if set (and it must be a file), then ``pg_dump`` on the PATH,
+    then the usual install places - on Windows the newest ``C:\\Program Files\\PostgreSQL\\<version>``
+    installation, on Linux the newest ``/usr/lib/postgresql/<version>`` (the Debian and Ubuntu
+    layout) and then ``/usr/bin`` and ``/usr/local/bin``. The newest is preferred because a server
+    needs a ``pg_dump`` of its own major version or a newer one.
+    """
+    named = config.pg_dump_override()
+    if named:
+        return Path(named) if Path(named).is_file() else None
+    on_path = shutil.which('pg_dump')
+    if on_path:
+        return Path(on_path)
+    if os.name == 'nt':
+        candidates = _installs_newest_first(
+            Path(os.environ.get('ProgramFiles', r'C:\Program Files')) / 'PostgreSQL', 'bin/pg_dump.exe')
+    else:
+        candidates = (_installs_newest_first(Path('/usr/lib/postgresql'), 'bin/pg_dump')
+                      + [Path('/usr/bin/pg_dump'), Path('/usr/local/bin/pg_dump')])
+    return next((path for path in candidates if path.is_file()), None)
+
+
 def export_tenant_data(slug, output_dir):
     """Everything one school owns, in one folder: a database dump plus its own uploads - the "give
     me everything" a school leaving is owed, made straightforward by every school already having
@@ -661,10 +697,12 @@ def export_tenant_data(slug, output_dir):
     url = make_url(resolve_db_url(info.db_url))
     if url.get_backend_name() != 'postgresql':
         raise ProvisioningError('Exporting only supports a school on PostgreSQL.')
-    if shutil.which('pg_dump') is None:
+    pg_dump = find_pg_dump()
+    if pg_dump is None:
         raise ProvisioningError(
             'pg_dump was not found on this machine. Install the PostgreSQL client tools (the '
-            'server package is not required) and try again.')
+            'server package is not required), or point BRIGHTSTARS_PG_DUMP at its pg_dump program, '
+            'and try again.')
 
     stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
     export_dir = Path(output_dir) / f'{slug}-{stamp}'
@@ -672,7 +710,7 @@ def export_tenant_data(slug, output_dir):
 
     dump_path = export_dir / 'database.sql'
     env = {**os.environ, 'PGPASSWORD': url.password or ''}
-    args = ['pg_dump', '--no-owner', '--no-privileges',
+    args = [str(pg_dump), '--no-owner', '--no-privileges',
             '-h', url.host or 'localhost', '-p', str(url.port or 5432),
             '-U', url.username or '', '-d', url.database, '-f', str(dump_path)]
     if info.db_schema:

@@ -2,6 +2,14 @@
 {% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Dashboard — {{ school_brand.name }}{% endblock %}
 {% block content %}
+<style>
+/* The actions a person comes here for, as cards, under the summary. */
+.ent-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); margin: 0 0 var(--sp-5); }
+.ent-quick .wd-module-card__ico { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
+@media (max-width: 760px) {
+  .ent-quick { grid-template-columns: 1fr; }
+}
+</style>
 {% set completion_rate = (stats.completed / stats.attempts * 100) if stats.attempts else none %}
 {% set ns = namespace(inactive=0) %}
 {% for b in banks %}{% if not exam_states.get(b.id, 1) %}{% set ns.inactive = ns.inactive + 1 %}{% endif %}{% endfor %}
@@ -41,6 +49,27 @@
     <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('pulse') }}</span><span class="wd-stat-chip__value">{{ stats.attempts }}</span><span class="wd-stat-chip__label">Attempts</span></div>
     <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('check-circle') }}</span><span class="wd-stat-chip__value">{{ stats.completed }}</span><span class="wd-stat-chip__label">Completed</span></div>
   </div>
+</div>
+
+<div class="ent-quick">
+  <a class="wd-module-card" href="{{ url_for('admin_new_candidate') }}">
+    <span class="wd-module-card__ico">{{ icon('candidate') }}</span>
+    <h3 class="wd-module-card__title">Register a candidate</h3>
+    <p class="wd-module-card__text">Add a candidate, choose their entry level and issue their sign-in details.</p>
+    <span class="wd-module-card__go">Open Candidates {{ icon('arrow-right', 'ico-sm') }}</span>
+  </a>
+  <a class="wd-module-card" href="{{ url_for('admin_question_banks') }}">
+    <span class="wd-module-card__ico">{{ icon('bank') }}</span>
+    <h3 class="wd-module-card__title">Question banks</h3>
+    <p class="wd-module-card__text">Turn banks on or off, import questions and check what each exam draws from.</p>
+    <span class="wd-module-card__go">Open Question banks {{ icon('arrow-right', 'ico-sm') }}</span>
+  </a>
+  <a class="wd-module-card" href="{{ url_for('admin_results') }}">
+    <span class="wd-module-card__ico">{{ icon('trend') }}</span>
+    <h3 class="wd-module-card__title">Results &amp; analytics</h3>
+    <p class="wd-module-card__text">Scores, subject analysis and the full candidate ranking.</p>
+    <span class="wd-module-card__go">Open Results {{ icon('arrow-right', 'ico-sm') }}</span>
+  </a>
 </div>
 
 {% if current_admin and admin_has_permission(current_admin['id'], 'presence.view') %}

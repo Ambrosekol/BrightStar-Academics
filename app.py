@@ -138,6 +138,7 @@ from core.presence import _presence_identity, touch_presence, touch_presence_if_
 # Permission catalogue, role presets, admin_required, current_admin,
 # audit_log and friends moved to core/security.py.
 from core.security import (  # noqa: E402
+    clear_school_admin_caches,
     ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
     admin_required, current_admin, is_school_admin, admin_has_permission,
     SCHOOL_ADMIN_ROLE, LEGACY_TOP_ROLE_NAMES, RETIRED_PERMISSIONS, RENAMED_PRESET_ROLES,
@@ -717,12 +718,12 @@ def inject_csrf_token():
     unread=open_controls=0
     finance_unallocated=None
     if admin:
-        unread,open_controls=_notification_counts(admin['id'])
+        unread,open_controls=remember('notification-counts', badge_cache_seconds(), _notification_counts, admin['id'])
         if is_school_admin(admin) or admin_has_permission(admin['id'],'finance.record'):
             from blueprints.finance.helpers import _finance_can_view_all, _finance_unallocated_summary
             scope_admin_id=None if _finance_can_view_all(admin) else admin['id']
             try:
-                finance_unallocated=_finance_unallocated_summary(scope_admin_id)
+                finance_unallocated=remember('finance-unallocated', badge_cache_seconds(), _finance_unallocated_summary, scope_admin_id)
             except Exception:
                 app.logger.exception('Could not compute the unallocated-payments banner')
     return {
@@ -814,6 +815,8 @@ def csrf_check_request():
 
 # Moved to core/public_settings.py.
 from core.public_settings import _public_settings  # noqa: E402
+from core.short_cache import forget_here, remember  # noqa: E402
+from control_plane.config import badge_cache_seconds  # noqa: E402
 
 # ---------------- unified login/logout/password recovery ----------------
 # Moved to blueprints/auth/routes.py.
@@ -844,6 +847,16 @@ def index():
 # by the browser or a cache, and must never be named in a Referer header, not even to this site's own
 # files.
 SECRET_URL_ENDPOINTS=frozenset({'password_reset','forgot_password'})
+
+
+@app.after_request
+def forget_counts_after_a_change(response):
+    """A change made by an administrator (a payment, a read notification) must show on the next page at
+    once, so the counts saved for the badges are dropped whenever a request changes something."""
+    if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
+        forget_here('notification-counts', 'finance-unallocated')
+        clear_school_admin_caches()
+    return response
 
 
 @app.after_request

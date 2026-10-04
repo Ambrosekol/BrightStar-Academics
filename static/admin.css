@@ -3783,12 +3783,15 @@ body{background:var(--bg);color:var(--text)}
   gap: 6px !important;
 }
 
+/* Plain form labels. Only the display stays !important: the labels that sit in a form and wrap
+   a control or a note rely on it to keep their text and their (optional) notes on one line. The
+   text styles are not !important, so a component that styles its own labels keeps its look. */
 .form-group label, form label {
   display: block !important;
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-  color: #334155 !important;
-  margin-bottom: 4px !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
 }
 
 input[type="text"], 

@@ -324,6 +324,17 @@ VARIABLES = [
         breaks_if_wrong='Result images fail to render until this points at a real Chrome/Chromium '
                         'executable.'),
     Variable(
+        name='BRIGHTSTARS_PG_DUMP', category='Ops', risk=RISK_LOW,
+        default='found automatically',
+        purpose='The pg_dump program used to export a school\'s database (python -m control_plane '
+               'export-tenant). Found automatically: pg_dump on the PATH, then the newest PostgreSQL '
+               'install under Program Files on Windows or /usr/lib/postgresql on Linux. Set this only '
+               'if pg_dump lives somewhere else.',
+        when_to_change='School exports fail with "pg_dump was not found" on this machine.',
+        affects='Only school exports (database.sql in an export).',
+        breaks_if_wrong='Exports fail until this points at a pg_dump of the same or a newer major '
+                        'version than the PostgreSQL server.'),
+    Variable(
         name='BRIGHTSTARS_CONTACT_EMAIL', category='Platform', risk=RISK_LOW,
         purpose='Where the public /marketing page\'s contact buttons point.',
         when_to_change='The platform\'s own contact address changes.',

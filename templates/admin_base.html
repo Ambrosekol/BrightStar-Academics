@@ -127,10 +127,6 @@
 
     {% set unread_title %}{% if admin_unread_messages %}{% if admin_unread_message_summaries|length == 1 %}New message from {{ admin_unread_message_summaries[0].sender_name }}{% else %}{{ admin_unread_messages }} unread messages{% endif %}{% endif %}{% endset %}
     {% set administration_items = [
-        {'label':'Messages','endpoint':'admin_messages','icon':'mail','id':'admin-messages-nav','live': true,
-         'title': unread_title,
-         'show': signed,
-         'active': path.startswith('/admin/administration/messages')},
         {'label':'Administration','endpoint':'admin_administration','icon':'shield',
          'show': signed and is_school_admin_ui,
          'active': path.startswith('/admin/administration') and ep != 'admin_controls'},
@@ -148,16 +144,10 @@
          'show': signed and admin_has_permission(aid,'presence.view'),
          'active': ep == 'admin_presence'},
     ] %}
-    {% set help_items = [
-        {'label':'Guide','endpoint':'admin_guide_home','icon':'book',
-         'show': signed,
-         'active': path.startswith('/admin/guide')},
-    ] %}
     {% set sections = [
         {'label':'Workspace','items':[{'label':'Exit Workspace','endpoint':'admin_workspace_home','icon':'exit','show': true,'active': false}]},
         {'label': workspace_label,'items': workspace_items},
         {'label':'Administration','items': administration_items},
-        {'label':'Help','items': help_items},
     ] %}
 {% endif %}
 <!doctype html>
@@ -223,10 +213,15 @@
                 <span class="rail-person__copy"><span class="rail-person__name">{{ current_admin.display_name }}</span><span class="rail-person__role">{% if admin_role_names %}{{ admin_role_names|join(' · ') }}{% else %}{{ current_admin.admin_type_name }}{% endif %}</span></span>
             </div>
             {% endif %}
-            <a href="{{ url_for('admin_logout') }}" class="rail-link" data-tip="Sign out"><span class="rail-ico">{{ icon('logout') }}</span><span class="rail-label">Sign out</span></a>
-            <button type="button" class="rail-link rail-pin" data-rail-pin data-tip="Keep menu open" aria-pressed="false"><span class="rail-ico">{{ icon('panel') }}</span><span class="rail-label">Keep menu open</span></button>
         </div>
     </aside>
+    <button type="button" class="rail-edge" data-rail-pin aria-pressed="false" aria-label="Keep menu open" title="Keep menu open">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path class="rail-edge__open" d="M10.5 9l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="rail-edge__close" d="M13.5 9l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
     <div class="rail-scrim" data-rail-scrim hidden></div>
     {% endif %}
 
@@ -236,12 +231,25 @@
             <nav class="ui-crumbs" aria-label="Breadcrumb">
                 <ol>
                     <li>{{ school_brand.name }}</li>
-                    <li aria-current="page">{{ self.title()|striptags|replace(' — ' ~ school_brand.name, '') }}</li>
                 </ol>
             </nav>
             <div class="ui-header-actions">
                 {% if current_admin %}
+                <nav class="ui-toplinks" aria-label="Quick links">
+                    <a href="{{ url_for('admin_guide_home') }}">Guide</a>
+                    <span class="ui-toplinks__sep" aria-hidden="true">|</span>
+                    <a href="{{ url_for('admin_messages') }}" title="{{ unread_title|trim }}">Messages{% if admin_unread_messages %} <b class="ui-toplinks__count">{{ admin_unread_messages }}</b>{% endif %}</a>
+                </nav>
                 <a class="ui-iconbtn" href="{{ url_for('admin_notifications') }}" title="Notifications" aria-label="Notifications{% if admin_unread_notifications %}, {{ admin_unread_notifications }} unread{% endif %}">{{ icon('bell') }}{% if admin_unread_notifications %}<span class="ui-count">{{ admin_unread_notifications }}</span>{% endif %}</a>
+                <div class="ui-account" data-account>
+                    <button type="button" class="ui-account__btn" aria-haspopup="menu" aria-expanded="false" aria-controls="ui-account-menu" data-account-toggle>
+                        <span class="ui-account__ava" aria-hidden="true">{% if current_admin.photo_path %}<img src="{{ url_for('static', filename=current_admin.photo_path) }}" alt="">{% else %}{{ current_admin.display_name[:1]|upper }}{% endif %}</span>
+                        <span class="ui-account__name">{{ current_admin.display_name }}</span>
+                    </button>
+                    <div class="ui-account__menu" id="ui-account-menu" role="menu" hidden>
+                        <a href="{{ url_for('admin_logout') }}" role="menuitem">Sign out</a>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </header>
@@ -269,5 +277,6 @@
 <script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>
 <script src="{{ url_for('static', filename='admin.js', v='6K-live-messages') }}"></script>
 <script src="{{ url_for('static', filename='school-nav.js', v='1') }}"></script>
+<script src="{{ url_for('static', filename='account-menu.js', v='1') }}"></script>
 </body>
 </html>

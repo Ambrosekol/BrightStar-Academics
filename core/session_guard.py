@@ -134,6 +134,17 @@ def _invalidate_fingerprint_cache(kind, account_id):
     _fingerprint_cache.pop(_fingerprint_cache_key(kind, account_id), None)
 
 
+def _refresh_fingerprint(kind, account_id):
+    """The fingerprint read from the database now, put in the cache in place of the old copy."""
+    value = _read_fingerprint(kind, account_id)
+    ttl = config.password_check_cache_seconds()
+    if ttl > 0:
+        if len(_fingerprint_cache) >= _FINGERPRINT_CACHE_MAX:
+            _fingerprint_cache.clear()
+        _fingerprint_cache[_fingerprint_cache_key(kind, account_id)] = (time.monotonic() + ttl, value)
+    return value
+
+
 def _current_fingerprint(kind, account_id):
     """``_read_fingerprint``, cached briefly per process (see above). Zero-second caching (the
     default's floor) reads the database every time, exactly like before this cache existed."""
@@ -208,6 +219,11 @@ def assess():
         return 'restart', launch, None
     try:
         current = _current_fingerprint(kind, account_id)
+        stamped = session.get(PASSWORD_KEY)
+        if current is not None and stamped is not None and stamped != current:
+            # The cached copy may predate a password change made a moment ago (a reset, or a change by an
+            # administrator). Only a stamp that still disagrees with the database is a sign-out.
+            current = _refresh_fingerprint(kind, account_id)
     except Exception:
         if kind != 'platform':
             db.session.rollback()

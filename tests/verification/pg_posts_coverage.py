@@ -86,6 +86,7 @@ EXERCISED = frozenset({
     "/admin/entrance-config/standard",
     "/admin/examinations/<bid>/toggle",
     "/admin/finance/assessments/new",
+    "/admin/finance/class-assessments/batch",
     "/admin/finance/fee-items/<int:item_id>/edit",
     "/admin/finance/fee-items/<int:item_id>/toggle",
     "/admin/finance/fee-items/new",

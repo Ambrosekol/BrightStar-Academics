@@ -690,6 +690,187 @@ def admin_finance_student_assessed_items(student_id):
             'category': item['category']}
     return jsonify(by_term)
 
+# ---------------------------------------------------------------------------
+# Billing a whole class.
+#
+# A class can hold a thousand students, so the page fetches the class's roster once and bills it in
+# small batches. Each student's charges are written in one commit, and every fee item a student already
+# has live for the billing period is skipped, so billing the class again - after an error, say - never
+# charges anyone twice. The per-student rules are the same as the single-student route's.
+# ---------------------------------------------------------------------------
+
+CLASS_BILLING_BATCH_LIMIT=100
+
+def _parse_ids(values):
+    ids=[]
+    for raw in values:
+        try:
+            value=int(str(raw).strip())
+        except (TypeError,ValueError):
+            continue
+        if value>0 and value not in ids:
+            ids.append(value)
+    return ids
+
+def _active_class_and_session(class_id, session_id):
+    klass=one(select(SchoolClass.id,SchoolClass.name).where(SchoolClass.id==class_id,SchoolClass.active==1))
+    session_row=one(select(AcademicSession.id,AcademicSession.name)
+                    .where(AcademicSession.id==session_id,AcademicSession.active==1))
+    return klass,session_row
+
+def _class_fee_items(item_ids, class_id):
+    """The active fee items named, all of which must be assigned to ``class_id``: (items, None) or (None, reason)."""
+    items=db.session.scalars(select(FinanceFeeItem)
+        .where(FinanceFeeItem.id.in_(item_ids),FinanceFeeItem.active==1)
+        .order_by(FinanceFeeItem.name)).all()
+    if len(items)!=len(item_ids):
+        return None,'One or more selected fee items are no longer available.'
+    allowed={int(fid) for (fid,) in tuples(
+        select(FinanceFeeItem.id)
+        .join(FinanceFeeItemClass,and_(FinanceFeeItemClass.fee_item_id==FinanceFeeItem.id,
+                                       FinanceFeeItemClass.active==1))
+        .where(FinanceFeeItem.id.in_(item_ids),FinanceFeeItemClass.class_id==class_id,
+               FinanceFeeItem.active==1))}
+    rejected=[item.name for item in items if int(item.id) not in allowed]
+    if rejected:
+        return None,'These fee item(s) are not assigned to this class: '+', '.join(rejected)
+    return [{'id':int(item.id),'name':item.name,'category':item.category,'amount':float(item.amount or 0)}
+            for item in items], None
+
+@app.get('/admin/finance/class-roster.json')
+@admin_required
+def admin_finance_class_roster():
+    """A class's students for one session, and for each fee item how many of them already have it for the billing period."""
+    try:
+        session_id=int(request.args.get('session_id',''))
+        class_id=int(request.args.get('class_id',''))
+    except (TypeError,ValueError):
+        return jsonify(error='Choose a class and an academic session.'),400
+    term=request.args.get('term','Full Session').strip() or 'Full Session'
+    if term not in ASSESSMENT_TERMS:
+        return jsonify(error='Choose a valid billing period.'),400
+    klass,session_row=_active_class_and_session(class_id,session_id)
+    if not klass or not session_row:
+        return jsonify(error='The class or the session could not be found.'),404
+    roster=all_rows(
+        select(Student.id,Student.admission_no,Student.first_name,Student.middle_name,Student.last_name)
+        .join(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
+                                    StudentEnrolment.session_id==session_id,
+                                    StudentEnrolment.class_id==class_id,
+                                    StudentEnrolment.active==1))
+        .where(Student.active==1)
+        .order_by(Student.last_name,Student.first_name,Student.id))
+    ids=[int(r['id']) for r in roster]
+    already={}
+    if ids:
+        for fid,count in tuples(
+                select(FinanceFeeAssessment.fee_item_id,
+                       func.count(func.distinct(FinanceFeeAssessment.student_id)))
+                .where(FinanceFeeAssessment.session_id==session_id,
+                       FinanceFeeAssessment.term==term,
+                       FinanceFeeAssessment.active==1,
+                       FinanceFeeAssessment.student_id.in_(ids))
+                .group_by(FinanceFeeAssessment.fee_item_id)):
+            already[str(fid)]=int(count)
+    return jsonify(
+        class_name=klass['name'],session_name=session_row['name'],
+        students=[{'id':int(r['id']),'admission_no':r['admission_no'] or '',
+                   'name':' '.join(x for x in (r['first_name'],r['middle_name'],r['last_name']) if x)}
+                  for r in roster],
+        already=already)
+
+@app.post('/admin/finance/class-assessments/batch')
+@admin_required
+@csrf_protect
+def admin_finance_class_assessments_batch():
+    """Bill one batch of a class's students and report every student's result, so the page can confirm each one."""
+    me=current_admin()
+    try:
+        session_id=int(request.form.get('session_id',''))
+        class_id=int(request.form.get('class_id',''))
+    except (TypeError,ValueError):
+        return jsonify(error='Choose a class and an academic session.'),400
+    term=(request.form.get('term','Full Session') or '').strip() or 'Full Session'
+    if term not in ASSESSMENT_TERMS:
+        return jsonify(error='Choose a valid billing period.'),400
+    due_date=request.form.get('due_date','').strip() or None
+    notes=request.form.get('notes','').strip()
+    item_ids=_parse_ids(request.form.getlist('fee_item_id'))
+    student_ids=_parse_ids(request.form.getlist('student_id'))
+    if not item_ids:
+        return jsonify(error='Select at least one fee item.'),400
+    if not student_ids:
+        return jsonify(error='This batch has no students in it.'),400
+    if len(student_ids)>CLASS_BILLING_BATCH_LIMIT:
+        return jsonify(error=f'A batch can hold at most {CLASS_BILLING_BATCH_LIMIT} students.'),400
+    klass,session_row=_active_class_and_session(class_id,session_id)
+    if not klass or not session_row:
+        return jsonify(error='The class or the session could not be found.'),404
+    items,reason=_class_fee_items(item_ids,class_id)
+    if reason:
+        return jsonify(error=reason),400
+
+    now=datetime.now(timezone.utc).isoformat()
+    results=[]
+    billed=[]
+    for sid in student_ids:
+        student=one(select(Student.id).where(Student.id==sid,Student.active==1))
+        if not student:
+            results.append({'student_id':sid,'status':'failed','reason':'The student is no longer active.'})
+            continue
+        enrolled=one(select(StudentEnrolment.id).where(StudentEnrolment.student_id==sid,
+                                                       StudentEnrolment.session_id==session_id,
+                                                       StudentEnrolment.class_id==class_id,
+                                                       StudentEnrolment.active==1))
+        if not enrolled:
+            results.append({'student_id':sid,'status':'failed',
+                            'reason':'Not enrolled in this class for this session.'})
+            continue
+        existing={fid for (fid,) in tuples(
+            select(FinanceFeeAssessment.fee_item_id)
+            .where(FinanceFeeAssessment.student_id==sid,
+                   FinanceFeeAssessment.session_id==session_id,
+                   FinanceFeeAssessment.term==term,
+                   FinanceFeeAssessment.fee_item_id.in_(item_ids),
+                   FinanceFeeAssessment.active==1))}
+        missing=[item for item in items if item['id'] not in existing]
+        if not missing:
+            results.append({'student_id':sid,'status':'already','reason':'Already charged for this billing period.'})
+            continue
+        rows=[FinanceFeeAssessment(student_id=sid,session_id=session_id,category=item['category'],
+                                   amount=item['amount'],due_date=due_date,notes=notes,
+                                   created_by=me['id'],created_at=now,active=1,
+                                   fee_item_id=item['id'],term=term)
+              for item in missing]
+        try:
+            db.session.add_all(rows)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Class billing could not save student %s', sid)
+            results.append({'student_id':sid,'status':'failed',
+                            'reason':'Could not be saved. Bill the class again; anyone already billed is skipped.'})
+            continue
+        total=sum(item['amount'] for item in missing)
+        billed.append((sid,[item['name'] for item in missing],total))
+        results.append({'student_id':sid,'status':'billed','items':len(missing),
+                        'skipped_items':len(items)-len(missing),'total':total})
+
+    if billed:
+        audit_log('finance_class_assessment_batch','finance','class',class_id,{
+            'class_name':klass['name'],
+            'session_id':session_id,
+            'term':term,
+            'student_ids':[sid for sid,_,_ in billed],
+            'fee_item_ids':[item['id'] for item in items],
+            'total_assessed':sum(total for _,_,total in billed)})
+    for sid,names,total in billed:
+        try:
+            _notify_parents_fee_assessed(sid,names,total,term,session_row['name'],me['id'])
+        except Exception:
+            app.logger.exception('Fee notification failed for student %s', sid)
+    return jsonify(results=results)
+
 @app.post('/admin/finance/assessments/new')
 @admin_required
 @csrf_protect

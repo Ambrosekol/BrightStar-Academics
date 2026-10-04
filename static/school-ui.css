@@ -476,6 +476,35 @@ html[data-rail="pinned"] .rail .rail-dot { visibility: hidden; }
 .rail-pin[aria-pressed="true"] { color: var(--brand-dark); }
 .rail-pin[aria-pressed="true"] .rail-ico { color: var(--brand); }
 
+/* The boxed arrow at the foot of the rail, across its edge: a solid school-coloured box. It steps out of
+   the way while the menu is open from hovering, so it never covers an item; pinned open, it stays. */
+.rail-edge {
+    position: fixed;
+    bottom: 24px;
+    left: calc(var(--rail-w) - 16px);
+    z-index: 61;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 2px solid var(--surface-0);
+    border-radius: 9px;
+    background: var(--brand);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(20, 36, 60, 0.28);
+    cursor: pointer;
+    transition: left var(--dur) var(--ease), opacity var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.rail-edge:hover { background: var(--brand-dark); }
+.rail-edge:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+html[data-rail="pinned"] .rail-edge { left: calc(var(--rail-open) - 16px); }
+html:not([data-rail="pinned"]) .rail.is-open ~ .rail-edge { opacity: 0; visibility: hidden; pointer-events: none; }
+.rail-edge__close { display: none; }
+html[data-rail="pinned"] .rail-edge__open { display: none; }
+html[data-rail="pinned"] .rail-edge__close { display: inline; }
+.rail-edge svg { display: block; }
+
 /* The one tooltip, drawn by school-nav.js outside the rail (the rail clips anything that overflows it). */
 .rail-tip {
     position: fixed;
@@ -561,6 +590,38 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
 .ui-crumbs li + li::before { content: "/"; margin-right: var(--sp-2); color: var(--line-strong); }
 .ui-crumbs li[aria-current] { color: var(--ink); font-weight: 600; }
 .ui-header-actions { display: flex; align-items: center; gap: var(--sp-2); }
+
+/* The page header takes the school's own colour (--navy, from its brand settings). */
+.ui-header {
+    background: var(--navy);
+    border-bottom: 0;
+    color: #fff;
+}
+.ui-header .ui-crumbs ol { color: rgba(255, 255, 255, 0.78); }
+.ui-header .ui-crumbs li + li::before { color: rgba(255, 255, 255, 0.45); }
+.ui-header .ui-crumbs li[aria-current] { color: #fff; }
+.ui-header .ui-iconbtn {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+.ui-header .ui-iconbtn:hover { background: rgba(255, 255, 255, 0.2); }
+.ui-toplinks { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); font-weight: 600; color: #fff; }
+.ui-toplinks a { color: #fff; text-decoration: none; }
+.ui-toplinks a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ui-toplinks__sep { color: rgba(255, 255, 255, 0.45); }
+.ui-toplinks__count { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 99px; background: #fff; color: var(--brand-dark); font-size: 11px; line-height: 18px; }
+.ui-account { position: relative; }
+.ui-account__btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 4px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 10px; background: rgba(255, 255, 255, 0.12); color: #fff; font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.ui-account__btn:hover { background: rgba(255, 255, 255, 0.2); }
+.ui-account__btn:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.ui-account__ava { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; overflow: hidden; background: #fff; color: var(--brand-dark); font-weight: 700; }
+.ui-account__ava img { width: 100%; height: 100%; object-fit: cover; }
+.ui-account__name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-account__menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 70; min-width: 180px; padding: 6px; border: var(--border); border-radius: 12px; background: var(--surface-0); box-shadow: var(--shadow-pop); }
+.ui-account__menu[hidden] { display: none; }
+.ui-account__menu a { display: block; padding: 9px 12px; border-radius: 8px; color: var(--ink); font-size: var(--fs-sm); font-weight: 600; text-decoration: none; }
+.ui-account__menu a:hover, .ui-account__menu a:focus-visible { background: var(--surface-1); }
 
 .ui-iconbtn {
     position: relative;
@@ -661,6 +722,7 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
     html.js .rail .rail-person__copy { opacity: 1; }
     html.js .rail .rail-dot { visibility: hidden; }
     html.js .rail .rail-pin { display: none; }
+    html.js .rail-edge { display: none; }
 
     /* No scripting: the menu is a plain block above the page rather than a drawer nobody can open. */
     html:not(.js) .rail {
@@ -676,6 +738,7 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
     html:not(.js) .rail .rail-brand__text,
     html:not(.js) .rail .rail-person__copy { opacity: 1; }
     html:not(.js) .rail-pin { display: none; }
+    html:not(.js) .rail-edge { display: none; }
     html:not(.js) .school-ui .admin-shell.has-rail .main { margin-left: 0; }
 }
 

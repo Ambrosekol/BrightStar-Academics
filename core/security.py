@@ -12,6 +12,7 @@ circular reference into two files importing each other.
 
 import json
 import secrets
+import time
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -24,6 +25,9 @@ from models import (
     AdminScope, AdminType, AdminTypePermission, Attempt, AuditLog, Candidate,
     Permission, db,
 )
+from control_plane import config
+from control_plane.context import current_tenant
+from core.short_cache import forget_here, remember
 from core.db_helpers import one, one_scalar, tuples
 
 
@@ -263,7 +267,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_students_import_history':'student.history.manage','admin_school_students_import_history_template':'student.history.manage',
     'admin_school_students_import_history_run':'student.history.manage',
     'admin_finance_dashboard':'finance.view_own',
-'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_payment_refund':'finance.manage','admin_finance_student_assessed_items':'finance.manage',
+'admin_finance_fee_items':'finance.manage','admin_finance_fee_item_new':'finance.manage','admin_finance_fee_item_edit':'finance.manage','admin_finance_fee_item_toggle':'finance.manage','admin_finance_assessment_new':'finance.manage','admin_finance_payment_void':'finance.manage','admin_finance_payment_refund':'finance.manage','admin_finance_student_assessed_items':'finance.manage','admin_finance_class_roster':'finance.manage','admin_finance_class_assessments_batch':'finance.manage',
     'admin_finance_record':'finance.record',
     'admin_finance_receipt':'finance.view_own',
     'admin_finance_receipt_print':'finance.view_own',
@@ -305,6 +309,77 @@ def _load_active_admin(admin_id):
     ).first()
 
 
+class _AdminSnapshot:
+    """A plain copy of an administrator's account row, kept between requests. An ORM row cannot be: its
+    columns expire on a commit, and it cannot be read once its session has closed. The copy reads the
+    same way the row did - by attribute and by name - so every caller works unchanged."""
+
+    __slots__ = ('_values',)
+
+    def __init__(self, values):
+        object.__setattr__(self, '_values', values)
+
+    def __getitem__(self, key):
+        return self._values[key]
+
+    def __getattr__(self, name):
+        try:
+            return self._values[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+    def __contains__(self, key):
+        return key in self._values
+
+    def get(self, key, default=None):
+        return self._values.get(key, default)
+
+
+_ADMIN_PROPERTIES = [name for name, value in vars(Admin).items() if isinstance(value, property)]
+_ADMIN_CACHE = {}
+_ADMIN_CACHE_MAX = 4096
+
+
+def _snapshot(admin):
+    values = {column.name: getattr(admin, column.name) for column in Admin.__table__.columns}
+    for name in _ADMIN_PROPERTIES:
+        values[name] = getattr(admin, name)
+    return _AdminSnapshot(values)
+
+
+def clear_school_admin_caches():
+    """Forget what this school's administrators were read as: their account rows, permissions and scopes.
+    Called after any change a school makes, so the next request sees it."""
+    forget_here('admin-perms', 'admin-scopes')
+    tenant = current_tenant(required=False)
+    scope = tenant.id if tenant is not None else None
+    for key in [k for k in _ADMIN_CACHE if k[0] == scope]:
+        _ADMIN_CACHE.pop(key, None)
+
+
+def _cached_active_admin(admin_id):
+    """``_load_active_admin``, kept for BRIGHTSTARS_ADMIN_CACHE_SECONDS in each process. Only an account
+    that exists is kept: a new, or newly reactivated, account is seen at once. The key includes the school,
+    because the same administrator id means different people in different schools."""
+    seconds = config.admin_cache_seconds()
+    if seconds <= 0:
+        return _load_active_admin(admin_id)
+    tenant = current_tenant(required=False)
+    key = (tenant.id if tenant is not None else None, admin_id)
+    now = time.monotonic()
+    hit = _ADMIN_CACHE.get(key)
+    if hit and hit[0] > now:
+        return hit[1]
+    admin = _load_active_admin(admin_id)
+    if admin is None:
+        return None
+    snap = _snapshot(admin)
+    if len(_ADMIN_CACHE) >= _ADMIN_CACHE_MAX:
+        _ADMIN_CACHE.clear()
+    _ADMIN_CACHE[key] = (now + seconds, snap)
+    return snap
+
+
 def _active_admin(admin_id):
     """Load an active administrator whose role is also active, else None.
 
@@ -313,10 +388,10 @@ def _active_admin(admin_id):
     each ask used to be a database round-trip. Requests are short, so nothing stale survives one.
     """
     if not has_request_context():
-        return _load_active_admin(admin_id)
+        return _cached_active_admin(admin_id)
     memo = g.setdefault('_active_admins', {})
     if admin_id not in memo:
-        memo[admin_id] = _load_active_admin(admin_id)
+        memo[admin_id] = _cached_active_admin(admin_id)
     return memo[admin_id]
 
 
@@ -380,22 +455,14 @@ def admin_has_permission(admin_id, code):
     # job-role capabilities govern the actual operational areas.
     if code == 'admin.access': return True
     if admin['admin_type_system']: return True
-    # A permission may be granted three ways: by the account's own admin type, by
-    # any additionally assigned role, or as a direct per-administrator override.
-    via_own_type=(select(sa.literal(1))
-        .select_from(AdminTypePermission)
-        .join(Permission,Permission.id==AdminTypePermission.permission_id)
-        .where(AdminTypePermission.admin_type_id==admin.admin_type_id,Permission.code==code))
-    via_assigned_role=(select(sa.literal(1))
-        .select_from(AdminRoleAssignment)
-        .join(AdminTypePermission,AdminTypePermission.admin_type_id==AdminRoleAssignment.admin_type_id)
-        .join(Permission,Permission.id==AdminTypePermission.permission_id)
-        .where(AdminRoleAssignment.admin_id==admin.id,Permission.code==code))
-    via_direct_grant=(select(sa.literal(1))
-        .select_from(AdminPermission)
-        .join(Permission,Permission.id==AdminPermission.permission_id)
-        .where(AdminPermission.admin_id==admin.id,Permission.code==code))
-    return one(via_own_type.union(via_assigned_role,via_direct_grant).limit(1)) is not None
+    return code in _cached_permission_codes(admin.id)
+
+
+def _cached_permission_codes(admin_id):
+    """The permission codes an administrator holds, read once and kept for BRIGHTSTARS_ADMIN_CACHE_SECONDS.
+    A permission may come from the account's own admin type, from an assigned role, or as a direct
+    override; ``admin_permission_codes`` reads all three. A school's own writes clear this at once."""
+    return remember('admin-perms', config.admin_cache_seconds(), admin_permission_codes, admin_id)
 
 
 def admin_permission_codes(admin_id):
@@ -416,13 +483,17 @@ def admin_permission_codes(admin_id):
     return {code for (code,) in tuples(via_own_type.union(via_assigned_role,via_direct_grant))}
 
 
+def _admin_scopes(admin_id):
+    return [tuple(row) for row in tuples(select(AdminScope.scope_type,AdminScope.scope_value)
+                                         .where(AdminScope.admin_id==admin_id))]
+
+
 def admin_scope_allows(admin_id, scope_type=None, scope_value=None):
     if not scope_type: return True
     admin=_active_admin(admin_id)
     if not admin: return False
     if admin['admin_type_system']: return True
-    scopes=tuples(select(AdminScope.scope_type,AdminScope.scope_value)
-                    .where(AdminScope.admin_id==admin.id))
+    scopes=remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id)
     # An administrator with no explicit boundary works across the whole permitted area.
     # A boundary only narrows the dimension it names (class, subject, bank, etc.).
     if not scopes: return True

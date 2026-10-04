@@ -209,6 +209,38 @@ def password_check_cache_seconds():
         return 30.0
 
 
+def pg_dump_override():
+    """The full path of a ``pg_dump`` program named by ``BRIGHTSTARS_PG_DUMP``, or ''.
+
+    Used by school exports (control_plane/provisioning.py's ``find_pg_dump``) ahead of the
+    automatic search, for a machine whose PostgreSQL client tools are not in a standard place.
+    """
+    return os.environ.get('BRIGHTSTARS_PG_DUMP', '').strip()
+
+
+def admin_cache_seconds():
+    """How long a signed-in administrator's account row is kept in each process after it is first read.
+
+    Every page an administrator opens asks who they are, and their permissions. Without this cache that
+    is a database round-trip per request. A change to an account (a deactivation, a new role) reaches a
+    request within this many seconds. Zero reads the row on every request.
+    """
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_ADMIN_CACHE_SECONDS', '15')))
+    except ValueError:
+        return 15.0
+
+
+def badge_cache_seconds():
+    """How long the counts shown on every admin page (unread notifications, open controls, unallocated
+    payments) are kept in each process. A count can therefore lag a change by this many seconds.
+    Zero counts on every page."""
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_BADGE_CACHE_SECONDS', '10')))
+    except ValueError:
+        return 10.0
+
+
 def school_engine_idle_seconds():
     """How long a school's database engine may go unused before its pooled connections are closed.
 

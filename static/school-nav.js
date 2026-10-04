@@ -86,7 +86,7 @@
     });
 
     /* ---- the pin ---------------------------------------------------------------------------- */
-    var pin = rail.querySelector('[data-rail-pin]');
+    var pin = document.querySelector('[data-rail-pin]');
     if (pin) {
         pin.setAttribute('aria-pressed', pinned() ? 'true' : 'false');
         pin.addEventListener('click', function () {

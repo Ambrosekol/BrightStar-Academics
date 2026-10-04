@@ -231,6 +231,7 @@ class Actor:
     def __init__(self, name, base=SCHOOL, adapter=ADAPTER, admin=False):
         self.name, self.base, self.adapter, self.admin = name, base, adapter, admin
         self.client = A.app.test_client()
+        self.login = None  # (sign-in page, username, password) of the last sign-in that worked
         # Each person "connects" from an address of their own, because sign-in, password recovery and
         # the platform console all limit tries per address (and the limit is shared through the registry).
         Actor.made[0] += 1
@@ -263,6 +264,32 @@ class Actor:
             if not sess.get("_csrf_token"):
                 sess["_csrf_token"] = "test-token-" + self.name
             return sess["_csrf_token"]
+
+    def signed_in_probe(self):
+        """A page that only a signed-in person of this kind may open, or None for an anonymous person."""
+        if self.base == PL:
+            return "/platform"
+        keys = self.session()
+        for key, page in (("admin_id", "/admin/home"), ("parent_id", "/parent/dashboard"),
+                          ("student_id", "/student/dashboard"), ("candidate_id", "/candidate/dashboard")):
+            if keys.get(key):
+                return page
+        return None
+
+    def ensure_signed_in(self):
+        """A sign-in can end earlier in the run for reasons that are not what is being tested (a
+        password reset, a team change). The junk check is about how a route answers junk, so a person whose
+        sign-in has ended is signed back in with the credentials they last used. Returns True if they had to be."""
+        page = self.signed_in_probe()
+        if page is None or self.login is None:
+            return False
+        response = self.client.get(page, base_url=self.base, environ_base={"REMOTE_ADDR": self.addr})
+        if response.status_code == 302 and "login" in response.headers.get("Location", ""):
+            sign_in_page, username, password = self.login
+            self.post(sign_in_page, {"username": username, "password": password}, valid=False,
+                      addr=fresh_addr(), label=f"sign {self.name} back in before the junk check")
+            return True
+        return False
 
     def flashes(self, clear=True):
         """The messages the last request left for the next page: [(category, text)]."""
@@ -304,6 +331,11 @@ class Actor:
             errors.seen.append((str(exc), exc))
         flashes = self.flashes()
         result = Result(self, path, resp, flashes, list(errors.seen), escaped)
+        if resp is not None and resp.status_code == 302 and "login" not in result.location:
+            if path.endswith("/login") and "username" in data and "password" in data:
+                self.login = (path, data["username"], data["password"])
+            elif path.endswith("/password") and valid and "new_password" in data and self.login:
+                self.login = (self.login[0], self.login[1], data["new_password"])
         rule = rule_of(path, self.adapter)
         label = label or f"{self.name} POST {rule or path}"
         db_problem = result.database_problem()
@@ -742,6 +774,16 @@ check("a fee item can be archived and brought back", one("SELECT active FROM fin
 op.post(f"{FIN}/assessments/new", {"student_id": ADA, "session_id": CURRENT, "fee_item_id": [TUITION, UNIFORM],
                                    "term": "First Term", "due_date": "2026-11-15", "notes": "First term bill"})
 check("two fee assessments were raised for a student", count("finance_fee_assessments", "student_id = :s AND active = 1", s=ADA) == 2)
+# Billing a whole class: the class of the student above, for the second term, one fee item. Run twice:
+# the second run must find the charge already there and add nothing.
+ADA_CLASS_FOR_BATCH = one("SELECT class_id FROM student_enrolments WHERE student_id = :s AND session_id = :c", s=ADA, c=CURRENT)
+batch_pairs = {"session_id": CURRENT, "class_id": ADA_CLASS_FOR_BATCH, "term": "Second Term",
+               "fee_item_id": [TUITION], "student_id": [ADA]}
+op.post(f"{FIN}/class-assessments/batch", batch_pairs)
+op.post(f"{FIN}/class-assessments/batch", batch_pairs)
+check("a class billed twice charges the student once for the term",
+      count("finance_fee_assessments", "student_id = :s AND term = :t AND fee_item_id = :f AND active = 1",
+            s=ADA, t="Second Term", f=TUITION) == 1)
 check("…and the parents were told (in-app notification)", count("school_notifications", "category IS NOT NULL AND recipient_type = 'parent'") >= 1)
 
 PAY = {"student_id": ADA, "session_id": CURRENT, "amount": "30000", "category": "School Fees", "method": "Cash",
@@ -1406,15 +1448,19 @@ ANONYMOUS = {"visitor", "student signing out", "platform admin signing out"}
 # A password reset ends every sign-in of the account it resets (core/session_guard.py), and an empty
 # form is a valid request to a reset route, so junk sent to one really does end the sessions of the
 # person it is aimed at. Those routes go last, so the junk for every other route is still sent by
-# people who are signed in.
+# people who are signed in. Removing a team member ends their sign-ins as well, so the team routes go last too.
 def _ends_sign_ins(rule):
-    return any(word in rule for word in ("reset", "credentials", "/account"))
+    # Removing a team member or resetting their password ends their sign-ins too, so their junk goes last.
+    return any(word in rule for word in ("reset", "credentials", "/account", "/team/"))
 
 
+signed_in_again = []
 for rule in sorted(coverage.write_rules(A.app.url_map), key=lambda r: (_ends_sign_ins(r), r)):
     if rule in coverage.EXEMPT or rule not in HITS:
         continue
     who, path, fields, _ = HITS[rule]
+    if not rule.endswith(("/login", "/logout")) and who.ensure_signed_in():
+        signed_in_again.append(f"{who.name} before {rule}")
     attempts = [(name, path, form, token) for name, form, token in junk_variants(fields)]
     attempts.append(("an id that does not exist", bogus_path(rule), {}, True))
     turned_away = 0
@@ -1428,6 +1474,8 @@ for rule in sorted(coverage.write_rules(A.app.url_map), key=lambda r: (_ends_sig
     if turned_away == len(attempts) - 1 and who.name not in ANONYMOUS and not rule.endswith(("/login", "/logout")):
         bounced.append(rule)
 check("the junk reached each route as a signed-in person (none was simply sent back to sign in)", not bounced, "; ".join(bounced))
+print(f"  note: {len(signed_in_again)} time(s) a person had to be signed back in before their junk check"
+      + (": " + "; ".join(signed_in_again) if signed_in_again else ""), flush=True)
 
 # ================================================================ 18. the guard, and the numbers
 exercised = set(HITS)
