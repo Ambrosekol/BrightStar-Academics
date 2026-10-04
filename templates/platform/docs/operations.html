@@ -35,7 +35,21 @@
 <ul>
   <li>Whoever changes their own password stays signed in where they did it; <strong>every other browser signed in to that account is signed out</strong>. The same happens when an administrator resets someone's login, when an emailed reset link is used, and for a platform admin's password. It is judged from the stored hash, so it holds however the password changed.</li>
   <li>Accounts created or reset by someone else start on a temporary password that must be replaced before anything else opens.</li>
+  <li>The password check is kept per worker for <code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>, so an ordinary request does not read the database. When a kept copy disagrees with the signed-in session, the database is read again before anyone is signed out, so a stale copy never ends a fresh sign-in.</li>
 </ul>
+
+<h2 id="caches">Caches, and how quickly a change shows</h2>
+<p>Several things are read once and kept per worker, so that a busy portal does not ask the database the same question on every page. Each lifetime is a setting, and <code>0</code> turns the cache off. A school's own change clears what that school has kept on the worker that handled the change; other workers catch up when the lifetime runs out.</p>
+<table>
+<tr><th>What</th><th>Kept for</th><th>How quickly a change shows</th></tr>
+<tr><td>Hostname to school</td><td><code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>, 10</td><td>Suspensions and new addresses, within that time on each worker.</td></tr>
+<tr><td>A school's branding</td><td><code>BRIGHTSTARS_BRANDING_CACHE_SECONDS</code>, 10</td><td>Saving branding clears it on the worker that saved it.</td></tr>
+<tr><td>Password fingerprint (sign-out after a password change)</td><td><code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>, 30</td><td>Other sessions of that account end within that time.</td></tr>
+<tr><td>Administrator account, permissions and scopes</td><td><code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>, 15</td><td>A deactivation, role or permission change applies within that time on other workers, and at once on the worker that made it.</td></tr>
+<tr><td>Admin page counts (notifications, open controls, unallocated payments)</td><td><code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>, 10</td><td>Within that time on other workers; at once where the change was made.</td></tr>
+<tr><td>Who is online (presence)</td><td>Written at most every 20 seconds per session; the 30-second heartbeat keeps it current</td><td>Within about 30 seconds.</td></tr>
+<tr><td>A school's idle database connections</td><td><code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code>, 600</td><td>Not a freshness setting: connections are closed after this long unused and rebuilt on the next request.</td></tr>
+</table>
 
 <h2 id="uploads">Uploaded files</h2>
 <p>Files under <code>/static/uploads/...</code> are <em>not</em> open to every signed-in account. Each folder has its own rule ({{ file('core/upload_access.py') }}); ownership is read from the database row that holds the file, and a refusal is a plain 404 so a file's existence is not confirmed. A school's logo and photographs are public; message attachments are never served there.</p>

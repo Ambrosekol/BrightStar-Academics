@@ -7,6 +7,23 @@
 it charges — tuition, a term's dues, a one-off charge — and which classes each applies to. This is the
 fourth step of the new-school setup checklist.</p>
 
+<h2 id="billing-class">Billing a whole class</h2>
+<p>On <a href="{{ url_for('admin_finance_fee_items') }}">Fee Structure</a>, the top of the page chooses
+between <strong>Bill a student</strong>, for one child, and <strong>Bill a class</strong>, for everyone
+enrolled in a class for the session. Pick the session, the class, the billing period and, if you want
+one, a due date; the fees offered are the ones assigned to that class.</p>
+<ul>
+  <li><strong>Review first.</strong> Review shows how many students will be billed, each fee and the
+  total per student. Nothing is charged until you confirm on that screen.</li>
+  <li><strong>The progress window stays open.</strong> The class is billed in batches. The window closes
+  only once every student on the list is confirmed as billed. If a student could not be billed, the
+  window lists who and why; <em>Retry the students not yet billed</em> bills only those.</li>
+  <li><strong>Safe to run again.</strong> A student already charged a fee for that billing period is
+  skipped, so billing the class again after an error never charges anyone twice.</li>
+  <li><strong>Archiving.</strong> Archiving or activating a fee asks first. Archiving stops it being
+  offered for new charges; charges and payments already made are not changed.</li>
+</ul>
+
 <h2 id="payments">Recording a payment</h2>
 <p>From <a href="{{ url_for('admin_finance_dashboard') }}">Finance</a>, recording a payment updates the
 student's balance and generates a receipt at once. A payment can be voided, with a reason, if it was

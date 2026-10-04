@@ -122,6 +122,16 @@ matching administrator sees it two ways: a banner injected by <code>inject_csrf_
 disappears on its own, the request after the last one is allocated — and
 {{ route('admin_finance_unallocated') }}, a dedicated list the banner links to.</p>
 
+<h2 id="class-billing">Billing a whole class</h2>
+<p>The Fee Structure page can bill every student enrolled in a class for a session, not only one student at a time. The page loads the class's students from {{ route('admin_finance_class_roster') }}, which also reports, for each fee, how many of them already have it for the billing period. It then bills them in batches through {{ route('admin_finance_class_assessments_batch') }}: at most 100 students per request, 50 per batch from the page.</p>
+<ul>
+  <li><strong>Each student is committed on their own.</strong> A batch that fails part way leaves the students before the failure billed and the rest not; nothing is half-written for one student.</li>
+  <li><strong>Idempotent.</strong> Every fee item a student already has live for the billing period is skipped, so billing the class again - after an error, say - never charges anyone twice. The per-student rules are the same as the single-student route's: the student must be enrolled in that class for the session, and each fee must be assigned to that class.</li>
+  <li><strong>The progress window closes only when every student is confirmed.</strong> The page confirms a student from the server's own per-student result, never from the request having returned. A retry sends only the students not yet confirmed. A student who could not be billed is listed with the reason.</li>
+  <li><strong>Notifications and audit.</strong> Parents are told, through the same channels as a single charge, after each student's own commit; a failure there never stops the charge. The batch writes one audit entry, <code>finance_class_assessment_batch</code>, for each batch that billed anyone.</li>
+  <li><strong>Permission.</strong> Both endpoints need the same <code>finance.manage</code> permission as the single-student route.</li>
+</ul>
+
 <h2 id="perms">Permissions</h2>
 <ul>
   <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>

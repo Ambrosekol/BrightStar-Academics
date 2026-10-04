@@ -196,6 +196,50 @@ VARIABLES = [
                         "that cached it as active for a while longer. Set to 0, every request's first "
                         'step is a fresh registry query.'),
     Variable(
+        name='BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS', category='Platform', risk=RISK_MEDIUM, default='30',
+        purpose='How long each worker remembers a signed-in person\'s password fingerprint before reading it '
+               'from the database again. A password change ends the person\'s other sign-ins within this time.',
+        when_to_change='Wanting another browser signed out sooner after a password change (lower it, or 0), '
+                       'or wanting fewer database reads on a very busy deployment (raise it).',
+        affects='Every signed-in request reads the password fingerprint from this cache.',
+        breaks_if_wrong='Set very high, a password change takes that long to sign out other browsers. A stale '
+                        'copy never ends a fresh sign-in: a disagreeing copy is re-read first.'),
+    Variable(
+        name='BRIGHTSTARS_ADMIN_CACHE_SECONDS', category='Platform', risk=RISK_MEDIUM, default='15',
+        purpose='How long each worker keeps a school administrator\'s account, permissions and scopes after '
+               'reading them.',
+        when_to_change='Wanting a deactivation or a role change to reach other workers faster (lower it), or '
+                       'fewer database reads per administrator request (raise it).',
+        affects='How quickly a change to an administrator reaches workers other than the one that made it.',
+        breaks_if_wrong='Set very high, a deactivated administrator can keep working on other workers for that '
+                        'long. Set to 0, every administrator request reads the account from the database.'),
+    Variable(
+        name='BRIGHTSTARS_BADGE_CACHE_SECONDS', category='Platform', risk=RISK_LOW, default='10',
+        purpose='How long the counts on every admin page (unread notifications, open controls, unallocated '
+               'payments) are kept in each worker.',
+        when_to_change='Wanting the counts to update faster across workers (lower it), or fewer count queries '
+                       'on very busy schools (raise it).',
+        affects='The header and banner counts on every administrator page.',
+        breaks_if_wrong='A count can lag a change made on another worker by this long. A change made on the '
+                        'same worker always shows at once.'),
+    Variable(
+        name='BRIGHTSTARS_BRANDING_CACHE_SECONDS', category='Platform', risk=RISK_LOW, default='10',
+        purpose='How long a school\'s computed branding (name, colours, logo, contact details) is kept in each '
+               'worker.',
+        when_to_change='Wanting a branding change to appear on other workers sooner (lower it), or fewer '
+                       'database reads per page (raise it).',
+        affects='Every page of a school\'s portal, its sign-in page and its documents.',
+        breaks_if_wrong='Set very high, other workers keep showing the old name or colours for that long.'),
+    Variable(
+        name='BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', category='Database', risk=RISK_MEDIUM, default='600',
+        purpose='How long a school\'s database connections may sit unused before they are closed. The next '
+               'request for that school opens them again.',
+        when_to_change='Many schools and worker processes exhausting the database\'s connection limit (lower it), '
+                       'or schools that are used in bursts and suffer from reconnecting (raise it).',
+        affects='The number of open connections to the database server from idle schools.',
+        breaks_if_wrong='Set to 0, idle schools keep their connections open indefinitely, which can use up the '
+                        'server\'s connection limit as schools are added.'),
+    Variable(
         name='BRIGHTSTARS_MAX_UPLOAD_BYTES', category='Platform', risk=RISK_LOW, default='5242880',
         purpose='The largest single uploaded image (question images, photographs, logos) any school '
                'may save, in bytes. 5 MB by default.',
