@@ -1771,7 +1771,8 @@ check("…a member of staff with no report card permission is refused (403) ever
       all(nobody.get(u).status_code == 403 for u in (f"{RC}?class_id={J1}", staff_view(ADA), staff_view(ADA) + "/pdf",
                                                      f"{RC}/class.pdf?class_id={J1}&session_id={CUR}&term=First%20Term",
                                                      RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings")))
-check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in nobody.text("/admin/school") and "report-cards" in op.text("/admin/school"))
+# The staff guide's help page for results is named after report cards and is open to every administrator, so it is not a menu link.
+check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in nobody.text("/admin/school").replace("/admin/guide/results-report-cards", "") and "report-cards" in op.text("/admin/school"))
 kept_comment = comment_row(ADA)
 kept_sigs = (admin_signature(TEACHER_A), signature_files(alpha))
 r1 = viewer.post(comments_url(J1), {f"comment_{ADA}": "The viewer must not write this."}, page="/admin/password")

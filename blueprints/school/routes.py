@@ -28,7 +28,7 @@ from models import (
     SchoolClassProgression, SchoolPublicSetting, SchoolProject, SchoolQuestion,
     SchoolStudentResult, SchoolSubject, Student, StudentAdmissionContact,
     StudentAdmissionProfile, StudentEnrolment, StudentEnrollmentHistory,
-    StudentNumberAllocation, ResultWorkflowEvent, db,
+    StudentNumberAllocation, ResultWorkflowEvent, PresenceSession, db,
 )
 from core.db_helpers import all_rows, group_concat, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.security import (
@@ -55,7 +55,7 @@ from blueprints.school.helpers import (
     _school_pair_allowed, _school_sessions, _school_student_visible,
     _school_subject_allowed, _set_ca_weights, _student_term_periods,
     _student_term_subjects, _sync_enrolment_for_history, _term_subject_report,
-    _work_with_class_subject,
+    _work_with_class_subject, archive_students,
 )
 
 
@@ -138,23 +138,22 @@ def admin_school_students():
         rows=[r for r in rows if r['class_name']==selected_class]
         if search:
             needle=search.casefold(); rows=[r for r in rows if needle in f"{r['first_name']} {r['middle_name'] or ''} {r['last_name']} {r['admission_no']} {r['guardian_name'] or ''} {r['guardian_email'] or ''}".casefold()]
-    return render_template('school_students.html',students=rows,school_session=school_session,class_cards=class_cards,selected_class=selected_class,search=search)
+    archived_count=one_scalar(select(func.count()).select_from(Student).where(Student.archived_at.isnot(None)),0)
+    return render_template('school_students.html',students=rows,school_session=school_session,class_cards=class_cards,selected_class=selected_class,search=search,archived_count=archived_count,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
 
-@app.route('/admin/school/students/<int:sid>')
-@admin_required
-def admin_school_student_detail(sid):
-    student=obj(Student,sid)
-    if not student: abort(404)
-    session_row=_school_current_session()
-    enrol=[_flatten(r,'StudentEnrolment','class_name','session_name') for r in all_rows(
+def _student_enrolment_rows(sid):
+    """Every class placement this student has, newest first, with the class and session names."""
+    return [_flatten(r,'StudentEnrolment','class_name','session_name') for r in all_rows(
         select(StudentEnrolment,SchoolClass.name.label('class_name'),
                AcademicSession.name.label('session_name'))
         .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .join(AcademicSession,AcademicSession.id==StudentEnrolment.session_id)
         .where(StudentEnrolment.student_id==sid)
         .order_by(StudentEnrolment.id.desc()))]
-    current_enrol=next((r for r in enrol if session_row and r['session_id']==session_row['id'] and r['active']), enrol[0] if enrol else None)
-    history=[_flatten(r,'StudentEnrollmentHistory','session_name','class_name') for r in all_rows(
+
+def _student_class_history(sid):
+    """The school journey: placements recorded by hand or imported, including those from before this school."""
+    return [_flatten(r,'StudentEnrollmentHistory','session_name','class_name') for r in all_rows(
         select(StudentEnrollmentHistory,AcademicSession.name.label('session_name'),
                SchoolClass.name.label('class_name'))
         .outerjoin(AcademicSession,AcademicSession.id==StudentEnrollmentHistory.session_id)
@@ -162,6 +161,16 @@ def admin_school_student_detail(sid):
         .where(StudentEnrollmentHistory.student_id==sid)
         .order_by(func.coalesce(StudentEnrollmentHistory.enrolled_at,'').desc(),
                   StudentEnrollmentHistory.id.desc()))]
+
+@app.route('/admin/school/students/<int:sid>')
+@admin_required
+def admin_school_student_detail(sid):
+    student=obj(Student,sid)
+    if not student: abort(404)
+    session_row=_school_current_session()
+    enrol=_student_enrolment_rows(sid)
+    current_enrol=next((r for r in enrol if session_row and r['session_id']==session_row['id'] and r['active']), enrol[0] if enrol else None)
+    history=_student_class_history(sid)
     sessions=db.session.scalars(select(AcademicSession).where(AcademicSession.active==1)
         .order_by(AcademicSession.id.desc())).all()
     classes_for_history=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
@@ -215,7 +224,8 @@ def admin_school_student_detail(sid):
     term_reports=[{**period,'subjects':_student_term_subjects(sid,period['session_id'],period['term'])}
                   for period in _student_term_periods(sid)]
     term_reports=[t for t in term_reports if t['subjects']]
-    return render_template('admin_school_student_detail.html',student=student,enrolments=enrol,enrollment_history=history,sessions=sessions,classes_for_history=classes_for_history,current_enrol=current_enrol,results=results,assignments=assignments,projects=projects,total_score=total_score,total_max=total_max,pct=pct,completed=len(completed),assignment_avg=assignment_avg,term_reports=term_reports)
+    archived_by=_archived_by_name(student)
+    return render_template('admin_school_student_detail.html',student=student,enrolments=enrol,enrollment_history=history,sessions=sessions,classes_for_history=classes_for_history,current_enrol=current_enrol,results=results,assignments=assignments,projects=projects,total_score=total_score,total_max=total_max,pct=pct,completed=len(completed),assignment_avg=assignment_avg,term_reports=term_reports,archived_by=archived_by,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
 
 @app.route('/admin/school/students/new',methods=['GET','POST'])
 @admin_required
@@ -653,9 +663,127 @@ def admin_school_student_toggle(sid):
     row=obj(Student, sid)
     if not row: abort(404)
     if not _school_student_visible(sid): return admin_access_error('school.students.delete')
+    # An archived student is switched on only by restoring them, which also clears the archive
+    # details; flipping ``active`` here would bring them back without that.
+    if row['archived_at']:
+        flash('This student is archived. Restore them from Archived students instead.','error')
+        return redirect(url_for('admin_school_student_detail',sid=sid))
     new=0 if row['active'] else 1
     db.session.execute(sa_update(Student).where(Student.id==sid).values(active=new))
     db.session.commit(); audit_log('school_student_status_changed','school','student',sid,{'active':new}); flash('Student record '+('activated.' if new else 'deactivated.'),'success'); return redirect(url_for('admin_school_students'))
+
+def _can_archive_students():
+    me=current_admin()
+    return bool(me and admin_has_permission(me['id'],'school.students.delete'))
+
+def _archived_by_name(student):
+    """Who archived this student, for display. None when the student is not archived or the admin is gone."""
+    if not student['archived_by_admin_id']: return None
+    return one_scalar(select(Admin.display_name).where(Admin.id==student['archived_by_admin_id']))
+
+def _student_ids_from_form(values):
+    ids=[]
+    for value in values:
+        try: ids.append(int(value))
+        except (TypeError,ValueError): continue
+    return sorted(set(ids))
+
+@app.route('/admin/school/students/archived')
+@admin_required
+def admin_school_students_archived():
+    # Archived students are a school-admin view only: they stay out of every other list in the portal.
+    if not is_school_admin(): return admin_access_error('school.students.view')
+    search=request.args.get('q','').strip()
+    students=[_flatten(r,'Student','archived_by_name') for r in all_rows(
+        select(Student,Admin.display_name.label('archived_by_name'))
+        .outerjoin(Admin,Admin.id==Student.archived_by_admin_id)
+        .where(Student.archived_at.isnot(None))
+        .order_by(Student.archived_at.desc(),Student.id.desc()))]
+    last_placement={}
+    if students:
+        for r in all_rows(
+            select(StudentEnrolment.student_id,SchoolClass.name.label('class_name'),
+                   AcademicSession.name.label('session_name'))
+            .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
+            .join(AcademicSession,AcademicSession.id==StudentEnrolment.session_id)
+            .where(StudentEnrolment.student_id.in_([s['id'] for s in students]))
+            .order_by(StudentEnrolment.id.desc())):
+            last_placement.setdefault(r['student_id'],r)
+    for s in students:
+        placement=last_placement.get(s['id'])
+        s['class_name']=placement['class_name'] if placement else None
+        s['session_name']=placement['session_name'] if placement else None
+    if search:
+        needle=search.casefold()
+        students=[s for s in students if needle in f"{s['first_name']} {s['middle_name'] or ''} {s['last_name']} {s['admission_no']} {s['guardian_name'] or ''} {s['class_name'] or ''}".casefold()]
+    archived_total=one_scalar(select(func.count()).select_from(Student).where(Student.archived_at.isnot(None)),0)
+    return render_template('admin_school_students_archived.html',students=students,search=search,
+                           archived_total=archived_total,archived_count=archived_total,is_school_admin=True)
+
+@app.route('/admin/school/students/archived/<int:sid>/record')
+@admin_required
+def admin_school_student_archived_record(sid):
+    """The academic record of one archived student, loaded into the archived-students modal."""
+    if not is_school_admin(): return admin_access_error('school.students.view')
+    student=db.session.scalars(select(Student).where(Student.id==sid,Student.archived_at.isnot(None))).first()
+    if not student: abort(404)
+    term_reports=[{**period,'subjects':_student_term_subjects(sid,period['session_id'],period['term'])}
+                  for period in _student_term_periods(sid)]
+    term_reports=[t for t in term_reports if t['subjects']]
+    return render_template('school_archived_student_record.html',student=student,
+                           enrolments=_student_enrolment_rows(sid),enrollment_history=_student_class_history(sid),
+                           term_reports=term_reports,archived_by=_archived_by_name(student))
+
+@app.post('/admin/school/students/archive')
+@admin_required
+@csrf_protect
+def admin_school_students_archive():
+    """Archive one or many students. Each must be visible to the admin, and an already archived student is left as it is."""
+    ids=_student_ids_from_form(request.form.getlist('student_ids'))
+    reason=request.form.get('reason','').strip()[:300] or None
+    class_name=request.form.get('class','').strip()
+    back=url_for('admin_school_students',**({'class':class_name} if class_name else {}))
+    if not ids:
+        flash('Select at least one student to archive.','error'); return redirect(back)
+    visible=[sid for sid in ids if _school_student_visible(sid)]
+    skipped=len(ids)-len(visible)
+    if not visible:
+        return admin_access_error('school.students.delete')
+    me=current_admin()
+    to_archive=archive_students(visible,reason,me['id'])
+    if to_archive:
+        db.session.commit()
+        for sid in to_archive:
+            audit_log('school_student_archived','school','student',sid,{'reason':reason})
+    archived=len(to_archive); already=len(visible)-archived
+    parts=[f'{archived} student{"" if archived==1 else "s"} archived.' if archived else 'Nothing was archived.']
+    if already: parts.append(f'{already} already archived.')
+    if skipped: parts.append(f'{skipped} outside your class scope were left alone.')
+    flash(' '.join(parts),'success' if archived else 'error')
+    return redirect(back)
+
+@app.post('/admin/school/students/archived/restore')
+@admin_required
+@csrf_protect
+def admin_school_students_restore():
+    """Bring archived students back into the current register, with their login working again."""
+    if not is_school_admin(): return admin_access_error('school.students.delete')
+    ids=_student_ids_from_form(request.form.getlist('student_ids'))
+    if not ids:
+        flash('Select at least one archived student to restore.','error'); return redirect(url_for('admin_school_students_archived'))
+    restored=db.session.scalars(select(Student).where(
+        Student.id.in_(ids),Student.archived_at.isnot(None))).all()
+    restored_ids=[s.id for s in restored]
+    if restored_ids:
+        db.session.execute(sa_update(Student).where(Student.id.in_(restored_ids)).values(
+            active=1,archived_at=None,archived_by_admin_id=None,archive_reason=None))
+        db.session.commit()
+        for sid in restored_ids:
+            audit_log('school_student_restored','school','student',sid,{})
+    count=len(restored_ids)
+    flash(f'{count} student{"" if count==1 else "s"} restored to the current register.' if count else 'No archived students were selected.',
+          'success' if count else 'error')
+    return redirect(url_for('admin_school_students_archived'))
 
 @app.route('/admin/school/classes')
 @admin_required
@@ -1195,7 +1323,7 @@ def admin_school_project_detail(project_id):
         select(ProjectStudent,Student.first_name,Student.middle_name,
                Student.last_name,Student.admission_no)
         .join(Student,Student.id==ProjectStudent.student_id)
-        .where(ProjectStudent.project_id==project_id)
+        .where(ProjectStudent.project_id==project_id,Student.active==1)
         .order_by(Student.last_name,Student.first_name))]
     return render_template('school_project_detail.html',project=p,assigned=assigned)
 

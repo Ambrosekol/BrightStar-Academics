@@ -1,0 +1,18 @@
+{#- The body of the setup checklist, sent to the browser when its saved copy has expired. The
+    data-setup-show flag tells the page whether to show the card at all: it is 0 once every step is done
+    or once the school has closed the checklist. -#}
+<div data-setup-show="{{ 1 if ob.show else 0 }}">
+  <div class="dock-progress" aria-hidden="true"><span style="width:{{ (ob.done_count * 100 // ob.total) if ob.total else 0 }}%"></span></div>
+  <ol class="dock-steps">
+    {% for step in ob.steps %}
+    <li class="dock-step{{ ' is-done' if step.done }}">
+      <span class="dock-step__mark">{{ '✓' if step.done else loop.index }}</span>
+      <div>
+        <strong>{{ step.label }}</strong>
+        <p>{{ step.text }}</p>
+        <a href="{{ url_for(step.endpoint) }}">{{ 'Review' if step.done else 'Start' }} →</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>

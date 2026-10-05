@@ -300,7 +300,12 @@ def build_cards(student_ids, session_id, term):
     Each card is a dictionary in the shape core/report_card_pdf.py documents. Class averages are
     worked out once per class, not once per student.
     """
+    # Archived students have no current report card; they are dropped before anything is computed for them.
     student_ids = list(dict.fromkeys(student_ids))
+    if student_ids:
+        current = {row[0] for row in db.session.execute(select(Student.id).where(
+            Student.id.in_(student_ids), Student.active == 1)).all()}
+        student_ids = [sid for sid in student_ids if sid in current]
     if not student_ids:
         return []
     counts = _official_result_counts(student_ids, session_id, term)

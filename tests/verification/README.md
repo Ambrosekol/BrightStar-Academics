@@ -25,6 +25,7 @@ The project README's *Testing* section says what each covers.
 | `write_paths_attendance.py` | taking the daily register, scope, re-marking and clearing, the term summary, permissions and CSRF, the student and parent portals |
 | `write_paths_timetable.py` | exam/test timetables: draft entries, releasing (and the notifications it sends), scope, permissions and CSRF, the student and parent portals |
 | `write_paths_student_import.py` | bulk CSV student import: valid rows created, bad rows skipped with a reason, class scope, generated numbers and credentials, permissions and CSRF, isolation |
+| `write_paths_student_archive.py` | archiving students (one or many): off the register, out of the count, sign-in and open sessions stopped; the archived list and records for school admins only; restoring; the deactivate switch refusing archived students; class scope; CSRF; isolation |
 | `write_paths_student_history_import.py` | bulk enrolment-history import: valid rows recorded against an already-existing student, bad rows skipped with a reason, an archived (no longer active) session accepted, permissions and CSRF, isolation |
 | `write_paths_guide.py` | the staff guide (/admin/guide): every real page renders, no permission of its own, either workspace, search, isolation |
 | `write_paths_admissions.py` | the admissions funnel: the waitlist, admitting (student + optional parent account), declining and undoing it, scope, permissions and CSRF, isolation |

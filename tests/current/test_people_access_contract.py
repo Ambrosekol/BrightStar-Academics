@@ -19,7 +19,7 @@ def test_multi_role_model_and_ui():
     assert '_sync_admin_roles' in ADMIN_HELPERS
 
 def test_question_bank_scope_is_listed():
-    assert 'scope-bank' in FORM
+    assert "'bank'" in FORM and 'Question bank' in FORM
     assert 'entrance_bank_display_name' in FORM
     assert 'name="scope_value"' in FORM
 

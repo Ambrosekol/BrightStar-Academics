@@ -52,6 +52,13 @@ this ({{ table('finance_delivery_logs') }}).</p>
 <p>Because delivery can be slow, the payment receipt and the report card notices are sent as a durable background job ({{ file('core/jobs.py') }}), so a restart mid-send is retried rather than lost. The in-app alerts are written synchronously so they are there when the page reloads.</p>
 <div class="note"><p><strong>Idempotence.</strong> The report card notice fires when a term <em>becomes</em> complete, and only then: releasing one subject of several says nothing (the term is not ready yet), and releasing the last one sends it. If a result is later edited and the term released again, the parents are told again; that is a real new event.</p></div>
 
+<h2 id="archived-and-notices">Archived children and family notices</h2>
+<p>Archiving a student stops that student's sign-in, and nothing else. Their parents still see the child on the parent portal,
+with the record and the fee account, because the parent's link to the child is kept and the portal includes archived
+children. The portal's own queries say so explicitly, so a future change to the student filter does not hide them by accident.</p>
+<p>Parents and students each get a what's-new notice, written for their own audience, on their own dashboard. It never links to
+the staff guide. See {{ file('blueprints/family_notices.py') }}.</p>
+
 <h2 id="recovery">Password recovery</h2>
 <p>{{ route('forgot_password') }} accepts an identifier for any of the four account types, finds the account and emails a single-use link ({{ table('password_reset_tokens') }}; only a hash of the token is stored). The reset pages are never cached and send no referrer, so a link is not kept or shown to anyone. Using a link ends the account's other sign-ins. Requests are rate limited per address and username.</p>
 {% endblock %}

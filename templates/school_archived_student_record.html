@@ -1,0 +1,50 @@
+<div class="profile-subline" style="margin-bottom:16px">
+  <span class="candidate-code">{{student.admission_no}}</span>
+  <span class="role-chip">Archived {{(student.archived_at or '')[:10] or 'date not recorded'}}{% if archived_by %} by {{archived_by}}{% endif %}</span>
+</div>
+{% if student.archive_reason %}<p class="qa-stat"><strong>Reason:</strong> {{student.archive_reason}}</p>{% endif %}
+
+<div class="term-report-block">
+  <div class="term-report-head"><strong>Class placements</strong><span>{{enrolments|length}} recorded</span></div>
+  <div class="activity-list">
+    {% for e in enrolments %}
+    <div class="activity-row"><div><strong>{{e.class_name}}</strong><small>{{e.session_name or 'Session not recorded'}}</small></div><div class="row-actions"><span class="role-chip">{{'Active' if e.active else 'Closed'}}</span></div></div>
+    {% else %}
+    <div class="empty-state">No class placement was recorded for this student.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="term-report-block">
+  <div class="term-report-head"><strong>School journey</strong><span>{{enrollment_history|length}} entr{{'y' if enrollment_history|length==1 else 'ies'}}</span></div>
+  <div class="activity-list">
+    {% for e in enrollment_history %}
+    <div class="activity-row"><div><strong>{{e.level_name}}</strong><small>{{e.session_name or 'Session not specified'}} · Enrolled {{e.enrolled_at or '—'}}{% if e.completed_at %} · Completed {{e.completed_at}}{% endif %}</small></div></div>
+    {% else %}
+    <div class="empty-state">No enrolment history found.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="term-report-block">
+  <div class="term-report-head"><strong>Results by term</strong><span>{{term_reports|length}} term{{'' if term_reports|length==1 else 's'}} recorded</span></div>
+  {% for t in term_reports %}
+  <div class="term-report-block">
+    <div class="term-report-head"><strong>{{t.session_name}}</strong><span>{{t.term}}</span></div>
+    <div class="paper-overview-table"><table><thead><tr><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th></tr></thead><tbody>
+      {% for s in t.subjects %}
+      <tr>
+        <td><strong>{{s.subject_name}}</strong></td>
+        <td>{{'%.1f'|format(s.ca_score)}} / {{s.ca_max|int}}</td>
+        <td>{{'%.1f'|format(s.exam_score)}} / {{s.exam_max|int}}</td>
+        <td><strong>{{'%.1f'|format(s.total_score)}} / {{s.total_max|int}}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody></table></div>
+  </div>
+  {% else %}
+  <div class="empty-state">No term-based results were recorded. Tests, examinations, assignments and projects with a session and term appear here once graded.</div>
+  {% endfor %}
+</div>
+
+<p style="margin-top:16px"><a class="btn btn-light btn-small" href="{{url_for('admin_school_student_detail',sid=student.id)}}">Open full student profile</a></p>

@@ -20,6 +20,7 @@
 <tr><td>{{ file('tests/current/test_phase3e_admin_hardening.py') }}, {{ file('tests/current/test_phase3e_governance.py') }}</td><td>Administrator hardening and governance.</td></tr>
 <tr><td>{{ file('tests/current/test_message_notification_sender.py') }}</td><td>Admin messaging notification behaviour.</td></tr>
 <tr><td>{{ file('tests/current/test_docs_contract.py') }}</td><td>These documentation pages: every file, route, table, permission and template they name still exists, and the access rules for <code>/docs</code> hold.</td></tr>
+<tr><td>{{ file('tests/current/test_release_notes_contract.py') }}</td><td>The release notes file is valid; each audience gets only its own changes; a family or student change never links to the staff guide; staff help links name real guide pages.</td></tr>
 </table></div>
 
 <h2 id="e2e">The end-to-end scripts: <code>tests/verification/</code></h2>
@@ -43,6 +44,10 @@
 <tr><td><code>write_paths_session_guard.py</code>, <code>_rate_limits.py</code>, <code>_upload_access.py</code>, <code>_upload_limits.py</code></td><td>Restart sign-out (exam sitters kept), password changes, headers, trusted proxies; shared limits; who may open which files; every upload's limit and explanations.</td></tr>
 <tr><td><code>write_paths_fractional_marks.py</code>, <code>_retired_tables.py</code>, <code>_error_pages.py</code>, <code>_known_gaps.py</code></td><td>Decimal marks and upgrading older schools; clearing removed features' tables; the 404/403/500 pages; a set of previously found gaps.</td></tr>
 <tr><td><code>write_paths_resilience.py</code></td><td>The things that only show up outside a request: the dedicated job poller running from a separate CLI process; <code>static/interactions.js</code>'s delegated listeners, driven in a real headless browser; the four alerting signals; the CSP's own nonce on every remaining inline script.</td></tr>
+<tr><td><code>write_paths_student_archive.py</code></td><td>Archiving and restoring students: off the register, out of the count, sign-in revoked, the archived list and records for the School Admin only, class scope, CSRF, isolation.</td></tr>
+<tr><td><code>write_paths_student_import.py</code>, <code>write_paths_student_history_import.py</code></td><td>Bulk student import with its required guardian columns; enrolment history with YYYY-MM-DD dates, outcomes, earlier-session creation and graduate archiving.</td></tr>
+<tr><td><code>write_paths_results_import.py</code></td><td>Past results: one row per subject, term and session; released with a migration source; existing results never overwritten; the bulk-import permission.</td></tr>
+<tr><td><code>write_paths_admin_dock.py</code></td><td>What's new and the setup checklist for administrators, students and parents; audience separation; a parent keeps an archived child while the child's sign-in is revoked.</td></tr>
 </table></div>
 <p>Alongside these, {{ file('tests/verification/load_test_exam_answers.py') }} is not a correctness suite: it fires the exact upsert <code>/answer</code> performs, concurrently, against a real database, and reports writes per second and per-write latency (no built-in pass/fail - hardware varies) - run it against a throwaway database by default, or a real school's own with <code>--school CODE</code>, before its first big entrance day.</p>
 

@@ -1,0 +1,93 @@
+{% if family_notice and family_notice.releases %}
+<style>
+/* What's-new notice for students and parents: bottom right, minimisable and closable. It carries all its
+   information itself. Colours follow the school's main colour. */
+.fnotice{position:fixed;right:24px;bottom:24px;z-index:900;width:min(360px,calc(100vw - 32px));border:1px solid #dfe6ef;border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(15,23,42,.16);overflow:hidden;font-family:inherit}
+.fnotice[hidden],.fnotice-release[hidden]{display:none !important}
+.fnotice__head{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;background:var(--fnotice-brand,#0d2b52);color:#fff}
+.fnotice__title{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.25}
+.fnotice__sub{display:block;margin-top:2px;font-size:12px;font-weight:500;opacity:.82}
+.fnotice__btn{display:grid;place-items:center;flex:none;width:28px;height:28px;border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.fnotice__btn:hover{background:rgba(255,255,255,.26)}
+.fnotice__body{max-height:min(54vh,420px);overflow:auto;padding:14px 16px 16px}
+.fnotice.is-min .fnotice__body{display:none}
+.fnotice h3{margin:0 0 8px;font-size:14px;color:#0f172a}
+.fnotice h3 span{font-size:12px;font-weight:500;color:#94a3b8}
+.fnotice-release{margin:0 0 14px}
+.fnotice-release:last-child{margin-bottom:0}
+.fnotice ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.fnotice li{padding:9px 10px;border-radius:9px;background:#f8fafc;font-size:13px;line-height:1.55;color:#334155}
+@media (max-width:640px){.fnotice{right:12px;bottom:12px}}
+</style>
+<section class="fnotice" id="familyNotice" role="region" aria-label="What's new" hidden
+         data-account="{{ family_notice.account }}" data-audience="{{ family_notice.audience }}"
+         data-app-version="{{ family_notice.app_version }}"
+         style="--fnotice-brand:{{ school_brand.primary or '#0d2b52' }}">
+  <header class="fnotice__head">
+    <div class="fnotice__title">What's new<span class="fnotice__sub" data-notice-count></span></div>
+    <button class="fnotice__btn" type="button" data-fnotice-min aria-expanded="true" aria-label="Minimise">–</button>
+    <button class="fnotice__btn" type="button" data-fnotice-close aria-label="Close what's new">×</button>
+  </header>
+  <div class="fnotice__body">
+    {% for release in family_notice.releases %}
+    <div class="fnotice-release" data-release data-version="{{ release.version }}" hidden>
+      <h3>{{ release.title }} <span>{{ release.date }}</span></h3>
+      <ul>
+        {% for change in release.changes %}<li>{{ change.text }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  // Runs entirely in the browser: the notice remembers which version this account last dismissed here, so
+  // the server is not asked anything when a dashboard opens.
+  var box=document.getElementById('familyNotice');
+  if(!box) return;
+  var account=box.getAttribute('data-account');
+  var audience=box.getAttribute('data-audience');
+  var appVersion=box.getAttribute('data-app-version');
+  var seenKey='bs-release-seen:'+audience+':'+account;
+  var minimise=box.querySelector('[data-fnotice-min]');
+  var close=box.querySelector('[data-fnotice-close]');
+
+  function read(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+  function write(key,value){ try{ localStorage.setItem(key,value); }catch(e){} }
+  function parts(version){ return String(version||'').split('.').map(function(n){ return parseInt(n,10)||0; }); }
+  function newer(a,b){
+    var x=parts(a), y=parts(b), n=Math.max(x.length,y.length);
+    for(var i=0;i<n;i++){ var p=x[i]||0, q=y[i]||0; if(p!==q) return p>q; }
+    return false;
+  }
+
+  // Show the newest release to someone who has never dismissed one; afterwards only the newer ones.
+  var seen=read(seenKey);
+  var releases=Array.prototype.slice.call(box.querySelectorAll('[data-release]'));
+  var shown=0;
+  releases.forEach(function(el,index){
+    var show = seen===null ? index===0 : newer(el.getAttribute('data-version'),seen);
+    el.hidden=!show;
+    if(show) shown++;
+  });
+  if(!shown) return;
+  box.querySelector('[data-notice-count]').textContent=shown+' update'+(shown===1?'':'s')+' since your last visit';
+
+  function setMinimised(on){
+    box.classList.toggle('is-min',on);
+    minimise.setAttribute('aria-expanded',String(!on));
+    minimise.setAttribute('aria-label',on?'Expand':'Minimise');
+    minimise.textContent=on?'+':'–';
+    write('bs-fnotice:min',on?'1':'0');
+  }
+  setMinimised(read('bs-fnotice:min')==='1');
+  minimise.addEventListener('click',function(){ setMinimised(!box.classList.contains('is-min')); });
+
+  close.addEventListener('click',function(){
+    write(seenKey,appVersion);
+    box.remove();
+  });
+  box.hidden=false;
+})();
+</script>
+{% endif %}

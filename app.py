@@ -1092,6 +1092,9 @@ import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402
 import blueprints.school.student_history_import  # noqa: F401,E402
+import blueprints.school.results_import  # noqa: F401,E402
+import blueprints.admin_dock  # noqa: F401,E402
+import blueprints.family_notices  # noqa: F401,E402
 import blueprints.school.notice_log  # noqa: F401,E402
 import blueprints.school.guide  # noqa: F401,E402
 import blueprints.entrance.admissions  # noqa: F401,E402

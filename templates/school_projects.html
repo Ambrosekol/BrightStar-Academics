@@ -1,6 +1,9 @@
 {% extends 'admin_base.html' %}
 {% block title %}Projects — {{ school_brand.name }}{% endblock %}
 {% block content %}
+{% include 'school_students_styles.html' %}
+{% set work_tab = 'projects' %}
+{% include 'school_work_tabs.html' %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Create practical classroom projects, give them a required date, and record completion and scores.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
 <div class="segmentation-intro"><div><strong>Choose a class</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_projects')}}">← All classes</a>{% endif %}</div>
 <div class="segment-card-grid school-segment-grid">{% for c in class_cards %}<a class="segment-card {% if selected_class==c.name %}selected{% endif %}" href="{{url_for('admin_school_projects',class=c.name)}}"><div class="segment-icon">{{c.name.split(' ')[0][:1]}}{{c.name.split(' ')[1][:1] if c.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{c.name}}</h2><p>{{c.count}} project{{'' if c.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
@@ -20,8 +23,8 @@
       {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_projects',class=selected_class)}}">Clear search</a>{% endif %}
       <a class="btn btn-light" href="{{url_for('admin_school_projects')}}">← All classes</a>
     </form>
-    <div class="table-scroll">
-      <table>
+    <div class="students-register-scroll">
+      <table class="students-register-table">
         <thead><tr><th>Project</th><th>Subject</th><th>Students</th><th>Given</th><th>Required</th><th>Action</th></tr></thead>
         <tbody>
           {% for p in projects %}

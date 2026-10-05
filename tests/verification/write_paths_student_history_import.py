@@ -253,7 +253,7 @@ def add_archived_session(school, name):
 ARCHIVED = add_archived_session(alpha, "2023/2024")
 
 
-def csv_of(*rows, header="admission_no,level,session,enrolled_at,completed_at,notes"):
+def csv_of(*rows, header="admission_no,level,session,enrolled_at,completed_at,outcome,notes"):
     return (header + "\r\n" + "\r\n".join(rows) + "\r\n").encode("utf-8")
 
 
@@ -266,14 +266,14 @@ check("the import page names the required and optional columns and the recognise
       "admission_no" in historian.text(IMPORT) and "notes" in historian.text(IMPORT) and "JSS 1" in historian.text(IMPORT))
 template = historian.get(f"{IMPORT}/template.csv").get_data(as_text=True)
 check("the template file downloads with the right header",
-      template.splitlines()[0].strip() == "admission_no,level,session,enrolled_at,completed_at,notes")
+      template.splitlines()[0].strip() == "admission_no,level,session,enrolled_at,completed_at,outcome,notes")
 
 r = do_import(historian, csv_of(
-    f"{ADA_NO},JSS 1,2023/2024,2023-09-11,2024-07-19,Brought in from her previous school",  # good, archived session
-    "NOT-REAL,JSS 1,2023/2024,,,",                        # unknown admission number
-    f"{ADA_NO},Not A Level,2023/2024,,,",                 # unrecognised level
-    f"{ADA_NO},JSS 1,No Such Session,,,",                 # unknown session
-    f"{ADA_NO},JSS 1,2023/2024,not-a-date,,",             # badly formed date
+    f"{ADA_NO},JSS 1,2023/2024,2023-09-11,2024-07-19,promoted,Brought in from her previous school",  # good, archived session
+    "NOT-REAL,JSS 1,2023/2024,,,,",                       # unknown admission number
+    f"{ADA_NO},Not A Level,2023/2024,,,,",                # unrecognised level
+    f"{ADA_NO},JSS 1,No Such Session,,,,",                # unknown session (not an earlier year, so never created)
+    f"{ADA_NO},JSS 1,2023/2024,not-a-date,,,",            # badly formed date
 ))
 report = html.unescape(r.get_data(as_text=True))
 check("the report shows one imported and four skipped, each with its own reason",
@@ -281,6 +281,50 @@ check("the report shows one imported and four skipped, each with its own reason"
 check("the skipped rows each name a reason: unknown admission number, unrecognised level, unknown session, a bad date",
       all(w in report for w in ("no active student with admission number", "is not a recognised level",
                                 "no session named", "must be a date")))
+# A year that is not a dated session at all, or is later than the current one, is never created by an import.
+CUR_NAME = alpha.one("SELECT name FROM academic_sessions WHERE is_current = 1 ORDER BY id DESC LIMIT 1")
+CUR_ID = alpha.one("SELECT id FROM academic_sessions WHERE is_current = 1 ORDER BY id DESC LIMIT 1")
+CUR_START = int(CUR_NAME.split("/")[0])
+PREV = f"{CUR_START - 2}/{CUR_START - 1}"
+LATER = f"{CUR_START + 1}/{CUR_START + 2}"
+r = do_import(op, csv_of(f"{ADA_NO},JSS 1,{LATER},,,,"))
+check("…and the row is reported as skipped for that reason",
+      "no session named" in html.unescape(r.get_data(as_text=True)) and alpha.one("SELECT COUNT(*) FROM academic_sessions WHERE name = :n", n=LATER) == 0)
+
+# An earlier year is created only for a student who may import students; the history-only officer is refused.
+r = do_import(historian, csv_of(f"{ADA_NO},JSS 1,{PREV},2021-09-13,2022-07-15,promoted,"))
+check("a staff member who may only import history cannot create an earlier session, and the row is skipped",
+      "permission to import students" in html.unescape(r.get_data(as_text=True))
+      and alpha.one("SELECT COUNT(*) FROM academic_sessions WHERE name = :n", n=PREV) == 0)
+
+# The importer who may import students creates the earlier session, records who and why, and never makes it current.
+r = do_import(op, csv_of(f"{ADA_NO},JSS 1,{PREV},2021-09-13,2022-07-15,promoted,Brought in from a previous school"))
+created = alpha.sql("SELECT id, is_current, active, created_by_admin_id, creation_reason, created_via FROM academic_sessions WHERE name = :n", n=PREV)
+check("an earlier session is created for the importer who may import students, inactive and never current",
+      len(created) == 1 and created[0][1] == 0 and created[0][2] == 0)
+check("…it records who imported it and why, and that it came from a bulk history import",
+      bool(created) and created[0][3] is not None and "earlier session" in (created[0][4] or "") and created[0][5] == "bulk_history_import")
+check("…and the current session is still the current session",
+      alpha.one("SELECT id FROM academic_sessions WHERE is_current = 1 ORDER BY id DESC LIMIT 1") == CUR_ID)
+check("…and the report names the session it created", "earlier session" in html.unescape(r.get_data(as_text=True)).lower())
+
+# A bad outcome is refused; a graduation archives the student once it is recorded.
+r = do_import(op, csv_of(f"{ADA_NO},JSS 1,2023/2024,,,Cheerful,"))
+check("an outcome that is not promoted, repeated, graduated or withdrawn is skipped", "outcome must be" in html.unescape(r.get_data(as_text=True)))
+
+r = op.post("/admin/school/students/new", {"first_name": "Gbemi", "last_name": "Grad", "gender": "Female", "class_id": str(J1),
+                                           "state_of_origin": "Lagos", "blood_group": "", "genotype": ""})
+GRAD = alpha.one("SELECT id FROM students WHERE first_name = 'Gbemi' AND last_name = 'Grad'")
+GRAD_NO = alpha.one("SELECT admission_no FROM students WHERE id = :i", i=GRAD)
+r = do_import(historian, csv_of(f"{GRAD_NO},JSS 1,{PREV},,,graduated,"))
+check("a graduation needs the permission to deactivate students, so the history-only officer is refused for that row",
+      alpha.one("SELECT active FROM students WHERE id = :i", i=GRAD) == 1)
+r = do_import(op, csv_of(f"{GRAD_NO},JSS 1,{PREV},,,graduated,Completed and left"))
+row = alpha.sql("SELECT active, archived_at, archive_reason FROM students WHERE id = :i", i=GRAD)[0]
+check("a graduated row archives the student, keeping their record and recording why",
+      row[0] == 0 and row[1] is not None and (row[2] or "").startswith("Graduated"))
+check("…and the graduation year is on the student's history",
+      alpha.one("SELECT outcome FROM student_enrollment_history WHERE student_id = :s AND outcome = 'graduated'", s=GRAD) == "graduated")
 check("the good row was recorded against an archived (no longer active) session, unlike the hand-entry form's own dropdown",
       alpha.one("SELECT level_name FROM student_enrollment_history WHERE student_id = :s AND session_id = :sess",
                 s=ADA, sess=ARCHIVED) == "JSS 1"
@@ -325,9 +369,9 @@ check("the import route is in the form suite's list of exercised routes and real
 posts_source = open(os.path.join(HERE, "write_paths_pg_posts.py"), encoding="utf-8").read()
 check("…and write_paths_pg_posts.py really submits it", '"{STUDENTS}/import-history"' in posts_source)
 check("every import endpoint has its permission in the endpoint map",
-      ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history") == "student.history.manage"
-      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history_template") == "student.history.manage"
-      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history_run") == "student.history.manage")
+      ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history") == "admin.access"
+      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history_template") == "admin.access"
+      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_history_run") == "admin.access")  # each step checks its own permission
 
 dispose_engines()
 DROP_TEST_DATABASES()

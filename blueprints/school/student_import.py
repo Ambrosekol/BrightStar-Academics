@@ -27,15 +27,17 @@ from flask import Response, flash, redirect, render_template, request, url_for
 from sqlalchemy import select
 
 from app import _provision_student_account, _school_current_session, app
-from blueprints.school.helpers import _school_class_allowed
-from core.security import admin_required, audit_log, csrf_protect, current_admin
+from blueprints.school.helpers import _school_class_allowed, import_allowed, import_permission_required
+from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
 from core.uploads import data_upload_limit_bytes, format_limit
 from models import School, SchoolClass, Student, StudentEnrolment, StudentNumberAllocation, db
 from services.student_number_generator import StudentNumberAllocationError, allocate_student_number
 
 MAX_ROWS = 1000
-REQUIRED_COLUMNS = ('first_name', 'last_name', 'gender', 'class')
-OPTIONAL_COLUMNS = ('middle_name', 'guardian_name', 'guardian_email', 'guardian_phone')
+# Every column is required: the guardian details drive the alerts parents receive and the sign-in a
+# parent uses, and a middle name is part of the name the school prints on every record.
+REQUIRED_COLUMNS = ('first_name', 'middle_name', 'last_name', 'gender', 'class', 'guardian_name', 'guardian_email', 'guardian_phone')
+OPTIONAL_COLUMNS = ()
 # A name reads naturally as first, middle, last: the template's column order says so, even though
 # validation groups 'required' and 'optional' the other way round.
 TEMPLATE_HEADER = ('first_name', 'middle_name', 'last_name', 'gender', 'class', 'guardian_name', 'guardian_email', 'guardian_phone')
@@ -47,15 +49,44 @@ def _classes_by_name():
         select(SchoolClass).where(SchoolClass.active == 1))}
 
 
+def render_import_page():
+    """The bulk-import page: step 1 brings in new students, step 2 brings in history for students already here.
+
+    Each step shows only to the staff member who may run it. The history constants are read from the
+    history module here rather than at the top of this file, because that module imports this one.
+    """
+    from blueprints.school.student_history_import import (
+        MAX_ROWS as HISTORY_MAX_ROWS, OPTIONAL_COLUMNS as HISTORY_OPTIONAL, OUTCOMES,
+        REQUIRED_COLUMNS as HISTORY_REQUIRED, _ALLOWED_LEVELS,
+    )
+    from blueprints.school.results_import import MAX_ROWS as RESULTS_MAX_ROWS, OPTIONAL_COLUMNS as RESULTS_OPTIONAL, REQUIRED_COLUMNS as RESULTS_REQUIRED
+    me = current_admin()
+    can_students = import_allowed('school.students.create')
+    can_history = import_allowed('student.history.manage')
+    can_results = import_allowed('school.results.release')
+    if not (can_students or can_history or can_results):
+        # Each step is shown only to whoever may run it; the page itself is for anyone who may run one of them.
+        return admin_access_error('school.students.create')
+    return render_template('admin_school_students_import.html', columns=TEMPLATE_HEADER,
+                           can_import_results=can_results,
+                           results_required=RESULTS_REQUIRED, results_optional=RESULTS_OPTIONAL, results_max_rows=RESULTS_MAX_ROWS,
+                           required_columns=REQUIRED_COLUMNS, optional_columns=OPTIONAL_COLUMNS, max_rows=MAX_ROWS,
+                           can_import_students=can_students,
+                           can_import_history=can_history,
+                           history_required=HISTORY_REQUIRED, history_optional=HISTORY_OPTIONAL,
+                           history_levels=sorted(_ALLOWED_LEVELS), history_max_rows=HISTORY_MAX_ROWS,
+                           history_outcomes=OUTCOMES)
+
+
 @app.route('/admin/school/students/import')
 @admin_required
 def admin_school_students_import():
-    return render_template('admin_school_students_import.html', columns=TEMPLATE_HEADER,
-                           required_columns=REQUIRED_COLUMNS, optional_columns=OPTIONAL_COLUMNS, max_rows=MAX_ROWS)
+    return render_import_page()
 
 
 @app.route('/admin/school/students/import/template.csv')
 @admin_required
+@import_permission_required('school.students.create')
 def admin_school_students_import_template():
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -69,6 +100,7 @@ def admin_school_students_import_template():
 @app.post('/admin/school/students/import')
 @admin_required
 @csrf_protect
+@import_permission_required('school.students.create')
 def admin_school_students_import_run():
     me = current_admin()
     upload = request.files.get('csv_file')
@@ -124,6 +156,14 @@ def admin_school_students_import_run():
         problems = []
         if not first or not last:
             problems.append('first name and surname are required')
+        if not middle:
+            problems.append('middle name is required')
+        if not guardian_name:
+            problems.append('guardian name is required')
+        if not guardian_phone:
+            problems.append('guardian phone is required')
+        if not guardian_email:
+            problems.append('guardian email is required')
         if not gender:
             problems.append("gender must be 'Male' or 'Female'")
         if not class_row:
@@ -165,7 +205,8 @@ def admin_school_students_import_run():
     created = sum(1 for o in outcomes if o['ok'])
     skipped = len(outcomes) - created
     if created:
-        audit_log('students_bulk_imported', 'school', 'session', session_row['id'], {'created': created, 'skipped': skipped})
+        audit_log('students_bulk_imported', 'school', 'session', session_row['id'],
+                  {'created': created, 'skipped': skipped, 'file': upload.filename})
     flash(f'{created} student{"" if created == 1 else "s"} imported' +
          (f', {skipped} row{"s" if skipped != 1 else ""} skipped.' if skipped else '.'),
          'success' if created else 'error')

@@ -1,0 +1,4 @@
+<nav class="students-seg" aria-label="Student lists">
+  <a class="students-seg__item{{ ' is-active' if students_tab=='current' }}" href="{{url_for('admin_school_students')}}" {% if students_tab=='current' %}aria-current="page"{% endif %}>Current students</a>
+  {% if is_school_admin %}<a class="students-seg__item{{ ' is-active' if students_tab=='archived' }}" href="{{url_for('admin_school_students_archived')}}" {% if students_tab=='archived' %}aria-current="page"{% endif %}>Archived students <span class="students-seg__count">{{archived_count}}</span></a>{% endif %}
+</nav>

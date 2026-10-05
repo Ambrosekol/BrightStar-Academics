@@ -56,6 +56,9 @@ class Admin(_LegacyAttachmentColumns, db.Model):
     created_at = db.Column(Text, nullable=False)
     created_by = db.Column(Integer, ForeignKey('admins.id'))
     last_login_at = db.Column(Text)
+    # No longer read or written: what's-new dismissals are kept in each browser now (see blueprints/admin_dock.py).
+    # The column stays so the live database still matches the model; it can be dropped in a later migration.
+    last_seen_release = db.Column(Text)
     email = db.Column(Text)
     phone = db.Column(Text)
     whatsapp = db.Column(Text)

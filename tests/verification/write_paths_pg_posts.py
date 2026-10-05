@@ -553,9 +553,9 @@ check("enrolment history was corrected with a reason",
 before_students = count("students")
 # Primary 5, deliberately: JSS 1 and JSS 2 have exact-count checks later (the promotion section),
 # which an extra imported student would throw off.
-csv_bytes = ("first_name,last_name,gender,class,guardian_name,guardian_email\r\n"
-            "Chika,Nwosu,Female,Primary 5,Mrs Nwosu,mrs.nwosu@example.test\r\n"
-            "Bad,Row,Not-A-Gender,Primary 5,,\r\n").encode("utf-8")
+csv_bytes = ("first_name,middle_name,last_name,gender,class,guardian_name,guardian_email,guardian_phone\r\n"
+            "Chika,Ngozi,Nwosu,Female,Primary 5,Mrs Nwosu,mrs.nwosu@example.test,08010000007\r\n"
+            "Bad,Row,Not-A-Gender,Primary 5,,,,\r\n").encode("utf-8")
 r = op.post(f"{STUDENTS}/import", {}, files={"csv_file": ("import.csv", csv_bytes)})
 check("a bulk student import created the good row and skipped the bad one",
       count("students") == before_students + 1 and "1 student imported" in r.body.lower() and "1 row skipped" in r.body.lower())
@@ -566,9 +566,9 @@ CHIKA_NO = one("SELECT admission_no FROM students WHERE id = :i", i=CHIKA)
 
 # ---- bulk-importing enrolment history: the deeper migration, for a student already in the system
 history_csv = (
-    "admission_no,level,session,enrolled_at,completed_at,notes\r\n"
-    f"{CHIKA_NO},Primary 4,2025/2026,2025-09-08,2026-07-17,Brought in from her previous school\r\n"
-    "NOT-A-REAL-NUMBER,Primary 4,2025/2026,,,\r\n"
+    "admission_no,level,session,enrolled_at,completed_at,outcome,notes\r\n"
+    f"{CHIKA_NO},Primary 4,2025/2026,2025-09-08,2026-07-17,promoted,Brought in from her previous school\r\n"
+    "NOT-A-REAL-NUMBER,Primary 4,2025/2026,,,,\r\n"
 ).encode("utf-8")
 r = op.post(f"{STUDENTS}/import-history", {}, files={"csv_file": ("history.csv", history_csv)})
 check("a bulk enrolment-history import created the good row and skipped the bad one",

@@ -244,7 +244,7 @@
                 <div class="ui-account" data-account>
                     <button type="button" class="ui-account__btn" aria-haspopup="menu" aria-expanded="false" aria-controls="ui-account-menu" data-account-toggle>
                         <span class="ui-account__ava" aria-hidden="true">{% if current_admin.photo_path %}<img src="{{ url_for('static', filename=current_admin.photo_path) }}" alt="">{% else %}{{ current_admin.display_name[:1]|upper }}{% endif %}</span>
-                        <span class="ui-account__name">{{ current_admin.display_name }}</span>
+                        {% set name_parts = (current_admin.display_name or '?').split() %}<span class="ui-account__name">{{ current_admin.display_name }}</span><span class="ui-account__initials" aria-hidden="true">{{ name_parts[0][:1] }}{{ name_parts[-1][:1] if name_parts|length > 1 else '' }}</span>
                     </button>
                     <div class="ui-account__menu" id="ui-account-menu" role="menu" hidden>
                         <a href="{{ url_for('admin_logout') }}" role="menuitem">Sign out</a>
@@ -272,6 +272,7 @@
         </div>
     </main>
 </div>
+{% include '_admin_dock.html' %}
 <div id="live-message-toast" class="live-message-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 <script nonce="{{ csp_nonce() }}">window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
 <script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>

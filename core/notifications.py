@@ -117,7 +117,7 @@ def _notify_guardians_of_school_work(student_ids, kind, title, due_date):
     if not student_ids: return
     rows=all_rows(select(Student.id,Student.first_name,Student.last_name,
                          Student.guardian_email,Student.guardian_phone)
-                  .where(Student.id.in_(student_ids)))
+                  .where(Student.id.in_(student_ids),Student.active==1))
     due_text=due_date or 'no due date set'
     for r in rows:
         child=f"{r['first_name']} {r['last_name']}".strip()

@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "RELEASE NOTES. This is the only file to edit when a change should be announced to users.",
+    "JSON has no comments, so every key that starts with an underscore is a comment: the loader in core/release_notes.py ignores it. Keep your notes in these keys.",
+    "",
+    "HOW IT IS SHOWN: each signed-in person sees the changes for their own audience in a card at the bottom right of their page, until they close it. Closing is saved for that one account.",
+    "",
+    "RULES (checked by tests/current/test_release_notes_contract.py, so a mistake fails the tests):",
+    "  1. 'releases' is ordered newest first. Each 'version' is dotted numbers (for example 2.20.26.1) and must go UP for each new release.",
+    "     The app's current version is the newest release's version. Do not edit it anywhere else.",
+    "  2. Each change has an 'audience': 'staff' (administrators), 'family' (parents) or 'student' (students).",
+    "     A change only ever shows to its own audience. A student change never appears on a parent's dashboard, and the reverse.",
+    "  3. 'text' is the whole message, in plain language for the people who read it. Write it so it makes sense on its own.",
+    "  4. 'help' is ONLY for 'staff' changes. It must be the slug of a page in the staff guide (see GUIDE_PAGES in blueprints/school/guide.py),",
+    "     for example 'students' or 'results-report-cards'. Parents and students cannot open the staff guide, so 'family' and 'student' changes must NOT have 'help'.",
+    "  5. To announce something new, add a release at the top of 'releases' with a new version, a date (YYYY-MM-DD), a title and its changes.",
+    "     Do not change the wording of a release that people may already have seen; add a new release instead."
+  ],
+  "releases": [
+    {
+      "_comment": "Newest release first. The date is when the change was made available.",
+      "version": "2.20.26.1",
+      "date": "2026-10-05",
+      "title": "Archiving, bulk imports and the staff directory",
+      "changes": [
+        { "audience": "staff", "text": "Archive a student, or several at once, from the class register. An archived student leaves the register, the student count and sign-in, and their record stays on file. Restore them from Archived students.", "help": "students" },
+        { "audience": "staff", "text": "Archived students each have an academic record you can open: class placements, school journey and results by term.", "help": "students" },
+        { "audience": "staff", "text": "The bulk import page has three steps: students, enrolment history and past results. Each step shows once you pick it, and every import is recorded with who ran it.", "help": "students" },
+        { "audience": "staff", "text": "Enrolment history rows can record how a student left each year. A graduate is archived once that year is recorded.", "help": "students" },
+        { "audience": "staff", "text": "Past results can be imported one subject, term and session per row, so a student's record from another system comes across complete.", "help": "results-report-cards" },
+        { "audience": "staff", "text": "A new bulk-import permission can be given to any role. It lets that role run all three import steps without holding each step's own permission.", "help": "roles-permissions" },
+        { "audience": "staff", "text": "The administrators page is a directory of cards with search and a status filter. Each person's page has a summary, a section list and a save bar.", "help": "staff-admin" },
+        { "audience": "staff", "text": "Looking for a permission under overrides? Search loosely: word order, capitals, accents and small spelling mistakes do not matter.", "help": "roles-permissions" },
+
+        { "audience": "family", "text": "Past results: once the school has brought in your child's results from earlier sessions, they appear on their academic record and report cards, shown the same way as this year's." },
+        { "audience": "family", "text": "Students who have left the school are archived. Their sign-in is switched off, but they stay on your portal with their records, results and fees." },
+
+        { "audience": "student", "text": "Past results: once the school has brought in your results from earlier sessions, they appear on your academic record and report cards, shown the same way as this year's." },
+        { "audience": "student", "text": "If you have left the school, your sign-in is switched off. Your records stay with the school." }
+      ]
+    }
+  ]
+}

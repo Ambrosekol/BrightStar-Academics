@@ -74,5 +74,8 @@ class StudentEnrollmentHistory(db.Model):
     notes = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
     corrected_at = db.Column(Text)
+    # How the student left this year: 'promoted', 'repeated', 'graduated' or 'withdrawn'. A
+    # 'graduated' record is what archives the student (see blueprints/school/student_history_import.py).
+    outcome = db.Column(Text)
     corrected_by = db.Column(Integer)
     correction_reason = db.Column(Text)

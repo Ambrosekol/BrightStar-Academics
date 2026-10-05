@@ -6,7 +6,7 @@ import secrets
 from functools import wraps
 
 from flask import redirect, request, session, url_for
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, or_, select
 
 from models import (
     Admin, AcademicSession, AssignmentStudent, ParentAccount,
@@ -51,7 +51,7 @@ def _parent_children(pid, with_session=False):
           AcademicSession.name.label('session_name')]
     stmt=(select(*cols)
           .select_from(ParentStudentLink)
-          .join(Student,and_(Student.id==ParentStudentLink.student_id,Student.active==1))
+          .join(Student,and_(Student.id==ParentStudentLink.student_id,or_(Student.active==1,Student.archived_at.isnot(None))))
           .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
                                            StudentEnrolment.active==1))
           .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)

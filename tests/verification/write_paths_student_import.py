@@ -232,7 +232,7 @@ teacher_a, TEACHER_A = mk_staff(alpha, "teacher.a", "Mrs Amaka Tutor", "Class Te
 nobody, _ = mk_staff(alpha, "nobody", "Nora Nothing", "Nothing Special", "JSS 1")
 
 
-def csv_of(*rows, header="first_name,last_name,gender,class,guardian_name,guardian_email,guardian_phone"):
+def csv_of(*rows, header="first_name,middle_name,last_name,gender,class,guardian_name,guardian_email,guardian_phone"):
     return (header + "\r\n" + "\r\n".join(rows) + "\r\n").encode("utf-8")
 
 
@@ -248,16 +248,17 @@ check("the template file downloads with the right header",
 
 before = alpha.one("SELECT COUNT(*) FROM students")
 r = do_import(teacher_a, csv_of(
-    "Ada,Obi,Female,JSS 1,Mrs Obi,mrs.obi@example.test,08010000000",
-    ",Nobody,Male,JSS 1,,,",                                  # missing first name
-    "Bad,Gender,Purple,JSS 1,,,",                             # bad gender
-    "Chidi,Eze,Male,Unknown Class,,,",                        # unknown class
-    "Tobi,Boundary,Male,JSS 2,,,",                            # outside teacher A's scope (JSS 1 only)
-    "Fola,Bright,Female,JSS 1,Mr Bright,not-an-email,",       # bad guardian email
+    "Ada,Nkem,Obi,Female,JSS 1,Mrs Obi,mrs.obi@example.test,08010000000",
+    ",Q,Nobody,Male,JSS 1,G,g@example.test,08010000000",      # missing first name
+    "Bad,Q,Gender,Purple,JSS 1,G,g@example.test,08010000000", # bad gender
+    "Chidi,Q,Eze,Male,Unknown Class,G,g@example.test,08010000000", # unknown class
+    "Tobi,Q,Boundary,Male,JSS 2,G,g@example.test,08010000000",    # outside teacher A's scope (JSS 1 only)
+    "Fola,Q,Bright,Female,JSS 1,Mr Bright,not-an-email,08010000000", # bad guardian email
+    "Gina,,Missing,Female,JSS 1,,,",                          # no middle name, guardian name, email or phone
 ))
 report = html.unescape(r.get_data(as_text=True))
-check("the report shows one imported and five skipped, each with its own reason",
-      "1 student imported" in r.get_data(as_text=True).lower() and "5 rows skipped" in r.get_data(as_text=True).lower()
+check("the report shows one imported and six skipped, each with its own reason",
+      "1 student imported" in r.get_data(as_text=True).lower() and "6 rows skipped" in r.get_data(as_text=True).lower()
       and alpha.one("SELECT COUNT(*) FROM students") == before + 1)
 ADA = alpha.one("SELECT id FROM students WHERE first_name = 'Ada' AND last_name = 'Obi'")
 check("Ada was created with a generated admission number, a class enrolment and a login",
@@ -269,15 +270,17 @@ check("…and her one-time password and username are shown on the report, and do
 check("the skipped rows each name a reason: a missing name, a bad gender, an unknown class, out-of-scope, a bad email",
       all(w in report for w in ("first name and surname are required", "gender must be", 'class "Unknown Class" was not found',
                                 "outside your authorised scope", "guardian email is not valid")))
+check("a row missing its middle name, guardian name, guardian email or guardian phone is skipped, naming each one",
+      all(w in report for w in ("middle name is required", "guardian name is required", "guardian email is required", "guardian phone is required")))
 
-r = do_import(teacher_a, csv_of("Bola,Eze,Female,JSS 1,,,", "Tunde,Eze,Male,JSS 1,,,"))
+r = do_import(teacher_a, csv_of("Bola,Q,Eze,Female,JSS 1,G Eze,g.eze@example.test,08010000001", "Tunde,Q,Eze,Male,JSS 1,G Eze,g.eze@example.test,08010000002"))
 BOLA = alpha.one("SELECT id FROM students WHERE first_name = 'Bola' AND last_name = 'Eze'")
 TUNDE = alpha.one("SELECT id FROM students WHERE first_name = 'Tunde' AND last_name = 'Eze'")
 check("two students in the same file get two different generated admission numbers",
       None not in (BOLA, TUNDE) and alpha.one("SELECT student_number FROM students WHERE id = :i", i=BOLA)
       != alpha.one("SELECT student_number FROM students WHERE id = :i", i=TUNDE))
 
-check("a class name is matched case-insensitively", do_import(teacher_a, csv_of("Case,Insensitive,Female,jss 1,,,")).status_code == 200
+check("a class name is matched case-insensitively", do_import(teacher_a, csv_of("Case,Q,Insensitive,Female,jss 1,G,g@example.test,08010000003")).status_code == 200
       and alpha.one("SELECT COUNT(*) FROM students WHERE first_name = 'Case'") == 1)
 
 before2 = alpha.one("SELECT COUNT(*) FROM students")
@@ -286,7 +289,7 @@ check("a file with no header row is refused outright, nothing written", "no head
 r = teacher_a.post(IMPORT, {}, files={"csv_file": ("bad.csv", b"first_name,last_name\r\nA,B\r\n")}, page=IMPORT)
 check("a file missing a required column is refused outright, nothing written",
       "missing" in teacher_a.said() and alpha.one("SELECT COUNT(*) FROM students") == before2)
-huge = csv_of(f"Row,Person,Female,JSS 1,,,,{'x' * (3 * 1024 * 1024)}")  # one row padded well past the 2 MB limit
+huge = csv_of(f"Row,Q,Person,Female,JSS 1,G,g@example.test,08010000004,{'x' * (3 * 1024 * 1024)}")  # one row padded well past the 2 MB limit
 r = teacher_a.post(IMPORT, {}, files={"csv_file": ("huge.csv", huge)}, page=IMPORT)
 check(f"a file over the size limit ({len(huge)} bytes) is refused, with the limit named, before a single row is read",
       "limit" in teacher_a.said() and alpha.one("SELECT COUNT(*) FROM students") == before2)
@@ -294,9 +297,9 @@ check(f"a file over the size limit ({len(huge)} bytes) is refused, with the limi
 # ================================================================ B. permissions and CSRF
 check("with no students.create permission, nobody is refused (403) the page, the template and the import",
       nobody.get(IMPORT).status_code == 403 and nobody.get(f"{IMPORT}/template.csv").status_code == 403
-      and nobody.post(IMPORT, {}, files={"csv_file": ("x.csv", csv_of("A,B,Female,JSS 1,,,"))}, page="/admin/password").status_code == 403)
+      and nobody.post(IMPORT, {}, files={"csv_file": ("x.csv", csv_of("A,Q,B,Female,JSS 1,G,g@example.test,08010000005"))}, page="/admin/password").status_code == 403)
 check("a POST without a CSRF token is refused (403), and nothing is written",
-      teacher_a.post(IMPORT, {}, files={"csv_file": ("x.csv", csv_of("Nope,Nope,Female,JSS 1,,,"))}, token=False).status_code == 403
+      teacher_a.post(IMPORT, {}, files={"csv_file": ("x.csv", csv_of("Nope,Q,Nope,Female,JSS 1,G,g@example.test,08010000006"))}, token=False).status_code == 403
       and alpha.one("SELECT COUNT(*) FROM students WHERE first_name = 'Nope'") == 0)
 visitor = Person(ALPHA, label="signed-out visitor")
 check("a signed-out visitor is sent to sign in from the page, and from the write route",
@@ -318,9 +321,9 @@ check("the import route is in the form suite's list of exercised routes and real
 posts_source = open(os.path.join(HERE, "write_paths_pg_posts.py"), encoding="utf-8").read()
 check("…and write_paths_pg_posts.py really submits it", '"{STUDENTS}/import"' in posts_source)
 check("every import endpoint has its permission in the endpoint map",
-      ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import") == "school.students.create"
-      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_template") == "school.students.create"
-      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_run") == "school.students.create")
+      ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import") == "admin.access"  # each step checks its own permission
+      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_template") == "admin.access"
+      and ADMIN_ENDPOINT_PERMISSIONS.get("admin_school_students_import_run") == "admin.access")  # the step checks its own permission
 
 dispose_engines()
 DROP_TEST_DATABASES()

@@ -618,6 +618,11 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
 .ui-account__ava { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; overflow: hidden; background: #fff; color: var(--brand-dark); font-weight: 700; }
 .ui-account__ava img { width: 100%; height: 100%; object-fit: cover; }
 .ui-account__name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-account__initials { display: none; font-weight: 700; letter-spacing: 0.04em; }
+@media (max-width: 760px) {
+    .ui-account__name { display: none; }
+    .ui-account__initials { display: inline; }
+}
 .ui-account__menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 70; min-width: 180px; padding: 6px; border: var(--border); border-radius: 12px; background: var(--surface-0); box-shadow: var(--shadow-pop); }
 .ui-account__menu[hidden] { display: none; }
 .ui-account__menu a { display: block; padding: 9px 12px; border-radius: 8px; color: var(--ink); font-size: var(--fs-sm); font-weight: 600; text-decoration: none; }

@@ -53,6 +53,13 @@
   <li><strong>Templates escape by default.</strong> Never use <code>|safe</code> on anything that came from a person.</li>
 </ul>
 
+<h2 id="announcing">Announcing a change to users</h2>
+<p>Put a note in {{ file('release_notes.json') }} at the project root; it is the only place a release note is written, and the file
+has comments that explain its rules. Each release has a version that must go up, and each change names an audience: staff,
+family or student. Staff changes may name one staff guide page in <code>help</code>; family and student changes must not, and
+the contract test {{ file('tests/current/test_release_notes_contract.py') }} fails if one does. Do not reword a release people may
+already have seen; add a new one instead.</p>
+
 <h2 id="pitfalls">Mistakes worth not repeating</h2>
 <div class="table-scroll"><table>
 <tr><th>Mistake</th><th>What happens</th><th>Do this instead</th></tr>

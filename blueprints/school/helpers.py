@@ -4,6 +4,8 @@ receipt-free assessment listing, and the class-promotion workflow.
 """
 
 import math
+import re
+from functools import wraps
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
@@ -17,10 +19,10 @@ from models import (
     SchoolAssignment, SchoolAssignmentAttempt, SchoolClass,
     SchoolClassProgression, SchoolNotification, SchoolProject, SchoolQuestion,
     SchoolSetting, SchoolStudentResult, SchoolSubject, Student,
-    StudentEnrolment, StudentEnrollmentHistory, db,
+    StudentEnrolment, StudentEnrollmentHistory, PresenceSession, db,
 )
 from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten
-from core.security import admin_scope_allows, audit_log, current_admin, is_school_admin
+from core.security import admin_access_error, admin_has_permission, admin_scope_allows, audit_log, current_admin, is_school_admin
 from core.storage import uploads_dir
 from blueprints.finance.helpers import _primary_school_id
 
@@ -93,13 +95,15 @@ def _assignment_students(assignment_id):
         select(AssignmentStudent,Student.first_name,Student.middle_name,
                Student.last_name,Student.admission_no)
         .join(Student,Student.id==AssignmentStudent.student_id)
-        .where(AssignmentStudent.assignment_id==assignment_id)
+        .where(AssignmentStudent.assignment_id==assignment_id,Student.active==1)
         .order_by(Student.last_name,Student.first_name))]
 
 def _notify_school_work(student_ids, category, title, message, action_url, created_by):
     """Notify each student and every linked parent about new or graded work."""
     now=datetime.now(timezone.utc).isoformat()
-    ids=sorted(set(student_ids))
+    # Archived students are no longer current, so they neither get the notice nor their parents.
+    ids=sorted({row[0] for row in tuples(select(Student.id)
+        .where(Student.id.in_(set(student_ids)),Student.active==1))})
     if not ids:
         return
     names={sid:' '.join(x for x in (first,middle,last) if x)
@@ -656,3 +660,67 @@ def _promotion_audit(action, entity_id, details):
         )
     except Exception:
         pass
+
+
+def archive_students(student_ids, reason, admin_id):
+    """Take these students out of every current list, count and sign-in, keeping their record.
+
+    The caller decides which students it may touch and commits. Already archived students are left as
+    they are, so the first archive's date, reason and administrator are never overwritten. Returns the
+    ids that were archived by this call.
+    """
+    ids = list(student_ids)
+    if not ids:
+        return []
+    to_archive = [s.id for s in db.session.scalars(select(Student).where(
+        Student.id.in_(ids), Student.archived_at.is_(None))).all()]
+    if not to_archive:
+        return []
+    now = datetime.now(timezone.utc).isoformat()
+    db.session.execute(sa_update(Student).where(Student.id.in_(to_archive)).values(
+        active=0, archived_at=now, archived_by_admin_id=admin_id, archive_reason=reason))
+    # Ending their open sessions makes the archive take effect on the presence board straight away.
+    db.session.execute(sa_update(PresenceSession).where(
+        PresenceSession.account_type == 'student', PresenceSession.account_id.in_(to_archive)).values(active=0))
+    return to_archive
+
+
+_SESSION_NAME = re.compile(r'^\s*(\d{4})/(\d{4})\s*$')
+
+
+def is_earlier_session_name(name, current_name):
+    """True when ``name`` is a 'YYYY/YYYY' session that starts before the current session's start year.
+
+    Anything else (another format, the current year, a later year, or no current session to compare
+    with) is False, so an import can only ever create a session that is genuinely in the past.
+    """
+    found = _SESSION_NAME.match(name or '')
+    current = _SESSION_NAME.match(current_name or '')
+    if not found or not current:
+        return False
+    start, end = int(found.group(1)), int(found.group(2))
+    return end == start + 1 and start < int(current.group(1))
+
+
+# The permission a school can give any role to run the three bulk imports (students, enrolment history and
+# past results). It stands in for each step's own permission, so a staff member needs one or the other.
+BULK_IMPORT_PERMISSION = 'school.bulk_import'
+
+
+def import_allowed(specific_permission):
+    """True when the current administrator holds this step's own permission, or the bulk-import permission."""
+    me = current_admin()
+    return bool(me and (admin_has_permission(me['id'], specific_permission)
+                        or admin_has_permission(me['id'], BULK_IMPORT_PERMISSION)))
+
+
+def import_permission_required(specific_permission):
+    """Route guard for an import step: the step's own permission or the bulk-import permission."""
+    def decorate(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not import_allowed(specific_permission):
+                return admin_access_error(specific_permission)
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorate

@@ -16,14 +16,17 @@ record, enrols them in the class and session you choose, and generates their adm
 login in one step. The admission number is always generated from your school's own numbering rules —
 nobody types one in by hand, so it can never clash with another student's.</p>
 
-<h2 id="bulk">Bringing in existing students at once</h2>
-<p>If your school already has students in a spreadsheet, use
-<a href="{{ url_for('admin_school_students_import') }}">Bulk import (CSV)</a> from the Students page
-instead of typing each one in. Download the template, fill in a row per student (name, gender, class,
-and optionally a guardian's name, email and phone), and upload it. Each row that is valid becomes
-exactly what registering one student by hand would create; a row that is not — a missing name, an
-unrecognised gender, a class that does not exist, a bad email — is skipped and reported by line
-number, and every other row in the file is still imported.</p>
+<h2 id="bulk">Bringing in new students at once</h2>
+<p>Use <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> from the Students page to
+bring students in from a spreadsheet. The page has three steps, shown one at a time, and they are done in
+order: <strong>students</strong>, then their <strong>enrolment history</strong>, then their
+<strong>past results</strong>. Each step has its own template to download and its own rules.</p>
+<p>Step 1 creates each student exactly as registering one by hand does. <strong>Every column is required</strong>,
+and every row must fill them all in: <code>first_name</code>, <code>middle_name</code>, <code>last_name</code>,
+<code>gender</code>, <code>class</code>, <code>guardian_name</code>, <code>guardian_email</code> and
+<code>guardian_phone</code>. The guardian's details drive the alerts parents receive and their sign-in, so a
+row without them is skipped. A row that is not valid is skipped and reported by its line number; every other
+row is still imported. Admission numbers are generated, never typed.</p>
 <div class="guide-warn">The generated usernames and one-time passwords for an import are shown once,
 on the results page, and can be downloaded from there as a CSV. They are never stored anywhere in
 readable form afterwards, so copy or download them before you navigate away.</div>
@@ -33,21 +36,50 @@ readable form afterwards, so copy or download them before you navigate away.</di
 Entrance workspace: once a candidate has sat their entrance exam, an admissions officer can admit them
 straight into a real student record, the same way as the other two paths above.</p>
 
-<h2 id="history-import">Moving from another system? Bring their history too</h2>
-<p>A school switching from another system, or from paper, usually already knows each student's
-past classes and sessions — that is not something the bulk student import above brings in, since
-it only ever creates a student's <em>current</em> record. From the Students page, once a student
-already exists here (imported above, or registered by hand),
-<a href="{{ url_for('admin_school_students_import_history') }}">bulk-import enrolment history</a>
-takes a second file — one row per (student, session) — matched to your students by admission
-number, and backfills the rest. A session in that file may be one your school has since archived;
-bringing in exactly that kind of old record is the point, unlike the single "Add enrolment
-history" entry on a student's own page, whose dropdown only offers the school's currently active
-sessions since it is meant for everyday correction, not migration.</p>
+<h2 id="history-import">Enrolment history: each student's past years</h2>
+<p>Step 2 brings in a student's past classes, one row per student per year, matched by admission number.
+Required columns: <code>admission_no</code>, <code>level</code>, <code>session</code>. Optional:
+<code>enrolled_at</code>, <code>completed_at</code>, <code>outcome</code>, <code>notes</code>.</p>
+<ul>
+  <li><strong>Dates must be written YYYY-MM-DD</strong>, for example 2023-09-11, in both
+  <code>enrolled_at</code> and <code>completed_at</code>. Leave <code>completed_at</code> empty while the year is open.</li>
+  <li><code>outcome</code> is <code>promoted</code>, <code>repeated</code>, <code>graduated</code> or
+  <code>withdrawn</code>. A <strong>graduated</strong> row archives the student once that year is recorded.</li>
+  <li>A session is matched by its name, such as 2023/2024. It may be a session the school has since archived.</li>
+  <li>If the session does not exist and it is an <em>earlier</em> year than the current session, the import creates
+  it. The new session is inactive and is never made the current session, and the import records who created it
+  and why. An import never changes which session is current.</li>
+  <li>A session that is later than the current one, or that is not written as 2023/2024, is refused. Create those
+  by hand under Academic sessions.</li>
+</ul>
+<p>Creating an earlier session, and archiving a graduate, need the permissions to import students and to
+deactivate students. The bulk-import permission covers both (see <em>Roles, permissions and scope</em>).</p>
 
 <h2 id="account">A student's account afterwards</h2>
 <p>From a student's own page you can edit their details, deactivate them (which also switches their
 login off), reset their password to a new one-time password, or switch their login on or off without
 touching anything else about their record. Enrolment history — previous schools, earlier levels — is
 kept separately and can be corrected with a reason if it was entered wrong.</p>
+
+<h2 id="archive">Archiving a student who has left</h2>
+<p>When a student leaves, <strong>archive</strong> them rather than deleting them. Archiving keeps their whole
+record and takes them out of everything current:</p>
+<ul>
+  <li>they leave the class register and the student count;</li>
+  <li>their sign-in stops working straight away, including a session that is already open;</li>
+  <li>their results, report cards and fee history stay on file.</li>
+</ul>
+<p>To archive one student, open their page and use <em>Archive student</em>. To archive several, tick them in the
+class register and use <em>Archive selected</em>. You can give a reason, such as "Left the school" or "Transferred
+out". Archiving needs the permission to deactivate students, and it applies only to students in your own classes.</p>
+<p>A graduate is archived automatically when a history import records their graduating year (see step 2 above).</p>
+<p>Archived students are kept in <a href="{{ url_for('admin_school_students_archived') }}">Archived students</a>,
+which only a School Admin can open. Each archived student has a record you can read: their class placements, their
+school journey, and their results by term. A School Admin can <em>restore</em> someone from that list, which puts
+them back in their class register and turns their sign-in back on.</p>
+<div class="guide-tip">Parents keep access to an archived child. The child's record, results and fee account stay on
+the parent's portal, and only the child's own sign-in stops.</div>
+<div class="guide-tip">Deactivating a student hides them without marking them as having left. The deactivate switch
+does not work on an archived student: restore them first.</div>
+
 {% endblock %}

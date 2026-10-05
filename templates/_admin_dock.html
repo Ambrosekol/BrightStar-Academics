@@ -1,0 +1,182 @@
+{% if dock %}
+<style>
+/* The administrator dock: bottom right of every admin page, one card for setup and one for what's new.
+   Each card can be minimised to its title bar or closed. Colours follow the school's main colour. */
+.dock{position:fixed;right:24px;bottom:24px;z-index:900;display:flex;flex-direction:column;align-items:flex-end;gap:12px;width:min(372px,calc(100vw - 32px));pointer-events:none}
+.dock[hidden],.dock-card[hidden],.dock-release[hidden]{display:none !important}
+.dock-card{pointer-events:auto;width:100%;overflow:hidden;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(15,23,42,.16)}
+.dock-card__head{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;background:var(--brand,#0d2b52);color:#fff}
+.dock-card__title{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.25}
+.dock-card__sub{display:block;margin-top:2px;font-size:12px;font-weight:500;opacity:.82}
+.dock-btn{display:grid;place-items:center;flex:none;width:28px;height:28px;border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.dock-btn:hover{background:rgba(255,255,255,.26)}
+.dock-card__body{max-height:min(54vh,460px);overflow:auto;padding:14px 16px 16px}
+.dock-card.is-min .dock-card__body{display:none}
+.dock-progress{height:6px;margin:0 0 12px;border-radius:999px;background:#e6ecf3;overflow:hidden}
+.dock-progress>span{display:block;height:100%;background:var(--blue,#1674b9);border-radius:999px}
+.dock-steps{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.dock-step{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:10px;border:1px solid #eef2f6;border-radius:9px}
+.dock-step.is-done{background:#f8fbf9;border-color:#d7eedd}
+.dock-step__mark{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#e2e8f0;color:#334155;font-size:12px;font-weight:700}
+.dock-step.is-done .dock-step__mark{background:#166534;color:#fff}
+.dock-step strong{display:block;font-size:14px;color:#0f172a}
+.dock-step p{margin:3px 0 6px;font-size:12.5px;line-height:1.45;color:#64748b}
+.dock-step a{font-size:13px;font-weight:600;color:var(--blue,#1674b9);text-decoration:none}
+.dock-step a:hover{text-decoration:underline}
+.dock-release{margin:0 0 14px}
+.dock-release:last-child{margin-bottom:0}
+.dock-release h3{margin:0 0 6px;font-size:14px;color:#0f172a}
+.dock-release__date{font-size:12px;font-weight:500;color:#94a3b8}
+.dock-release ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.dock-release li{padding:9px 10px;border-radius:9px;background:#f8fafc;font-size:13px;line-height:1.5;color:#334155}
+.dock-release li a{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:600;color:var(--blue,#1674b9);text-decoration:none}
+.dock-release li a:hover{text-decoration:underline}
+@media (max-width:640px){.dock{right:12px;bottom:12px}}
+</style>
+<div class="dock" id="adminDock" role="region" aria-label="Setup and what's new" hidden
+     data-csrf="{{ csrf_token() }}"
+     data-account="{{ dock.account }}"
+     data-app-version="{{ dock.app_version }}"
+     data-setup-url="{{ url_for('admin_school_onboarding_card') }}"
+     data-dismiss-url="{{ url_for('admin_school_onboarding_dismiss') }}">
+
+  {% if dock.show_setup %}
+  <section class="dock-card" data-dock="setup" hidden>
+    <header class="dock-card__head">
+      <div class="dock-card__title">Set up your school<span class="dock-card__sub" data-setup-count>Checking your progress…</span></div>
+      <button class="dock-btn" type="button" data-dock-min aria-expanded="true" aria-label="Minimise">–</button>
+      <button class="dock-btn" type="button" data-dock-close aria-label="Close setup checklist">×</button>
+    </header>
+    <div class="dock-card__body" data-setup-body></div>
+  </section>
+  {% endif %}
+
+  {% if dock.releases %}
+  <section class="dock-card" data-dock="updates" hidden>
+    <header class="dock-card__head">
+      <div class="dock-card__title">What's new<span class="dock-card__sub" data-updates-count></span></div>
+      <button class="dock-btn" type="button" data-dock-min aria-expanded="true" aria-label="Minimise">–</button>
+      <button class="dock-btn" type="button" data-dock-close aria-label="Close what's new">×</button>
+    </header>
+    <div class="dock-card__body">
+      {% for release in dock.releases %}
+      <div class="dock-release" data-release data-version="{{ release.version }}" hidden>
+        <h3>{{ release.title }} <span class="dock-release__date">{{ release.date }}</span></h3>
+        <ul>
+          {% for item in release.changes %}
+          <li>{{ item.text }}{% if item.help %}<br><a href="/admin/guide/{{ item.help }}">Learn how this works →</a>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var dock=document.getElementById('adminDock');
+  if(!dock) return;
+  // Everything below runs in the browser. The server is only asked for the setup checklist, and only when
+  // the copy saved in this browser is older than the refresh interval.
+  var SETUP_REFRESH_MINUTES=15;
+  var account=dock.getAttribute('data-account');
+  var appVersion=dock.getAttribute('data-app-version');
+  var token=dock.getAttribute('data-csrf');
+
+  function read(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+  function write(key,value){ try{ localStorage.setItem(key,value); }catch(e){} }
+  function parts(version){ return String(version||'').split('.').map(function(n){ return parseInt(n,10)||0; }); }
+  function newer(a,b){ // true when version a is later than version b
+    var x=parts(a), y=parts(b), n=Math.max(x.length,y.length);
+    for(var i=0;i<n;i++){ var p=x[i]||0, q=y[i]||0; if(p!==q) return p>q; }
+    return false;
+  }
+  function minimiseFor(card){
+    var name=card.getAttribute('data-dock');
+    var button=card.querySelector('[data-dock-min]');
+    function set(on){
+      card.classList.toggle('is-min',on);
+      button.setAttribute('aria-expanded',String(!on));
+      button.setAttribute('aria-label',on?'Expand':'Minimise');
+      button.textContent=on?'+':'–';
+      write('bs-dock:'+name,on?'1':'0');
+    }
+    set(read('bs-dock:'+name)==='1');
+    button.addEventListener('click',function(){ set(!card.classList.contains('is-min')); });
+  }
+  function postForm(url){
+    var body=new FormData();
+    body.append('_csrf_token',token);
+    return fetch(url,{method:'POST',body:body,credentials:'same-origin',headers:{'X-Requested-With':'fetch'}});
+  }
+
+  // What's new: the newest release is shown to someone who has never dismissed one; after that, only the
+  // releases newer than the last one dismissed in this browser.
+  var updates=dock.querySelector('[data-dock="updates"]');
+  if(updates){
+    var seenKey='bs-release-seen:staff:'+account;
+    var seen=read(seenKey);
+    var releases=Array.prototype.slice.call(updates.querySelectorAll('[data-release]'));
+    var shown=0;
+    releases.forEach(function(el,index){
+      var version=el.getAttribute('data-version');
+      var show = seen===null ? index===0 : newer(version,seen);
+      el.hidden=!show;
+      if(show) shown++;
+    });
+    if(shown){
+      updates.querySelector('[data-updates-count]').textContent=shown+' update'+(shown===1?'':'s')+' since you last looked';
+      updates.hidden=false;
+      minimiseFor(updates);
+      updates.querySelector('[data-dock-close]').addEventListener('click',function(){
+        write(seenKey,appVersion);
+        updates.remove();
+        if(!dock.querySelector('.dock-card')) dock.remove();
+      });
+    } else {
+      updates.remove();
+    }
+  }
+
+  // Setup checklist: rendered from the browser's saved copy while it is fresh; otherwise fetched once.
+  var setup=dock.querySelector('[data-dock="setup"]');
+  if(setup){
+    var cacheKey='bs-setup:'+account;
+    var body=setup.querySelector('[data-setup-body]');
+    function show(html){
+      body.innerHTML=html;
+      var flag=body.querySelector('[data-setup-show]');
+      if(!flag || flag.getAttribute('data-setup-show')!=='1'){ setup.remove(); if(!dock.querySelector('.dock-card')) dock.remove(); return; }
+      setup.querySelector('[data-setup-count]').textContent=(body.querySelectorAll('.dock-step.is-done').length)+' of '+(body.querySelectorAll('.dock-step').length)+' steps done';
+      setup.hidden=false;
+      dock.hidden=false;
+      minimiseFor(setup);
+    }
+    function remember(html){ write(cacheKey,JSON.stringify({at:Date.now(),html:html})); }
+    var cached=null;
+    try{ cached=JSON.parse(read(cacheKey)||'null'); }catch(e){ cached=null; }
+    var fresh = cached && (Date.now()-cached.at) < SETUP_REFRESH_MINUTES*60*1000;
+    if(fresh){
+      show(cached.html);
+    } else {
+      fetch(dock.getAttribute('data-setup-url'),{credentials:'same-origin',headers:{'X-Requested-With':'fetch'}})
+        .then(function(response){ if(!response.ok) throw new Error('HTTP '+response.status); return response.text(); })
+        .then(function(html){ remember(html); show(html); })
+        .catch(function(){ setup.remove(); if(!dock.querySelector('.dock-card')) dock.remove(); });
+    }
+    setup.querySelector('[data-dock-close]').addEventListener('click',function(){
+      postForm(dock.getAttribute('data-dismiss-url'))
+        .then(function(response){
+          if(!response.ok) throw new Error('HTTP '+response.status);
+          remember('');
+          setup.remove();
+          if(!dock.querySelector('.dock-card')) dock.remove();
+        })
+        .catch(function(){ setup.querySelector('[data-dock-close]').setAttribute('title','Could not close this card. Try again.'); });
+    });
+  }
+  if(dock.querySelector('.dock-card')) dock.hidden=false;
+})();
+</script>
+{% endif %}

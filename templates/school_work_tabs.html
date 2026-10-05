@@ -1,0 +1,8 @@
+<nav class="students-seg" aria-label="Academic work">
+  <a class="students-seg__item{{ ' is-active' if work_tab=='results' }}" href="{{ url_for('admin_school_results') }}" {% if work_tab=='results' %}aria-current="page"{% endif %}>Results &amp; records</a>
+  <a class="students-seg__item{{ ' is-active' if work_tab=='assignments' }}" href="{{ url_for('admin_school_assignments') }}" {% if work_tab=='assignments' %}aria-current="page"{% endif %}>Assignments</a>
+  <a class="students-seg__item{{ ' is-active' if work_tab=='projects' }}" href="{{ url_for('admin_school_projects') }}" {% if work_tab=='projects' %}aria-current="page"{% endif %}>Projects</a>
+  <a class="students-seg__item{{ ' is-active' if work_tab=='tests' }}" href="{{ url_for('admin_school_tests') }}" {% if work_tab=='tests' %}aria-current="page"{% endif %}>Tests</a>
+  <a class="students-seg__item{{ ' is-active' if work_tab=='practice' }}" href="{{ url_for('admin_school_practice_tests') }}" {% if work_tab=='practice' %}aria-current="page"{% endif %}>Practice tests</a>
+  <a class="students-seg__item{{ ' is-active' if work_tab=='examinations' }}" href="{{ url_for('admin_school_examinations') }}" {% if work_tab=='examinations' %}aria-current="page"{% endif %}>Examinations</a>
+</nav>

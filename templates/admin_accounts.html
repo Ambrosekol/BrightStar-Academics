@@ -1,19 +1,162 @@
 {% extends 'admin_base.html' %}
 {% block title %}Administrators — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrators</h1><p class="hero-copy">Manage staff identities, multiple job roles, contact details and access boundaries from one controlled directory.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_account_new') }}">+ Add staff administrator</a></div></div>
-<div class="card table-card"><div class="table-toolbar"><div><strong>{{ total_count }} administrator{{ 's' if total_count != 1 else '' }}</strong><span class="muted">Role capabilities are cumulative; boundaries narrow what each person can reach.</span></div><a class="btn btn-light btn-small" href="{{ url_for('admin_messages') }}">Messages{% if admin_unread_messages %} ({{ admin_unread_messages }}){% endif %}</a></div><div class="table-scroll"><table><thead><tr><th>Staff member</th><th>Job roles</th><th>Contact</th><th>Status</th><th>Access boundary</th><th>Last sign-in</th><th></th></tr></thead><tbody>
-{% for a in admins %}<tr><td><div class="person-cell">{% if a.photo_path %}<img class="table-avatar-image" src="{{ url_for('static',filename=a.photo_path) }}" alt="">{% else %}<span class="table-avatar">{{ a.display_name[:1]|upper }}</span>{% endif %}<div><strong>{{ a.display_name }}</strong><small>{{ a.username }}</small></div></div></td><td><div class="role-chip-list">{% for role in (a.role_names or a.admin_type_name).split('|') %}<span class="role-chip">{{ role }}</span>{% endfor %}</div></td><td><small>{{ a.email or 'No email' }}</small><small>{{ a.phone or a.whatsapp or 'No phone' }}</small></td><td>{% if a.active %}<span class="status submitted">Active</span>{% else %}<span class="status expired">Suspended</span>{% endif %}</td><td>{% if a.admin_type_name == 'School Admin' %}<span class="status submitted">Unrestricted</span>{% elif a.scope_count %}<span class="muted">{{ a.scope_count }} boundary{{ 'ies' if a.scope_count != 1 else '' }}</span>{% else %}<span class="muted">Default</span>{% endif %}</td><td>{{ (a.last_login_at or 'Never').replace('T',' ')[:19] }}</td><td class="row-actions"><a class="btn btn-light btn-small" href="{{ url_for('admin_messages', **{'with':a.id}) }}">Message</a><a class="btn btn-light btn-small" href="{{ url_for('admin_account_edit',aid=a.id) }}">Manage</a>{% if a.active and a.username != current_admin.username %}<form method="post" action="{{ url_for('admin_account_credentials_reset',aid=a.id) }}" data-confirm="Generate a new temporary password for this administrator? Their current password will stop working."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-light btn-small" type="submit">Reset login</button></form>{% endif %}{% if a.username != current_admin.username %}<form method="post" action="{{ url_for('admin_account_toggle',aid=a.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn {% if a.active %}btn-danger{% else %}btn-success{% endif %} btn-small" type="submit">{{ 'Suspend' if a.active else 'Activate' }}</button></form>{% endif %}</td></tr>{% endfor %}
-</tbody></table></div>
-{% if total_pages > 1 %}
-<div class="table-toolbar">
-    <span class="muted">Page {{ page }} of {{ total_pages }} ({{ per_page }} per page)</span>
-    <div class="row-actions">
-        {% if page > 1 %}<a class="btn btn-light btn-small" href="{{ url_for('admin_accounts', page=page-1) }}">← Previous</a>{% endif %}
-        {% if page < total_pages %}<a class="btn btn-light btn-small" href="{{ url_for('admin_accounts', page=page+1) }}">Next →</a>{% endif %}
+<style>
+/* Administrators directory: a card per person, a status switch and search above it. Colours follow the
+   school's accent (--blue) so the page matches the rest of the portal. */
+.adm-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.adm-head h1{margin:0}
+.adm-stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+.adm-stat{display:flex;align-items:baseline;gap:8px;padding:9px 14px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#fff}
+.adm-stat strong{font-size:20px;line-height:1}
+.adm-stat span{font-size:13px;color:#64748b}
+.adm-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.adm-tabs{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#f1f5f9}
+.adm-tab{padding:7px 14px;border-radius:7px;color:#334155;font-size:14px;font-weight:600;text-decoration:none}
+.adm-tab:hover{background:#fff}
+.adm-tab.is-active{background:#fff;color:var(--blue,#1674b9);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.adm-search{display:flex;gap:8px;flex:1 1 300px;max-width:440px}
+.adm-search input{flex:1;min-width:0}
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.adm-card{display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#fff}
+.adm-card.is-suspended{background:#f8fafc}
+.adm-card__top{display:flex;gap:12px;align-items:center;min-width:0}
+.adm-avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;background:var(--blue,#1674b9);color:#fff;font-weight:700;font-size:16px}
+.adm-avatar img{width:100%;height:100%;object-fit:cover}
+.adm-card__name{margin:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-card__user{color:#64748b;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.adm-pill--on{background:#e7f6ec;color:#166534}
+.adm-pill--off{background:#fde8e8;color:#991b1b}
+.adm-pill--you{background:#eef2ff;color:#3730a3}
+.adm-roles{display:flex;flex-wrap:wrap;gap:6px}
+.adm-role{padding:3px 9px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:12px;font-weight:600}
+.adm-access{padding:8px 11px;border-radius:8px;background:#f8fafc;color:#334155;font-size:13px}
+.adm-access strong{color:#0f172a}
+.adm-meta{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0;font-size:13px}
+.adm-meta dt{color:#94a3b8}
+.adm-meta dd{margin:0;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-foot{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:auto;padding-top:12px;border-top:1px solid #eef2f6}
+.adm-menu{position:relative}
+.adm-menu>summary{list-style:none;display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid var(--line,#dfe6ef);border-radius:8px;background:#fff;cursor:pointer;font-size:18px;line-height:1;color:#334155}
+.adm-menu>summary::-webkit-details-marker{display:none}
+.adm-menu[open]>summary{background:#f1f5f9}
+.adm-menu__panel{position:absolute;right:0;bottom:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;min-width:200px;padding:6px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(15,23,42,.14)}
+.adm-menu__panel form{margin:0}
+.adm-menu__item{display:block;width:100%;padding:8px 10px;border:0;border-radius:7px;background:none;color:#1e293b;font:inherit;font-size:14px;text-align:left;text-decoration:none;cursor:pointer}
+.adm-menu__item:hover{background:#f1f5f9}
+.adm-menu__item.is-danger{color:#b91c1c}
+.adm-empty{padding:28px;border:1px dashed #cbd5e1;border-radius:12px;text-align:center;color:#64748b}
+.adm-how{margin:0 0 16px;padding:12px 14px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#f8fafc}
+.adm-how summary{cursor:pointer;font-weight:600;color:#0f172a}
+.adm-how p{margin:8px 0 0;color:#475569;font-size:14px;line-height:1.5}
+.adm-pager{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:18px}
+@media (max-width:640px){.adm-grid{grid-template-columns:1fr}.adm-search{max-width:none}}
+</style>
+
+<div class="adm-head">
+  <div>
+    <div class="eyebrow">PEOPLE &amp; ACCESS</div>
+    <h1>Administrators</h1>
+    <p class="hero-copy">Everyone who can sign in to the school's administration, what they can do, and whether their access is on.</p>
+  </div>
+  <div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_account_new') }}">+ Add administrator</a></div>
+</div>
+
+<div class="adm-stats" aria-label="Summary">
+  <div class="adm-stat"><strong>{{ everyone_count }}</strong><span>in total</span></div>
+  <div class="adm-stat"><strong>{{ active_count }}</strong><span>active</span></div>
+  <div class="adm-stat"><strong>{{ suspended_count }}</strong><span>suspended</span></div>
+</div>
+
+<details class="adm-how">
+  <summary>How access works</summary>
+  <p>A person can hold several roles. Their roles add up, so they can do everything any one of them allows. An access area narrows that to specific classes, subjects, sessions or question banks. A school administrator has full access. Suspending someone stops them signing in straight away; they keep their record and can be activated again at any time.</p>
+</details>
+
+<div class="adm-tools">
+  <nav class="adm-tabs" aria-label="Filter by status">
+    <a class="adm-tab{{ ' is-active' if status=='all' }}" href="{{ url_for('admin_accounts', q=q or None) }}" {% if status=='all' %}aria-current="page"{% endif %}>Everyone ({{ everyone_count }})</a>
+    <a class="adm-tab{{ ' is-active' if status=='active' }}" href="{{ url_for('admin_accounts', status='active', q=q or None) }}" {% if status=='active' %}aria-current="page"{% endif %}>Active ({{ active_count }})</a>
+    <a class="adm-tab{{ ' is-active' if status=='suspended' }}" href="{{ url_for('admin_accounts', status='suspended', q=q or None) }}" {% if status=='suspended' %}aria-current="page"{% endif %}>Suspended ({{ suspended_count }})</a>
+  </nav>
+  <form class="adm-search" method="get" action="{{ url_for('admin_accounts') }}" role="search">
+    {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Search name, username or email" aria-label="Search administrators">
+    <button class="btn btn-light" type="submit">Search</button>
+  </form>
+</div>
+
+{% if admins %}
+<div class="adm-grid">
+  {% for a in admins %}
+  {% set is_me = a.username == current_admin.username %}
+  <article class="adm-card{{ '' if a.active else ' is-suspended' }}">
+    <div class="adm-card__top">
+      <span class="adm-avatar" aria-hidden="true">{% if a.photo_path %}<img src="{{ url_for('static', filename=a.photo_path) }}" alt="">{% else %}{{ a.display_name[:1]|upper }}{% endif %}</span>
+      <div style="min-width:0;flex:1">
+        <h2 class="adm-card__name">{{ a.display_name }}{% if is_me %} <span class="adm-pill adm-pill--you">You</span>{% endif %}</h2>
+        <div class="adm-card__user">{{ a.username }}</div>
+      </div>
+      {% if a.active %}<span class="adm-pill adm-pill--on">Active</span>{% else %}<span class="adm-pill adm-pill--off">Suspended</span>{% endif %}
     </div>
+
+    <div class="adm-roles" aria-label="Roles">
+      {% for role in (a.role_names or a.admin_type_name).split('|') %}<span class="adm-role">{{ role }}</span>{% endfor %}
+    </div>
+
+    <div class="adm-access">
+      {% if a.is_system %}<strong>Full access</strong> to the whole school
+      {% elif a.scope_count %}<strong>Limited</strong> to {{ a.scope_count }} access area{{ '' if a.scope_count == 1 else 's' }}
+      {% else %}<strong>Standard access</strong> from their roles{% endif %}
+    </div>
+
+    <dl class="adm-meta">
+      <dt>Email</dt><dd>{{ a.email or 'Not recorded' }}</dd>
+      <dt>Phone</dt><dd>{{ a.phone or a.whatsapp or 'Not recorded' }}</dd>
+      <dt>Last sign-in</dt><dd>{{ (a.last_login_at or 'Never').replace('T',' ')[:16] }}</dd>
+    </dl>
+
+    <div class="adm-foot">
+      <a class="btn btn-primary btn-small" href="{{ url_for('admin_account_edit', aid=a.id) }}">Manage</a>
+      <details class="adm-menu">
+        <summary aria-label="More actions for {{ a.display_name }}">⋯</summary>
+        <div class="adm-menu__panel">
+          <a class="adm-menu__item" href="{{ url_for('admin_messages', **{'with': a.id}) }}">Send a message</a>
+          {% if not is_me %}
+            {% if a.active %}
+            <form method="post" action="{{ url_for('admin_account_credentials_reset', aid=a.id) }}" data-confirm="Generate a new temporary password for {{ a.display_name }}? Their current password will stop working.">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button class="adm-menu__item" type="submit">Reset login</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('admin_account_toggle', aid=a.id) }}" data-confirm="{{ 'Suspend ' ~ a.display_name ~ '? They will be signed out and cannot sign in until reactivated.' if a.active else 'Reactivate ' ~ a.display_name ~ '?' }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button class="adm-menu__item{{ ' is-danger' if a.active }}" type="submit">{{ 'Suspend access' if a.active else 'Reactivate access' }}</button>
+            </form>
+          {% else %}
+            <span class="adm-menu__item" style="color:#64748b">You cannot suspend or reset your own access.</span>
+          {% endif %}
+        </div>
+      </details>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="adm-empty">
+  <strong>{% if q %}No administrators match “{{ q }}”.{% elif status=='suspended' %}No administrators are suspended.{% elif status=='active' %}No administrators are active.{% else %}No administrators yet.{% endif %}</strong>
+  <p style="margin:8px 0 0">{% if q or status != 'all' %}<a href="{{ url_for('admin_accounts') }}">Show everyone</a>{% else %}<a href="{{ url_for('admin_account_new') }}">Add the first administrator</a>{% endif %}</p>
 </div>
 {% endif %}
+
+{% if total_pages > 1 %}
+<div class="adm-pager">
+  <span class="muted">Page {{ page }} of {{ total_pages }} · {{ total_count }} shown</span>
+  <div class="row-actions">
+    {% if page > 1 %}<a class="btn btn-light btn-small" href="{{ url_for('admin_accounts', page=page-1, q=q or None, status=status if status != 'all' else None) }}">← Previous</a>{% endif %}
+    {% if page < total_pages %}<a class="btn btn-light btn-small" href="{{ url_for('admin_accounts', page=page+1, q=q or None, status=status if status != 'all' else None) }}">Next →</a>{% endif %}
+  </div>
 </div>
-<div class="info-banner"><strong>Professional access model</strong><span>One person can have several job roles. The selected roles add capabilities together, while access boundaries restrict those capabilities to the permitted class, subject, session or question bank.</span></div>
+{% endif %}
 {% endblock %}

@@ -604,10 +604,10 @@ boss2.post("/login", data={"username": "boss", "password": "boss-password-1",
 boss2.get("/admin/workspace/school", base_url=u_page)
 list1 = boss2.get("/admin/administration/admins", base_url=u_page).get_data(as_text=True)
 check("61 administrators (60 seeded plus Boss) is paged, not dumped onto one page",
-      "Page 1 of 2" in list1 and list1.count("<tr>") - 1 == 50, list1.count("<tr>"))
+      "Page 1 of 2" in list1 and list1.count('<article class="adm-card') == 50, list1.count('<article class="adm-card'))
 list2 = boss2.get("/admin/administration/admins?page=2", base_url=u_page).get_data(as_text=True)
 check("…and the second page holds exactly the rest",
-      "Page 2 of 2" in list2 and list2.count("<tr>") - 1 == 11, list2.count("<tr>"))
+      "Page 2 of 2" in list2 and list2.count('<article class="adm-card') == 11, list2.count('<article class="adm-card'))
 check("a page number past the end is clamped rather than shown empty or erroring",
       boss2.get("/admin/administration/admins?page=99", base_url=u_page).status_code == 200)
 

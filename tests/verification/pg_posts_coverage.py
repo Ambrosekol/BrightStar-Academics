@@ -28,6 +28,12 @@ EXEMPT = {
     # behind it, same as the two rules above - exercised for real, both accepted and refused,
     # webhook-confirmed and webhook-failed, in tests/verification/write_paths_paystack.py.
     "/admin/finance/payments/<int:payment_id>/refund": "see write_paths_paystack.py",
+    # Archiving and restoring students: exercised for real, valid and hostile (single and bulk,
+    # class scope, CSRF, school-admin only for restore) in tests/verification/write_paths_student_archive.py.
+    "/admin/school/students/archive": "see write_paths_student_archive.py",
+    # Past results imported in bulk: exercised for real, valid and hostile, in tests/verification/write_paths_results_import.py.
+    "/admin/school/students/import-results": "see write_paths_results_import.py",
+    "/admin/school/students/archived/restore": "see write_paths_student_archive.py",
     # The platform Settings / Terminal-actions area (control_plane/settings_console.py): system
     # operations, not an ordinary admin CSRF form this file's generic Actor/junk-submission shape
     # fits. Several are one-way or state-changing in ways this fuzzer cannot safely cover: a new

@@ -1,33 +1,243 @@
 {% extends 'admin_base.html' %}
-{% block title %}Bulk import students — {{ school_brand.name }}{% endblock %}
+{% block title %}Bulk import — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div>
+<style>
+/* Bulk import: three steps shown one at a time, with a stepper above them. Without JavaScript every step
+   stays visible, so the page still works. Colours follow the school's accent (--blue). */
+.imp-head{margin-bottom:16px}
+.imp-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.imp-tab{display:flex;gap:12px;align-items:center;min-width:0;padding:12px 14px;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#fff;color:#0f172a;text-decoration:none}
+.imp-tab:hover{border-color:var(--blue,#1674b9)}
+.imp-tab.is-current{border-color:var(--blue,#1674b9);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue,#1674b9) 16%,transparent)}
+.imp-tab.is-locked{color:#64748b}
+.imp-tab__num{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:#e2e8f0;color:#334155;font-weight:700;font-size:14px}
+.imp-tab.is-current .imp-tab__num{background:var(--blue,#1674b9);color:#fff}
+.imp-tab__title{font-weight:700;font-size:14px;line-height:1.25}
+.imp-tab__state{display:block;font-size:12px;font-weight:500;color:#64748b}
+.imp-panel{display:flex;flex-direction:column;gap:14px;max-width:820px}
+.imp-panel[hidden]{display:none}
+.imp-panel h2{margin:0;font-size:20px}
+.imp-lede{margin:0;color:#475569;font-size:15px;line-height:1.5}
+.imp-label{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.imp-chips{display:flex;flex-wrap:wrap;gap:6px}
+.imp-chip{padding:4px 10px;border-radius:999px;background:var(--blue,#1674b9);color:#fff;font-size:13px;font-weight:600}
+.imp-chip--optional{background:#f1f5f9;color:#334155}
+.imp-rules{padding:12px 14px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#f8fafc}
+.imp-rules summary{cursor:pointer;font-weight:600;color:#0f172a}
+.imp-rules ul{margin:10px 0 0;padding-left:18px;color:#334155;font-size:14px;line-height:1.55}
+.imp-rules li{margin:4px 0}
+.imp-upload{display:flex;flex-direction:column;gap:12px;padding-top:6px;border-top:1px solid #eef2f6}
+.imp-drop{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 16px;border:2px dashed #cbd5e1;border-radius:12px;background:#f8fafc;text-align:center}
+.imp-drop input[type=file]{max-width:100%}
+.imp-file{font-size:14px;color:#475569}
+.imp-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.imp-note{padding:12px 14px;border-radius:10px;background:#f8fafc;border:1px solid #e1e8f0;color:#334155;font-size:14px;line-height:1.5}
+.imp-note--locked{background:#fff7ed;border-color:#fed7aa;color:#7c2d12}
+@media (max-width:760px){.imp-steps{grid-template-columns:1fr}}
+</style>
+
+<div class="page-hero imp-head"><div>
   <div class="eyebrow">SCHOOL PORTAL / STUDENTS</div>
-  <h1>Bulk import students</h1>
-  <p class="hero-copy">Bring in students from a spreadsheet all at once. Each row becomes exactly what "Register Student" creates by hand: the student record, an enrolment in the named class, and a login with a generated admission number and a one-time password.</p>
+  <h1>Bulk import</h1>
+  <p class="hero-copy">Bring a school's records in from a spreadsheet, one step at a time. Do the steps in order: students first, then their history, then their past results.</p>
 </div></div>
 
-<section class="card modern-form">
-  <h3 style="margin-top:0">1. Start from the template</h3>
-  <p class="muted">Columns: <code>{{ required_columns|join(', ') }}</code> are required; <code>{{ optional_columns|join(', ') }}</code> are optional. <code>class</code> must match one of this school's own class names exactly (case does not matter), and <code>gender</code> must be "Male" or "Female". Admission numbers are never typed: the school's own numbering rules generate every one, the same as adding a student by hand.</p>
-  <p><a class="btn btn-light" href="{{ url_for('admin_school_students_import_template') }}">Download CSV template</a></p>
-</section>
+<nav class="imp-steps" id="importSteps" aria-label="Import steps">
+  <a class="imp-tab" href="#step-1" data-step-tab="step-1">
+    <span class="imp-tab__num">1</span>
+    <span class="imp-tab__title">Students<span class="imp-tab__state">{{ 'Ready' if can_import_students else 'Locked' }}</span></span>
+  </a>
+  <a class="imp-tab" href="#step-2" data-step-tab="step-2">
+    <span class="imp-tab__num">2</span>
+    <span class="imp-tab__title">Enrolment history<span class="imp-tab__state">{{ 'Ready' if can_import_history else 'Locked' }}</span></span>
+  </a>
+  <a class="imp-tab" href="#step-3" data-step-tab="step-3">
+    <span class="imp-tab__num">3</span>
+    <span class="imp-tab__title">Past results<span class="imp-tab__state">{{ 'Ready' if can_import_results else 'Locked' }}</span></span>
+  </a>
+</nav>
 
-<section class="card modern-form" style="margin-top:18px">
-  <h3 style="margin-top:0">2. Upload your file</h3>
-  <form method="post" action="{{ url_for('admin_school_students_import_run') }}" enctype="multipart/form-data">
+<section class="card modern-form imp-panel" id="step-1" data-step-panel>
+  <div>
+    <p class="imp-label">Step 1 of 3</p>
+    <h2>Import students</h2>
+  </div>
+  {% if can_import_students %}
+  <p class="imp-lede">Each row creates a student, their enrolment in the named class for the current session, a generated admission number and a one-time sign-in.</p>
+  <div>
+    <p class="imp-label">Every column is required</p>
+    <div class="imp-chips">{% for c in required_columns %}<span class="imp-chip">{{ c }}</span>{% endfor %}</div>
+  </div>
+  <details class="imp-rules">
+    <summary>Rules for this file</summary>
+    <ul>
+      <li><code>class</code> must match one of this school's class names (case does not matter).</li>
+      <li><code>gender</code> must be Male or Female.</li>
+      <li><code>guardian_email</code> must be a valid email address. The guardian's details drive the alerts parents receive and their sign-in.</li>
+      <li>Admission numbers are generated by the school's numbering rules, never typed.</li>
+      <li>Up to {{ max_rows }} rows per file.</li>
+    </ul>
+  </details>
+  <div class="imp-foot">
+    <a class="btn btn-light" href="{{ url_for('admin_school_students_import_template') }}">Download template</a>
+  </div>
+  <form class="imp-upload" method="post" action="{{ url_for('admin_school_students_import_run') }}" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="field"><label for="csv_file">CSV file (UTF-8, first {{ max_rows }} rows)</label>
-      <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" {{ upload_attrs('data') }} required>{{ upload_hint('data') }}</div>
-    <div class="form-actions"><button class="btn btn-primary" type="submit">Import</button></div>
+    <label class="imp-drop">
+      <strong>Choose your CSV file</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <span class="imp-file" data-file-name>No file chosen</span>
+    </label>
+    {{ upload_hint('data') }}
+    <div class="imp-foot">
+      <span class="muted">A row that fails is skipped and listed with its reason. Valid rows are created straight away.</span>
+      <button class="btn btn-primary" type="submit" data-submit disabled>Import students</button>
+    </div>
   </form>
-  <p class="muted">A row that fails (a missing name, an unknown class, an invalid gender or email) is skipped and reported by line number; every other valid row is still imported. Nothing is a "preview" — a valid row is created immediately, so check the file once before uploading.</p>
+  {% else %}
+  <div class="imp-note imp-note--locked">You do not have permission to import students. Ask a school administrator for the bulk-import permission or the student import permission.</div>
+  {% endif %}
 </section>
 
-{% if admin_has_permission(current_admin.id, 'student.history.manage') %}
-<section class="card modern-form" style="margin-top:18px">
-  <h3 style="margin-top:0">Moving from another system? Bring their history too</h3>
-  <p class="muted">Once a student exists here (imported above, or registered by hand), <a href="{{ url_for('admin_school_students_import_history') }}">bulk-import enrolment history</a> backfills the classes and sessions they were in before — a separate file, matched to your students by admission number.</p>
+<section class="card modern-form imp-panel" id="step-2" data-step-panel>
+  <div>
+    <p class="imp-label">Step 2 of 3</p>
+    <h2>Import enrolment history</h2>
+  </div>
+  {% if can_import_history %}
+  <p class="imp-lede">For students who already exist here: one row per student per year, matched by admission number. A year that does not exist yet is created when it is an earlier year than the current session.</p>
+  <div>
+    <p class="imp-label">Required</p>
+    <div class="imp-chips">{% for c in history_required %}<span class="imp-chip">{{ c }}</span>{% endfor %}</div>
+  </div>
+  <div>
+    <p class="imp-label">Optional</p>
+    <div class="imp-chips">{% for c in history_optional %}<span class="imp-chip imp-chip--optional">{{ c }}</span>{% endfor %}</div>
+  </div>
+  <details class="imp-rules">
+    <summary>Rules for this file</summary>
+    <ul>
+      <li><code>enrolled_at</code> and <code>completed_at</code> are dates in the format <strong>YYYY-MM-DD</strong>, for example 2023-09-11. Leave <code>completed_at</code> empty while the year is open.</li>
+      <li><code>level</code> is one of: {{ history_levels|join(', ') }}.</li>
+      <li><code>outcome</code> is one of {{ history_outcomes|join(', ') }}. A <strong>graduated</strong> row archives the student once that year is recorded. Their record stays on file.</li>
+      <li><code>session</code> is matched by name, such as 2023/2024. An earlier year that does not exist is created inactive and never as the current session, and the import records who made it and why. The current session is never changed.</li>
+      <li>Up to {{ history_max_rows }} rows per file.</li>
+    </ul>
+  </details>
+  <div class="imp-foot">
+    <a class="btn btn-light" href="{{ url_for('admin_school_students_import_history_template') }}">Download template</a>
+  </div>
+  <form class="imp-upload" method="post" action="{{ url_for('admin_school_students_import_history_run') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="imp-drop">
+      <strong>Choose your CSV file</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <span class="imp-file" data-file-name>No file chosen</span>
+    </label>
+    {{ upload_hint('data') }}
+    <div class="imp-foot">
+      <span class="muted">A row that fails is skipped and listed with its reason.</span>
+      <button class="btn btn-primary" type="submit" data-submit disabled>Import history</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="imp-note imp-note--locked">You do not have permission to import student history. Ask a school administrator for the bulk-import permission or the student history permission.</div>
+  {% endif %}
 </section>
-{% endif %}
+
+<section class="card modern-form imp-panel" id="step-3" data-step-panel>
+  <div>
+    <p class="imp-label">Step 3 of 3</p>
+    <h2>Import past results</h2>
+  </div>
+  {% if can_import_results %}
+  <p class="imp-lede">One row per student, subject, term and session. A student has as many rows as they have subjects, terms and sessions. Imported results are released straight away and appear on academic records and report cards.</p>
+  <div>
+    <p class="imp-label">Required</p>
+    <div class="imp-chips">{% for c in results_required %}<span class="imp-chip">{{ c }}</span>{% endfor %}</div>
+  </div>
+  <div>
+    <p class="imp-label">Optional</p>
+    <div class="imp-chips">{% for c in results_optional %}<span class="imp-chip imp-chip--optional">{{ c }}</span>{% endfor %}</div>
+  </div>
+  <details class="imp-rules">
+    <summary>Rules for this file</summary>
+    <ul>
+      <li>Run steps 1 and 2 first. The session and the subject must already exist.</li>
+      <li><code>term</code> is First Term, Second Term or Third Term.</li>
+      <li>Scores and maximums are numbers, and a score cannot be above its maximum. Leave the test columns empty when no test was recorded.</li>
+      <li>Graduates are matched too, so the results of students who have left are brought across.</li>
+      <li>A subject, term and session that already has a result for the student is left as it is and reported, never overwritten.</li>
+      <li>Up to {{ results_max_rows }} rows per file.</li>
+    </ul>
+  </details>
+  <div class="imp-foot">
+    <a class="btn btn-light" href="{{ url_for('admin_school_results_import_template') }}">Download template</a>
+  </div>
+  <form class="imp-upload" method="post" action="{{ url_for('admin_school_results_import_run') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="imp-drop">
+      <strong>Choose your CSV file</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <span class="imp-file" data-file-name>No file chosen</span>
+    </label>
+    {{ upload_hint('data') }}
+    <div class="imp-foot">
+      <span class="muted">A row that fails is skipped and listed with its reason.</span>
+      <button class="btn btn-primary" type="submit" data-submit disabled>Import past results</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="imp-note imp-note--locked">You do not have permission to import past results. Ask a school administrator for the bulk-import permission or the results release permission.</div>
+  {% endif %}
+</section>
+
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.getElementById('importSteps');
+  if(!root) return;
+  var tabs=Array.prototype.slice.call(root.querySelectorAll('[data-step-tab]'));
+  var panels=Array.prototype.slice.call(document.querySelectorAll('[data-step-panel]'));
+  var available={};
+  panels.forEach(function(p){ available[p.id]=!!p.querySelector('form'); });
+
+  function show(id){
+    panels.forEach(function(p){ p.hidden = p.id!==id; });
+    tabs.forEach(function(t){ t.classList.toggle('is-current', t.getAttribute('data-step-tab')===id); });
+  }
+  function first(){
+    for(var i=0;i<panels.length;i++){ if(available[panels[i].id]) return panels[i].id; }
+    return panels[0].id;
+  }
+
+  root.classList.add('is-wizard');
+  var wanted=(location.hash||'').replace('#','');
+  show(panels.some(function(p){ return p.id===wanted; }) ? wanted : first());
+
+  tabs.forEach(function(t){
+    t.addEventListener('click',function(e){
+      e.preventDefault();
+      var id=t.getAttribute('data-step-tab');
+      show(id);
+      history.replaceState(null,'','#'+id);
+    });
+  });
+
+  document.querySelectorAll('[data-file-input]').forEach(function(input){
+    var form=input.closest('form');
+    var label=form.querySelector('[data-file-name]');
+    var submit=form.querySelector('[data-submit]');
+    input.addEventListener('change',function(){
+      var file=input.files && input.files[0];
+      if(file){
+        label.textContent=file.name+' · '+Math.max(1,Math.round(file.size/1024))+' KB';
+        submit.disabled=false;
+      } else {
+        label.textContent='No file chosen';
+        submit.disabled=true;
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

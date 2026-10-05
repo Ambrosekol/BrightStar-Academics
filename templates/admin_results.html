@@ -2,6 +2,11 @@
 
 {% block content %}
 <style>
+  /* The metric cards: three across, with a clear gap before the section below. The row's old
+     utility margin was never defined in this stylesheet, so the spacing is set here. */
+  .results-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .results-metrics > * { min-width: 0; }
+  @media (max-width: 768px) { .results-metrics { grid-template-columns: 1fr; } }
   .results-container { padding: 1.5rem; }
   
   /* Metric Cards */
@@ -75,7 +80,7 @@
   </div>
 
   <!-- Key Metrics 3-Column Grid -->
-  <div class="row g-3 mb-5">
+  <div class="results-metrics">
     <div class="col-12 col-md-4">
       <div class="metric-card">
         <span class="stat-badge mb-2">Candidates in scope</span>

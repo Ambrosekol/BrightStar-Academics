@@ -223,22 +223,41 @@ def admin_accounts():
         .join(AdminType,AdminType.id==AdminRoleAssignment.admin_type_id)
         .where(AdminRoleAssignment.admin_id==Admin.id,AdminType.active==1)
         .scalar_subquery().label('role_names'))
+    # Search and the status filter narrow the directory before it is paged.
+    q=request.args.get('q','').strip()[:100]
+    status=request.args.get('status','all')
+    if status not in ('all','active','suspended'): status='all'
+    filters=[]
+    if q:
+        needle=q.casefold()
+        filters.append(or_(func.lower(Admin.display_name).contains(needle,autoescape=True),
+                           func.lower(Admin.username).contains(needle,autoescape=True),
+                           func.lower(func.coalesce(Admin.email,'')).contains(needle,autoescape=True)))
+    if status=='active': filters.append(Admin.active==1)
+    if status=='suspended': filters.append(Admin.active==0)
+    everyone=one_scalar(select(func.count()).select_from(Admin),0)
+    active_count=one_scalar(select(func.count()).select_from(Admin).where(Admin.active==1),0)
     # Fine for hundreds without paging at all; this is what a school past a few thousand accounts needs.
-    total=one_scalar(select(func.count()).select_from(Admin),0)
+    count_stmt=select(func.count()).select_from(Admin)
+    if filters: count_stmt=count_stmt.where(and_(*filters))
+    total=one_scalar(count_stmt,0)
     total_pages=max(1,-(-total//ADMIN_ACCOUNTS_PER_PAGE))
     try: page=int(request.args.get('page','1'))
     except (TypeError,ValueError): page=1
     page=min(max(page,1),total_pages)
-    rows=all_rows(select(Admin.id,Admin.username,Admin.display_name,Admin.active,
-                         Admin.created_at,Admin.last_login_at,Admin.email,Admin.phone,
-                         Admin.whatsapp,Admin.photo_path,
-                         AdminType.name.label('admin_type_name'),
-                         scope_count,direct_permission_count,role_names)
-        .join(AdminType,AdminType.id==Admin.admin_type_id)
-        .order_by(Admin.id)
-        .limit(ADMIN_ACCOUNTS_PER_PAGE).offset((page-1)*ADMIN_ACCOUNTS_PER_PAGE))
+    list_stmt=(select(Admin.id,Admin.username,Admin.display_name,Admin.active,
+                      Admin.created_at,Admin.last_login_at,Admin.email,Admin.phone,
+                      Admin.whatsapp,Admin.photo_path,
+                      AdminType.name.label('admin_type_name'),AdminType.is_system.label('is_system'),
+                      scope_count,direct_permission_count,role_names)
+               .join(AdminType,AdminType.id==Admin.admin_type_id))
+    if filters: list_stmt=list_stmt.where(and_(*filters))
+    rows=all_rows(list_stmt.order_by(Admin.display_name,Admin.id)
+                  .limit(ADMIN_ACCOUNTS_PER_PAGE).offset((page-1)*ADMIN_ACCOUNTS_PER_PAGE))
     return render_template('admin_accounts.html',admins=rows,page=page,total_pages=total_pages,
-                           total_count=total,per_page=ADMIN_ACCOUNTS_PER_PAGE)
+                           total_count=total,per_page=ADMIN_ACCOUNTS_PER_PAGE,
+                           everyone_count=everyone,active_count=active_count,
+                           suspended_count=everyone-active_count,q=q,status=status)
 
 @app.route('/admin/administration/admins/new',methods=['GET','POST'])
 @admin_required

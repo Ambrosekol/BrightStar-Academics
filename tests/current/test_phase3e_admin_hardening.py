@@ -31,7 +31,7 @@ def test_admin_creation_has_one_time_credentials_and_no_plain_password_field():
 def test_composite_multi_value_scopes_are_supported():
     assert 'name="scope_values_{{ st }}"' in FORM
     assert 'name="scope_types"' in FORM
-    assert 'Multiple values within a boundary are allowed' in FORM
+    assert 'choose more than one' in FORM
     assert "scope_groups={}" in ADMIN_ROUTES
     assert 'admin_scope_allows(me[\'id\'],st,v)' in ADMIN_ROUTES
 

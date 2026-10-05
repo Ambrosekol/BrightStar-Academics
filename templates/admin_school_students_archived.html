@@ -1,0 +1,92 @@
+{% extends 'admin_base.html' %}
+{% block title %}Archived students — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{% include 'school_students_styles.html' %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / STUDENTS</div><h1>Archived students</h1><p class="hero-copy">Students who have left the school. They are kept out of the current register, the student count and sign-in. Select a student to see their academic record from before the archive.</p></div></div>
+{% set students_tab='archived' %}{% include 'school_students_tabs.html' %}
+
+<div class="info-banner segmentation-note"><strong>Archived students are only visible here.</strong><span>Restoring a student puts them back in their class register and turns their login back on.</span></div>
+
+<form class="register-search" method="get" style="margin:16px 0">
+  <input name="q" value="{{search}}" placeholder="Search name, admission number, guardian or last class">
+  <button class="btn btn-light" type="submit">Search</button>
+  {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_students_archived')}}">Clear search</a>{% endif %}
+</form>
+
+<form method="post" action="{{url_for('admin_school_students_restore')}}" id="restoreForm">
+  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+  <div class="students-selection">
+    <span class="students-selection__count">{{students|length}} of {{archived_total}} archived student{{'' if archived_total==1 else 's'}} shown · <span id="restoreSelectedCount">none selected</span></span>
+    <button class="btn btn-success" type="submit" id="restoreSubmit" disabled data-confirm="Restore the selected students to the current register? Their login will work again.">Restore selected</button>
+  </div>
+  <div class="students-register-scroll">
+    <table class="segmented-table students-register-table">
+      <thead><tr><th><input type="checkbox" id="restoreSelectAll" aria-label="Select all archived students"></th><th>Student</th><th>Admission No.</th><th>Last class</th><th>Archived</th><th>Reason</th><th>Academic record</th></tr></thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td><input type="checkbox" name="student_ids" value="{{s.id}}" aria-label="Select {{s.first_name}} {{s.last_name}}"></td>
+          <td><div class="person-cell"><span class="table-avatar">{{s.first_name[:1]|upper}}{{s.last_name[:1]|upper}}</span><div><strong>{{s.first_name}} {{s.middle_name or ''}} {{s.last_name}}</strong><small>{{s.gender or '—'}}</small></div></div></td>
+          <td><span class="candidate-code">{{s.admission_no}}</span></td>
+          <td>{{s.class_name or '—'}}<small>{{s.session_name or 'No placement recorded'}}</small></td>
+          <td>{{(s.archived_at or '')[:10] or '—'}}<small>{{s.archived_by_name or 'Administrator'}}</small></td>
+          <td>{{s.archive_reason or '—'}}</td>
+          <td><button type="button" class="btn btn-primary btn-small" data-record-url="{{url_for('admin_school_student_archived_record',sid=s.id)}}" data-record-name="{{s.first_name}} {{s.last_name}}">View record</button></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7"><div class="empty-state"><strong>{% if search %}No archived students match “{{search}}”.{% else %}No students have been archived.{% endif %}</strong><p>Students you archive from the register appear here.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+
+<dialog class="cr-modal" id="archivedRecordModal">
+  <div class="cr-modal-head">
+    <div>
+      <div class="section-label">ARCHIVED STUDENT</div>
+      <h2 id="archivedRecordTitle">Academic record</h2>
+      <p>Read-only record from before the student was archived.</p>
+    </div>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="archivedRecordModal">×</button>
+  </div>
+  <div class="cr-modal-body" id="archivedRecordBody"></div>
+</dialog>
+
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var all=document.getElementById('restoreSelectAll');
+  var boxes=Array.prototype.slice.call(document.querySelectorAll('#restoreForm input[name=student_ids]'));
+  var label=document.getElementById('restoreSelectedCount');
+  var submit=document.getElementById('restoreSubmit');
+  function refresh(){
+    var selected=0;
+    boxes.forEach(function(box){
+      if(box.checked) selected++;
+      var row=box.closest('tr');
+      if(row) row.classList.toggle('is-selected',box.checked);
+    });
+    if(label) label.textContent=selected ? selected+' selected' : 'none selected';
+    if(submit) submit.disabled=selected===0;
+    if(all){ all.checked=selected>0 && selected===boxes.length; all.indeterminate=selected>0 && selected<boxes.length; }
+  }
+  boxes.forEach(function(box){ box.addEventListener('change',refresh); });
+  if(all) all.addEventListener('change',function(){ boxes.forEach(function(box){ box.checked=all.checked; }); refresh(); });
+  refresh();
+  var modal=document.getElementById('archivedRecordModal');
+  var body=document.getElementById('archivedRecordBody');
+  var title=document.getElementById('archivedRecordTitle');
+  document.querySelectorAll('[data-record-url]').forEach(function(button){
+    button.addEventListener('click',function(){
+      title.textContent=button.getAttribute('data-record-name')||'Academic record';
+      body.innerHTML='<p class="qa-stat">Loading record…</p>';
+      modal.showModal();
+      fetch(button.getAttribute('data-record-url'),{credentials:'same-origin',headers:{'X-Requested-With':'fetch'}})
+        .then(function(response){ if(!response.ok) throw new Error('HTTP '+response.status); return response.text(); })
+        .then(function(html){ body.innerHTML=html; })
+        .catch(function(){ body.innerHTML='<div class="empty-state">This record could not be loaded. Close the window and try again.</div>'; });
+    });
+  });
+})();
+</script>
+{% endblock %}

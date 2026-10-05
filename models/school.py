@@ -18,6 +18,11 @@ class AcademicSession(db.Model):
     created_at = db.Column(Text, nullable=False)
     result_release_at = db.Column(Text)
     school_id = db.Column(Integer, ForeignKey('schools.id'))
+    # Who created the session and why, when it was not made by hand from the session page: a past
+    # session created during a bulk history import records the importing administrator and the reason.
+    created_by_admin_id = db.Column(Integer, ForeignKey('admins.id'))
+    creation_reason = db.Column(Text)
+    created_via = db.Column(Text)
 
 
 class SchoolClass(db.Model):
@@ -92,6 +97,13 @@ class Student(db.Model):
     legacy_student_id = db.Column(Text)
     student_number_source = db.Column(Text, nullable=False, default='existing', server_default=text("'existing'"))
     student_number = db.Column(Text)
+
+    # Archiving keeps a student's record and academic history but takes them out of every current
+    # list, count and login. It also sets ``active`` to 0, so the existing "active" filters do the
+    # exclusion; ``archived_at`` is what tells an archived student apart from a merely deactivated one.
+    archived_at = db.Column(Text)
+    archived_by_admin_id = db.Column(Integer, ForeignKey('admins.id'))
+    archive_reason = db.Column(Text)
 
 
 class StudentEnrolment(db.Model):

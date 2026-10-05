@@ -1,6 +1,9 @@
 {% extends 'admin_base.html' %}
 {% block title %}Results & Records — {{ school_brand.name }}{% endblock %}
 {% block content %}
+{% include 'school_students_styles.html' %}
+{% set work_tab = 'results' %}
+{% include 'school_work_tabs.html' %}
 {% set can_release = current_admin and admin_has_permission(current_admin['id'],'school.results.release') %}
 {% set can_enter = current_admin and admin_has_permission(current_admin['id'],'school.results.enter') %}
 <style>
@@ -130,7 +133,7 @@
         <div><button class="btn btn-primary" type="submit">Yes, release the results</button> <button class="btn btn-light" type="button" id="rrCancel">Cancel</button></div>
       </form>
       {% endif %}
-      <div class="table-scroll"><table><thead><tr><th>Subject</th><th>Component</th><th>Score</th><th>Status</th><th>Workflow</th></tr></thead><tbody>
+      <div class="students-register-scroll"><table class="students-register-table"><thead><tr><th>Subject</th><th>Component</th><th>Score</th><th>Status</th><th>Workflow</th></tr></thead><tbody>
       {% for r in rows %}
         <tr><td><strong>{{ r.subject_name }}</strong></td><td>{{ r.component_name or r.assessment_title or 'CBT Assessment' }}</td><td>{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}</td><td><span class="role-chip">{{ r.status }}</span></td><td>
           {% if r.status in ('entered','verified') and can_enter %}<a class="btn btn-light btn-small" href="{{ url_for('admin_school_result_edit',result_id=r.id) }}">Edit</a>{% endif %}

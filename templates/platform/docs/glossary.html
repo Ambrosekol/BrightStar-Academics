@@ -39,5 +39,14 @@
 <tr><td><strong>Numbering pattern</strong></td><td>The checked text a school uses to say how its codes look, such as <code>{school}-{year}-{seq:4}</code>.</td></tr>
 <tr><td><strong>Verification script</strong></td><td>An end-to-end test in <code>tests/verification/</code>.</td></tr>
 <tr><td><strong>Contract test</strong></td><td>A fast test in <code>tests/current/</code> guarding a rule of the design.</td></tr>
+<tr><td><strong>Archived student</strong></td><td>A student who has left: <code>active</code> is 0 and <code>archived_at</code> is set. Their sign-in is refused, but their record, results and fees stay, and parents still see them.</td></tr>
+<tr><td><strong>Deactivated student</strong></td><td>A student switched off without being archived. Hidden from current lists; the deactivate switch refuses an archived student.</td></tr>
+<tr><td><strong>Bulk import</strong></td><td>Bringing records in from a spreadsheet, in three steps: students, enrolment history and past results.</td></tr>
+<tr><td><strong>Outcome</strong></td><td>How a student left a year: promoted, repeated, graduated or withdrawn. A graduated outcome archives the student.</td></tr>
+<tr><td><strong>Migrated result</strong></td><td>A past result brought in by the results import: released at once, with a migration source and a workflow entry.</td></tr>
+<tr><td><strong>Bulk-import permission</strong></td><td><code>school.bulk_import</code>: stands in for the permission each import step needs.</td></tr>
+<tr><td><strong>Audience</strong></td><td>Who a release note is for: staff, family or student.</td></tr>
+<tr><td><strong>What's new</strong></td><td>The notice of changes, shown to each person in their browser until they close it.</td></tr>
+<tr><td><strong>Setup checklist</strong></td><td>The new-school steps (classes, subjects, students, fees), shown until the school closes it.</td></tr>
 </table></div>
 {% endblock %}

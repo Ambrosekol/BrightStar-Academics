@@ -66,6 +66,50 @@ every step is done.</p>
 <h2 id="top-of-class">Top of the Class</h2>
 <p>On the Overview's second row, beside the People cards (Students and Parents), the same page shows the highest-scoring student in each class for the current term: one row per class, its top student's overall percentage and letter grade, reusing <code>class_term_stats</code> ({{ file('blueprints/school/report_card_data.py') }}) - the same aggregate the report-card pages already compute, never a separate calculation of its own. Which classes appear is scoped exactly like every other class-facing page: <code>_school_class_allowed</code> ({{ file('blueprints/school/helpers.py') }}) shows every active class to a School Admin and only a scoped teacher's own classes to them. A class with nobody ready yet (an official term result needs every one of a student's subjects released) shows as waiting rather than being silently left out.</p>
 
+<h2 id="archiving">Archiving: leavers keep their record</h2>
+<p>A student who leaves is <strong>archived</strong>, not deleted. Archiving sets the student's <code>active</code> flag
+to 0 and records <code>archived_at</code>, the administrator who archived them, and the reason. Because every current
+list, count and sign-in already filters on <code>active</code>, the archived student drops out of them all at once, and
+the same checks stop their login. Their open presence sessions are ended in the same step.</p>
+<p>The archive and restore logic is one helper, {{ file('blueprints/school/helpers.py') }} (<code>archive_students</code>), used
+by the class register, the student page and the history import. Already archived students are left as they are, so the
+first archive's date and reason are never overwritten. A School Admin can restore a student; the archived list and each
+archived record are for the School Admin only ({{ route('admin_school_students_archived') }}).</p>
+<p>Parents are deliberately not cut off: the parent dashboard, the child's record and the fee account include archived
+children, so the family keeps its history. Only the child's own sign-in is revoked.</p>
+
+<h2 id="bulk-imports">Bulk imports: three steps</h2>
+<p>The bulk import page ({{ route('admin_school_students_import') }}) offers three steps, shown one at a time. Each step
+posts to its own route and has its own template, and each writes an audit entry that names who ran it, the file name
+and the counts.</p>
+<table>
+<tr><th>Step</th><th>Code</th><th>Permission it needs</th><th>Rules that matter</th></tr>
+<tr><td>1. Students</td><td>{{ file('blueprints/school/student_import.py') }}</td><td>{{ perm('school.students.create') }}</td><td>Every column is required, including the guardian's name, email and phone and the middle name. Admission numbers are generated.</td></tr>
+<tr><td>2. Enrolment history</td><td>{{ file('blueprints/school/student_history_import.py') }}</td><td>{{ perm('student.history.manage') }}</td><td>Dates are YYYY-MM-DD. An <code>outcome</code> of graduated archives the student. An earlier session that does not exist is created inactive and never current, with its creator and reason recorded; this needs the student-import permission.</td></tr>
+<tr><td>3. Past results</td><td>{{ file('blueprints/school/results_import.py') }}</td><td>{{ perm('school.results.release') }}</td><td>One row per student, subject, term and session. Results are written as released with a migration source. An existing result is never overwritten. Graduates are included.</td></tr>
+</table>
+<p>Each step accepts either its own permission or {{ perm('school.bulk_import') }} ("Run bulk imports"), which can be given to any
+role. The helper that decides this is <code>import_allowed</code> in {{ file('blueprints/school/helpers.py') }}. The bulk
+permission does not open anything else.</p>
+
+<h2 id="notices-and-cache">What's new, the setup checklist and browser caching</h2>
+<p>Release notes are announced from one file, {{ file('release_notes.json') }}, read by {{ file('core/release_notes.py') }}.
+Each item has an audience: staff, family or student. Staff items keep a link to the matching guide page; family and
+student items are complete on their own and never carry one, because families cannot open the staff guide.</p>
+<ul>
+  <li><strong>Administrators</strong> see the staff items in the panel at the bottom right of every admin page
+  ({{ file('blueprints/admin_dock.py') }}, {{ file('templates/_admin_dock.html') }}).</li>
+  <li><strong>Students and parents</strong> see their own items on their dashboard
+  ({{ file('blueprints/family_notices.py') }}, {{ file('templates/_family_notice.html') }}). A student never receives a parent's
+  item, and the reverse.</li>
+  <li><strong>The database is not asked</strong> for any of this on an ordinary page. The server sends the notes for the
+  audience, and the browser decides what to show, from the version it last saw for that account (stored in local storage).
+  Closing a notice is a browser setting, so it does not reach another device.</li>
+  <li><strong>The setup checklist</strong> is the one thing read from the database on request: {{ route('admin_school_onboarding_card') }}
+  answers with the school's progress. The browser keeps that answer for fifteen minutes before asking again. Closing the
+  checklist is a real change and is saved for the whole school.</li>
+</ul>
+
 <h2 id="staff-guide">The staff guide</h2>
 <p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Thirteen pages, grouped and ordered the same way {{ route('docs_home') }} is, with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>
 

@@ -1,0 +1,39 @@
+<style>
+/* Students pages: a segmented Current / Archived switch, class cards with a size meter, and a register
+   whose header stays in view and whose rows show when they are selected. Colours come from the school's
+   own accent (--blue) with the portal's blue as the fallback. */
+.students-seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 18px;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#f1f5f9}
+.students-seg__item{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:9px;color:var(--ink,#334155);font-size:14px;font-weight:600;text-decoration:none}
+.students-seg__item:hover{background:#fff}
+.students-seg__item.is-active{background:var(--blue,#1674b9);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--blue,#1674b9) 30%,transparent)}
+.students-seg__count{min-width:22px;padding:1px 8px;border-radius:999px;background:rgba(15,23,42,.08);font-size:12px;text-align:center}
+.students-seg__item.is-active .students-seg__count{background:rgba(255,255,255,.22)}
+.students-meter{height:6px;margin-top:12px;border-radius:999px;background:#e6ecf3;overflow:hidden}
+.students-meter>span{display:block;height:100%;border-radius:999px;background:var(--blue,#1674b9)}
+.students-register-scroll{max-height:58vh;overflow:auto;border-radius:12px}
+.students-register-table thead th{position:sticky;top:0;z-index:1;background:#fff;box-shadow:inset 0 -1px 0 var(--line,#dfe6ef)}
+.students-register-table tbody tr{transition:background-color .15s ease}
+.students-register-table tbody tr:hover{background:#f7fafd}
+.students-register-table tbody tr.is-selected{background:color-mix(in srgb,var(--blue,#1674b9) 10%,#fff)}
+.students-selection{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.students-selection__count{font-size:14px;font-weight:600;color:var(--ink,#334155)}
+.students-selection__form{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0}
+/* The search and the archive bar sit side by side in one toolbar; each takes its share of the row and
+   only wraps onto a second line when the modal is too narrow for both. */
+.students-toolbar{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;margin-bottom:16px}
+.students-toolbar>form{display:flex;flex:1 1 320px;flex-wrap:wrap;gap:10px;align-items:center;margin:0;min-width:0}
+.students-toolbar input{width:auto;flex:1 1 180px;min-width:0}
+.students-toolbar .btn{flex:none}
+/* Class cards: a matte finish in the school's main colour. Flat fill, no shadow or gradient, and a
+   small corner radius so the card reads as a panel rather than a button. */
+.school-segment-grid .segment-card{background:var(--brand,var(--navy,#0d2b52));border:1px solid color-mix(in srgb,var(--brand,#0d2b52) 82%,#000);border-radius:6px;box-shadow:none;color:#fff;transform:none}
+.school-segment-grid .segment-card:hover{background:var(--brand-dark,var(--navy-deep,#081c35));border-color:color-mix(in srgb,var(--brand-dark,#081c35) 82%,#000);box-shadow:none;transform:none}
+.school-segment-grid .segment-card.selected{outline:2px solid var(--brand-accent,var(--blue,#1674b9));outline-offset:2px}
+.school-segment-grid .segment-card h2{color:#fff}
+.school-segment-grid .segment-card p{color:rgba(255,255,255,.82)}
+.school-segment-grid .segment-kicker{color:rgba(255,255,255,.66)}
+.school-segment-grid .segment-arrow{color:rgba(255,255,255,.85)}
+.school-segment-grid .segment-icon{background:rgba(255,255,255,.14);border:0;border-radius:5px;color:#fff}
+.school-segment-grid .students-meter{background:rgba(255,255,255,.2)}
+.school-segment-grid .students-meter>span{background:#fff}
+</style>

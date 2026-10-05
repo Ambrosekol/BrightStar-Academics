@@ -51,4 +51,22 @@ school, plus how much of a subject's mark comes from Continuous Assessment versu
 above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is different: it is where any
 member of staff uploads <em>their own</em> signature image, for use wherever their own name appears
 signed on a document.</p>
+
+<h2 id="past-results">Bringing in past results</h2>
+<p>Step 3 of <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> brings in a student's graded
+results from an earlier school year. It takes one row per student, subject, term and session. Required columns:
+<code>admission_no</code>, <code>session</code>, <code>term</code>, <code>subject</code>, <code>exam_score</code>,
+<code>exam_max</code>. Optional: <code>test_score</code>, <code>test_max</code>, <code>notes</code>. Leave the test
+columns empty when no test was recorded.</p>
+<ul>
+  <li>The session and the subject must already exist. Earlier sessions are created by step 2, and subjects are
+  created under Subjects.</li>
+  <li>Results are <strong>released straight away</strong>, so they appear on the student's academic record and on
+  their report cards. Each one is recorded as migrated, with the administrator who imported it.</li>
+  <li>A subject, term and session that already has a result for that student is left as it is and reported. Running
+  a file twice never changes what is on record.</li>
+  <li>Graduates are included, so the results of students who have left are brought across.</li>
+  <li>It needs the permission to release results, or the bulk-import permission.</li>
+</ul>
+
 {% endblock %}

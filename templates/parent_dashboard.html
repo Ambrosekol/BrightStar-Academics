@@ -148,5 +148,6 @@
 
 </main>
 <script nonce="{{ csp_nonce() }}">setInterval(function(){fetch('{{url_for("presence_heartbeat")}}',{credentials:'same-origin'}).catch(function(){});},30000);</script>
+{% include '_family_notice.html' %}
 </body>
 </html>

@@ -3,6 +3,16 @@
 {% block content %}
 <div class="profile-hero"><div><a class="text-back" href="{{url_for('admin_school_students',class=current_enrol.class_name if current_enrol else '')}}">← Back to Students</a><div class="eyebrow">STUDENT PROFILE</div><h1>{{student.first_name}} {{student.middle_name or ''}} {{student.last_name}}</h1><div class="profile-subline"><span class="level-badge">{{current_enrol.class_name if current_enrol else 'Not enrolled'}}</span><span class="candidate-code">{{student.admission_no}}</span></div></div><div class="hero-actions"><a class="btn btn-light" href="{{url_for('admin_school_student_edit',sid=student.id)}}">Edit Student</a>{% if current_admin and admin_has_permission(current_admin['id'],'audit.view') %}<a class="btn btn-light" href="{{url_for('admin_notification_log',student_id=student.id)}}">Notice log</a>{% endif %}<button type="button" class="btn btn-primary" data-modal-open="modal-academic-record">Check Performance →</button></div></div>
 
+{% if student.archived_at %}
+<div class="info-banner segmentation-note"><strong>This student is archived.</strong><span>Archived {{student.archived_at[:10]}}{% if archived_by %} by {{archived_by}}{% endif %}{% if student.archive_reason %} · {{student.archive_reason}}{% endif %}. They are not in the register, the student count or sign-in. Their record stays on file.</span>
+  {% if is_school_admin %}<form method="post" action="{{url_for('admin_school_students_restore')}}" style="margin-top:10px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="student_ids" value="{{student.id}}"><button class="btn btn-success" type="submit" data-confirm="Restore this student to the current register? Their login will work again.">Restore student</button></form>{% endif %}
+</div>
+{% elif can_archive %}
+<details class="info-banner segmentation-note" style="margin-bottom:16px"><summary><strong>Archive this student</strong> — take them off the register and stop their sign-in, keeping their record.</summary>
+  <form method="post" action="{{url_for('admin_school_students_archive')}}" class="register-search" style="margin-top:10px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="student_ids" value="{{student.id}}"><input name="reason" maxlength="300" placeholder="Reason (optional), e.g. left the school, transferred out"><button class="btn btn-danger" type="submit" data-confirm="Archive this student? Their login stops working until they are restored from Archived students.">Archive student</button></form>
+</details>
+{% endif %}
+
 <div class="profile-grid-3">
   <section class="card profile-card">
     <div class="section-label">STUDENT INFORMATION</div>
@@ -15,7 +25,7 @@
       <div><dt>Blood group</dt><dd>{{student.blood_group or 'Not recorded'}}</dd></div>
       <div><dt>Genotype</dt><dd>{{student.genotype or 'Not recorded'}}</dd></div>
       <div><dt>Record created</dt><dd>{{student.created_at.replace('T',' ')[:19]}}</dd></div>
-      <div><dt>Account status</dt><dd><span class="status submitted">Active</span></dd></div>
+      <div><dt>Account status</dt><dd>{% if student.archived_at %}<span class="status">Archived</span>{% else %}<span class="status submitted">Active</span>{% endif %}</dd></div>
     </dl>
   </section>
   <section class="card profile-card">

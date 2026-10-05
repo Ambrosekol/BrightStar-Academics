@@ -32,6 +32,14 @@
 
   <aside class="guide-toc" aria-label="On this page"><div class="guide-toc-title">On this page</div><div id="guideToc"></div></aside>
 </div>
+<style>
+  /* The "On this page" list reads across, with a | between each entry. */
+  .guide-toc { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+  .guide-toc-title { width: 100%; }
+  .guide-toc a { padding: 2px 0; }
+  .guide-toc a + a::before { content: "|"; margin: 0 .55em; color: var(--ink-3, #94a3b8); }
+  .guide-toc a.sub { padding-left: 0; font-size: inherit; }
+</style>
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var article = document.getElementById('guideArticle'), toc = document.getElementById('guideToc');

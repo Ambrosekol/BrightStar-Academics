@@ -26,12 +26,25 @@ cannot see this link at all, that is why, and it is normal for every account exc
 Admin's own.</div>
 
 <h2 id="staff">Staff accounts</h2>
-<p><a href="{{ url_for('admin_accounts') }}">Accounts</a> lists every member of staff. From here you
-add a new one — a name, a username, an email, a phone number, and which role(s) they hold — or open
-an existing account to edit its details, change its roles or scope, switch its sign-in on or off, or
-reset its password to a fresh one-time password. A new account always starts on a one-time password
-that must be changed at first sign-in; nobody, not even the School Admin, can ever see what a
-password is, only reset it.</p>
+<p><a href="{{ url_for('admin_accounts') }}">Accounts</a> is a directory of everyone who can sign in to the school's
+administration. Each person has a card showing their name, username, whether they are active or suspended, their roles,
+their contact details and their last sign-in. The card also says in plain words what they can reach: full access for
+the School Admin, limited to a number of access areas, or standard access from their roles.</p>
+<ul>
+  <li><strong>Search</strong> by name, username or email, and switch between <em>Everyone</em>, <em>Active</em> and
+  <em>Suspended</em>.</li>
+  <li><strong>Manage</strong> opens the person's own page.</li>
+  <li>The <strong>⋯</strong> menu on a card sends them a message, resets their login (they get a new one-time password),
+  or suspends or reactivates their access. Suspending stops their sign-in straight away; their record stays, and they
+  can be reactivated at any time. You cannot suspend or reset your own access.</li>
+</ul>
+<p>A person's own page has four sections, listed down the side. <em>Profile</em> holds their name, contact details and
+photo; the username cannot be changed once created. <em>Job roles</em> is where you tick every role they do, with a
+summary that updates as you tick. <em>Where they work</em> leaves them with access to the whole school, or limits them
+to chosen classes, subjects, sessions or question banks. <em>Overrides</em> (shown to the School Admin) grants individual
+permissions for exceptions only. The bar at the bottom saves your changes, cancels, or resets their login.</p>
+<p>A new account always starts on a one-time password that must be changed at first sign-in. Nobody, not even the School
+Admin, can see a password, only reset it to a new one-time password.</p>
 
 <h2 id="roles">Roles</h2>
 <p><a href="{{ url_for('admin_roles') }}">Roles</a> is where the named bundles of permissions
@@ -82,4 +95,19 @@ connects its own mail server and WhatsApp Business account, so every automatic n
 card, a payment, a released timetable — reaches a guardian on those channels too, not only in-app.
 School Admin only, since whoever holds these accounts can send a message that looks like it comes
 from the school.</p>
+
+<h2 id="panel">The panel at the bottom right</h2>
+<p>Every administrator sees a small panel at the bottom right of each page, with up to two cards.</p>
+<ul>
+  <li><strong>What's new</strong> lists the latest changes to the portal in plain language, each with a link to the guide
+  page that explains it. It shows only the changes you have not yet closed. Closing it hides those changes for you in
+  this browser; another person sees their own.</li>
+  <li><strong>Set up your school</strong> shows the setup steps for a new school (classes, subjects, students and fees)
+  with their progress. Closing it hides it for the whole school, as it always has.</li>
+  <li><strong>Minimise</strong> folds a card to its title bar. Your choice is remembered in this browser.</li>
+</ul>
+<p>So that the system stays fast for every school, the panel does not look anything up each time you open a page. What's
+new is kept in your browser. The setup progress is kept in your browser too, and refreshed about every fifteen minutes,
+so a step you finish can take up to that long to show as done.</p>
+
 {% endblock %}

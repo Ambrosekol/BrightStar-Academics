@@ -1,6 +1,9 @@
 {% extends 'admin_base.html' %}
 {% block title %}Assignments — {{ school_brand.name }}{% endblock %}
 {% block content %}
+{% include 'school_students_styles.html' %}
+{% set work_tab = 'assignments' %}
+{% include 'school_work_tabs.html' %}
 <div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Assignments</h1><p class="hero-copy">Choose a class first, then manage the assignments belonging to that class.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_assignment_new')}}">+ Create Assignment</a></div></div>
 <div class="segmentation-intro"><div><strong>Choose a class</strong><span>Assignments are kept inside their class boundary.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_assignments')}}">← All classes</a>{% endif %}</div>
 <div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_assignments',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} assignment{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
@@ -20,8 +23,8 @@
       {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_assignments',class=selected_class)}}">Clear search</a>{% endif %}
       <a class="btn btn-light" href="{{url_for('admin_school_assignments')}}">← All classes</a>
     </form>
-    <div class="table-scroll">
-      <table>
+    <div class="students-register-scroll">
+      <table class="students-register-table">
         <thead><tr><th>Assignment</th><th>Subject</th><th>Format</th><th>Students</th><th>Due</th><th>Actions</th></tr></thead>
         <tbody>
           {% for a in assignments %}

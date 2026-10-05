@@ -32,6 +32,18 @@ page — Students, Attendance, Results — see different rows: each sees only wh
 permission or a scope, not a fault. Ask whoever manages Administration at your school to check what
 your account's role and scope allow.</div>
 
+<h2 id="bulk-import">The bulk-import permission</h2>
+<p>The permission <strong>Run bulk imports</strong> (<code>school.bulk_import</code>) can be given to any role. It lets
+that role run all three bulk import steps (students, enrolment history and past results) without also holding each
+step's own permission. Its holder can also create an earlier session during the history step, and archive a graduate.
+It grants nothing else: the rest of the school stays as the role allows. Every import is recorded in the audit log
+with who ran it, the file name and the counts.</p>
+
+<h2 id="search-permissions">Finding a permission quickly</h2>
+<p>On a staff member's page, under <em>Overrides</em>, a search box filters the permissions as you type. It is forgiving:
+capital letters, accents, the order of words and small spelling mistakes do not matter, so "student delete" and
+"finence" both find what you are looking for. Overrides are for exceptions only. Ordinary access should come from roles.</p>
+
 <h2 id="temporary-password">New accounts and temporary passwords</h2>
 <p>A new staff, student or parent account is always created with a one-time password, shown once when
 the account is made. The first sign-in forces a real password to be chosen before anything else opens.

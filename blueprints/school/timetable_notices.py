@@ -42,7 +42,7 @@ def _announce(class_ids, session_id, term, exam_type, admin_id):
         return
     students = db.session.execute(select(Student.id, Student.first_name, Student.last_name,
                                          Student.guardian_email, Student.guardian_phone)
-                                  .where(Student.id.in_(student_ids))).all()
+                                  .where(Student.id.in_(student_ids), Student.active == 1)).all()
     kind = 'test' if exam_type == 'test' else 'examination'
     label = f'{term} {kind} timetable'
     now = datetime.now(timezone.utc).isoformat()

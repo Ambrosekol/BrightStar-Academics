@@ -925,7 +925,7 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #155f9a;
+    background-color: var(--blue-2, #155f9a);
 }
 
 
@@ -1604,15 +1604,15 @@ body{background:var(--bg);color:var(--text)}
 }
 
 .admin-shell .btn-primary {
-    background: #1674b9;
-    border-color: #1674b9;
-    box-shadow: 0 4px 10px rgba(22,116,185,.14);
+    background: var(--blue, #1674b9);
+    border-color: var(--blue, #1674b9);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--blue, #1674b9) 14%, transparent);
 }
 
 .admin-shell .btn-primary:hover {
-    background: #1266a4;
-    border-color: #1266a4;
-    box-shadow: 0 6px 14px rgba(22,116,185,.19);
+    background: var(--blue-2, #1266a4);
+    border-color: var(--blue-2, #1266a4);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--blue, #1674b9) 19%, transparent);
 }
 
 .admin-shell .btn-light {
@@ -3913,19 +3913,19 @@ select:focus {
 }
 
 .btn-primary {
-  background-color: #0284c7 !important;
+  background-color: var(--blue, #0284c7) !important;
   color: #ffffff !important;
   font-weight: 600 !important;
   padding: 10px 20px !important;
   border-radius: 8px !important;
   border: none !important;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2) !important;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--blue, #0284c7) 20%, transparent) !important;
   transition: all 0.2s ease !important;
   cursor: pointer !important;
 }
 
 .btn-primary:hover {
-  background-color: #0369a1 !important;
+  background-color: var(--blue-2, #0369a1) !important;
 }
 
 /* Force Catalogue Search Toolbar Layout */
@@ -4129,13 +4129,13 @@ select:focus {
 }
 
 .finance-btn-primary{
-    background:#1779bd;
+    background:var(--blue,#1779bd);
     color:#fff;
-    box-shadow:0 5px 15px rgba(23,121,189,.16);
+    box-shadow:0 5px 15px color-mix(in srgb, var(--blue,#1779bd) 16%, transparent);
 }
 
 .finance-btn-primary:hover{
-    background:#126cae;
+    background:var(--blue-2,#126cae);
     color:#fff;
     transform:translateY(-1px);
     box-shadow:0 7px 18px rgba(23,121,189,.21);

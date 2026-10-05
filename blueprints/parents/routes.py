@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from flask import Response, abort, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, func, select, update as sa_update
+from sqlalchemy import and_, func, or_, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -115,7 +115,7 @@ def parent_child_detail(student_id):
                    SchoolClass.name.label('class_name'),
                    AcademicSession.name.label('session_name'))
             .select_from(ParentStudentLink)
-            .join(Student,and_(Student.id==ParentStudentLink.student_id,Student.active==1))
+            .join(Student,and_(Student.id==ParentStudentLink.student_id,or_(Student.active==1,Student.archived_at.isnot(None))))
             .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
                                              StudentEnrolment.active==1))
             .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
@@ -224,7 +224,7 @@ def parent_feedback():
     children=[_flatten(r,'Student','class_name') for r in all_rows(
         select(Student,SchoolClass.name.label('class_name'))
         .select_from(ParentStudentLink)
-        .join(Student,and_(Student.id==ParentStudentLink.student_id,Student.active==1))
+        .join(Student,and_(Student.id==ParentStudentLink.student_id,or_(Student.active==1,Student.archived_at.isnot(None))))
         .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
                                          StudentEnrolment.active==1))
         .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
