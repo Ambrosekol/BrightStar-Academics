@@ -18,6 +18,32 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.4: the fee structure buttons use the school's own colours.",
+      "version": "2.20.26.5",
+      "date": "2026-10-05",
+      "title": "Fee structure buttons in the school's colours",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The buttons on the fee structure page use the school's own brand colours, so the page matches the rest of the school's portal. A school that has not chosen colours keeps the standard blue.",
+          "help": "finance"
+        }
+      ]
+    },
+    {
+      "_comment": "Changes since 2.20.26.3: the workspace chooser fits the screen with no scrolling.",
+      "version": "2.20.26.4",
+      "date": "2026-10-05",
+      "title": "The workspace chooser fits the screen",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The workspace chooser (Entrance Examination or School Portal) fits on one screen on desktops, tablets and most phones, so both choices show without scrolling.",
+          "help": "welcome"
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.2: the sign-in page fits the screen with no scrolling.",
       "version": "2.20.26.3",
       "date": "2026-10-05",

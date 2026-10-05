@@ -935,6 +935,42 @@ dialog.cr-finance-confirm{
     grid-template-columns:1fr;
   }
 }
+/* Buttons on this page use the school's own colours: --blue for actions and --navy for the
+   navigation buttons. A school that has chosen no colours keeps the platform blue shown here. */
+.cr-finance-primary-btn{
+  border-color:var(--blue,#1478ba);
+  background:var(--blue,#147fc1);
+  box-shadow:0 8px 18px rgba(16,42,67,.16);
+}
+.cr-finance-primary-btn:hover{
+  border-color:var(--blue-2,#0f6aa3);
+  background:var(--blue-2,#0f6aa3);
+  box-shadow:0 11px 22px rgba(16,42,67,.22);
+}
+.cr-finance-secondary-btn{
+  color:var(--navy,#173e62);
+}
+.cr-finance-secondary-btn:hover{
+  border-color:var(--blue,#9fc5df);
+}
+.cr-finance-row-action:hover{
+  border-color:var(--blue,#9cbdd3);
+  color:var(--navy,#173e62);
+}
+.cr-bill-btn{
+  color:var(--blue,#126da5);
+}
+.cr-bill-btn:hover{
+  border-color:var(--blue,#126da5);
+}
+.cr-bill-mode.is-active{
+  border-color:var(--blue,#7fb3d6);
+}
+.cr-bill-row input:checked + .cr-bill-box{
+  border-color:var(--blue,#147fc1);
+  background:var(--blue,#147fc1);
+}
+
 </style>
 
 <div class="cr-finance-page">
