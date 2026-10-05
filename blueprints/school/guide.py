@@ -22,29 +22,33 @@ from core.security import admin_required
 GUIDE_GROUPS = (
     ('Getting started', (
         ('welcome', 'Welcome to your guide', 'What this is, and the two workspaces'),
+        ('dashboard', 'Your school dashboard', 'The home page: setup, Top of the Class and what is new'),
+    )),
+    ('Set up the school', (
+        ('classes-subjects', 'Classes and subjects', 'The shape of a school year'),
         ('roles-permissions', 'Roles, permissions and scope', 'Who can do what, and how it is limited'),
+        ('staff-admin', 'Staff, roles and branding', 'Accounts, audit and how the portal looks'),
+    )),
+    ('Students and families', (
+        ('students', 'Students', 'Registering, importing, archiving'),
+        ('families', 'Parents and messages', 'Parent accounts, feedback and notices'),
+        ('attendance', 'Attendance', 'The daily register and the term summary'),
     )),
     ('Academics', (
-        ('classes-subjects', 'Classes and subjects', 'The shape of a school year'),
-        ('students', 'Students', 'Registering one at a time, or many at once'),
-        ('attendance', 'Attendance', 'The daily register and the term summary'),
-        ('work', 'Assignments, projects and tests', 'Setting work and marking it'),
+        ('work', 'Assignments, projects and tests', 'Setting work, issuing it to a class, marking it'),
         ('timetable', 'Exam and test timetables', 'Building a draft, then releasing it'),
         ('results-report-cards', 'Results and report cards', 'From a mark to a report card a parent can see'),
     )),
-    ('Finance and families', (
+    ('Money and library', (
         ('finance', 'Fees, payments and receipts', 'Charging, collecting and receipting'),
-        ('families', 'Parents and messages', 'Parent accounts, feedback and notices'),
         ('library', 'Library', 'Books, members and loans'),
-    )),
-    ('Running the school', (
-        ('staff-admin', 'Staff, roles and branding', 'Accounts, audit and how the portal looks'),
     )),
     ('Entrance workspace', (
         ('entrance', 'Entrance examinations', 'Banks, candidates, the exam and results'),
         ('admissions', 'Admissions: candidate to student', 'The waitlist, admitting and declining'),
     )),
 )
+
 GUIDE_PAGES = {slug: (title, blurb, group) for group, items in GUIDE_GROUPS for slug, title, blurb in items}
 GUIDE_ORDER = [slug for _, items in GUIDE_GROUPS for slug, _, _ in items]
 

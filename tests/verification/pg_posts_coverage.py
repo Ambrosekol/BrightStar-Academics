@@ -33,6 +33,9 @@ EXEMPT = {
     "/admin/school/students/archive": "see write_paths_student_archive.py",
     # Past results imported in bulk: exercised for real, valid and hostile, in tests/verification/write_paths_results_import.py.
     "/admin/school/students/import-results": "see write_paths_results_import.py",
+    # Restoring a deleted assignment or project: exercised in tests/verification/write_paths_work_delete.py.
+    "/admin/school/assignments/<int:assignment_id>/restore": "see write_paths_work_delete.py",
+    "/admin/school/projects/<int:project_id>/restore": "see write_paths_work_delete.py",
     "/admin/school/students/archived/restore": "see write_paths_student_archive.py",
     # The platform Settings / Terminal-actions area (control_plane/settings_console.py): system
     # operations, not an ordinary admin CSRF form this file's generic Actor/junk-submission shape

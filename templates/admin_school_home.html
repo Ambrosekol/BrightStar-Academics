@@ -15,6 +15,32 @@
 @media (max-width: 760px) {
   .wd-top-row { grid-template-columns: 1fr; }
 }
+/* Top of the class: a card that fills its column, a featured leader, then ranked rows with score bars. */
+.tc-card { display: flex; flex-direction: column; height: 100%; min-width: 0; background: var(--surface-0, #fff); border: 1px solid var(--line, #e2e8f0); border-radius: 16px; padding: 20px 20px 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.tc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.tc-eyebrow { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand, #0d2b52); }
+.tc-title { margin: 4px 0 0; font-size: 17px; font-weight: 700; color: var(--ink, #0f172a); line-height: 1.25; }
+.tc-title span { font-weight: 500; color: var(--ink-3, #64748b); }
+.tc-count { flex: none; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--brand, #0d2b52) 9%, #fff); color: var(--brand, #0d2b52); font-size: 12px; font-weight: 600; }
+.tc-leader { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--brand, #0d2b52); color: #fff; margin-bottom: 14px; }
+.tc-medal { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .18); font-weight: 800; font-size: 16px; }
+.tc-leader__body { min-width: 0; display: flex; flex-direction: column; }
+.tc-leader__name { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-leader__meta { font-size: 12px; opacity: .8; }
+.tc-leader__score { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.tc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.tc-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 6px; border-radius: 10px; }
+.tc-row:hover { background: #f8fafc; }
+.tc-pos { font-size: 13px; font-weight: 700; color: var(--ink-3, #64748b); padding-top: 1px; text-align: center; }
+.tc-row__main { min-width: 0; }
+.tc-row__top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tc-row__name { font-size: 14px; font-weight: 600; color: var(--ink, #0f172a); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-row__score { font-size: 13px; font-weight: 700; flex: none; }
+.tc-bar { height: 6px; margin: 7px 0 5px; border-radius: 999px; background: #e9eef4; overflow: hidden; }
+.tc-bar span { display: block; height: 100%; border-radius: 999px; background: var(--brand, #0d2b52); }
+.tc-row__meta { font-size: 12px; color: var(--ink-3, #64748b); }
+.tc-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 12px; text-align: center; color: var(--ink-3, #64748b); font-size: 14px; line-height: 1.5; }
+.tc-empty p { margin: 0; max-width: 260px; }
 </style>
 
 <div class="wd-head">
@@ -104,41 +130,48 @@
     </div>
   </section>
   <div class="wd-top-class">
-    <section class="wd-section">
-      <div class="wd-section__head">
+    <section class="tc-card" aria-labelledby="tcTitle">
+      <header class="tc-head">
         <div>
-          <h2 class="wd-section__title">Top of the Class — {{ top_of_class_term }}{% if top_of_class_session %}, {{ top_of_class_session }}{% endif %}</h2>
-          <p class="wd-section__desc">The highest-scoring student in each class this term, once its report card results are released.</p>
+          <span class="tc-eyebrow">Top of the class</span>
+          <h2 class="tc-title" id="tcTitle">{{ top_of_class_term }}{% if top_of_class_session %} <span>· {{ top_of_class_session }}</span>{% endif %}</h2>
         </div>
-      </div>
-      <div class="ui-panel">
-        {% if top_of_class %}
-        <ol class="wd-rank-list">
-          {% for row in top_of_class %}
-          {% set cls = 'good' if row.percentage >= 70 else ('fair' if row.percentage >= 50 else 'poor') %}
-          <li class="wd-rank-row{% if loop.index == 1 %} wd-rank-row--1{% endif %}">
-            <span class="wd-rank-pos">{{ loop.index }}</span>
-            <span class="wd-rank-avatar">{{ row.student_name[:1]|upper if row.student_name else '?' }}</span>
-            <span class="wd-rank-main">
-              <span class="wd-rank-name">{{ row.student_name }}</span>
-              <span class="wd-rank-meta">{{ row.class_name }}</span>
-            </span>
-            <span class="wd-rank-score">
-              <strong class="tone-{{ cls }}">{{ '%.1f'|format(row.percentage) }}%</strong>
-              <small>Grade {{ row.grade }}</small>
-            </span>
+        {% if top_of_class %}<span class="tc-count">{{ top_of_class|length }} class{{ '' if top_of_class|length == 1 else 'es' }}</span>{% endif %}
+      </header>
+      {% if top_of_class %}
+        {% set leader = top_of_class[0] %}
+        <div class="tc-leader">
+          <span class="tc-medal" aria-hidden="true">1</span>
+          <div class="tc-leader__body">
+            <strong class="tc-leader__name">{{ leader.student_name }}</strong>
+            <span class="tc-leader__meta">{{ leader.class_name }} · Grade {{ leader.grade }}</span>
+          </div>
+          <span class="tc-leader__score">{{ '%.1f'|format(leader.percentage) }}%</span>
+        </div>
+        {% if top_of_class|length > 1 %}
+        <ol class="tc-list">
+          {% for row in top_of_class[1:] %}
+          {% set tone = 'good' if row.percentage >= 70 else ('fair' if row.percentage >= 50 else 'poor') %}
+          <li class="tc-row">
+            <span class="tc-pos">{{ loop.index + 1 }}</span>
+            <div class="tc-row__main">
+              <div class="tc-row__top">
+                <span class="tc-row__name">{{ row.student_name }}</span>
+                <span class="tc-row__score tone-{{ tone }}">{{ '%.1f'|format(row.percentage) }}%</span>
+              </div>
+              <div class="tc-bar" aria-hidden="true"><span style="width: {{ [row.percentage, 100]|min }}%"></span></div>
+              <div class="tc-row__meta">{{ row.class_name }} · Grade {{ row.grade }}</div>
+            </div>
           </li>
           {% endfor %}
         </ol>
-        {% if top_of_class_pending %}
-        <div class="ui-panel__body">
-          <p class="ui-panel__desc">No released results yet for: {{ top_of_class_pending|join(', ') }}.</p>
+        {% endif %}
+      {% else %}
+        <div class="tc-empty">
+          {{ icon('podium') }}
+          <p>No released results for {{ top_of_class_term }} yet. A class appears here once its report card results are released.</p>
         </div>
-        {% endif %}
-        {% else %}
-        <div class="ui-empty">{{ icon('podium') }}<p>{% if top_of_class_pending %}No class has a released report card for {{ top_of_class_term }} yet.{% else %}No classes to show yet.{% endif %}</p></div>
-        {% endif %}
-      </div>
+      {% endif %}
     </section>
   </div>
 </div>

@@ -456,29 +456,29 @@ check("Bola's page keeps them apart: four separate term blocks, one line each",
 check("…in order, the newest session first",
       list(term_rows(BOLA))[0][0] == "2027/2028")
 
-# ---------------------------------------------------------------- work that is removed stops counting
+# ---------------------------------------------------------------- unmarked work can be removed without changing a result
+# Work with marks cannot be removed (its marks are part of the term result; the work-deletion suite proves the refusal),
+# so this block removes work nobody has marked, which must leave the term result exactly as it was.
 A_GONE = make_assignment("Assignment to remove", "10", [BOLA])
-grade_assignment(A_GONE, BOLA, "10")
-check("a further assignment, 10/10, lifts the assignment share: 24/40 of 10 = 6.0", close(report(BOLA)["assignment_score"], 6.0),
-      str(report(BOLA)["assignment_score"]))
 admin.post(f"/admin/school/assignments/{A_GONE}/delete", {}, page=f"/admin/school/assignments/{A_GONE}")
-check("removing that assignment takes its mark out of the term result again",
+check("an unmarked assignment can be removed, and the term result is unchanged",
       one("SELECT active FROM school_assignments WHERE id = :a", a=A_GONE) == 0 and close(report(BOLA)["assignment_score"], 4.67),
       str(report(BOLA)["assignment_score"]))
 P_GONE = make_project("Project to remove", "10", [BOLA])
-grade_project(P_GONE, BOLA, "10")
 admin.post(f"/admin/school/projects/{P_GONE}/delete", {}, page=f"/admin/school/projects/{P_GONE}")
-check("…and the same for a removed project", close(report(BOLA)["project_score"], 5.33), str(report(BOLA)["project_score"]))
+PROJECT_BEFORE = report(BOLA)["project_score"]
+check("…and an unmarked project likewise", one("SELECT active FROM school_projects WHERE id = :p", p=P_GONE) == 0 and close(PROJECT_BEFORE, 5.33), str(PROJECT_BEFORE))
 
 # ---------------------------------------------------------------- work with no maximum cannot be scaled, so it is left out
+ASSIGNMENT_BEFORE, TOTAL_BEFORE = report(BOLA)["assignment_score"], report(BOLA)["total_score"]
 A_LOOSE = make_assignment("Assignment with no maximum", "", [BOLA])
 r = grade_assignment(A_LOOSE, BOLA, "5")
 check("an assignment made without a maximum can still be marked", r.status_code in (302, 303))
 check("…but its marks do not count (a score with nothing to scale it against would inflate the share to 6.33)",
-      close(report(BOLA)["assignment_score"], 4.67) and close(report(BOLA)["total_score"], 58.0), str(report(BOLA)))
+      close(report(BOLA)["assignment_score"], ASSIGNMENT_BEFORE) and close(report(BOLA)["total_score"], TOTAL_BEFORE), str(report(BOLA)))
 P_LOOSE = make_project("Project with no maximum", "", [BOLA])
 grade_project(P_LOOSE, BOLA, "5")
-check("…and the same for a project", close(report(BOLA)["project_score"], 5.33), str(report(BOLA)["project_score"]))
+check("…and the same for a project", close(report(BOLA)["project_score"], PROJECT_BEFORE), str(report(BOLA)["project_score"]))
 lone = make_assignment("Only a loose assignment", "", [DAYO])
 grade_assignment(lone, DAYO, "7")
 r = report(DAYO)

@@ -741,3 +741,23 @@ def offer_subject(class_id, subject_id, admin_id):
     db.session.add(ClassSubject(class_id=class_id, subject_id=subject_id, locked=0, final_locked=0,
                                 created_by=admin_id, created_at=datetime.now(timezone.utc).isoformat()))
 
+
+def whole_class_ids(students, class_id):
+    """Every student in a class from a form's student list: what "issue to the whole class" selects."""
+    return [s['id'] for s in students if s['class_id'] == class_id]
+
+
+def assignment_has_marks(assignment_id):
+    """True when any student has a score, a submission, or a status other than undone for this assignment."""
+    return bool(one_scalar(select(func.count()).select_from(AssignmentStudent).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        sa.or_(AssignmentStudent.score.is_not(None), AssignmentStudent.submitted_at.is_not(None),
+               AssignmentStudent.status != 'undone')), 0))
+
+
+def project_has_marks(project_id):
+    """True when any student has a score, or a status other than not_done, for this project."""
+    return bool(one_scalar(select(func.count()).select_from(ProjectStudent).where(
+        ProjectStudent.project_id == project_id,
+        sa.or_(ProjectStudent.score.is_not(None), ProjectStudent.status != 'not_done')), 0))
+

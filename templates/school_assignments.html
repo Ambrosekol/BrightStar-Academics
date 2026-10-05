@@ -2,48 +2,73 @@
 {% block title %}Assignments — {{ school_brand.name }}{% endblock %}
 {% block content %}
 {% include 'school_students_styles.html' %}
+{% include 'school_work_styles.html' %}
 {% set work_tab = 'assignments' %}
 {% include 'school_work_tabs.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Assignments</h1><p class="hero-copy">Choose a class first, then manage the assignments belonging to that class.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_assignment_new')}}">+ Create Assignment</a></div></div>
-<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Assignments are kept inside their class boundary.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_assignments')}}">← All classes</a>{% endif %}</div>
-<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_assignments',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} assignment{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
-{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Assignment boundary.</strong><span>Select a class above to open its assignment register.</span></div>{% endif %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div><h1>Assignments</h1><p class="hero-copy">Pick a class to see its assignments. Issue one to the whole class in a single step, or to chosen students.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_assignment_new')}}">+ Create assignment</a></div></div>
 
-{% if selected_class %}
-<dialog class="cr-modal" id="assignmentsModal">
-  <div class="cr-modal-head">
-    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} Assignments</h2><p>{{assignments|length}} assignment{{'' if assignments|length==1 else 's'}} shown.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assignmentsModal">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <form class="register-search" method="get" style="margin-bottom:16px">
-      <input type="hidden" name="class" value="{{selected_class}}">
-      <input name="q" value="{{search}}" placeholder="Search assignment, subject or class">
+<div class="wk-class-section">
+  <p class="wk-class-section__label">Choose a class <span>· {{ class_cards|length }} classes</span></p>
+  <nav class="wk-class-grid" aria-label="Choose a class">
+    {% for card in class_cards %}
+    <a class="wk-class-tile{{ ' is-active' if selected_class == card.name }}" href="{{ url_for(request.endpoint, **{'class': card.name}) }}" {% if selected_class == card.name %}aria-current="true"{% endif %}>
+      <span class="wk-class-tile__name">{{ card.name }}</span>
+      <span class="wk-class-tile__count">{{ card.count }} assignment{{ '' if card.count == 1 else 's' }}</span>
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+
+{% if not selected_class %}
+  <div class="wk-empty"><strong>Choose a class</strong>Assignments belong to a class. Pick one above to see and manage its assignments.</div>
+{% else %}
+  <div class="wk-toolbar">
+    <form class="wk-search" method="get" role="search">
+      <input type="hidden" name="class" value="{{ selected_class }}">
+      <input name="q" value="{{ search }}" placeholder="Search title, subject or instructions" aria-label="Search assignments">
       <button class="btn btn-light" type="submit">Search</button>
-      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_assignments',class=selected_class)}}">Clear search</a>{% endif %}
-      <a class="btn btn-light" href="{{url_for('admin_school_assignments')}}">← All classes</a>
+      {% if search %}<a class="btn btn-light" href="{{ url_for('admin_school_assignments', **{'class': selected_class}) }}">Clear</a>{% endif %}
     </form>
-    <div class="students-register-scroll">
-      <table class="students-register-table">
-        <thead><tr><th>Assignment</th><th>Subject</th><th>Format</th><th>Students</th><th>Due</th><th>Actions</th></tr></thead>
-        <tbody>
-          {% for a in assignments %}
-          <tr>
-            <td><strong>{{a.title}}</strong><small>{{a.instructions|truncate(70) if a.instructions else 'No instructions'}}</small></td>
-            <td>{{a.subject_name}}</td>
-            <td>{{'CBT-style' if a.assignment_type=='quiz' else 'Written / Task'}}{% if a.assignment_type=='quiz' %}<small>{{a.question_count}} question{{'' if a.question_count==1 else 's'}}</small>{% endif %}</td>
-            <td>{{a.student_count}}</td>
-            <td>{{a.due_date or '—'}}</td>
-            <td><div class="row-actions"><a class="btn btn-primary btn-small" href="{{url_for('admin_school_assignment_detail',assignment_id=a.id)}}">Open</a><a class="btn btn-light" href="{{url_for('admin_school_assignment_edit',assignment_id=a.id)}}">Edit</a><form method="post" action="{{url_for('admin_school_assignment_delete',assignment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" data-confirm="Remove this assignment?">Delete</button></form></div></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="6"><div class="empty-state">No assignments found in {{selected_class}}.</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% if show_deleted %}<a class="btn btn-light" href="{{ url_for('admin_school_assignments', **{'class': selected_class}) }}">Show current</a>{% else %}<a class="btn btn-light" href="{{ url_for('admin_school_assignments', **{'class': selected_class, 'deleted': 1}) }}">Show deleted</a>{% endif %}
+    <span class="muted">{{ assignments|length }} assignment{{ '' if assignments|length == 1 else 's' }} in {{ selected_class }}</span>
   </div>
-</dialog>
-<script nonce="{{ csp_nonce() }}">document.getElementById('assignmentsModal')?.showModal();</script>
+
+  {% if assignments %}
+  <div class="wk-grid">
+    {% for a in assignments %}
+    <article class="wk-card">
+      <div class="wk-card__pills">
+        <span class="wk-pill">{{ a.subject_name }}</span>
+        <span class="wk-pill wk-pill--muted">{{ 'CBT-style' if a.assignment_type == 'quiz' else 'Written / task' }}</span>
+      </div>
+      {% if show_deleted %}<span class="wk-pill wk-pill--due">Deleted</span>{% endif %}
+      <h3 class="wk-card__title">{{ a.title }}</h3>
+      {% if a.instructions %}<p class="wk-card__text">{{ a.instructions }}</p>{% endif %}
+      <dl class="wk-card__facts">
+        <div><dt>Due</dt><dd>{{ a.due_date or 'No due date' }}</dd></div>
+        <div><dt>Issued to</dt><dd>{{ a.student_count }} student{{ '' if a.student_count == 1 else 's' }}</dd></div>
+        {% if a.assignment_type == 'quiz' %}<div><dt>Questions</dt><dd>{{ a.question_count }}</dd></div>{% endif %}
+      </dl>
+      <div class="wk-card__actions">
+        {% if show_deleted %}
+        <form method="post" action="{{ url_for('admin_school_assignment_restore', assignment_id=a.id) }}" data-confirm="Restore this assignment to the list?">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-primary btn-small" type="submit">Restore</button>
+        </form>
+        {% else %}
+        <a class="btn btn-primary btn-small" href="{{ url_for('admin_school_assignment_detail', assignment_id=a.id) }}">Open</a>
+        <a class="btn btn-light btn-small" href="{{ url_for('admin_school_assignment_edit', assignment_id=a.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('admin_school_assignment_delete', assignment_id=a.id) }}" data-confirm="Delete this assignment? Students will no longer see it. You can restore it from the deleted list.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-light btn-small" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="wk-empty"><strong>No assignments in {{ selected_class }} yet</strong>Create one and issue it to the whole class, or to chosen students.</div>
+  {% endif %}
 {% endif %}
 {% endblock %}

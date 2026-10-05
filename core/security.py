@@ -287,6 +287,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_library_return':'library.manage',
     'admin_school_home':'school.view','admin_school_students':'school.students.view','admin_school_student_new':'school.students.create','admin_school_student_edit':'school.students.edit','admin_school_student_toggle':'school.students.delete','admin_school_student_account_reset':'school.students.edit','admin_school_student_account_toggle':'school.students.edit','admin_school_student_account_print':'school.students.view',
     'admin_school_results_import_template':'admin.access','admin_school_results_import_run':'admin.access',
+    'admin_school_assignment_restore':'school.assignments.delete','admin_school_project_restore':'school.projects.delete',
     'admin_school_students_import':'admin.access','admin_school_students_import_template':'admin.access','admin_school_students_import_run':'admin.access',
     'admin_school_students_archived':'school.students.view','admin_school_student_archived_record':'school.students.view','admin_school_students_archive':'school.students.delete','admin_school_students_restore':'school.students.delete',
     'admin_school_classes':'school.classes.view','admin_school_class_edit':'school.classes.manage','admin_school_class_toggle':'school.classes.manage',

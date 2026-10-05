@@ -1,0 +1,82 @@
+<style>
+/* Assignments, projects and their forms: a class picker, a grid of cards, and sectioned forms.
+   Colours follow the school's main colour (--brand) and accent (--blue). */
+.wk-classes { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin: 0 0 14px; scrollbar-width: thin; }
+.wk-class { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--line, #dfe6ef); border-radius: 999px; background: #fff; color: var(--ink, #0f172a); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.wk-class:hover { border-color: var(--brand, #0d2b52); }
+.wk-class__count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 12px; text-align: center; }
+.wk-class.is-active { background: var(--brand, #0d2b52); border-color: var(--brand, #0d2b52); color: #fff; }
+.wk-class.is-active .wk-class__count { background: rgba(255, 255, 255, .2); color: #fff; }
+
+.wk-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
+.wk-search { display: flex; flex: 1 1 320px; max-width: 480px; gap: 8px; }
+.wk-search input { flex: 1; min-width: 0; }
+
+.wk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.wk-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px; background: #fff; border: 1px solid var(--line, #dfe6ef); border-radius: 14px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.wk-card:hover { border-color: color-mix(in srgb, var(--brand, #0d2b52) 35%, #dfe6ef); }
+.wk-card__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.wk-pill { display: inline-block; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--brand, #0d2b52) 8%, #fff); color: var(--brand, #0d2b52); font-size: 12px; font-weight: 600; }
+.wk-pill--muted { background: #f1f5f9; color: #475569; }
+.wk-pill--due { background: #fff7ed; color: #9a3412; }
+.wk-pill--late { background: #fef2f2; color: #991b1b; }
+.wk-card__title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink, #0f172a); line-height: 1.3; overflow-wrap: anywhere; }
+.wk-card__text { margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wk-card__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; padding: 12px 0 0; border-top: 1px solid #eef2f6; }
+.wk-card__facts div { min-width: 0; }
+.wk-card__facts dt { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #94a3b8; }
+.wk-card__facts dd { margin: 2px 0 0; font-size: 13px; color: #0f172a; overflow-wrap: anywhere; }
+.wk-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
+.wk-card__actions form { margin: 0; }
+
+.wk-empty { padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fff; text-align: center; color: #64748b; }
+.wk-empty strong { display: block; margin-bottom: 6px; color: #0f172a; font-size: 16px; }
+
+/* Forms */
+.wk-form { display: flex; flex-direction: column; gap: 16px; max-width: 880px; }
+.wk-section { padding: 20px; background: #fff; border: 1px solid var(--line, #dfe6ef); border-radius: 14px; }
+.wk-section__head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.wk-step { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--brand, #0d2b52); color: #fff; font-weight: 700; font-size: 14px; }
+.wk-section__head h2 { margin: 0; font-size: 16px; color: var(--ink, #0f172a); }
+.wk-section__head p { margin: 2px 0 0; font-size: 13px; color: #64748b; line-height: 1.45; }
+.wk-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.wk-fields .field { min-width: 0; }
+.wk-fields .field-wide { grid-column: 1 / -1; }
+.wk-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.wk-choice label { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line, #dfe6ef); border-radius: 12px; cursor: pointer; background: #fff; }
+.wk-choice label:has(input:checked) { border-color: var(--brand, #0d2b52); background: color-mix(in srgb, var(--brand, #0d2b52) 6%, #fff); }
+.wk-choice input { margin-top: 3px; }
+.wk-choice strong { display: block; font-size: 14px; color: #0f172a; }
+.wk-choice small { display: block; margin-top: 2px; font-size: 12px; color: #64748b; line-height: 1.4; }
+.wk-notice { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: #f8fafc; color: #334155; font-size: 13px; }
+.wk-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; padding: 14px 16px; background: #fff; border: 1px solid var(--line, #dfe6ef); border-radius: 14px; position: sticky; bottom: 0; }
+.wk-actions .wk-hint { margin-right: auto; font-size: 13px; color: #64748b; }
+@media (max-width: 720px) { .wk-fields, .wk-choice { grid-template-columns: 1fr; } .wk-grid { grid-template-columns: 1fr; } }
+/* The existing assignment and project forms, restyled as sections. Their fields and scripts are unchanged. */
+.wk-page { display: flex; flex-direction: column; gap: 16px; max-width: 880px; }
+.wk-page .form-section { background: #fff; border: 1px solid var(--line, #dfe6ef); border-radius: 14px; padding: 20px; margin: 0; }
+.wk-page .form-section-title { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.wk-page .form-section-title h2 { margin: 0; font-size: 16px; color: var(--ink, #0f172a); }
+.wk-page .form-section-title p { margin: 2px 0 0; font-size: 13px; color: #64748b; line-height: 1.45; }
+.wk-page .form-section-title .step { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--brand, #0d2b52); color: #fff; font-weight: 700; font-size: 14px; }
+.wk-page .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.wk-page .form-grid .field { min-width: 0; }
+.wk-page .form-grid .field-wide { grid-column: 1 / -1; }
+.wk-page .form-actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; padding: 14px 16px; background: #fff; border: 1px solid var(--line, #dfe6ef); border-radius: 14px; }
+@media (max-width: 720px) { .wk-page .form-grid { grid-template-columns: 1fr; } }
+/* The outer card gives way to the sections, and the existing format options get a title line and a description line. */
+.card.modern-form:has(> .wk-page) { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.wk-page .form-section label > strong { display: block; margin-bottom: 2px; color: var(--ink, #0f172a); }
+.wk-page .form-section label { line-height: 1.45; }
+/* Class selection: every class is a tile in a grid, so none is hidden off the edge of the screen. */
+.wk-class-section { margin: 0 0 18px; }
+.wk-class-section__label { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #64748b; }
+.wk-class-section__label span { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.wk-class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.wk-class-tile { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line, #dfe6ef); border-radius: 12px; background: #fff; color: var(--ink, #0f172a); text-decoration: none; }
+.wk-class-tile:hover { border-color: var(--brand, #0d2b52); }
+.wk-class-tile__name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-class-tile__count { font-size: 12px; color: #64748b; }
+.wk-class-tile.is-active { background: var(--brand, #0d2b52); border-color: var(--brand, #0d2b52); color: #fff; }
+.wk-class-tile.is-active .wk-class-tile__count { color: rgba(255, 255, 255, .8); }
+</style>

@@ -18,25 +18,167 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.2: the sign-in page fits the screen with no scrolling.",
+      "version": "2.20.26.3",
+      "date": "2026-10-05",
+      "title": "A sign-in page that fits the screen",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The sign-in page now fits on one screen, so nothing needs scrolling to reach the sign-in button, the help links or the version line. Other password pages are unchanged.",
+          "help": "welcome"
+        },
+        {
+          "audience": "family",
+          "text": "The sign-in page now fits on one screen, so you can see the sign-in button and the help links without scrolling."
+        },
+        {
+          "audience": "student",
+          "text": "The sign-in page now fits on one screen, so you can see the sign-in button and the help links without scrolling."
+        }
+      ]
+    },
+    {
+      "_comment": "Changes since 2.20.26.1: work issued to whole classes, the work pages, deletion rules, subjects, the dashboard, the sign-in footer and the guide.",
+      "version": "2.20.26.2",
+      "date": "2026-10-05",
+      "title": "Whole-class work, safer deletion and a clearer dashboard",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Assignments and projects can be issued to a whole class in one step. Choose \"Whole class\" on the form and every student enrolled in that class receives it. Choose \"Selected students\" to tick individuals instead.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "The assignments and projects pages are redesigned. Pick a class from the grid of tiles, which shows every class and how many items each has. Each assignment or project is a card with its subject, due date, and how many students it reaches.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "An assignment or project that has marks, scores or submissions cannot be deleted, because its marks are part of students' term results. It stays on the list.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "Deleted assignments and projects can be restored. Choose \"Show deleted\" on the list to see them, and restore one from its card.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "Every subject is listed on the assignment, project, timetable and result forms. A subject not yet offered to the chosen class is marked as such, and it is offered to that class when you save the work.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "The Top of the Class card on the dashboard is redesigned around the leader of the term. Only classes with released results are shown.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "The dashboard's setup checklist is refreshed from the server about every fifteen minutes, and it is cached in the browser in between.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "The What's new panel opens minimised, so it does not cover the page when you arrive. Its cards have a capped height and can be expanded when you want to read them.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "The sign-in page shows the platform version at the bottom, read from the release notes.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The staff guide is reorganised into groups that follow the order of a school year, with a new page about the dashboard.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Results & Analytics has a clear gap between its summary cards and the section below.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "family",
+          "text": "When a teacher gives an assignment or project to a whole class, every enrolled child receives it, and you are told as before."
+        },
+        {
+          "audience": "family",
+          "text": "Marked assignments and projects cannot be removed once they carry marks, so the marks on your child's report card stay in place."
+        },
+        {
+          "audience": "student",
+          "text": "Assignments and projects given to your class now reach every student in it at once, so nobody is left out of the set work."
+        },
+        {
+          "audience": "student",
+          "text": "Once an assignment or project has been marked, it cannot be removed, so the marks you earned on it stay on your report card."
+        }
+      ]
+    },
+    {
       "_comment": "Newest release first. The date is when the change was made available.",
       "version": "2.20.26.1",
       "date": "2026-10-05",
       "title": "Archiving, bulk imports and the staff directory",
       "changes": [
-        { "audience": "staff", "text": "Archive a student, or several at once, from the class register. An archived student leaves the register, the student count and sign-in, and their record stays on file. Restore them from Archived students.", "help": "students" },
-        { "audience": "staff", "text": "Archived students each have an academic record you can open: class placements, school journey and results by term.", "help": "students" },
-        { "audience": "staff", "text": "The bulk import page has three steps: students, enrolment history and past results. Each step shows once you pick it, and every import is recorded with who ran it.", "help": "students" },
-        { "audience": "staff", "text": "Enrolment history rows can record how a student left each year. A graduate is archived once that year is recorded.", "help": "students" },
-        { "audience": "staff", "text": "Past results can be imported one subject, term and session per row, so a student's record from another system comes across complete.", "help": "results-report-cards" },
-        { "audience": "staff", "text": "A new bulk-import permission can be given to any role. It lets that role run all three import steps without holding each step's own permission.", "help": "roles-permissions" },
-        { "audience": "staff", "text": "The administrators page is a directory of cards with search and a status filter. Each person's page has a summary, a section list and a save bar.", "help": "staff-admin" },
-        { "audience": "staff", "text": "Looking for a permission under overrides? Search loosely: word order, capitals, accents and small spelling mistakes do not matter.", "help": "roles-permissions" },
-
-        { "audience": "family", "text": "Past results: once the school has brought in your child's results from earlier sessions, they appear on their academic record and report cards, shown the same way as this year's." },
-        { "audience": "family", "text": "Students who have left the school are archived. Their sign-in is switched off, but they stay on your portal with their records, results and fees." },
-
-        { "audience": "student", "text": "Past results: once the school has brought in your results from earlier sessions, they appear on your academic record and report cards, shown the same way as this year's." },
-        { "audience": "student", "text": "If you have left the school, your sign-in is switched off. Your records stay with the school." }
+        {
+          "audience": "staff",
+          "text": "Archive a student, or several at once, from the class register. An archived student leaves the register, the student count and sign-in, and their record stays on file. Restore them from Archived students.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Archived students each have an academic record you can open: class placements, school journey and results by term.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "The bulk import page has three steps: students, enrolment history and past results. Each step shows once you pick it, and every import is recorded with who ran it.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Enrolment history rows can record how a student left each year. A graduate is archived once that year is recorded.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Past results can be imported one subject, term and session per row, so a student's record from another system comes across complete.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "A new bulk-import permission can be given to any role. It lets that role run all three import steps without holding each step's own permission.",
+          "help": "roles-permissions"
+        },
+        {
+          "audience": "staff",
+          "text": "The administrators page is a directory of cards with search and a status filter. Each person's page has a summary, a section list and a save bar.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Looking for a permission under overrides? Search loosely: word order, capitals, accents and small spelling mistakes do not matter.",
+          "help": "roles-permissions"
+        },
+        {
+          "audience": "family",
+          "text": "Past results: once the school has brought in your child's results from earlier sessions, they appear on their academic record and report cards, shown the same way as this year's."
+        },
+        {
+          "audience": "family",
+          "text": "Students who have left the school are archived. Their sign-in is switched off, but they stay on your portal with their records, results and fees."
+        },
+        {
+          "audience": "student",
+          "text": "Past results: once the school has brought in your results from earlier sessions, they appear on your academic record and report cards, shown the same way as this year's."
+        },
+        {
+          "audience": "student",
+          "text": "If you have left the school, your sign-in is switched off. Your records stay with the school."
+        }
       ]
     }
   ]

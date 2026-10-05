@@ -2,48 +2,73 @@
 {% block title %}Projects — {{ school_brand.name }}{% endblock %}
 {% block content %}
 {% include 'school_students_styles.html' %}
+{% include 'school_work_styles.html' %}
 {% set work_tab = 'projects' %}
 {% include 'school_work_tabs.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Create practical classroom projects, give them a required date, and record completion and scores.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
-<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{{url_for('admin_school_projects')}}">← All classes</a>{% endif %}</div>
-<div class="segment-card-grid school-segment-grid">{% for c in class_cards %}<a class="segment-card {% if selected_class==c.name %}selected{% endif %}" href="{{url_for('admin_school_projects',class=c.name)}}"><div class="segment-icon">{{c.name.split(' ')[0][:1]}}{{c.name.split(' ')[1][:1] if c.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{c.name}}</h2><p>{{c.count}} project{{'' if c.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
-{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Choose a class.</strong><span>Projects are organized by the class where the subject is taught.</span></div>{% endif %}
+<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Practical classroom work with a date it is given and a date it is due. Issue a project to the whole class in one step, or to chosen students.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
 
-{% if selected_class %}
-<dialog class="cr-modal" id="projectsModal">
-  <div class="cr-modal-head">
-    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} Projects</h2><p>{{projects|length}} project{{'' if projects|length==1 else 's'}} shown.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="projectsModal">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <form class="register-search" method="get" style="margin-bottom:16px">
-      <input type="hidden" name="class" value="{{selected_class}}">
-      <input name="q" value="{{search}}" placeholder="Search project or subject">
+<div class="wk-class-section">
+  <p class="wk-class-section__label">Choose a class <span>· {{ class_cards|length }} classes</span></p>
+  <nav class="wk-class-grid" aria-label="Choose a class">
+    {% for card in class_cards %}
+    <a class="wk-class-tile{{ ' is-active' if selected_class == card.name }}" href="{{ url_for(request.endpoint, **{'class': card.name}) }}" {% if selected_class == card.name %}aria-current="true"{% endif %}>
+      <span class="wk-class-tile__name">{{ card.name }}</span>
+      <span class="wk-class-tile__count">{{ card.count }} project{{ '' if card.count == 1 else 's' }}</span>
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+
+{% if not selected_class %}
+  <div class="wk-empty"><strong>Choose a class</strong>Projects are organised by the class where the subject is taught. Pick one above to see its projects.</div>
+{% else %}
+  <div class="wk-toolbar">
+    <form class="wk-search" method="get" role="search">
+      <input type="hidden" name="class" value="{{ selected_class }}">
+      <input name="q" value="{{ search }}" placeholder="Search title, subject or class" aria-label="Search projects">
       <button class="btn btn-light" type="submit">Search</button>
-      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_projects',class=selected_class)}}">Clear search</a>{% endif %}
-      <a class="btn btn-light" href="{{url_for('admin_school_projects')}}">← All classes</a>
+      {% if search %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class}) }}">Clear</a>{% endif %}
     </form>
-    <div class="students-register-scroll">
-      <table class="students-register-table">
-        <thead><tr><th>Project</th><th>Subject</th><th>Students</th><th>Given</th><th>Required</th><th>Action</th></tr></thead>
-        <tbody>
-          {% for p in projects %}
-          <tr>
-            <td><strong>{{p.title}}</strong><small>{{p.instructions|truncate(80) if p.instructions else 'No instructions'}}</small></td>
-            <td>{{p.subject_name}}</td>
-            <td>{{p.student_count}}</td>
-            <td>{{p.date_given}}</td>
-            <td>{{p.due_date or '—'}}</td>
-            <td><a class="btn btn-light btn-small" href="{{url_for('admin_school_project_detail',project_id=p.id)}}">Open</a></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="6" class="muted">No projects found in {{selected_class}}.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% if show_deleted %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class}) }}">Show current</a>{% else %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class, 'deleted': 1}) }}">Show deleted</a>{% endif %}
+    <span class="muted">{{ projects|length }} project{{ '' if projects|length == 1 else 's' }} in {{ selected_class }}</span>
   </div>
-</dialog>
-<script nonce="{{ csp_nonce() }}">document.getElementById('projectsModal')?.showModal();</script>
+
+  {% if projects %}
+  <div class="wk-grid">
+    {% for p in projects %}
+    <article class="wk-card">
+      <div class="wk-card__pills">
+        <span class="wk-pill">{{ p.subject_name }}</span>
+        {% if p.max_score %}<span class="wk-pill wk-pill--muted">Out of {{ p.max_score|int if p.max_score == p.max_score|int else p.max_score }}</span>{% endif %}
+      </div>
+      {% if show_deleted %}<span class="wk-pill wk-pill--due">Deleted</span>{% endif %}
+      <h3 class="wk-card__title">{{ p.title }}</h3>
+      {% if p.instructions %}<p class="wk-card__text">{{ p.instructions }}</p>{% endif %}
+      <dl class="wk-card__facts">
+        <div><dt>Given</dt><dd>{{ p.date_given or '—' }}</dd></div>
+        <div><dt>Due</dt><dd>{{ p.due_date or 'No due date' }}</dd></div>
+        <div><dt>Issued to</dt><dd>{{ p.student_count }} student{{ '' if p.student_count == 1 else 's' }}</dd></div>
+      </dl>
+      <div class="wk-card__actions">
+        {% if show_deleted %}
+        <form method="post" action="{{ url_for('admin_school_project_restore', project_id=p.id) }}" data-confirm="Restore this project to the list?">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-primary btn-small" type="submit">Restore</button>
+        </form>
+        {% else %}
+        <a class="btn btn-primary btn-small" href="{{ url_for('admin_school_project_detail', project_id=p.id) }}">Open</a>
+        <a class="btn btn-light btn-small" href="{{ url_for('admin_school_project_edit', project_id=p.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('admin_school_project_delete', project_id=p.id) }}" data-confirm="Delete this project? Students will no longer see it. You can restore it from the deleted list.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-light btn-small" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="wk-empty"><strong>No projects in {{ selected_class }} yet</strong>Create one and issue it to the whole class, or to chosen students.</div>
+  {% endif %}
 {% endif %}
 {% endblock %}

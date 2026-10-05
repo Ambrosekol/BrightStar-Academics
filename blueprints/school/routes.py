@@ -55,7 +55,8 @@ from blueprints.school.helpers import (
     _school_pair_allowed, _school_sessions, _school_student_visible,
     _school_subject_allowed, _set_ca_weights, _student_term_periods,
     _student_term_subjects, _sync_enrolment_for_history, _term_subject_report,
-    _work_with_class_subject, archive_students, offer_subject,
+    _work_with_class_subject, archive_students, offer_subject, whole_class_ids,
+    assignment_has_marks, project_has_marks,
 )
 
 
@@ -1050,7 +1051,7 @@ def admin_school_subject_final_lock(subject_id,class_id):
 @app.route('/admin/school/assignments')
 @admin_required
 def admin_school_assignments():
-    selected_class=request.args.get('class','').strip(); search=request.args.get('q','').strip()
+    selected_class=request.args.get('class','').strip(); search=request.args.get('q','').strip(); show_deleted=request.args.get('deleted')=='1'
     question_count=(select(func.count()).select_from(AssignmentQuestion)
                     .where(AssignmentQuestion.assignment_id==SchoolAssignment.id)
                     .correlate(SchoolAssignment).scalar_subquery())
@@ -1063,7 +1064,7 @@ def admin_school_assignments():
         .join(SchoolClass,SchoolClass.id==SchoolAssignment.class_id)
         .join(SchoolSubject,SchoolSubject.id==SchoolAssignment.subject_id)
         .outerjoin(AssignmentStudent,AssignmentStudent.assignment_id==SchoolAssignment.id)
-        .where(SchoolAssignment.active==1)
+        .where(SchoolAssignment.active==(0 if show_deleted else 1))
         .group_by(SchoolAssignment.id,SchoolClass.id,SchoolSubject.id)
         .order_by(SchoolAssignment.id.desc()))]
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
@@ -1076,7 +1077,7 @@ def admin_school_assignments():
     if selected_class: rows=[r for r in rows if r['class_name']==selected_class]
     if search:
         needle=search.casefold(); rows=[r for r in rows if needle in f"{r['title']} {r['class_name']} {r['subject_name']}".casefold()]
-    return render_template('school_assignments.html',assignments=rows,class_cards=cards,selected_class=selected_class,search=search)
+    return render_template('school_assignments.html',assignments=rows,class_cards=cards,selected_class=selected_class,search=search,show_deleted=show_deleted)
 
 @app.route('/admin/school/assignments/new',methods=['GET','POST'])
 @admin_required
@@ -1100,6 +1101,7 @@ def admin_school_assignment_new():
         if assignment_type=='quiz' and timing_mode=='per_question' and per_q<=0: errors.append('Enter the time allowed for each question.')
         if timing_mode not in ('untimed','overall','per_question'): errors.append('Choose a valid timing mode.')
         allowed={r['id'] for r in students if r['class_id']==cid}
+        if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
         if not student_ids: errors.append('Select at least one student.')
         if any(x not in allowed for x in student_ids): errors.append('One or more selected students are outside the selected class.')
         if max_score<0: errors.append('Maximum score cannot be negative.')
@@ -1215,6 +1217,7 @@ def admin_school_assignment_edit(assignment_id):
         if term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
         if assignment_type=='quiz' and timing_mode=='overall' and time_limit<=0: errors.append('Enter an overall time limit.')
         if assignment_type=='quiz' and timing_mode=='per_question' and per_q<=0: errors.append('Enter a per-question time limit.')
+        if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
         if not student_ids: errors.append('Select at least one student.')
         if errors:
             form={c.key:getattr(a,c.key) for c in a.__mapper__.column_attrs}
@@ -1249,14 +1252,29 @@ def admin_school_assignment_delete(assignment_id):
     a=obj(SchoolAssignment,assignment_id)
     if not a: abort(404)
     if not _school_pair_allowed(current_admin()['id'],a.class_id,a.subject_id): return admin_access_error('school.assignments.delete')
+    if assignment_has_marks(assignment_id):
+        flash("This assignment has marks or submissions recorded. Its marks are part of students' term results, so it cannot be deleted and stays on the list.",'error')
+        return redirect(url_for('admin_school_assignments'))
     a.active=0
     db.session.commit()
-    audit_log('school_assignment_deleted','school','assignment',assignment_id); flash('Assignment removed.','success'); return redirect(url_for('admin_school_assignments'))
+    audit_log('school_assignment_deleted','school','assignment',assignment_id); flash('Assignment removed. You can restore it from the deleted list.','success'); return redirect(url_for('admin_school_assignments'))
+
+@app.post('/admin/school/assignments/<int:assignment_id>/restore')
+@admin_required
+@csrf_protect
+def admin_school_assignment_restore(assignment_id):
+    a=obj(SchoolAssignment,assignment_id)
+    if not a: abort(404)
+    if not _school_pair_allowed(current_admin()['id'],a.class_id,a.subject_id): return admin_access_error('school.assignments.delete')
+    a.active=1
+    db.session.commit()
+    audit_log('school_assignment_restored','school','assignment',assignment_id); flash('Assignment restored.','success')
+    return redirect(url_for('admin_school_assignments',deleted=1))
 
 @app.route('/admin/school/projects')
 @admin_required
 def admin_school_projects():
-    selected_class=request.args.get('class','').strip(); search=request.args.get('q','').strip()
+    selected_class=request.args.get('class','').strip(); search=request.args.get('q','').strip(); show_deleted=request.args.get('deleted')=='1'
     rows=[_flatten(r,'SchoolProject','class_name','subject_name','student_count')
           for r in all_rows(
         select(SchoolProject,SchoolClass.name.label('class_name'),
@@ -1265,7 +1283,7 @@ def admin_school_projects():
         .join(SchoolClass,SchoolClass.id==SchoolProject.class_id)
         .join(SchoolSubject,SchoolSubject.id==SchoolProject.subject_id)
         .outerjoin(ProjectStudent,ProjectStudent.project_id==SchoolProject.id)
-        .where(SchoolProject.active==1)
+        .where(SchoolProject.active==(0 if show_deleted else 1))
         .group_by(SchoolProject.id,SchoolClass.id,SchoolSubject.id)
         .order_by(SchoolProject.id.desc()))]
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
@@ -1278,7 +1296,7 @@ def admin_school_projects():
     if selected_class: rows=[r for r in rows if r['class_name']==selected_class]
     if search:
         n=search.casefold(); rows=[r for r in rows if n in f"{r['title']} {r['class_name']} {r['subject_name']}".casefold()]
-    return render_template('school_projects.html',projects=rows,class_cards=cards,selected_class=selected_class,search=search)
+    return render_template('school_projects.html',projects=rows,class_cards=cards,selected_class=selected_class,search=search,show_deleted=show_deleted)
 
 @app.route('/admin/school/projects/new',methods=['GET','POST'])
 @admin_required
@@ -1296,6 +1314,7 @@ def admin_school_project_new():
         if not _school_pair_allowed(me['id'],cid,sid): errors.append('Select a class and subject within your authorised scope.')
         if not session_id or not one_scalar(select(AcademicSession.id).where(AcademicSession.id==session_id)): errors.append('Select a valid academic session.')
         if term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
+        if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
         if not student_ids: errors.append('Select at least one student.')
         allowed={r['id'] for r in students if r['class_id']==cid}
         if any(x not in allowed for x in student_ids): errors.append('One or more selected students are outside the selected class.')
@@ -1373,6 +1392,7 @@ def admin_school_project_edit(project_id):
         if not _school_pair_allowed(me['id'],cid,sid): errors.append('Select a valid class and subject.')
         if not session_id or not one_scalar(select(AcademicSession.id).where(AcademicSession.id==session_id)): errors.append('Select a valid academic session.')
         if term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
+        if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
         if not student_ids: errors.append('Select at least one student.')
         if errors:
             form={c.key:getattr(p,c.key) for c in p.__mapper__.column_attrs}
@@ -1399,9 +1419,24 @@ def admin_school_project_delete(project_id):
     me=current_admin(); p=obj(SchoolProject,project_id)
     if not p: abort(404)
     if not _school_pair_allowed(me['id'],p.class_id,p.subject_id): return admin_access_error('school.projects.delete')
+    if project_has_marks(project_id):
+        flash("This project has marks recorded. Its marks are part of students' term results, so it cannot be deleted and stays on the list.",'error')
+        return redirect(url_for('admin_school_projects'))
     p.active=0
     db.session.commit()
-    audit_log('school_project_deleted','school','project',project_id); flash('Project removed.','success'); return redirect(url_for('admin_school_projects'))
+    audit_log('school_project_deleted','school','project',project_id); flash('Project removed. You can restore it from the deleted list.','success'); return redirect(url_for('admin_school_projects'))
+
+@app.post('/admin/school/projects/<int:project_id>/restore')
+@admin_required
+@csrf_protect
+def admin_school_project_restore(project_id):
+    me=current_admin(); p=obj(SchoolProject,project_id)
+    if not p: abort(404)
+    if not _school_pair_allowed(me['id'],p.class_id,p.subject_id): return admin_access_error('school.projects.delete')
+    p.active=1
+    db.session.commit()
+    audit_log('school_project_restored','school','project',project_id); flash('Project restored.','success')
+    return redirect(url_for('admin_school_projects',deleted=1))
 
 @app.route('/admin/school/tests')
 @admin_required

@@ -10,7 +10,7 @@
 .dock-card__sub{display:block;margin-top:2px;font-size:12px;font-weight:500;opacity:.82}
 .dock-btn{display:grid;place-items:center;flex:none;width:28px;height:28px;border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font-size:16px;line-height:1;cursor:pointer}
 .dock-btn:hover{background:rgba(255,255,255,.26)}
-.dock-card__body{max-height:min(54vh,460px);overflow:auto;padding:14px 16px 16px}
+.dock-card__body{max-height:min(40vh,340px);overflow:auto;padding:14px 16px 16px}
 .dock-card.is-min .dock-card__body{display:none}
 .dock-progress{height:6px;margin:0 0 12px;border-radius:999px;background:#e6ecf3;overflow:hidden}
 .dock-progress>span{display:block;height:100%;background:var(--blue,#1674b9);border-radius:999px}
@@ -92,7 +92,7 @@
     for(var i=0;i<n;i++){ var p=x[i]||0, q=y[i]||0; if(p!==q) return p>q; }
     return false;
   }
-  function minimiseFor(card){
+  function minimiseFor(card,startMinimised){
     var name=card.getAttribute('data-dock');
     var button=card.querySelector('[data-dock-min]');
     function set(on){
@@ -102,7 +102,8 @@
       button.textContent=on?'+':'–';
       write('bs-dock:'+name,on?'1':'0');
     }
-    set(read('bs-dock:'+name)==='1');
+    var stored=read('bs-dock:'+name);
+    set(stored===null ? startMinimised : stored==='1');
     button.addEventListener('click',function(){ set(!card.classList.contains('is-min')); });
   }
   function postForm(url){
@@ -128,7 +129,7 @@
     if(shown){
       updates.querySelector('[data-updates-count]').textContent=shown+' update'+(shown===1?'':'s')+' since you last looked';
       updates.hidden=false;
-      minimiseFor(updates);
+      minimiseFor(updates,true);
       updates.querySelector('[data-dock-close]').addEventListener('click',function(){
         write(seenKey,appVersion);
         updates.remove();
@@ -151,7 +152,7 @@
       setup.querySelector('[data-setup-count]').textContent=(body.querySelectorAll('.dock-step.is-done').length)+' of '+(body.querySelectorAll('.dock-step').length)+' steps done';
       setup.hidden=false;
       dock.hidden=false;
-      minimiseFor(setup);
+      minimiseFor(setup,false);
     }
     function remember(html){ write(cacheKey,JSON.stringify({at:Date.now(),html:html})); }
     var cached=null;

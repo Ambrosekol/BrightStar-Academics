@@ -1,6 +1,7 @@
 {% extends 'auth_base.html' %}
 {% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Portal Sign In — {{ school_title }}{% endblock %}
+{% block body_class %}auth-fit{% endblock %}
 {% block card %}
         <h1 class="auth-title">Portal Sign In</h1>
         <p class="auth-lead">Enter your assigned ID or username to continue</p>
@@ -37,4 +38,5 @@
         </div>
 
         <p class="auth-help"><a class="ui-link" href="{% if school_brand.email %}mailto:{{ school_brand.email }}{% else %}{{ url_for('forgot_password') }}{% endif %}">Need Help or Forgot Password?</a></p>
+        <p class="auth-version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
 {% endblock %}

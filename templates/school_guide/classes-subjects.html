@@ -20,9 +20,13 @@ just a choice on a form, not something you create.</p>
 <h2 id="subjects">Subjects</h2>
 <p><a href="{{ url_for('admin_school_subjects') }}">Subjects</a> are not seeded: a brand-new school has
 none, which is the second step of the setup checklist. Creating a subject attaches it to one or more
-classes at the same time, so it only ever shows up where it is actually taught. A subject can be
-<strong>locked</strong> once its results are being finalised, which stops further changes to it for
-that class.</p>
+classes at the same time, and a subject you have added is then listed on every form that asks for a subject.
+A subject that is not yet attached to the class you pick on a form is still listed, marked as not yet offered to
+that class. Saving the work offers the subject to the class, so you never have to go back to Subjects first. A
+subject can be <strong>locked</strong> once its results are being finalised, which stops further changes to it
+for that class.</p>
+<div class="guide-note">The assignment, project, timetable and result forms all follow this rule, so a subject
+you cannot find in a drop-down is almost always one that has not been created yet, not one that has been hidden.</div>
 
 <h2 id="promotion">Moving a class up a session</h2>
 <p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> lets you

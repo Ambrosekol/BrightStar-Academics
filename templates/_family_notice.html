@@ -9,7 +9,7 @@
 .fnotice__sub{display:block;margin-top:2px;font-size:12px;font-weight:500;opacity:.82}
 .fnotice__btn{display:grid;place-items:center;flex:none;width:28px;height:28px;border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font-size:16px;line-height:1;cursor:pointer}
 .fnotice__btn:hover{background:rgba(255,255,255,.26)}
-.fnotice__body{max-height:min(54vh,420px);overflow:auto;padding:14px 16px 16px}
+.fnotice__body{max-height:min(40vh,320px);overflow:auto;padding:14px 16px 16px}
 .fnotice.is-min .fnotice__body{display:none}
 .fnotice h3{margin:0 0 8px;font-size:14px;color:#0f172a}
 .fnotice h3 span{font-size:12px;font-weight:500;color:#94a3b8}
@@ -80,7 +80,8 @@
     minimise.textContent=on?'+':'–';
     write('bs-fnotice:min',on?'1':'0');
   }
-  setMinimised(read('bs-fnotice:min')==='1');
+  var storedMin=read('bs-fnotice:min');
+  setMinimised(storedMin===null ? true : storedMin==='1');
   minimise.addEventListener('click',function(){ setMinimised(!box.classList.contains('is-min')); });
 
   close.addEventListener('click',function(){

@@ -5,21 +5,44 @@
 Practice Tests and Examinations — and every one except Practice feeds the same term result once
 marked (see {{ page('results-report-cards', 'Results and report cards') }}).</p>
 
+<h2 id="finding-work">Finding work: the class tiles</h2>
+<p>Both the Assignments and the Projects pages open on a grid of tiles, one for each class, with how many
+items each class has. Pick a tile to see that class's work as cards, one card for each assignment or project,
+showing its subject, its due date and how many students it reaches. The search box narrows the cards you can
+see. A card's buttons open it, edit it or delete it.</p>
+
+<h2 id="issuing">Issuing work to a whole class or to chosen students</h2>
+<p>On the new-work form, the Students section has two choices. <strong>Whole class</strong> is the default for
+new work: every student enrolled in the chosen class receives it, including students who join the class later
+when the work is issued to them. <strong>Selected students</strong> shows the list of students, so you can
+tick only the ones who should receive it. The form tells you how many students the whole class has before you
+save.</p>
+
 <h2 id="assignments">Assignments</h2>
 <p><a href="{{ url_for('admin_school_assignments') }}">Assignments</a> can be written work you mark by
 hand, or a quiz taken on-screen and marked automatically, timed or not. Open the list, choose
 <strong>New assignment</strong>, and set the class, subject, session and term it belongs to, which
-students it applies to, and — for a quiz — the questions themselves (a text, four options and the
-right one, exactly like a question bank question). Once students have started work, opening one
-assignment from the list shows every student's own answer or score, ready to mark or check.</p>
+students it applies to (see the section above), and — for a quiz — the questions themselves (a text, four
+options and the right one, exactly like a question bank question). Once students have started work, opening
+one assignment from the list shows every student's own answer or score, ready to mark or check.</p>
 
 <h2 id="projects">Projects</h2>
 <p><a href="{{ url_for('admin_school_projects') }}">Projects</a> are practical, longer-running tasks —
 a model to build, a report to write — with their own due date. There is no on-screen quiz for a
 project: a student is simply marked as having completed it or not, with a score and a remark you add
-by hand once you have seen the work. Opening a project has a <em>Delete</em> button, for whoever may
-edit that class and subject's projects; it removes the project from this list, but every student's
-already-recorded score and remark against it are kept.</p>
+by hand once you have seen the work. Each project card has its own <em>Delete</em> button, for whoever may
+edit that class and subject's projects.</p>
+
+<h2 id="deleting">Deleting and restoring work</h2>
+<p>Work that nobody has marked can be deleted. It leaves the current list and goes to the deleted list, which
+you open with <strong>Show deleted</strong> at the top of the page. From there, <strong>Restore</strong> puts it
+back on the current list, and nothing about it is lost.</p>
+<div class="guide-warn">An assignment or project that already has marks, scores or submissions cannot be
+deleted. Its marks are part of each student's term result, and a report card must still add up after the
+school closes the term. The portal refuses the delete and the work stays on the list. If the work was given
+by mistake, leave it on the list and tell the class teacher or the School Admin.</div>
+<p>Deleting work never changes a report card that has already been released. The lists show only current work
+in the term results, so removing an unmarked item simply means it is no longer counted.</p>
 
 <h2 id="tests-and-examinations">Tests and Examinations: two separate shelves for the same kind of work</h2>
 <p><a href="{{ url_for('admin_school_tests') }}">Tests</a> and

@@ -1,0 +1,39 @@
+{% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page with context %}
+{% block guide %}
+<p>The School portal's home page is the first thing you see after choosing the School workspace. It gives the
+school's numbers, the next steps for a new school, which term's top students each class has, and the panel
+that tells you what has changed. You can reach every area of the school from its cards.</p>
+
+<h2 id="numbers">The numbers at the top</h2>
+<p>The large tile counts the students enrolled in the current session. The smaller tiles count classes,
+subjects, assignments, projects, tests and examinations. Each one is a live count, so it changes as work is
+added or removed. Deleted work is not counted.</p>
+
+<h2 id="setup">Finish setting up your school</h2>
+<p>A new school has four steps to finish before it can really run: review its classes (the standard list is
+already there, so usually this is done), add its subjects, enrol its students, and set up its fee items. Each
+step shows as done when the school has the data for it, and it links straight to the page where that happens.
+See {{ page('classes-subjects', 'Classes and subjects') }}, {{ page('students', 'Students') }} and
+{{ page('finance', 'Fees, payments and receipts') }}.</p>
+<p>Closing the checklist hides it for the whole school, as it always has. Its progress is refreshed about every
+fifteen minutes, so a step you have just finished may take that long to show as done.</p>
+
+<h2 id="top-of-class">Top of the Class</h2>
+<p>This card shows the highest-scoring student in each class for the current term and session. A class appears
+only once its report card results for that term are released, so a class with no released results is left off
+rather than shown empty. The leader is featured at the top, and the other classes follow with their percentage
+and grade. The term and session are shown in the card's heading.</p>
+<div class="guide-tip">The score is the same one on the student's report card, so the two always agree. Changing a
+result changes the card once it is recalculated.</div>
+
+<h2 id="panel">The panel at the bottom right</h2>
+<p>The panel holds the setup checklist and the What's new notices. It opens minimised, so it does not cover the
+page when you arrive. Read more about it in {{ page('staff-admin', 'Staff, roles and branding') }}, under
+<em>The panel at the bottom right</em>.</p>
+
+<h2 id="where-to-go">Where to go from here</h2>
+<p>The cards below the numbers are grouped by area: people and access, academic structure, assessment, and records
+and communication. Each card opens its page and says what that page is for. If a card you expect is missing, the
+reason is almost always a permission. See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</p>
+{% endblock %}
