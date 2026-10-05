@@ -55,7 +55,7 @@ from blueprints.school.helpers import (
     _school_pair_allowed, _school_sessions, _school_student_visible,
     _school_subject_allowed, _set_ca_weights, _student_term_periods,
     _student_term_subjects, _sync_enrolment_for_history, _term_subject_report,
-    _work_with_class_subject, archive_students,
+    _work_with_class_subject, archive_students, offer_subject,
 )
 
 
@@ -1116,6 +1116,7 @@ def admin_school_assignment_new():
             db.session.add(AssignmentStudent(assignment_id=aid,student_id=stid,
                                              status='undone',max_score=max_score or None))
         _notify_school_work(student_ids,'assignment','New assignment',f'{title} has been assigned. Due: {due or "No due date"}.',url_for('student_assignment_detail',assignment_id=aid),me['id'])
+        offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
         _notify_guardians_of_school_work(student_ids,'assignment',title,due)
         audit_log('school_assignment_created','school','assignment',aid,{'class_id':cid,'subject_id':sid,'students':student_ids,'assignment_type':assignment_type,'session_id':session_id,'term':term}); flash('Assignment created. Add questions if this is a CBT-style assignment.','success'); return redirect(url_for('admin_school_assignment_detail',assignment_id=aid))
@@ -1236,6 +1237,7 @@ def admin_school_assignment_edit(assignment_id):
                 AssignmentStudent.assignment_id==assignment_id,
                 AssignmentStudent.student_id==stid,
                 AssignmentStudent.student_id.not_in(started)))
+        offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
         audit_log('school_assignment_updated','school','assignment',assignment_id,{'class_id':cid,'subject_id':sid}); flash('Assignment updated.','success'); return redirect(url_for('admin_school_assignment_detail',assignment_id=assignment_id))
     return render_template('school_assignment_form.html',mode='edit',assignment=a,classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
@@ -1307,6 +1309,7 @@ def admin_school_project_new():
         for stid in student_ids:
             db.session.add(ProjectStudent(project_id=pid,student_id=stid,status='not_done'))
         _notify_school_work(student_ids,'project','New project',f'{title} has been assigned. Required: {due or "No due date"}.',url_for('student_dashboard')+'#projects',me['id'])
+        offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
         _notify_guardians_of_school_work(student_ids,'project',title,due)
         audit_log('school_project_created','school','project',pid,{'class_id':cid,'subject_id':sid,'students':student_ids,'session_id':session_id,'term':term}); flash('Project created and assigned.','success'); return redirect(url_for('admin_school_project_detail',project_id=pid))
@@ -1384,6 +1387,7 @@ def admin_school_project_edit(project_id):
         for stid in old-new:
             db.session.execute(sa_delete(ProjectStudent).where(
                 ProjectStudent.project_id==project_id,ProjectStudent.student_id==stid))
+        offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
         audit_log('school_project_updated','school','project',project_id,{'class_id':cid,'subject_id':sid}); flash('Project updated.','success'); return redirect(url_for('admin_school_project_detail',project_id=project_id))
     return render_template('school_project_form.html',mode='edit',project=p,classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
@@ -1640,7 +1644,7 @@ def admin_school_result_manual_new():
     current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=_result_term(request.values.get('term','')) or 'Full Session'; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
     subjects=all_rows(select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,
                              group_concat(ClassSubject.class_id).label('class_ids'))
-        .join(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
+        .outerjoin(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
         .where(SchoolSubject.active==1)
         .group_by(SchoolSubject.id).order_by(SchoolSubject.name))
     students=all_rows(select(Student.id,Student.admission_no,Student.first_name,
@@ -1659,7 +1663,7 @@ def admin_school_result_manual_new():
     if student_id:
         selected_student=next((x for x in students if x['id']==student_id),None)
         if selected_student: class_id=selected_student['class_id']
-    if class_id: subjects=[x for x in subjects if str(class_id) in (x['class_ids'] or '').split(',')]
+    if class_id: subjects=sorted(subjects,key=lambda x: str(class_id) not in (x['class_ids'] or '').split(','))
 
     def existing_rows():
         if not (student_id and subject_id and session_id):
@@ -1689,9 +1693,6 @@ def admin_school_result_manual_new():
         if not subject: errors.append('Select a subject that has been created for the selected class.')
         if not _school_class_allowed(me['id'],class_id): errors.append('The selected class is outside your authorised scope.')
         if not _school_subject_allowed(me['id'],subject_id): errors.append('The selected subject is outside your authorised scope.')
-        if not one_scalar(select(ClassSubject.id).where(ClassSubject.class_id==class_id,
-                                                        ClassSubject.subject_id==subject_id)):
-            errors.append('That subject has not been created for the selected class.')
         if not took:
             if not absence: errors.append('State why the student did not take the test.')
         else:
@@ -1733,6 +1734,7 @@ def admin_school_result_manual_new():
         if errors:
             db.session.rollback()
             return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,students=students,existing=existing,errors=errors,form=request.form)
+        offer_subject(class_id,subject_id,me['id'])
         db.session.commit()
         audit_log('school_manual_result_entered','school','result',student_id,{'subject_id':subject_id,'session_id':session_id,'term':term,'took_test':took}); flash('The offline Test/Exam record has been entered and is awaiting verification.','success'); return redirect(url_for('admin_school_results',**{'class':student['class_name']}))
     return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,students=students,existing=existing,errors=errors,form=request.args)

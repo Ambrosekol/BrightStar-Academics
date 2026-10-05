@@ -14,7 +14,7 @@ from flask import Response, abort, flash, redirect, render_template, request, ur
 from sqlalchemy import select
 
 from app import ACADEMIC_TERMS, _school_current_session, app
-from blueprints.school.helpers import _assignment_form_data, _school_class_allowed, _school_pair_allowed
+from blueprints.school.helpers import _assignment_form_data, _school_class_allowed, _school_pair_allowed, offer_subject
 from blueprints.school.timetable_data import EXAM_TYPES, entry_rows, release, save_entry
 from blueprints.school.timetable_notices import announce_timetable_released
 from core.branding import school_brand
@@ -89,6 +89,7 @@ def admin_school_timetable_new():
         db.session.rollback()
         flash(str(exc), 'error')
         return _redirect_back(session_row, term)
+    offer_subject(values['class_id'], values['subject_id'], current_admin()['id'])
     db.session.commit()
     audit_log('timetable_entry_created', 'school', 'class', values['class_id'],
               {'session_id': session_row.id, 'term': term, 'subject_id': values['subject_id']})
@@ -115,6 +116,7 @@ def admin_school_timetable_edit(entry_id):
         db.session.rollback()
         flash(str(exc), 'error')
         return _redirect_back(session_row, term)
+    offer_subject(values['class_id'], values['subject_id'], current_admin()['id'])
     db.session.commit()
     audit_log('timetable_entry_edited', 'school', 'class', values['class_id'],
               {'entry_id': entry_id, 'session_id': entry.session_id, 'term': entry.term})

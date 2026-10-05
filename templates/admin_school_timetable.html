@@ -63,7 +63,12 @@
     var cid = cls.value;
     Array.prototype.forEach.call(sub.options, function(o){
       if (!o.value) return;
-      o.hidden = !!cid && (o.dataset.classes || '').split(',').indexOf(cid) === -1;
+      // Every subject stays selectable. One that is not yet offered to the chosen class is labelled, and it is
+      // offered to that class when the entry is saved.
+      if (!o.dataset.base) o.dataset.base = o.textContent;
+      var offered = !!cid && (o.dataset.classes || '').split(',').indexOf(cid) !== -1;
+      o.hidden = false;
+      o.textContent = o.dataset.base + (cid && !offered ? ' — will be offered to this class on save' : '');
     });
     if (sub.selectedOptions[0] && sub.selectedOptions[0].hidden) sub.value = '';
   }

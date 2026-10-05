@@ -33,13 +33,16 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [Documentation, the marketing page and the privacy statement](#documentation-the-marketing-page-and-the-privacy-statement)
 - [The new-school setup checklist](#the-new-school-setup-checklist)
 - [Email and WhatsApp](#email-and-whatsapp)
+- [Administrators and access](#administrators-and-access)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
 - [Practice tests](#practice-tests)
 - [Attendance](#attendance)
 - [Exam and test timetables](#exam-and-test-timetables)
-- [Bulk student import](#bulk-student-import)
+- [Bulk import: students, history and past results](#bulk-import-students-history-and-past-results)
+- [Archiving students](#archiving-students)
 - [Admissions: candidate to student](#admissions-candidate-to-student)
+- [What's new, notices and browser caching](#whats-new-notices-and-browser-caching)
 - [The staff guide](#the-staff-guide)
 - [Report cards](#report-cards)
 - [Receipts and parent notices](#receipts-and-parent-notices)
@@ -313,14 +316,16 @@ enforced (only a signed-in admin with access; nobody else, not even by guessing 
 
 ## The new-school setup checklist
 
-A school that signs up and then stalls on setup — never adding a subject, never enrolling a
-student — is a school that quietly churns. The School workspace home page (`/admin/school`) shows
-an ordered checklist of the four things a school does before it can really run: review its classes
-(pre-seeded, so usually already done), add subjects, enrol students, and set up fee items. Each
-step's state is read live from the school's own data, never a flag anyone has to remember to set,
-so the checklist can never disagree with what the school has actually done. It disappears once all
-four are done, or a school can hide it early (a small link brings it back). See
-[blueprints/school/onboarding.py](blueprints/school/onboarding.py).
+A school that signs up and then stalls on setup is a school that quietly churns. A new school gets a
+*Set up your school* card at the bottom right of every administrator page, showing four steps:
+review its classes (pre-seeded, so usually already done), add subjects, enrol students, and set up
+fee items. Each step's state is read from the school's own data, so the card can never disagree
+with what the school has done.
+
+The card is cached in the browser for fifteen minutes, so the database is not asked on every page;
+a finished step can therefore take up to that long to show as done. Closing the card hides it for the
+whole school, as it always has. Minimising it is remembered in that browser only. See
+[blueprints/admin_dock.py](blueprints/admin_dock.py) and [templates/_admin_dock.html](templates/_admin_dock.html).
 
 **The activity log** is arranged as *choose an admin, then read their log*: the super admin picks
 anyone (or Everyone, or a removed admin) and reads their entries, filtered by Schools, Accounts &
@@ -364,6 +369,20 @@ before relying on it.
   again), and only the standard mail ports (25, 465, 587, 2525) are allowed. In development a
   local mail catcher is accepted. The platform's own configured server is trusted and unrestricted.
   Certificates are verified.
+
+## Administrators and access
+
+*Administrators* is a directory of cards, one per person, with their name, status, roles, contact details, last
+sign-in and a plain description of what they can reach. It can be searched by name, username or email and filtered
+to everyone, active or suspended. Each card's ⋯ menu sends a message, resets the login, or suspends or reactivates
+the account; nobody can suspend or reset their own access.
+
+A person's own page is organised into profile, job roles, where they work (scope) and overrides. The overrides
+list has a loose search: capital letters, accents, word order and small spelling mistakes do not matter. Overrides
+are for exceptions; ordinary access comes from roles.
+
+The bulk-import permission (`school.bulk_import`) lets a role run all three import steps without holding each step's
+own permission. See [Bulk import](#bulk-import-students-history-and-past-results).
 
 ## How a school numbers its people
 
@@ -521,31 +540,57 @@ entries) and `school.timetable.release` (the sensitive one: only this notifies s
 A student and a linked parent each see only released entries for their own class, on the dashboard
 under *Exam timetable*, and can download it as a PDF or print it.
 
-## Bulk student import
+## Bulk import: students, history and past results
 
-A school with existing students does not type them in one at a time: *Bulk import (CSV)* on the
-Students page takes a spreadsheet — `first_name`, `last_name`, `gender` and `class` required;
-`middle_name`, `guardian_name`, `guardian_email`, `guardian_phone` optional — and creates exactly
-what "Register Student" creates by hand for each valid row: the student record, an enrolment in the
-named class for the current session, and a login with a generated admission number and a one-time
-password, using the same numbering and account machinery either way. `class` is matched against the
-school's own class names, case-insensitively; admission numbers are never typed, in bulk any more
-than one at a time. A row that fails (a missing name, an unrecognised gender, an unknown class, a bad
-guardian email, or a class outside the importing staff member's own scope) is skipped and reported by
-line number and reason; every other valid row is still imported. The results page is the only place
-the generated usernames and one-time passwords are ever shown — download them as a CSV from there (built
-in the browser, never a second trip to the server) before leaving the page. A file with no header row,
-a missing required column, or one over the size limit is refused outright, before anything is written.
+*Bulk import* on the Students page brings a school's records in from spreadsheets, in three steps
+shown one at a time. Do them in order.
 
-**Migration: bringing in enrolment history.** The importer above only ever creates a student's
-*current* record — a school moving from another system, or from paper, usually already knows each
-student's *past* classes and sessions too. *Bulk-import enrolment history*, linked from the same
-Students page, takes a second file (`admission_no`, `level`, `session` required; `enrolled_at`,
-`completed_at`, `notes` optional) matched to an already-existing student by admission number, and
-records exactly what the single "Add enrolment history" entry on a student's own page records by
-hand. A session named in that file may be one the school has since archived — bringing in exactly
-that kind of old record is the point, unlike the hand-entry form's own dropdown, which only offers
-currently active sessions since it is built for everyday correction, not migration.
+**Step 1: students.** Every column is required and every row must fill them in: `first_name`,
+`middle_name`, `last_name`, `gender`, `class`, `guardian_name`, `guardian_email`, `guardian_phone`.
+The guardian's details drive parent alerts and parent sign-in. Each valid row creates exactly what
+"Register Student" creates by hand: the record, an enrolment in the named class for the current
+session, and a login with a generated admission number and a one-time password. Admission numbers
+are never typed. A row that fails is skipped and reported by line number and reason; every other valid
+row is still imported. The generated usernames and passwords are shown once, on the results page, and
+can be downloaded from there.
+
+**Step 2: enrolment history.** `admission_no`, `level` and `session` are required; `enrolled_at`,
+`completed_at`, `outcome` and `notes` are optional. Dates must be `YYYY-MM-DD`. `outcome` is
+`promoted`, `repeated`, `graduated` or `withdrawn`. A session is matched by name and may be one the school
+has archived. A session that does not exist is created only when it is an *earlier* `YYYY/YYYY` year than
+the current session; it is created inactive, never made current, and the import records who made it and why.
+A `graduated` row archives the student once that year is recorded.
+
+**Step 3: past results.** One row per student, subject, term and session: `admission_no`, `session`, `term`,
+`subject`, `exam_score` and `exam_max` are required; `test_score`, `test_max` and `notes` are optional. Results
+are written as released, marked as migrated, with the importing administrator recorded and a workflow entry.
+The session and subject must already exist. A subject, term and session that already has a result for the
+student is left as it is and reported, so running a file twice never changes what is on record.
+
+**Who may run each step.** Each step needs its own permission (students: `school.students.create`; history:
+`student.history.manage`; results: `school.results.release`), or the bulk-import permission
+`school.bulk_import` ("Run bulk imports"), which can be given to any role. Creating an earlier session and
+archiving a graduate, during step 2, need the student-import and deactivate permissions, or the bulk permission.
+
+**Every import is recorded** in the audit log with who ran it, the file name and the counts, and any
+session created by an import records its creator and reason. A file with no header row, a missing required
+column, or one over the size limit is refused before anything is written.
+
+## Archiving students
+
+A student who leaves is **archived**, not deleted. Archiving keeps the whole record and takes the student out
+of everything current: they leave the class register and the count, and their sign-in stops at once, including
+a session that is already open. Archive one from the student's page, or several from the class register. A reason
+is optional. It needs the permission to deactivate students and applies to students in the actor's own classes.
+
+Archived students are listed under *Archived students*, which only a School Admin can open. Each has a record
+showing class placements, school journey and results by term. A School Admin can restore a student, which puts them
+back in their register and turns their sign-in back on. The helper is `archive_students` in
+[blueprints/school/helpers.py](blueprints/school/helpers.py).
+
+**Parents keep their access.** Archiving revokes only the child's own sign-in. The parent dashboard, the child's
+record and the fee account still include archived children.
+
 
 ## Admissions: candidate to student
 
@@ -570,6 +615,23 @@ record, since a candidate has at most one admission decision, ever: `admission_s
   not only deciding it, needs this permission. The *Admissions Officer* role preset carries it;
   nobody else does by default. An officer limited to one entry level's candidates (by the same class
   scope every other scoped account uses) can only decide for that level.
+
+## What's new, notices and browser caching
+
+Changes are announced from one file, [release_notes.json](release_notes.json), at the project root. Each release has a
+version that must increase, a title and its changes. Each change has an audience:
+
+- **staff** (administrators): shown in the *What's new* card at the bottom right of every admin page, with a link to the
+  staff guide page that explains it;
+- **family** (parents) and **student**: shown on their own dashboard. The notice is complete on its own and never links to
+  the staff guide, which families cannot open. A student never receives a parent's change, and the reverse.
+
+The file has comments explaining its rules. [core/release_notes.py](core/release_notes.py) reads it, and
+[tests/current/test_release_notes_contract.py](tests/current/test_release_notes_contract.py) fails if a rule is broken.
+
+**Nothing here queries the database on an ordinary page.** The server sends the notes for the audience, and the browser
+keeps what each account has dismissed (in local storage, per browser and per account). The only database read is the setup
+checklist's progress, which the browser fetches when its saved copy is older than fifteen minutes.
 
 ## The staff guide
 
@@ -711,6 +773,8 @@ variable; the ones that shape the deployment:
 | `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
 | `BRIGHTSTARS_CHROME` | Optional. The Chrome or Chromium program that draws a candidate's result image; found automatically on Windows and under the usual names on Linux and macOS. |
 | `BRIGHTSTARS_TRUSTED_PROXIES` | Optional, default `0`. How many reverse proxies stand in front of the application; see *Behind a reverse proxy* under [Operating](#operating). |
+| `BRIGHTSTARS_DB_POOL_SIZE` / `BRIGHTSTARS_DB_MAX_OVERFLOW` | Optional, defaults 2 and 3. Connections each school's own database pool keeps open per running instance (so up to 5 per school per instance by default). See *Database connections* under [Operating](#operating). |
+| `BRIGHTSTARS_REGISTRY_POOL_SIZE` / `BRIGHTSTARS_REGISTRY_MAX_OVERFLOW` | Optional, defaults 10 and 20. Connections the platform registry pool keeps open per running instance. The defaults allow 30 per instance, which is too many for a small managed database; lower them as the number of instances grows. |
 | `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and WhatsApp secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
 
 ## Project layout
@@ -719,6 +783,7 @@ variable; the ones that shape the deployment:
 Academics/
 ├── app.py                    # Flask/SQLAlchemy setup, request hooks, error handlers,
 │                             #   context processor, blueprint registration, shared helpers
+├── release_notes.json        # What's new, by audience. Edit this to announce a change (see *What's new*)
 ├── control_plane/            # The platform itself
 │   ├── models.py             #   registry tables: Tenant, TenantDomain, PlatformAdmin,
 │   │                         #     PlatformEntryToken, PlatformAuditLog (own database)
@@ -747,6 +812,7 @@ Academics/
 ├── core/                     # Cross-cutting helpers — no routes
 │   ├── db_helpers.py         #   query helpers, and the dialect-neutral upsert/aggregate
 │   ├── security.py           #   RBAC, admin_required, csrf_protect, audit_log
+│   ├── release_notes.py      #   reads release_notes.json and decides what each audience is shown
 │   ├── branding.py           #   the school's own name, motto, logo, colours, gallery, receipt prefix
 │   ├── theme.py              #   brand-colour and gallery rules: validation, contrast, theme CSS
 │   ├── storage.py            #   the school's data/ and uploads/ folders — local disk or an S3-compatible object store
@@ -844,6 +910,18 @@ schools, path traversal, uploads, question banks, suspension, creating a school 
 and logo, colours and photographs (including hostile input), portal addresses and CNAMEs, and
 entering a school.
 
+The end-to-end suites for the recent work are in `tests/verification/` and run the same way as the others:
+
+```bash
+python tests/verification/write_paths_student_archive.py      # archiving, restoring, the archived records
+python tests/verification/write_paths_student_import.py       # bulk student import and its required columns
+python tests/verification/write_paths_student_history_import.py  # enrolment history, outcomes, earlier sessions
+python tests/verification/write_paths_results_import.py       # past results and the bulk-import permission
+python tests/verification/write_paths_admin_dock.py           # what's new, the setup card, family notices
+python tests/verification/write_paths_subject_selectors.py       # subjects offered to classes in the work forms
+python tests/verification/write_paths_pg_posts.py             # every form submission, and the route coverage guard
+```
+
 ### Every write is tested on PostgreSQL
 
 `write_paths_pg_smoke.py` opens every page; `write_paths_pg_posts.py` submits every form.
@@ -869,6 +947,15 @@ plus a folder under `tenants/<code>/`. Restoring one school never touches anothe
 **Suspending** a school takes its portal offline for everyone — staff, parents and students —
 within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` on each worker. Its data is untouched and returns on
 reactivation.
+
+**Database connections.** Every school is its own database and gets its own connection pool in each running instance,
+and the platform registry has one more. Those pools multiply: thousands of schools across several instances can
+exceed a managed database's connection limit, which shows as new connections being refused while others sit idle.
+Check what is holding connections (`SELECT datname, state, count(*) FROM pg_stat_activity GROUP BY 1,2;` and
+`SHOW max_connections;`). Keep the per-school pools small (`BRIGHTSTARS_DB_POOL_SIZE=1`,
+`BRIGHTSTARS_DB_MAX_OVERFLOW=1` for a large number of schools), lower the registry pool, and put a connection pooler
+(such as Aiven's PgBouncer) in front of the database. Closing idle connections clears the immediate problem but only
+rolls back any write that was mid-transaction; the pool settings are the lasting fix.
 
 **Upgrades.** `python app.py` brings every registered school's schema up to date before serving.
 With many schools, run `python -m control_plane upgrade` as a deploy step instead.
@@ -974,8 +1061,23 @@ which needs no shared disk at all.
   given the platform's standard set, and can import its own (see *Question banks* below). Code that
   reads or writes a school's files should go through `core/storage.py`'s functions, never `os.path`
   directly, so it works under either backend.
+- **Announcing a change.** Add it to the top of the `releases` list in [release_notes.json](release_notes.json) with a new
+  version, and give each item an audience. Staff items may name one staff guide page; family and student items must not.
+  Do not reword a release people may already have seen; add a new one.
+- **New columns reach an existing school when its database is initialised.** `_add_missing_columns` adds them. A live
+  database that has not been initialised since a model change will fail `test_models_match_db.py` until it is.
 
 ## Known gaps
 
-None that are currently known. When one is found it is listed here, with what it affects and what
-to do about it.
+- **A live school database can be behind the models** until the app initialises it. The schema-drift
+  contract test reports this. Starting the app, or running the platform's upgrade, adds the missing columns.
+- **Dismissals of *What's new* and minimised cards are per browser.** They do not follow a person to another device,
+  and the setup card's progress can be up to fifteen minutes stale.
+- **Past results import accepts CSV only.** Exports from another system must be turned into the template first.
+- **Parents keep seeing archived children** by design. Review that if a school wants leavers hidden from families.
+- **`admins.last_seen_release` is no longer used.** It is kept only so an existing database still matches the model;
+  a later migration can drop it.
+- **Sign-in still reads the administrator's row on each request**, so the database is not idle for signed-in
+  administrators even though the notices and cards no longer query it.
+- **Connection limits** on a managed database can be reached with many schools; see *Database connections* under
+  [Operating](#operating).

@@ -133,7 +133,7 @@ def _assignment_form_data(admin_id):
         .order_by(SchoolClass.level_order)).all()
     subjects=[_flatten(r,'SchoolSubject','class_ids') for r in all_rows(
         select(SchoolSubject,group_concat(ClassSubject.class_id).label('class_ids'))
-        .join(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
+        .outerjoin(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
         .where(SchoolSubject.active==1)
         .group_by(SchoolSubject.id).order_by(SchoolSubject.name))]
     students=all_rows(
@@ -724,3 +724,20 @@ def import_permission_required(specific_permission):
             return fn(*args, **kwargs)
         return wrapper
     return decorate
+
+
+def offer_subject(class_id, subject_id, admin_id):
+    """Offer a subject to a class if it is not offered already.
+
+    Saving work for a subject in a class is what makes that subject offered to the class, so a subject created
+    on the Subjects page can always be chosen by the forms that need it. An existing offer is left as it is.
+    """
+    if not class_id or not subject_id:
+        return
+    exists = one_scalar(select(ClassSubject.id).where(
+        ClassSubject.class_id == class_id, ClassSubject.subject_id == subject_id))
+    if exists:
+        return
+    db.session.add(ClassSubject(class_id=class_id, subject_id=subject_id, locked=0, final_locked=0,
+                                created_by=admin_id, created_at=datetime.now(timezone.utc).isoformat()))
+
