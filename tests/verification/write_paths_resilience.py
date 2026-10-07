@@ -329,6 +329,9 @@ else:
 window.__calls = 0;
 window.__mode = 'retry-then-success';
 window.fetch = function(url, opts) {{
+  // Only answer saves are counted. The page's liveness ping (/exam/heartbeat) also goes through
+  // fetch every few seconds, so counting it made these checks depend on timing.
+  if (url !== '/answer') return Promise.resolve({{ok: true, status: 200}});
   window.__calls += 1;
   if (window.__mode === 'retry-then-success') {{
     if (window.__calls < 3) return Promise.reject(new TypeError('network error'));

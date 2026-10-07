@@ -94,12 +94,16 @@ def _spawn(job_id):
 
 
 def _execute(job_id):
-    job = db.session.get(BackgroundJob, job_id)
-    if not job or job.status not in ('pending', 'failed'):
-        return  # already done, or another thread is already on it
-    job.status = 'running'
-    job.started_at = datetime.now(timezone.utc).isoformat()
+    # Claim the job in one conditional UPDATE. Several threads or containers may try for the same
+    # job at once; only the one whose UPDATE changes the row (1 row) runs it, the rest back off.
+    claimed = db.session.execute(sa.text(
+        "UPDATE background_jobs SET status = 'running', started_at = :started "
+        "WHERE id = :i AND status IN ('pending', 'failed')"
+    ), {'started': datetime.now(timezone.utc).isoformat(), 'i': job_id}).rowcount
     db.session.commit()
+    if claimed != 1:
+        return  # already done, or another thread or container has claimed it
+    job = db.session.get(BackgroundJob, job_id)
     handler = _HANDLERS.get(job.kind)
     try:
         if handler is None:
