@@ -29,7 +29,7 @@ from app import app
 from core.security import csrf_protect
 
 from . import config as cp_config
-from . import env_file, launch, settings_registry
+from . import env_file, launch, settings_registry, shared_settings
 from . import provisioning as pv
 from .console import platform_host_only, platform_required, superadmin_required
 from .context import tenant_context
@@ -100,20 +100,35 @@ def _info_or_404(code):
 
 # ---------------- environment variables ----------------
 
+shared_settings.install(app)
+
+
+def _state(variable, shared_saved, file_saved):
+    """Where this setting lives and what it currently is, for the page."""
+    shared = shared_settings.is_shared(variable)
+    return {
+        'shared': shared,
+        'value': env_file.effective_value(variable.name),
+        'saved': (variable.name in shared_saved) if shared else (variable.name in file_saved),
+        'overridden': False if shared else env_file.host_overridden(variable.name),
+    }
+
+
 @app.route('/platform/settings')
 @settings_required
 def platform_settings():
+    try:
+        shared_saved = set(shared_settings.shared_values())
+    except Exception:
+        shared_saved = set()
+    file_saved = env_file.read_values()
     rows = []
     for variable in settings_registry.VARIABLES:
-        rows.append({
-            'v': variable,
-            'value': env_file.effective_value(variable.name),
-            'saved': variable.name in env_file.read_values(),
-            'overridden': env_file.host_overridden(variable.name),
-            'editable': _may_edit(variable),
-        })
+        rows.append({'v': variable, 'editable': _may_edit(variable),
+                     **_state(variable, shared_saved, file_saved)})
     return render_template('platform/settings.html', grouped=settings_registry.grouped(),
-                           rows={r['v'].name: r for r in rows}, categories=settings_registry.CATEGORIES)
+                           rows={r['v'].name: r for r in rows}, categories=settings_registry.CATEGORIES,
+                           server_name=shared_settings.server_name())
 
 
 @app.route('/platform/settings/<name>', methods=['GET', 'POST'])
@@ -131,18 +146,26 @@ def platform_settings_variable(name):
             # unreadable at once. The rotation wizard is the only door to this one.
             abort(400)
         value = request.form.get('value', '')
-        env_file.write_value(variable.name, value)
-        _log_variable_change(variable.name)
-        flash(f'{variable.name} saved.' + (
-            ' It takes effect the next time it is read - no restart needed.'
-            if variable.effect == settings_registry.EFFECT_IMMEDIATE
-            else ' The running application will not see this until it is restarted.'), 'success')
+        if shared_settings.is_shared(variable):
+            shared_settings.save(variable, value)
+            _log_variable_change(variable.name)
+            flash(f'{variable.name} saved for every server. Each server picks it up within '
+                  f'{shared_settings.SYNC_SECONDS} seconds - no restart needed.', 'success')
+        else:
+            env_file.write_value(variable.name, value)
+            _log_variable_change(variable.name)
+            flash(f'{variable.name} saved on this server ({shared_settings.server_name()}) only. '
+                  'It is a per-server setting: set the same value on every other server too.'
+                  + (' The running application will not see it until it is restarted.'
+                     if variable.effect == settings_registry.EFFECT_RESTART else ''), 'success')
         return redirect(url_for('platform_settings_variable', name=variable.name))
-    return render_template('platform/settings_variable.html', v=variable,
-                           value=env_file.effective_value(variable.name),
-                           saved=variable.name in env_file.read_values(),
-                           overridden=env_file.host_overridden(variable.name),
-                           editable=_may_edit(variable))
+    try:
+        shared_saved = set(shared_settings.shared_values())
+    except Exception:
+        shared_saved = set()
+    return render_template('platform/settings_variable.html', v=variable, editable=_may_edit(variable),
+                           server_name=shared_settings.server_name(),
+                           **_state(variable, shared_saved, env_file.read_values()))
 
 
 @app.post('/platform/settings/team/<int:admin_id>/access')

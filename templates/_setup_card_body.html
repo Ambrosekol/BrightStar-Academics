@@ -5,12 +5,14 @@
   <div class="dock-progress" aria-hidden="true"><span style="width:{{ (ob.done_count * 100 // ob.total) if ob.total else 0 }}%"></span></div>
   <ol class="dock-steps">
     {% for step in ob.steps %}
+    {% if step.group_start %}<li class="dock-group" aria-hidden="true">{{ step.group }}</li>{% endif %}
     <li class="dock-step{{ ' is-done' if step.done }}">
       <span class="dock-step__mark">{{ '✓' if step.done else loop.index }}</span>
       <div>
-        <strong>{{ step.label }}</strong>
+        <strong>{{ step.label }}{% if not step.major %} <em class="dock-tag">Optional</em>{% endif %}</strong>
         <p>{{ step.text }}</p>
-        <a href="{{ url_for(step.endpoint) }}">{{ 'Review' if step.done else 'Start' }} →</a>
+        {% if step.warning and not step.done %}<p class="dock-warn">⚠ {{ step.warning }}</p>{% endif %}
+        {% if step.can_open %}<a href="{{ url_for(step.endpoint) }}">{{ 'Review' if step.done else 'Start' }} →</a>{% endif %}
       </div>
     </li>
     {% endfor %}

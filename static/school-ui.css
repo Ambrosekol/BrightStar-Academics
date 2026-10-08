@@ -1221,6 +1221,10 @@ a.wd-online:hover { background: var(--surface-1); }
 }
 .wd-setup__step.is-done .wd-setup__step-num { background: var(--success-bg); color: var(--success); }
 .wd-setup__step.is-done .wd-setup__step-num .ico { width: 15px; height: 15px; }
+.wd-setup__group { list-style: none; margin: 14px 0 2px; padding: 0 2px; font-size: var(--fs-xs, 11px); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.wd-setup__group:first-child { margin-top: 0; }
+.wd-setup__tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--line, #e5e9f0); color: var(--ink-3); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+.wd-setup__warn { margin: 6px 0 0; padding: 6px 10px; border-radius: 8px; background: #fff6e0; border: 1px solid #f1dfb6; color: #8a5a00; font-size: var(--fs-sm); }
 .wd-setup__step-body { flex: 1; min-width: 0; }
 .wd-setup__step-body strong { display: block; color: var(--ink); font-size: var(--fs-md); }
 .wd-setup__step.is-done .wd-setup__step-body strong { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line-strong); }

@@ -72,7 +72,7 @@
   <div class="wd-setup__head">
     <div>
       <h2 class="wd-setup__title">Finish setting up your school</h2>
-      <p class="wd-setup__lead">Four things get your school ready to run. Do them in order, or jump straight to whichever you need.</p>
+      <p class="wd-setup__lead">{{ onboarding.major_total }} essentials get your school ready to run, plus a few smaller things worth doing. Go in order, or jump straight to whichever you need. {{ onboarding.major_done }} of {{ onboarding.major_total }} essentials done.</p>
     </div>
     <div class="wd-setup__progress" role="img" aria-label="{{ onboarding.done_count }} of {{ onboarding.total }} steps done">
       <svg viewBox="0 0 42 42" class="wd-setup__ring">
@@ -85,13 +85,15 @@
   </div>
   <ol class="wd-setup__list">
     {% for step in onboarding.steps %}
+    {% if step.group_start %}<li class="wd-setup__group" aria-hidden="true">{{ step.group }}</li>{% endif %}
     <li class="wd-setup__step {{ 'is-done' if step.done else '' }}">
       <span class="wd-setup__step-num">{{ icon('check') if step.done else loop.index }}</span>
       <div class="wd-setup__step-body">
-        <strong>{{ step.label }}</strong>
+        <strong>{{ step.label }}{% if not step.major %} <span class="wd-setup__tag">Optional</span>{% endif %}</strong>
         <p>{{ step.text }}</p>
+        {% if step.warning and not step.done %}<p class="wd-setup__warn">⚠ {{ step.warning }}</p>{% endif %}
       </div>
-      {% if not step.done and admin_has_permission(current_admin['id'], step.permission) %}
+      {% if not step.done and step.can_open %}
       <a class="btn btn-light btn-small wd-setup__step-go" href="{{ url_for(step.endpoint) }}">Open {{ icon('arrow-right', 'ico-sm') }}</a>
       {% elif step.done %}
       <span class="wd-setup__step-done">Done</span>

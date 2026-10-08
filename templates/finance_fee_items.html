@@ -1345,72 +1345,9 @@ dialog.cr-finance-confirm{
   </dialog>
 </div>
 <div id="financePanelHistory" class="cr-finance-tab-panel-v7" role="tabpanel" aria-labelledby="financeTabHistory" data-finance-panel="history" hidden>
-<section class="cr-finance-assessments-section">
-    <div class="cr-finance-section-heading"><div><span class="cr-finance-section-kicker">ASSESSMENT HISTORY</span><h2>Recent Student Assessments</h2><p>Browse by student, then session, then term.</p></div></div>
-    {% if assessed_students %}
-    <div class="cr-finance-history-toolbar">
-      <label class="cr-finance-search"><span aria-hidden="true">⌕</span><input id="financeHistorySearch" type="search" placeholder="Search student or admission number..." autocomplete="off"></label>
-    </div>
-    <div class="cr-finance-catalogue-card">
-      <div class="cr-finance-catalogue-table-wrap">
-        <table class="cr-finance-catalogue-table">
-          <thead><tr><th>Student</th><th class="numeric">Items</th><th class="numeric">Total Assessed</th><th class="actions">Actions</th></tr></thead>
-          <tbody>
-            {% for b in assessed_students %}
-            <tr data-history-row data-history-name="{{ (b.last_name ~ ' ' ~ b.first_name ~ ' ' ~ (b.admission_no or ''))|lower }}">
-              <td><strong>{{ b.last_name }} {{ b.first_name }}</strong><small>{{ b.admission_no }}</small></td>
-              <td class="numeric">{{ b.item_count }}</td>
-              <td class="numeric"><strong>₦{{ "{:,.2f}".format(b.total_assessed) }}</strong></td>
-              <td class="actions"><button type="button" class="cr-finance-row-action" data-modal-open="assessmentHistoryModal-{{ b.student_id }}">Browse assessments</button></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div id="financeHistoryNoMatches" class="cr-finance-no-matches" hidden>No students match your search.</div>
-    </div>
-
-    {% for b in assessed_students %}
-    <dialog class="cr-modal" id="assessmentHistoryModal-{{ b.student_id }}">
-      <div class="cr-modal-head">
-        <div><div class="section-label">STUDENT ASSESSMENTS</div><h2>{{ b.last_name }} {{ b.first_name }}</h2><p>{{ b.admission_no }} · {{ b.item_count }} item{{ '' if b.item_count==1 else 's' }} · ₦{{ "{:,.2f}".format(b.total_assessed) }} total assessed</p></div>
-        <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assessmentHistoryModal-{{ b.student_id }}">×</button>
-      </div>
-      <div class="cr-modal-body">
-        {% for session_name, terms in b.sessions.items() %}
-        <div class="cr-finance-history-session">
-          <h3>{{ session_name }}</h3>
-          {% for term_name, term_items in terms.items() %}
-          <div class="cr-finance-history-term">
-            <h4>{{ term_name }}</h4>
-            <div class="cr-finance-catalogue-table-wrap">
-              <table class="cr-finance-catalogue-table">
-                <thead><tr><th>Fee</th><th class="numeric">Assessed</th><th>Payment</th><th class="actions">Actions</th></tr></thead>
-                <tbody>
-                  {% for a in term_items %}
-                  <tr>
-                    <td>{{ a.fee_name or a.category }}</td>
-                    <td class="numeric"><strong>₦{{ "{:,.2f}".format(a.amount|float) }}</strong></td>
-                    <td>{% if not a.active %}<span class="cr-finance-status archived">Voided</span>{% elif a.payment_status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif a.payment_status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>
-                    <td class="actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_student_account', student_id=a.student_id, session_id=a.session_id) }}">View account</a></td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endfor %}
-      </div>
-    </dialog>
-    {% endfor %}
-    {% else %}
-    <div class="cr-finance-catalogue-card">
-      <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">✓</div><strong>No student assessments yet</strong><p>Once an assessment is created, its individual fee obligations will appear here.</p></div>
-    </div>
-    {% endif %}
-  </section>
+<div id="financeHistoryHost" data-history-src="{{ url_for('admin_finance_assessment_history') }}">
+    <div class="cr-finance-catalogue-card"><div class="cr-finance-history-empty"><strong>Open this tab to load the assessment history.</strong></div></div>
+  </div>
 </div>
 </div>
 
@@ -1639,6 +1576,35 @@ dialog.cr-finance-confirm{
 })();
 </script>
 
+
+<dialog class="cr-modal cr-finance-confirm" id="financeReviewModal" aria-labelledby="financeReviewTitle">
+  <div class="cr-modal-head">
+    <div>
+      <div class="section-label">REVIEW ASSESSMENT</div>
+      <h2 id="financeReviewTitle">Charge this student?</h2>
+      <p>The student is charged the fees below. Nothing is charged until you confirm.</p>
+    </div>
+    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="financeReviewModal">×</button>
+  </div>
+  <div class="cr-modal-body">
+    <dl class="cr-finance-review-summary">
+      <div><dt>Student</dt><dd id="financeReviewStudent">—</dd></div>
+      <div><dt>Class</dt><dd id="financeReviewClass">—</dd></div>
+      <div><dt>Session</dt><dd id="financeReviewSession">—</dd></div>
+      <div><dt>Billing period</dt><dd id="financeReviewTerm">—</dd></div>
+      <div><dt>Due date</dt><dd id="financeReviewDue">Not set</dd></div>
+    </dl>
+    <ul class="cr-finance-review-list" id="financeReviewItems"></ul>
+    <div class="cr-finance-review-total">
+      <span id="financeReviewCount">0 fee items</span>
+      <strong id="financeReviewTotal">₦0.00</strong>
+    </div>
+    <div class="cr-finance-modal-actions">
+      <button type="button" class="cr-finance-secondary-btn" data-modal-close="financeReviewModal">← Back to edit</button>
+      <button type="button" class="cr-finance-primary-btn" id="financeConfirmAssessment">Create Student Assessment</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog class="cr-modal cr-finance-confirm" id="classReviewModal" aria-labelledby="classReviewTitle">
   <div class="cr-modal-head">
@@ -2233,15 +2199,34 @@ dialog.cr-finance-confirm{
 </script>
 
 <script id="cr-finance-history-search" nonce="{{ csp_nonce() }}">
+/* The history is fetched the first time its tab is opened (it can be thousands of rows), so
+   its pieces do not exist at page load: the loader and the search both work on what is there
+   at the moment they are used. */
 (function () {
-  const search = document.getElementById('financeHistorySearch');
-  if (!search) return;
-  const rows = Array.from(document.querySelectorAll('[data-history-row]'));
-  const noMatches = document.getElementById('financeHistoryNoMatches');
-  search.addEventListener('input', function () {
-    const query = (search.value || '').trim().toLowerCase();
+  const host = document.getElementById('financeHistoryHost');
+  if (!host) return;
+  let started = false;
+  function load() {
+    if (started) return;
+    started = true;
+    host.innerHTML = '<div class="cr-finance-catalogue-card"><div class="cr-finance-history-empty"><strong>Loading assessment history…</strong></div></div>';
+    fetch(host.dataset.historySrc, {credentials: 'same-origin'})
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (html) { host.innerHTML = html; })
+      .catch(function () {
+        started = false;
+        host.innerHTML = '<div class="cr-finance-catalogue-card"><div class="cr-finance-history-empty"><strong>Could not load the history.</strong><p>Close this tab and open it again to retry.</p></div></div>';
+      });
+  }
+  document.querySelectorAll('[data-finance-tab="history"]').forEach(function (tab) {
+    tab.addEventListener('click', load);
+  });
+  document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'financeHistorySearch') return;
+    const query = (e.target.value || '').trim().toLowerCase();
+    const noMatches = document.getElementById('financeHistoryNoMatches');
     let visible = 0;
-    rows.forEach(function (row) {
+    document.querySelectorAll('[data-history-row]').forEach(function (row) {
       const matches = !query || (row.dataset.historyName || '').includes(query);
       row.hidden = !matches;
       if (matches) visible++;

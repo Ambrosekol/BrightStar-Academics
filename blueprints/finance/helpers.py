@@ -199,14 +199,14 @@ def _receipt_summary(row):
         FinancePayment.status=='posted',FinancePayment.id<=row['id']),0)),2)
     return {'charged':charged,'paid':paid,'balance':round(max(charged-paid,0.0),2)}
 
-def _receipt_sheet(payment_id):
+def _receipt_sheet(payment_id,row=None):
     """Everything drawn on one receipt, in the school's own identity, or None if there is no such payment.
 
     The one description of a receipt: the on-screen page, the printout and the PDF sent to parents are
     all made from it (see core/receipt_pdf.py), so they can never differ. Colours are the school's two
     brand colours; a school that has chosen none gets the portal's own.
     """
-    row=_receipt_payload(payment_id)
+    row=row or _receipt_payload(payment_id)
     if not row: return None
     brand=school_brand()
     primary=brand.get('primary') or theme.DEFAULT_PRIMARY

@@ -23,7 +23,8 @@
           <p class="setting-purpose">{{ v.purpose }}</p>
           <div class="setting-meta">
             <span class="tag tag-{{ 'ok' if v.risk == 'low' else ('warn' if v.risk == 'medium' else ('critical' if v.risk == 'critical' else 'bad')) }}">{{ v.risk }} risk</span>
-            {% if v.effect == 'restart' %}<span class="badge-restart">Restart required</span>{% else %}<span class="muted" style="font-size:.78rem">Takes effect instantly</span>{% endif %}
+            {% if r.shared %}<span class="pill" title="Stored in the platform database: one edit reaches every server within seconds.">All servers</span>{% else %}<span class="pill pill-warn" title="Lives in each server's own environment. An edit here changes only the server you are connected to ({{ server_name }}).">This server only</span>{% endif %}
+            {% if v.effect == 'restart' %}<span class="badge-restart">Restart required</span>{% elif r.shared %}<span class="muted" style="font-size:.78rem">Takes effect within seconds</span>{% else %}<span class="muted" style="font-size:.78rem">Takes effect instantly</span>{% endif %}
             {% if v.secret %}<span class="muted" style="font-size:.78rem">&middot; secret, never shown once saved</span>{% endif %}
             {% if r.overridden %}<span class="pill pill-warn" title="The running application is using a value that did not come from .env — editing it here will not take effect until that other source changes too.">Overridden outside .env</span>{% endif %}
           </div>

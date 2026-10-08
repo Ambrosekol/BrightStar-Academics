@@ -275,14 +275,17 @@ def admin_finance_dashboard():
 @idempotent_write('finance.record_payment')
 def admin_finance_record():
     me=current_admin()
-    students=all_rows(select(Student.id,Student.admission_no,Student.first_name,
-                             Student.middle_name,Student.last_name,
-                             Student.guardian_email,Student.guardian_phone)
-                      .where(Student.active==1)
-                      .order_by(Student.last_name,Student.first_name))
-    sessions=db.session.scalars(select(AcademicSession).where(AcademicSession.active==1)
-                                .order_by(AcademicSession.id.desc())).all()
-    current=_school_current_session()
+    # The student and session lists are only the form's drop-downs: a successful save never needs
+    # them, so they are loaded for showing the form (or showing it again with an error), not before.
+    def pick_lists():
+        students=all_rows(select(Student.id,Student.admission_no,Student.first_name,
+                                 Student.middle_name,Student.last_name,
+                                 Student.guardian_email,Student.guardian_phone)
+                          .where(Student.active==1)
+                          .order_by(Student.last_name,Student.first_name))
+        sessions=db.session.scalars(select(AcademicSession).where(AcademicSession.active==1)
+                                    .order_by(AcademicSession.id.desc())).all()
+        return students,sessions
     if request.method=='POST':
         try: student_id=int(request.form.get('student_id','')); session_id=int(request.form.get('session_id',''))
         except (TypeError,ValueError): student_id=session_id=0
@@ -292,18 +295,23 @@ def admin_finance_record():
         if amount is None: errors.append('Enter the payment amount as a number of naira, for example 12500.50.')
         elif amount<=0: errors.append('Payment amount must be greater than zero.')
         if not session_id: errors.append('Select an academic session.')
-        if errors: return render_template('finance_payment_form.html',students=students,sessions=sessions,form=request.form,errors=errors)
+        if errors:
+            students,sessions=pick_lists()
+            return render_template('finance_payment_form.html',students=students,sessions=sessions,form=request.form,errors=errors)
         student=db.session.scalars(select(Student).where(
             Student.id==student_id,Student.active==1)).first()
-        if not student: return render_template('finance_payment_form.html',students=students,sessions=sessions,form=request.form,errors=['Student not found.'])
+        if not student:
+            students,sessions=pick_lists()
+            return render_template('finance_payment_form.html',students=students,sessions=sessions,form=request.form,errors=['Student not found.'])
         payer_name=request.form.get('payer_name','').strip()
         receipt=_next_receipt_no(); now=datetime.now(timezone.utc).isoformat()
         payment=FinancePayment(receipt_no=receipt,student_id=student_id,session_id=session_id,
             amount=amount,category=category,method=method,reference=reference,
             paid_at=paid_at,recorded_by=me['id'],status='posted',notes=notes,
             created_at=now,payer_name=payer_name)
-        db.session.add(payment); db.session.commit()
-        audit_log('finance_payment_recorded','finance','payment',payment.id,{'receipt_no':receipt,'amount':amount,'student_id':student_id,'method':method})
+        db.session.add(payment); db.session.flush()
+        audit_log('finance_payment_recorded','finance','payment',payment.id,{'receipt_no':receipt,'amount':amount,'student_id':student_id,'method':method},commit=False)
+        db.session.commit()
         try:
             _notify_parents_payment_recorded(student_id,receipt,amount,category,me['id'],external=False)
         except Exception:
@@ -311,6 +319,8 @@ def admin_finance_record():
         # The parents get the receipt itself by email and WhatsApp, without anyone having to send it.
         enqueue('send_payment_receipt',payment_id=payment.id,actor_id=me['id'])
         return redirect(url_for('admin_finance_receipt',payment_id=payment.id))
+    students,sessions=pick_lists()
+    current=_school_current_session()
     return render_template('finance_payment_form.html',students=students,sessions=sessions,form=None,errors=[],current_session=dict(current) if current else None)
 
 @app.route('/admin/finance/receipts/<int:payment_id>')
@@ -325,7 +335,7 @@ def admin_finance_receipt(payment_id):
         FinanceOnlinePayment.payment_id==payment_id,FinanceOnlinePayment.status=='success')).first() is not None
     refund=db.session.scalars(select(FinanceRefund).where(FinanceRefund.payment_id==payment_id)
                               .order_by(FinanceRefund.id.desc())).first()
-    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id),
+    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id,row),
                            signature_path=_receipt_signature_relpath(),
                            is_online_payment=is_online_payment,refund=refund)
 
@@ -448,6 +458,23 @@ def admin_finance_fee_items():
     class_groups={g:[dict(r) for r in classes if _class_group(r)==g]
                   for g in ('nursery','primary','college')}
 
+    return render_template(
+        'finance_fee_items.html',
+        items=items,
+        students=students,
+        sessions=sessions,
+        current_session=current,
+        classes=classes,
+        class_groups=class_groups,
+        student_class_map=student_class_map,
+        fee_class_map=fee_class_map)
+
+@app.get('/admin/finance/assessment-history')
+@admin_required
+def admin_finance_assessment_history():
+    """The Recent Student Assessments tab, fetched on first open: up to 2000 assessments grouped
+    by student, which is far too much to build and ship on every visit to the fee structure page
+    (every save redirects there)."""
     allocated_sq=(select(func.sum(FinancePaymentAllocation.amount))
                   .select_from(FinancePaymentAllocation)
                   .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
@@ -490,17 +517,7 @@ def admin_finance_fee_items():
         term_bucket.append(row)
     assessed_students=sorted(assessed_by_student.values(),key=lambda b:(b['last_name'] or '',b['first_name'] or ''))
 
-    return render_template(
-        'finance_fee_items.html',
-        items=items,
-        students=students,
-        sessions=sessions,
-        current_session=current,
-        classes=classes,
-        class_groups=class_groups,
-        student_class_map=student_class_map,
-        fee_class_map=fee_class_map,
-        assessed_students=assessed_students)
+    return render_template('_finance_assessment_history.html',assessed_students=assessed_students)
 
 @app.route('/admin/finance/fee-items/new',methods=['GET','POST'])
 @admin_required
@@ -552,9 +569,9 @@ def admin_finance_fee_item_new():
             db.session.add_all([FinanceFeeItemClass(fee_item_id=item.id,class_id=cid,active=1,
                                                     created_at=now,created_by=me['id'])
                                 for cid in selected_class_ids])
-            db.session.commit()
             audit_log('finance_fee_item_created','finance','fee_item',item.id,{
-                'name':name,'amount':amount,'class_ids':selected_class_ids})
+                'name':name,'amount':amount,'class_ids':selected_class_ids},commit=False)
+            db.session.commit()
             flash('Fee item created and assigned to the selected classes.','success')
             return redirect(url_for('admin_finance_fee_items'))
 

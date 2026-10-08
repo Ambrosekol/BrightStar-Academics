@@ -1,0 +1,76 @@
+{% extends "platform/base.html" %}
+{% block title %}Creating {{ name }}{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Creating a school</div>
+    <h1>{{ name }}</h1>
+  </div>
+</div>
+
+<div class="panel" id="creation-panel" data-status-url="{{ url_for('platform_school_creation_status', slug=slug) }}"
+     data-manage-url="{{ url_for('platform_school', slug=slug) }}" data-state="running">
+  <h2 style="margin-top:0" id="creation-title">Building the school…</h2>
+  <p class="muted" id="creation-note">This takes a little while: the school's database, its tables, its standard
+    data and its files are being set up. You can stay on this page; it updates itself when the school is ready.</p>
+  <p><a class="btn btn-primary" id="creation-open" href="{{ url_for('platform_school', slug=slug) }}" hidden>Manage {{ name }}</a>
+     <a class="btn" href="{{ url_for('platform_dashboard') }}">All schools</a></p>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">The school's portal</h2>
+  <p class="muted">This address works once the school is ready. Staff, parents and students sign in here.</p>
+  <span class="secret" id="portal-address">{{ portal }}</span>
+</div>
+
+{% if password %}
+  <div class="panel">
+    <h2 style="margin-top:0">Give these to the school, once</h2>
+    <p class="muted">Copy this password now. It is shown here and nowhere else, and it cannot be retrieved later —
+      if it is lost, create another administrator for the school.</p>
+    <p>Username <code>{{ admin_username|lower }}</code></p>
+    <span class="secret" id="temp-password">{{ password }}</span>
+    <p class="muted">They must change it the first time they sign in.</p>
+  </div>
+{% else %}
+  <div class="panel">
+    <h2 style="margin-top:0">No administrator yet</h2>
+    <p class="muted">Nobody can sign in to this school until you add one, from the school's page.</p>
+  </div>
+{% endif %}
+
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var panel = document.getElementById('creation-panel');
+  var title = document.getElementById('creation-title');
+  var note = document.getElementById('creation-note');
+  var open = document.getElementById('creation-open');
+  var misses = 0;
+  function poll() {
+    fetch(panel.dataset.statusUrl, {credentials: 'same-origin'})
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (s) {
+        misses = 0;
+        if (s.state === 'done') {
+          title.textContent = 'The school is ready';
+          note.textContent = 'Its portal address now works and the administrator can sign in.';
+          open.hidden = false;
+          return;
+        }
+        if (s.state === 'failed') {
+          title.textContent = 'The school could not be created';
+          note.textContent = s.error || 'Something went wrong. Nothing was kept; try again.';
+          return;
+        }
+        setTimeout(poll, 3000);
+      })
+      .catch(function () {
+        misses += 1;
+        if (misses > 20) { note.textContent = 'Lost touch with the server. Check the school list to see whether the school was created.'; return; }
+        setTimeout(poll, 4000);
+      });
+  }
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endblock %}

@@ -54,9 +54,7 @@ def admin_school_results(): ...</code></pre>
 </ul>
 
 <h2 id="onboarding">The new-school setup checklist</h2>
-<p>The School workspace home page ({{ route('admin_school_home') }}) shows an ordered checklist of the four things a school does
-before it can really run: review its classes (every school is seeded with the standard Primary/JSS/SSS list, so this step is
-usually already done), add subjects, enrol students, and set up fee items ({{ file('blueprints/school/onboarding.py') }}). Each
+<p>The School workspace home page ({{ route('admin_school_home') }}) shows a grouped, ordered checklist of everything a new school puts in order: its profile and look, the academic session, classes and subjects (and which classes take which), staff, students and parents, fee items and billing, online payments, the receipt signature, the report card settings, attendance, the exam timetable, email/WhatsApp and the library ({{ file('blueprints/school/onboarding.py') }}). The essentials are marked apart from the optional extras. Each
 step's state is read live from a plain count of the school's own active rows — never a stored flag — so it can never disagree with
 what the school has actually done. A school may dismiss it early ({{ route('admin_school_onboarding_dismiss') }}, one
 {{ table('school_settings') }} row) and bring it back ({{ route('admin_school_onboarding_show') }}); it disappears by itself once

@@ -644,7 +644,9 @@ def audit_display_detail(log):
     return friendly.get(action, 'Administrative activity recorded.')
 
 
-def audit_log(action,module,target_type=None,target_id=None,details=None,success=True,admin=None):
+def audit_log(action,module,target_type=None,target_id=None,details=None,success=True,admin=None,commit=True):
+    """``commit=False`` only adds the row, for a caller that commits the change it records in the
+    same transaction - one round trip to the database instead of two."""
     try:
         admin=admin or current_admin()
         db.session.add(AuditLog(
@@ -659,7 +661,7 @@ def audit_log(action,module,target_type=None,target_id=None,details=None,success
             user_agent=request.headers.get('User-Agent','')[:500],
             success=1 if success else 0,
             created_at=datetime.now(timezone.utc).isoformat()))
-        db.session.commit()
+        if commit: db.session.commit()
         if success and action in {'admin_created','admin_status_changed','role_created'}:
             labels={'admin_created':'A new administrator account was created.','admin_status_changed':'An administrator account status changed.','role_created':'A new staff role was created.'}
             _notify_school_admins('Administrative change', labels.get(action,'A significant administrative change was recorded.'), 'warning', url_for('admin_controls') if request else None, admin['id'] if admin else None)

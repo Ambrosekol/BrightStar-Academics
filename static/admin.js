@@ -1,4 +1,3 @@
-﻿
 
 
 
@@ -16,12 +15,39 @@
 
 
 
+
+
+// Back goes to the page the person was actually on before this one, not to whatever the browser
+// history happens to hold (which is the workspace chooser after a fresh sign-in, or a form page
+// after a save redirect). Every admin page load is recorded in a per-tab trail; opening a page
+// already in the trail cuts the trail back to it, so list -> form -> list leaves just "list".
+// The workspace chooser (/admin/home) is never part of the trail, so Back never lands on it.
+(function () {
+    var KEY = 'bs-nav-trail', HOME = '/admin/home';
+    function read() {
+        try { var t = JSON.parse(window.sessionStorage.getItem(KEY) || '[]'); return Array.isArray(t) ? t : []; }
+        catch (e) { return []; }
+    }
+    function write(t) {
+        try { window.sessionStorage.setItem(KEY, JSON.stringify(t.slice(-40))); } catch (e) {}
+    }
+    var here = window.location.pathname + window.location.search;
+    if (window.location.pathname === HOME) { write([]); return; }
+    var trail = read();
+    var at = trail.indexOf(here);
+    if (at >= 0) trail = trail.slice(0, at + 1);
+    else trail.push(here);
+    write(trail);
+})();
 
 window.portalGoBack = function(fallback) {
-    try {
-        if (window.history.length > 1) { window.history.back(); return; }
-    } catch (e) {}
-    window.location.href = fallback;
+    var trail = [];
+    try { trail = JSON.parse(window.sessionStorage.getItem('bs-nav-trail') || '[]'); } catch (e) {}
+    var here = window.location.pathname + window.location.search;
+    if (trail[trail.length - 1] === here) trail.pop();
+    var previous = trail.length ? trail[trail.length - 1] : null;
+    try { window.sessionStorage.setItem('bs-nav-trail', JSON.stringify(trail)); } catch (e) {}
+    window.location.href = previous || fallback;
 };
 
 document.addEventListener("DOMContentLoaded", () => {

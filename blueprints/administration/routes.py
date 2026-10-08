@@ -130,13 +130,23 @@ def admin_notification_read(nid):
 @admin_required
 def admin_notification_open(nid):
     me=current_admin()
-    action_url=one_scalar(select(AdminNotification.action_url)
-        .where(AdminNotification.id==nid,AdminNotification.admin_id==me['id']))
-    db.session.execute(sa_update(AdminNotification)
-        .where(AdminNotification.id==nid,AdminNotification.admin_id==me['id'])
-        .values(read_at=datetime.now(timezone.utc).isoformat()))
-    db.session.commit()
-    return redirect(action_url or url_for('admin_controls'))
+    note=db.session.scalars(select(AdminNotification).where(
+        AdminNotification.id==nid,AdminNotification.admin_id==me['id'])).first()
+    if not note: abort(404)
+    action_url=(note.action_url or '').strip()
+    title,message=note.title,note.message
+    if not note.read_at:
+        note.read_at=datetime.now(timezone.utc).isoformat()
+        db.session.commit()
+    controls_path=url_for('admin_controls')
+    # Many alerts have nowhere else to go (or point back at this very page); sending the person
+    # to the page they clicked from looks like the click did nothing, so the alert is shown to
+    # them in full instead. Only addresses inside this site are ever followed.
+    local=action_url.startswith('/') and not action_url.startswith('//')
+    if not local or action_url.split('?')[0].rstrip('/')==controls_path.rstrip('/'):
+        flash(f'{title}: {message}','info')
+        return redirect(controls_path)
+    return redirect(action_url)
 
 @app.post('/admin/administration/controls/<int:cid>/resolve')
 @admin_required

@@ -1,0 +1,66 @@
+<section class="cr-finance-assessments-section">
+    <div class="cr-finance-section-heading"><div><span class="cr-finance-section-kicker">ASSESSMENT HISTORY</span><h2>Recent Student Assessments</h2><p>Browse by student, then session, then term.</p></div></div>
+    {% if assessed_students %}
+    <div class="cr-finance-history-toolbar">
+      <label class="cr-finance-search"><span aria-hidden="true">⌕</span><input id="financeHistorySearch" type="search" placeholder="Search student or admission number..." autocomplete="off"></label>
+    </div>
+    <div class="cr-finance-catalogue-card">
+      <div class="cr-finance-catalogue-table-wrap">
+        <table class="cr-finance-catalogue-table">
+          <thead><tr><th>Student</th><th class="numeric">Items</th><th class="numeric">Total Assessed</th><th class="actions">Actions</th></tr></thead>
+          <tbody>
+            {% for b in assessed_students %}
+            <tr data-history-row data-history-name="{{ (b.last_name ~ ' ' ~ b.first_name ~ ' ' ~ (b.admission_no or ''))|lower }}">
+              <td><strong>{{ b.last_name }} {{ b.first_name }}</strong><small>{{ b.admission_no }}</small></td>
+              <td class="numeric">{{ b.item_count }}</td>
+              <td class="numeric"><strong>₦{{ "{:,.2f}".format(b.total_assessed) }}</strong></td>
+              <td class="actions"><button type="button" class="cr-finance-row-action" data-modal-open="assessmentHistoryModal-{{ b.student_id }}">Browse assessments</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="financeHistoryNoMatches" class="cr-finance-no-matches" hidden>No students match your search.</div>
+    </div>
+
+    {% for b in assessed_students %}
+    <dialog class="cr-modal" id="assessmentHistoryModal-{{ b.student_id }}">
+      <div class="cr-modal-head">
+        <div><div class="section-label">STUDENT ASSESSMENTS</div><h2>{{ b.last_name }} {{ b.first_name }}</h2><p>{{ b.admission_no }} · {{ b.item_count }} item{{ '' if b.item_count==1 else 's' }} · ₦{{ "{:,.2f}".format(b.total_assessed) }} total assessed</p></div>
+        <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assessmentHistoryModal-{{ b.student_id }}">×</button>
+      </div>
+      <div class="cr-modal-body">
+        {% for session_name, terms in b.sessions.items() %}
+        <div class="cr-finance-history-session">
+          <h3>{{ session_name }}</h3>
+          {% for term_name, term_items in terms.items() %}
+          <div class="cr-finance-history-term">
+            <h4>{{ term_name }}</h4>
+            <div class="cr-finance-catalogue-table-wrap">
+              <table class="cr-finance-catalogue-table">
+                <thead><tr><th>Fee</th><th class="numeric">Assessed</th><th>Payment</th><th class="actions">Actions</th></tr></thead>
+                <tbody>
+                  {% for a in term_items %}
+                  <tr>
+                    <td>{{ a.fee_name or a.category }}</td>
+                    <td class="numeric"><strong>₦{{ "{:,.2f}".format(a.amount|float) }}</strong></td>
+                    <td>{% if not a.active %}<span class="cr-finance-status archived">Voided</span>{% elif a.payment_status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif a.payment_status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>
+                    <td class="actions"><a class="cr-finance-row-action" href="{{ url_for('admin_finance_student_account', student_id=a.student_id, session_id=a.session_id) }}">View account</a></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </dialog>
+    {% endfor %}
+    {% else %}
+    <div class="cr-finance-catalogue-card">
+      <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">✓</div><strong>No student assessments yet</strong><p>Once an assessment is created, its individual fee obligations will appear here.</p></div>
+    </div>
+    {% endif %}
+  </section>

@@ -331,7 +331,7 @@ def platform_school_new():
         gallery = request.files.getlist('gallery')
         if not errors:
             try:
-                info, password = pv.create_tenant(
+                slug, password = pv.start_tenant_creation(
                     code, form['name'], domains,
                     db_url=form['db_url'] or None, db_schema=form['db_schema'] or None,
                     admin_username=form['admin_username'] or None,
@@ -341,19 +341,28 @@ def platform_school_new():
             except (pv.ProvisioningError, ValueError) as exc:
                 errors.append(str(exc))
             else:
-                flash(f'{info.name} has been created.', 'success')
-                portal, customs = pv.domains_of(info.slug)
-                return render_template('platform/school_created.html', info=info,
-                                       portal=portal, customs=customs,
-                                       admin_username=form['admin_username'],
-                                       password=password,
-                                       folder=pv.tenant_folder_listing(info))
+                # Building the school takes longer than a browser or proxy will wait, so it runs in
+                # the background and this page follows it. The one-time password is chosen already
+                # and shown here, the only place it ever appears.
+                return render_template('platform/school_creating.html', slug=slug, name=form['name'],
+                                       portal=pv.config.portal_hostname(slug),
+                                       admin_username=form['admin_username'], password=password)
     return render_template('platform/school_new.html', form=form, errors=errors,
                            starter_banks=starter_banks,
                            numbering=_numbering_view(numbering_values),
                            portal_domain=pv.config.portal_domain(),
                            max_gallery=theme.MAX_GALLERY_IMAGES,
                            min_contrast=theme.MIN_CONTRAST_WITH_WHITE)
+
+
+@app.get('/platform/schools/<slug>/creation-status')
+@platform_host_only
+@platform_required
+def platform_school_creation_status(slug):
+    """Where a school that is being built in the background has got to."""
+    if not SLUG_RE.match(slug):
+        abort(404)
+    return jsonify(pv.provision_state(slug))
 
 
 @app.route('/platform/schools/<slug>')

@@ -18,6 +18,44 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.6: Back button, faster fee items and payments, Review assessment, alerts.",
+      "version": "2.20.26.7",
+      "date": "2026-10-08",
+      "title": "Back button, faster fees, and fixes",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Print Login Details on a new or reset student account now prints the student's one-time password along with their username, so you can hand it over on paper.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "The setup checklist on the School home page is now complete: it lists the school profile, session, classes, subjects, staff, students, parents, fee items, billing, online payments, receipts, report cards, attendance, timetable, email and WhatsApp, and the library, grouped and with the optional ones marked.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "The Back button now returns you to the page you were just on, instead of the workspace chooser or an unrelated page.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Adding a fee item and recording a payment are much faster. The fee structure page no longer loads the whole assessment history up front; it loads when you open that tab.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Review assessment on Bill a student works again and shows a summary before you confirm.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Clicking a notification under Controls & Alerts now shows its full message when it has nowhere else to take you.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.5: online payments connect again; parents pick which fees to pay.",
       "version": "2.20.26.6",
       "date": "2026-10-08",

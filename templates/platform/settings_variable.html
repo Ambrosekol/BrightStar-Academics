@@ -19,6 +19,7 @@
     <dt>Default</dt><dd class="mono">{{ v.default or '(none)' }}</dd>
     {% if v.aliases %}<dt>Also read as</dt><dd class="mono">{{ v.aliases|join(', ') }}</dd>{% endif %}
     <dt>Takes effect</dt><dd>{% if v.effect == 'restart' %}Only after the application is restarted{% else %}Immediately, on its next read{% endif %}</dd>
+    <dt>Where it is kept</dt><dd>{% if shared %}In the platform database, so it applies to <strong>every server</strong> (each picks it up within seconds).{% else %}In <strong>each server's own environment</strong> — saving here changes only this server ({{ server_name }}). Set the same value on every other server (its <code>.env</code> or host environment), or it will differ between them.{% endif %}</dd>
   </dl>
 
   {% if overridden %}

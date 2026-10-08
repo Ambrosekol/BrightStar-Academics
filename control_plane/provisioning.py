@@ -189,7 +189,7 @@ def upgrade_all_tenants():
     return infos
 
 
-def create_school_admin(info, username, display_name=None):
+def create_school_admin(info, username, display_name=None, password=None):
     """Give a school its first administrator, on the school's top-level role.
 
     Returns the one-time temporary password; the account must change it at first
@@ -206,7 +206,7 @@ def create_school_admin(info, username, display_name=None):
             raise ProvisioningError('The school has no top-level role yet; run "upgrade" first.')
         if A.db.session.scalars(sa.select(A.Admin).where(A.Admin.username == username)).first():
             raise ProvisioningError(f'{username} already exists in {info.slug}.')
-        password = A._new_admin_password()
+        password = password or A._new_admin_password()
         A.db.session.add(A.Admin(
             username=username, display_name=display_name or username,
             password_hash=generate_password_hash(password), admin_type_id=role.id,
@@ -217,7 +217,7 @@ def create_school_admin(info, username, display_name=None):
 
 def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
                   admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
-                  actor='cli', numbering_rules=None):
+                  actor='cli', numbering_rules=None, admin_password=None):
     """Register a new school and build its database.
 
     The school's portal hostname is generated here and works immediately; any
@@ -271,7 +271,8 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
             record('tenant.numbering_update', _describe_rules(None, rules), info.id, actor)
         if starter_banks:
             add_starter_banks(info)  # the standard entrance banks, copied into the school's own folder
-        password = create_school_admin(info, admin_username, admin_display_name) if admin_username else None
+        password = (create_school_admin(info, admin_username, admin_display_name, admin_password)
+                    if admin_username else None)
     except Exception:
         # Do not leave a registered school that has no usable database.
         with platform_session() as session:
@@ -955,3 +956,126 @@ def list_tenants():
                  [d.hostname for d in t.domains if not d.is_portal], shown(t.db_url))
                 for t in session.scalars(sa.select(Tenant).order_by(Tenant.id))]
 
+
+
+# ---------------------------------------------------------------------------------------------
+# Creating a school without holding the request open.
+#
+# Building a school (its database, every table, the standard data, its folder, the starter
+# question banks) takes longer than a web server or proxy will wait for one request, so the browser
+# was shown a timeout error even though the school was created. The console now checks everything
+# it can up front, answers at once, and builds the school in a background thread; the page it
+# shows polls provision_state() until the school is ready. The one-time password is chosen before
+# the thread starts and is shown on that first answer, so it never has to be stored anywhere.
+# ---------------------------------------------------------------------------------------------
+
+PROVISION_STALLED_AFTER_SECONDS = 15 * 60
+
+
+def _provision_key(slug):
+    return f'provision:{slug}'
+
+
+def _set_provision_state(slug, state, error=''):
+    import json
+
+    from control_plane.models import PlatformState
+
+    value = json.dumps({'state': state, 'error': error})
+    with platform_session() as session:
+        row = session.get(PlatformState, _provision_key(slug))
+        if row is None:
+            session.add(PlatformState(key=_provision_key(slug), value=value, updated_at=now_iso()))
+        else:
+            row.value = value
+            row.updated_at = now_iso()
+        session.commit()
+
+
+def provision_state(slug):
+    """``{'state': 'running'|'done'|'failed'|'unknown', 'error': str}`` for a school being created."""
+    import json
+    from datetime import datetime, timezone
+
+    from control_plane.models import PlatformState
+
+    with platform_session() as session:
+        row = session.get(PlatformState, _provision_key(slug))
+        if row is None:
+            return {'state': 'unknown', 'error': ''}
+        found = json.loads(row.value)
+        updated = row.updated_at
+    if found.get('state') == 'running':
+        try:
+            age = (datetime.now(timezone.utc) - datetime.fromisoformat(updated)).total_seconds()
+        except ValueError:
+            age = 0
+        if age > PROVISION_STALLED_AFTER_SECONDS:
+            return {'state': 'failed',
+                    'error': 'Creating the school stopped part-way (the server may have restarted). '
+                             'Check the school list; if it is not there, create it again.'}
+    return found
+
+
+def _copy_upload(upload):
+    """An independent copy of an uploaded file, readable after the request that carried it is over."""
+    from io import BytesIO
+
+    from werkzeug.datastructures import FileStorage
+
+    if upload is None or not getattr(upload, 'filename', ''):
+        return None
+    data = upload.read()
+    upload.seek(0)
+    return FileStorage(stream=BytesIO(data), filename=upload.filename, content_type=upload.content_type)
+
+
+def start_tenant_creation(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
+                          admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
+                          actor='cli', numbering_rules=None):
+    """Check everything that can be checked now, then build the school in the background.
+
+    Raises ProvisioningError for anything wrong with the request (so the form can show it);
+    otherwise returns ``(slug, admin_password)`` at once. ``admin_password`` is None when no
+    administrator was asked for. The outcome is read with ``provision_state(slug)``.
+    """
+    import threading
+
+    validate_slug(slug)
+    name = (name or '').strip()
+    if not name:
+        raise ProvisioningError('A school name is required.')
+    check_branding_inputs(branding, _copy_upload(logo), [c for c in (_copy_upload(g) for g in gallery) if c])
+    check_numbering_inputs(slug, name, numbering_rules)
+    init_platform_db()
+    with platform_session() as session:
+        if get_tenant(session, slug):
+            raise ProvisioningError(f'A school with code "{slug}" already exists.')
+        portal_host = _check_hostnames(session, [config.portal_hostname(slug)])[0]
+        _check_hostnames(session, hostnames, taken=[portal_host])
+    A = _app_module()
+    password = A._new_admin_password() if admin_username else None
+    job = dict(hostnames=list(hostnames), db_url=db_url, db_schema=db_schema, admin_username=admin_username,
+               admin_display_name=admin_display_name, branding=dict(branding or {}),
+               logo=_copy_upload(logo), gallery=[c for c in (_copy_upload(g) for g in gallery) if c],
+               starter_banks=starter_banks, actor=actor, numbering_rules=numbering_rules,
+               admin_password=password)
+    _set_provision_state(slug, 'running')
+
+    def run():
+        try:
+            create_tenant(slug, name, **job)
+            _set_provision_state(slug, 'done')
+        except Exception as exc:
+            A.app.logger.exception('Creating the school %s failed', slug)
+            if isinstance(exc, (ProvisioningError, ValueError)):
+                message = str(exc)
+            else:
+                message = 'Something went wrong while building the school. Nothing was kept; try again.'
+            try:
+                _set_provision_state(slug, 'failed', message)
+            except Exception:
+                A.app.logger.exception('Could not record the failure of %s', slug)
+
+    threading.Thread(target=run, name=f'create-school-{slug}', daemon=True).start()
+    return slug, password
