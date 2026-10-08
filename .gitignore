@@ -7,6 +7,7 @@ env/
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
 # Secrets and local config (.env.example is deliberately tracked)
 .env
