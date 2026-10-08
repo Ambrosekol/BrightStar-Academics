@@ -16,6 +16,25 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
+<style>
+.pay-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px 22px; margin-bottom: 18px; border-radius: 16px; text-decoration: none; color: #fff; background: linear-gradient(120deg, var(--brand-dark, #12305a), var(--brand, #1d4f91)); box-shadow: 0 10px 26px rgba(16, 40, 80, .22); }
+.pay-banner__text { display: flex; flex-direction: column; gap: 3px; }
+.pay-banner__text strong { font-size: 18px; }
+.pay-banner__text span { opacity: .9; font-size: 13.5px; }
+.pay-banner__cta { background: #fff; color: var(--brand-dark, #12305a); font-weight: 700; padding: 10px 18px; border-radius: 999px; font-size: 14px; white-space: nowrap; }
+.pay-banner:hover .pay-banner__cta { transform: translateY(-1px); }
+.pay-pick { width: 20px; height: 20px; cursor: pointer; accent-color: var(--brand, #1d4f91); }
+.pay-one { background: var(--brand, #1d4f91); color: #fff; border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.pay-one:hover { background: var(--brand-dark, #12305a); }
+tr.is-picked td { background: var(--brand-tint, #eef3fb); }
+.pay-bar { position: sticky; bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 14px; padding: 14px 18px; border-radius: 14px; background: var(--brand-dark, #12305a); color: #fff; box-shadow: 0 10px 28px rgba(16, 40, 80, .28); }
+.pay-bar__total span { display: block; font-size: 12px; opacity: .8; }
+.pay-bar__total strong { font-size: 22px; }
+.pay-bar__actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pay-bar__all { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+.pay-bar__go { background: #fff; color: var(--brand-dark, #12305a); border: 0; border-radius: 999px; padding: 10px 22px; font-weight: 800; font-size: 15px; cursor: pointer; }
+.pay-bar__go:disabled { opacity: .5; cursor: not-allowed; }
+</style>
 </head>
 <body class="school-ui">{{ connectivity_banner() }}
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -52,15 +71,10 @@
   </div>
 
   {% if paystack_available and total_outstanding and total_outstanding > 0.005 %}
-  <div class="ui-alert ui-alert--info fp-alert-row">
-    <form method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
-      <strong>Pay online</strong>
-      <span>₦</span><input type="number" name="amount" step="0.01" min="0.01" max="{{ '%.2f'|format(total_outstanding) }}" value="{{ '%.2f'|format(total_outstanding) }}" style="width:140px" required>
-      <button class="btn btn-primary btn-small" type="submit">Pay with Paystack</button>
-    </form>
-  </div>
+  <a class="pay-banner" href="#fees">
+    <span class="pay-banner__text"><strong>Pay school fees online</strong><span>Choose one fee or several below and pay securely with Paystack.</span></span>
+    <span class="pay-banner__cta">Choose fees to pay &darr;</span>
+  </a>
   {% endif %}
 
   {% if other_sessions_with_balance %}
@@ -106,14 +120,21 @@
       <div><p class="fp-panel__eyebrow">Fees assessed</p><h2>Fees for {{ session.name }}</h2></div>
     </div>
     {% if account %}
+    {% set can_pay = paystack_available and account|selectattr('outstanding', 'gt', 0.005)|list|length > 0 %}
+    <form id="fees" method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}">
+    {% if can_pay %}
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+    {% endif %}
     <div class="fp-table-wrap">
       <table class="fp-table">
         <thead>
-          <tr><th>Fee</th><th>Term</th><th>Due</th><th class="num">Assessed</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th></tr>
+          <tr>{% if can_pay %}<th></th>{% endif %}<th>Fee</th><th>Term</th><th>Due</th><th class="num">Assessed</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th>{% if can_pay %}<th></th>{% endif %}</tr>
         </thead>
         <tbody>
           {% for item in account %}
           <tr>
+            {% if can_pay %}<td>{% if item.outstanding > 0.005 %}<input class="pay-pick" type="checkbox" name="assessment_ids" value="{{ item.id }}" data-amount="{{ '%.2f'|format(item.outstanding) }}" aria-label="Select {{ item.category }} to pay">{% endif %}</td>{% endif %}
             <td><strong>{{ item.category }}</strong></td>
             <td>{{ item.term or 'Full Session' }}</td>
             <td>{{ item.due_date or '—' }}</td>
@@ -121,11 +142,22 @@
             <td class="num">₦{{ '{:,.2f}'.format(item.paid) }}</td>
             <td class="num"><strong>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
             <td>{% if item.status == 'Paid' %}<span class="pcf-badge paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="pcf-badge partial">Part Paid</span>{% else %}<span class="pcf-badge unpaid">Unpaid</span>{% endif %}</td>
+            {% if can_pay %}<td>{% if item.outstanding > 0.005 %}<button type="button" class="pay-one" data-pay-one="{{ item.id }}">Pay ₦{{ '{:,.2f}'.format(item.outstanding) }}</button>{% endif %}</td>{% endif %}
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+    {% if can_pay %}
+    <div class="pay-bar">
+      <div class="pay-bar__total"><span id="pay-count">Tick the fees you want to pay</span><strong id="pay-total">₦0.00</strong></div>
+      <div class="pay-bar__actions">
+        <button type="button" class="pay-bar__all" id="pay-all">Select all</button>
+        <button type="submit" class="pay-bar__go" id="pay-go" disabled>Pay with Paystack</button>
+      </div>
+    </div>
+    {% endif %}
+    </form>
     <p class="fp-table-note">Paid/outstanding above — and the totals at the top of this page — reflect payments the school office has applied to each specific fee. A payment you have just made may take a short time to be applied and will show as "not yet applied to a specific fee" above until then.</p>
     {% else %}
     <div class="fp-empty"><strong>No fees have been assessed for {{ session.name }} yet.</strong></div>
@@ -165,5 +197,40 @@
   {% endif %}
 
 </main>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var form = document.getElementById('fees');
+  if (!form) return;
+  var boxes = Array.prototype.slice.call(form.querySelectorAll('.pay-pick'));
+  if (!boxes.length) return;
+  var total = document.getElementById('pay-total'), count = document.getElementById('pay-count');
+  var go = document.getElementById('pay-go'), all = document.getElementById('pay-all');
+  function refresh() {
+    var sum = 0, n = 0;
+    boxes.forEach(function (b) {
+      b.closest('tr').classList.toggle('is-picked', b.checked);
+      if (b.checked) { sum += parseFloat(b.dataset.amount); n++; }
+    });
+    total.textContent = '₦' + sum.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    count.textContent = n ? n + (n === 1 ? ' fee selected' : ' fees selected') : 'Tick the fees you want to pay';
+    go.disabled = !n;
+    all.textContent = n === boxes.length ? 'Clear all' : 'Select all';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', refresh); });
+  all.addEventListener('click', function () {
+    var on = !boxes.every(function (b) { return b.checked; });
+    boxes.forEach(function (b) { b.checked = on; });
+    refresh();
+  });
+  form.querySelectorAll('[data-pay-one]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      boxes.forEach(function (b) { b.checked = b.value === btn.dataset.payOne; });
+      refresh();
+      form.requestSubmit ? form.requestSubmit() : form.submit();
+    });
+  });
+  refresh();
+})();
+</script>
 <script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
 </html>

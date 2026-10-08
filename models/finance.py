@@ -166,6 +166,9 @@ class FinanceOnlinePayment(db.Model):
     failure_reason = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
     verified_at = db.Column(Text)
+    # JSON list of {assessment_id, amount}: the specific fees this payment was started for, so
+    # that once Paystack confirms it the money is applied to exactly those fees. Null = a lump sum.
+    items = db.Column(Text)
 
 
 class FinanceRefund(db.Model):

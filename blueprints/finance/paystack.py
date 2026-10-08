@@ -189,24 +189,48 @@ def parent_finance_pay_start(student_id):
     current = _school_current_session()
     if not student or not current:
         abort(404)
-    try:
-        amount = float(request.form.get('amount', '0'))
-    except (TypeError, ValueError):
-        amount = 0
-    outstanding = _outstanding_for(student_id)
-    if amount <= 0 or amount > outstanding + 0.01:  # a few kobo of float slack, never more
-        flash('Enter an amount up to what is outstanding.', 'error')
-        return redirect(url_for('parent_child_finance', student_id=student_id))
+
+    # Either specific fees ticked by the parent (each paid in full, whatever is still owing on
+    # it), or - the older lump-sum form - one amount up to the whole outstanding balance.
+    from blueprints.finance.helpers import _finance_student_outstanding
+    chosen_ids = set()
+    for raw in request.form.getlist('assessment_ids'):
+        try: chosen_ids.add(int(raw))
+        except (TypeError, ValueError): pass
+    items = []
+    session_id = current['id']
+    if chosen_ids:
+        owing = {i['id']: i for i in _finance_student_outstanding(student_id) if i['outstanding'] > 0.005}
+        picked = [owing[i] for i in sorted(chosen_ids) if i in owing]
+        if not picked or len(picked) != len(chosen_ids):
+            flash('One of the selected fees is no longer outstanding. Please review and try again.', 'error')
+            return redirect(url_for('parent_child_finance', student_id=student_id))
+        items = [{'assessment_id': i['id'], 'amount': i['outstanding']} for i in picked]
+        amount = round(sum(i['amount'] for i in items), 2)
+        session_id = picked[0]['session_id']
+    else:
+        try:
+            amount = float(request.form.get('amount', '0'))
+        except (TypeError, ValueError):
+            amount = 0
+        outstanding = _outstanding_for(student_id)
+        if amount <= 0 or amount > outstanding + 0.01:  # a few kobo of float slack, never more
+            flash('Choose at least one fee to pay.', 'error')
+            return redirect(url_for('parent_child_finance', student_id=student_id))
 
     from models import ParentAccount
     parent = obj(ParentAccount, pid)
-    email = (parent.email or '').strip() or f'guardian{pid}@{request.host.split(":")[0]}'
+    email = (parent.email or '').strip()
+    if not email:
+        # Paystack insists on a well-formed address; a bare "localhost" host is not one.
+        host = request.host.split(':')[0]
+        email = f'guardian{pid}@{host if "." in host else "example.com"}'
 
     reference = payments.new_reference()
     now = datetime.now(timezone.utc).isoformat()
     db.session.add(FinanceOnlinePayment(
-        reference=reference, student_id=student_id, parent_id=pid, session_id=current['id'],
-        amount=amount, status='pending', created_at=now))
+        reference=reference, student_id=student_id, parent_id=pid, session_id=session_id,
+        amount=amount, status='pending', created_at=now, items=json.dumps(items) if items else None))
     db.session.commit()
 
     try:
@@ -313,13 +337,16 @@ def _finalize(settings, row):
     paid_naira = round((data.get('amount') or 0) / 100, 2)
     admin_id = _payments_admin_id()
     receipt = _next_receipt_no()
+    items = _row_items(row)
+    category = _items_category(items)
     payment = FinancePayment(
         receipt_no=receipt, student_id=row.student_id, session_id=row.session_id,
-        amount=paid_naira, category='School Fees', method='Paystack', reference=row.reference,
+        amount=paid_naira, category=category, method='Paystack', reference=row.reference,
         paid_at=now, recorded_by=admin_id, status='posted',
         notes='Paid online by the parent through Paystack.', created_at=now)
     db.session.add(payment)
     db.session.flush()
+    _apply_items(payment, items, paid_naira, admin_id, now)
     row.payment_id = payment.id
     row.status = 'success'
     db.session.commit()
@@ -328,10 +355,50 @@ def _finalize(settings, row):
               {'receipt_no': receipt, 'amount': paid_naira, 'student_id': row.student_id,
                'method': 'Paystack', 'online_payment_id': row.id})
     try:
-        _notify_parents_payment_recorded(row.student_id, receipt, paid_naira, 'School Fees', admin_id, external=False)
+        _notify_parents_payment_recorded(row.student_id, receipt, paid_naira, category, admin_id, external=False)
     except Exception:
         current_app.logger.exception('Parent payment-recorded notification failed for student %s', row.student_id)
     enqueue('send_payment_receipt', payment_id=payment.id, actor_id=admin_id)
+
+
+def _row_items(row):
+    try:
+        items = json.loads(row.items) if row.items else []
+    except ValueError:
+        return []
+    return [i for i in items if isinstance(i, dict) and i.get('assessment_id')]
+
+
+def _items_category(items):
+    """The payment's purpose: the fees the parent chose, or the generic label for a lump sum."""
+    from models import FinanceFeeAssessment
+    names = []
+    for i in items:
+        a = obj(FinanceFeeAssessment, i['assessment_id'])
+        if a and a.category and a.category not in names:
+            names.append(a.category)
+    return (', '.join(names) or 'School Fees')[:200]
+
+
+def _apply_items(payment, items, paid_naira, admin_id, now):
+    """Apply the money to the exact fees the parent ticked, so they show as paid straight away
+    instead of waiting for the office to allocate it. Never over-applies: what is allocated to a
+    fee is capped by what it still owes now (staff may have allocated to it since) and by what
+    Paystack really took; any remainder just stays unallocated for the office to place."""
+    from blueprints.finance.helpers import _finance_assessment_allocated
+    from models import FinanceFeeAssessment, FinancePaymentAllocation
+    left = paid_naira
+    for i in items:
+        a = obj(FinanceFeeAssessment, i['assessment_id'])
+        if not a or not a.active or left <= 0.004:
+            continue
+        owed = round(float(a.amount or 0) - _finance_assessment_allocated(a.id), 2)
+        part = round(min(float(i.get('amount') or 0), owed, left), 2)
+        if part <= 0:
+            continue
+        db.session.add(FinancePaymentAllocation(
+            payment_id=payment.id, assessment_id=a.id, amount=part, created_by=admin_id, created_at=now))
+        left = round(left - part, 2)
 
 
 def _finalize_refund(event_type, data):

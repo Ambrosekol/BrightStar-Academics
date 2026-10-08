@@ -132,7 +132,11 @@ def _request(secret_key, method, path, payload=None, timeout=15):
     body = json.dumps(payload).encode() if payload is not None else None
     request = urllib.request.Request(
         f'{API_BASE}{path}', data=body, method=method,
-        headers={'Authorization': f'Bearer {secret_key}', 'Content-Type': 'application/json'})
+        headers={'Authorization': f'Bearer {secret_key}', 'Content-Type': 'application/json',
+                 'Accept': 'application/json',
+                 # Paystack sits behind Cloudflare, which answers urllib's default
+                 # "Python-urllib/x.y" agent with an empty 403 before Paystack ever sees the key.
+                 'User-Agent': 'BrightStarsAcademics/1.0 (+https://paystack.com)'})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return response.status, json.loads(response.read().decode())
@@ -184,19 +188,20 @@ def verify_transaction(settings, reference):
 def check_connection(settings):
     """Whether the secret key is one Paystack recognises, without creating a real transaction.
 
-    Verifying a reference that cannot exist answers 404 "Transaction not found" for a valid key,
-    and 401 for one Paystack does not recognise at all - so this is a safe, free way to test a
-    key. ``(ok, detail)``, never raises.
+    Listing one transaction is a read-only call that needs a valid secret key and nothing else:
+    200 for a key Paystack recognises, 401 for one it does not. ``(ok, detail)``, never raises.
     """
     try:
-        status, body = _request(settings.secret_key, 'GET',
-                                '/transaction/verify/brightstars-connection-check-does-not-exist')
+        status, body = _request(settings.secret_key, 'GET', '/transaction?perPage=1')
     except PaystackError as exc:
         return False, exc.detail
     if status == 401:
-        return False, 'Paystack did not accept this secret key.'
-    if status in (200, 404):
-        return True, 'Connected to Paystack.'
+        return False, body.get('message') or 'Paystack did not accept this secret key.'
+    if status == 200 and body.get('status'):
+        mode = 'live' if settings.secret_key.startswith('sk_live_') else 'test'
+        if settings.public_key.startswith('pk_live_') != settings.secret_key.startswith('sk_live_'):
+            return False, 'Connected, but your public key and secret key are from different modes (one test, one live). Use a matching pair.'
+        return True, f'Connected to Paystack ({mode} mode).'
     return False, body.get('message') or f'Paystack answered unexpectedly (status {status}).'
 
 

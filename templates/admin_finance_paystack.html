@@ -45,13 +45,16 @@
       <div class="form-actions">
         <button class="btn btn-primary" type="submit">Save Paystack settings</button>
         {% if settings %}
-        <form method="post" action="{{ url_for('admin_finance_paystack_test') }}" style="display:inline">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-light" type="submit">Test connection</button>
-        </form>
+        <button class="btn btn-light" type="submit" form="paystack-test-form">Test connection</button>
         {% endif %}
       </div>
     </form>
+    {# A separate form, linked by the button's form="" attribute: a <form> nested inside the save form is invalid HTML, and browsers drop it - which made "Test connection" just re-submit Save. #}
+    {% if settings %}
+    <form id="paystack-test-form" method="post" action="{{ url_for('admin_finance_paystack_test') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    </form>
+    {% endif %}
   </div>
 
   {% if settings %}

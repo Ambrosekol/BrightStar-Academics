@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.5: online payments connect again; parents pick which fees to pay.",
+      "version": "2.20.26.6",
+      "date": "2026-10-08",
+      "title": "Pay fees online, one at a time or together",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Online payments now connect to Paystack properly: Test connection checks your keys and tells you if the public and secret keys are from different modes, and parents' payments go through. A payment made for chosen fees is applied to those fees straight away.",
+          "help": "finance"
+        },
+        {
+          "audience": "family",
+          "text": "Paying school fees online is easier to find and to use. A banner leads you to your child's fees, where you can press Pay beside any one fee, or tick several and pay them together."
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.4: the fee structure buttons use the school's own colours.",
       "version": "2.20.26.5",
       "date": "2026-10-05",
