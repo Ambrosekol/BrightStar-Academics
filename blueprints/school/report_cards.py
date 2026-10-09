@@ -15,14 +15,14 @@ import json
 import re
 from datetime import datetime, timezone
 
-from flask import Response, abort, flash, redirect, render_template, request, url_for
+from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import select
 
 from app import ACADEMIC_TERMS, _release_due_school_results, _school_current_session, app
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.school.report_card_data import (
     HEAD_TITLES, MAX_COMMENT_LENGTH, SETTING_HEAD_NAME, SETTING_HEAD_SIGNATURE, SETTING_HEAD_TITLE,
-    SETTING_NEXT_TERM, TRAIT_GROUPS, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
+    SETTING_NEXT_TERM, TRAIT_GROUPS, TRAIT_SCALE, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
     report_settings, save_report_settings, term_from_slug, term_slug, traits_overview,
 )
 from blueprints.finance.helpers import _save_signature_data_url
@@ -126,16 +126,50 @@ def signature_action(current_stored):
 @app.route('/admin/school/report-cards')
 @admin_required
 def admin_school_report_cards():
+    """The page itself. The class, session and term pickers sit across the top; the students are
+    fetched in-page (``admin_school_report_card_students``) so changing a picker never reloads it."""
+    classes, sessions, class_row, session_row, term = _choice()
+    me = current_admin()
+    mine = db.session.scalar(select(Admin.signature_path).where(Admin.id == me['id']))
+    return render_template(
+        'admin_school_report_cards.html', classes=classes, sessions=sessions, terms=TERMS, class_row=class_row,
+        session_row=session_row, term=term, settings=report_settings(), max_length=MAX_COMMENT_LENGTH,
+        trait_groups=[{'name': name, 'items': [{'key': key, 'label': label} for key, label in items]}
+                      for name, items in TRAIT_GROUPS],
+        trait_scale=[{'value': value, 'label': label} for value, label in TRAIT_SCALE],
+        signature_path=mine if upload_exists(mine or '') else '', open_signature=request.args.get('signature') == '1')
+
+
+@app.get('/admin/school/report-cards/students')
+@admin_required
+def admin_school_report_card_students():
+    """One class's students for a session and term, as JSON for the report cards page: the state of
+    each card, the class teacher's comment and the trait ratings, all in one round trip."""
     _release_due_school_results()
     db.session.commit()
     classes, sessions, class_row, session_row, term = _choice()
-    rows = class_overview(class_row.id, session_row.id, term) if class_row and session_row else []
-    settings = report_settings()
-    return render_template(
-        'admin_school_report_cards.html', classes=classes, sessions=sessions, terms=TERMS, class_row=class_row,
-        session_row=session_row, term=term, rows=rows, slug=term_slug(term), settings=settings,
-        ready=sum(1 for r in rows if r['state'] == 'ready'),
-        missing_comments=sum(1 for r in rows if r['state'] != 'none' and not r['comment'].strip()))
+    if not class_row or not session_row:
+        return jsonify({'error': 'Choose a class, a session and a term.'}), 400
+    slug = term_slug(term)
+    overview = class_overview(class_row.id, session_row.id, term)
+    traits = {t['student_id']: t for t in traits_overview(class_row.id, session_row.id, term)}
+    students = []
+    for r in overview:
+        t = traits.get(r['student_id'], {})
+        ratings = t.get('ratings', {})
+        ready = r['state'] == 'ready'
+        students.append({
+            **r, 'ratings': ratings, 'rated_by': t.get('rated_by', ''),
+            'view_url': url_for('admin_school_report_card_view', student_id=r['student_id'], session_id=session_row.id, slug=slug) if ready else '',
+            'pdf_url': url_for('admin_school_report_card_pdf', student_id=r['student_id'], session_id=session_row.id, slug=slug) if ready else ''})
+    ready_count = sum(1 for r in overview if r['state'] == 'ready')
+    return jsonify({
+        'class': {'id': class_row.id, 'name': class_row.name}, 'session': {'id': session_row.id, 'name': session_row.name},
+        'term': term, 'total': len(students), 'ready': ready_count,
+        'trait_total': sum(len(items) for _, items in TRAIT_GROUPS),
+        'class_pdf_url': url_for('admin_school_report_cards_class_pdf', class_id=class_row.id, session_id=session_row.id, term=term)
+        if ready_count else '',
+        'students': students})
 
 
 @app.route('/admin/school/report-cards/<int:student_id>/<int:session_id>/<slug>')
@@ -192,138 +226,124 @@ def admin_school_report_cards_class_pdf():
 
 
 # ---------------------------------------------------------------------------------------------
-# The class teacher's comments
+# The class teacher's comment and trait ratings: one student at a time, from a small window on the
+# report cards page. The old stand-alone pages now simply lead back to that page.
+def _display_name(admin_id):
+    return (db.session.scalar(select(Admin.display_name).where(Admin.id == admin_id)) or '') if admin_id else ''
+
+
+def _student_target():
+    """The student, session and term a comment or rating is being saved for, as
+    ``((student_id, session_id, term, class_id), '')`` or ``(None, reason)``.
+
+    The same rule as opening the card: the student must be in a class this staff member may work
+    with for that session, so a number from another class (or another school) is refused."""
+    student_id = request.form.get('student_id', type=int)
+    session_id = request.form.get('session_id', type=int)
+    term = request.form.get('term', '').strip()
+    if not student_id or not session_id or term not in TERMS:
+        return None, 'Choose a class, a session and a term first.'
+    class_id = _class_of(student_id, session_id)
+    if class_id is None or not _may_see(student_id, session_id):
+        return None, 'That student is not in one of your classes for this session.'
+    return (student_id, session_id, term, class_id), ''
+
+
+def _kept_filters():
+    return {k: v for k, v in request.args.items() if k in ('class_id', 'session_id', 'term')}
+
+
 @app.route('/admin/school/report-cards/comments')
 @admin_required
 def admin_school_report_card_comments():
-    classes, sessions, class_row, session_row, term = _choice()
-    rows = class_overview(class_row.id, session_row.id, term) if class_row and session_row else []
-    me = current_admin()
-    mine = db.session.scalar(select(Admin.signature_path).where(Admin.id == me['id']))
-    return render_template('admin_school_report_card_comments.html', classes=classes, sessions=sessions, terms=TERMS,
-                           class_row=class_row, session_row=session_row, term=term, rows=rows,
-                           max_length=MAX_COMMENT_LENGTH, has_signature=bool(upload_exists(mine or '')))
+    return redirect(url_for('admin_school_report_cards', **_kept_filters()))
 
 
 @app.post('/admin/school/report-cards/comments')
 @admin_required
 @csrf_protect
 def admin_school_report_card_comments_save():
+    """Save (or clear) one student's class teacher comment. Answers with JSON for the page's window."""
     me = current_admin()
-    classes, sessions, class_row, session_row, term = _choice()
-    if not class_row or not session_row:
-        flash('Choose a class, a session and a term first.', 'error')
-        return redirect(url_for('admin_school_report_card_comments'))
-    enrolled = {r['student_id']: r for r in class_overview(class_row.id, session_row.id, term)}
-    existing = {c.student_id: c for c in db.session.scalars(select(ReportCardComment).where(
-        ReportCardComment.session_id == session_row.id, ReportCardComment.term == term,
-        ReportCardComment.student_id.in_(list(enrolled) or [0])))}
+    target, error = _student_target()
+    if target is None:
+        return jsonify({'error': error}), 400
+    student_id, session_id, term, class_id = target
+    # A browser sends a line break as CRLF; keep them all as LF so the same comment always compares equal.
+    text = re.sub(r'[ \t]+\n', '\n', request.form.get('comment', '').replace('\r\n', '\n').replace('\r', '\n').strip())
+    if len(text) > MAX_COMMENT_LENGTH:
+        return jsonify({'error': f'A comment can be at most {MAX_COMMENT_LENGTH} characters.'}), 400
+    old = db.session.scalars(select(ReportCardComment).where(
+        ReportCardComment.student_id == student_id, ReportCardComment.session_id == session_id,
+        ReportCardComment.term == term)).first()
     now = datetime.now(timezone.utc).isoformat()
-    saved = cleared = 0
-    too_long = []
-    for student_id, row in enrolled.items():
-        field = f'comment_{student_id}'
-        if field not in request.form:
-            continue
-        # A browser sends a line break as CRLF; keep them all as LF so the same comment always compares equal.
-        text = re.sub(r'[ \t]+\n', '\n', request.form.get(field, '').replace('\r\n', '\n').replace('\r', '\n').strip())
-        old = existing.get(student_id)
-        if text == (old.comment.replace('\r\n', '\n').strip() if old else ''):
-            continue        # nothing changed: saving the page never takes over someone else's comment
-        if len(text) > MAX_COMMENT_LENGTH:
-            too_long.append(row['name'])
-            continue
-        if not text:
-            if old is not None:
-                db.session.delete(old)
-                cleared += 1
-        elif old is None:
-            db.session.add(ReportCardComment(student_id=student_id, session_id=session_row.id, term=term, comment=text,
-                                             author_admin_id=me['id'], created_at=now, updated_at=now))
-            saved += 1
-        else:
-            old.comment, old.author_admin_id, old.updated_at = text, me['id'], now
-            saved += 1
-    if too_long:
-        db.session.rollback()
-        flash(f'A comment can be at most {MAX_COMMENT_LENGTH} characters. Nothing was saved: shorten the comment for '
-              + ', '.join(too_long[:5]) + ('…' if len(too_long) > 5 else '') + '.', 'error')
+    if old is not None and text == old.comment.replace('\r\n', '\n').strip():
+        # nothing changed: saving never takes over someone else's comment
+        return jsonify({'ok': True, 'comment': old.comment, 'comment_by': _display_name(old.author_admin_id)})
+    if not text:
+        if old is not None:
+            db.session.delete(old)
+    elif old is None:
+        db.session.add(ReportCardComment(student_id=student_id, session_id=session_id, term=term, comment=text,
+                                         author_admin_id=me['id'], created_at=now, updated_at=now))
     else:
-        db.session.commit()
-        if saved or cleared:
-            audit_log('report_card_comments_saved', 'school', 'class', class_row.id,
-                      {'term': term, 'session_id': session_row.id, 'saved': saved, 'cleared': cleared})
-        flash(f'{saved} comment{"" if saved == 1 else "s"} saved' + (f', {cleared} cleared' if cleared else '') + '.'
-              if (saved or cleared) else 'No comment was changed.', 'success')
-    return redirect(url_for('admin_school_report_card_comments', class_id=class_row.id, session_id=session_row.id, term=term))
+        old.comment, old.author_admin_id, old.updated_at = text, me['id'], now
+    db.session.commit()
+    audit_log('report_card_comments_saved', 'school', 'class', class_id,
+              {'term': term, 'session_id': session_id, 'student_id': student_id, 'saved': int(bool(text)), 'cleared': int(not text)})
+    return jsonify({'ok': True, 'comment': text, 'comment_by': me['display_name'] if text else ''})
 
 
-# ---------------------------------------------------------------------------------------------
-# Affective and psychomotor traits (same class teacher, same class/session/term)
 @app.route('/admin/school/report-cards/traits')
 @admin_required
 def admin_school_report_card_traits():
-    classes, sessions, class_row, session_row, term = _choice()
-    rows = traits_overview(class_row.id, session_row.id, term) if class_row and session_row else []
-    return render_template('admin_school_report_card_traits.html', classes=classes, sessions=sessions, terms=TERMS,
-                           class_row=class_row, session_row=session_row, term=term, rows=rows, trait_groups=TRAIT_GROUPS)
+    return redirect(url_for('admin_school_report_cards', **_kept_filters()))
 
 
 @app.post('/admin/school/report-cards/traits')
 @admin_required
 @csrf_protect
 def admin_school_report_card_traits_save():
+    """Save (or clear) one student's trait ratings. Answers with JSON for the page's window."""
     me = current_admin()
-    classes, sessions, class_row, session_row, term = _choice()
-    if not class_row or not session_row:
-        flash('Choose a class, a session and a term first.', 'error')
-        return redirect(url_for('admin_school_report_card_traits'))
-    enrolled = {r['student_id'] for r in traits_overview(class_row.id, session_row.id, term)}
-    existing = {t.student_id: t for t in db.session.scalars(select(ReportCardTrait).where(
-        ReportCardTrait.session_id == session_row.id, ReportCardTrait.term == term,
-        ReportCardTrait.student_id.in_(list(enrolled) or [0])))}
-    trait_keys = {key for _, items in TRAIT_GROUPS for key, _ in items}
-    now = datetime.now(timezone.utc).isoformat()
-    saved = cleared = 0
-    for student_id in enrolled:
-        ratings = {}
-        for key in trait_keys:
-            value = request.form.get(f'trait_{student_id}_{key}', '').strip()
+    target, error = _student_target()
+    if target is None:
+        return jsonify({'error': error}), 400
+    student_id, session_id, term, class_id = target
+    ratings = {}
+    for _, items in TRAIT_GROUPS:
+        for key, _label in items:
+            value = request.form.get(f'trait_{key}', '').strip()
             if value.isdigit() and 1 <= int(value) <= 5:
                 ratings[key] = int(value)
-        new_json = json.dumps(ratings, sort_keys=True)
-        old = existing.get(student_id)
-        if old is not None and json.dumps(_parse_ratings(old.ratings), sort_keys=True) == new_json:
-            continue      # nothing changed: saving the page never takes over someone else's ratings
-        if not ratings:
-            if old is not None:
-                db.session.delete(old)
-                cleared += 1
-        elif old is None:
-            db.session.add(ReportCardTrait(student_id=student_id, session_id=session_row.id, term=term,
-                                           ratings=new_json, author_admin_id=me['id'], created_at=now, updated_at=now))
-            saved += 1
-        else:
-            old.ratings, old.author_admin_id, old.updated_at = new_json, me['id'], now
-            saved += 1
+    new_json = json.dumps(ratings, sort_keys=True)
+    old = db.session.scalars(select(ReportCardTrait).where(
+        ReportCardTrait.student_id == student_id, ReportCardTrait.session_id == session_id,
+        ReportCardTrait.term == term)).first()
+    now = datetime.now(timezone.utc).isoformat()
+    if old is not None and json.dumps(_parse_ratings(old.ratings), sort_keys=True) == new_json:
+        # nothing changed: saving never takes over someone else's ratings
+        return jsonify({'ok': True, 'ratings': ratings, 'rated_by': _display_name(old.author_admin_id)})
+    if not ratings:
+        if old is not None:
+            db.session.delete(old)
+    elif old is None:
+        db.session.add(ReportCardTrait(student_id=student_id, session_id=session_id, term=term, ratings=new_json,
+                                       author_admin_id=me['id'], created_at=now, updated_at=now))
+    else:
+        old.ratings, old.author_admin_id, old.updated_at = new_json, me['id'], now
     db.session.commit()
-    if saved or cleared:
-        audit_log('report_card_traits_saved', 'school', 'class', class_row.id,
-                  {'term': term, 'session_id': session_row.id, 'saved': saved, 'cleared': cleared})
-    flash(f'{saved} student{"" if saved == 1 else "s"} updated' + (f', {cleared} cleared' if cleared else '') + '.'
-          if (saved or cleared) else 'No rating was changed.', 'success')
-    return redirect(url_for('admin_school_report_card_traits', class_id=class_row.id, session_id=session_row.id, term=term))
+    audit_log('report_card_traits_saved', 'school', 'class', class_id,
+              {'term': term, 'session_id': session_id, 'student_id': student_id, 'saved': int(bool(ratings)), 'cleared': int(not ratings)})
+    return jsonify({'ok': True, 'ratings': ratings, 'rated_by': me['display_name'] if ratings else ''})
 
 
 # ---------------------------------------------------------------------------------------------
-# A staff member's own signature
+# A staff member's own signature: set from a window on the report cards page
 @app.route('/admin/school/report-cards/my-signature')
 @admin_required
 def admin_my_signature():
-    me = current_admin()
-    stored = db.session.scalar(select(Admin.signature_path).where(Admin.id == me['id']))
-    current = stored if upload_exists(stored or '') else ''
-    return render_template('admin_report_card_signature.html', signature_path=current, errors=[])
+    return redirect(url_for('admin_school_report_cards', signature=1))
 
 
 @app.post('/admin/school/report-cards/my-signature')
@@ -336,12 +356,12 @@ def admin_my_signature_save():
         admin.signature_path, message = signature_action(admin.signature_path)
     except ValueError as exc:
         db.session.rollback()
-        return render_template('admin_report_card_signature.html', signature_path=admin.signature_path or '',
-                               errors=[str(exc)]), 400
+        flash(str(exc), 'error')
+        return redirect(url_for('admin_school_report_cards', signature=1))
     db.session.commit()
     audit_log('report_card_signature_updated', 'school', 'admin', me['id'], {'action': request.form.get('action')})
     flash(message, 'success')
-    return redirect(url_for('admin_my_signature'))
+    return redirect(url_for('admin_school_report_cards'))
 
 
 # ---------------------------------------------------------------------------------------------

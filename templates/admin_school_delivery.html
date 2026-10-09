@@ -1,8 +1,8 @@
 {% extends 'admin_base.html' %}
-{% block title %}Email &amp; WhatsApp — {{ school_brand.name }}{% endblock %}
+{% block title %}Email &amp; SMS — {{ school_brand.name }}{% endblock %}
 {% block content %}
 {% set email = state.email %}
-{% set wa = state.whatsapp %}
+{% set sms = state.sms %}
 <style>
   .delivery-state { display: flex; gap: 12px; align-items: flex-start; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #f8fbfe; margin-bottom: 18px; font-size: 13px; line-height: 1.5; }
   .delivery-state strong { display: block; margin-bottom: 2px; }
@@ -18,8 +18,8 @@
 
 <div class="page-hero"><div>
   <div class="eyebrow">SCHOOL PORTAL / COMMUNICATION</div>
-  <h1>Email &amp; WhatsApp</h1>
-  <p class="hero-copy">Payment receipts, password-recovery emails and alerts about school work are sent to parents from these accounts. Use your school's own so that messages come from the school. Passwords and tokens are stored encrypted and are never shown again.</p>
+  <h1>Email &amp; SMS</h1>
+  <p class="hero-copy">Payment receipts, password-recovery emails and alerts about school work are sent to parents from these accounts. Use your school's own so that messages come from the school. Parents get a text message only for the moments that matter: a report card released, a new fee, a payment received, and the first message when the school starts a conversation. Passwords and tokens are stored encrypted and are never shown again.</p>
 </div></div>
 
 <section class="card modern-form">
@@ -81,44 +81,59 @@
 
   <div class="form-section">
     <div class="form-section-title"><span class="step">2</span><div>
-      <h2>WhatsApp</h2>
-      <p>Your school's WhatsApp Business (Cloud API) account, for receipts and alerts.</p>
+      <h2>SMS</h2>
+      <p>Text messages to parents, sent through BulkSMS Nigeria.</p>
     </div></div>
 
-    {% if wa.mode == 'school' %}
-      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Sending from your school's own WhatsApp account</strong>Phone number ID {{ wa.phone_id }}.</div></div>
-    {% elif wa.mode == 'platform' %}
-      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Using the platform's shared WhatsApp account</strong>You have not set up your own. Add yours below to send from your school.</div></div>
-    {% elif wa.mode == 'incomplete' %}
-      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Your settings are incomplete</strong>WhatsApp will not be used until they are. Enter both the phone number ID and the access token, and save again.</div></div>
+    {% if sms.payer == 'platform' %}
+      {% if sms.mode == 'platform' %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>SMS is provided by the platform</strong>Parents are texted from "{{ sms.sender_in_use }}". There is nothing for the school to set up or pay for.</div></div>
+      {% else %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>SMS is not available yet</strong>The platform provides SMS for every school, but has not finished setting it up. Texts are not being sent.</div></div>
+      {% endif %}
     {% else %}
-      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>WhatsApp is not set up</strong>Receipts and alerts will not be sent by WhatsApp.</div></div>
+      {% if sms.mode == 'school' %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Texting from your school's own account</strong>Parents see "{{ sms.sender_in_use }}". Messages are charged to your BulkSMS Nigeria wallet.</div></div>
+      {% elif sms.mode == 'platform' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Using the platform's shared SMS account</strong>You have not set up your own. Add yours below to text from your school's name.</div></div>
+      {% elif sms.mode == 'incomplete' %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Your settings are incomplete</strong>No texts are sent until they are. Enter both the sender name and the API token, and save again.</div></div>
+      {% else %}
+      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>SMS is not set up</strong>Parents will not be texted until you connect a BulkSMS Nigeria account.</div></div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('admin_school_delivery_sms_save') }}" autocomplete="off">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid">
+          <div class="field"><label for="sms_sender_id">Sender name <span class="optional">3 to 11 letters and digits</span></label>
+            <input id="sms_sender_id" name="sms_sender_id" value="{{ sms.sender_id }}" maxlength="11" placeholder="BRIGHTSTAR" autocomplete="off" spellcheck="false" required>
+            <small>It must be registered and approved on your BulkSMS Nigeria account.</small></div>
+          <div class="field"><label for="sms_gateway">Route</label>
+            <select id="sms_gateway" name="sms_gateway">{% for value, label in sms_gateways %}<option value="{{ value }}" {% if value == sms.gateway %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field field-wide"><label for="sms_api_token">API token</label>
+            <input type="password" id="sms_api_token" name="sms_api_token" autocomplete="new-password" placeholder="{{ 'Saved — leave blank to keep it' if sms.has_token else '' }}">
+            {% if sms.has_token %}<div class="secret-note">A token is saved. It is not shown again.</div>{% endif %}</div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Save SMS settings</button></div>
+      </form>
     {% endif %}
 
-    <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_save') }}" autocomplete="off">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <div class="form-grid">
-        <div class="field"><label for="whatsapp_phone_number_id">Phone number ID</label>
-          <input id="whatsapp_phone_number_id" name="whatsapp_phone_number_id" value="{{ wa.phone_id }}" inputmode="numeric" autocomplete="off" required></div>
-        <div class="field"><label for="whatsapp_graph_version">API version</label>
-          <input id="whatsapp_graph_version" name="whatsapp_graph_version" value="{{ wa.version }}" placeholder="{{ default_version }}"></div>
-        <div class="field field-wide"><label for="whatsapp_token">Access token</label>
-          <input type="password" id="whatsapp_token" name="whatsapp_token" autocomplete="new-password" placeholder="{{ 'Saved — leave blank to keep it' if wa.has_token else '' }}">
-          {% if wa.has_token %}<div class="secret-note">A token is saved. It is not shown again.</div>{% endif %}</div>
-      </div>
-      <div class="form-actions"><button class="btn btn-primary" type="submit">Save WhatsApp settings</button></div>
-    </form>
-
     <div class="inline-actions" style="margin-top:18px">
-      {% if wa.mode in ('school', 'platform') %}
-      <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_check') }}">
+      {% if sms.mode in ('school', 'platform') %}
+      <form method="post" action="{{ url_for('admin_school_delivery_sms_check') }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-light" type="submit">Check the connection</button>
       </form>
       {% endif %}
-      {% if wa.own_set %}
-      <form method="post" action="{{ url_for('admin_school_delivery_whatsapp_clear') }}"
-            data-confirm="Remove your school's own WhatsApp settings? The school will use the platform's shared account, if there is one.">
+      {% if sms.mode == 'school' and sms.payer != 'platform' %}
+      <form method="post" action="{{ url_for('admin_school_delivery_sms_balance') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light" type="submit">Check my SMS balance</button>
+      </form>
+      {% endif %}
+      {% if sms.own_set %}
+      <form method="post" action="{{ url_for('admin_school_delivery_sms_clear') }}"
+            data-confirm="Remove your school's own SMS settings? The school will use the platform's account, if there is one.">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-light" type="submit">Remove my settings</button>
       </form>

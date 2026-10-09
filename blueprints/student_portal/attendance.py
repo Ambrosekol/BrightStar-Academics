@@ -8,6 +8,7 @@ from flask import render_template, request, session, url_for
 
 from app import ACADEMIC_TERMS, _student_with_enrolment, app
 from blueprints.school.attendance_data import STATUSES, student_history, student_summary
+from blueprints.school.record_views import attendance_view
 from blueprints.student_portal.helpers import student_required
 from models import AcademicSession, db
 from sqlalchemy import select
@@ -35,6 +36,6 @@ def student_attendance():
     summary = student_summary(student['id'], session_row.id, term) if session_row else None
     history = student_history(student['id'], session_row.id, term) if session_row else []
     return render_template('attendance_view.html', sessions=sessions, session_row=session_row, term=term,
-                           terms=ACADEMIC_TERMS, summary=summary, history=history, statuses=STATUSES,
+                           terms=ACADEMIC_TERMS, summary=summary, history=history, statuses=STATUSES, **attendance_view(history),
                            back_url=url_for('student_dashboard'), back_label='Back to my dashboard', title='My attendance',
                            home_url=url_for('student_dashboard'), home_kind='Student Portal', person_name=student['first_name'])

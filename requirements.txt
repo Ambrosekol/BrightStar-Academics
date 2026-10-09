@@ -8,7 +8,7 @@ Pillow>=10,<13
 python-dotenv>=1.0,<2
 # PostgreSQL driver. Required: PostgreSQL is the only supported database.
 psycopg[binary]>=3.1,<4
-# Encrypts a school's own mail and WhatsApp credentials at rest.
+# Encrypts a school's own mail and SMS credentials at rest.
 cryptography>=42,<47
 # S3-compatible object storage for tenant files. Only needed when
 # BRIGHTSTARS_STORAGE_BACKEND=s3 (AWS S3, Cloudflare R2, Backblaze B2, DigitalOcean

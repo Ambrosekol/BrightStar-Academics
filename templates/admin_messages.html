@@ -1,8 +1,16 @@
 {% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Messages — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Administrator Messages</h1><p class="hero-copy">Private direct messages between signed-in {{ school_brand.name }} administrators. Use this for operational communication without mixing staff messages into student records.</p></div></div>
-{% if admin_unread_messages %}
+<link rel="stylesheet" href="{{ url_for('static', filename='messages.css', v='1') }}">
+
+{% macro avatar(name, photo=None, cls='') -%}
+  {% if photo %}<img class="msg-ava {{ cls }}" src="{{ url_for('static',filename=photo) }}" alt="">{% else %}<span class="msg-ava {{ cls }}" aria-hidden="true">{{ (name or '?')[:1]|upper }}</span>{% endif %}
+{%- endmacro %}
+
+<div class="page-hero"><div><div class="eyebrow">COMMUNICATION</div><h1>Messages</h1><p class="hero-copy">Talk to your colleagues in private, or reach a student's parent. Parent conversations are shared: any administrator who can manage them may answer, and every reply shows who wrote it.</p></div></div>
+
+{% if tab == 'admins' and admin_unread_messages %}
 <div class="message-notification card" role="status" aria-live="polite">
   <div class="message-notification-icon">✉</div>
   <div class="message-notification-copy">
@@ -13,16 +21,88 @@
 </div>
 {% endif %}
 
-<div class="messages-shell card" data-live-message-page data-selected-admin="{{ selected.id if selected else '' }}">
- <aside class="message-contacts"><div class="message-panel-title"><strong>Staff directory</strong><span>{{ contacts|length }} active</span></div>
- {% for c in contacts %}<a class="message-contact {% if selected and selected.id==c.id %}active{% endif %}" href="{{ url_for('admin_messages', **{'with':c.id}) }}">{% if c.photo_path %}<img src="{{ url_for('static',filename=c.photo_path) }}" alt="">{% else %}<span class="table-avatar">{{ c.display_name[:1]|upper }}</span>{% endif %}<span><strong>{{ c.display_name }}{% if unread_map.get(c.id) %}<b class="message-unread-badge" title="{{ unread_map[c.id] }} unread message{{ 's' if unread_map[c.id] != 1 else '' }} from {{ c.display_name }}">{{ unread_map[c.id] }}</b>{% endif %}</strong><small>{{ c.username }}</small></span></a>{% else %}<div class="empty-state">No other active administrators are available.</div>{% endfor %}</aside>
- <section class="message-thread">
- {% if selected %}<div class="message-thread-head"><div>{% if selected.photo_path %}<img src="{{ url_for('static',filename=selected.photo_path) }}" alt="">{% else %}<span class="table-avatar">{{ selected.display_name[:1]|upper }}</span>{% endif %}<div><strong>{{ selected.display_name }}</strong><small>{{ selected.email or selected.phone or 'Administrator' }}</small></div></div></div>
- <div class="message-list" data-live-message-thread>{% for m in thread %}
+<div class="msg-app" id="msg-app" data-tab="{{ tab }}"
+     data-recipients-url="{{ url_for('admin_school_parent_recipients') }}"
+     {% if tab == 'admins' %}data-live-message-page data-selected-admin="{{ selected.id if selected else '' }}"{% endif %}>
+
+  {# ---------------------------------------------------------------- the list #}
+  <aside class="msg-side{% if (tab == 'admins' and selected) or (tab == 'parents' and parents.open) %} has-open{% endif %}">
+    <nav class="msg-tabs" aria-label="Who to message">
+      <a class="msg-tab{% if tab == 'admins' %} is-on{% endif %}" href="{{ url_for('admin_messages') }}"{% if tab == 'admins' %} aria-current="page"{% endif %}>
+        Administrators{% if admin_unread_messages %}<b class="msg-count">{{ admin_unread_messages }}</b>{% endif %}
+      </a>
+      {% if parents.allowed %}
+      <a class="msg-tab{% if tab == 'parents' %} is-on{% endif %}" href="{{ url_for('admin_messages', tab='parents') }}"{% if tab == 'parents' %} aria-current="page"{% endif %}>
+        Parents{% if parents.counts.awaiting %}<b class="msg-count" title="{{ parents.counts.awaiting }} waiting for a reply">{{ parents.counts.awaiting }}</b>{% endif %}
+      </a>
+      {% endif %}
+    </nav>
+
+    {% if tab == 'admins' %}
+    <div class="msg-search"><input type="search" id="msg-contact-filter" placeholder="Find a colleague" aria-label="Find a colleague"></div>
+    <div class="msg-list" id="msg-contacts">
+      {% for c in contacts %}
+      <a class="msg-item{% if selected and selected.id==c.id %} is-on{% endif %}" data-name="{{ c.display_name|lower }} {{ c.username|lower }}" href="{{ url_for('admin_messages', **{'with':c.id}) }}">
+        {{ avatar(c.display_name, c.photo_path) }}
+        <span class="msg-item__text"><strong>{{ c.display_name }}</strong><small>{{ c.username }}</small></span>
+        {% if unread_map.get(c.id) %}<b class="msg-count" title="{{ unread_map[c.id] }} unread from {{ c.display_name }}">{{ unread_map[c.id] }}</b>{% endif %}
+      </a>
+      {% else %}<div class="msg-empty">No other active administrators are available.</div>{% endfor %}
+      <div class="msg-empty" id="msg-contact-none" hidden>No one matches.</div>
+    </div>
+
+    {% else %}
+    <div class="msg-tools">
+      <form method="get" class="msg-search">
+        <input type="hidden" name="tab" value="parents">
+        {% if parents.status %}<input type="hidden" name="status" value="{{ parents.status }}">{% endif %}
+        <input type="search" name="q" value="{{ parents.q }}" placeholder="Search parent, child or subject" aria-label="Search conversations">
+      </form>
+      {% if parents.can_manage %}<button type="button" class="btn btn-primary btn-small" id="msg-new-open">New message</button>{% endif %}
+    </div>
+    <div class="msg-chips" role="group" aria-label="Filter by status">
+      {% set base_args = {'tab':'parents'} %}
+      <a class="msg-chip{% if not parents.status %} is-on{% endif %}" href="{{ url_for('admin_messages', tab='parents', q=parents.q or None) }}">All <b>{{ parents.counts.all }}</b></a>
+      {% for key, label in parents.statuses.items() %}
+      <a class="msg-chip is-{{ key }}{% if parents.status == key %} is-on{% endif %}" href="{{ url_for('admin_messages', tab='parents', status=key, q=parents.q or None) }}">{{ label }} <b>{{ parents.counts[key] }}</b></a>
+      {% endfor %}
+    </div>
+    <div class="msg-list">
+      {% for t in parents.threads %}
+      <a class="msg-item msg-item--thread{% if parents.open and parents.open.id==t.id %} is-on{% endif %}" href="{{ url_for('admin_messages', tab='parents', thread=t.id, status=parents.status or None, q=parents.q or None) }}">
+        {{ avatar(t.parent_name) }}
+        <span class="msg-item__text">
+          <strong>{{ t.parent_name }}{% if t.awaiting %}<i class="msg-dot" title="Waiting for a reply"></i>{% endif %}</strong>
+          <span class="msg-item__subject">{{ t.subject }}</span>
+          <small>{{ t.preview[:80] }}{% if t.preview|length > 80 %}…{% endif %}</small>
+          <span class="msg-item__meta">
+            <span class="msg-status is-{{ t.status }}">{{ t.status_label }}</span>
+            {% if t.student_name %}<span>{{ t.student_name }}{% if t.class_name %} · {{ t.class_name }}{% endif %}</span>{% endif %}
+          </span>
+          {% if t.assigned_name and t.status != 'resolved' %}<span class="msg-item__resp">{{ 'You are' if t.assigned_admin_id == current_admin.id else t.assigned_name ~ ' is' }} responding</span>{% endif %}
+        </span>
+      </a>
+      {% else %}
+      <div class="msg-empty">{% if parents.q or parents.status %}No conversation matches.{% else %}No parent conversations yet.{% if parents.can_manage %} Use <strong>New message</strong> to reach a parent first.{% endif %}{% endif %}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </aside>
+
+  {# ---------------------------------------------------------------- the open conversation #}
+  <section class="msg-main">
+  {% if tab == 'admins' %}
+    {% if selected %}
+    <header class="msg-head">
+      <a class="msg-back" href="{{ url_for('admin_messages') }}" aria-label="Back to the list">{{ icon('arrow-left') }}</a>
+      {{ avatar(selected.display_name, selected.photo_path, 'msg-ava--lg') }}
+      <div><strong>{{ selected.display_name }}</strong><small>{{ selected.email or selected.phone or 'Administrator' }}</small></div>
+    </header>
+    <div class="message-list" data-live-message-thread>{% for m in thread %}
 <div class="message-bubble-wrap {% if m.sender_admin_id==current_admin.id %}mine{% endif %}">
     <div class="message-bubble">
         {% if m.body %}
-        <div class="message-body">{{ m.body|e|replace('\n','<br>')|safe }}</div>
+        <div class="message-body">{{ m.body }}</div>
         {% endif %}
 
         {% if m.attachment_path %}
@@ -49,14 +129,118 @@
 {% else %}
 <div class="empty-state">No messages yet. Start the conversation below.</div>
 {% endfor %}</div>
- <form enctype="multipart/form-data" method="post" action="{{ url_for('admin_message_send') }}" class="message-compose"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="recipient_id" value="{{ selected.id }}"><textarea name="body" rows="3" maxlength="5000" placeholder="Write a direct message to {{ selected.display_name }}…"></textarea><div><small>Messages are visible only to the two administrators in this conversation.</small><div class="d-inline-flex align-items-center gap-2 me-2">{% include "includes/_chat_attachment_input.html" %}</div><button class="btn btn-primary" type="submit">Send message</button></div>
+    <form enctype="multipart/form-data" method="post" action="{{ url_for('admin_message_send') }}" class="message-compose"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="recipient_id" value="{{ selected.id }}"><textarea name="body" rows="3" maxlength="5000" placeholder="Write a direct message to {{ selected.display_name }}…"></textarea><div><small>Only you and {{ selected.display_name }} can see this conversation.</small><div class="d-inline-flex align-items-center gap-2 me-2">{% include "includes/_chat_attachment_input.html" %}</div><button class="btn btn-primary" type="submit">Send message</button></div>
     </form>
- {% else %}<div class="empty-state large"><strong>Select a staff member</strong><span>Choose an administrator from the directory to view the private conversation.</span></div>{% endif %}
- </section>
+    {% else %}
+    <div class="msg-blank"><span class="msg-blank__ico">{{ icon('message') }}</span><strong>Select a colleague</strong><span>Choose an administrator from the list to open your private conversation.</span></div>
+    {% endif %}
+
+  {% else %}
+    {% set t = parents.open %}
+    {% if t %}
+    <header class="msg-head msg-head--thread">
+      <a class="msg-back" href="{{ url_for('admin_messages', tab='parents', status=parents.status or None, q=parents.q or None) }}" aria-label="Back to the list">{{ icon('arrow-left') }}</a>
+      <div class="msg-head__title">
+        <strong>{{ t.subject }}</strong>
+        <small>{{ t.parent_name }}{% if t.student_name %} · about {{ t.student_name }}{% if t.class_name %} ({{ t.class_name }}){% endif %}{% else %} · general enquiry{% endif %}{% if t.parent_email or t.parent_phone %} · {{ t.parent_email or t.parent_phone }}{% endif %}</small>
+      </div>
+      {% if parents.can_manage %}
+      <form method="post" action="{{ url_for('admin_school_parent_feedback_status', feedback_id=t.id) }}" class="msg-statusbar" aria-label="Conversation status">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        {% for key, label in parents.statuses.items() %}
+        <button type="submit" name="status" value="{{ key }}" class="msg-seg is-{{ key }}{% if t.status == key %} is-on{% endif %}"{% if t.status == key %} aria-pressed="true" disabled{% endif %}>{{ label }}</button>
+        {% endfor %}
+      </form>
+      {% else %}<span class="msg-status is-{{ t.status }}">{{ t.status_label }}</span>{% endif %}
+    </header>
+
+    <div class="msg-responder{% if not t.assigned_name %} is-none{% endif %}">
+      {% if t.status == 'resolved' %}
+        <span><strong>Resolved</strong>{% if t.assigned_name %} · last handled by {{ 'you' if t.assigned_admin_id == current_admin.id else t.assigned_name }}{% endif %}</span>
+      {% elif t.assigned_name %}
+        {{ avatar(t.assigned_name, None, 'msg-ava--sm') }}
+        <span><strong>{{ 'You are' if t.assigned_admin_id == current_admin.id else t.assigned_name ~ ' is' }}</strong> currently responding{% set others = t.staff_participants|reject('equalto', t.assigned_name)|list %}{% if others %} · also replied: {{ others|join(', ') }}{% endif %}</span>
+      {% else %}
+        <span>No one is responding yet.</span>
+      {% endif %}
+      {% if parents.can_manage and t.status != 'resolved' and t.assigned_admin_id != current_admin.id %}
+      <form method="post" action="{{ url_for('admin_school_parent_feedback_take', feedback_id=t.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light btn-small" type="submit">I'll respond</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="message-list msg-thread" id="msg-thread">
+      {% for m in t.messages %}
+      <div class="msg-row {{ 'is-parent' if m.from_parent else 'is-staff' }}">
+        <div class="msg-bubble">
+          <div class="msg-bubble__who">{{ m.author }}{% if m.from_parent %} <span>parent</span>{% elif m.admin_id == current_admin.id %} <span>you</span>{% else %} <span>staff</span>{% endif %}</div>
+          <div class="msg-bubble__text">{{ m.body }}</div>
+          {% if m.attachment %}<a class="msg-bubble__file" href="{{ url_for('admin_school_parent_feedback_attachment', feedback_id=t.id) }}" target="_blank" rel="noopener">📎 {{ m.attachment_name or 'Attachment' }}</a>{% endif %}
+          <time>{{ m.at[:16].replace('T', ' ') }} UTC</time>
+        </div>
+      </div>
+      {% else %}
+      <div class="msg-empty">No messages in this conversation yet.</div>
+      {% endfor %}
+    </div>
+
+    {% if parents.can_manage %}
+    <form method="post" action="{{ url_for('admin_school_parent_feedback_reply', feedback_id=t.id) }}" class="message-compose msg-compose">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <textarea name="body" rows="3" maxlength="5000" placeholder="Reply to {{ t.parent_name }}…" required></textarea>
+      <div>
+        <small>{{ t.parent_name }} is told by email.{% if t.status == 'resolved' %} Replying reopens this conversation.{% endif %}</small>
+        <button class="btn btn-primary" type="submit">Send reply</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="msg-readonly">You can read this conversation but not reply to it.</div>
+    {% endif %}
+
+    {% else %}
+    <div class="msg-blank"><span class="msg-blank__ico">{{ icon('message') }}</span><strong>Select a conversation</strong><span>Pick a parent conversation from the list{% if parents.can_manage %}, or start a new one with <em>New message</em>{% endif %}.</span></div>
+    {% endif %}
+  {% endif %}
+  </section>
 </div>
+
+{# ---------------------------------------------------------------- start a conversation with a parent #}
+{% if tab == 'parents' and parents.can_manage %}
+<dialog class="msg-modal" id="msg-new-modal" aria-labelledby="msg-new-title" data-open="{{ 1 if compose else 0 }}">
+  <form method="post" action="{{ url_for('admin_school_parent_message_new') }}" class="msg-modal__form" id="msg-new-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="parent_id" id="msg-parent-id">
+    <input type="hidden" name="student_id" id="msg-student-id">
+    <header class="msg-modal__head">
+      <div><h2 id="msg-new-title">Message a parent</h2><p>Find the student, then choose which parent to write to.</p></div>
+      <button type="button" class="msg-x" data-close aria-label="Close">×</button>
+    </header>
+    <div class="msg-modal__body">
+      <div class="msg-field">
+        <label for="msg-recipient-q">Student or parent</label>
+        <input type="search" id="msg-recipient-q" autocomplete="off" placeholder="Type at least two letters of a name or class" role="combobox" aria-expanded="false" aria-controls="msg-recipient-list">
+        <div class="msg-picked" id="msg-picked" hidden><span id="msg-picked-text"></span><button type="button" class="msg-link" id="msg-picked-clear">Change</button></div>
+        <ul class="msg-results" id="msg-recipient-list" role="listbox" hidden></ul>
+      </div>
+      <div class="msg-field">
+        <label for="msg-subject">Subject</label>
+        <input type="text" id="msg-subject" name="subject" maxlength="150" required placeholder="e.g. Term fees reminder">
+      </div>
+      <div class="msg-field">
+        <label for="msg-body">Message</label>
+        <textarea id="msg-body" name="body" rows="6" maxlength="5000" required placeholder="Write your message to the parent…"></textarea>
+      </div>
+      <p class="msg-hint">The parent is told by email and SMS, and can reply from their portal. Any administrator can carry on the conversation.</p>
+    </div>
+    <footer class="msg-modal__foot">
+      <button type="button" class="btn btn-light" data-close>Cancel</button>
+      <button type="submit" class="btn btn-primary" id="msg-new-send">Send message</button>
+    </footer>
+  </form>
+</dialog>
+{% endif %}
+
+<script src="{{ url_for('static', filename='messages.js', v='1') }}"></script>
 {% endblock %}
-
-
-
-
-

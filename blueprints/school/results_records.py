@@ -193,7 +193,7 @@ def admin_school_results_release_term():
               f'need{"s" if waiting == 1 else ""} to be verified or approved, so the report card is not ready yet.', 'success')
     else:
         flash(f'Released all {len(due)} result{"" if len(due) == 1 else "s"} for the term. The report card '
-              'is ready, and the parents are being told by email and WhatsApp.', 'success')
+              'is ready, and the parents are being told by email and SMS.', 'success')
     return redirect(back)
 
 

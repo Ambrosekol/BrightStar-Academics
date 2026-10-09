@@ -225,7 +225,7 @@ check("adding an admin needs the form token",
 
 # ================================================================ ordinary admins keep full control of schools
 r = make_school(am, "alpha", "Alpha Academy")
-check("an ordinary admin can create a school", "Alpha Academy is ready" in r.get_data(as_text=True))
+check("an ordinary admin can create a school", "Alpha Academy" in r.get_data(as_text=True) and "Building the school" in r.get_data(as_text=True))
 make_school(sup, "beta", "Beta College")
 r = am.post("/platform/schools/beta/status", data={"_csrf_token": csrf(am, "/platform/schools/beta"),
             "status": "suspended", "reason": "test"}, base_url=PL)

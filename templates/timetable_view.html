@@ -1,74 +1,75 @@
-{% from 'includes/_nav_icons.html' import icon %}
-{% from 'includes/_school_mark.html' import school_mark %}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ title }} — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
-</head>
-<body class="school-ui">{{ connectivity_banner() }}
-<a class="skip-link" href="#main">Skip to main content</a>
+{% extends 'parent_base.html' if home_kind == 'Parent Portal' else 'student_base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{#-
+  Released exam and test dates for one term. The next paper is picked out first, then every day in order
+  with its papers; days already gone are quieter.
+-#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='1') }}">
+<p class="rv-back"><a href="{{ back_url }}">&larr; {{ back_label }}</a></p>
 
-<header class="fp-bar">
-  <a class="fp-bar__brand" href="{{ home_url }}">
-    {{ school_mark(school_brand) }}
-    <span class="fp-bar__brand-text">
-      <span class="fp-bar__name">{{ school_brand.name }}</span>
-      <span class="fp-bar__kind">{{ home_kind }}</span>
-    </span>
-  </a>
-  <div class="fp-bar__actions">
-    <span class="fp-bar__person">{{ person_name }}</span>
-    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+<header class="rv-head">
+  <div>
+    <p class="pp-eyebrow">Exam timetable</p>
+    <h1>{{ title }}</h1>
   </div>
+  <form method="get" class="rv-filters">
+    <label><span>Session</span>
+      <select class="ui-input" name="session_id" data-autosubmit>
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+      </select></label>
+    <label><span>Term</span>
+      <select class="ui-input" name="term" data-autosubmit>
+        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></label>
+    <noscript><button class="ui-btn ui-btn--light ui-btn--sm" type="submit">Show</button></noscript>
+  </form>
 </header>
 
-<main class="fp-main" id="main">
-  <p><a class="fp-row__go" href="{{ back_url }}">&larr; {{ back_label }}</a></p>
-
-  <section class="fp-hero">
-    <div>
-      <p class="fp-hero__eyebrow">Exam timetable</p>
-      <h1>{{ title }}</h1>
+{% if rows %}
+<section class="rv-top">
+  {% if next_up %}
+  <div class="rv-next">
+    <span class="rv-next__date"><small>{{ next_up.month }}</small><b>{{ next_up.day }}</b><small>{{ next_up.weekday[:3] }}</small></span>
+    <div class="rv-next__body">
+      <p class="pp-eyebrow">Next paper · {{ next_up.when }}</p>
+      <strong>{{ next_up.subject_name }}</strong>
+      <span>{{ next_up.start_time }}{% if next_up.end_time %} – {{ next_up.end_time }}{% endif %}{% if next_up.venue %} · {{ next_up.venue }}{% endif %} · {{ 'Test' if next_up.exam_type == 'test' else 'Examination' }}</span>
     </div>
-  </section>
-
-  <section class="fp-panel">
-    <form method="get" class="fp-form-grid" style="margin-bottom:0">
-      <label class="ui-field">Session
-        <select class="ui-input" name="session_id" data-autosubmit>
-          {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-        </select></label>
-      <label class="ui-field">Term
-        <select class="ui-input" name="term" data-autosubmit>
-          {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-        </select></label>
-    </form>
-  </section>
-
-  {% if rows %}
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div><p class="fp-panel__eyebrow">{{ term }} · {{ session_row.name }}</p><h2>Papers</h2></div>
-      <span class="fp-count">{{ rows|length }}</span>
-    </div>
-    <div class="ui-table-wrap"><table class="ui-table">
-      <tr><th>Date</th><th>Time</th><th>Subject</th><th>Type</th><th>Venue</th></tr>
-      {% for r in rows %}
-      <tr><td>{{ r.date }}</td><td>{{ r.start_time }}{% if r.end_time %} – {{ r.end_time }}{% endif %}</td>
-        <td>{{ r.subject_name }}</td><td>{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</td><td>{{ r.venue or '—' }}</td></tr>
-      {% endfor %}
-    </table></div>
-    {% if pdf_url %}<p style="margin-top:14px"><a class="ui-btn ui-btn--primary" href="{{ pdf_url }}">Download PDF</a>
-    <button type="button" class="ui-btn ui-btn--light" data-print>Print</button></p>{% endif %}
-  </section>
+  </div>
   {% else %}
-  <section class="fp-panel"><p class="fp-panel-note" style="margin:0">No timetable has been released for {{ term }} yet.</p></section>
+  <div class="rv-next is-done"><div class="rv-next__body"><p class="pp-eyebrow">All done</p><strong>Every paper on this timetable has passed.</strong></div></div>
   {% endif %}
-</main>
-<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
-</html>
+  <div class="rv-tally">
+    <div><b>{{ rows|length }}</b><span>papers</span></div>
+    <div><b>{{ upcoming }}</b><span>to come</span></div>
+    <div><b>{{ done }}</b><span>done</span></div>
+  </div>
+  {% if pdf_url %}
+  <div class="rv-tools">
+    <a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ pdf_url }}">Download PDF</a>
+    <button type="button" class="ui-btn ui-btn--light ui-btn--sm" data-print>Print</button>
+  </div>
+  {% endif %}
+</section>
+
+<ol class="rv-timeline">
+  {% for d in days %}
+  <li class="rv-dayrow{% if d.past %} is-past{% endif %}{% if d.today %} is-today{% endif %}">
+    <div class="rv-dayrow__date"><small>{{ d.month }} {{ d.year }}</small><b>{{ d.day }}</b><span>{{ d.weekday }}{% if d.today %} · today{% endif %}</span></div>
+    <ul class="rv-papers">
+      {% for r in d.entries %}
+      <li class="rv-paper">
+        <span class="rv-paper__time">{{ r.start_time }}{% if r.end_time %}<small>to {{ r.end_time }}</small>{% endif %}</span>
+        <span class="rv-paper__what"><strong>{{ r.subject_name }}</strong><small>{{ r.venue or 'Venue to be announced' }}</small></span>
+        <span class="rv-chip is-{{ 'test' if r.exam_type == 'test' else 'exam' }}">{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<section class="pp-block"><p class="pp-none" style="padding:0">No timetable has been released for {{ term }} yet.</p></section>
+{% endif %}
+{% endblock %}

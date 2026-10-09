@@ -31,8 +31,8 @@ ROUTES = {
     "delivery": [
         "admin_school_delivery", "admin_school_delivery_email_save",
         "admin_school_delivery_email_clear", "admin_school_delivery_email_test",
-        "admin_school_delivery_whatsapp_save", "admin_school_delivery_whatsapp_clear",
-        "admin_school_delivery_whatsapp_check",
+        "admin_school_delivery_sms_save", "admin_school_delivery_sms_clear",
+        "admin_school_delivery_sms_check", "admin_school_delivery_sms_balance",
     ],
     "paystack": [
         "admin_finance_paystack_settings", "admin_finance_paystack_save",
@@ -78,15 +78,23 @@ def test_none_of_the_four_areas_is_a_grantable_permission_any_more():
             assert code not in spec["permissions"], f"{role_name} still grants {code}"
 
 
-def test_the_navigation_rail_only_offers_these_four_to_the_top_level_admin():
+def test_the_settings_page_only_offers_these_four_to_the_top_level_admin():
+    """The four pages are reached from the Settings page (blueprints/school/settings.py). Each entry
+    there must be shown on the school-administrator check alone, never on a grantable permission, and
+    the navigation rail must not offer any of the four to anyone else on its own."""
+    settings = (ROOT / "blueprints" / "school" / "settings.py").read_text(encoding="utf-8")
     admin_base = (ROOT / "templates" / "admin_base.html").read_text(encoding="utf-8")
     for endpoint in ("admin_school_delivery", "admin_administration",
                      "admin_finance_paystack_settings", "admin_school_branding"):
+        start = settings.find(f"'{endpoint}'")
+        assert start != -1, f"{endpoint} is missing from the Settings page"
+        entry = settings[start: settings.index("),\n", start)]
+        assert re.match(rf"'{endpoint}',\s*'[\w-]+',\s*admin\b(?!\s+and)", entry), (
+            f"{endpoint}'s Settings entry must be shown on is_school_admin() alone: {entry}")
+        assert "can(" not in entry, f"{endpoint}'s Settings entry offers itself to a granted permission: {entry}"
         pattern = re.escape(f"'endpoint':'{endpoint}'")
-        start = re.search(pattern, admin_base)
-        assert start, f"{endpoint} is missing from the navigation rail"
-        # the entry's own 'show' clause, up to the next '}' that closes the dict
-        entry = admin_base[start.start(): admin_base.index("},", start.start())]
-        assert "is_school_admin_ui" in entry, f"{endpoint}'s nav entry no longer checks is_school_admin_ui"
-        assert "admin_has_permission" not in entry, (
-            f"{endpoint}'s nav entry still offers itself to a granted permission: {entry}")
+        in_rail = re.search(pattern, admin_base)
+        if in_rail:
+            rail_entry = admin_base[in_rail.start(): admin_base.index("},", in_rail.start())]
+            assert "is_school_admin_ui" in rail_entry and "admin_has_permission" not in rail_entry, (
+                f"{endpoint}'s nav entry must check is_school_admin_ui only: {rail_entry}")

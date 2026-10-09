@@ -1,4 +1,4 @@
-"""A school's own email and WhatsApp delivery, end to end.
+"""A school's own email and SMS delivery, end to end.
 
 Runs a real (tiny) SMTP server so messages actually travel, and checks what matters:
 
@@ -14,6 +14,8 @@ Runs a real (tiny) SMTP server so messages actually travel, and checks what matt
 Run:  python tests/verification/write_paths_delivery.py
 """
 import base64
+import io
+import json
 import os
 import shutil
 import socketserver
@@ -55,7 +57,8 @@ from models import AuditLog  # noqa: E402
 # app.py has just read the developer's .env, which may hold real mail credentials. A test of email
 # must never be able to reach them, so start from a platform with no shared account at all.
 for name in ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-             "BRIGHTSTARS_WHATSAPP_TOKEN", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID", "BRIGHTSTARS_DELIVERY_KEY",
+             "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
+             "BRIGHTSTARS_DELIVERY_KEY",
              "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS", "BRIGHTSTARS_SMTP_STARTTLS"):
     os.environ.pop(name, None)
 
@@ -192,17 +195,19 @@ def page(client, base):
 
 # ================================================================ nothing set up anywhere
 html = page(alpha, ALPHA)
-check("the school's menu offers Email & WhatsApp", "/admin/school/delivery" in alpha.get("/admin/school", base_url=ALPHA).get_data(as_text=True))
-check("with no account anywhere, the page says email and WhatsApp are not set up",
-      "Email is not set up" in html and "WhatsApp is not set up" in html)
+settings_page = alpha.get("/admin/settings", base_url=ALPHA).get_data(as_text=True)
+check("the Settings page offers Email & SMS", "/admin/school/delivery" in settings_page and "Email &amp; SMS" in settings_page)
+check("with no account anywhere, the page says email and SMS are not set up",
+      "Email is not set up" in html and "SMS is not set up" in html)
 check("…and nothing can be sent", in_school(info_alpha, delivery.email_settings) is None
-      and in_school(info_alpha, delivery.whatsapp_settings) is None)
+      and in_school(info_alpha, delivery.sms_settings) is None)
 
 # ================================================================ the platform's shared account
 os.environ.update({"BRIGHTSTARS_SMTP_HOST": "127.0.0.1", "BRIGHTSTARS_SMTP_PORT": str(platform_mail.server_address[1]),
                    "BRIGHTSTARS_SMTP_USER": "platform-user", "BRIGHTSTARS_SMTP_PASSWORD": "platform-secret-pw",
                    "BRIGHTSTARS_SMTP_FROM": "noreply@platform.example", "BRIGHTSTARS_SMTP_STARTTLS": "0",
-                   "BRIGHTSTARS_WHATSAPP_TOKEN": "platform-wa-token", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID": "111222333"})
+                   "BRIGHTSTARS_SMS_API_TOKEN": "platform-sms-token", "BRIGHTSTARS_SMS_SENDER_ID": "PLATFORM",
+                   "BRIGHTSTARS_SMS_PAYER": "school"})
 html = page(alpha, ALPHA)
 check("a school with none of its own is told it uses the platform's shared account, and from which address",
       "Using the platform's shared account" in html and "noreply@platform.example" in html)
@@ -397,31 +402,38 @@ check("…and goes back to the platform's shared account",
 check("…which is recorded", "school_delivery_cleared" in " ".join(
     str(v) for row in engine_for(info_alpha).connect().execute(sa.text("SELECT action FROM audit_logs")).all() for v in row))
 
-# ================================================================ WhatsApp
-wa_form = {"whatsapp_phone_number_id": "987654321", "whatsapp_graph_version": "v23.0", "whatsapp_token": "alpha-wa-token"}
-r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/save", **wa_form)
+# ================================================================ SMS (BulkSMS Nigeria)
+sms_form = {"sms_sender_id": "ALPHASCH", "sms_gateway": "direct-refund", "sms_api_token": "alpha-sms-token"}
+check("payer 'school': a school with no account of its own cannot send, even though the platform has one set up",
+      in_school(info_beta, delivery.sms_settings) is None and "SMS is not set up" in page(beta, BETA))
+r = post(alpha, ALPHA, "/admin/school/delivery/sms/save", **sms_form)
 text = r.get_data(as_text=True)
-check("a school saves its own WhatsApp account", "WhatsApp settings have been saved" in text)
+check("a school saves its own SMS account", "SMS settings have been saved" in text)
 check("…its token is encrypted, and never shown again",
-      stored(info_alpha, "whatsapp_token").startswith("enc:v1:") and "alpha-wa-token" not in text
-      and "A token is saved" in text)
-r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/save", **{**wa_form, "whatsapp_phone_number_id": "12ab"})
-check("a phone number ID that is not digits is refused", "digits only" in r.get_data(as_text=True))
-r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/save", **{**wa_form, "whatsapp_graph_version": "latest"})
-check("an API version that is not a version is refused", "looks like v23.0" in r.get_data(as_text=True))
-post(alpha, ALPHA, "/admin/school/delivery/whatsapp/save", **{**wa_form, "whatsapp_token": ""})
-check("saving with the token left blank keeps it", in_school(info_alpha, delivery.whatsapp_settings).token == "alpha-wa-token")
-r = post(beta, BETA, "/admin/school/delivery/whatsapp/save", whatsapp_phone_number_id="555666777",
-         whatsapp_graph_version="v23.0", whatsapp_token="")
-check("a first save with no token is refused", "Enter the access token" in r.get_data(as_text=True))
-check("…and leaves the school on the platform's account", in_school(info_beta, delivery.whatsapp_settings).source == "platform")
+      stored(info_alpha, "sms_api_token").startswith("enc:v1:") and "alpha-sms-token" not in text and "A token is saved" in text)
+check("…and it is told it texts from its own account, under its own sender name",
+      ("Texting from your school&#39;s own account" in text or "Texting from your school's own account" in text) and "ALPHASCH" in text)
+r = post(alpha, ALPHA, "/admin/school/delivery/sms/save", **{**sms_form, "sms_sender_id": "x"})
+check("a sender name that is too short is refused", "3 to 11 letters and digits" in r.get_data(as_text=True))
+r = post(alpha, ALPHA, "/admin/school/delivery/sms/save", **{**sms_form, "sms_sender_id": "Way Too Long Name"})
+check("a sender name over 11 characters is refused", "3 to 11 letters and digits" in r.get_data(as_text=True))
+r = post(alpha, ALPHA, "/admin/school/delivery/sms/save", **{**sms_form, "sms_gateway": "fast-lane"})
+check("a route that does not exist is refused", "how the messages are routed" in r.get_data(as_text=True))
+post(alpha, ALPHA, "/admin/school/delivery/sms/save", **{**sms_form, "sms_api_token": ""})
+check("saving with the token left blank keeps it", in_school(info_alpha, delivery.sms_settings).token == "alpha-sms-token")
+r = post(beta, BETA, "/admin/school/delivery/sms/save", sms_sender_id="BETASCH", sms_gateway="direct-refund", sms_api_token="")
+check("a first save with no token is refused", "Enter the API token" in r.get_data(as_text=True))
+check("…and leaves the school unable to send (the platform's account is not borrowed)", in_school(info_beta, delivery.sms_settings) is None)
+post(beta, BETA, "/admin/school/delivery/sms/save", sms_sender_id="BETASCH", sms_gateway="direct-refund", sms_api_token="beta-sms-token")
+post(beta, BETA, "/admin/school/delivery/sms/clear")
+os.environ["BRIGHTSTARS_SMS_PAYER"] = "school"
 
 seen = {}
 
 
 class FakeResponse:
-    def __init__(self, payload):
-        self.payload = payload
+    def __init__(self, payload, status=200):
+        self.payload, self.status = payload, status
 
     def read(self):
         return self.payload
@@ -434,34 +446,79 @@ class FakeResponse:
 
 
 def fake_urlopen(request, timeout=0):
-    seen["url"], seen["auth"] = request.full_url, request.headers.get("Authorization")
+    seen["url"], seen["auth"], seen["method"] = request.full_url, request.headers.get("Authorization"), request.get_method()
+    seen["body"] = json.loads(request.data) if request.data else None
+    seen["calls"] = seen.get("calls", 0) + 1
     if seen.get("fail"):
-        raise urllib.error.HTTPError(request.full_url, 401, "Unauthorized", {}, None)
-    return FakeResponse(b'{"verified_name": "Alpha School", "display_phone_number": "+234 800 000 0000", "messages": [{"id": "wamid.1"}]}')
+        raise urllib.error.HTTPError(request.full_url, 401, "Unauthorized", {}, io.BytesIO(b"{}"))
+    if request.full_url.endswith("/balance"):
+        return FakeResponse(b'{"status": "success", "data": {"universal_wallet": 5400.5, "sms_wallet": 1250}}')
+    return FakeResponse(b'{"status": "success", "data": {"id": "MSG1", "cost": 2.5}}')
 
 
 real_urlopen = urllib.request.urlopen
 urllib.request.urlopen = fake_urlopen
 try:
-    r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/check")
-    check("the connection check asks WhatsApp who the credentials belong to, with the school's token",
-          seen["auth"] == "Bearer alpha-wa-token" and "987654321" in seen["url"]
-          and "Connected to WhatsApp: Alpha School" in r.get_data(as_text=True), str(seen))
+    r = post(alpha, ALPHA, "/admin/school/delivery/sms/check")
+    check("the connection check calls BulkSMS Nigeria v2 with the school's own token",
+          seen["auth"] == "Bearer alpha-sms-token" and seen["url"] == "https://www.bulksmsnigeria.com/api/v2/balance"
+          and "Connected to BulkSMS Nigeria" in r.get_data(as_text=True), str(seen))
     seen["fail"] = True
-    r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/check")
+    r = post(alpha, ALPHA, "/admin/school/delivery/sms/check")
     body = r.get_data(as_text=True)
-    check("a rejected token is reported without echoing it", "did not accept these details" in body and "alpha-wa-token" not in body)
+    check("a rejected token is reported without echoing it", "token was not accepted" in body and "alpha-sms-token" not in body)
     seen["fail"] = False
-    ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_whatsapp("08030000001", "hello"))
-    check("a WhatsApp alert is sent with the school's own token, not the platform's",
-          ok and seen["auth"] == "Bearer alpha-wa-token" and "987654321" in seen["url"], str(seen))
-    ok, detail = in_school(info_beta, lambda: A.sys.modules["core.notifications"]._notify_guardian_whatsapp("08030000001", "hello"))
-    check("a school with no account of its own uses the platform's",
-          ok and seen["auth"] == "Bearer platform-wa-token" and "111222333" in seen["url"], str(seen))
+
+    r = post(alpha, ALPHA, "/admin/school/delivery/sms/balance")
+    body = r.get_data(as_text=True)
+    check("a school that pays for its own SMS can see its balance (every wallet, under its own name)",
+          "Balance:" in body and "5,400.50" in body and "1,250.00" in body, body[body.find("Balance"):][:200])
+    check("…the balance button is offered only on a school's own account",
+          "Check my SMS balance" in page(alpha, ALPHA) and "Check my SMS balance" not in page(beta, BETA))
+    r = post(beta, BETA, "/admin/school/delivery/sms/balance")
+    check("…and a school with no account of its own is told to connect one first", "not connected to your school" in r.get_data(as_text=True).replace("&#39;", "'"))
+
+    ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
+    check("a text is sent to BulkSMS Nigeria v2 with the school's own token, sender name and route, to a +234 number",
+          ok and seen["auth"] == "Bearer alpha-sms-token" and seen["url"] == "https://www.bulksmsnigeria.com/api/v2/sms"
+          and seen["method"] == "POST" and seen["body"] == {"from": "ALPHASCH", "to": "+2348030000001", "body": "hello", "gateway": "direct-refund"},
+          str(seen))
+    before = seen["calls"]
+    ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("123", "hello"))
+    check("a phone number that is not a real number is not texted at all", not ok and seen["calls"] == before)
+
+    # who pays: 'either' lets a school without its own account use the platform's
+    os.environ["BRIGHTSTARS_SMS_PAYER"] = "either"
+    ok, detail = in_school(info_beta, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
+    check("payer 'either': a school with no account of its own texts through the platform's (its token and sender name)",
+          ok and seen["auth"] == "Bearer platform-sms-token" and seen["body"]["from"] == "PLATFORM", str(seen))
+    ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
+    check("…while a school that has its own still uses its own", ok and seen["auth"] == "Bearer alpha-sms-token")
+
+    # who pays: 'platform' means the platform's account for everyone, and schools have nothing to set up
+    os.environ["BRIGHTSTARS_SMS_PAYER"] = "platform"
+    ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
+    check("payer 'platform': even a school with its own saved account texts through the platform's",
+          ok and seen["auth"] == "Bearer platform-sms-token" and seen["body"]["from"] == "PLATFORM", str(seen))
+    html = page(alpha, ALPHA)
+    check("…its page says SMS is provided by the platform, with nothing to enter and no balance to check",
+          "SMS is provided by the platform" in html and "sms_api_token" not in html and "Check my SMS balance" not in html
+          and "platform-sms-token" not in html)
+    r = post(alpha, ALPHA, "/admin/school/delivery/sms/save", **sms_form)
+    check("…saving SMS settings is refused", "provided by the platform" in r.get_data(as_text=True))
+    calls = seen["calls"]
+    r = post(alpha, ALPHA, "/admin/school/delivery/sms/balance")
+    check("…and the school cannot see a balance (the platform's is the platform's business), and nothing was asked of BulkSMS",
+          "no balance for the school to check" in r.get_data(as_text=True) and seen["calls"] == calls)
+    status = in_school(info_alpha, delivery.status)["sms"]
+    check("…the page is handed no token at all", "token" not in {k for k in status if k != "has_token"} and status["payer"] == "platform"
+          and status["can_configure"] is False)
+    os.environ["BRIGHTSTARS_SMS_PAYER"] = "school"
 finally:
     urllib.request.urlopen = real_urlopen
-r = post(alpha, ALPHA, "/admin/school/delivery/whatsapp/clear")
-check("removing WhatsApp settings returns the school to the platform's", in_school(info_alpha, delivery.whatsapp_settings).source == "platform")
+r = post(alpha, ALPHA, "/admin/school/delivery/sms/clear")
+check("removing SMS settings leaves the school unable to send under payer 'school'", in_school(info_alpha, delivery.sms_settings) is None
+      and stored(info_alpha, "sms_api_token") is None)
 
 # ================================================================ who may change any of it
 with A.app.app_context(), tenant_context(info_alpha):
@@ -484,13 +541,14 @@ check("an administrator without the permission cannot open the page",
       clerk.get("/admin/school/delivery", base_url=ALPHA).status_code != 200)
 denied = []
 for path, data in (("/admin/school/delivery/email/save", school_form), ("/admin/school/delivery/email/clear", {}),
-                   ("/admin/school/delivery/email/test", {"to": "a@b.org"}), ("/admin/school/delivery/whatsapp/save", wa_form),
-                   ("/admin/school/delivery/whatsapp/clear", {}), ("/admin/school/delivery/whatsapp/check", {})):
+                   ("/admin/school/delivery/email/test", {"to": "a@b.org"}), ("/admin/school/delivery/sms/save", sms_form),
+                   ("/admin/school/delivery/sms/clear", {}), ("/admin/school/delivery/sms/check", {}),
+                   ("/admin/school/delivery/sms/balance", {})):
     r = clerk.post(path, data={"_csrf_token": "t" * 32, **data}, base_url=ALPHA)
     denied.append(r.status_code)
 check("…nor change, clear or test anything, even with a valid form token", all(s != 302 for s in denied), str(denied))
-check("…and nothing was changed", stored(info_alpha, "smtp_host") is None and stored(info_alpha, "whatsapp_token") is None)
-check("the menu does not offer it to them", "Email &amp; WhatsApp" not in clerk.get("/admin/school", base_url=ALPHA).get_data(as_text=True))
+check("…and nothing was changed", stored(info_alpha, "smtp_host") is None and stored(info_alpha, "sms_api_token") is None)
+check("the Settings page does not offer it to them", "/admin/school/delivery" not in clerk.get("/admin/settings", base_url=ALPHA).get_data(as_text=True))
 check("nobody signed out can reach it", A.app.test_client().get("/admin/school/delivery", base_url=ALPHA).status_code == 302)
 check("it does not exist on the platform host", console.get("/admin/school/delivery", base_url=PL).status_code == 404)
 check("every change needs a form token",
@@ -518,7 +576,7 @@ new_key = "a-brand-new-delivery-key-" + "z" * 20
 
 with A.app.app_context(), tenant_context(info_alpha):
     rotated, skipped = rotate_one_tenant(old_key, new_key)
-check("rotating with the real old key moves the school's own secret (WhatsApp's own was cleared above)",
+check("rotating with the real old key moves the school's own secret (the SMS token was cleared above)",
       rotated == 1 and skipped == [], (rotated, skipped))
 
 os.environ["BRIGHTSTARS_DELIVERY_KEY"] = new_key

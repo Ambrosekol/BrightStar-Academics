@@ -116,7 +116,7 @@ class FinancePaymentAllocation(db.Model):
 
 
 class FinanceDeliveryLog(db.Model):
-    """Record of each attempt to deliver a receipt by email or WhatsApp."""
+    """Record of each attempt to deliver a receipt by email or SMS."""
 
     __tablename__ = 'finance_delivery_logs'
 

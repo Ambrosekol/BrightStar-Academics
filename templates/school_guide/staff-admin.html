@@ -20,7 +20,7 @@ own content: it shows a few counts (how many staff accounts, how many roles, how
 items) and links into the real pages described below.</p>
 <div class="guide-warn">Administration is one of four areas kept for the School Admin alone — the
 account created when the school itself was set up, never a role you build or grant. Email &amp;
-WhatsApp, Online Payments and School Profile, further down this page, are the other three. Nobody
+SMS, Online Payments and School Profile, further down this page, are the other three. Nobody
 else can be given access to any of the four, no matter what permissions their role carries; if you
 cannot see this link at all, that is why, and it is normal for every account except the School
 Admin's own.</div>
@@ -57,11 +57,28 @@ permission that exists in the whole system, grouped by area, so you can see exac
 carry before you build one; <a href="{{ url_for('admin_scopes') }}">scopes</a> lists every account in
 the school that is currently limited to particular classes, subjects or banks, all in one place.</p>
 
+<h2 id="settings-page">Settings</h2>
+<p><a href="{{ url_for('admin_settings') }}">Settings</a> is the one menu entry that leads to every
+setting, control and record of activity — school profile, academic sessions, report card settings,
+Email &amp; SMS, online payments, receipts, Administration, controls and alerts, the activity log
+and who is online. It groups them, shows at a glance whether each is set up (for example whether
+Email &amp; SMS is the school's own account or the platform default) and offers only what your role
+allows. Type in the box at the top to find a setting by name.</p>
+
 <h2 id="messages">Messages</h2>
-<p><a href="{{ url_for('admin_messages') }}">Messages</a> is a simple inbox between members of staff —
-pick a colleague, write a note, attach a file if you need to. It is only ever between staff; a parent
-or a student never sees it and cannot use it. A small red number by the link in the navigation rail
-shows how many messages you have not opened yet.</p>
+<p><a href="{{ url_for('admin_messages') }}">Messages</a> has two tabs. <strong>Administrators</strong> is a
+private inbox between members of staff — pick a colleague, write a note, attach a file if you need to; a
+parent or a student never sees it. <strong>Parents</strong> holds the conversations with parents (see
+{{ page('families', 'Parents') }}). A small number by the link in the navigation rail shows how many
+messages you have not opened yet.</p>
+
+<h2 id="birthdays">Birthday reminders</h2>
+<p>Two days before a student's birthday, the staff who teach that student's class see a notification in
+their bell — for example "Ada Obi (JSS 1) turns 12 on Fri 11 Oct". Staff count as a class's teachers when
+they have access to that class and may write report card comments. Nothing needs setting up: the first
+time anyone opens an admin page each day, the school checks for birthdays coming up, and none is sent
+twice. It reads the date of birth on each student's record, so a student whose date is missing or not a
+readable date gets no reminder.</p>
 
 <h2 id="presence">Who is online now</h2>
 <p><a href="{{ url_for('admin_presence') }}">Online Now</a> shows which staff, students and parents are
@@ -73,7 +90,7 @@ is actually at their screen right now.</p>
 record, from which address, and whether it succeeded — every release, every account change, every
 sign-in. Some actions also notify School Admins directly.</p>
 <p>A link from that page, or from a student's own record, opens the <strong>Notice log</strong> —
-every attempt to tell a guardian something by email or WhatsApp (a new assignment, a fee charged, a
+every attempt to tell a guardian something by email or SMS (a new assignment, a fee charged, a
 released report card or exam timetable), whether it actually went through or not, so you can answer
 "did she get it?" yourself. Payment receipts keep their own version of this on each receipt's own
 page.</p>
@@ -89,9 +106,9 @@ logo, brand colours and sign-in photographs — everything a receipt, a report c
 the portal wear as their own. School Admin only, like Administration above: changing what the school
 is called or how it looks is kept out of ordinary staff reach.</p>
 
-<h2 id="delivery">Email and WhatsApp</h2>
-<p><a href="{{ url_for('admin_school_delivery') }}">Email &amp; WhatsApp</a> is where the school
-connects its own mail server and WhatsApp Business account, so every automatic notice — a new report
+<h2 id="delivery">Email and SMS</h2>
+<p><a href="{{ url_for('admin_school_delivery') }}">Email &amp; SMS</a> is where the school
+connects its own mail server and BulkSMS Nigeria account, so every automatic notice — a new report
 card, a payment, a released timetable — reaches a guardian on those channels too, not only in-app.
 School Admin only, since whoever holds these accounts can send a message that looks like it comes
 from the school.</p>

@@ -6,7 +6,7 @@ from .base import db
 
 
 class SchoolDeliverySetting(db.Model):
-    """A school's own email and WhatsApp account: host, sender, and the secrets for them.
+    """A school's own email and SMS account: host, sender, and the secrets for them.
 
     Deliberately not in the general settings store (school_public_settings), which is read
     freely to render pages. Only core/delivery.py reads this table, and it encrypts the secrets.

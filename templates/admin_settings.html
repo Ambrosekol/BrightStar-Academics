@@ -1,0 +1,54 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Settings — {{ school_brand.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='1') }}">
+
+<div class="page-hero"><div>
+  <div class="eyebrow">{{ 'ENTRANCE EXAMINATION' if workspace == 'entrance' else 'SCHOOL PORTAL' }}</div>
+  <h1>Settings</h1>
+  <p class="hero-copy">Everything that sets up the portal, controls who can use it or records what happened, in one place. You see only the settings your role allows.</p>
+</div></div>
+
+{% if groups %}
+<div class="set-app" id="set-app">
+  <nav class="set-nav" aria-label="Settings sections">
+    <label class="set-find"><span class="sr-only">Find a setting</span>
+      <input type="search" id="set-filter" placeholder="Find a setting" autocomplete="off">
+    </label>
+    <ul>
+      {% for g in groups %}
+      <li><a href="#set-{{ g.key }}" data-group="{{ g.key }}">{{ g.title }}<span>{{ g.entries|length }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <div class="set-body">
+    {% for g in groups %}
+    <section class="set-group" id="set-{{ g.key }}" aria-labelledby="set-h-{{ g.key }}">
+      <header>
+        <h2 id="set-h-{{ g.key }}">{{ g.title }}</h2>
+        <p>{{ g.blurb }}</p>
+      </header>
+      <ul class="set-list">
+        {% for e in g.entries %}
+        <li data-find="{{ (e.title ~ ' ' ~ e.text ~ ' ' ~ e.keywords)|lower }}">
+          <a class="set-row" href="{{ url_for(e.endpoint) }}">
+            <span class="set-ico">{{ icon(e.icon) }}</span>
+            <span class="set-copy"><strong>{{ e.title }}</strong><span>{{ e.text }}</span></span>
+            {% if e.status %}<span class="set-chip is-{{ e.status[1] }}">{{ e.status[0] }}</span>{% endif %}
+            <span class="set-go">{{ icon('arrow-right') }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+    <p class="set-none" id="set-none" hidden>No setting matches “<span id="set-none-q"></span>”.</p>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='settings.js', v='1') }}"></script>
+{% else %}
+<section class="card"><p class="muted" style="margin:0">Your role has no settings to manage here.</p></section>
+{% endif %}
+{% endblock %}

@@ -1,89 +1,154 @@
 {% extends 'admin_base.html' %}
 {% block title %}Report cards — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-  .rc-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-  .rc-filter .field { min-width: 170px; }
-  .rc-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 6px; }
-  .rc-note { padding: 12px 14px; border-radius: 10px; border: 1px solid #f1dfb6; background: #fffaf0; margin: 14px 0; font-size: 13px; line-height: 1.5; }
-  .rc-state { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .rc-state.ready { background: #e3f6ec; color: #067647; }
-  .rc-state.waiting { background: #fff1d6; color: #9a5b00; }
-  .rc-state.none { background: #eef2f6; color: #566575; }
-  .rc-comment-cell { max-width: 320px; color: #35424f; }
-  .rc-comment-cell small { display: block; color: #6b7a89; }
-</style>
+{% set can_comment = current_admin and admin_has_permission(current_admin['id'], 'report_cards.comment') %}
+{% set can_manage = current_admin and admin_has_permission(current_admin['id'], 'report_cards.manage') %}
+<link rel="stylesheet" href="{{ url_for('static', filename='report-cards.css', v='1') }}">
 
 <div class="page-hero"><div>
   <div class="eyebrow">SCHOOL PORTAL / RESULTS</div>
   <h1>Report cards</h1>
-  <p class="hero-copy">A student's report card is ready once every one of their results for the term has been released. It then appears in the student's and the parent's portal by itself. Comments and signatures can be added at any time.</p>
+  <p class="hero-copy">A card is ready once every result for the term has been released, and then reaches the student's and parent's portal by itself. Comments and trait ratings can be added at any time.</p>
 </div></div>
 
-<section class="card modern-form">
-  <form method="get" class="rc-filter">
-    <div class="field"><label for="class_id">Class</label>
-      <select id="class_id" name="class_id" data-autosubmit>
-        <option value="">Choose a class</option>
-        {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="session_id">Session</label>
-      <select id="session_id" name="session_id" data-autosubmit>
-        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="term">Term</label>
-      <select id="term" name="term" data-autosubmit>
-        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-      </select></div>
-    <noscript><button class="btn btn-primary" type="submit">Show</button></noscript>
-  </form>
+<div class="rc-app" id="rc-app"
+     data-students-url="{{ url_for('admin_school_report_card_students') }}"
+     data-comment-url="{{ url_for('admin_school_report_card_comments_save') }}"
+     data-traits-url="{{ url_for('admin_school_report_card_traits_save') }}"
+     data-csrf="{{ csrf_token() }}"
+     data-can-comment="{{ 1 if can_comment else 0 }}"
+     data-max-length="{{ max_length }}"
+     data-open-signature="{{ 1 if open_signature else 0 }}">
+
+  <section class="rc-bar" aria-label="Choose what to show">
+    <div class="rc-bar__pickers">
+      <label class="rc-pick"><span>Class</span>
+        <select id="rc-class">
+          <option value="">Choose a class</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select></label>
+      <label class="rc-pick"><span>Session</span>
+        <select id="rc-session">
+          {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+        </select></label>
+      <label class="rc-pick"><span>Term</span>
+        <select id="rc-term">
+          {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <div class="rc-bar__actions">
+      {% if can_comment %}
+      <button type="button" class="rc-btn" id="rc-signature-open">
+        <span class="rc-dot {{ 'is-on' if signature_path else 'is-off' }}" aria-hidden="true"></span>
+        {{ 'My signature' if signature_path else 'Set my signature' }}
+      </button>
+      {% endif %}
+      {% if can_manage %}<a class="rc-btn rc-btn--quiet" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature &amp; settings</a>{% endif %}
+    </div>
+  </section>
 
   {% if not settings.head_name or not settings.head_signature %}
-  <div class="rc-note">The head's {% if not settings.head_name %}name{% endif %}{% if not settings.head_name and not settings.head_signature %} and {% endif %}{% if not settings.head_signature %}signature{% endif %} {% if not settings.head_name and not settings.head_signature %}are{% else %}is{% endif %} not set, so every card prints a blank line for it.
-    {% if current_admin and admin_has_permission(current_admin['id'], 'report_cards.manage') %}<a href="{{ url_for('admin_school_report_card_settings') }}">Set it now</a>.{% else %}Ask an administrator to set it.{% endif %}</div>
+  <div class="rc-note" role="note">The head's {% if not settings.head_name %}name{% endif %}{% if not settings.head_name and not settings.head_signature %} and {% endif %}{% if not settings.head_signature %}signature{% endif %} {% if not settings.head_name and not settings.head_signature %}are{% else %}is{% endif %} not set, so every card prints a blank line for it.
+    {% if can_manage %}<a href="{{ url_for('admin_school_report_card_settings') }}">Set it now</a>.{% else %}Ask an administrator to set it.{% endif %}</div>
+  {% endif %}
+  {% if can_comment and not signature_path %}
+  <div class="rc-note" role="note">You have not saved a signature yet, so your comments print with a blank signature line.</div>
   {% endif %}
 
-  <div class="rc-actions">
-    {% if class_row and ready %}<a class="btn btn-primary" href="{{ url_for('admin_school_report_cards_class_pdf', class_id=class_row.id, session_id=session_row.id, term=term) }}">Download all ready cards (PDF)</a>{% endif %}
-    {% if current_admin and admin_has_permission(current_admin['id'], 'report_cards.comment') %}
-      <a class="btn btn-light" href="{{ url_for('admin_school_report_card_comments', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Write comments</a>
-      <a class="btn btn-light" href="{{ url_for('admin_school_report_card_traits', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Rate traits</a>
-      <a class="btn btn-light" href="{{ url_for('admin_my_signature') }}">My signature</a>
-    {% endif %}
-    {% if current_admin and admin_has_permission(current_admin['id'], 'report_cards.manage') %}<a class="btn btn-light" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature &amp; settings</a>{% endif %}
+  <section class="rc-panel" id="rc-panel" aria-live="polite" aria-busy="false">
+    <div class="rc-state" id="rc-idle">
+      <strong>Choose a class</strong>
+      <span>Pick a class, session and term above to see its students.</span>
+    </div>
+    <div class="rc-state" id="rc-loading" hidden>
+      <span class="rc-spinner" aria-hidden="true"></span>
+      <span>Loading students…</span>
+    </div>
+    <div class="rc-state rc-state--error" id="rc-error" hidden>
+      <strong>Could not load the students</strong>
+      <span id="rc-error-text"></span>
+      <button type="button" class="rc-btn" id="rc-retry">Try again</button>
+    </div>
+    <div id="rc-loaded" hidden>
+      <div class="rc-summary">
+        <div class="rc-summary__stats" id="rc-stats"></div>
+        <div class="rc-summary__tools">
+          <input type="search" id="rc-filter" placeholder="Find a student" aria-label="Find a student">
+          <a class="rc-btn rc-btn--primary" id="rc-class-pdf" href="#" hidden>Download all ready cards (PDF)</a>
+        </div>
+      </div>
+      <div class="rc-table-wrap">
+        <table class="rc-table">
+          <thead><tr><th>Student</th><th>Card</th><th>Comment</th><th>Traits</th><th class="rc-col-end"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody id="rc-rows"></tbody>
+        </table>
+      </div>
+      <p class="rc-empty" id="rc-none" hidden>No student matches.</p>
+    </div>
+  </section>
+</div>
+
+{# ---- A student's comment ---- #}
+<dialog class="rc-modal" id="rc-comment-modal" aria-labelledby="rc-comment-title">
+  <form method="dialog" class="rc-modal__form" id="rc-comment-form">
+    <header class="rc-modal__head">
+      <div><h2 id="rc-comment-title">Comment</h2><p id="rc-comment-sub"></p></div>
+      <button type="button" class="rc-x" data-close aria-label="Close">×</button>
+    </header>
+    <div class="rc-modal__body">
+      <label for="rc-comment-text" class="sr-only">Class teacher's comment</label>
+      <textarea id="rc-comment-text" rows="7" maxlength="{{ max_length }}" placeholder="Write the class teacher's comment…"></textarea>
+      <div class="rc-modal__meta"><span id="rc-comment-by"></span><span id="rc-comment-count"></span></div>
+      <p class="rc-form-error" id="rc-comment-error" role="alert" hidden></p>
+    </div>
+    <footer class="rc-modal__foot">
+      <button type="button" class="rc-btn rc-btn--quiet" id="rc-comment-clear">Clear comment</button>
+      <span class="rc-spacer"></span>
+      <button type="button" class="rc-btn" data-close>Cancel</button>
+      <button type="submit" class="rc-btn rc-btn--primary" id="rc-comment-save">Save comment</button>
+    </footer>
+  </form>
+</dialog>
+
+{# ---- A student's traits ---- #}
+<dialog class="rc-modal rc-modal--traits" id="rc-traits-modal" aria-labelledby="rc-traits-title">
+  <form method="dialog" class="rc-modal__form" id="rc-traits-form">
+    <header class="rc-modal__head">
+      <div><h2 id="rc-traits-title">Rate traits</h2><p id="rc-traits-sub"></p></div>
+      <button type="button" class="rc-x" data-close aria-label="Close">×</button>
+    </header>
+    <div class="rc-modal__body">
+      <div class="rc-scale" aria-hidden="true"><b>5</b> Excellent · <b>4</b> Very good · <b>3</b> Good · <b>2</b> Fair · <b>1</b> Poor</div>
+      <div id="rc-trait-groups"></div>
+      <p class="rc-form-error" id="rc-traits-error" role="alert" hidden></p>
+    </div>
+    <footer class="rc-modal__foot">
+      <button type="button" class="rc-btn rc-btn--quiet" id="rc-traits-clear">Clear all</button>
+      <span class="rc-spacer" id="rc-traits-by"></span>
+      <button type="button" class="rc-btn" data-close>Cancel</button>
+      <button type="submit" class="rc-btn rc-btn--primary" id="rc-traits-save">Save ratings</button>
+    </footer>
+  </form>
+</dialog>
+
+{# ---- The teacher's own signature ---- #}
+{% if can_comment %}
+<dialog class="rc-modal rc-modal--wide" id="rc-signature-modal" aria-labelledby="rc-signature-title">
+  <div class="rc-modal__form">
+    <header class="rc-modal__head">
+      <div><h2 id="rc-signature-title">My signature</h2><p>Printed on a report card beside the comment you wrote. Only you can change it.</p></div>
+      <button type="button" class="rc-x" data-close aria-label="Close">×</button>
+    </header>
+    <div class="rc-modal__body">
+      {% set sig_action = url_for('admin_my_signature_save') %}
+      {% set sig_subject = 'Your signature' %}
+      {% set sig_empty = 'You have not added a signature yet: report cards show a blank signature line beside your comments.' %}
+      {% include '_signature_editor.html' %}
+    </div>
   </div>
-</section>
-
-{% if class_row %}
-<section class="card" style="margin-top:18px">
-  {% if rows %}
-  <p class="muted" style="margin-top:0">{{ ready }} of {{ rows|length }} card{{ '' if rows|length == 1 else 's' }} ready{% if missing_comments %} · {{ missing_comments }} with no teacher's comment yet{% endif %}.</p>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Student</th><th>Admission no.</th><th>Card</th><th>Class teacher's comment</th><th></th></tr></thead>
-    <tbody>
-    {% for r in rows %}
-      <tr>
-        <td>{{ r.name }}</td>
-        <td>{{ r.admission_no }}</td>
-        <td>
-          {% if r.state == 'ready' %}<span class="rc-state ready">Ready</span>
-          {% elif r.state == 'waiting' %}<span class="rc-state waiting">Waiting for {{ r.pending }} result{{ '' if r.pending == 1 else 's' }} to be released</span>
-          {% else %}<span class="rc-state none">No results yet</span>{% endif %}
-        </td>
-        <td class="rc-comment-cell">{% if r.comment %}{{ r.comment[:90] }}{% if r.comment|length > 90 %}…{% endif %}{% if r.comment_by %}<small>{{ r.comment_by }}</small>{% endif %}{% else %}<span class="muted">Not written</span>{% endif %}</td>
-        <td>{% if r.state == 'ready' %}
-          <a class="btn btn-light" href="{{ url_for('admin_school_report_card_view', student_id=r.student_id, session_id=session_row.id, slug=slug) }}">View</a>
-          <a class="btn btn-light" href="{{ url_for('admin_school_report_card_pdf', student_id=r.student_id, session_id=session_row.id, slug=slug) }}">PDF</a>
-        {% endif %}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table></div>
-  {% else %}
-  <p class="muted" style="margin:0">No student is enrolled in {{ class_row.name }} for this session.</p>
-  {% endif %}
-</section>
-{% else %}
-<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">Choose a class to see its report cards.</p></section>
+</dialog>
 {% endif %}
+
+<script nonce="{{ csp_nonce() }}">window.RC_TRAITS = {{ trait_groups|tojson }}; window.RC_SCALE = {{ trait_scale|tojson }};</script>
+<script src="{{ url_for('static', filename='report-cards.js', v='1') }}"></script>
 {% endblock %}

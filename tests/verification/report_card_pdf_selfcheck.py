@@ -51,6 +51,18 @@ from reportlab.pdfbase.pdfmetrics import stringWidth  # noqa: E402
 import core.report_card_pdf as RC  # noqa: E402
 from core.report_card_pdf import render_report_cards_pdf  # noqa: E402
 
+# A school's pictures are stored under its own uploads folder and read through core/storage.py, which needs a school
+# to be serving a request. This check has no school and no database, so the fixtures' pictures sit as plain files and
+# the one function that would look them up is pointed at them.
+import core.storage as _storage  # noqa: E402
+
+
+def _read_fixture_picture(path):
+    return open(path, "rb").read() if isinstance(path, str) and os.path.isfile(path) else None
+
+
+_storage.read_upload_bytes = _read_fixture_picture
+
 OUT = os.environ.get("REPORT_CARD_SAMPLE_DIR") or os.path.join(tempfile.gettempdir(), "brightstars_report_card_selfcheck")
 os.makedirs(OUT, exist_ok=True)
 PICS = os.path.join(OUT, "pictures")

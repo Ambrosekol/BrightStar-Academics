@@ -121,7 +121,7 @@ ADMIN_PERMISSION_DEFS = [
     ('presence.view','View live presence','administration','View authorized online account presence.'),
     ('finance.view_own','View own finance collections','finance','View payments and collection totals recorded by the signed-in finance officer.'),
     ('finance.record','Record payments','finance','Record student payments and generate official receipts.'),
-    ('finance.receipt.send','Send receipts','finance','Send receipts by email or WhatsApp and print/download receipts.'),
+    ('finance.receipt.send','Send receipts','finance','Send receipts by email, and payment texts by SMS, and print/download receipts.'),
     ('finance.view_all','View all finance','finance','View school-wide collections, balances, transactions and finance reports.'),
     ('finance.manage','Manage finance','finance','Manage fee assessments, payment corrections and finance controls.'),
     ('finance.paystack.manage','Manage online payments','finance','Set up and test the school\'s own Paystack account for parents to pay online.'),
@@ -132,7 +132,7 @@ ADMIN_PERMISSION_DEFS = [
     ('report_cards.view','View report cards','school','See and download students\' report cards for the classes you may access.'),
     ('report_cards.comment','Write report card comments','school','Write the class teacher\'s comment on report cards, and keep your own signature for them.'),
     ('report_cards.manage','Manage report card settings','school','Set the head teacher\'s or proprietor\'s title, name and signature, and when the next term begins.'),
-    ('delivery.manage','Manage email and WhatsApp delivery','school','Set up the mail server and WhatsApp account the school sends receipts, recovery emails and alerts from.'),
+    ('delivery.manage','Manage email and SMS delivery','school','Set up the mail server and SMS account the school sends receipts, recovery emails and alerts from.'),
     ('entrance.config.view','View entrance configurations','assessment','View entrance bank academic-period configurations.'),
     ('entrance.config.create','Create entrance configurations','assessment','Create entrance bank configurations.'),
     ('entrance.config.edit','Edit entrance configurations','assessment','Edit entrance bank configuration settings.'),
@@ -228,6 +228,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_branding':'branding.manage','admin_school_branding_save':'branding.manage',
     'admin_school_report_cards':'report_cards.view','admin_school_report_card_view':'report_cards.view',
     'admin_school_report_card_pdf':'report_cards.view','admin_school_report_cards_class_pdf':'report_cards.view',
+    'admin_school_report_card_students':'report_cards.view',
     'admin_school_report_card_comments':'report_cards.comment','admin_school_report_card_comments_save':'report_cards.comment',
     'admin_school_report_card_traits':'report_cards.comment','admin_school_report_card_traits_save':'report_cards.comment',
     'admin_my_signature':'report_cards.comment','admin_my_signature_save':'report_cards.comment',
@@ -239,8 +240,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_timetable_delete':'school.timetable.manage','admin_school_timetable_release':'school.timetable.release',
     'admin_school_delivery':'delivery.manage','admin_school_delivery_email_save':'delivery.manage',
     'admin_school_delivery_email_clear':'delivery.manage','admin_school_delivery_email_test':'delivery.manage',
-    'admin_school_delivery_whatsapp_save':'delivery.manage','admin_school_delivery_whatsapp_clear':'delivery.manage',
-    'admin_school_delivery_whatsapp_check':'delivery.manage',
+    'admin_school_delivery_sms_save':'delivery.manage','admin_school_delivery_sms_clear':'delivery.manage',
+    'admin_school_delivery_sms_check':'delivery.manage','admin_school_delivery_sms_balance':'delivery.manage',
     # Bringing a bank in is creating one (replacing an existing one also needs question_banks.edit,
     # checked in the route); setting up the standard papers creates and activates configurations.
     'admin_bank_import':'question_banks.create','admin_entrance_config_standard':'entrance.config.create',
@@ -274,7 +275,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_receipt_print':'finance.view_own',
     'admin_finance_receipt_pdf':'finance.view_own',
     'admin_finance_receipt_email':'finance.receipt.send',
-    'admin_finance_receipt_whatsapp':'finance.receipt.send',
+    'admin_finance_receipt_sms':'finance.receipt.send',
     'admin_finance_receipt_settings':'finance.manage',
     'admin_finance_student_account':'finance.view_own',
     'admin_finance_payment_allocate':'finance.record','admin_finance_unallocated':'finance.record',
@@ -299,7 +300,7 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_examinations':'school.examinations.view','admin_school_examination_new':'school.examinations.create','admin_school_examination_edit':'school.examinations.edit','admin_school_examination_delete':'school.examinations.delete',
     'admin_school_results':'school.results.view','admin_school_results_release':'school.results.release','admin_school_results_release_term':'school.results.release','admin_school_results_release_class':'school.results.release',
     'admin_school_onboarding_dismiss':'school.view','admin_school_onboarding_show':'school.view',
-    'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.verify',
+    'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_take':'parent.feedback.manage','admin_school_parent_message_new':'parent.feedback.manage','admin_school_parent_recipients':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.verify',
     'admin_school_assessment_detail':'school.view','admin_school_assessment_edit':'school.view','admin_school_assessment_toggle':'school.view','admin_school_assessment_question_new':'school.view','admin_school_assessment_question_delete':'school.view','admin_school_assessment_delete':'school.view',
 }
 
@@ -639,6 +640,9 @@ def audit_display_detail(log):
         'school_project_student_updated': 'A student project record was updated.',
         'parent_feedback_replied': 'A parent feedback message received a school reply.',
         'parent_feedback_status_changed': 'A parent feedback status was changed.',
+        'school_delivery_balance': 'A school checked its SMS balance.',
+        'parent_message_started': 'A member of staff started a conversation with a parent.',
+        'parent_feedback_taken': 'A member of staff took over a parent conversation.',
 
     }
     return friendly.get(action, 'Administrative activity recorded.')

@@ -31,6 +31,9 @@ Questions and assignments stay open to every student and candidate rather than o
 exam contains the picture: a wrong refusal there would take a diagram away in the middle of an
 exam, and a name cannot be guessed. Parents have no exam, so they are not let in.
 
+The one exception outside a public folder is the school's own chosen logo (``school_logo``), which the
+sign-in page shows to anyone; it matters only to a school whose logo predates the branding folder.
+
 A refusal is always a plain 404, so it does not confirm that a file exists.
 """
 
@@ -39,7 +42,7 @@ from flask import g, session
 
 from core.session_guard import usable_for_files
 from models import (
-    Admin, AdminType, Candidate, ParentAccount, ParentStudentLink, Student, db,
+    Admin, AdminType, Candidate, ParentAccount, ParentStudentLink, SchoolPublicSetting, Student, db,
 )
 
 PUBLIC = 'public'
@@ -103,6 +106,15 @@ def _is_active(kind, account_id):
     return db.session.execute(query).first() is not None
 
 
+def _is_the_school_logo(clean):
+    """Whether this file is the logo the school has chosen. The sign-in page shows it to people who are not
+    signed in, so it is open to anyone - including a school whose logo was saved before the branding folder
+    existed and so sits outside it. Only that one file; nothing else outside a folder with a public rule."""
+    stored = db.session.execute(sa.select(SchoolPublicSetting.setting_value)
+                                .where(SchoolPublicSetting.setting_key == 'school_logo')).scalar()
+    return bool(stored) and stored == 'uploads/' + clean
+
+
 def _owns_student_photo(kind, account_id, stored):
     if kind == 'student':
         return db.session.execute(sa.select(Student.id).where(
@@ -132,6 +144,8 @@ def may_open(folder, clean):
         return True
     if rule == NEVER:
         return False
+    if _is_the_school_logo(clean):
+        return True
     kind, account_id = _who()
     if kind is None:
         return False

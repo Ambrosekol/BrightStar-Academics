@@ -53,7 +53,7 @@ def alert(category, message, **details):
 
 
 def note_delivery_failure(channel, detail=''):
-    """Count one email/WhatsApp delivery failure for the current school, and alert once a burst
+    """Count one email/SMS delivery failure for the current school, and alert once a burst
     of them - not a single honest bounce, which is not worth anyone's attention - has piled up
     within a short window. The counter itself is the same shared, registry-backed one every
     sign-in and password-reset rate limit already uses (control_plane/ratelimit.py), so it is

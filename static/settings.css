@@ -1,0 +1,55 @@
+/* Settings hub: a section index on the left, rows of settings on the right. Colours come from school-ui.css tokens. */
+
+.set-app { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
+.set-app .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; }
+
+.set-nav { position: sticky; top: 16px; }
+.set-find input { width: 100%; box-sizing: border-box; height: 38px; padding: 0 11px; font: inherit; font-size: var(--fs-sm); color: var(--ink);
+  background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 9px; }
+.set-find input:focus-visible, .set-row:focus-visible, .set-nav a:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 1px; }
+.set-nav ul { list-style: none; margin: 12px 0 0; padding: 0; border-left: 2px solid var(--line); }
+.set-nav a { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-left: -2px; padding: 7px 12px; font-size: var(--fs-sm);
+  font-weight: 600; color: var(--ink-2); text-decoration: none; border-left: 2px solid transparent; }
+.set-nav a span { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.set-nav a:hover { color: var(--ink); background: var(--surface-2); }
+.set-nav a.is-on { color: var(--brand); border-left-color: var(--brand); }
+.set-nav li[hidden] { display: none; }
+
+.set-body { display: flex; flex-direction: column; gap: 26px; min-width: 0; }
+.set-group { scroll-margin-top: 16px; }
+.set-group[hidden], .set-none[hidden], .set-list li[hidden] { display: none; }
+.set-group header { margin: 0 0 8px; }
+.set-group h2 { margin: 0; font-size: var(--fs-lg); }
+.set-group header p { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--ink-3); }
+
+.set-list { list-style: none; margin: 0; padding: 0; overflow: hidden; background: var(--surface-0); border: 1px solid var(--line); border-radius: 12px; }
+.set-list li + li { border-top: 1px solid var(--line); }
+.set-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: inherit; text-decoration: none; }
+.set-row:hover { background: var(--surface-1); }
+.set-ico { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; color: var(--brand); background: var(--brand-tint); border-radius: 10px; }
+.set-ico svg { width: 20px; height: 20px; }
+.set-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.set-copy strong { font-size: var(--fs-md); color: var(--ink); }
+.set-copy span { font-size: var(--fs-sm); line-height: 1.45; color: var(--ink-3); }
+.set-chip { padding: 3px 10px; font-size: 12px; font-weight: 600; border-radius: 999px; white-space: nowrap; color: var(--ink-2); background: var(--surface-2); }
+.set-chip.is-good { color: var(--success); background: var(--success-bg); }
+.set-chip.is-warn { color: var(--warning); background: var(--warning-bg); }
+.set-go { color: var(--ink-3); display: grid; }
+.set-go svg { width: 18px; height: 18px; }
+.set-row:hover .set-go { color: var(--brand); transform: translateX(2px); }
+@media (prefers-reduced-motion: no-preference) { .set-go { transition: transform .12s ease, color .12s ease; } }
+.set-none { margin: 0; padding: 26px; text-align: center; color: var(--ink-3); background: var(--surface-0); border: 1px dashed var(--line-strong); border-radius: 12px; }
+
+@media (max-width: 860px) {
+  .set-app { grid-template-columns: 1fr; gap: 16px; }
+  .set-nav { position: static; }
+  .set-nav ul { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 4px; border-left: 0; }
+  .set-nav a { margin: 0; white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-0); }
+  .set-nav a.is-on { border-color: var(--brand); }
+  .set-nav a span { display: none; }
+}
+@media (max-width: 560px) {
+  .set-row { flex-wrap: wrap; }
+  .set-chip { order: 3; margin-left: 52px; }
+  .set-go { display: none; }
+}

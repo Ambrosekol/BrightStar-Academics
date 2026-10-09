@@ -32,7 +32,7 @@ Multi-tenancy is the architecture, not a setting. There is no switch to turn it 
 - [The platform team and its activity log](#the-platform-team-and-its-activity-log)
 - [Documentation, the marketing page and the privacy statement](#documentation-the-marketing-page-and-the-privacy-statement)
 - [The new-school setup checklist](#the-new-school-setup-checklist)
-- [Email and WhatsApp](#email-and-whatsapp)
+- [Email and SMS](#email-and-sms)
 - [Administrators and access](#administrators-and-access)
 - [How a school numbers its people](#how-a-school-numbers-its-people)
 - [Question banks](#question-banks)
@@ -115,7 +115,7 @@ released; parents follow their children's results, attendance and fee status, an
 messages with the school.
 
 **Finance** — fee items and per-student assessments, payment recording and allocation,
-outstanding balances, and receipts delivered as PDF, email or WhatsApp.
+outstanding balances, and receipts delivered as PDF, email or SMS.
 
 **Library** — a book and loan catalogue.
 
@@ -339,17 +339,17 @@ their reserved `platform@<username>` account. Only schools the admin has entered
 school that cannot be reached is named on the page rather than silently leaving entries out. Any
 other admin sees only their own log.
 
-## Email and WhatsApp
+## Email and SMS
 
 What parents receive — payment receipts, password-recovery emails, alerts about school work — is
 sent from **the school's own accounts**. The school's top-level administrator sets them up under
-**Email & WhatsApp** in the admin area - restricted to that one admin type, not a permission any
+**Email & SMS** in the admin area - restricted to that one admin type, not a permission any
 other role can be granted, since these accounts can send messages that look like they come from the
-school: a mail server, or a WhatsApp Business (Cloud API) account, each with a button to test it
+school: a mail server, or a BulkSMS Nigeria account, each with a button to test it
 before relying on it.
 
 - **The platform's shared account is the fallback.** A school that has set up nothing sends through
-  the `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` account, if the deployment has one, and its
+  the `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_SMS_*` account, if the deployment has one, and its
   page says so, showing the sender address. A school that has set up nothing and has no shared
   account to fall back on simply cannot send, and says so.
 - **A half-set-up school never borrows the platform's account.** Once a school enters a mail host,
@@ -533,7 +533,7 @@ Staff build an exam/test timetable as a **draft** — one entry per class, subje
 an optional venue — under *Exam Timetable* in the school menu, editing and deleting freely. Nothing
 outside staff sees a draft. **Releasing** the whole session-and-term timetable at once turns every
 draft entry into a released one and, in the background, notifies every currently enrolled student of
-the classes it covers and their parents: an in-app alert each, plus an email and a WhatsApp message to
+the classes it covers and their parents: an in-app alert each, plus an email and a text message to
 the guardian contact. Releasing a second time releases nothing more and says so. Three permissions:
 `school.timetable.view` (see the list, read-only), `school.timetable.manage` (add, edit and delete
 entries) and `school.timetable.release` (the sensitive one: only this notifies students and parents).
@@ -692,15 +692,15 @@ Every school gives each student a **report card for each term**, as a page and a
   it, the note the bursar attached to the payment, and where the student's account stood for the
   session as of that payment. A school with no logo gets its initials in the logo's place.
 - **Parents are told automatically.** Recording a payment sends the guardian the receipt itself, by
-  email (PDF attached) and by WhatsApp, and adds an in-app alert for linked parent accounts; each
+  email (PDF attached) and by SMS, and adds an in-app alert for linked parent accounts; each
   attempt is logged on the receipt page. When a student's last result for a term is released, whether
   by the *Release all results* button, one result at a time, or the session's release date, the
-  parents are told by email, WhatsApp and in-app that the report card is ready. Sending happens as a
+  parents are told by email, SMS and in-app that the report card is ready. Sending happens as a
   durable background job (`core/jobs.py`), so nobody waits on a mail server, a failed message never
   undoes what was saved, and a thread that never finishes (a restart, a dropped connection) is retried
-  rather than lost. WhatsApp Cloud API only delivers free-form messages within 24 hours of the
-  recipient's last message to the school's number; a school that needs to reach parents outside that
-  window needs approved message templates, which this application does not send.
+  rather than lost. SMS goes out through BulkSMS Nigeria (one JSON call per message) and costs credit,
+  so only four moments send one: a report card released, a new fee, a payment recorded, and the first
+  message of a conversation the school starts.
 - **Results & Records** is a dialog: choose a class, search its students, choose a student, then a
   session and term, then read that term's subjects and release them all with one confirmed button.
   The button releases every *approved* result of the term; results not yet verified or approved stay
@@ -712,7 +712,7 @@ Every school gives each student a **report card for each term**, as a page and a
   school's own public and secret key; there is no shared platform account, so a school with
   nothing saved simply has no "Pay online" option for its parents. The secret key is encrypted at
   rest (`core/payments.py`), under its own key-derivation domain, separate from the one
-  Email & WhatsApp uses for a mail password — a compromise of one says nothing about the other —
+  Email & SMS uses for a mail password — a compromise of one says nothing about the other —
   and is never shown again once saved.
 - **A parent pays from their own fee account**, for any amount up to what is outstanding, and is
   sent to Paystack's own checkout page — card, bank transfer, USSD, whatever Paystack itself
@@ -725,7 +725,7 @@ Every school gives each student a **report card for each term**, as a page and a
   confirmed even if the parent closes their browser first) call the same confirmation step, and a
   conditional database update is what stops both from ever acting on the same payment twice.
 - **Indistinguishable from a payment recorded by hand** once confirmed: the same receipt, the same
-  parent notification (email, WhatsApp, in-app), the same durable `send_payment_receipt` job. A
+  parent notification (email, SMS, in-app), the same durable `send_payment_receipt` job. A
   double-click starting a payment is retry-safe (`core/idempotency.py`): it is sent back to the
   very same Paystack checkout instead of opening a second transaction.
 - Restricted to the school's own top-level administrator: connecting or changing the school's own
@@ -770,12 +770,12 @@ variable; the ones that shape the deployment:
 | `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` | Optional: place schools' databases on another server. |
 | `BRIGHTSTARS_PG_MAINTENANCE_DB` | Optional, default `postgres`. Which database `CREATE DATABASE` connects to when a school's (or the registry's) own database does not exist yet. Set this on a managed provider that does not ship one called `postgres` (Aiven's default is `defaultdb`, for instance). |
 | `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached per worker, which bounds how quickly a suspension takes effect. |
-| `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` | The platform's *shared* email and WhatsApp account, used by any school that has not set up its own (see [Email and WhatsApp](#email-and-whatsapp)). |
+| `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_SMS_*` | The platform's *shared* email and SMS account, used by any school that has not set up its own (see [Email and SMS](#email-and-sms)). |
 | `BRIGHTSTARS_CHROME` | Optional. The Chrome or Chromium program that draws a candidate's result image; found automatically on Windows and under the usual names on Linux and macOS. |
 | `BRIGHTSTARS_TRUSTED_PROXIES` | Optional, default `0`. How many reverse proxies stand in front of the application; see *Behind a reverse proxy* under [Operating](#operating). |
 | `BRIGHTSTARS_DB_POOL_SIZE` / `BRIGHTSTARS_DB_MAX_OVERFLOW` | Optional, defaults 2 and 3. Connections each school's own database pool keeps open per running instance (so up to 5 per school per instance by default). See *Database connections* under [Operating](#operating). |
 | `BRIGHTSTARS_REGISTRY_POOL_SIZE` / `BRIGHTSTARS_REGISTRY_MAX_OVERFLOW` | Optional, defaults 10 and 20. Connections the platform registry pool keeps open per running instance. The defaults allow 30 per instance, which is too many for a small managed database; lower them as the number of instances grows. |
-| `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and WhatsApp secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
+| `BRIGHTSTARS_DELIVERY_KEY` | Optional. The key schools' saved mail and SMS secrets are encrypted under; defaults to one derived from `BRIGHTSTARS_SECRET`. |
 
 ## Project layout
 
@@ -819,14 +819,14 @@ Academics/
 │   ├── object_store.py       #   the S3-compatible client used when BRIGHTSTARS_STORAGE_BACKEND=s3
 │   ├── accounts.py           #   shared sign-in/out helpers
 │   ├── entrance.py           #   question banks, grading, result rendering
-│   ├── delivery.py           #   a school's own email/WhatsApp: encrypted secrets, safe hosts
+│   ├── delivery.py           #   a school's own email/SMS: encrypted secrets, safe hosts
 │   ├── banks.py              #   question-bank validation, safe writing, the standard set
 │   ├── numbering.py          #   each school's numbering rules (tenants/<code>/numbering.json): reading, saving, making numbers
 │   ├── numbering_pattern.py  #   the pattern language: read and checked, never run
 │   ├── report_card_pdf.py    #   draws report cards as a PDF (one page per student)
 │   ├── marks.py              #   marks are decimals: exact totals, whole marks shown as whole numbers
 │   ├── retired_tables.py     #   drops the removed website editor's tables when they are empty
-│   ├── notifications.py      #   guardian email/WhatsApp alerts
+│   ├── notifications.py      #   guardian email/SMS alerts
 │   ├── presence.py           #   who is online
 │   ├── public_settings.py    #   the school's settings lookup
 │   └── uploads.py            #   image upload validation, the size limit and the words that explain a refusal
@@ -874,7 +874,7 @@ python tests/verification/write_paths_multitenancy.py      # isolation between s
 python tests/verification/write_paths_platform_console.py  # the console, end to end
 python tests/verification/write_paths_portal_branding.py   # colours, logo and sign-in photographs
 python tests/verification/write_paths_platform_team.py     # the team, roles, removal, activity logs
-python tests/verification/write_paths_delivery.py          # a school's own email and WhatsApp
+python tests/verification/write_paths_delivery.py          # a school's own email and SMS
 python tests/verification/write_paths_known_gaps.py        # roles, profile page, uploads, search, sign-in errors
 python tests/verification/write_paths_pg_smoke.py          # every page, opened on PostgreSQL
 python tests/verification/write_paths_pg_posts.py          # every form submission, sent on PostgreSQL
@@ -887,7 +887,7 @@ python tests/verification/write_paths_error_pages.py       # the 404, 403 and 50
 python tests/verification/write_paths_term_grading.py      # Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility
 python tests/verification/write_paths_bank_locks.py        # locking a question bank, and what a lock blocks
 python tests/verification/write_paths_finance.py           # fee items, paid / unpaid, payments, allocations, parents' alerts, the site-wide unallocated-payment banner and list
-python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and WhatsApp, the signature
+python tests/verification/write_paths_receipts.py          # the receipt PDF, its email and SMS, the signature
 python tests/verification/write_paths_candidate_results.py # a candidate's result image carries the right school and leaks nothing
 python tests/verification/write_paths_report_cards.py      # report cards: when ready, content, comments, traits, signatures, portals
 python tests/verification/write_paths_attendance.py         # taking the register, scope, the term summary, student and parent portals
@@ -927,7 +927,7 @@ python tests/verification/write_paths_pg_posts.py             # every form submi
 `write_paths_pg_smoke.py` opens every page; `write_paths_pg_posts.py` submits every form.
 It sends a real, valid submission to all 132 routes that accept a POST, as the right kind of
 signed-in person (platform operator, school administrator, staff, student, parent, candidate), and
-checks the row was written. Email and WhatsApp are caught at the last step, so the real sending
+checks the row was written. Email and SMS are caught at the last step, so the real sending
 code (including building a receipt PDF) still runs. It then sends each route an empty form,
 hostile text, huge and negative numbers, NUL bytes, no CSRF token and an id that does not exist,
 and fails on any 500 or database error. This is how nine more PostgreSQL-only failures were found
@@ -967,7 +967,7 @@ and a warning says so. `python -m control_plane drop-retired-tables` shows what 
 holds, and adding `--yes` drops it for good.
 
 **Limits are shared by every worker.** Sign-in (schools and the console), password recovery and the
-email/WhatsApp test buttons are limited to a number of tries per stretch of time, for example
+email/SMS test buttons are limited to a number of tries per stretch of time, for example
 8 sign-ins per 5 minutes per address and username. The counts live in the registry database (table
 `rate_limits`), so several workers, or a restart, cannot multiply or reset them. Each is a fixed
 window, and only a hash of the key is stored, never an address or a username. If the registry

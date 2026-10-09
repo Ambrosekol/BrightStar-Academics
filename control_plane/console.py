@@ -345,7 +345,7 @@ def platform_school_new():
                 # the background and this page follows it. The one-time password is chosen already
                 # and shown here, the only place it ever appears.
                 return render_template('platform/school_creating.html', slug=slug, name=form['name'],
-                                       portal=pv.config.portal_hostname(slug),
+                                       portal=pv.config.portal_hostname(slug), customs=domains,
                                        admin_username=form['admin_username'], password=password)
     return render_template('platform/school_new.html', form=form, errors=errors,
                            starter_banks=starter_banks,

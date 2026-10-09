@@ -1,0 +1,128 @@
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+{#-
+  The parent portal's frame: the school's mark and name, three places to go, and a room for the page.
+  A page fills the blocks `title`, `content` and, if it needs one, `scripts`. `topbar_extra` adds links
+  that only make sense on that page.
+-#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Parent Portal{% endblock %} — {{ school_brand.name }}</title>
+<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='parent-portal.css', v='1') }}">
+<script nonce="{{ csp_nonce() }}">document.documentElement.classList.add('js');</script>
+</head>
+<body class="school-ui pp-body">{{ connectivity_banner() }}
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">Parent Portal</span>
+    </span>
+  </a>
+  <nav class="fp-bar__actions" aria-label="Parent portal">
+    {% set here = request.endpoint %}
+    <a class="fp-bar__link pp-nav{% if here == 'parent_dashboard' %} is-here{% endif %}" href="{{ url_for('parent_dashboard') }}"{% if here == 'parent_dashboard' %} aria-current="page"{% endif %}>{{ icon('dashboard') }} Dashboard</a>
+    <a class="fp-bar__link pp-nav{% if here == 'parent_feedback' %} is-here{% endif %}" href="{{ url_for('parent_feedback') }}"{% if here == 'parent_feedback' %} aria-current="page"{% endif %}>{{ icon('message') }} Messages</a>
+    {% set bell = parent_bell %}
+    {% if bell %}
+    <details class="pp-bell" id="pp-bell" data-state-url="{{ url_for('parent_notifications_state') }}" data-read-url="{{ url_for('parent_notifications_read_all') }}" data-csrf="{{ csrf_token() }}">
+      <summary aria-label="Notifications{% if bell.unread %}, {{ bell.unread }} new{% endif %}">{{ icon('bell') }}<b class="pp-bell__count" data-count{% if not bell.unread %} hidden{% endif %}>{{ bell.unread if bell.unread < 100 else '99+' }}</b></summary>
+      <div class="pp-bell__panel">
+        <div class="pp-bell__head"><strong>Notifications</strong>
+          <form method="post" action="{{ url_for('parent_notifications_read_all') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button type="submit" class="pp-link" data-readall{% if not bell.unread %} hidden{% endif %}>Mark all read</button></form>
+        </div>
+        <ul class="pp-bell__list" data-list>
+          {% for n in bell['items'] %}
+          <li><a class="pp-bell__item{% if n.unread %} is-new{% endif %}" href="{{ n.url }}"><strong>{{ n.title }}</strong><span>{{ n.message }}</span><time>{{ n.created_at }}</time></a></li>
+          {% else %}
+          <li class="pp-bell__none">Nothing yet. New results, fees and messages from the school will appear here.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </details>
+    {% endif %}
+    {% set me = parent_menu %}
+    {% if me %}
+    {% set words = (me.name or '').split() %}
+    {% set initials = ((words[0][:1] if words else '') ~ (words[-1][:1] if words|length > 1 else ''))|upper or '?' %}
+    <details class="pp-menu" id="pp-menu">
+      <summary aria-label="Account menu for {{ me.name }}"><span class="pp-menu__ava" aria-hidden="true">{{ initials }}</span></summary>
+      <div class="pp-menu__panel">
+        <div class="pp-menu__who"><strong>{{ me.name }}</strong><span>{{ me.contact }}</span></div>
+        <a href="{{ url_for('parent_password_change') }}">Change password</a>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+      </div>
+    </details>
+    {% else %}
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+    {% endif %}
+  </nav>
+</header>
+
+<main class="fp-main pp-main" id="main">
+  {% with flashes = get_flashed_messages(with_categories=true) %}
+  {% for category, text in flashes %}
+  <div class="ui-alert ui-alert--{{ 'error' if category == 'error' else 'success' }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ text }}</div>
+  {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<script nonce="{{ csp_nonce() }}">setInterval(function(){fetch('{{ url_for("presence_heartbeat") }}',{credentials:'same-origin'}).catch(function(){});},30000);</script>
+<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var menus = [].slice.call(document.querySelectorAll('details.pp-menu, details.pp-bell'));
+  menus.forEach(function (m) {
+    m.addEventListener('toggle', function () { if (m.open) menus.forEach(function (o) { if (o !== m) o.open = false; }); });
+  });
+  document.addEventListener('click', function (e) { menus.forEach(function (m) { if (m.open && !m.contains(e.target)) m.open = false; }); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    menus.forEach(function (m) { if (m.open) { m.open = false; m.querySelector('summary').focus(); } });
+  });
+
+  /* The bell: look for new notices every minute, and mark them read without leaving the page. */
+  var bell = document.getElementById('pp-bell');
+  if (!bell) return;
+  var badge = bell.querySelector('[data-count]'), list = bell.querySelector('[data-list]'), readAll = bell.querySelector('[data-readall]');
+  function paint(d) {
+    badge.textContent = d.unread > 99 ? '99+' : d.unread; badge.hidden = !d.unread; readAll.hidden = !d.unread;
+    bell.querySelector('summary').setAttribute('aria-label', 'Notifications' + (d.unread ? ', ' + d.unread + ' new' : ''));
+    list.textContent = '';
+    if (!d.items.length) { var none = document.createElement('li'); none.className = 'pp-bell__none'; none.textContent = 'Nothing yet. New results, fees and messages from the school will appear here.'; list.appendChild(none); return; }
+    d.items.forEach(function (n) {
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.className = 'pp-bell__item' + (n.unread ? ' is-new' : ''); a.href = n.url;
+      [['strong', n.title], ['span', n.message], ['time', n.created_at]].forEach(function (p) { var e = document.createElement(p[0]); e.textContent = p[1]; a.appendChild(e); });
+      li.appendChild(a); list.appendChild(li);
+    });
+  }
+  function poll() {
+    if (document.hidden) return;
+    fetch(bell.dataset.stateUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { if (d) paint(d); }).catch(function () {});
+  }
+  setInterval(poll, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+  readAll.form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    fetch(bell.dataset.readUrl, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF-Token': bell.dataset.csrf, 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); }).then(paint).catch(function () { readAll.form.submit(); });
+  });
+})();
+</script>
+{% block scripts %}{% endblock %}
+{% include '_family_notice.html' %}
+</body>
+</html>

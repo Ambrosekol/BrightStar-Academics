@@ -4,7 +4,7 @@ The Settings page used to write the server's own ``.env`` file, so with the appl
 several servers an edit reached only the one that handled the request. Two kinds of setting are
 therefore kept apart:
 
-* **Shared** settings (mail and WhatsApp accounts, cache lengths, upload limits, addresses...) are
+* **Shared** settings (mail and SMS accounts, cache lengths, upload limits, addresses...) are
   stored once, in the platform database every server already reads. Each server copies them into its
   own environment at the start of a request, at most every ``SYNC_SECONDS``, so one edit reaches every
   server within seconds and a restarted or newly added server picks them up with no file to copy.

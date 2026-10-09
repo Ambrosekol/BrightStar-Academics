@@ -17,6 +17,7 @@ file (``students.photo_path`` and so on), never by the file's name.
 Run:  python tests/verification/write_paths_upload_access.py
 """
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -276,7 +277,8 @@ r_refused = people[OTHER_STUDENT].get("/static/uploads/students/ada.png")
 r_missing = people[OTHER_STUDENT].get("/static/uploads/students/no-such-file.png")
 check("a refusal looks exactly like a file that is not there",
       r_refused.status_code == r_missing.status_code == 404
-      and r_refused.get_data() == r_missing.get_data())
+      and re.sub(rb'nonce="[^"]*"', b"", r_refused.get_data()) == re.sub(rb'nonce="[^"]*"', b"", r_missing.get_data()),
+      f"{r_refused.status_code} {r_missing.status_code} {r_refused.get_data()[:300]!r} // {r_missing.get_data()[:300]!r}")
 check("…for someone not signed in too",
       people[NOBODY].get("/static/uploads/students/ada.png").status_code == 404
       == people[NOBODY].get("/static/uploads/students/none.png").status_code)
@@ -379,8 +381,10 @@ p2 = Person(ALPHA)
 p2.sign_in("stu_ada")
 check("(set-up) a fresh sign-in opens the student's photograph", p2.get("/static/uploads/students/ada.png").status_code == 200)
 sql("alpha", "UPDATE students SET login_password_hash = :h WHERE id = :i", h=generate_password_hash("another-one-1"), i=IDS["ada"])
+from core import session_guard as _guard  # noqa: E402
+_guard._fingerprint_cache.clear()   # a change made behind the application's back is seen once the short-lived copy is dropped
 check("once the student's password has been changed (elsewhere), that sign-in opens nothing",
-      p2.get("/static/uploads/students/ada.png").status_code == 404)
+      p2.get("/static/uploads/students/ada.png").status_code == 404, str(p2.get("/static/uploads/students/ada.png").status_code))
 
 # ================================================================ signed-out behaviour that must not change
 sql("alpha", "INSERT INTO school_public_settings (setting_key, setting_value, updated_at) "
@@ -390,7 +394,8 @@ with open(os.path.join(uploads, "legacy_logo.png"), "wb") as f:
     f.write(b"\x89PNG\r\n\x1a\nlegacy")
 check("a school whose logo predates the branding folder still shows it on its sign-in page",
       people[NOBODY].get("/static/uploads/legacy_logo.png").status_code == 200
-      and people[NOBODY].get("/static/uploads/root.txt").status_code == 404)
+      and people[NOBODY].get("/static/uploads/root.txt").status_code == 404,
+      f"{people[NOBODY].get('/static/uploads/legacy_logo.png').status_code} {people[NOBODY].get('/static/uploads/root.txt').status_code}")
 
 # ================================================================ the rule table itself
 check("every folder the application writes to has a rule (nothing falls into 'staff only' by accident)",

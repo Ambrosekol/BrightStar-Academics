@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Add administrator' if mode == 'new' else 'Manage administrator' }} — {{ school_brand.name }}{% endblock %}
+{% block title %}{{ 'Create staff' if mode == 'new' else 'Manage staff' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
 <style>
 /* Staff administrator page: a profile header, a section list beside the form, and a save bar that stays in view.
@@ -65,9 +65,9 @@
 <div class="sa-top">
   <div>
     <div class="eyebrow">PEOPLE &amp; ACCESS</div>
-    <h1 style="margin:0">{{ 'Add administrator' if mode == 'new' else 'Manage administrator' }}</h1>
+    <h1 style="margin:0">{{ 'Create staff' if mode == 'new' else 'Manage staff' }}</h1>
   </div>
-  <a class="btn btn-light btn-small" href="{{ url_for('admin_accounts') }}">← All administrators</a>
+  <a class="btn btn-light btn-small" href="{{ url_for('admin_accounts') }}">← All staff</a>
 </div>
 
 {% if mode == 'edit' and editing %}
@@ -213,7 +213,7 @@
         <div class="sa-bar__actions">
           <a class="btn btn-light" href="{{ url_for('admin_accounts') }}">Cancel</a>
           {% if mode=='edit' and editing and editing.active %}<button class="btn btn-light" type="submit" formaction="{{ url_for('admin_account_credentials_reset', aid=editing.id) }}" formmethod="post" data-confirm="Generate a new temporary password for {{ editing.display_name }}? Their current password will stop working.">Reset login</button>{% endif %}
-          <button class="btn btn-primary" type="submit">{{ 'Create administrator' if mode=='new' else 'Save changes' }}</button>
+          <button class="btn btn-primary" type="submit">{{ 'Create staff' if mode=='new' else 'Save changes' }}</button>
         </div>
       </div>
     </div>

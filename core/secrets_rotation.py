@@ -1,10 +1,10 @@
 """Rotating BRIGHTSTARS_DELIVERY_KEY safely.
 
-Every school's own mail-server password, WhatsApp token and Paystack secret key are encrypted
+Every school's own mail-server password, SMS API token and Paystack secret key are encrypted
 under this one key (core/delivery.py, core/payments.py's own domain-separated derivations of it).
 Simply changing the environment variable and restarting, the way recommendations.html's Hardening
 section frames "rotate the platform secrets on a calendar" for the session secret, would instead
-silently break every school's mail, WhatsApp and online payments at once: the next read of any of
+silently break every school's mail, SMS and online payments at once: the next read of any of
 them would decrypt to nothing under a key that no longer matches what encrypted it.
 
 rotate_one_tenant() re-encrypts everything the CURRENT tenant holds, from the old key to the new
@@ -19,7 +19,7 @@ from sqlalchemy import select
 
 from models import SchoolDeliverySetting, SchoolPaymentSetting, db
 
-_DELIVERY_KEYS = ('smtp_password', 'whatsapp_token')
+_DELIVERY_KEYS = ('smtp_password', 'sms_api_token')
 _PAYMENT_KEYS = ('paystack_secret_key',)
 
 

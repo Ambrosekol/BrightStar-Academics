@@ -63,7 +63,7 @@ VARIABLES = [
         name='BRIGHTSTARS_SECRET', category='Security', risk=RISK_CRITICAL, secret=True,
         effect=EFFECT_RESTART, default='random, new on every restart if left blank',
         purpose='The Flask session-signing secret, and (unless BRIGHTSTARS_DELIVERY_KEY is set '
-                'separately) the key every saved school SMTP password, WhatsApp token and Paystack '
+                'separately) the key every saved school SMTP password, SMS API token and Paystack '
                 'secret key is encrypted under.',
         when_to_change='Rarely, and on a deliberate schedule (see the delivery-key rotation wizard on '
                        'this page for the safe way to do it if BRIGHTSTARS_DELIVERY_KEY is not set '
@@ -72,7 +72,7 @@ VARIABLES = [
         affects='Every signed-in session, everywhere. If BRIGHTSTARS_DELIVERY_KEY is not set, also '
                "every school's saved delivery and payment secrets.",
         breaks_if_wrong='Changing it signs out everyone, everywhere, at once. If BRIGHTSTARS_DELIVERY_KEY '
-                        'is not set separately, it also makes every saved SMTP password, WhatsApp token '
+                        'is not set separately, it also makes every saved SMTP password, SMS API token '
                         "and Paystack key unreadable - use the rotation wizard, never edit this field "
                         'directly, unless no school has any of those saved yet.'),
     Variable(
@@ -120,18 +120,18 @@ VARIABLES = [
     Variable(
         name='BRIGHTSTARS_DELIVERY_KEY', category='Security', risk=RISK_CRITICAL, secret=True,
         effect=EFFECT_RESTART, default='derived from BRIGHTSTARS_SECRET if left blank',
-        purpose="The key every school's saved SMTP password, WhatsApp token and Paystack secret key "
+        purpose="The key every school's saved SMTP password, SMS API token and Paystack secret key "
                'is encrypted under at rest. Kept separate from BRIGHTSTARS_SECRET so the session '
                'secret can be rotated (an easy, cheap operation - it only signs everyone out) without '
                "touching schools' saved credentials at all.",
         when_to_change='On a deliberate rotation schedule, or if this key is ever suspected exposed - '
                        'always through the rotation wizard on this page, never by editing this field '
                        'directly.',
-        affects="Every school's own saved mail server password, WhatsApp Business token and Paystack "
+        affects="Every school's own saved mail server password, SMS API token and Paystack "
                'secret key.',
         breaks_if_wrong='Changed directly (not through the rotation wizard), every school with a saved '
-                        'SMTP password, WhatsApp token or Paystack key can no longer read it back - '
-                        'mail, WhatsApp delivery and online payments silently stop working for that '
+                        'SMTP password, SMS API token or Paystack key can no longer read it back - '
+                        'mail, SMS delivery and online payments silently stop working for that '
                         'school until it re-enters its credentials.'),
     Variable(
         name='BRIGHTSTARS_TRUSTED_PROXIES', category='Security', risk=RISK_HIGH, default='0',
@@ -268,7 +268,7 @@ VARIABLES = [
     Variable(
         name='BRIGHTSTARS_SMTP_HOST', category='Delivery', risk=RISK_MEDIUM,
         purpose="The platform's shared mail server, used by any school that has not set up its own "
-               'under "Email & WhatsApp" in its own admin area. Left blank, email delivery through '
+               'under "Email & SMS" in its own admin area. Left blank, email delivery through '
                'the shared account is disabled entirely (a school with its own account is unaffected).',
         when_to_change='Setting up (or moving) the platform\'s own shared mail account.',
         affects='Every school that has not configured its own SMTP account: password-reset emails, '
@@ -322,28 +322,38 @@ VARIABLES = [
         breaks_if_wrong='Set wrong, the connection is attempted with the wrong TLS mode and is '
                         'refused.'),
     Variable(
-        name='BRIGHTSTARS_WHATSAPP_TOKEN', category='Delivery', risk=RISK_MEDIUM, secret=True,
-        purpose="The platform's shared WhatsApp Business (Cloud API) access token, used by any school "
-               'that has not set up its own account. Left blank, shared WhatsApp delivery is disabled '
-               '(a school with its own account is unaffected).',
-        when_to_change='Setting up the shared WhatsApp account, or its token expired/was rotated by '
-                       'Meta.',
-        affects='Every school that has not configured its own WhatsApp account.',
-        breaks_if_wrong='WhatsApp delivery through the shared account stops working for every school '
-                        'relying on it.'),
+        name='BRIGHTSTARS_SMS_PAYER', category='Delivery', risk=RISK_MEDIUM, default='school',
+        purpose='Who pays for the text messages parents receive (a report card released, a new fee, a '
+               'payment received, the first message of a conversation the school starts). "school": every '
+               'school connects its own BulkSMS Nigeria account and pays for its own messages. "platform": '
+               "the platform's one account (the token and sender below) texts for every school and the "
+               'platform pays; schools are not asked for SMS details. "either": a school\'s own account '
+               'when it has one, otherwise the platform\'s.',
+        when_to_change='Deciding whether the platform absorbs (or bills for) its schools\' SMS cost.',
+        affects='Every school: whether they must connect their own SMS account and who is charged.',
+        breaks_if_wrong='Set to "platform" with no token below, no school can send SMS. Set to "school", '
+                        'schools that relied on the shared account stop sending until they add their own.'),
     Variable(
-        name='BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID', category='Delivery', risk=RISK_MEDIUM,
-        purpose="The shared WhatsApp Business account's phone number id.",
-        when_to_change='Together with BRIGHTSTARS_WHATSAPP_TOKEN.',
-        affects='Every school using the shared WhatsApp account.',
-        breaks_if_wrong='WhatsApp delivery through the shared account fails.'),
+        name='BRIGHTSTARS_SMS_API_TOKEN', category='Delivery', risk=RISK_MEDIUM, secret=True,
+        purpose="The platform's BulkSMS Nigeria API token (https://www.bulksmsnigeria.com/user/api-tokens), "
+               'used when BRIGHTSTARS_SMS_PAYER is "platform", or "either" for a school without its own.',
+        when_to_change='Setting up the platform account, or rotating the token.',
+        affects='Every school that texts through the platform account.',
+        breaks_if_wrong='Texts through the platform account are refused until the token is right.'),
     Variable(
-        name='BRIGHTSTARS_WHATSAPP_GRAPH_VERSION', category='Delivery', risk=RISK_MEDIUM, default='v20.0',
-        purpose='The WhatsApp Cloud API version the shared account is called against.',
-        when_to_change='Meta retires the currently-used API version.',
-        affects='Every school using the shared WhatsApp account.',
-        breaks_if_wrong='WhatsApp delivery through the shared account can start failing once Meta '
-                        'retires the version in use.'),
+        name='BRIGHTSTARS_SMS_SENDER_ID', category='Delivery', risk=RISK_MEDIUM,
+        purpose='The sender name parents see on a text sent through the platform account: 3 to 11 letters and '
+               'digits, registered and approved on the BulkSMS Nigeria account.',
+        when_to_change='Together with BRIGHTSTARS_SMS_API_TOKEN.',
+        affects='Every school that texts through the platform account.',
+        breaks_if_wrong='BulkSMS Nigeria refuses texts from a sender name that is not approved.'),
+    Variable(
+        name='BRIGHTSTARS_SMS_GATEWAY', category='Delivery', risk=RISK_LOW, default='direct-refund',
+        purpose='The BulkSMS Nigeria route for texts sent through the platform account: direct-refund '
+               '(cheapest, refunded if not delivered), direct-corporate (most reliable) or dual-backup.',
+        when_to_change='Texts are not reaching parents on numbers that block promotional routes.',
+        affects='Every school that texts through the platform account.',
+        breaks_if_wrong='An unknown value falls back to direct-refund.'),
     Variable(
         name='BRIGHTSTARS_ALERT_WEBHOOK', category='Ops', risk=RISK_LOW, secret=True,
         purpose='A URL (e.g. a Slack "Incoming Webhook") that receives a JSON POST for the handful of '

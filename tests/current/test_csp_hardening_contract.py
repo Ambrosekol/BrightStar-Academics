@@ -77,11 +77,11 @@ def test_interactions_js_is_loaded_everywhere_a_migrated_attribute_is_used():
     interactions = (ROOT / "static" / "interactions.js").read_text(encoding="utf-8")
     assert interactions, "static/interactions.js is empty"
     bases_with_it = set()
-    for base in ("admin_base.html", "auth_base.html", "platform/base.html", "platform/docs/_layout.html"):
+    for base in ("admin_base.html", "auth_base.html", "parent_base.html", "student_base.html", "platform/base.html", "platform/docs/_layout.html"):
         text = (ROOT / "templates" / base).read_text(encoding="utf-8")
         if "interactions.js" in text:
             bases_with_it.add(base)
-    assert bases_with_it == {"admin_base.html", "auth_base.html", "platform/base.html", "platform/docs/_layout.html"}, (
+    assert bases_with_it == {"admin_base.html", "auth_base.html", "parent_base.html", "student_base.html", "platform/base.html", "platform/docs/_layout.html"}, (
         f"a base template lost its interactions.js include: {bases_with_it}")
 
     # Fragments have no <html> of their own and are {% include %}-d into a page that already

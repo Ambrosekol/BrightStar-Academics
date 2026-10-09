@@ -189,7 +189,8 @@ r = c_pl.post("/platform/schools/new", data={
     "logo": FileStorage(io.BytesIO(png_bytes()), filename="logo.png", content_type="image/png"),
     "_csrf_token": token}, base_url=u_pl, content_type="multipart/form-data")
 body = r.get_data(as_text=True)
-check("the create form reports success", r.status_code == 200 and "Alpha Academy is ready" in body)
+check("the create form reports success (the school is being built; the page says so and follows it)",
+      r.status_code == 200 and "Alpha Academy" in body and "Building the school" in body and 'id="creation-panel"' in body)
 
 portal_host = element(body, "portal-address")
 temp_password = element(body, "temp-password")
@@ -241,7 +242,7 @@ check("the school's data lives in a PostgreSQL database of its own",
       and make_url(alpha.db_url).database != make_url(
           os.environ["BRIGHTSTARS_PLATFORM_DB"]).database,
       make_url(alpha.db_url).database)
-check("the created page shows the operator that folder", root in body)
+check("the school's page shows the operator that folder", root in c_pl.get("/platform/schools/alpha", base_url=u_pl).get_data(as_text=True))
 
 # ------------------------------------- a school gets a portal, not a website
 r = c_school.get("/", base_url=u_school)
@@ -301,7 +302,7 @@ r = c_pl.post("/platform/schools/new", data={
     "logo": FileStorage(io.BytesIO(png_bytes()), filename="logo.png", content_type="image/png")},
     base_url=u_pl, content_type="multipart/form-data")
 check("…so the same code can be used again once the logo is fixed",
-      info_for("logotest") is not None and "Logo Test is ready" in r.get_data(as_text=True))
+      info_for("logotest") is not None and "Building the school" in r.get_data(as_text=True))
 r = c_pl.post("/platform/schools/new", data={
     "name": "Beta College", "code": "", "_csrf_token": token}, base_url=u_pl)
 check("a blank code is derived from the school's name, and no domain is needed",

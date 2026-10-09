@@ -10,6 +10,7 @@ from flask import abort, render_template, request, session, url_for
 from app import ACADEMIC_TERMS, app
 from blueprints.parents.helpers import _parent_owns_student, parent_required
 from blueprints.school.attendance_data import STATUSES, student_history, student_summary
+from blueprints.school.record_views import attendance_view
 from models import AcademicSession, Student, StudentEnrolment, db
 from sqlalchemy import select
 
@@ -45,7 +46,7 @@ def parent_child_attendance(student_id):
     summary = student_summary(student_id, session_row.id, term) if session_row else None
     history = student_history(student_id, session_row.id, term) if session_row else []
     return render_template('attendance_view.html', sessions=sessions, session_row=session_row, term=term,
-                           terms=ACADEMIC_TERMS, summary=summary, history=history, statuses=STATUSES,
+                           terms=ACADEMIC_TERMS, summary=summary, history=history, statuses=STATUSES, **attendance_view(history),
                            back_url=url_for('parent_child_detail', student_id=student_id) + '#attendance',
                            back_label='Back to my child', title=f'{child.first_name}’s attendance',
                            home_url=url_for('parent_dashboard'), home_kind='Parent Portal', person_name=child.first_name)

@@ -1,82 +1,89 @@
-{% from 'includes/_nav_icons.html' import icon %}
-{% from 'includes/_school_mark.html' import school_mark %}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ title }} — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
-</head>
-<body class="school-ui">{{ connectivity_banner() }}
-<a class="skip-link" href="#main">Skip to main content</a>
+{% extends 'parent_base.html' if home_kind == 'Parent Portal' else 'student_base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{#-
+  Attendance for one term, for a student or for their parent. The rate comes first, then how the days
+  divided, then the days that need a second look, then every recorded day laid out month by month.
+-#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='1') }}">
+<p class="rv-back"><a href="{{ back_url }}">&larr; {{ back_label }}</a></p>
 
-<header class="fp-bar">
-  <a class="fp-bar__brand" href="{{ home_url }}">
-    {{ school_mark(school_brand) }}
-    <span class="fp-bar__brand-text">
-      <span class="fp-bar__name">{{ school_brand.name }}</span>
-      <span class="fp-bar__kind">{{ home_kind }}</span>
-    </span>
-  </a>
-  <div class="fp-bar__actions">
-    <span class="fp-bar__person">{{ person_name }}</span>
-    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+<header class="rv-head">
+  <div>
+    <p class="pp-eyebrow">Attendance</p>
+    <h1>{{ title }}</h1>
   </div>
+  <form method="get" class="rv-filters">
+    <label><span>Session</span>
+      <select class="ui-input" name="session_id" data-autosubmit>
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
+      </select></label>
+    <label><span>Term</span>
+      <select class="ui-input" name="term" data-autosubmit>
+        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></label>
+    <noscript><button class="ui-btn ui-btn--light ui-btn--sm" type="submit">Show</button></noscript>
+  </form>
 </header>
 
-<main class="fp-main" id="main">
-  <p><a class="fp-row__go" href="{{ back_url }}">&larr; {{ back_label }}</a></p>
-
-  <section class="fp-hero">
-    <div>
-      <p class="fp-hero__eyebrow">Attendance</p>
-      <h1>{{ title }}</h1>
+{% if summary and summary.total %}
+{% set rate = summary.percentage %}
+<section class="rv-summary" aria-label="Summary for {{ term }}">
+  <div class="rv-rate">
+    <div class="rv-donut" style="--pct: {{ rate }}" role="img" aria-label="{{ '%.1f'|format(rate) }} percent attendance">
+      <span><b>{{ '%.0f'|format(rate) }}%</b><small>attended</small></span>
     </div>
-  </section>
+    <p>{{ summary.present + summary.late }} of {{ summary.total }} recorded days attended<br><small>{{ term }} · {{ session_row.name }}</small></p>
+  </div>
 
-  <section class="fp-panel">
-    <form method="get" class="fp-form-grid" style="margin-bottom:0">
-      <label class="ui-field">Session
-        <select class="ui-input" name="session_id" data-autosubmit>
-          {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-        </select></label>
-      <label class="ui-field">Term
-        <select class="ui-input" name="term" data-autosubmit>
-          {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-        </select></label>
-    </form>
-  </section>
+  <div class="rv-split">
+    <div class="rv-bar" role="img" aria-label="Present {{ summary.present }}, late {{ summary.late }}, absent {{ summary.absent }}, excused {{ summary.excused }}">
+      {% for key in ('present', 'late', 'excused', 'absent') %}{% if summary[key] %}<i class="is-{{ key }}" style="flex: {{ summary[key] }}"></i>{% endif %}{% endfor %}
+    </div>
+    <dl class="rv-counts">
+      <div class="is-present"><dt>Present</dt><dd>{{ summary.present }}</dd></div>
+      <div class="is-late"><dt>Late</dt><dd>{{ summary.late }}</dd></div>
+      <div class="is-absent"><dt>Absent</dt><dd>{{ summary.absent }}</dd></div>
+      <div class="is-excused"><dt>Excused</dt><dd>{{ summary.excused }}</dd></div>
+    </dl>
+  </div>
+</section>
 
-  {% if summary and summary.total %}
-  <section class="fp-panel">
-    <div class="fp-panel__head"><div><p class="fp-panel__eyebrow">{{ term }} · {{ session_row.name }}</p><h2>Summary</h2></div>
-      <span class="fp-count">{{ '%.1f'|format(summary.percentage) }}%</span></div>
-    <ul class="fp-list">
-      <li class="fp-row"><span class="fp-row__body"><span class="fp-row__title">Present</span></span><span class="fp-score">{{ summary.present }}</span></li>
-      <li class="fp-row"><span class="fp-row__body"><span class="fp-row__title">Late</span></span><span class="fp-score">{{ summary.late }}</span></li>
-      <li class="fp-row"><span class="fp-row__body"><span class="fp-row__title">Absent</span></span><span class="fp-score">{{ summary.absent }}</span></li>
-      <li class="fp-row"><span class="fp-row__body"><span class="fp-row__title">Excused</span></span><span class="fp-score">{{ summary.excused }}</span></li>
-      <li class="fp-row"><span class="fp-row__body"><span class="fp-row__title">Days recorded</span></span><span class="fp-score">{{ summary.total }}</span></li>
-    </ul>
-  </section>
-
-  <section class="fp-panel">
-    <div class="fp-panel__head"><div><p class="fp-panel__eyebrow">Day by day</p><h2>History</h2></div></div>
-    <ul class="fp-list">
-      {% for h in history %}
-      <li class="fp-row">
-        <span class="fp-row__body"><span class="fp-row__title">{{ h.date }}</span><span class="fp-row__sub">{{ h.class_name }}</span></span>
-        <span class="fp-status is-{{ 'done' if h.status == 'present' else ('pending' if h.status == 'late' else ('overdue' if h.status == 'absent' else 'excused')) }}">{{ h.status|capitalize }}</span>
+<div class="rv-cols">
+  <section class="pp-block rv-note">
+    <div class="pp-block__head"><h2>Days to note</h2>{% if notable %}<span class="pp-count">{{ notable|length }}</span>{% endif %}</div>
+    {% if notable %}
+    <ul class="pp-rows pp-scroll-y">
+      {% for n in notable %}
+      <li class="pp-row">
+        <span class="pp-row__main"><strong>{{ n.pretty }}</strong><small>{{ n.class_name }}</small></span>
+        <span class="rv-chip is-{{ n.status }}">{{ n.status|capitalize }}</span>
       </li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="pp-none">Present on every recorded day this term.</p>
+    {% endif %}
   </section>
-  {% else %}
-  <section class="fp-panel"><p class="fp-panel-note" style="margin:0">No attendance has been recorded for {{ term }} yet.</p></section>
-  {% endif %}
-</main>
-<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
-</html>
+
+  <section class="pp-block">
+    <div class="pp-block__head"><h2>Every recorded day</h2>
+      <ul class="rv-legend" aria-label="Key"><li class="is-present">Present</li><li class="is-late">Late</li><li class="is-absent">Absent</li><li class="is-excused">Excused</li></ul>
+    </div>
+    <div class="rv-months pp-scroll-y">
+      {% for m in months|reverse %}
+      <div class="rv-month">
+        <h3>{{ m.label }}<small>{{ m.days|length }} day{{ '' if m.days|length == 1 else 's' }}</small></h3>
+        <ul class="rv-days">
+          {% for d in m.days %}<li class="rv-day is-{{ d.status }}" title="{{ d.title }}"><small>{{ d.weekday }}</small><b>{{ d.day }}</b></li>{% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% else %}
+<section class="pp-block"><p class="pp-none" style="padding:0">No attendance has been recorded for {{ term }} yet.</p></section>
+{% endif %}
+{% endblock %}

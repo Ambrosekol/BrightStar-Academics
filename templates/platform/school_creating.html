@@ -23,6 +23,26 @@
   <span class="secret" id="portal-address">{{ portal }}</span>
 </div>
 
+<div class="panel">
+  <h2 style="margin-top:0">Using the school's own address</h2>
+  {% if customs %}
+    <p class="muted">These addresses are registered for the school. Each one reaches the portal as
+      soon as the school adds this DNS record on its own domain:</p>
+    <table>
+      <thead><tr><th>Type</th><th>Name</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for hostname in customs %}
+          <tr><td class="mono">CNAME</td><td class="mono">{{ hostname }}</td><td class="mono">{{ portal }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">Your reverse proxy also needs a certificate for each of them.</p>
+  {% else %}
+    <p class="muted">None yet. Add the school's own address on its page, then have the school point
+      a CNAME record at <code>{{ portal }}</code>.</p>
+  {% endif %}
+</div>
+
 {% if password %}
   <div class="panel">
     <h2 style="margin-top:0">Give these to the school, once</h2>

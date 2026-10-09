@@ -1,202 +1,138 @@
+{% extends 'parent_base.html' %}
 {% from 'includes/_nav_icons.html' import icon %}
-{% from 'includes/_school_mark.html' import school_mark %}
+{% block title %}Fee account — {{ student.first_name }} {{ student.last_name }}{% endblock %}
 {#-
-  One child's fee account: the lifetime totals (every session, so an old balance is never
-  hidden by a new one), a callout for a balance left in another session or a payment not yet
-  applied, then the chosen session's fees and the full payment history with receipts.
+  One child's fee account. The lifetime totals come first (every session, so an old balance is never
+  hidden by a new one), then anything that needs saying (a balance in another session, a payment not
+  yet applied), then the chosen session's fees - where one, several or all can be paid - and the full
+  payment history with receipts.
 -#}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ student.first_name }} {{ student.last_name }} — Fee Account — Parent Portal</title>
-<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
-<style>
-.pay-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px 22px; margin-bottom: 18px; border-radius: 16px; text-decoration: none; color: #fff; background: linear-gradient(120deg, var(--brand-dark, #12305a), var(--brand, #1d4f91)); box-shadow: 0 10px 26px rgba(16, 40, 80, .22); }
-.pay-banner__text { display: flex; flex-direction: column; gap: 3px; }
-.pay-banner__text strong { font-size: 18px; }
-.pay-banner__text span { opacity: .9; font-size: 13.5px; }
-.pay-banner__cta { background: #fff; color: var(--brand-dark, #12305a); font-weight: 700; padding: 10px 18px; border-radius: 999px; font-size: 14px; white-space: nowrap; }
-.pay-banner:hover .pay-banner__cta { transform: translateY(-1px); }
-.pay-pick { width: 20px; height: 20px; cursor: pointer; accent-color: var(--brand, #1d4f91); }
-.pay-one { background: var(--brand, #1d4f91); color: #fff; border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
-.pay-one:hover { background: var(--brand-dark, #12305a); }
-tr.is-picked td { background: var(--brand-tint, #eef3fb); }
-.pay-bar { position: sticky; bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 14px; padding: 14px 18px; border-radius: 14px; background: var(--brand-dark, #12305a); color: #fff; box-shadow: 0 10px 28px rgba(16, 40, 80, .28); }
-.pay-bar__total span { display: block; font-size: 12px; opacity: .8; }
-.pay-bar__total strong { font-size: 22px; }
-.pay-bar__actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.pay-bar__all { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-.pay-bar__go { background: #fff; color: var(--brand-dark, #12305a); border: 0; border-radius: 999px; padding: 10px 22px; font-weight: 800; font-size: 15px; cursor: pointer; }
-.pay-bar__go:disabled { opacity: .5; cursor: not-allowed; }
-</style>
-</head>
-<body class="school-ui">{{ connectivity_banner() }}
-<a class="skip-link" href="#main">Skip to main content</a>
+{% block content %}
+{% set owed = total_outstanding or 0 %}
 
-<header class="fp-bar">
-  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
-    {{ school_mark(school_brand) }}
-    <span class="fp-bar__brand-text">
-      <span class="fp-bar__name">{{ school_brand.name }}</span>
-      <span class="fp-bar__kind">Parent Portal</span>
-    </span>
-  </a>
-  <div class="fp-bar__actions">
-    <a class="fp-bar__link" href="{{ url_for('parent_dashboard') }}">{{ icon('dashboard') }} Dashboard</a>
-    <a class="fp-bar__link" href="{{ url_for('parent_child_detail', student_id=student.id) }}">{{ icon('user') }} Child profile</a>
-    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+<header class="pp-profile pp-profile--plain">
+  <div class="pp-profile__id">
+    <p class="pp-eyebrow"><a href="{{ url_for('parent_dashboard') }}">Dashboard</a> / <a href="{{ url_for('parent_child_detail', student_id=student.id) }}">{{ student.first_name }}</a> / Fee account</p>
+    <h1>{{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %} {{ student.last_name }}</h1>
+    <p class="pp-sub">{{ student.admission_no }} · balances across every academic session</p>
+  </div>
+  <div class="pp-profile__actions">
+    <a class="ui-btn ui-btn--light ui-btn--sm" href="{{ url_for('parent_child_detail', student_id=student.id) }}">Child profile</a>
   </div>
 </header>
 
-<main class="fp-main" id="main">
+<section class="pp-kpis pp-kpis--3" aria-label="Lifetime totals">
+  <div class="pp-kpi"><small>Assessed, all sessions</small><strong>₦{{ '{:,.2f}'.format(total_assessed or 0) }}</strong></div>
+  <div class="pp-kpi is-paid"><small>Paid, all sessions</small><strong>₦{{ '{:,.2f}'.format(total_paid or 0) }}</strong></div>
+  <div class="pp-kpi{% if owed > 0.005 %} is-owing{% endif %}"><small>Outstanding, all sessions</small><strong>₦{{ '{:,.2f}'.format(owed) }}</strong></div>
+</section>
 
-  <section class="fp-hero">
-    <div>
-      <p class="fp-hero__eyebrow">Fee account</p>
-      <h1>{{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %} {{ student.last_name }}</h1>
-      <p class="fp-hero__meta">{{ student.admission_no }} · lifetime balance across every academic session, what has been paid, and what is still outstanding.</p>
-    </div>
-  </section>
+{% if other_sessions_with_balance %}
+<div class="ui-alert ui-alert--warning pp-alert">
+  <strong>Balance also outstanding in</strong>
+  <span class="pp-chips">
+    {% for s in other_sessions_with_balance %}<a class="pp-chip" href="?session_id={{ s.id }}">{{ s.name }} · ₦{{ '{:,.0f}'.format(s.outstanding) }}</a>{% endfor %}
+  </span>
+</div>
+{% endif %}
 
-  <div class="fp-kpis">
-    <div class="fp-kpi"><span>Total Assessed (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_assessed or 0) }}</strong></div>
-    <div class="fp-kpi is-paid"><span>Total Paid (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_paid or 0) }}</strong></div>
-    <div class="fp-kpi is-outstanding"><span>Outstanding (All Sessions)</span><strong>₦{{ '{:,.2f}'.format(total_outstanding or 0) }}</strong></div>
-  </div>
+{% if total_unallocated and total_unallocated > 0.005 %}
+<div class="ui-alert ui-alert--info pp-alert">
+  <strong>₦{{ '{:,.2f}'.format(total_unallocated) }} received, not yet applied to a fee</strong>
+  <span>The school office has not matched this payment to one of the fees below yet. It does not reduce the outstanding balance until they do, but the money has been received.</span>
+</div>
+{% endif %}
 
-  {% if paystack_available and total_outstanding and total_outstanding > 0.005 %}
-  <a class="pay-banner" href="#fees">
-    <span class="pay-banner__text"><strong>Pay school fees online</strong><span>Choose one fee or several below and pay securely with Paystack.</span></span>
-    <span class="pay-banner__cta">Choose fees to pay &darr;</span>
-  </a>
-  {% endif %}
+{% if not session %}
+<section class="pp-block"><div class="pp-empty"><strong>No active academic session is available.</strong></div></section>
+{% else %}
 
-  {% if other_sessions_with_balance %}
-  <div class="ui-alert ui-alert--warning fp-alert-row">
-    <strong>Balance also outstanding in:</strong>
-    <span class="fp-chip-row">
-      {% for s in other_sessions_with_balance %}
-      <a class="fp-chip-link" href="?session_id={{ s.id }}">{{ s.name }} · ₦{{ '{:,.0f}'.format(s.outstanding) }}</a>
-      {% endfor %}
-    </span>
-  </div>
-  {% endif %}
-
-  {% if total_unallocated and total_unallocated > 0.005 %}
-  <div class="ui-alert ui-alert--info">
-    <strong>₦{{ '{:,.2f}'.format(total_unallocated) }} recently paid, not yet applied to a specific fee</strong>
-    <span class="fp-alert-note">The school office hasn't yet matched this payment to one of the fees below — it doesn't reduce the outstanding balance shown here until they do, but the money has been received.</span>
-  </div>
-  {% endif %}
-
-  <section class="fp-panel">
-    <form method="get" class="fp-inline-form">
-      <div class="ui-field">
-        <label for="session_id">Browse a specific session's fee breakdown</label>
-        <select id="session_id" name="session_id" class="ui-input" data-autosubmit>
-          {% for s in sessions %}
-          <option value="{{ s.id }}" {% if session and s.id == session.id %}selected{% endif %}>{{ s.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <noscript><button class="ui-btn ui-btn--light" type="submit">Show</button></noscript>
+<section class="pp-block">
+  <div class="pp-block__head pp-block__head--wrap">
+    <div><h2>Fees for {{ session.name }}</h2>{% if paystack_available and owed > 0.005 %}<p class="pp-small">Tick one fee or several, then pay securely with Paystack.</p>{% endif %}</div>
+    <form method="get" class="pp-session">
+      <label for="session_id">Session</label>
+      <select id="session_id" name="session_id" class="ui-input" data-autosubmit>
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session and s.id == session.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+      <noscript><button class="ui-btn ui-btn--light ui-btn--sm" type="submit">Show</button></noscript>
     </form>
-  </section>
+  </div>
 
-  {% if not session %}
-  <section class="fp-panel">
-    <div class="fp-empty"><strong>No active academic session is available.</strong></div>
-  </section>
-  {% else %}
-
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div><p class="fp-panel__eyebrow">Fees assessed</p><h2>Fees for {{ session.name }}</h2></div>
-    </div>
-    {% if account %}
-    {% set can_pay = paystack_available and account|selectattr('outstanding', 'gt', 0.005)|list|length > 0 %}
-    <form id="fees" method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}">
+  {% if account %}
+  {% set can_pay = paystack_available and account|selectattr('outstanding', 'gt', 0.005)|list|length > 0 %}
+  <form id="fees" method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}">
     {% if can_pay %}
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
     {% endif %}
-    <div class="fp-table-wrap">
-      <table class="fp-table">
+    <div class="pp-table-wrap">
+      <table class="pp-table">
         <thead>
-          <tr>{% if can_pay %}<th></th>{% endif %}<th>Fee</th><th>Term</th><th>Due</th><th class="num">Assessed</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th>{% if can_pay %}<th></th>{% endif %}</tr>
+          <tr>{% if can_pay %}<th class="pp-pick-col"><span class="sr-only">Select</span></th>{% endif %}<th>Fee</th><th>Term</th><th>Due</th><th class="num">Assessed</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th>{% if can_pay %}<th><span class="sr-only">Pay</span></th>{% endif %}</tr>
         </thead>
         <tbody>
           {% for item in account %}
           <tr>
-            {% if can_pay %}<td>{% if item.outstanding > 0.005 %}<input class="pay-pick" type="checkbox" name="assessment_ids" value="{{ item.id }}" data-amount="{{ '%.2f'|format(item.outstanding) }}" aria-label="Select {{ item.category }} to pay">{% endif %}</td>{% endif %}
+            {% if can_pay %}<td class="pp-pick-col">{% if item.outstanding > 0.005 %}<input class="pay-pick" type="checkbox" name="assessment_ids" value="{{ item.id }}" data-amount="{{ '%.2f'|format(item.outstanding) }}" aria-label="Select {{ item.category }} to pay">{% endif %}</td>{% endif %}
             <td><strong>{{ item.category }}</strong></td>
             <td>{{ item.term or 'Full Session' }}</td>
             <td>{{ item.due_date or '—' }}</td>
             <td class="num">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
             <td class="num">₦{{ '{:,.2f}'.format(item.paid) }}</td>
             <td class="num"><strong>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
-            <td>{% if item.status == 'Paid' %}<span class="pcf-badge paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="pcf-badge partial">Part Paid</span>{% else %}<span class="pcf-badge unpaid">Unpaid</span>{% endif %}</td>
-            {% if can_pay %}<td>{% if item.outstanding > 0.005 %}<button type="button" class="pay-one" data-pay-one="{{ item.id }}">Pay ₦{{ '{:,.2f}'.format(item.outstanding) }}</button>{% endif %}</td>{% endif %}
+            <td>{% if item.status == 'Paid' %}<span class="pp-badge is-paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="pp-badge is-part">Part paid</span>{% else %}<span class="pp-badge is-unpaid">Unpaid</span>{% endif %}</td>
+            {% if can_pay %}<td class="pp-pay-col">{% if item.outstanding > 0.005 %}<button type="button" class="ui-btn ui-btn--light ui-btn--sm" data-pay-one="{{ item.id }}">Pay this</button>{% endif %}</td>{% endif %}
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if can_pay %}
-    <div class="pay-bar">
-      <div class="pay-bar__total"><span id="pay-count">Tick the fees you want to pay</span><strong id="pay-total">₦0.00</strong></div>
-      <div class="pay-bar__actions">
-        <button type="button" class="pay-bar__all" id="pay-all">Select all</button>
-        <button type="submit" class="pay-bar__go" id="pay-go" disabled>Pay with Paystack</button>
+    <div class="pp-paybar">
+      <div class="pp-paybar__total"><span id="pay-count">Tick the fees you want to pay</span><strong id="pay-total">₦0.00</strong></div>
+      <div class="pp-paybar__actions">
+        <button type="button" class="ui-btn ui-btn--light ui-btn--sm" id="pay-all">Select all</button>
+        <button type="submit" class="ui-btn ui-btn--primary" id="pay-go" disabled>Pay with Paystack</button>
       </div>
     </div>
     {% endif %}
-    </form>
-    <p class="fp-table-note">Paid/outstanding above — and the totals at the top of this page — reflect payments the school office has applied to each specific fee. A payment you have just made may take a short time to be applied and will show as "not yet applied to a specific fee" above until then.</p>
-    {% else %}
-    <div class="fp-empty"><strong>No fees have been assessed for {{ session.name }} yet.</strong></div>
-    {% endif %}
-  </section>
-
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div><p class="fp-panel__eyebrow">Payment history</p><h2>Payments</h2><small>Every payment ever recorded, across all sessions.</small></div>
-    </div>
-    {% if payments %}
-    <div class="fp-table-wrap">
-      <table class="fp-table">
-        <thead>
-          <tr><th>Receipt</th><th>Paid at</th><th>Method</th><th>Purpose</th><th class="num">Amount</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for p in payments %}
-          <tr>
-            <td><strong>{{ p.receipt_no }}</strong></td>
-            <td>{{ p.paid_at }}</td>
-            <td>{{ p.method }}</td>
-            <td>{{ p.category }}</td>
-            <td class="num">₦{{ '{:,.2f}'.format(p.amount or 0) }}</td>
-            <td>{% if p.status == 'voided' %}<span class="pcf-badge voided">Voided</span>{% else %}<span class="pcf-badge posted">Posted</span>{% endif %}</td>
-            <td><a class="btn btn-light btn-small" href="{{ url_for('parent_receipt_pdf', student_id=student.id, payment_id=p.id) }}" target="_blank">Receipt</a></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="fp-empty"><strong>No payments have been recorded yet.</strong></div>
-    {% endif %}
-  </section>
-
+  </form>
+  <p class="pp-small pp-note-text">Paid and outstanding figures, here and in the totals above, reflect payments the school office has applied to each fee. A payment you have just made may take a short while to be applied.</p>
+  {% else %}
+  <p class="pp-none">No fees have been assessed for {{ session.name }} yet.</p>
   {% endif %}
+</section>
 
-</main>
+<section class="pp-block">
+  <div class="pp-block__head"><div><h2>Payments</h2><p class="pp-small">Every payment recorded, across all sessions.</p></div>{% if payments %}<span class="pp-count">{{ payments|length }}</span>{% endif %}</div>
+  {% if payments %}
+  <div class="pp-table-wrap pp-scroll-y">
+    <table class="pp-table">
+      <thead><tr><th>Receipt</th><th>Paid at</th><th>Method</th><th>Purpose</th><th class="num">Amount</th><th>Status</th><th><span class="sr-only">Receipt</span></th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><strong>{{ p.receipt_no }}</strong></td>
+          <td>{{ p.paid_at }}</td>
+          <td>{{ p.method }}</td>
+          <td>{{ p.category }}</td>
+          <td class="num">₦{{ '{:,.2f}'.format(p.amount or 0) }}</td>
+          <td>{% if p.status == 'voided' %}<span class="pp-badge is-unpaid">Voided</span>{% else %}<span class="pp-badge is-paid">Posted</span>{% endif %}</td>
+          <td><a class="ui-btn ui-btn--light ui-btn--sm" href="{{ url_for('parent_receipt_pdf', student_id=student.id, payment_id=p.id) }}" target="_blank" rel="noopener">Receipt</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="pp-none">No payments have been recorded yet.</p>
+  {% endif %}
+</section>
+
+{% endif %}
+{% endblock %}
+{% block scripts %}
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var form = document.getElementById('fees');
@@ -232,5 +168,4 @@ tr.is-picked td { background: var(--brand-tint, #eef3fb); }
   refresh();
 })();
 </script>
-<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
-</html>
+{% endblock %}

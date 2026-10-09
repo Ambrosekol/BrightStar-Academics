@@ -70,6 +70,6 @@ end-to-end scripts in <code>tests/verification/</code> create throwaway database
 <tr><td>A page that says "Address not found"</td><td>You used <code>localhost</code> or an IP address. Use <code>platform.localhost</code> for the console and <code>&lt;code&gt;.localhost</code> for a school. The <em>address</em> chooses the school.</td></tr>
 <tr><td>You are signed out every time you restart</td><td>By design: a restart signs everyone out (except people in the middle of an exam). See {{ page('operations', 'Operating it') }}.</td></tr>
 <tr><td>Startup refuses with a message about the secret</td><td>In production the secret must be at least 32 characters.</td></tr>
-<tr><td>Email or WhatsApp does not send</td><td>Nothing is configured yet. A school sets up its own under <em>Email &amp; WhatsApp</em>, or the deployment has a shared account. See {{ page('families', 'Students, parents and messages') }}.</td></tr>
+<tr><td>Email or SMS does not send</td><td>Nothing is configured yet. A school sets up its own under <em>Email &amp; SMS</em>, or the deployment has a shared account. See {{ page('families', 'Students, parents and messages') }}.</td></tr>
 </table></div>
 {% endblock %}

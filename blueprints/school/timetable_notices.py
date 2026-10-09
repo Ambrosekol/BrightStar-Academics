@@ -2,7 +2,7 @@
 
 A release covers every entry in one session and term whose class was included in the release. Every
 student currently enrolled in one of those classes gets an in-app alert, as does every parent linked
-to them; the guardian contact on the student's record also gets an email and a WhatsApp message. The
+to them; the guardian contact on the student's record also gets an email. The
 message names the term and the kind of timetable, not every entry line by line, so it stays short —
 the student and parent open the timetable itself to see the dates.
 
@@ -19,7 +19,7 @@ from sqlalchemy import select
 
 from core.jobs import job_handler, enqueue
 from core.branding import school_name
-from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp, _parent_ids_for_student
+from core.notifications import _notify_guardian_email, _parent_ids_for_student
 from models import SchoolNotification, Student, StudentEnrolment, db
 
 
@@ -67,12 +67,7 @@ def _announce(class_ids, session_id, term, exam_type, admin_id):
         subject = f'{label} released — {child}'
         body = (f'Dear Parent/Guardian,\n\nThe {label} has been released.\n\n'
                f'Sign in to the parent portal to view and download it.\n\nThank you,\n{school_name()}')
-        text = f'{school_name()}: the {label} is ready. Sign in to the parent portal to view and download it.'
         try:
             _notify_guardian_email(r.guardian_email, subject, body, student_id=r.id, kind='timetable_released')
         except Exception:
             current_app.logger.exception('Guardian email (timetable released) failed for student %s', r.id)
-        try:
-            _notify_guardian_whatsapp(r.guardian_phone, text, student_id=r.id, kind='timetable_released')
-        except Exception:
-            current_app.logger.exception('Guardian WhatsApp (timetable released) failed for student %s', r.id)

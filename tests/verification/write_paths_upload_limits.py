@@ -370,7 +370,7 @@ CASES = [
          field="signature_file", action="/admin/finance/receipt-settings", data=lambda: {"action": "upload"},
          stored=lambda: alpha.one("SELECT setting_value FROM school_settings WHERE setting_key = :k",
                                   k="receipt_authorised_signature")),
-    dict(name="a staff member's own report-card signature", who=op, page="/admin/school/report-cards/my-signature",
+    dict(name="a staff member's own report-card signature", who=op, page="/admin/school/report-cards",
          field="signature_file", action="/admin/school/report-cards/my-signature", data=lambda: {"action": "upload"},
          stored=lambda: alpha.one("SELECT signature_path FROM admins WHERE id = :i", i=SA)),
     dict(name="the head's signature on report cards", who=op, page="/admin/school/report-cards/settings",

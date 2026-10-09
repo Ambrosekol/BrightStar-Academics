@@ -489,7 +489,7 @@ def test_a_school_delivery_secret_is_encrypted_isolated_and_never_returned():
 
     from core import delivery
 
-    assert {"smtp_password", "whatsapp_token"} <= delivery.SECRET_KEYS
+    assert {"smtp_password", "sms_api_token"} <= delivery.SECRET_KEYS
     save = inspect.getsource(delivery.save_email)
     assert "encrypt(password)" in save and "resolve_public(host)" in save
     # The connection goes to the address that was checked, and again checked at send time.
@@ -498,7 +498,7 @@ def test_a_school_delivery_secret_is_encrypted_isolated_and_never_returned():
     assert delivery.ALLOWED_SMTP_PORTS == (25, 465, 587, 2525)
     # What the page is given carries facts about the secrets, never the secrets.
     status = inspect.getsource(delivery.status)
-    assert "bool(own.get('smtp_password'))" in status and "bool(own.get('whatsapp_token'))" in status
+    assert "bool(own.get('smtp_password'))" in status and "bool(own.get('sms_api_token'))" in status
     assert "'password'" not in status and "'token'" not in status
     # A half-set-up school never borrows the platform's account.
     assert inspect.getsource(delivery.email_settings).count("half set up") == 1
@@ -507,7 +507,7 @@ def test_a_school_delivery_secret_is_encrypted_isolated_and_never_returned():
         if path.name == "delivery.py":
             continue
         body = path.read_text(encoding="utf-8")
-        assert "BRIGHTSTARS_SMTP" not in body and "BRIGHTSTARS_WHATSAPP" not in body, path.name
+        assert "BRIGHTSTARS_SMTP" not in body and "BRIGHTSTARS_SMS" not in body, path.name
 
 
 def test_the_uploads_route_decides_on_the_path_it_will_actually_serve():

@@ -359,7 +359,7 @@ check("with school.attendance.view only, the viewer opens the summary but is ref
 check("with neither permission, nobody is refused (403) on both pages",
       nobody.get(reg_url(J1, DAY1)).status_code == 403 and nobody.get(summary_url(J1)).status_code == 403)
 check("…nor do they see 'Attendance' in the menu, while a marker does",
-      "attendance" not in nobody.text("/admin/school").lower() and "attendance" in teacher_a.text("/admin/school").lower())
+      'href="/admin/school/attendance' not in nobody.text("/admin/school") and 'href="/admin/school/attendance' in teacher_a.text("/admin/school"))
 kept_row = alpha.sql("SELECT status FROM attendance_records WHERE student_id = :s AND date = :d", s=ADA, d=DAY1)
 check("a POST without a CSRF token is refused (403), and nothing changes",
       op.post(reg_url(J1, DAY1), {f"status_{ADA}": "present"}, token=False).status_code == 403
@@ -376,9 +376,9 @@ check("Ada sees her own attendance summary and history for the term she was mark
       ("66.7" in ada_att_page))
 bola_portal = Person(ALPHA, "/student/password", label="alpha student bola")
 bola_portal.post("/login", {"username": "bola.eze", "password": PASSWORD}, page="/login")
-check("…and Bola sees her own, not Ada's",
-      "50.0" in bola_portal.text("/student/attendance?session_id=%s&term=First%%20Term" % CUR)
-      and "66.7" not in bola_portal.text("/student/attendance?session_id=%s&term=First%%20Term" % CUR))
+bola_att_page = bola_portal.text("/student/attendance?session_id=%s&term=First%%20Term" % CUR)
+bola_rates = re.findall(r"([\d.]+) percent attendance", bola_att_page)
+check("…and Bola sees her own, not Ada's", bola_rates == ["50.0"] and "66.7" not in bola_att_page, str(bola_rates))
 check("a student cannot open the staff pages",
       ada_portal.get(reg_url(J1, DAY1)).status_code in (302, 403, 404) and ada_portal.get(summary_url(J1)).status_code in (302, 403, 404))
 mum_ada_page = mum_ada.text(f"/parent/children/{ADA}/attendance?session_id={CUR}&term=First%20Term")

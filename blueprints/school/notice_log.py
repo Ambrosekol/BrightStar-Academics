@@ -1,5 +1,5 @@
 """A school's own record of every guardian notice attempted - a new assignment, a fee charged, a
-released report card or exam timetable - by email or WhatsApp, successful or not.
+released report card or exam timetable - by email or SMS, successful or not.
 
 Payment receipts already have exactly this (finance_delivery_logs, blueprints/finance/routes.py);
 this is everything else, recorded by core/notifications.py's two guardian-contact senders as each

@@ -80,6 +80,23 @@ ALPHA_LOGO, BETA_LOGO = picture((200, 30, 30)), picture((30, 60, 200))
 ALPHA_PHOTO, BETA_PHOTO = picture((20, 160, 60), (60, 70)), picture((120, 30, 160), (60, 70))
 
 
+PHOTO_COLOURS = {"alpha": (20, 160, 60), "beta": (120, 30, 160)}
+
+
+def has_photo(page, whose):
+    """Whether the page carries that school's candidate photograph. The school keeps a photograph as a JPEG of its
+    own making (every upload is re-encoded), so it is recognised by its colour, not by the bytes that were sent."""
+    for m in re.finditer(r"data:image/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)", page):
+        raw = base64.b64decode(m.group(1))
+        if raw in (ALPHA_LOGO, BETA_LOGO):
+            continue
+        image = Image.open(io.BytesIO(raw)).convert("RGB")
+        pixel = image.getpixel((image.width // 2, image.height // 2))
+        if all(abs(a - b) <= 16 for a, b in zip(pixel, PHOTO_COLOURS[whose])):
+            return True
+    return False
+
+
 def data_uri(png):
     return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
 
@@ -242,8 +259,8 @@ r = result_image("alpha", ids["Ada Photo"])
 check("the result image is produced", r.status_code == 200 and r.mimetype == "image/png" and r.data[:8] == b"\x89PNG\r\n\x1a\n", str(r.status_code))
 page = CAPTURED[-1]
 check("it is drawn with alpha's own logo", data_uri(ALPHA_LOGO) in page)
-check("…and this candidate's own photograph", data_uri(ALPHA_PHOTO) in page)
-check("…and never another school's logo or photograph", data_uri(BETA_LOGO) not in page and data_uri(BETA_PHOTO) not in page)
+check("…and this candidate's own photograph", has_photo(page, "alpha"))
+check("…and never another school's logo or photograph", data_uri(BETA_LOGO) not in page and not has_photo(page, "beta"))
 check("…and carries alpha's name and motto", "Alpha School" in page.title() or "ALPHA SCHOOL" in page or "Alpha School" in page)
 check("…and nothing belonging to the school the platform grew from",
       not any(w in page.upper() for w in OLD_SCHOOL_WORDS) and "Beta College" not in page and "BETA COLLEGE" not in page)
@@ -255,8 +272,8 @@ check("…and nothing was ever put in a public folder", not os.path.exists(os.pa
 r = result_image("beta", ids["Bola Photo"])
 page = CAPTURED[-1]
 check("beta's result uses beta's logo and photograph, not alpha's",
-      r.status_code == 200 and data_uri(BETA_LOGO) in page and data_uri(BETA_PHOTO) in page
-      and data_uri(ALPHA_LOGO) not in page and data_uri(ALPHA_PHOTO) not in page)
+      r.status_code == 200 and data_uri(BETA_LOGO) in page and has_photo(page, "beta")
+      and data_uri(ALPHA_LOGO) not in page and not has_photo(page, "alpha"))
 # (each school numbers its candidates from 1, so use an id that exists only at alpha)
 alpha_only = ids["Ada Nophoto"]
 check("(set-up) that id really is alpha's alone: beta has no candidate with it",
@@ -271,7 +288,7 @@ n = len(CAPTURED)
 r = result_image("alpha", ids["Ada Nophoto"])
 page = CAPTURED[-1]
 check("a candidate with no photograph still gets a result, with alpha's logo and no photograph",
-      r.status_code == 200 and len(CAPTURED) == n + 1 and data_uri(ALPHA_LOGO) in page and data_uri(ALPHA_PHOTO) not in page)
+      r.status_code == 200 and len(CAPTURED) == n + 1 and data_uri(ALPHA_LOGO) in page and not has_photo(page, "alpha"))
 r = result_image("gamma", ids["Gina Nologo"])
 page = CAPTURED[-1]
 check("a school with no logo still gets a result, with its own name where the logo would be",
@@ -292,7 +309,7 @@ for label, path in attempts.items():
     r = result_image("alpha", ids["Ada Nophoto"])
     page = CAPTURED[-1]
     check(f"{label} is ignored: the result is made without it",
-          r.status_code == 200 and data_uri(BETA_PHOTO) not in page and "win.ini" not in page and "[fonts]" not in page,
+          r.status_code == 200 and not has_photo(page, "beta") and "win.ini" not in page and "[fonts]" not in page,
           str(r.status_code))
 set_photo_path("alpha", ids["Ada Nophoto"], None)
 

@@ -9,7 +9,7 @@
   <li><strong>Run the whole verification suite against staging</strong> with production-like settings ({{ page('testing', 'Testing') }}). Especially the multi-school isolation script.</li>
   <li><strong>Set up backups and <em>test a restore</em></strong> of one school into a scratch server. A backup you have never restored is a hope.</li>
   <li><strong>Add two-factor authentication for platform admins.</strong> A platform admin can enter any school. Their sign-in is the most valuable credential in the company.</li>
-  <li><strong>Decide the email and WhatsApp story.</strong> Either give every school its own sender (recommended: parents recognise the school) or run a shared platform sender. For WhatsApp, apply for approved message templates so notices can reach parents outside the 24-hour window; today the application sends free-form messages only.</li>
+  <li><strong>Decide the email and SMS story.</strong> Either give every school its own sender (recommended: parents recognise the school) or run a shared platform sender. For SMS, apply for approved message templates so notices can reach parents outside the 24-hour window; today the application sends free-form messages only.</li>
   <li><strong>Have a teacher of each subject review the standard question banks</strong> before a school relies on them for real admissions decisions.</li>
 </ol>
 
@@ -41,7 +41,7 @@
   they only log, exactly as before.</li>
   <li><strong>Rotating the platform secrets on a calendar</strong> was already safe for the session secret
   (a sign-out is the only cost) but not for <code>BRIGHTSTARS_DELIVERY_KEY</code>: every school's mail
-  password, WhatsApp token and Paystack secret key are encrypted under it, so changing it outright would
+  password, SMS API token and Paystack secret key are encrypted under it, so changing it outright would
   have silently broken every one of them at once. {{ file('core/secrets_rotation.py') }} decrypts a
   school's own secrets under the old key and re-encrypts them under the new one first;
   <code>python -m control_plane rotate-delivery-key OLD NEW [CODE]</code> runs it across every school (or
@@ -64,7 +64,7 @@
 <h2 id="product">Product recommendations</h2>
 <ul>
   <li><strong>Offer parents a "notify me" choice</strong> (channels and quiet hours). Today every parent with a contact on file gets every notice.</li>
-  <li><strong>A notice log per school.</strong> Done: every guardian email/WhatsApp attempt (a new
+  <li><strong>A notice log per school.</strong> Done: every guardian email/SMS attempt (a new
   assignment, a fee charged, a released report card or exam timetable) is recorded to
   {{ table('notification_delivery_logs') }} and viewable at {{ route('admin_notification_log') }},
   linked from the Activity Log and from a student's own page. Receipts already had their own,

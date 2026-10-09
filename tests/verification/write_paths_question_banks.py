@@ -230,11 +230,11 @@ def create_school(name, code, admin, opt_in=True):
 
 NAMES = {"alpha": "Alpha Academy", "beta": "Beta College", "gamma": "Gamma School"}
 r = create_school(NAMES["alpha"], "alpha", "alpha_admin")
-check("the console creates a school with the standard banks ticked", "Alpha Academy is ready" in text_of(r), str(r.status_code))
+check("the console creates a school with the standard banks ticked", "Building the school" in text_of(r) and "Alpha Academy" in text_of(r), str(r.status_code))
 r = create_school(NAMES["beta"], "beta", "beta_admin", opt_in=False)
-check("…and one with the box unticked", "Beta College is ready" in text_of(r), str(r.status_code))
+check("…and one with the box unticked", "Building the school" in text_of(r) and "Beta College" in text_of(r), str(r.status_code))
 r = create_school(NAMES["gamma"], "gamma", "gamma_admin")
-check("…and a third, also with the standard banks", "Gamma School is ready" in text_of(r), str(r.status_code))
+check("…and a third, also with the standard banks", "Building the school" in text_of(r) and "Gamma School" in text_of(r), str(r.status_code))
 ids = {slug: make_admin_known(slug, f"{slug}_admin", f"{slug.title()}-admin-pass-1") for slug in NAMES}
 
 # ------------------------------------------------------- what each school was given

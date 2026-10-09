@@ -32,13 +32,13 @@
 <tr><td><code>write_paths_multitenancy.py</code></td><td>Isolation between schools; cookies copied between schools; path traversal.</td></tr>
 <tr><td><code>write_paths_platform_console.py</code>, <code>_platform_team.py</code></td><td>The console end to end; the team, roles, removal and activity logs.</td></tr>
 <tr><td><code>write_paths_portal_branding.py</code></td><td>Colours, logo and sign-in photographs, including hostile input.</td></tr>
-<tr><td><code>write_paths_delivery.py</code></td><td>A school's own email and WhatsApp; fallbacks; encryption; safe hosts.</td></tr>
+<tr><td><code>write_paths_delivery.py</code></td><td>A school's own email and SMS; fallbacks; encryption; safe hosts.</td></tr>
 <tr><td><code>write_paths_numbering_rules.py</code></td><td>Numbering patterns: the console, the language, candidates and students.</td></tr>
 <tr><td><code>write_paths_question_banks.py</code>, <code>_bank_locks.py</code></td><td>The standard banks, importing, a new school's first exam, locking.</td></tr>
 <tr><td><code>write_paths_term_grading.py</code></td><td>Exam 60 + CA 40: weights, scaling, rounding, workflow, visibility.</td></tr>
 <tr><td><code>write_paths_report_cards.py</code></td><td>When a report card is ready, its content, comments, signatures, both portals.</td></tr>
 <tr><td><code>write_paths_class_billing.py</code></td><td>Billing a whole class: the roster, batches, billing again charges nobody twice, a new fee reaches the class without re-charging the old ones, and students in another class, a fee not assigned to the class, a bad billing period and an oversize batch are all refused.</td></tr>
-<tr><td><code>write_paths_finance.py</code>, <code>_receipts.py</code></td><td>Fees, paid/unpaid, payments, allocations, parents' alerts; the receipt PDF, its email and WhatsApp, the signature, one design per school.</td></tr>
+<tr><td><code>write_paths_finance.py</code>, <code>_receipts.py</code></td><td>Fees, paid/unpaid, payments, allocations, parents' alerts; the receipt PDF, its email and SMS, the signature, one design per school.</td></tr>
 <tr><td><code>write_paths_paystack.py</code></td><td>A school's own Paystack account end to end: starting a payment, the callback and the webhook (including a racing pair, and a bad signature), reconciling one stuck 'pending'; refunding a payment made online - the permission gate, a duplicate-attempt refusal, a webhook confirming or failing the refund, and reconciling a refund whose webhook never arrived - all against a fake Paystack.</td></tr>
 <tr><td><code>write_paths_candidate_results.py</code></td><td>A candidate's result image carries the right school and leaks nothing. Needs Chrome or Chromium.</td></tr>
 <tr><td><code>write_paths_session_guard.py</code>, <code>_rate_limits.py</code>, <code>_upload_access.py</code>, <code>_upload_limits.py</code></td><td>Restart sign-out (exam sitters kept), password changes, headers, trusted proxies; shared limits; who may open which files; every upload's limit and explanations.</td></tr>
@@ -55,7 +55,7 @@
 <ul>
   <li><strong>{{ file('tests/verification/_pg.py') }}</strong> sets up the throwaway databases. It gives each run a unique prefix and a database-name template with a literal <code>{slug}</code>, so every school under test gets its own database. (An earlier bug percent-encoded those braces, so every test school silently shared one database and isolation checks passed or failed for the wrong reasons; keep that in mind when touching it.)</li>
   <li>The scripts call the Flask application <em>in process</em> through its test client, with hostnames like <code>posts.portal.test</code>, so the real resolver, real sessions and real CSRF are all in play.</li>
-  <li><strong>The outside world is stood in for at the last step.</strong> A fake SMTP connection and a fake <code>urlopen</code> catch email and WhatsApp, so the real sending code (including building a PDF) runs but nothing leaves the machine.</li>
+  <li><strong>The outside world is stood in for at the last step.</strong> A fake SMTP connection and a fake <code>urlopen</code> catch email and SMS, so the real sending code (including building a PDF) runs but nothing leaves the machine.</li>
   <li>They set <code>A.app.config['BACKGROUND_INLINE'] = True</code> so messages to parents are sent at once and can be inspected ({{ file('core/jobs.py') }}).</li>
   <li>An <code>Actor</code> is one browser with its own cookies; <code>check(name, ok, detail)</code> records a result; <code>sql(...)</code>/<code>one(...)</code> read the school's database directly to confirm a row was written.</li>
 </ul>

@@ -10,10 +10,16 @@ account rather than getting two. A parent's password can be reset to a new one-t
 time.</p>
 <p>The Parents card is also on the School workspace's Overview, under People, beside Students.</p>
 
-<h2 id="feedback">Parent feedback</h2>
-<p>A parent can send feedback or a question from their own portal; it appears under
-<a href="{{ url_for('admin_school_parent_feedback') }}">Parents' Feedback</a> to be assigned, replied
-to and resolved by whoever holds that permission.</p>
+<h2 id="feedback">Messages with parents</h2>
+<p>Conversations with parents live on the <strong>Parents</strong> tab of
+<a href="{{ url_for('admin_messages', tab='parents') }}">Messages</a>. A parent can send a question or
+feedback from their own portal; or a member of staff can reach a student's parent first with
+<strong>New message</strong> — search for the student, choose the parent, and write. The parent is told
+by email and SMS and replies from their portal.</p>
+<p>Any administrator who may manage parent messages can answer any conversation they can see. The
+conversation shows who is <em>currently responding</em> (whoever replied last, or whoever pressed
+<strong>I'll respond</strong>), and every reply carries its writer's name. Each conversation is marked
+Open, In progress or Resolved; conversations waiting for an answer are listed first.</p>
 
 <h2 id="notices">What a parent is told, automatically</h2>
 <p>A linked parent is told, without anyone at the school having to remember to tell them, whenever:</p>
@@ -24,8 +30,8 @@ to and resolved by whoever holds that permission.</p>
   <li>an exam or test timetable is released.</li>
 </ul>
 <p>Each of these goes out as an in-app alert on the parent's own dashboard, and — where the school has
-set up its own mail server and WhatsApp account under
-<a href="{{ url_for('admin_school_delivery') }}">Email &amp; WhatsApp</a> — by email and WhatsApp too.</p>
+set up its own mail server and SMS account under
+<a href="{{ url_for('admin_school_delivery') }}">Email &amp; SMS</a> — by email and SMS too.</p>
 
 <h2 id="archived-children">A child who has left the school</h2>
 <p>When a student is archived, their own sign-in stops working. Their parents keep full access to their record on the

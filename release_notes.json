@@ -18,6 +18,64 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.7: one Messages page for colleagues and parents, a Settings page, in-page report cards, and a stricter email setup step.",
+      "version": "2.20.26.8",
+      "date": "2026-10-09",
+      "title": "Messages, Settings and a faster report cards page",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Messages now has two tabs: Administrators and Parents. You can start a conversation with a student's parent yourself (New message), and any administrator who manages parent messages can answer any conversation. Each conversation shows who is currently responding, every reply shows the name of whoever wrote it, and the Open, In progress and Resolved status is kept. Parents' Feedback has moved into Messages.",
+          "help": "families"
+        },
+        {
+          "audience": "staff",
+          "text": "The menu is shorter: Settings now holds School profile, Academic sessions, Report card settings, Email & SMS, Online payments, Receipts, Administration, Controls & alerts, the Activity log and Online now, grouped and with a search box.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "The Report cards page is redesigned. Pick a class, session and term across the top and the students load right on the page with a loading indicator. Beside each student, Comment and Rate traits open a small window, and My signature opens one too. The separate comment and trait pages are gone.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "In the setup checklist, Connect email and SMS is no longer ticked off while the school still sends from the platform's shared address. It is now marked as important and is done once the school connects its own email or SMS account.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "family",
+          "text": "The parent portal has been redesigned. Your children now sit side by side on the dashboard, each showing fees owing, average and completion at a glance and opening for more. Notifications scroll instead of growing the page, a child's profile is split into Overview, Results, Work and Messages, and the fee account is easier to read and pay from."
+        },
+        {
+          "audience": "family",
+          "text": "The attendance and exam timetable pages are redesigned. Attendance shows the attendance rate, how the days divided, the days to note, and every day laid out by month. The timetable picks out the next paper and lists each day with its papers."
+        },
+        {
+          "audience": "student",
+          "text": "Your attendance and exam timetable pages are redesigned. Attendance shows your attendance rate and the days you were late, absent or excused. The timetable picks out your next paper and lists each day with its papers."
+        },
+        {
+          "audience": "family",
+          "text": "Message the school now looks like a chat: your conversations on the left, the open one on the right, and every message shows the name of the member of staff who wrote it."
+        },
+        {
+          "audience": "staff",
+          "text": "Parents now get a text message (SMS, through BulkSMS Nigeria) when a report card is released, a new fee is charged, a payment is recorded, and when the school starts a conversation with them. WhatsApp is no longer used: Email & WhatsApp is now Email & SMS. Whether each school connects its own SMS account or the platform's account is used is set by the platform.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Class teachers now get a notification in their bell two days before a student in their class has a birthday.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "family",
+          "text": "You now get a text message for a released report card, a new fee, a payment received, and when the school starts a conversation with you. The school can now message you first. Messages from the school appear under Message school, with the name of the member of staff who wrote each one, and you can reply there."
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.6: Back button, faster fee items and payments, Review assessment, alerts.",
       "version": "2.20.26.7",
       "date": "2026-10-08",

@@ -1,63 +1,114 @@
+{% extends 'parent_base.html' %}
 {% from 'includes/_nav_icons.html' import icon %}
-{% from 'includes/_school_mark.html' import school_mark %}
+{% block title %}Messages{% endblock %}
 {#-
-  "Message the school": start a new conversation (optionally about one child), and carry on
-  every existing one — active conversations can be replied to here, resolved ones are kept
-  read-only below them.
+  "Message the school", laid out like a chat room: your conversations down the left, the open one on the
+  right with every message labelled by who wrote it (you, or the member of staff by name), and a box to
+  answer at the bottom. A new conversation is a form in the same place. An active conversation can be
+  replied to; a resolved one is kept to read.
 -#}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Message the School — Parent Portal</title>
-<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
-</head>
-<body class="school-ui">{{ connectivity_banner() }}
-<a class="skip-link" href="#main">Skip to main content</a>
+{% block content %}
+{% set wants_new = errors or request.args.get('student') %}
+{% set ids = feedback|map(attribute='id')|list %}
+{% if wants_new or not feedback %}{% set start = 'new' %}
+{% elif open_id and open_id in ids %}{% set start = open_id %}
+{% else %}{% set start = feedback[0].id %}{% endif %}
 
-<header class="fp-bar">
-  <a class="fp-bar__brand" href="{{ url_for('parent_dashboard') }}">
-    {{ school_mark(school_brand) }}
-    <span class="fp-bar__brand-text">
-      <span class="fp-bar__name">{{ school_brand.name }}</span>
-      <span class="fp-bar__kind">Parent Portal</span>
-    </span>
-  </a>
-  <div class="fp-bar__actions">
-    <a class="fp-bar__link" href="{{ url_for('parent_dashboard') }}">{{ icon('dashboard') }} Dashboard</a>
-    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
-  </div>
-</header>
+{% for e in errors %}<div class="ui-alert ui-alert--error" role="alert">{{ e }}</div>{% endfor %}
 
-<main class="fp-main" id="main">
+<div class="pp-chat{% if wants_new or open_id %} is-open{% endif %}" id="pp-chat" data-start="{{ start }}">
 
-  <section class="fp-hero">
-    <div>
-      <p class="fp-hero__eyebrow">Parent support</p>
-      <h1>Message the school</h1>
-      <p class="fp-hero__meta">Send a question, feedback or concern to the school team assigned to parent communication. You'll get an email and WhatsApp alert as soon as they reply.</p>
+  {# ---------------------------------------------------------------- conversations #}
+  <aside class="pp-chat__list" aria-label="Your conversations">
+    <div class="pp-chat__listhead">
+      <h1>Messages</h1>
+      <a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('parent_feedback', student=request.args.get('student') or None) }}" data-thread="new">{{ icon('edit', 'ico-sm') }} New</a>
     </div>
-  </section>
+    <ul class="pp-chat__threads">
+      {% for f in feedback %}
+      {% set rs = replies.get(f.id, []) %}
+      {% set last = rs[-1] if rs else none %}
+      {% set preview = last.body if last else f.body %}
+      <li>
+        <a class="pp-thread{% if start == f.id %} is-on{% endif %}" href="{{ url_for('parent_feedback', c=f.id) }}" data-thread="{{ f.id }}">
+          <span class="pp-thread__top"><strong>{{ f.subject }}</strong><time>{{ (last.created_at if last else f.created_at)[5:10] }}</time></span>
+          <span class="pp-thread__about">{{ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message' }}</span>
+          <span class="pp-thread__preview">{% if last %}{{ 'You: ' if last.is_parent else (last.admin_name ~ ': ') }}{% endif %}{{ preview|truncate(70) }}</span>
+          <span class="pp-chip-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="pp-empty pp-empty--flat"><strong>No conversations yet</strong><span>Start one with New.</span></li>
+      {% endfor %}
+    </ul>
+  </aside>
 
-  {% for e in errors %}
-  <div class="ui-alert ui-alert--error" role="alert">{{ e }}</div>
-  {% endfor %}
+  {# ---------------------------------------------------------------- the open conversation #}
+  <section class="pp-chat__pane">
 
-  <section class="fp-panel">
-    <p class="fp-panel__eyebrow">Start a new conversation</p>
-    <h2>Ask the school something new</h2>
-    <p class="fp-panel-note">For an existing conversation, reply directly inside it below instead of starting another one.</p>
-    <form enctype="multipart/form-data" method="post">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <div class="fp-form-grid">
+    {% for f in feedback %}
+    {% set rs = replies.get(f.id, []) %}
+    <div class="pp-conv" id="conv-{{ f.id }}" data-conv="{{ f.id }}"{% if start != f.id %} hidden{% endif %}>
+      <header class="pp-conv__head">
+        <button type="button" class="pp-back" data-back aria-label="Back to conversations">{{ icon('arrow-left') }}</button>
+        <div class="pp-conv__title">
+          <strong>{{ f.subject }}</strong>
+          <small>{{ 'About ' ~ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message to the school' }}
+            · {% if f.status == 'resolved' %}Resolved{% elif f.assigned_name %}<b>{{ f.assigned_name }}</b> is responding{% else %}Waiting for the school{% endif %}</small>
+        </div>
+        <span class="pp-chip-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
+      </header>
+
+      <div class="pp-feed-chat" data-feed tabindex="0" aria-label="Messages in {{ f.subject }}">
+        {% set day = namespace(v='') %}
+        {% if f.body %}
+          {% set day.v = f.created_at[:10] %}
+          <div class="pp-day"><span>{{ f.created_at[:10] }}</span></div>
+          <div class="pp-msg pp-msg--me">
+            <div class="pp-msg__bubble">
+              <div class="pp-msg__who">You</div>
+              <div class="pp-msg__text">{{ f.body }}</div>
+              {% if f.attachment_path %}<a class="pp-msg__file" href="{{ url_for('parent_feedback_attachment', feedback_id=f.id) }}" target="_blank" rel="noopener">{{ icon('folder', 'ico-sm') }} {{ f.attachment_name or 'Attachment' }}</a>{% endif %}
+              <time>{{ f.created_at[11:16] }}</time>
+            </div>
+          </div>
+        {% endif %}
+        {% for r in rs %}
+          {% if r.created_at[:10] != day.v %}{% set day.v = r.created_at[:10] %}<div class="pp-day"><span>{{ day.v }}</span></div>{% endif %}
+          <div class="pp-msg {{ 'pp-msg--me' if r.is_parent else 'pp-msg--school' }}">
+            <div class="pp-msg__bubble">
+              <div class="pp-msg__who">{% if r.is_parent %}You{% else %}{{ r.admin_name or 'School staff' }} <span>School</span>{% endif %}</div>
+              <div class="pp-msg__text">{{ r.body }}</div>
+              <time>{{ r.created_at[11:16] }}</time>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if f.status == 'resolved' %}
+      <div class="pp-conv__closed">The school has marked this conversation resolved. <a href="{{ url_for('parent_feedback', student=f.student_id or None) }}" data-thread="new">Start a new one</a> if you need more help.</div>
+      {% else %}
+      <form class="pp-composer" method="post" action="{{ url_for('parent_feedback_reply', feedback_id=f.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label class="sr-only" for="reply-{{ f.id }}">Your reply</label>
+        <textarea id="reply-{{ f.id }}" class="ui-input" name="body" rows="1" maxlength="5000" placeholder="Write a reply…" required data-enter-send></textarea>
+        <button class="ui-btn ui-btn--primary" type="submit">Send {{ icon('send', 'ico-sm') }}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {# ---------------------------------------------------------------- a new conversation #}
+    <div class="pp-conv" id="conv-new" data-conv="new"{% if start != 'new' %} hidden{% endif %}>
+      <header class="pp-conv__head">
+        <button type="button" class="pp-back" data-back aria-label="Back to conversations">{{ icon('arrow-left') }}</button>
+        <div class="pp-conv__title"><strong>New conversation</strong><small>Goes to the school team. You get an email alert when they reply.</small></div>
+      </header>
+      <form class="pp-new" enctype="multipart/form-data" method="post" action="{{ url_for('parent_feedback') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <div class="ui-field">
-          <label>Child <span class="fp-optional">(optional)</span></label>
-          <select name="student_id" class="ui-input">
+          <label for="new-child">About <span class="fp-optional">(optional)</span></label>
+          <select id="new-child" name="student_id" class="ui-input">
             <option value="">General message to the school</option>
             {% for c in children %}
             <option value="{{ c.id }}" {% if request.args.get('student')|int == c.id or form and form.get('student_id')|int == c.id %}selected{% endif %}>{{ c.first_name }} {{ c.last_name }} · {{ c.class_name or 'Class not assigned' }}</option>
@@ -65,92 +116,20 @@
           </select>
         </div>
         <div class="ui-field">
-          <label>Subject</label>
-          <input type="text" class="ui-input" name="subject" value="{{ form.get('subject', '') if form else '' }}" placeholder="e.g. Question about Mathematics assignment" required>
+          <label for="new-subject">Subject</label>
+          <input id="new-subject" type="text" class="ui-input" name="subject" maxlength="150" value="{{ form.get('subject', '') if form else '' }}" placeholder="e.g. Question about Mathematics assignment" required>
         </div>
-        <div class="ui-field fp-field-wide">
-          <label>Your message</label>
-          <textarea class="ui-input" name="body" rows="5" placeholder="Write your feedback or message to the school..." required>{{ form.get('body', '') if form else '' }}</textarea>
+        <div class="ui-field">
+          <label for="new-body">Message</label>
+          <textarea id="new-body" class="ui-input" name="body" rows="7" maxlength="5000" placeholder="Write your message to the school…" required>{{ form.get('body', '') if form else '' }}</textarea>
         </div>
-      </div>
-      <div class="fp-form-actions">
-        <div class="fp-attach">{% include 'includes/_chat_attachment_input.html' %}</div>
-        <button class="ui-btn ui-btn--primary" type="submit">Send message {{ icon('send', 'ico-sm') }}</button>
-      </div>
-    </form>
+        <div class="pp-new__foot">
+          <div class="fp-attach">{% include 'includes/_chat_attachment_input.html' %}</div>
+          <button class="ui-btn ui-btn--primary" type="submit">Send message {{ icon('send', 'ico-sm') }}</button>
+        </div>
+      </form>
+    </div>
   </section>
-
-  {% set active_threads = feedback|selectattr('status', 'ne', 'resolved')|list %}
-  {% set resolved_threads = feedback|selectattr('status', 'equalto', 'resolved')|list %}
-
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div><h2>Active conversations</h2></div>
-      <span class="fp-count">{{ active_threads|length }}</span>
-    </div>
-    {% for f in active_threads %}
-    <div class="fp-thread">
-      <div class="fp-thread__head">
-        <div><strong>{{ f.subject }}</strong><span class="fp-row__sub">{{ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message' }} · {{ f.created_at[:10] }}</span></div>
-        <span class="fp-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
-      </div>
-      <div class="fp-thread__feed">
-        <div class="fp-bubble is-out">
-          <div>{{ f.body }}</div>
-          {% if f.attachment_path %}<a class="pf-attachment-link" href="{{ url_for('parent_feedback_attachment', feedback_id=f.id) }}" target="_blank" rel="noopener">Attachment: {{ f.attachment_name or 'file' }}</a>{% endif %}
-          <span class="fp-bubble__time">You · {{ f.created_at[:16].replace('T', ' ') }} UTC</span>
-        </div>
-        {% for r in replies.get(f.id, []) %}
-        <div class="fp-bubble {% if r.is_parent %}is-out{% else %}is-in{% endif %}">
-          <div>{{ r.body }}</div>
-          <span class="fp-bubble__time">{{ 'You' if r.is_parent else r.admin_name }} · {{ r.created_at[:16].replace('T', ' ') }} UTC</span>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="fp-reply">
-        <form method="post" action="{{ url_for('parent_feedback_reply', feedback_id=f.id) }}">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <textarea class="ui-input" name="body" rows="1" placeholder="Reply to the school…" required></textarea>
-          <button class="ui-btn ui-btn--primary ui-btn--sm" type="submit">Send</button>
-        </form>
-      </div>
-    </div>
-    {% else %}
-    <div class="fp-empty"><strong>No active conversations.</strong></div>
-    {% endfor %}
-  </section>
-
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div><h2>Resolved</h2></div>
-      <span class="fp-count">{{ resolved_threads|length }}</span>
-    </div>
-    {% for f in resolved_threads %}
-    <div class="fp-thread">
-      <div class="fp-thread__head">
-        <div><strong>{{ f.subject }}</strong><span class="fp-row__sub">{{ f.first_name ~ ' ' ~ f.last_name if f.first_name else 'General message' }} · {{ f.created_at[:10] }}</span></div>
-        <span class="fp-status is-{{ f.status }}">{{ f.status|replace('_', ' ')|title }}</span>
-      </div>
-      <div class="fp-thread__feed">
-        <div class="fp-bubble is-out">
-          <div>{{ f.body }}</div>
-          {% if f.attachment_path %}<a class="pf-attachment-link" href="{{ url_for('parent_feedback_attachment', feedback_id=f.id) }}" target="_blank" rel="noopener">Attachment: {{ f.attachment_name or 'file' }}</a>{% endif %}
-          <span class="fp-bubble__time">You · {{ f.created_at[:16].replace('T', ' ') }} UTC</span>
-        </div>
-        {% for r in replies.get(f.id, []) %}
-        <div class="fp-bubble {% if r.is_parent %}is-out{% else %}is-in{% endif %}">
-          <div>{{ r.body }}</div>
-          <span class="fp-bubble__time">{{ 'You' if r.is_parent else r.admin_name }} · {{ r.created_at[:16].replace('T', ' ') }} UTC</span>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="fp-resolved-note">This conversation has been marked resolved. Start a new conversation above if you need further help.</div>
-    </div>
-    {% else %}
-    <div class="fp-empty"><strong>No resolved conversations yet.</strong></div>
-    {% endfor %}
-  </section>
-
-</main>
-<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script></body>
-</html>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='parent-portal.js', v='1') }}"></script>{% endblock %}

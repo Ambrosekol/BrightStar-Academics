@@ -37,7 +37,7 @@
 
   {% if v.name == 'BRIGHTSTARS_DELIVERY_KEY' %}
     <div class="flash" style="margin-top:18px">This key cannot be changed directly — doing so would make every
-      school's saved mail, WhatsApp and payment secrets unreadable at once. Use the
+      school's saved mail, SMS and payment secrets unreadable at once. Use the
       <a href="{{ url_for('platform_settings_rotate_key') }}">rotation wizard</a> instead, which moves every
       school's secrets to the new key first.</div>
   {% elif editable %}

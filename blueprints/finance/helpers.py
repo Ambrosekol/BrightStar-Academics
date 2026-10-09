@@ -26,9 +26,9 @@ from models import (
 from core import theme
 from core.branding import receipt_prefix, school_brand, school_name
 from core.db_helpers import all_rows, one, one_scalar, _flatten
-from core.delivery import GRAPH_URL, email_settings, send_email, whatsapp_settings
+from core.delivery import email_settings, send_email
 from core.jobs import job_handler
-from core.notifications import _ng_phone
+from core.notifications import _ng_phone, _notify_parents_sms, _parent_sms_numbers, payment_sms_text
 from core.security import admin_has_permission, current_admin, is_school_admin
 from core.storage import read_upload_bytes, save_upload_bytes
 from core.uploads import STATIC
@@ -248,7 +248,7 @@ def _send_email_receipt(payment_id):
     if not row: return False,'Receipt not found.'
     if row['status']=='voided': return False,'This payment has been voided, so its receipt is not sent.'
     settings=email_settings()
-    if settings is None: return False,'Email delivery is not set up for this school. A school administrator can add it under Email & WhatsApp.'
+    if settings is None: return False,'Email delivery is not set up for this school. A school administrator can add it under Email & SMS.'
     recipient=(row['guardian_email'] or '').strip()
     if not recipient: return False,'This student has no parent/guardian email address.'
     pdf,_=_receipt_pdf(payment_id)
@@ -267,29 +267,19 @@ def _send_email_receipt(payment_id):
         return True,recipient
     except Exception as exc: return False,f'Email delivery failed: {exc}'
 
-def _send_whatsapp_receipt(payment_id):
+def _send_sms_receipt(payment_id):
+    """The text a parent gets when a payment is recorded (the PDF receipt itself goes by email)."""
     row=_receipt_payload(payment_id)
     if not row: return False,'Receipt not found.'
     if row['status']=='voided': return False,'This payment has been voided, so its receipt is not sent.'
-    settings=whatsapp_settings(); token,phone_id,version=((settings.token,settings.phone_id,settings.version) if settings else ('','','')); recipient=_ng_phone(row['guardian_phone'])
-    if settings is None: return False,'WhatsApp is not set up for this school. A school administrator can add it under Email & WhatsApp.'
-    if not recipient: return False,'This student has no valid parent/guardian WhatsApp number.'
-    pdf,_=_receipt_pdf(payment_id); boundary='----BrightstarsBoundary'+secrets.token_hex(8); url=f'{GRAPH_URL}/{version}/{phone_id}/media'
-    body=(f'--{boundary}\r\nContent-Disposition: form-data; name="messaging_product"\r\n\r\nwhatsapp\r\n--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{row["receipt_no"]}.pdf"\r\nContent-Type: application/pdf\r\n\r\n').encode()+pdf+(f'\r\n--{boundary}--\r\n').encode()
-    try:
-        req=urllib.request.Request(url,data=body,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':f'multipart/form-data; boundary={boundary}'})
-        with urllib.request.urlopen(req,timeout=30) as resp: media=json.loads(resp.read().decode())
-        media_id=media.get('id')
-        if not media_id: return False,'WhatsApp media upload returned no media ID.'
-        payload=json.dumps({'messaging_product':'whatsapp','to':recipient,'type':'document','document':{'id':media_id,'caption':f'Official payment receipt {row["receipt_no"]} — {_student_display(row)}','filename':f'{row["receipt_no"]}.pdf'}}).encode(); req2=urllib.request.Request(f'{GRAPH_URL}/{version}/{phone_id}/messages',data=payload,method='POST',headers={'Authorization':f'Bearer {token}','Content-Type':'application/json'})
-        with urllib.request.urlopen(req2,timeout=30) as resp: result=json.loads(resp.read().decode())
-        return True,result.get('messages',[{}])[0].get('id',recipient)
-    except urllib.error.HTTPError as exc: return False,f'WhatsApp API error {exc.code}: {exc.read().decode(errors="replace")[:500]}'
-    except Exception as exc: return False,f'WhatsApp delivery failed: {exc}'
+    sent,detail=_notify_parents_sms(row['student_id'],row['guardian_phone'],
+                                    payment_sms_text(_student_display(row),float(row['amount'] or 0),row.get('category') or 'School Fees',row['receipt_no']),
+                                    kind='payment_recorded')
+    return (True,f'{sent} text{"" if sent==1 else "s"} sent') if sent else (False,detail or 'No text was sent.')
 
 @job_handler('send_payment_receipt')
 def _send_payment_receipt_to_guardian(payment_id, actor_id):
-    """Send a newly recorded payment's receipt to the guardian by email and by WhatsApp.
+    """Send a newly recorded payment's receipt to the guardian by email, and a payment text by SMS.
 
     This is what makes telling the parents automatic: nobody has to remember to press "send". Each
     attempt is logged like a hand-sent one, so the bursar can see on the receipt page whether it
@@ -299,7 +289,7 @@ def _send_payment_receipt_to_guardian(payment_id, actor_id):
     row=_receipt_payload(payment_id)
     if not row or row['status']=='voided': return
     for channel,send,contact in (('email',_send_email_receipt,row['guardian_email']),
-                                 ('whatsapp',_send_whatsapp_receipt,row['guardian_phone'])):
+                                 ('sms',_send_sms_receipt,', '.join(_parent_sms_numbers(row['student_id'],row['guardian_phone'])))):
         try:
             ok,msg=send(payment_id)
             _log_receipt_delivery(payment_id,channel,contact,ok,msg,actor_id)

@@ -11,6 +11,7 @@ from flask import Response, abort, render_template, request, session, url_for
 from app import ACADEMIC_TERMS, app
 from blueprints.parents.helpers import _parent_owns_student, parent_required
 from blueprints.school.timetable_data import entry_rows
+from blueprints.school.record_views import timetable_view
 from core.branding import school_brand
 from core.timetable_pdf import render_timetable_pdf
 from models import AcademicSession, Student, StudentEnrolment, db
@@ -51,7 +52,7 @@ def parent_child_timetable(student_id):
     sessions, session_row, term = _choice(current_session_id)
     rows = entry_rows([class_id], session_row.id, term, released_only=True) if (session_row and class_id) else []
     return render_template('timetable_view.html', sessions=sessions, session_row=session_row, term=term,
-                           terms=ACADEMIC_TERMS, rows=rows,
+                           terms=ACADEMIC_TERMS, rows=rows, **timetable_view(rows),
                            pdf_url=url_for('parent_child_timetable_pdf', student_id=student_id, session_id=session_row.id, term=term)
                            if (session_row and rows) else None,
                            back_url=url_for('parent_child_detail', student_id=student_id) + '#timetable',

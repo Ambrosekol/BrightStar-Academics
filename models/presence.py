@@ -41,7 +41,7 @@ class SchoolNotification(db.Model):
 
 
 class NotificationDeliveryLog(db.Model):
-    """Every attempt to email or WhatsApp a guardian about a school notice - a new assignment, a
+    """Every attempt to email or SMS a guardian about a school notice - a new assignment, a
     fee charged, a released report card or exam timetable - successful or not, so a school can
     answer "did she get it?" itself instead of asking a developer to read a server log. Payment
     receipts already have their own version of this (finance_delivery_logs); this is everything
@@ -53,7 +53,7 @@ class NotificationDeliveryLog(db.Model):
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'))
     kind = db.Column(Text, nullable=False)  # 'work' | 'fee_assessed' | 'payment_recorded' | 'report_card_ready' | 'timetable_released'
-    channel = db.Column(Text, nullable=False)  # 'email' | 'whatsapp'
+    channel = db.Column(Text, nullable=False)  # 'email' | 'sms'
     recipient = db.Column(Text)
     status = db.Column(Text, nullable=False)  # 'sent' | 'failed'
     detail = db.Column(Text)

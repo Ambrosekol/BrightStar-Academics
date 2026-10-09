@@ -24,6 +24,14 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(ROOT / '.env')
 
+# The developer's .env may hold the real mail account and the real SMS token. A test must never be able to reach
+# them: a verification run that releases report cards, charges fees or resets passwords would otherwise send real
+# emails and real text messages (to test addresses and numbers, and at the cost of real credit). Blanked here, before
+# the application reads the file, so nothing in a run can use them; a script that tests delivery sets its own.
+for _name in ('BRIGHTSTARS_SMS_API_TOKEN', 'BRIGHTSTARS_SMS_SENDER_ID', 'BRIGHTSTARS_SMTP_HOST', 'BRIGHTSTARS_SMTP_USER',
+              'BRIGHTSTARS_SMTP_PASSWORD', 'BRIGHTSTARS_SMTP_FROM'):
+    os.environ[_name] = ''
+
 import sqlalchemy as sa  # noqa: E402
 from sqlalchemy.engine import make_url  # noqa: E402
 
@@ -78,6 +86,23 @@ def _drop_stale(url):
         engine.dispose()
 
 
+def _build_schools_inline():
+    """A school is built on a background thread, and the page follows it with a progress poll. A script
+    that submits the new-school form and goes straight on to use the school needs it finished, so the
+    thread named ``create-school-<code>`` is run to completion right where it starts."""
+    import threading
+
+    real_start = threading.Thread.start
+
+    def start(self, *args, **kwargs):
+        if (self.name or '').startswith('create-school-'):
+            self.run()
+            return
+        return real_start(self, *args, **kwargs)
+
+    threading.Thread.start = start
+
+
 def setup(tag):
     """Point this process at a fresh, uniquely named registry database.
 
@@ -102,6 +127,8 @@ def setup(tag):
     # run's prefix and can be found and dropped again afterwards.
     os.environ['BRIGHTSTARS_SCHOOL_DB_TEMPLATE'] = url.set(
         database=f'{prefix}_{{slug}}').render_as_string(hide_password=False).replace('%7Bslug%7D', '{slug}')  # SQLAlchemy percent-encodes the braces; the template needs them literal
+
+    _build_schools_inline()
 
     def teardown():
         from control_plane.routing import dispose_engines

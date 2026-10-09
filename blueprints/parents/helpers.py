@@ -49,6 +49,8 @@ def _parent_children(pid, with_session=False):
     """
     cols=[Student,ParentStudentLink.relationship,SchoolClass.name.label('class_name'),
           AcademicSession.name.label('session_name')]
+    if with_session:
+        cols.append(StudentEnrolment.session_id.label('session_id'))
     stmt=(select(*cols)
           .select_from(ParentStudentLink)
           .join(Student,and_(Student.id==ParentStudentLink.student_id,or_(Student.active==1,Student.archived_at.isnot(None))))
@@ -59,7 +61,7 @@ def _parent_children(pid, with_session=False):
     stmt=stmt.where(ParentStudentLink.parent_id==pid,ParentStudentLink.active==1)
     stmt=stmt.order_by(Student.first_name,Student.last_name,Student.id,
                        case((AcademicSession.is_current==1,0),else_=1),StudentEnrolment.id.desc())
-    extra=('relationship','class_name')+(('session_name',) if with_session else ())
+    extra=('relationship','class_name')+(('session_name','session_id') if with_session else ())
     children,seen=[],set()
     for r in all_rows(stmt):
         child=_flatten(r,'Student',*extra)
@@ -68,7 +70,7 @@ def _parent_children(pid, with_session=False):
     return children
 
 
-def _released_results(student_id, limit=None):
+def _released_results(student_id, limit=None, session_id=None):
     stmt=(select(SchoolStudentResult.score,SchoolStudentResult.max_score,
                  SchoolStudentResult.term,SchoolStudentResult.status,
                  SchoolSubject.name.label('subject_name'),
@@ -79,12 +81,14 @@ def _released_results(student_id, limit=None):
           .where(SchoolStudentResult.student_id==student_id,
                  SchoolStudentResult.status=='released')
           .order_by(SchoolStudentResult.id.desc()))
+    if session_id:
+        stmt=stmt.where(SchoolStudentResult.session_id==session_id)
     if limit:
         stmt=stmt.limit(limit)
     return all_rows(stmt)
 
 
-def _student_assignments(student_id, limit=None, with_id=True):
+def _student_assignments(student_id, limit=None, with_id=True, session_id=None):
     cols=([SchoolAssignment.id] if with_id else [])+[
         SchoolAssignment.title,SchoolAssignment.date_given,SchoolAssignment.due_date,
         SchoolAssignment.assignment_type,AssignmentStudent.status,
@@ -95,12 +99,14 @@ def _student_assignments(student_id, limit=None, with_id=True):
           .join(SchoolSubject,SchoolSubject.id==SchoolAssignment.subject_id)
           .where(AssignmentStudent.student_id==student_id,SchoolAssignment.active==1)
           .order_by(SchoolAssignment.date_given.desc(),SchoolAssignment.id.desc()))
+    if session_id:
+        stmt=stmt.where(SchoolAssignment.session_id==session_id)
     if limit:
         stmt=stmt.limit(limit)
     return all_rows(stmt)
 
 
-def _student_projects(student_id, limit=None, with_id=True):
+def _student_projects(student_id, limit=None, with_id=True, session_id=None):
     cols=([SchoolProject.id] if with_id else [])+[
         SchoolProject.title,SchoolProject.date_given,SchoolProject.due_date,
         SchoolProject.max_score,ProjectStudent.status,ProjectStudent.score,
@@ -110,9 +116,28 @@ def _student_projects(student_id, limit=None, with_id=True):
           .join(SchoolSubject,SchoolSubject.id==SchoolProject.subject_id)
           .where(ProjectStudent.student_id==student_id,SchoolProject.active==1)
           .order_by(SchoolProject.date_given.desc(),SchoolProject.id.desc()))
+    if session_id:
+        stmt=stmt.where(SchoolProject.session_id==session_id)
     if limit:
         stmt=stmt.limit(limit)
     return all_rows(stmt)
+
+
+def _child_sessions(student_id):
+    """The academic sessions a child has anything to show for - a place in a class, or a released result -
+    newest first, and the one to open on: the current session if the child is in it, else the latest.
+
+    Returns ``(sessions, default_id)``; ``sessions`` is a list of ``AcademicSession``.
+    """
+    ids=set(db.session.scalars(select(StudentEnrolment.session_id).where(
+        StudentEnrolment.student_id==student_id,StudentEnrolment.active==1)).all())
+    ids|=set(db.session.scalars(select(SchoolStudentResult.session_id).where(
+        SchoolStudentResult.student_id==student_id,SchoolStudentResult.status=='released').distinct()).all())
+    ids.discard(None)
+    sessions=db.session.scalars(select(AcademicSession).where(
+        AcademicSession.id.in_(ids or {0}),AcademicSession.active==1).order_by(AcademicSession.id.desc())).all()
+    default=next((x.id for x in sessions if x.is_current),sessions[0].id if sessions else None)
+    return sessions,default
 
 
 def _feedback_replies(feedback_ids):

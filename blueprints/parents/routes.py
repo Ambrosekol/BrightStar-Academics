@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
-from flask import Response, abort, flash, redirect, render_template, request, session, url_for
+from flask import Response, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import and_, func, or_, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -33,7 +33,7 @@ from models import (
 from core.branding import school_name
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_school_admin
-from core.notifications import _notify_guardian_email, _notify_guardian_whatsapp
+from core.notifications import _notify_guardian_email
 from core.session_guard import refresh_password_stamp
 from core.storage import delete_upload, read_upload_bytes, save_upload_bytes
 from core.uploads import ATTACHMENT_EXTENSIONS, attachment_kind
@@ -44,12 +44,77 @@ from blueprints.finance.helpers import (
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.school.report_card_data import student_periods
 from blueprints.parents.helpers import (
-    _assignment_metrics, _feedback_replies, _new_parent_password,
+    _assignment_metrics, _child_sessions, _feedback_replies, _new_parent_password,
     _parent_children, _parent_form_context, _parent_owns_student,
     _released_results, _student_assignments, _student_projects,
     parent_required,
 )
 
+
+def _parent_bell(pid,limit=8):
+    """The bell's contents: how many notices are unread, and the latest few."""
+    unread=one_scalar(select(func.count()).select_from(SchoolNotification).where(
+        SchoolNotification.recipient_type=='parent',SchoolNotification.recipient_id==pid,
+        SchoolNotification.read_at.is_(None)),0)
+    rows=db.session.scalars(select(SchoolNotification).where(
+        SchoolNotification.recipient_type=='parent',SchoolNotification.recipient_id==pid)
+        .order_by(SchoolNotification.id.desc()).limit(limit)).all()
+    return {'unread':unread,'items':[{'id':n.id,'title':n.title,'message':n.message,'category':n.category,
+                                      'created_at':(n.created_at or '')[:10],'unread':n.read_at is None,
+                                      'url':url_for('parent_notification_open',nid=n.id)} for n in rows]}
+
+@app.context_processor
+def inject_parent_menu():
+    """Who is signed in, and what is new for them, for the account menu and the bell in the parent
+    portal's top bar."""
+    pid=session.get('parent_id')
+    if not pid or not request.path.startswith('/parent'):
+        return {'parent_menu':None,'parent_bell':None}
+    row=one(select(ParentAccount.display_name,ParentAccount.email,ParentAccount.phone,ParentAccount.username)
+            .where(ParentAccount.id==pid))
+    if not row:
+        return {'parent_menu':None,'parent_bell':None}
+    return {'parent_menu':{'name':row['display_name'] or row['username'],
+                           'contact':row['email'] or row['phone'] or 'Parent account'},
+            'parent_bell':_parent_bell(pid)}
+
+@app.get('/parent/notifications/state')
+@parent_required
+def parent_notifications_state():
+    """The bell's numbers and latest notices, polled by the page so a new one appears without a reload."""
+    response=jsonify(_parent_bell(session['parent_id']))
+    response.headers['Cache-Control']='no-store'
+    return response
+
+@app.get('/parent/notifications/<int:nid>/open')
+@parent_required
+def parent_notification_open(nid):
+    """Open a notice: it is marked as read, then the person goes where it points."""
+    pid=session['parent_id']
+    row=db.session.scalars(select(SchoolNotification).where(
+        SchoolNotification.id==nid,SchoolNotification.recipient_type=='parent',
+        SchoolNotification.recipient_id==pid)).first()
+    if not row: abort(404)
+    if row.read_at is None:
+        row.read_at=datetime.now(timezone.utc).isoformat(); db.session.commit()
+    target=row.action_url or ''
+    # Only a page on this site: a notice must never be able to send a parent somewhere else.
+    if not target.startswith('/') or target.startswith('//') or '\\' in target:
+        target=url_for('parent_dashboard')
+    return redirect(target)
+
+@app.post('/parent/notifications/read-all')
+@parent_required
+@csrf_protect
+def parent_notifications_read_all():
+    pid=session['parent_id']
+    db.session.execute(sa_update(SchoolNotification).where(
+        SchoolNotification.recipient_type=='parent',SchoolNotification.recipient_id==pid,
+        SchoolNotification.read_at.is_(None)).values(read_at=datetime.now(timezone.utc).isoformat()))
+    db.session.commit()
+    if request.headers.get('Accept','').startswith('application/json'):
+        return jsonify(_parent_bell(pid))
+    return redirect(url_for('parent_dashboard'))
 
 @app.route('/parent/dashboard')
 @parent_required
@@ -61,21 +126,21 @@ def parent_dashboard():
     child_data=[]
     total_outstanding_all=0.0
     for child in _parent_children(pid,with_session=True):
-        assignments=_student_assignments(child['id'],limit=50)
+        assignments=_student_assignments(child['id'],limit=50,session_id=child['session_id'])
         avg,completion,trend=_assignment_metrics(assignments)
         # Across every session, not just the current one — a balance carried
         # over from a prior session must never silently disappear here.
         fee_summary=_finance_student_lifetime_totals(child['id'])
         total_outstanding_all+=fee_summary['outstanding']
         child_data.append({'child':child,
-                           'results':_released_results(child['id'],limit=50),
+                           'results':_released_results(child['id'],limit=50,session_id=child['session_id']),
                            'assignments':assignments,
-                           'projects':_student_projects(child['id'],limit=50),
+                           'projects':_student_projects(child['id'],limit=50,session_id=child['session_id']),
                            'avg':avg,'completion':completion,'trend':trend,
                            'fee_summary':fee_summary})
     notifications=db.session.scalars(select(SchoolNotification).where(
         SchoolNotification.recipient_type=='parent',SchoolNotification.recipient_id==pid)
-        .order_by(SchoolNotification.id.desc()).limit(15)).all()
+        .order_by(SchoolNotification.id.desc()).limit(40)).all()
     feedback=[_flatten(r,'ParentFeedback','first_name','last_name') for r in all_rows(
         select(ParentFeedback,Student.first_name,Student.last_name)
         .outerjoin(Student,Student.id==ParentFeedback.student_id)
@@ -127,9 +192,14 @@ def parent_child_detail(student_id):
                       StudentEnrolment.id.desc()).limit(1))
     if not row: abort(404)
     child=_flatten(row,'Student','relationship','class_name','session_name')
-    assignments=_student_assignments(student_id,with_id=False)
-    projects=_student_projects(student_id,with_id=False)
-    results=_released_results(student_id)
+    # Assignments, projects and results are shown one academic session at a time.
+    child_sessions,default_session=_child_sessions(student_id)
+    wanted=request.args.get('session_id',type=int)
+    chosen=next((x for x in child_sessions if x.id==wanted),None) or next((x for x in child_sessions if x.id==default_session),None)
+    chosen_id=chosen.id if chosen else None
+    assignments=_student_assignments(student_id,with_id=False,session_id=chosen_id) if chosen_id else []
+    projects=_student_projects(student_id,with_id=False,session_id=chosen_id) if chosen_id else []
+    results=_released_results(student_id,session_id=chosen_id) if chosen_id else []
     feedback=db.session.scalars(select(ParentFeedback).where(
         ParentFeedback.parent_id==pid,ParentFeedback.student_id==student_id)
         .order_by(ParentFeedback.id.desc()).limit(10)).all()
@@ -140,7 +210,7 @@ def parent_child_detail(student_id):
     notif_rows=db.session.scalars(select(SchoolNotification).where(
         SchoolNotification.recipient_type=='parent',SchoolNotification.recipient_id==pid,
         SchoolNotification.student_id==student_id)
-        .order_by(SchoolNotification.id.desc()).limit(20)).all()
+        .order_by(SchoolNotification.id.desc()).limit(40)).all()
     notifications=[{'id':n.id,'title':n.title,'message':n.message,'category':n.category,
                     'action_url':n.action_url,'created_at':n.created_at,
                     'is_new':n.read_at is None} for n in notif_rows]
@@ -155,7 +225,8 @@ def parent_child_detail(student_id):
 
     return render_template('parent_child_detail.html',child=child,report_periods=student_periods(student_id),assignments=assignments,
         projects=projects,results=results,feedback=feedback,replies=replies,avg=avg,
-        completion=completion,trend=trend,fee_summary=fee_summary,notifications=notifications)
+        completion=completion,trend=trend,fee_summary=fee_summary,notifications=notifications,
+        siblings=_parent_children(pid),child_sessions=child_sessions,chosen_session=chosen)
 
 @app.route('/parent/children/<int:student_id>/finance')
 @parent_required
@@ -243,7 +314,7 @@ def parent_feedback():
         if not body: errors.append('Enter your feedback or message.')
         if len(body)>5000: errors.append('Please keep the message under 5,000 characters.')
         if errors:
-            return render_template('parent_feedback.html',parent=parent,children=children,errors=errors,form=request.form)
+            return _feedback_page(parent,children,errors,request.form)
 
         # An attachment is optional; the "Attach" button on the form posts it as "attachment".
         attachment_path=attachment_type=attachment_name=None
@@ -251,13 +322,10 @@ def parent_feedback():
         if file_obj and file_obj.filename:
             original_name=secure_filename(file_obj.filename)
             if not original_name:
-                return render_template('parent_feedback.html',parent=parent,children=children,
-                    errors=['The selected attachment has an invalid filename.'],form=request.form)
+                return _feedback_page(parent,children,['The selected attachment has an invalid filename.'],request.form)
             fext=os.path.splitext(original_name)[1].lower()
             if fext not in ATTACHMENT_EXTENSIONS:
-                return render_template('parent_feedback.html',parent=parent,children=children,
-                    errors=['That file type is not supported. Please attach an image, PDF, Word, text or Excel file.'],
-                    form=request.form)
+                return _feedback_page(parent,children,['That file type is not supported. Please attach an image, PDF, Word, text or Excel file.'],request.form)
             attachment_type=attachment_kind(fext)
             attachment_name=original_name
             uname=f'{uuid.uuid4().hex}{fext}'
@@ -296,11 +364,10 @@ def parent_feedback():
             db.session.add(thread); db.session.flush()
         except Exception:
             db.session.rollback(); discard_upload()
-            return render_template('parent_feedback.html',parent=parent,children=children,
-                errors=['Your message could not be sent. Please try again.'],form=request.form)
+            return _feedback_page(parent,children,['Your message could not be sent. Please try again.'],request.form)
         sender_name=parent.display_name if parent else 'A parent'
         notification_message=f'{sender_name}: {subject}'
-        exact_feedback_url=url_for('admin_school_parent_feedback_detail',feedback_id=thread.id)
+        exact_feedback_url=url_for('admin_messages',tab='parents',thread=thread.id)
         if assigned:
             targets=[assigned]
         else:
@@ -310,14 +377,28 @@ def parent_feedback():
             db.session.add(AdminNotification(admin_id=aid,title='New parent message',
                 message=notification_message,severity='info',
                 action_url=exact_feedback_url,created_at=now))
-        db.session.commit(); flash('Your message has been sent to the school.','success'); return redirect(url_for('parent_feedback'))
-    feedback=[_flatten(r,'ParentFeedback','first_name','last_name') for r in all_rows(
-        select(ParentFeedback,Student.first_name,Student.last_name)
-        .outerjoin(Student,Student.id==ParentFeedback.student_id)
-        .where(ParentFeedback.parent_id==pid)
-        .order_by(ParentFeedback.id.desc()).limit(20))]
+        db.session.commit(); flash('Your message has been sent to the school.','success'); return redirect(url_for('parent_feedback',c=thread.id))
+    feedback=_parent_threads(pid)
     replies=_feedback_replies([x['id'] for x in feedback])
-    return render_template('parent_feedback.html',parent=parent,children=children,feedback=feedback,replies=replies,errors=[],form={})
+    return render_template('parent_feedback.html',parent=parent,children=children,feedback=feedback,replies=replies,errors=[],form={},
+                           open_id=request.args.get('c',type=int))
+
+def _feedback_page(parent,children,errors,form):
+    """The Message-the-school page, re-shown with what went wrong and what the parent had typed."""
+    feedback=_parent_threads(parent.id)
+    return render_template('parent_feedback.html',parent=parent,children=children,feedback=feedback,
+                           replies=_feedback_replies([x['id'] for x in feedback]),errors=errors,form=form,open_id=None)
+
+def _parent_threads(pid):
+    """A parent's conversations, the most recently active first, each with the name of the member of
+    staff currently responding to it."""
+    Assigned=sa.orm.aliased(Admin)
+    return [_flatten(r,'ParentFeedback','first_name','last_name','assigned_name') for r in all_rows(
+        select(ParentFeedback,Student.first_name,Student.last_name,Assigned.display_name.label('assigned_name'))
+        .outerjoin(Student,Student.id==ParentFeedback.student_id)
+        .outerjoin(Assigned,Assigned.id==ParentFeedback.assigned_admin_id)
+        .where(ParentFeedback.parent_id==pid)
+        .order_by(ParentFeedback.updated_at.desc()).limit(30))]
 
 def _message_attachment_response(attachment_path,attachment_name):
     """A feedback attachment's bytes as a downloadable response, or 404 if it is gone."""
@@ -372,12 +453,12 @@ def parent_feedback_reply(feedback_id):
     if not row or row.parent_id!=pid: abort(404)
     if row.status=='resolved':
         flash('This conversation has been marked resolved. It can no longer be replied to.','error')
-        return redirect(url_for('parent_feedback'))
+        return redirect(url_for('parent_feedback',c=feedback_id))
     body=request.form.get('body','').strip()
     if not body:
-        flash('Enter a message before sending.','error'); return redirect(url_for('parent_feedback'))
+        flash('Enter a message before sending.','error'); return redirect(url_for('parent_feedback',c=feedback_id))
     if len(body)>5000:
-        flash('Please keep the message under 5,000 characters.','error'); return redirect(url_for('parent_feedback'))
+        flash('Please keep the message under 5,000 characters.','error'); return redirect(url_for('parent_feedback',c=feedback_id))
     now=datetime.now(timezone.utc).isoformat()
     db.session.add(ParentFeedbackReply(feedback_id=feedback_id,admin_id=None,body=body,created_at=now))
     row.updated_at=now
@@ -389,119 +470,55 @@ def parent_feedback_reply(feedback_id):
     for aid in notify_targets:
         db.session.add(AdminNotification(admin_id=aid,title='New reply from a parent',
             message=f'{sender_name}: {row.subject}',severity='info',
-            action_url=url_for('admin_school_parent_feedback_detail',feedback_id=feedback_id),
+            action_url=url_for('admin_messages',tab='parents',thread=feedback_id),
             created_at=now))
     db.session.commit()
     audit_log('parent_feedback_followup','school','parent_feedback',feedback_id)
     flash('Your message has been sent to the school.','success')
-    return redirect(url_for('parent_feedback'))
-
-@app.route('/admin/school/parent-feedback')
-@admin_required
-def admin_school_parent_feedback():
-    me=current_admin()
-    if not admin_has_permission(me['id'],'parent.feedback.view'): return admin_access_error('parent.feedback.view')
-    rows=[_flatten(r,'ParentFeedback','parent_name','parent_username','first_name',
-                   'last_name','class_id','class_name') for r in all_rows(
-        select(ParentFeedback,
-               ParentAccount.display_name.label('parent_name'),
-               ParentAccount.username.label('parent_username'),
-               Student.first_name,Student.last_name,
-               SchoolClass.id.label('class_id'),SchoolClass.name.label('class_name'))
-        .join(ParentAccount,ParentAccount.id==ParentFeedback.parent_id)
-        .outerjoin(Student,Student.id==ParentFeedback.student_id)
-        .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
-                                         StudentEnrolment.active==1))
-        .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
-        .order_by(sa.case((ParentFeedback.status=='open',0),
-                          (ParentFeedback.status=='in_progress',1),else_=2),
-                  ParentFeedback.id.desc()))]
-    if not me['admin_type_system']:
-        rows=[r for r in rows if not r['class_id'] or _school_class_allowed(me['id'],r['class_id'])]
-    replies=_feedback_replies([r['id'] for r in rows])
-    return render_template('admin_parent_feedback.html',feedback=rows,replies=replies)
-
-@app.route('/admin/school/parent-feedback/<int:feedback_id>')
-@admin_required
-def admin_school_parent_feedback_detail(feedback_id):
-    me=current_admin()
-    if not admin_has_permission(me['id'],'parent.feedback.view'): return admin_access_error('parent.feedback.view')
-    raw=one(select(ParentFeedback,
-                   ParentAccount.display_name.label('parent_name'),
-                   ParentAccount.username.label('parent_username'),
-                   ParentAccount.email.label('parent_email'),
-                   ParentAccount.phone.label('parent_phone'),
-                   Student.first_name,Student.last_name,
-                   SchoolClass.id.label('class_id'),SchoolClass.name.label('class_name'))
-            .join(ParentAccount,ParentAccount.id==ParentFeedback.parent_id)
-            .outerjoin(Student,Student.id==ParentFeedback.student_id)
-            .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
-                                             StudentEnrolment.active==1))
-            .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
-            .where(ParentFeedback.id==feedback_id))
-    if not raw: abort(404)
-    row=_flatten(raw,'ParentFeedback','parent_name','parent_username','parent_email',
-                 'parent_phone','first_name','last_name','class_id','class_name')
-    if not me['admin_type_system'] and row['class_id'] and not _school_class_allowed(me['id'],row['class_id']): return admin_access_error('parent feedback scope')
-    replies=_feedback_replies([feedback_id]).get(feedback_id,[])
-    return render_template('admin_parent_feedback_detail.html',feedback=row,replies=replies)
+    return redirect(url_for('parent_feedback',c=feedback_id))
 
 @app.post('/admin/school/parent-feedback/<int:feedback_id>/reply')
 @admin_required
 @csrf_protect
 def admin_school_parent_feedback_reply(feedback_id):
+    """Any administrator who may manage parent messages can answer any conversation they can see; the
+    reply carries their name and they become the one currently responding."""
+    from blueprints.parents.messaging import (
+        MAX_BODY, deliver_parent_alerts, in_scope, messages_url, notify_parent)
     me=current_admin()
     if not admin_has_permission(me['id'],'parent.feedback.manage'): return admin_access_error('parent.feedback.manage')
-    body=request.form.get('body','').strip()
-    if not body: flash('Enter a reply.','error'); return redirect(url_for('admin_school_parent_feedback'))
     row=obj(ParentFeedback,feedback_id)
     if not row: abort(404)
+    if not in_scope(me,row.student_id): return admin_access_error('parent feedback scope')
+    body=request.form.get('body','').replace('\r\n','\n').strip()
+    if not body: flash('Enter a reply.','error'); return redirect(messages_url(feedback_id))
+    if len(body)>MAX_BODY: flash(f'Please keep the reply under {MAX_BODY:,} characters.','error'); return redirect(messages_url(feedback_id))
     now=datetime.now(timezone.utc).isoformat()
     db.session.add(ParentFeedbackReply(feedback_id=feedback_id,admin_id=me['id'],body=body,created_at=now))
-    row.status='in_progress'; row.assigned_admin_id=me['id']; row.updated_at=now
-    db.session.add(SchoolNotification(
-        recipient_type='parent',recipient_id=row.parent_id,student_id=row.student_id,
-        category='feedback',title='School replied to your feedback',message=body,
-        action_url=url_for('parent_feedback'),created_at=now,created_by=me['id']))
+    row.status='in_progress'; row.closed_at=None; row.assigned_admin_id=me['id']; row.updated_at=now
+    notify_parent(row,body,me['id'])
     db.session.commit()
-    # Best-effort: a parent contact that's blank or a channel that's down must
-    # never break the in-app reply that just succeeded.
-    parent_contact=one(select(ParentAccount.email,ParentAccount.phone,ParentAccount.display_name)
-                       .where(ParentAccount.id==row.parent_id))
-    if parent_contact:
-        subject_line=f'School replied: {row.subject}' if row.subject else 'School replied to your message'
-        try:
-            _notify_guardian_email(parent_contact['email'],subject_line,
-                f"Dear {parent_contact['display_name'] or 'Parent/Guardian'},\n\n"
-                f"The school has replied to your message"
-                f"{f' ({row.subject})' if row.subject else ''}:\n\n{body}\n\n"
-                "Sign in to the parent portal to continue the conversation.\n\n"
-                f"{school_name()}")
-        except Exception: app.logger.exception('Parent feedback email notification failed for feedback %s',feedback_id)
-        try:
-            _notify_guardian_whatsapp(parent_contact['phone'],
-                f"{school_name()}: You have a reply to your message"
-                f"{f' ({row.subject})' if row.subject else ''}. "
-                "Sign in to the parent portal to view it.")
-        except Exception: app.logger.exception('Parent feedback WhatsApp notification failed for feedback %s',feedback_id)
+    deliver_parent_alerts(row,body)
     audit_log('parent_feedback_replied','school','parent_feedback',feedback_id)
-    return redirect(url_for('admin_school_parent_feedback'))
+    return redirect(messages_url(feedback_id))
 
 @app.post('/admin/school/parent-feedback/<int:feedback_id>/status')
 @admin_required
 @csrf_protect
 def admin_school_parent_feedback_status(feedback_id):
+    from blueprints.parents.messaging import in_scope, messages_url
     me=current_admin()
     if not admin_has_permission(me['id'],'parent.feedback.manage'): return admin_access_error('parent.feedback.manage')
     status=request.form.get('status','open')
     if status not in ('open','in_progress','resolved'): status='open'
     row=obj(ParentFeedback,feedback_id)
     if not row: abort(404)
+    if not in_scope(me,row.student_id): return admin_access_error('parent feedback scope')
     now=datetime.now(timezone.utc).isoformat()
     row.status=status; row.updated_at=now; row.closed_at=now if status=='resolved' else None
     db.session.commit()
     audit_log('parent_feedback_status_changed','school','parent_feedback',feedback_id,{'status':status})
-    return redirect(url_for('admin_school_parent_feedback'))
+    return redirect(messages_url(feedback_id))
 
 @app.route('/admin/school/parents')
 @admin_required

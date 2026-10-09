@@ -10,6 +10,7 @@ from flask import Response, render_template, request, session, url_for
 
 from app import ACADEMIC_TERMS, _student_with_enrolment, app
 from blueprints.school.timetable_data import entry_rows
+from blueprints.school.record_views import timetable_view
 from blueprints.student_portal.helpers import student_required
 from core.branding import school_brand
 from core.timetable_pdf import render_timetable_pdf
@@ -38,7 +39,7 @@ def student_timetable():
     sessions, session_row, term = _choice(student['session_id'])
     rows = entry_rows([student['class_id']], session_row.id, term, released_only=True) if (session_row and student['class_id']) else []
     return render_template('timetable_view.html', sessions=sessions, session_row=session_row, term=term,
-                           terms=ACADEMIC_TERMS, rows=rows,
+                           terms=ACADEMIC_TERMS, rows=rows, **timetable_view(rows),
                            pdf_url=url_for('student_timetable_pdf', session_id=session_row.id, term=term) if (session_row and rows) else None,
                            back_url=url_for('student_dashboard'), back_label='Back to my dashboard', title='My exam timetable',
                            home_url=url_for('student_dashboard'), home_kind='Student Portal', person_name=student['first_name'])

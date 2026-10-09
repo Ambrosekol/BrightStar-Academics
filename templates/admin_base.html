@@ -67,9 +67,6 @@
             {'label':'Fee Structure','endpoint':'admin_finance_fee_items','icon':'receipt','sub': true,
              'show': finance_shown and admin_has_permission(aid,'finance.manage'),
              'active': path.startswith('/admin/finance/fee-items')},
-            {'label':'Online Payments','endpoint':'admin_finance_paystack_settings','icon':'send','sub': true,
-             'show': finance_shown and is_school_admin_ui,
-             'active': path.startswith('/admin/finance/paystack')},
             {'label':'Library','endpoint':'admin_library','icon':'library',
              'show': signed and admin_has_permission(aid,'library.view'),
              'active': path.startswith('/admin/library')},
@@ -82,15 +79,9 @@
             {'label':'Parents','endpoint':'admin_school_parents','icon':'users',
              'show': signed and admin_has_permission(aid,'parent.view'),
              'active': path.startswith('/admin/school/parents')},
-            {'label':"Parents' Feedback",'endpoint':'admin_school_parent_feedback','icon':'message',
-             'show': signed and admin_has_permission(aid,'parent.feedback.view'),
-             'active': path.startswith('/admin/school/parent-feedback')},
-            {'label':'School profile','endpoint':'admin_school_branding','icon':'school',
-             'show': signed and is_school_admin_ui,
-             'active': path.startswith('/admin/school/branding')},
-            {'label':'Email & WhatsApp','endpoint':'admin_school_delivery','icon':'send',
-             'show': signed and is_school_admin_ui,
-             'active': path.startswith('/admin/school/delivery')},
+            {'label':'Messages','endpoint':'admin_messages','icon':'message','live': true,
+             'show': signed,
+             'active': ep == 'admin_messages' or path.startswith('/admin/school/parent-')},
         ] %}
     {% else %}
         {% set workspace_label = 'Entrance examination' %}
@@ -126,28 +117,24 @@
     {% endif %}
 
     {% set unread_title %}{% if admin_unread_messages %}{% if admin_unread_message_summaries|length == 1 %}New message from {{ admin_unread_message_summaries[0].sender_name }}{% else %}{{ admin_unread_messages }} unread messages{% endif %}{% endif %}{% endset %}
+    {#- Everything that is a setting, a control or a record of what happened lives behind one entry. -#}
+    {% set settings_shown = signed and (is_school_admin_ui or admin_has_permission(aid,'audit.view') or admin_has_permission(aid,'presence.view')
+                                        or admin_has_permission(aid,'report_cards.manage') or admin_has_permission(aid,'finance.manage')
+                                        or admin_has_permission(aid,'entrance.config.view')) %}
     {% set administration_items = [
-        {'label':'Administration','endpoint':'admin_administration','icon':'shield',
-         'show': signed and is_school_admin_ui,
-         'active': path.startswith('/admin/administration') and ep != 'admin_controls'},
-        {'label':'Academic Sessions','endpoint':'admin_school_sessions','icon':'calendar',
-         'show': signed and is_school_admin_ui,
-         'active': ep == 'admin_school_sessions'},
-        {'label':'Activity Log','endpoint':'admin_audit_logs','icon':'list',
-         'show': signed and admin_has_permission(aid,'audit.view'),
-         'active': ep == 'admin_audit_logs'},
-        {'label':'Controls & Alerts','endpoint':'admin_controls','icon':'alert',
+        {'label':'Settings','endpoint':'admin_settings','icon':'sliders',
          'badge': admin_unread_notifications,
-         'show': signed and admin_has_permission(aid,'audit.view'),
-         'active': ep in ('admin_controls','admin_lock_resource','admin_unlock_resource','admin_control_resolve')},
-        {'label':'Online Now','endpoint':'admin_presence','icon':'presence',
-         'show': signed and admin_has_permission(aid,'presence.view'),
-         'active': ep == 'admin_presence'},
+         'show': settings_shown,
+         'active': ep in ('admin_settings','admin_controls','admin_lock_resource','admin_unlock_resource','admin_control_resolve',
+                          'admin_school_sessions','admin_school_branding','admin_school_delivery','admin_audit_logs','admin_presence',
+                          'admin_school_report_card_settings','admin_finance_paystack_settings','admin_finance_receipt_settings')
+                   or path.startswith(('/admin/school/branding','/admin/school/delivery','/admin/school/report-cards/settings','/admin/finance/paystack'))
+                   or (path.startswith('/admin/administration') and not path.startswith(('/admin/administration/messages','/admin/administration/notifications')))},
     ] %}
     {% set sections = [
         {'label':'Workspace','items':[{'label':'Exit Workspace','endpoint':'admin_workspace_home','icon':'exit','show': true,'active': false}]},
         {'label': workspace_label,'items': workspace_items},
-        {'label':'Administration','items': administration_items},
+        {'label':'Manage','items': administration_items},
     ] %}
 {% endif %}
 <!doctype html>

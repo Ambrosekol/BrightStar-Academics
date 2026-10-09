@@ -142,7 +142,7 @@ r = create(c_pl, u_pl, name="Maroon Academy", code="maroon", school_motto="Ever 
            school_brand_primary="#7A1F3D", school_brand_accent="#0b6e4f",
            logo=upload("logo.png", marker=9), gallery=photos)
 check("a school is created with a logo, three photographs and its own colours",
-      r.status_code == 200 and "Maroon Academy is ready" in r.get_data(as_text=True)
+      r.status_code == 200 and "Building the school" in r.get_data(as_text=True)
       and info_for("maroon") is not None, str(r.status_code))
 check("its colours are stored normalised",
       setting("maroon", theme.PRIMARY_KEY) == "#7a1f3d" and setting("maroon", theme.ACCENT_KEY) == "#0b6e4f",
@@ -345,8 +345,9 @@ c_s.get(r.headers["Location"][len("http://selfserve.portal.test"):], base_url=u_
 c_s.get("/admin/workspace/school", base_url=u_s)
 
 home = c_s.get("/admin/school", base_url=u_s).get_data(as_text=True)
-check("the school's admin area offers a Branding page in its menu",
-      "/admin/school/branding" in home and "<span>School profile</span>" in home)
+settings_page = c_s.get("/admin/settings", base_url=u_s).get_data(as_text=True)
+check("the school's Settings page offers its profile and branding page",
+      "/admin/school/branding" in settings_page and "School profile &amp; branding" in settings_page)
 page = c_s.get("/admin/school/branding", base_url=u_s)
 html = page.get_data(as_text=True)
 check("the Branding page loads with colours, logo and photographs to manage",
@@ -457,12 +458,12 @@ with A.app.app_context(), tenant_context(info_for("selfserve")):
                                            granted_at="2026-01-01T00:00:00+00:00"))
     A.db.session.commit()
 r = c_clerk.get("/admin/school/branding", base_url=u_clerk)
-check("once a role is granted branding.manage, its holders can use the page",
-      r.status_code == 200 and "Save changes" in r.get_data(as_text=True), str(r.status_code))
+check("a role granted the old branding.manage permission still cannot open the page: branding is the school administrator's alone",
+      r.status_code == 403, str(r.status_code))
 r = c_clerk.post("/admin/school/branding/save", data={"_csrf_token": "t" * 32,
                  "school_brand_primary": "#123456", "school_brand_accent": theme.DEFAULT_ACCENT},
                  base_url=u_clerk, content_type="multipart/form-data")
-check("…and change the branding", r.status_code == 302 and setting("selfserve", theme.PRIMARY_KEY) == "#123456")
+check("…nor change the branding with it", r.status_code != 302 and setting("selfserve", theme.PRIMARY_KEY) is None, str(r.status_code))
 
 # A school that existed before this permission was introduced picks it up when the application
 # next starts (the same upgrade runs for every school), and its top-level admin holds it.
@@ -484,8 +485,8 @@ with A.app.app_context(), tenant_context(info_for("selfserve")):
             A.AdminTypePermission.permission_id == restored.id)))).all())
 check("an existing school gains the permission on upgrade, held by its top-level administrator",
       held)
-check("…and the upgrade grants it to no other role than the profile-manager preset",
-      spread == sorted([A.SCHOOL_ADMIN_ROLE, "School Profile Manager"]), str(spread))
+check("…and the upgrade grants it to no other role (the profile-manager preset is gone)",
+      spread == [A.SCHOOL_ADMIN_ROLE], str(spread))
 
 anon, u_anon = client("selfserve.portal.test")
 check("signed-out visitors cannot reach the page or save",

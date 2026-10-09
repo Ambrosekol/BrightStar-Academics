@@ -60,7 +60,7 @@
     <h1>Administrators</h1>
     <p class="hero-copy">Everyone who can sign in to the school's administration, what they can do, and whether their access is on.</p>
   </div>
-  <div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_account_new') }}">+ Add administrator</a></div>
+  <div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_account_new') }}">+ Create staff</a></div>
 </div>
 
 <div class="adm-stats" aria-label="Summary">
@@ -146,7 +146,7 @@
 {% else %}
 <div class="adm-empty">
   <strong>{% if q %}No administrators match “{{ q }}”.{% elif status=='suspended' %}No administrators are suspended.{% elif status=='active' %}No administrators are active.{% else %}No administrators yet.{% endif %}</strong>
-  <p style="margin:8px 0 0">{% if q or status != 'all' %}<a href="{{ url_for('admin_accounts') }}">Show everyone</a>{% else %}<a href="{{ url_for('admin_account_new') }}">Add the first administrator</a>{% endif %}</p>
+  <p style="margin:8px 0 0">{% if q or status != 'all' %}<a href="{{ url_for('admin_accounts') }}">Show everyone</a>{% else %}<a href="{{ url_for('admin_account_new') }}">Create the first staff account</a>{% endif %}</p>
 </div>
 {% endif %}
 

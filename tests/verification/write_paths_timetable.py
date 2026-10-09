@@ -371,7 +371,7 @@ check("with school.timetable.manage (teacher A) but not .release, releasing is r
       teacher_a.post(f"{TT}/release?session_id={CUR}&term={TERM}", {}, page="/admin/password").status_code == 403)
 check("with none of the three permissions, nobody is refused (403) on the list itself", nobody.get(tt_url()).status_code == 403)
 check("…nor do they see 'Exam Timetable' in the menu, while a viewer does",
-      "timetable" not in nobody.text("/admin/school").lower() and "timetable" in viewer.text("/admin/school").lower())
+      'href="/admin/school/timetable' not in nobody.text("/admin/school") and 'href="/admin/school/timetable' in viewer.text("/admin/school"))
 kept_count = alpha.one("SELECT COUNT(*) FROM exam_timetable_entries")
 check("a POST without a CSRF token is refused (403) on every write route, and nothing changes",
       teacher_a.post(f"{TT}/new?session_id={CUR}&term={TERM}", {"class_id": J1, "subject_id": MATHS, "exam_type": "test",

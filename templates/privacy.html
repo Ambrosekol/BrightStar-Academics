@@ -79,7 +79,7 @@
     <table class="legal-table">
       <tr><th>Category</th><th>Examples</th></tr>
       <tr><td>Student and candidate records</td><td>Name, date of birth, gender, class, admission or candidate number, photograph, academic results, attendance, entrance-examination attempts and answers</td></tr>
-      <tr><td>Guardian and parent contact details</td><td>Name, relationship, phone number, email address, WhatsApp number, home address</td></tr>
+      <tr><td>Guardian and parent contact details</td><td>Name, relationship, phone number, email address, SMS number, home address</td></tr>
       <tr><td>Staff records</td><td>Name, role, contact details, photograph, signature image, login credentials, work assigned to and by them</td></tr>
       <tr><td>Financial records</td><td>Fees charged, payments recorded, receipts issued, and who recorded them</td></tr>
       <tr><td>Communications</td><td>Messages between a school and a parent, and the content of the notices sent about results, fees and school work</td></tr>
@@ -117,7 +117,7 @@
     <ul>
       <li>Passwords are never stored in readable form; they are hashed, and changing a password immediately ends every other
         sign-in on that account.</li>
-      <li>A school's own email server password and WhatsApp Business token, where it sets one up, are encrypted before they are
+      <li>A school's own email server password and SMS API token, where it sets one up, are encrypted before they are
         stored, under a key specific to that school; they are never shown again once saved, and a copy of the database does not
         expose them.</li>
       <li>Sign-in attempts, password-recovery requests and test-message buttons are rate-limited against guessing.</li>
@@ -159,8 +159,8 @@
       platform's own shared account, where offered, as a stand-in until it sets up its own):</p>
     <ul>
       <li><strong>Email</strong>, sent through the mail server the school (or the platform, as a fallback) has configured.</li>
-      <li><strong>WhatsApp</strong>, sent through the WhatsApp Business Cloud API, operated by Meta, using the school's own
-        connected WhatsApp Business account where it has one.</li>
+      <li><strong>SMS text messages</strong>, sent through BulkSMS Nigeria, using the school's own account where it has one
+        (or the platform's, where the platform provides it). A text carries only a short notice, never a result or a balance.</li>
     </ul>
     <p>The underlying database and application hosting is provided by <span class="ph">[your infrastructure/hosting provider(s)]</span>,
       acting as a sub-processor under contract with us, bound to the same confidentiality and security expectations as this statement.</p>

@@ -693,19 +693,27 @@ def staff_view(student, session_id=None, slug=SLUG):
     return f"{RC}/{student}/{session_id or CUR}/{slug}"
 
 
+def students_json(person, class_id, term=TERM, session_id=None):
+    """The page's student list: what the report cards page fetches in-page when a class is chosen."""
+    r = person.get(f"{RC}/students?class_id={class_id}&session_id={session_id or CUR}&term={urllib.parse.quote(term)}")
+    return r, (json.loads(r.get_data(as_text=True)) if r.mimetype == "application/json" else {})
+
+
 def staff_list(person, class_id, term=TERM, session_id=None):
-    """{student name: what the Card column says} from the staff page for a class."""
-    body = person.text(f"{RC}?class_id={class_id}&session_id={session_id or CUR}&term={urllib.parse.quote(term)}")
+    """{student name: what the Card column says} for a class, from the same list the page shows."""
+    _, data = students_json(person, class_id, term, session_id)
     out = {}
-    for tr in re.findall(r"<tr>(.*?)</tr>", body, re.S):
-        cells = [strip_tags(c) for c in re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)]
-        if len(cells) >= 4:
-            out[cells[0]] = cells[2]
+    for st in data.get("students", []):
+        n = st["pending"]
+        out[st["name"]] = ("Ready" if st["state"] == "ready" else "No results yet" if st["state"] == "none"
+                           else f"Waiting for {n} result{'' if n == 1 else 's'} to be released")
     return out
 
 
 def has_panel(body):
-    return 'id="report-cards"' in body
+    """Whether a page offers ready report cards. A parent's child page always has the section, and says so
+    when nothing is ready yet (the student dashboard simply leaves the panel out)."""
+    return 'id="report-cards"' in body and "No report card is ready yet" not in body
 
 
 def panel_links(body):
@@ -722,10 +730,22 @@ def comments_url(class_id, session_id=None, term=TERM):
     return f"{RC}/comments?class_id={class_id}&session_id={session_id or CUR}&term={urllib.parse.quote(term)}"
 
 
+def post_comment(person, student, text, term=TERM, session_id=None, token=True):
+    """Save one student's comment the way the report cards page's window does. Answers JSON."""
+    return person.post(f"{RC}/comments", {"student_id": str(student), "session_id": str(session_id or CUR), "term": term, "comment": text},
+                       token=token)
+
+
 def post_comments(person, class_id, values, term=TERM, session_id=None):
-    """Save comments the way the page does. ``values`` maps a student id to the text of their box."""
-    return person.post(comments_url(class_id, session_id, term), {f"comment_{k}": v for k, v in values.items()},
-                       page=comments_url(class_id, session_id, term))
+    """Save several students' comments, one at a time (the page has no bulk save any more). Returns the last answer."""
+    r = None
+    for student, text in values.items():
+        r = post_comment(person, student, text, term, session_id)
+    return r
+
+
+def reply_of(r):
+    return json.loads(r.get_data(as_text=True)) if r.mimetype == "application/json" else {}
 
 
 def comment_row(student, term=TERM, session_id=None):
@@ -734,24 +754,19 @@ def comment_row(student, term=TERM, session_id=None):
     return tuple(rows[0]) if rows else None
 
 
-def boxes(person, class_id, term=TERM):
-    """What every comment box on the page holds right now, as a browser would send it back (line breaks as CRLF)."""
-    body = person.text(comments_url(class_id, term=term))
-    return {int(sid): html.unescape(text).replace("\r\n", "\n").replace("\n", "\r\n")
-            for sid, text in re.findall(r'<textarea name="comment_(\d+)"[^>]*>(.*?)</textarea>', body, re.S)}
-
-
 def traits_url(class_id, session_id=None, term=TERM):
     return f"{RC}/traits?class_id={class_id}&session_id={session_id or CUR}&term={urllib.parse.quote(term)}"
 
 
 def post_traits(person, class_id, values, term=TERM, session_id=None):
-    """Save trait ratings the way the page does. ``values`` maps a student id to {trait key: 1..5}."""
-    data = {}
+    """Save one student's trait ratings the way the window does. ``values`` maps a student id to {trait key: 1..5}."""
+    r = None
     for student_id, ratings in values.items():
+        data = {"student_id": str(student_id), "session_id": str(session_id or CUR), "term": term}
         for key, rating in ratings.items():
-            data[f"trait_{student_id}_{key}"] = str(rating)
-    return person.post(traits_url(class_id, session_id, term), data, page=traits_url(class_id, session_id, term))
+            data[f"trait_{key}"] = str(rating)
+        r = person.post(f"{RC}/traits", data)
+    return r
 
 
 def trait_row(student, term=TERM, session_id=None):
@@ -1286,13 +1301,13 @@ check("…the class figures no longer count her while she waits: Maths class ave
 bola_now, _ = verify_card("Bola's card while Ada waits (class of three)", bola_portal, s_view(CUR), s_view(CUR) + "/pdf", "BOLA", TERM)
 
 # a teacher writes the comment now: comments can be written before release
-r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(GREEN_SIGN)}, page=RC + "/my-signature")
+r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(GREEN_SIGN)}, page=RC)
 check("teacher A draws her signature", r.status_code == 302 and (admin_signature(TEACHER_A) or "").startswith("uploads/signatures/"))
 A_FIRST_FILE = admin_signature(TEACHER_A)
 COMMENT_ADA = "Ada is a joy to teach and works hard."
 r = post_comments(teacher_a, J1, {ADA: COMMENT_ADA})
-check("teacher A writes Ada's comment while her results are still unreleased", comment_row(ADA) == (COMMENT_ADA, TEACHER_A) and r.status_code == 302,
-      str(comment_row(ADA)))
+check("teacher A writes Ada's comment while her results are still unreleased", comment_row(ADA) == (COMMENT_ADA, TEACHER_A) and r.status_code == 200
+      and reply_of(r).get("comment_by") == "Mrs Amaka Tutor", str(comment_row(ADA)))
 for late_id, _ in late:
     workflow(late_id, "verify")
     workflow(late_id, "approve")
@@ -1317,21 +1332,20 @@ check("the comment shows with its author's name on the page and the PDF",
 check("…and with teacher A's own signature: green in the page and in the PDF",
       page["signs"][0]["image"] and pixel_of(page["signs"][0]["image"]) == (20, 160, 60) and draws(pdf, GREEN))
 check("teacher B has no signature of her own yet and has not touched the comment", admin_signature(TEACHER_B) in (None, ""))
-r = teacher_b.post(RC + "/my-signature", {"action": "upload"}, page=RC + "/my-signature", files={"signature_file": ("mine.png", PURPLE_SIGN)})
+r = teacher_b.post(RC + "/my-signature", {"action": "upload"}, page=RC, files={"signature_file": ("mine.png", PURPLE_SIGN)})
 B_FILE = admin_signature(TEACHER_B)
 check("teacher B uploads her signature: a separate file from A's", r.status_code == 302 and B_FILE and B_FILE != admin_signature(TEACHER_A)
       and admin_signature(TEACHER_A) == A_FIRST_FILE)
 _, pdf_still = verify_card("Ada's card after B added her signature", ada_portal, s_view(CUR), s_view(CUR) + "/pdf", "ADA", TERM)
 check("…Ada's card still carries A's signature and not B's", draws(pdf_still, GREEN) and not draws(pdf_still, PURPLE))
 
-# saving the page unchanged does not take over the comment (a browser sends line breaks as CRLF)
-values = boxes(teacher_b, J1)
-r = post_comments(teacher_b, J1, values)
-check("teacher B saves the whole comments page without changing anything: the comment keeps its author, A",
-      comment_row(ADA) == (COMMENT_ADA, TEACHER_A) and "no comment was changed" in teacher_b.said(), str(comment_row(ADA)))
-r = post_comments(teacher_b, J1, {**values, ADA: "Ada is a joy to teach and works very hard."})
-check("teacher B edits Ada's comment: B takes over as its author", comment_row(ADA) == ("Ada is a joy to teach and works very hard.", TEACHER_B),
-      str(comment_row(ADA)))
+# saving a comment unchanged does not take it over from its author
+r = post_comment(teacher_b, ADA, COMMENT_ADA)
+check("teacher B saves Ada's comment without changing it: the comment keeps its author, A, and the answer still names A",
+      comment_row(ADA) == (COMMENT_ADA, TEACHER_A) and reply_of(r).get("comment_by") == "Mrs Amaka Tutor", str(comment_row(ADA)))
+r = post_comment(teacher_b, ADA, "Ada is a joy to teach and works very hard.")
+check("teacher B edits Ada's comment: B takes over as its author", comment_row(ADA) == ("Ada is a joy to teach and works very hard.", TEACHER_B)
+      and reply_of(r).get("comment_by") == "Mr Babatunde Guide", str(comment_row(ADA)))
 page, pdf = verify_card("Ada's card after B edited the comment", ada_portal, s_view(CUR), s_view(CUR) + "/pdf", "ADA", TERM)
 check("…the card shows B's name and B's purple signature, and no longer A's",
       page["signs"][0]["who"] == "Mr Babatunde Guide" and pixel_of(page["signs"][0]["image"]) == (120, 30, 160)
@@ -1340,11 +1354,10 @@ check("…the card shows B's name and B's purple signature, and no longer A's",
 
 # a comment typed with plain line breaks, saved again by a browser, keeps its author
 alpha.sql("UPDATE report_card_comments SET comment = :c, author_admin_id = :a WHERE student_id = :s", c="First line.\nSecond line.", a=TEACHER_A, s=ADA)
-values = boxes(teacher_b, J1)
-post_comments(teacher_b, J1, values)
+post_comment(teacher_b, ADA, "First line.\r\nSecond line.")   # a browser sends line breaks as CRLF
 check("a two-line comment stored with plain line breaks, resaved untouched by another teacher's browser (CRLF), keeps its author",
       comment_row(ADA)[1] == TEACHER_A, str(comment_row(ADA)))
-post_comments(teacher_b, J1, {**boxes(teacher_b, J1), ADA: "Ada is a joy to teach and works very hard."})
+post_comment(teacher_b, ADA, "Ada is a joy to teach and works very hard.")
 
 # Bola and Chidi, and the clearing / limit / scope rules
 post_comments(teacher_a, J1, {SID["BOLA"]: "Bola is bright and helpful."})
@@ -1355,24 +1368,24 @@ check("Bola's card carries A's name and A's signature, while Ada's carries B's (
       and draws(bola_pdf, GREEN) and not draws(bola_pdf, PURPLE))
 before = (comment_row(ADA), comment_row(SID["BOLA"]))
 too_long = "x" * 1001
-r = post_comments(teacher_a, J1, {SID["BOLA"]: "Bola has changed her mind entirely.", SID["CHIDI"]: too_long})
-check("a comment over 1000 characters is refused and NOTHING in the same submission is saved (Bola's valid edit is not either)",
-      (comment_row(ADA), comment_row(SID["BOLA"])) == before and comment_row(SID["CHIDI"]) is None
-      and "at most 1000" in teacher_a.said().replace(",", ""), str(comment_row(SID["BOLA"])))
+r = post_comment(teacher_a, SID["CHIDI"], too_long)
+check("a comment over 1000 characters is refused (400, with the reason) and nothing is saved",
+      (comment_row(ADA), comment_row(SID["BOLA"])) == before and comment_row(SID["CHIDI"]) is None and r.status_code == 400
+      and "at most 1000" in reply_of(r).get("error", "").replace(",", ""), str(comment_row(SID["BOLA"])))
 exact = "y" * 1000
 post_comments(teacher_a, J1, {SID["CHIDI"]: exact})
 check("a comment of exactly 1000 characters is accepted", comment_row(SID["CHIDI"]) == (exact, TEACHER_A))
 post_comments(teacher_a, J1, {SID["CHIDI"]: ""})
-check("clearing a box removes the comment", comment_row(SID["CHIDI"]) is None)
+check("clearing a comment removes it", comment_row(SID["CHIDI"]) is None)
 chidi_page, chidi_pdf = verify_card("Chidi's card with no comment", chidi_portal, s_view(CUR), s_view(CUR) + "/pdf", "CHIDI", TERM)
 check("…the card still appears, with an empty comment box and 'Class Teacher' on a blank signature line, page and PDF",
       chidi_page["comment"] == "" and chidi_page["signs"][0]["who"] == "Class Teacher" and chidi_page["signs"][0]["image"] is None
       and "Class Teacher's Comment" in chidi_pdf["lines"] and not draws(chidi_pdf, GREEN) and not draws(chidi_pdf, PURPLE))
 before = (comment_row(SID["BOLA"]), comment_row(ADA))
-post_comments(teacher_a, J1, {SID["BOLA"]: "Words", SID["TOBI"]: "A JSS 2 pupil, not in this class", 999999: "nobody"})
-check("boxes for students who are not in the class are ignored", comment_row(SID["TOBI"]) is None and comment_row(999999) is None
-      and comment_row(SID["BOLA"]) == ("Words", TEACHER_A))
-post_comments(teacher_a, J1, {SID["BOLA"]: "Bola is bright and helpful."})
+resp_other_class = post_comment(teacher_a, SID["TOBI"], "A JSS 2 pupil, not in this class")
+resp_no_such = post_comment(teacher_a, 999999, "nobody")
+check("a student who is not in one of her classes, or does not exist, is refused (400) and nothing is saved",
+      resp_other_class.status_code == 400 and resp_no_such.status_code == 400 and comment_row(SID["TOBI"]) is None and comment_row(999999) is None)
 
 # a teacher with no signature gets a blank line and her name
 post_comments(teacher_c, J2, {SID["TOBI"]: "Tobi has met every target."})
@@ -1382,12 +1395,12 @@ check("a teacher with no signature: the card shows her name, 'Class Teacher', a 
       tobi_page["signs"][0]["who"] == "Ms Chioma Mentor" and tobi_page["signs"][0]["image"] is None
       and tobi_page["comment"] == "Tobi has met every target." and len(tobi_pdf["images"]) == 1 and "Ms Chioma Mentor" in tobi_pdf["lines"],
       f"{tobi_page['signs']} images={len(tobi_pdf['images'])}")
-check("the comments page tells her she has no signature yet", "have not saved a signature" in html.unescape(teacher_c.text(comments_url(J2))))
+check("the report cards page tells her she has no signature yet", "have not saved a signature" in html.unescape(teacher_c.text(f"{RC}?class_id={J2}")))
 
 # ---- replacing and removing a signature deletes the old file; bad signatures change nothing
 folder = os.path.join(alpha.uploads(), "signatures")
 before_files = signature_files(alpha)
-r = teacher_a.post(RC + "/my-signature", {"action": "upload"}, page=RC + "/my-signature", files={"signature_file": ("new.png", TEAL_SIGN)})
+r = teacher_a.post(RC + "/my-signature", {"action": "upload"}, page=RC, files={"signature_file": ("new.png", TEAL_SIGN)})
 after_files = signature_files(alpha)
 A_SECOND_FILE = admin_signature(TEACHER_A)
 check("teacher A replaces her signature by uploading a new one: the old file is deleted from disk, the new one is there, B's is untouched",
@@ -1409,18 +1422,18 @@ refused = {
 }
 for label, (action, payload, phrase) in refused.items():
     if action == "draw":
-        r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": payload}, page=RC + "/my-signature")
+        r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": payload}, page=RC)
     elif action == "upload":
-        r = teacher_a.post(RC + "/my-signature", {"action": "upload"}, page=RC + "/my-signature", files=payload)
+        r = teacher_a.post(RC + "/my-signature", {"action": "upload"}, page=RC, files=payload)
     else:
-        r = teacher_a.post(RC + "/my-signature", {"action": action}, page=RC + "/my-signature")
+        r = teacher_a.post(RC + "/my-signature", {"action": action}, page=RC)
     check(f"{label} is refused with a message, and the signature and the files on disk are unchanged",
-          r.status_code in (400, 200) and phrase in html.unescape(r.get_data(as_text=True)).lower()
+          r.status_code == 302 and phrase in teacher_a.said()
           and (admin_signature(TEACHER_A), signature_files(alpha)) == kept, f"{r.status_code}")
-r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(GREEN_SIGN)}, page=RC + "/my-signature")
+r = teacher_a.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(GREEN_SIGN)}, page=RC)
 check("drawing again replaces the uploaded one (its file is deleted too)", admin_signature(TEACHER_A) not in (None, A_SECOND_FILE)
       and not os.path.exists(os.path.join(alpha.uploads(), A_SECOND_FILE[len("uploads/"):])) and len(signature_files(alpha)) == len(after_files))
-r = teacher_b.post(RC + "/my-signature", {"action": "remove"}, page=RC + "/my-signature")
+r = teacher_b.post(RC + "/my-signature", {"action": "remove"}, page=RC)
 check("removing a signature deletes its file and clears the record; A's is not touched",
       admin_signature(TEACHER_B) in ("", None) and not os.path.exists(os.path.join(alpha.uploads(), B_FILE[len("uploads/"):]))
       and (admin_signature(TEACHER_A) or "").startswith("uploads/signatures/") and len(signature_files(alpha)) == len(after_files) - 1)
@@ -1428,8 +1441,8 @@ page, pdf = verify_card("Ada's card after B removed her signature", ada_portal, 
 check("…Ada's card keeps B's name and comment, with a blank signature line",
       page["signs"][0]["who"] == "Mr Babatunde Guide" and page["signs"][0]["image"] is None and not draws(pdf, PURPLE)
       and "Mr Babatunde Guide" in pdf["lines"])
-page_text = html.unescape(teacher_a.text(RC + "/my-signature"))
-check("the signature page shows the current signature and can only ever show one's own",
+page_text = html.unescape(teacher_a.text(RC))
+check("the signature window on the report cards page shows the current signature and can only ever show one's own",
       "Current signature" in page_text and "Remove signature" in page_text and (admin_signature(TEACHER_A) or "x") in page_text
       and (B_FILE or "y") not in page_text)
 
@@ -1443,14 +1456,14 @@ before_ada, before_pdf = ada_portal.text(s_view(CUR)), ada_portal.get(s_view(CUR
 check("before any trait is rated, a card shows no traits section at all (a school that never uses this sees no change)",
       "Affective Domain" not in before_ada and "Affective Domain" not in pdf_read(before_pdf)["text"])
 
-traits_page = html.unescape(teacher_a.text(traits_url(J1)))
-check("the traits page lists Ada and every catalogued trait with its five ratings",
-      "Ada Obi" in traits_page and "Punctuality" in traits_page and "Psychomotor Domain" in traits_page
+traits_page = html.unescape(teacher_a.text(f"{RC}?class_id={J1}"))
+check("the report cards page carries every catalogued trait with its five ratings, and the class list includes Ada",
+      "Ada Obi" in staff_list(teacher_a, J1) and "Punctuality" in traits_page and "Psychomotor Domain" in traits_page
       and all(w in traits_page for w in ("Excellent", "Very Good", "Good", "Fair", "Poor")))
 
 r = post_traits(teacher_a, J1, {ADA: {"punctuality": 5, "neatness": 3}})
 check("teacher A rates two of Ada's traits; the rest stay unrated, and it is recorded under her name",
-      r.status_code == 302 and trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and "1 student" in teacher_a.said())
+      r.status_code == 200 and trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and reply_of(r).get("rated_by") == "Mrs Amaka Tutor")
 
 after_ada = ada_portal.text(s_view(CUR))
 after_pairs = trait_pairs(after_ada)
@@ -1463,20 +1476,20 @@ check("Ada's card now shows both domains: the two rated traits with their labels
 
 r = post_traits(teacher_b, J1, {ADA: {"punctuality": 5, "neatness": 3}})
 check("teacher B saves the same ratings unchanged: the row keeps teacher A as its rater",
-      trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and "no rating was changed" in teacher_b.said())
+      trait_row(ADA) == ({"punctuality": 5, "neatness": 3}, TEACHER_A) and reply_of(r).get("rated_by") == "Mrs Amaka Tutor")
 
 r = post_traits(teacher_b, J1, {ADA: {"punctuality": 4, "neatness": 3}})
 check("teacher B changes one rating: the row now takes over under her name",
-      trait_row(ADA) == ({"punctuality": 4, "neatness": 3}, TEACHER_B) and "1 student" in teacher_b.said())
+      trait_row(ADA) == ({"punctuality": 4, "neatness": 3}, TEACHER_B) and reply_of(r).get("rated_by") == "Mr Babatunde Guide")
 
 kept_tobi_before = trait_row(SID["TOBI"])
 r = post_traits(teacher_a, J2, {SID["TOBI"]: {"punctuality": 5}})
-check("teacher A (JSS 1 only) cannot rate a JSS 2 student: nothing is written for Tobi",
-      trait_row(SID["TOBI"]) == kept_tobi_before)
+check("teacher A (JSS 1 only) cannot rate a JSS 2 student: refused (400), nothing is written for Tobi",
+      trait_row(SID["TOBI"]) == kept_tobi_before and r.status_code == 400)
 
 r = post_traits(teacher_b, J1, {ADA: {}})
 check("clearing every trait removes the row entirely, and the card goes back to showing nothing",
-      trait_row(ADA) is None and "1 cleared" in teacher_b.said()
+      trait_row(ADA) is None and reply_of(r).get("ratings") == {}
       and "Affective Domain" not in ada_portal.text(s_view(CUR)))
 
 check("viewer (report_cards.view only) is refused (403) opening and posting to the traits page, and nothing is written",
@@ -1496,6 +1509,35 @@ check("a POST to the traits page without a CSRF token is refused (403), and noth
       op.post(traits_url(J1), {f"trait_{ADA}_punctuality": "5"}, token=False).status_code == 403 and trait_row(ADA) is None)
 # Ada is left unrated again here (trait_row(ADA) is None), so every later section sees exactly the same
 # card it always saw, undisturbed by this new feature.
+
+# ---- the in-page student list, and what became of the old pages
+r_list, listing = students_json(teacher_a, J1)
+ada_row = next((x for x in listing.get("students", []) if x["name"] == "Ada Obi"), {})
+check("the in-page list for a class is JSON: every student with card state, comment and ratings, and the class's PDF link",
+      r_list.status_code == 200 and listing.get("class", {}).get("name") == "JSS 1" and listing.get("total") == len(listing["students"])
+      and ada_row.get("state") == "ready" and ada_row.get("comment") == "Ada is a joy to teach and works very hard."
+      and ada_row.get("comment_by") == "Mr Babatunde Guide" and ada_row.get("ratings") == {} and ada_row.get("view_url", "").startswith(RC)
+      and listing.get("class_pdf_url", "").startswith(RC), str(ada_row))
+post_traits(teacher_b, J1, {ADA: {"punctuality": 5}})
+_, listing = students_json(teacher_a, J1)
+check("…and shows a student's ratings and who gave them as soon as they are saved",
+      next(x for x in listing["students"] if x["name"] == "Ada Obi")["ratings"] == {"punctuality": 5}
+      and next(x for x in listing["students"] if x["name"] == "Ada Obi")["rated_by"] == "Mr Babatunde Guide")
+post_traits(teacher_b, J1, {ADA: {}})
+r_other, other = students_json(teacher_a, J2)
+check("teacher A is refused (400) the list for JSS 2, which is not hers, and it names no student", r_other.status_code == 400 and not other.get("students"))
+check("the list is open to someone who may only view report cards, and closed (403) to someone with no report card permission",
+      students_json(viewer, J1)[0].status_code == 200 and students_json(nobody, J1)[0].status_code == 403)
+check("the list is for staff only: a signed-out visitor is sent to sign in, and a parent or student is turned away",
+      Person(ALPHA, label="signed-out (list)").get(f"{RC}/students?class_id={J1}").status_code == 302
+      and MUM_ADA.get(f"{RC}/students?class_id={J1}").status_code in (302, 403, 404)
+      and ada_portal.get(f"{RC}/students?class_id={J1}").status_code in (302, 403, 404))
+check("the report cards page itself no longer lists students in its HTML (they are fetched in the page), and offers the signature window only to someone who may comment",
+      "Ada Obi" not in html.unescape(teacher_a.text(f"{RC}?class_id={J1}")) and 'id="rc-signature-modal"' in teacher_a.text(RC)
+      and 'id="rc-signature-modal"' not in viewer.text(RC))
+old_pages = [teacher_a.get(RC + "/comments?class_id=%d" % J1), teacher_a.get(RC + "/traits?class_id=%d" % J1), teacher_a.get(RC + "/my-signature")]
+check("the old comments, traits and signature pages are gone: each sends a teacher back to the report cards page",
+      all(p.status_code == 302 and p.headers["Location"].split("?")[0].endswith("/admin/school/report-cards") for p in old_pages))
 
 # ================================================================ D. the head
 op.said()
@@ -1577,8 +1619,8 @@ BETA_CUR = beta.one("SELECT id FROM academic_sessions WHERE is_current = 1")
 CHIKE = mk_students(beta, [("Chike", "Betaman", BETA_J1, BETA_CUR, {"login": "chike"})])[0]
 put(beta, CHIKE, BETA_MATHS, {"T": [(9, 10)], "E": [(48, 60)]}, session=BETA_CUR, class_id=BETA_J1, admin_id=beta.one("SELECT id FROM admins ORDER BY id LIMIT 1"))
 beta_teacher, BETA_TEACHER = mk_staff(beta, "beta.teacher", "Mr Beta Tutor", "Primary Class Teacher", "JSS 1")
-beta_teacher.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(PINK_SIGN)}, page=RC + "/my-signature")
-beta_teacher.post(comments_url(BETA_J1, BETA_CUR), {f"comment_{CHIKE}": "Chike is a fine student."}, page=comments_url(BETA_J1, BETA_CUR))
+beta_teacher.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(PINK_SIGN)}, page=RC)
+post_comment(beta_teacher, CHIKE, "Chike is a fine student.", session_id=BETA_CUR)
 op_beta.post(RC + "/settings", {"head_title": "Principal", "head_name": "Dr Beta Head", "next_term_begins": "Tuesday, 5 January 2027"}, page=RC + "/settings")
 op_beta.post(RC + "/settings", {"action": "draw", "signature_data_url": drawn(GREY_SIGN)}, page=RC + "/settings")
 chike_portal = Person(BETA, "/student/password", label="beta student Chike")
@@ -1775,7 +1817,7 @@ check("…a member of staff with no report card permission is refused (403) ever
 check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in nobody.text("/admin/school").replace("/admin/guide/results-report-cards", "") and "report-cards" in op.text("/admin/school"))
 kept_comment = comment_row(ADA)
 kept_sigs = (admin_signature(TEACHER_A), signature_files(alpha))
-r1 = viewer.post(comments_url(J1), {f"comment_{ADA}": "The viewer must not write this."}, page="/admin/password")
+r1 = viewer.post(RC + "/comments", {"student_id": str(ADA), "session_id": str(CUR), "term": TERM, "comment": "The viewer must not write this."}, page="/admin/password")
 r2 = viewer.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(GREEN_SIGN)}, page="/admin/password")
 check("with report_cards.view only: comments, my-signature and settings are refused (403) to open and to submit, and nothing is written",
       viewer.get(RC + "/comments").status_code == 403 and viewer.get(RC + "/my-signature").status_code == 403 and viewer.get(RC + "/settings").status_code == 403
@@ -1787,9 +1829,12 @@ check("…yet the viewer can open and download cards, and reads the comment but 
 check("a class teacher (view + comment, no manage) may not open the head's settings (403 on GET and POST)",
       teacher_a.get(RC + "/settings").status_code == 403 and teacher_a.post(RC + "/settings", {"head_name": "Nope"}, page="/admin/password").status_code == 403
       and head_setting(alpha, "report_head_name") == "Mrs A. B. Okoye")
-check("…but may write comments and keep a signature", teacher_a.get(RC + "/comments").status_code == 200 and teacher_a.get(RC + "/my-signature").status_code == 200)
+check("…but may write comments and keep a signature (the old addresses lead back to the page; the page offers the signature window)",
+      teacher_a.get(RC + "/comments").status_code == 302 and teacher_a.get(RC + "/my-signature").status_code == 302
+      and 'id="rc-signature-modal"' in teacher_a.text(RC))
 check("the Report Card Officer and the School Academic Administrator presets can use every report card page",
-      all(p.get(u).status_code == 200 for p in (officer, academic) for u in (RC, RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings")))
+      all(p.get(u).status_code == 200 for p in (officer, academic) for u in (RC, RC + "/settings"))
+      and all(p.get(u).status_code == 302 for p in (officer, academic) for u in (RC + "/comments", RC + "/traits", RC + "/my-signature")))
 perms = lambda role: {r[0] for r in alpha.sql("SELECT p.code FROM admin_types t JOIN admin_type_permissions x ON x.admin_type_id = t.id "  # noqa: E731
                                               "JOIN permissions p ON p.id = x.permission_id WHERE t.name = :n", n=role)}
 check("the presets carry what they should: Primary Class Teacher view + comment (not manage); School Academic Administrator and Report Card Officer all three",
@@ -1808,9 +1853,10 @@ check("every staff route for report cards has its permission in the endpoint map
 listing_a = teacher_a.text(f"{RC}?class_id={J1}")
 listing_a_wrong = teacher_a.text(f"{RC}?class_id={J2}")
 check("teacher A (JSS 1 only) sees JSS 1's cards, and JSS 2 is not even a choice on her page",
-      "Ada Obi" in html.unescape(listing_a) and ">JSS 2<" not in listing_a and ">JSS 1<" in listing_a)
+      "Ada Obi" in staff_list(teacher_a, J1) and ">JSS 2<" not in listing_a and ">JSS 1<" in listing_a)
 check("…asking for JSS 2 by hand shows her none of its students",
-      "Tobi Boundary" not in listing_a_wrong and "Ife Bright" not in listing_a_wrong and "Choose a class" in listing_a_wrong)
+      not staff_list(teacher_a, J2) and "Tobi Boundary" not in listing_a_wrong and "Ife Bright" not in listing_a_wrong
+      and ">JSS 2<" not in listing_a_wrong)
 check("…another class's card page, PDF and student are a 404 for her, and a class bundle for JSS 2 is a 404",
       teacher_a.get(staff_view(SID["TOBI"])).status_code == 404 and teacher_a.get(staff_view(SID["TOBI"]) + "/pdf").status_code == 404
       and teacher_a.get(f"{RC}/class.pdf?class_id={J2}&session_id={CUR}&term=First%20Term").status_code == 404
@@ -1823,15 +1869,15 @@ check("…her own class's card page and PDF and bundle are open to her",
       and teacher_a.get(f"{RC}/class.pdf?class_id={J1}&session_id={CUR}&term=First%20Term").status_code == 200)
 kept = (comment_row(SID["TOBI"]), comment_row(ADA))
 r = post_comments(teacher_a, J2, {SID["TOBI"]: "Teacher A writing in JSS 2, which she may not"})
-check("…she cannot write a comment for JSS 2 (told to choose a class, nothing saved)", (comment_row(SID["TOBI"]), comment_row(ADA)) == kept
-      and comment_row(SID["TOBI"]) == ("Tobi has met every target.", TEACHER_C))
+check("…she cannot write a comment for JSS 2 (refused, nothing saved)", (comment_row(SID["TOBI"]), comment_row(ADA)) == kept
+      and comment_row(SID["TOBI"]) == ("Tobi has met every target.", TEACHER_C) and r.status_code == 400)
 check("teacher C (JSS 2 only) sees JSS 2 and not JSS 1: Ada's card is a 404 for her",
-      "Tobi Boundary" in teacher_c.text(f"{RC}?class_id={J2}") and teacher_c.get(staff_view(ADA)).status_code == 404
-      and teacher_c.get(staff_view(SID["TOBI"])).status_code == 200 and "Ada Obi" not in html.unescape(teacher_c.text(f"{RC}?class_id={J1}")))
+      "Tobi Boundary" in staff_list(teacher_c, J2) and teacher_c.get(staff_view(ADA)).status_code == 404
+      and teacher_c.get(staff_view(SID["TOBI"])).status_code == 200 and "Ada Obi" not in staff_list(teacher_c, J1))
 
 # ---- CSRF, signed-out visitors
 kept = (comment_row(ADA), head_setting(alpha, "report_head_name"), admin_signature(TEACHER_A))
-posts = ((comments_url(J1), {f"comment_{ADA}": "no token"}), (RC + "/my-signature", {"action": "remove"}), (RC + "/settings", {"head_name": "no token"}))
+posts = ((RC + "/comments", {"student_id": str(ADA), "session_id": str(CUR), "term": TERM, "comment": "no token"}), (RC + "/my-signature", {"action": "remove"}), (RC + "/settings", {"head_name": "no token"}))
 check("a POST without a CSRF token is refused (403) on all three write routes, and nothing changes",
       all(op.post(path, data, token=False).status_code == 403 for path, data in posts)
       and all(op.post(path, data, token="wrong-token").status_code == 403 for path, data in posts)
@@ -1862,7 +1908,7 @@ check("a student cannot open the staff pages or the parent pages, and a parent c
       and "Ada Obi" not in ada_portal.text(RC) and "Ada Obi" not in MUM_ADA.text(RC))
 check("…nor submit to a staff form, or open one another kind of person's card",
       MUM_ADA.post(RC + "/settings", {"head_name": "Parent"}, token=False).status_code in (302, 403)
-      and ada_portal.post(comments_url(J1), {f"comment_{ADA}": "Student"}, token=False).status_code in (302, 403) and comment_row(ADA)[0].startswith("Ada is a joy")
+      and ada_portal.post(RC + "/comments", {"student_id": str(ADA), "comment": "Student"}, token=False).status_code in (302, 403) and comment_row(ADA)[0].startswith("Ada is a joy")
       and MUM_ADA.get(s_view(CUR)).status_code in (302, 403, 404) and ada_portal.get(p_view(ADA, CUR)).status_code in (302, 403, 404))
 
 # ---- parents
@@ -1892,8 +1938,8 @@ check("…a beta parent asking for an alpha child is a 404; a beta parent sees h
       and beta_parent.get(p_view(CHIKE, BETA_CUR)).status_code == 200)
 check("…and the class bundle for a class number that only alpha has is a 404 at beta (alpha's class ids are its own)",
       op_beta.get(f"{RC}/class.pdf?class_id=999999&session_id={BETA_CUR}&term=First%20Term").status_code == 404)
-check("beta's staff list never shows an alpha student", "Ada Obi" not in html.unescape(op_beta.text(f"{RC}?class_id={BETA_J1}"))
-      and "Chike Betaman" in html.unescape(op_beta.text(f"{RC}?class_id={BETA_J1}")))
+check("beta's staff list never shows an alpha student", "Ada Obi" not in staff_list(op_beta, BETA_J1)
+      and "Chike Betaman" in staff_list(op_beta, BETA_J1))
 
 # ================================================================ G. the PDF and the class bundle
 before = alpha.one("SELECT count(*) FROM audit_logs WHERE action = 'report_card_downloaded'")

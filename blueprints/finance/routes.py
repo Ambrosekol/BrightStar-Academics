@@ -1,5 +1,5 @@
 """Admin finance: payment recording/allocation, receipts (view/print/PDF/
-email/WhatsApp), the receipt signature settings page, fee items, and fee
+email/SMS), the receipt signature settings page, fee items, and fee
 assessments.
 """
 
@@ -18,7 +18,7 @@ from models import (
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.idempotency import idempotent_write
 from core.jobs import enqueue
-from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded
+from core.notifications import _notify_parents_fee_assessed, _notify_parents_payment_recorded, _parent_sms_numbers
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
 from core.storage import delete_upload
 from core.uploads import _save_image_upload
@@ -33,7 +33,7 @@ from blueprints.finance.helpers import (
     # 'send_payment_receipt' job handler (core/jobs.py); it is only ever called through enqueue().
     _send_payment_receipt_to_guardian,  # noqa: F401
     _receipt_signature_relpath, _save_signature_data_url, _send_email_receipt,
-    _send_whatsapp_receipt, _set_receipt_signature, RECEIPT_SIGNATURE_SETTING_KEY,
+    _send_sms_receipt, _set_receipt_signature, RECEIPT_SIGNATURE_SETTING_KEY,
 )
 
 # The billing periods a charge can be raised for: the fee-picker's choices.
@@ -316,7 +316,7 @@ def admin_finance_record():
             _notify_parents_payment_recorded(student_id,receipt,amount,category,me['id'],external=False)
         except Exception:
             app.logger.exception('Parent payment-recorded notification failed for student %s',student_id)
-        # The parents get the receipt itself by email and WhatsApp, without anyone having to send it.
+        # The parents get the receipt itself by email and SMS, without anyone having to send it.
         enqueue('send_payment_receipt',payment_id=payment.id,actor_id=me['id'])
         return redirect(url_for('admin_finance_receipt',payment_id=payment.id))
     students,sessions=pick_lists()
@@ -366,16 +366,16 @@ def admin_finance_receipt_email(payment_id):
     _log_receipt_delivery(payment_id,'email',row['guardian_email'],ok,msg,me['id'])
     audit_log('finance_receipt_email','finance','payment',payment_id,{'success':ok}); flash('Receipt emailed successfully.' if ok else msg,'success' if ok else 'error'); return redirect(url_for('admin_finance_receipt',payment_id=payment_id))
 
-@app.post('/admin/finance/receipts/<int:payment_id>/whatsapp')
+@app.post('/admin/finance/receipts/<int:payment_id>/sms')
 @admin_required
 @csrf_protect
-def admin_finance_receipt_whatsapp(payment_id):
+def admin_finance_receipt_sms(payment_id):
     me=current_admin(); row=_receipt_payload(payment_id)
     if not row: abort(404)
     if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.receipt.send')
-    ok,msg=_send_whatsapp_receipt(payment_id)
-    _log_receipt_delivery(payment_id,'whatsapp',row['guardian_phone'],ok,msg,me['id'])
-    audit_log('finance_receipt_whatsapp','finance','payment',payment_id,{'success':ok}); flash('Receipt sent through WhatsApp Business successfully.' if ok else msg,'success' if ok else 'error'); return redirect(url_for('admin_finance_receipt',payment_id=payment_id))
+    ok,msg=_send_sms_receipt(payment_id)
+    _log_receipt_delivery(payment_id,'sms',', '.join(_parent_sms_numbers(row['student_id'],row['guardian_phone'])),ok,msg,me['id'])
+    audit_log('finance_receipt_sms','finance','payment',payment_id,{'success':ok}); flash('Payment text sent successfully.' if ok else msg,'success' if ok else 'error'); return redirect(url_for('admin_finance_receipt',payment_id=payment_id))
 
 @app.route('/admin/finance/receipt-settings',methods=['GET','POST'])
 @admin_required

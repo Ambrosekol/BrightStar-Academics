@@ -17,7 +17,7 @@ What it does, in plain terms:
 3. Sends every route an empty form, a form full of hostile values and a form with no CSRF
    token, and checks each one is refused cleanly (a message and a redirect, or a 4xx) and never
    with a 500 or a database error.
-4. Anything that would reach the outside world (email, WhatsApp) is caught by a stand-in at
+4. Anything that would reach the outside world (email, SMS) is caught by a stand-in at
    the very last step, so the real sending code still runs.
 5. THE GUARD: the run fails if any route that accepts a POST is neither driven here nor listed in
    ``EXEMPT`` (in pg_posts_coverage.py) with a reason. A new route cannot ship untested on
@@ -56,6 +56,8 @@ os.environ.update({
     "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
     "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
     "BRIGHTSTARS_SECRET": "x" * 40,
+    # Each school brings its own SMS account here, whatever the developer's .env says about the platform's.
+    "BRIGHTSTARS_SMS_PAYER": "school", "BRIGHTSTARS_SMS_API_TOKEN": "", "BRIGHTSTARS_SMS_SENDER_ID": "",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -159,11 +161,11 @@ class FakeHTTPResponse:
         return False
 
 
-WHATSAPP_CALLS = []
+SMS_CALLS = []
 
 
 def fake_urlopen(request, timeout=None):
-    """Stands in for the WhatsApp Cloud API and Paystack: answers each request the way the real
+    """Stands in for BulkSMS Nigeria and Paystack: answers each request the way the real
     one would."""
     url = request.full_url if hasattr(request, "full_url") else str(request)
     if "api.paystack.co" in url:
@@ -173,12 +175,10 @@ def fake_urlopen(request, timeout=None):
             return FakeHTTPResponse({"status": True, "data": {
                 "authorization_url": "https://checkout.paystack.test/fake", "reference": "posts-test-ref"}})
         return FakeHTTPResponse({"status": True, "data": {"status": "success", "amount": 100000, "id": 1}})
-    WHATSAPP_CALLS.append(url)
-    if url.endswith("/media"):
-        return FakeHTTPResponse({"id": "media-1"})
-    if url.endswith("/messages"):
-        return FakeHTTPResponse({"messages": [{"id": "wamid.1"}]})
-    return FakeHTTPResponse({"verified_name": "Posts School", "display_phone_number": "+234 800 000 0000"})
+    SMS_CALLS.append(url)
+    if url.endswith("/v2/sms"):
+        return FakeHTTPResponse({"status": "success", "data": {"id": "sms-1", "cost": 2.5}})
+    return FakeHTTPResponse({"status": "success", "data": {"balance": 1000}})
 
 
 from core import delivery as _delivery  # noqa: E402
@@ -427,8 +427,19 @@ check("the operator is inside the school", op.get("/admin/home").status_code == 
 # the new-school setup checklist: classes are pre-seeded (so step one is already done), nothing else is yet
 op.get("/admin/workspace/school")
 page = op.text("/admin/school")
-check("the setup checklist shows on a brand-new school, one of four steps already done",
-      "Finish setting up your school" in page and "1/4" in page and "Add your subjects" in page)
+def step_state(html_page, label):
+    """``(found, done, optional)`` for the checklist step with this label."""
+    m = re.search(r'<li class="wd-setup__step (is-done)?">\s*<span class="wd-setup__step-num">(?:(?!</li>).)*?</span>\s*<div class="wd-setup__step-body">\s*<strong>'
+                  + re.escape(label) + r'( <span class="wd-setup__tag">Optional</span>)?</strong>', html_page, re.S)
+    return (m is not None, bool(m and m.group(1)), bool(m and m.group(2)))
+
+
+check("the setup checklist shows on a brand-new school with its classes already done and subjects still to do",
+      "Finish setting up your school" in page and step_state(page, "Add your subjects") == (True, False, False)
+      and step_state(page, "Review your classes")[:2] == (True, True),
+      f"subjects {step_state(page, 'Add your subjects')}, classes {step_state(page, 'Review your classes')}")
+check("…and 'Connect email and SMS' is NOT ticked off by the platform's shared email or SMS, and is an important step (not optional)",
+      step_state(page, "Connect email and SMS") == (True, False, False), str(step_state(page, "Connect email and SMS")))
 op.post("/admin/school/onboarding/dismiss", {})
 page = op.text("/admin/school")
 check("dismissing the checklist hides it, but leaves a way to bring it back",
@@ -580,7 +591,7 @@ op.post(f"{STUDENTS}/{CHIKA}/toggle", {})  # deactivated: later exact-count sect
 check("…deactivating her afterwards keeps her out of everyone else's counts below",
       one("SELECT active FROM students WHERE id = :i", i=CHIKA) == 0)
 
-# ================================================================ 3. the school's own email and WhatsApp (set up now, so everything below can send)
+# ================================================================ 3. the school's own email and SMS (set up now, so everything below can send)
 DELIVERY = "/admin/school/delivery"
 op.post(f"{DELIVERY}/email/save", {"smtp_host": "smtp.posts.test", "smtp_port": "587", "smtp_security": "starttls",
                                    "smtp_user": "office@posts.test", "smtp_password": "mail-pass-123",
@@ -589,11 +600,16 @@ check("the school's mail server was saved, with its password encrypted",
       one("SELECT setting_value FROM school_delivery_settings WHERE setting_key = 'smtp_password'").startswith("enc:"))
 r = op.post(f"{DELIVERY}/email/test", {"to": "principal@example.test"})
 check("a test email was 'sent' through the mail stand-in", len(FakeSMTP.sent) == 1 and r.said("test message was sent"))
-op.post(f"{DELIVERY}/whatsapp/save", {"whatsapp_phone_number_id": "104512345678901", "whatsapp_graph_version": "v23.0",
-                                      "whatsapp_token": "EAAG-test-token"})
-check("the school's WhatsApp account was saved", count("school_delivery_settings", "setting_key = 'whatsapp_phone_number_id'") == 1)
-r = op.post(f"{DELIVERY}/whatsapp/check", {})
-check("the WhatsApp connection check ran against the stand-in", r.said("Connected to WhatsApp"))
+op.post(f"{DELIVERY}/sms/save", {"sms_sender_id": "POSTSCH", "sms_gateway": "direct-refund", "sms_api_token": "bsn-test-token"})
+check("the school's SMS account was saved, with its token encrypted",
+      count("school_delivery_settings", "setting_key = 'sms_sender_id'") == 1
+      and one("SELECT setting_value FROM school_delivery_settings WHERE setting_key = 'sms_api_token'").startswith("enc:"))
+r = op.post(f"{DELIVERY}/sms/check", {})
+check("the SMS connection check ran against the stand-in", r.said("Connected to BulkSMS Nigeria"))
+check("with its own email server and SMS account saved, 'Connect email and SMS' is ticked off on the checklist",
+      step_state(op.text("/admin/school"), "Connect email and SMS") == (True, True, False))
+r = op.post(f"{DELIVERY}/sms/balance", {})
+check("the school can see its own SMS balance", r.said("Balance:") and r.said("1,000.00"))
 
 # ================================================================ 4. assignments and projects
 ASSIGN = "/admin/school/assignments"
@@ -764,8 +780,8 @@ TUITION = one("SELECT id FROM finance_fee_items WHERE name = 'Tuition (JSS 1)'")
 op.post(f"{FIN}/fee-items/new", {**FEE, "name": "Uniform", "category": "Uniform", "amount": "12000", "optional": "1", "required": ""})
 UNIFORM = one("SELECT id FROM finance_fee_items WHERE name = 'Uniform'")
 check("two fee items were created and mapped to their class", count("finance_fee_item_classes", "class_id = :c AND active = 1", c=JSS1) == 2)
-check("…and the setup checklist now considers itself complete and stays out of the way",
-      "Finish setting up your school" not in op.text("/admin/school"))
+check("…and the checklist ticks off the fee items step (the rest of the list is still to do)",
+      step_state(op.text("/admin/school"), "Set up your fee items")[:2] == (True, True))
 op.post(f"{FIN}/fee-items/{UNIFORM}/edit", {**FEE, "name": "School uniform", "category": "Uniform", "amount": "13500", "optional": "1"})
 check("a fee item was edited", one("SELECT amount FROM finance_fee_items WHERE id = :i", i=UNIFORM) == 13500)
 op.post(f"{FIN}/fee-items/{UNIFORM}/toggle", {})
@@ -798,7 +814,7 @@ check("a payment was allocated to a fee", one("SELECT sum(amount) FROM finance_p
 check("a recorded payment emailed its receipt to the guardian automatically",
       len(FakeSMTP.sent) == mail_auto + 1 and any(p.get_content_type() == "application/pdf" for p in FakeSMTP.sent[-1].iter_attachments())
       and "Part payment" in FakeSMTP.sent[-1].get_body().get_content())
-check("…and sent it by WhatsApp too, both attempts logged",
+check("…and sent the payment text by SMS too, both attempts logged",
       count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PAYMENT) == 2)
 receipt_pdf = op.get(f"{FIN}/receipts/{PAYMENT}/pdf")
 check("the receipt PDF is drawn from the school's own identity", receipt_pdf.status_code == 200 and receipt_pdf.data.startswith(b"%PDF"))
@@ -809,8 +825,8 @@ mail_before = len(FakeSMTP.sent)
 op.post(f"{FIN}/receipts/{PAYMENT}/email", {})
 check("a receipt PDF was emailed to the guardian", len(FakeSMTP.sent) == mail_before + 1
       and any(part.get_content_type() == "application/pdf" for part in FakeSMTP.sent[-1].iter_attachments()))
-op.post(f"{FIN}/receipts/{PAYMENT}/whatsapp", {})
-check("a receipt PDF was sent by WhatsApp", any(u.endswith("/media") for u in WHATSAPP_CALLS)
+op.post(f"{FIN}/receipts/{PAYMENT}/sms", {})
+check("a payment text was sent by SMS", any(u.endswith("/v2/sms") for u in SMS_CALLS)
       and count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PAYMENT) == 4)
 r = op.post(f"{FIN}/payments/new", {**PAY, "amount": "5000", "reference": "CASH-002"})
 VOIDED = int(grab(r"/receipts/(\d+)", r.location, "the second receipt's id"))
@@ -841,18 +857,17 @@ op.post(f"{RC}/my-signature", {"action": "upload"}, files={"signature_file": png
 op.post(f"{RC}/my-signature", {"action": "remove"})
 check("a staff signature can be replaced and removed", one("SELECT COUNT(*) FROM admins WHERE signature_path IS NOT NULL AND signature_path <> ''") == 0)
 ADA_CLASS = one("SELECT class_id FROM student_enrolments WHERE student_id = :s AND session_id = :c", s=ADA, c=CURRENT)
-op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": "A hardworking and polite pupil."})
+op.post(f"{RC}/comments", {"student_id": ADA, "session_id": CURRENT, "term": "First Term", "comment": "A hardworking and polite pupil."})
 check("the class teacher's comment on a student's report card was saved",
       one("SELECT comment FROM report_card_comments WHERE student_id = :s AND term = 'First Term'", s=ADA) == "A hardworking and polite pupil.")
-op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": ""})
+op.post(f"{RC}/comments", {"student_id": ADA, "session_id": CURRENT, "term": "First Term", "comment": ""})
 check("clearing the box removes the comment", one("SELECT COUNT(*) FROM report_card_comments WHERE student_id = :s", s=ADA) == 0)
-op.post(f"{RC}/comments?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {f"comment_{ADA}": "Shows great promise."})
-op.post(f"{RC}/traits?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term",
-        {f"trait_{ADA}_punctuality": "5", f"trait_{ADA}_neatness": "3"})
+op.post(f"{RC}/comments", {"student_id": ADA, "session_id": CURRENT, "term": "First Term", "comment": "Shows great promise."})
+op.post(f"{RC}/traits", {"student_id": ADA, "session_id": CURRENT, "term": "First Term", "trait_punctuality": "5", "trait_neatness": "3"})
 check("the class teacher's affective/psychomotor trait ratings on a student's report card were saved",
       one("SELECT ratings FROM report_card_traits WHERE student_id = :s AND term = 'First Term'", s=ADA)
       == '{"neatness": 3, "punctuality": 5}')
-op.post(f"{RC}/traits?class_id={ADA_CLASS}&session_id={CURRENT}&term=First Term", {})
+op.post(f"{RC}/traits", {"student_id": ADA, "session_id": CURRENT, "term": "First Term"})
 check("clearing every trait removes the row", one("SELECT COUNT(*) FROM report_card_traits WHERE student_id = :s", s=ADA) == 0)
 
 # ================================================================ 7c. attendance
@@ -961,15 +976,29 @@ r2 = father.post("/parent/feedback", {"subject": "A form", "body": "Attaching th
 check("a disallowed file type is refused, and nothing was saved for it",
       r2.status in (200, 302) and one("SELECT COUNT(*) FROM parent_feedback WHERE subject = 'A form'") == 0)
 mail_before = len(FakeSMTP.sent)
-wa_before = len(WHATSAPP_CALLS)
+sms_before = len(SMS_CALLS)
 op.post(f"{FB}/{FEEDBACK}/reply", {"body": "Thank you, we will review it."})
-check("the school's reply reached the parent (in the app, by email and by WhatsApp)",
+check("the school's reply reached the parent by email and in the app, and cost no text",
       one("SELECT status FROM parent_feedback WHERE id = :f", f=FEEDBACK) == "in_progress"
-      and len(FakeSMTP.sent) > mail_before and len(WHATSAPP_CALLS) > wa_before)
+      and len(FakeSMTP.sent) > mail_before and len(SMS_CALLS) == sms_before)
 father.post(f"/parent/feedback/{FEEDBACK}/reply", {"body": "Thank you."})
 check("the parent replied in the same thread", count("parent_feedback_replies", "feedback_id = :f", f=FEEDBACK) == 2)
+father.post("/parent/notifications/read-all", {})
+check("a parent can mark every notification read from the bell",
+      count("school_notifications", "recipient_type = 'parent' AND recipient_id = :p AND read_at IS NULL", p=FATHER) == 0)
 op.post(f"{FB}/{FEEDBACK}/status", {"status": "resolved"})
 check("a conversation can be marked resolved", one("SELECT status FROM parent_feedback WHERE id = :f", f=FEEDBACK) == "resolved")
+sms_before_started = len(SMS_CALLS)
+op.post("/admin/school/parent-messages/new", {"parent_id": FATHER, "student_id": ADA, "subject": "Open day",
+                                              "body": "Please remember the open day on Friday."})
+STARTED = one("SELECT id FROM parent_feedback WHERE subject = 'Open day'")
+check("a member of staff can start a conversation with a student's parent; the first message is theirs, not the parent's",
+      STARTED is not None and one("SELECT body FROM parent_feedback WHERE id = :f", f=STARTED) == ""
+      and count("parent_feedback_replies", "feedback_id = :f AND admin_id IS NOT NULL", f=STARTED) == 1
+      and one("SELECT assigned_admin_id FROM parent_feedback WHERE id = :f", f=STARTED) is not None)
+check("the first message the school started was also sent to the parent as a text", len(SMS_CALLS) > sms_before_started)
+op.post(f"{FB}/{STARTED}/take", {})
+check("an administrator can choose to respond to a conversation", one("SELECT assigned_admin_id FROM parent_feedback WHERE id = :f", f=STARTED) is not None)
 
 # ================================================================ 10. the student's own portal
 student = Actor("student")
@@ -1309,7 +1338,7 @@ stranger.post(f"/reset-password/{token}", {"new_password": "recovered-password-9
 check("the password was reset through the emailed link", count("password_reset_tokens", "used_at IS NULL") == 0
       and Actor("signing in again").post("/login", {"username": "clerk1", "password": "recovered-password-9"}).location.endswith("/admin/home"))
 
-# ================================================================ 14b. the school's own profile and look; taking its email and WhatsApp away again
+# ================================================================ 14b. the school's own profile and look; taking its email and SMS away again
 op.post("/admin/school/branding/save", {"school_name": "Posts Academy", "school_motto": "Steady wins", "school_tagline": "Learn well",
                                         "school_phone": "0803 000 1111", "school_email": "hello@posts.test", "school_address": "1 Test Road",
                                         "school_brand_primary": "#0d2b52", "school_brand_accent": "#1674b9"},
@@ -1319,8 +1348,8 @@ check("the school changed its own name, contact details and look",
       and one("SELECT setting_value FROM school_public_settings WHERE setting_key = 'school_motto'") == "Steady wins")
 op.post(f"{DELIVERY}/email/clear", {})
 check("the school's own mail settings were removed", count("school_delivery_settings", "setting_key = 'smtp_host'") == 0)
-op.post(f"{DELIVERY}/whatsapp/clear", {})
-check("…and its WhatsApp settings", count("school_delivery_settings", "setting_key = 'whatsapp_phone_number_id'") == 0)
+op.post(f"{DELIVERY}/sms/clear", {})
+check("…and its SMS settings", count("school_delivery_settings", "setting_key = 'sms_sender_id'") == 0)
 
 # ================================================================ 15. promotion to the next session (last, because it moves the students)
 PROMO = "/admin/school/promotion"

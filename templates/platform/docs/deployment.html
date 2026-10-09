@@ -42,9 +42,9 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <ul>
   <li><strong><code>BRIGHTSTARS_ENV=production</code></strong> makes session cookies <code>Secure</code>, adds HSTS, and makes the application <em>refuse to start</em> if the secret is under 32 characters.</li>
   <li><strong><code>BRIGHTSTARS_TRUSTED_PROXIES</code></strong> is how many reverse proxies you run in front (usually 1). Leave it 0 with none. Too high lets a visitor forge their address in the audit log and dodge the sign-in limits; too low records the proxy's address for everyone. Behind a TLS-terminating proxy it is also what makes links in emails and the "Enter school" redirect use <code>https</code>.</li>
-  <li><strong><code>BRIGHTSTARS_DELIVERY_KEY</code></strong> encrypts schools' saved mail and WhatsApp secrets independently of the session secret. <strong>Set it before any school saves credentials and never change it afterwards.</strong> Without it the key derives from <code>BRIGHTSTARS_SECRET</code>, so rotating that secret would make every saved credential unreadable.</li>
+  <li><strong><code>BRIGHTSTARS_DELIVERY_KEY</code></strong> encrypts schools' saved mail and SMS secrets independently of the session secret. <strong>Set it before any school saves credentials and never change it afterwards.</strong> Without it the key derives from <code>BRIGHTSTARS_SECRET</code>, so rotating that secret would make every saved credential unreadable.</li>
   <li><code>BRIGHTSTARS_CONTACT_EMAIL</code> is optional: the address the marketing page's buttons write to. Without it the page shows the buttons without a mail link.</li>
-  <li>Optional shared mail and WhatsApp accounts (<code>BRIGHTSTARS_SMTP_*</code>, <code>BRIGHTSTARS_WHATSAPP_*</code>) are the fallback for schools that have set up none. See the full list in the {{ page('reference-config', 'configuration reference') }}.</li>
+  <li>Optional shared mail and SMS accounts (<code>BRIGHTSTARS_SMTP_*</code>, <code>BRIGHTSTARS_SMS_*</code>) are the fallback for schools that have set up none. See the full list in the {{ page('reference-config', 'configuration reference') }}.</li>
 </ul>
 
 <h2 id="first">4. First launch</h2>
@@ -86,7 +86,7 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <tr><td>Tenants folder on shared storage, or <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (if more than one server)</td><td>Every server sees every school's files.</td></tr>
 <tr><td>Backups of the registry, each school database and <code>tenants/</code></td><td>A school is a database plus a folder.</td></tr>
 <tr><td>PostgreSQL <code>max_connections</code> sized for schools &times; pool &times; workers</td><td>Otherwise new connections fail as schools are added.</td></tr>
-<tr><td>Shared mail and WhatsApp accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>
+<tr><td>Shared mail and SMS accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>
 <tr><td>Chrome or Chromium installed, if candidates' result <em>images</em> are wanted</td><td>The one feature that shells out to a browser.</td></tr>
 <tr><td>Contract suite and the end-to-end scripts pass against a copy of production settings</td><td>See {{ page('testing', 'Testing') }}.</td></tr>
 </table></div>

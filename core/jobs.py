@@ -1,5 +1,5 @@
 """Durable background work: telling parents or students something has happened (an email, a
-WhatsApp message, an in-app alert) without making the person who triggered it wait for a slow mail
+text message, an in-app alert) without making the person who triggered it wait for a slow mail
 server. A row is written to the database *before* the thread that does the sending starts, so a
 thread that never finishes - a restart, a crash, a connection dropped mid-send - leaves something
 to retry instead of the work simply vanishing, which is what a bare ``threading.Thread`` (this

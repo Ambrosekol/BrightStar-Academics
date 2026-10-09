@@ -1,0 +1,125 @@
+/* Report cards page: a compact picker bar, an in-page student list, and small windows for the
+   comment, the trait ratings and the teacher's signature. Colours come from school-ui.css tokens. */
+
+.rc-app .sr-only, .rc-modal .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; }
+
+/* ---- the bar across the top ---- */
+.rc-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
+  background: var(--surface-0); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.rc-bar__pickers { display: flex; gap: 10px; flex-wrap: wrap; }
+.rc-bar__actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rc-pick { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rc-pick > span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.rc-pick select { min-width: 150px; height: 36px; padding: 0 32px 0 10px; font: inherit; font-size: 12.5px; line-height: 1.2; text-overflow: ellipsis; color: var(--ink);
+  background-color: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 8px; }
+.rc-pick select:focus-visible, .rc-btn:focus-visible, .rc-summary input:focus-visible, .rc-modal textarea:focus-visible, .rc-x:focus-visible {
+  outline: 2px solid var(--brand-accent); outline-offset: 1px; }
+
+.rc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 14px; font: inherit; font-size: var(--fs-sm);
+  font-weight: 600; color: var(--ink); background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.rc-btn:hover { background: var(--surface-2); }
+.rc-btn--primary { color: #fff; background: var(--brand); border-color: var(--brand); }
+.rc-btn--primary:hover { background: var(--brand-dark); }
+.rc-btn--quiet { border-color: transparent; background: transparent; color: var(--ink-2); }
+.rc-btn--quiet:hover { background: var(--surface-2); }
+.rc-btn--sm { height: 30px; padding: 0 11px; font-size: 12.5px; }
+.rc-btn[hidden] { display: none; }
+.rc-btn[disabled] { opacity: .55; cursor: progress; }
+.rc-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.rc-dot.is-on { background: var(--success); }
+.rc-dot.is-off { background: var(--warning); }
+
+.rc-note { margin-top: 10px; padding: 9px 13px; border-radius: 9px; font-size: var(--fs-sm); line-height: 1.5;
+  color: var(--warning); background: var(--warning-bg); border: 1px solid var(--warning-line); }
+.rc-note a { color: inherit; font-weight: 700; }
+
+/* ---- the student list ---- */
+.rc-panel { margin-top: 12px; background: var(--surface-0); border: 1px solid var(--line); border-radius: 12px; min-height: 180px; }
+.rc-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 180px; padding: 24px; text-align: center; color: var(--ink-3); font-size: var(--fs-sm); }
+.rc-state[hidden], #rc-loaded[hidden], .rc-empty[hidden], .rc-form-error[hidden], #rc-class-pdf[hidden] { display: none; }
+.rc-state strong { color: var(--ink); font-size: var(--fs-md); }
+.rc-state--error strong { color: var(--danger); }
+#rc-loading { flex-direction: row; gap: 12px; }
+.rc-spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--surface-3); border-top-color: var(--brand-accent); animation: rc-spin .7s linear infinite; }
+@keyframes rc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rc-spinner { animation-duration: 2.4s; } }
+
+.rc-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.rc-summary__stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.rc-stat { padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--surface-2); }
+.rc-stat b { color: var(--ink); }
+.rc-summary__tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rc-summary input { height: 36px; width: 190px; padding: 0 11px; font: inherit; font-size: var(--fs-sm); border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-0); color: var(--ink); }
+
+.rc-table-wrap { overflow-x: auto; }
+.rc-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.rc-table th { padding: 9px 14px; text-align: left; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); background: var(--surface-1); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.rc-table td { padding: 10px 14px; vertical-align: middle; border-bottom: 1px solid var(--line); }
+.rc-table tbody tr:last-child td { border-bottom: 0; }
+.rc-table tbody tr:hover { background: var(--surface-1); }
+.rc-col-end { text-align: right !important; }
+.rc-name strong { display: block; color: var(--ink); }
+.rc-name small { color: var(--ink-3); }
+.rc-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.rc-pill.ready { color: var(--success); background: var(--success-bg); }
+.rc-pill.waiting { color: var(--warning); background: var(--warning-bg); }
+.rc-pill.none { color: var(--ink-3); background: var(--surface-2); }
+.rc-cell-text { display: block; max-width: 280px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-cell-sub { display: block; color: var(--ink-3); font-size: 12px; }
+.rc-none { color: var(--ink-3); }
+.rc-meter { display: inline-block; width: 54px; height: 6px; margin-right: 8px; vertical-align: middle; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.rc-meter > i { display: block; height: 100%; background: var(--brand-accent); }
+.rc-row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.rc-empty { margin: 0; padding: 20px; text-align: center; color: var(--ink-3); }
+
+@media (max-width: 760px) {
+  .rc-pick select { min-width: 0; width: 100%; }
+  .rc-bar__pickers { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .rc-bar__pickers .rc-pick:first-child { grid-column: 1 / -1; }
+  .rc-summary input { width: 100%; }
+  .rc-table thead { display: none; }
+  .rc-table, .rc-table tbody, .rc-table tr, .rc-table td { display: block; width: 100%; }
+  .rc-table tr { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .rc-table td { padding: 3px 0; border: 0; }
+  .rc-cell-text { max-width: none; white-space: normal; }
+  .rc-row-actions { justify-content: flex-start; margin-top: 6px; }
+}
+
+/* ---- the small windows ---- */
+.rc-modal { width: min(520px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-0); color: var(--ink); box-shadow: 0 24px 60px rgba(13, 20, 33, .28); }
+.rc-modal--traits { width: min(620px, calc(100vw - 24px)); }
+.rc-modal--wide { width: min(640px, calc(100vw - 24px)); }
+.rc-modal::backdrop { background: rgba(13, 20, 33, .45); }
+.rc-modal__form { display: flex; flex-direction: column; max-height: calc(100vh - 34px); margin: 0; }
+.rc-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+.rc-modal__head h2 { margin: 0; font-size: var(--fs-lg); }
+.rc-modal__head p { margin: 3px 0 0; font-size: var(--fs-sm); color: var(--ink-3); }
+.rc-x { width: 32px; height: 32px; flex: 0 0 32px; font-size: 22px; line-height: 1; color: var(--ink-2); background: transparent; border: 0; border-radius: 8px; cursor: pointer; }
+.rc-x:hover { background: var(--surface-2); }
+.rc-modal__body { padding: 14px 18px; overflow-y: auto; }
+.rc-modal__foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--surface-1); border-radius: 0 0 14px 14px; }
+.rc-spacer { flex: 1; font-size: 12px; color: var(--ink-3); }
+.rc-modal textarea { width: 100%; resize: vertical; min-height: 130px; padding: 10px 12px; font: inherit; font-size: var(--fs-md); line-height: 1.5; color: var(--ink); background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 9px; box-sizing: border-box; }
+.rc-modal__meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+.rc-form-error { margin: 10px 0 0; padding: 8px 11px; font-size: var(--fs-sm); color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-line); border-radius: 8px; }
+
+.rc-scale { margin-bottom: 10px; font-size: 12px; color: var(--ink-3); }
+.rc-scale b { color: var(--ink); }
+.rc-tg + .rc-tg { margin-top: 14px; }
+.rc-tg h3 { margin: 0 0 4px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.rc-trait { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; min-width: 0; }
+.rc-trait + .rc-trait { border-top: 1px solid var(--line); }
+.rc-trait__label { font-size: var(--fs-sm); color: var(--ink); }
+.rc-rate { display: flex; gap: 4px; margin-left: auto; }
+.rc-rate label { position: relative; }
+.rc-rate input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.rc-rate span { display: grid; place-items: center; width: 32px; height: 30px; font-size: 13px; font-weight: 700; color: var(--ink-2); background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 7px; }
+.rc-rate label:hover span { background: var(--surface-2); }
+.rc-rate input:checked + span { color: #fff; background: var(--brand); border-color: var(--brand); }
+.rc-rate input:focus-visible + span { outline: 2px solid var(--brand-accent); outline-offset: 1px; }
+
+@media (max-width: 520px) {
+  .rc-trait { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .rc-rate { margin-left: 0; }
+  .rc-rate span { width: 40px; }
+}

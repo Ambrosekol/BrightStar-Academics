@@ -718,6 +718,9 @@ def inject_csrf_token():
     unread=open_controls=0
     finance_unallocated=None
     if admin:
+        # Once a day (and not more often than every half hour) the school looks for birthdays coming up.
+        from blueprints.school.birthdays import run_birthday_check_safely
+        remember('birthday-check', 1800, run_birthday_check_safely)
         unread,open_controls=remember('notification-counts', badge_cache_seconds(), _notification_counts, admin['id'])
         if is_school_admin(admin) or admin_has_permission(admin['id'],'finance.record'):
             from blueprints.finance.helpers import _finance_can_view_all, _finance_unallocated_summary
@@ -934,12 +937,13 @@ from core.accounts import _clear_identity_sessions  # noqa: E402
 # ---------------- parent portal + admin parent management ----------------
 # Moved to blueprints/parents/routes.py.
 import blueprints.parents.routes  # noqa: F401,E402
+import blueprints.parents.messaging  # noqa: F401,E402
 
 def _release_due_school_results():
     """Release every approved result whose session release time has passed.
 
     A student's term whose last result this releases has its report card ready, so its parents are
-    told (email and WhatsApp), exactly as when an administrator releases it by hand. The release is
+    told (email and SMS), exactly as when an administrator releases it by hand. The release is
     committed here, before anyone is told, and only when it actually released something.
     """
     now=datetime.now(timezone.utc).isoformat()
@@ -1088,6 +1092,7 @@ import blueprints.school.delivery  # noqa: F401,E402
 import blueprints.school.report_cards  # noqa: F401,E402
 import blueprints.school.results_records  # noqa: F401,E402
 import blueprints.school.onboarding  # noqa: F401,E402
+import blueprints.school.settings  # noqa: F401,E402
 import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402

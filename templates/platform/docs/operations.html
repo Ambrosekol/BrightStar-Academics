@@ -29,7 +29,7 @@
 <p>Alerting ({{ file('core/alerting.py') }}) watches the log lines that mean something needs a look: the registry unreachable, a job that used up its retries, a burst of delivery failures for one school, a sign-in rate limit actually being hit. They always log; set <code>BRIGHTSTARS_ALERT_WEBHOOK</code> to also have each one post there (Slack's own incoming-webhook shape works as-is).</p>
 
 <h2 id="limits">Rate limits</h2>
-<p>Sign-in (schools and console), password recovery and the email/WhatsApp test buttons allow a number of tries per stretch of time, for example 8 sign-ins per 5 minutes per address and username. The counts live in the registry (table <code>rate_limits</code>), so several workers or a restart cannot multiply or reset them. Each is a fixed window; only a hash of the key is stored. If the registry cannot be reached each worker counts in its own memory and logs a warning at most once a minute; nobody is locked out. A limit at the reverse proxy is still worthwhile, and behind a proxy set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application sees real visitor addresses (or every visitor shares one count).</p>
+<p>Sign-in (schools and console), password recovery and the email/SMS test buttons allow a number of tries per stretch of time, for example 8 sign-ins per 5 minutes per address and username. The counts live in the registry (table <code>rate_limits</code>), so several workers or a restart cannot multiply or reset them. Each is a fixed window; only a hash of the key is stored. If the registry cannot be reached each worker counts in its own memory and logs a warning at most once a minute; nobody is locked out. A limit at the reverse proxy is still worthwhile, and behind a proxy set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application sees real visitor addresses (or every visitor shares one count).</p>
 
 <h2 id="passwords">Passwords</h2>
 <ul>
@@ -69,7 +69,7 @@
 <tr><th>Symptom</th><th>Likely cause and what to do</th></tr>
 <tr><td>A school shows "address not found"</td><td>The hostname is not registered (or is registered to another school); check the school's page in the console. A platform host that is also registered to a school logs a warning at start: the platform wins, taking that school offline.</td></tr>
 <tr><td>Everyone reports being signed out</td><td>A restart, or <code>new-launch</code>. Expected.</td></tr>
-<tr><td>Parents say they received nothing</td><td>The school has no email/WhatsApp set up and the deployment has no shared account; or the guardian's email or phone is missing on the student; or WhatsApp's 24-hour rule. The delivery log says which.</td></tr>
+<tr><td>Parents say they received nothing</td><td>The school has no email/SMS set up and the deployment has no shared account; or the guardian's email or phone is missing on the student; or SMS's 24-hour rule. The delivery log says which.</td></tr>
 <tr><td>A school cannot be entered</td><td>The entry ticket is single-use and short-lived: go back to the console and press <em>Enter school</em> again. If the school cannot be reached, the console says so.</td></tr>
 <tr><td>Every visitor seems to share one sign-in limit</td><td>Behind a proxy with <code>BRIGHTSTARS_TRUSTED_PROXIES</code> at 0.</td></tr>
 <tr><td>"Cannot add NOT NULL column" at upgrade</td><td>A model added a required column with no default. Give it a default.</td></tr>

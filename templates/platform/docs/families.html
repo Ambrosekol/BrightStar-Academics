@@ -23,11 +23,11 @@
   <li>Staff create parent accounts (and link them to students), each with a one-time password. A brother or sister is linked to the <em>same</em> parent account, not a new one.</li>
 </ul>
 
-<h2 id="delivery">Email and WhatsApp: a school's own accounts</h2>
-<p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. The school's own top-level administrator sets them up on <em>Email &amp; WhatsApp</em> ({{ route('admin_school_delivery') }}) - restricted to that one admin type, not a permission any other role can be granted - each with a button to test before relying on it.</p>
+<h2 id="delivery">Email and SMS: a school's own accounts</h2>
+<p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. The school's own top-level administrator sets them up on <em>Email &amp; SMS</em> ({{ route('admin_school_delivery') }}) - restricted to that one admin type, not a permission any other role can be granted - each with a button to test before relying on it.</p>
 <div class="table-scroll"><table>
 <tr><th>Rule</th><th>Why</th></tr>
-<tr><td><strong>The platform's shared account is the fallback.</strong> A school that has set up nothing sends through the <code>BRIGHTSTARS_SMTP_*</code> / <code>BRIGHTSTARS_WHATSAPP_*</code> account if the deployment has one. With neither, it cannot send, and says so.</td><td>New schools work at once, but nothing is ever sent from a place nobody chose.</td></tr>
+<tr><td><strong>The platform's shared account is the fallback.</strong> A school that has set up nothing sends through the <code>BRIGHTSTARS_SMTP_*</code> / <code>BRIGHTSTARS_SMS_*</code> account if the deployment has one. With neither, it cannot send, and says so.</td><td>New schools work at once, but nothing is ever sent from a place nobody chose.</td></tr>
 <tr><td><strong>A half-set-up school never borrows the platform's account.</strong> Once a mail host is entered, the school's settings are used exclusively, even if incomplete.</td><td>Otherwise a typo would quietly send a school's parents' mail from the platform's address.</td></tr>
 <tr><td><strong>Secrets are encrypted at rest</strong> (Fernet) in the school's own database, under a key derived from the application secret <em>and the school's code</em>. Never shown again; blank on save means "keep".</td><td>A copy of a school's database is not a copy of its mail credentials, and one school's stored token means nothing in another. Set <code>BRIGHTSTARS_DELIVERY_KEY</code> so rotating the app secret does not strand them.</td></tr>
 <tr><td><strong>The server cannot be aimed at its own network.</strong> In production a school's mail host must resolve only to public addresses (checked when saved and again before each connection, connecting to the very address checked); only ports 25, 465, 587 and 2525.</td><td>A school chooses a host the <em>server</em> connects to, which is a way to probe internal services.</td></tr>
@@ -37,14 +37,14 @@
 <h2 id="notices">What parents are told, and when</h2>
 <div class="table-scroll"><table>
 <tr><th>Event</th><th>Channels</th><th>Code</th></tr>
-<tr><td>New assignment or project</td><td>email, WhatsApp to the guardian</td><td><code>_notify_guardians_of_school_work</code></td></tr>
-<tr><td>A fee charged to their child</td><td>in-app, email, WhatsApp</td><td><code>_notify_parents_fee_assessed</code></td></tr>
-<tr><td><strong>A payment recorded</strong></td><td>in-app; the <strong>receipt PDF</strong> by email and WhatsApp, automatically</td><td><code>_notify_parents_payment_recorded</code>, <code>_send_payment_receipt_to_guardian</code></td></tr>
-<tr><td><strong>A term's results released, so the report card is ready</strong></td><td>in-app, email, WhatsApp</td><td><code>_notify_parents_report_card_ready</code>, {{ file('blueprints/school/result_notices.py') }}</td></tr>
+<tr><td>New assignment or project</td><td>in-app, email to the guardian</td><td><code>_notify_guardians_of_school_work</code></td></tr>
+<tr><td>A fee charged to their child</td><td>in-app, email, SMS</td><td><code>_notify_parents_fee_assessed</code></td></tr>
+<tr><td><strong>A payment recorded</strong></td><td>in-app; the <strong>receipt PDF</strong> by email and a payment text by SMS, automatically</td><td><code>_notify_parents_payment_recorded</code>, <code>_send_payment_receipt_to_guardian</code></td></tr>
+<tr><td><strong>A term's results released, so the report card is ready</strong></td><td>in-app, email, SMS</td><td><code>_notify_parents_report_card_ready</code>, {{ file('blueprints/school/result_notices.py') }}</td></tr>
 </table></div>
 <p>All in {{ file('core/notifications.py') }}. They share one contract: <strong>best effort, and never blocks the change that triggered it</strong>. A missing channel, an unset contact or a failed delivery for one child never stops the others and never rolls anything back. Each sender is called only after its own commit has succeeded.</p>
 <p>Every attempt through the two guardian-contact senders (<code>_notify_guardian_email</code>,
-<code>_notify_guardian_whatsapp</code>) is also recorded to {{ table('notification_delivery_logs') }} -
+<code>_notify_guardian_sms</code>) is also recorded to {{ table('notification_delivery_logs') }} -
 student, kind, channel, recipient, sent or failed, and why - so a school can answer "did she get it?"
 itself from {{ route('admin_notification_log') }} ({{ file('blueprints/school/notice_log.py') }}),
 without asking a developer to read a server log. Payment receipts keep their own, older version of

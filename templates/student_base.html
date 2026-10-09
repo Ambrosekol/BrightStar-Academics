@@ -1,0 +1,37 @@
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
+{#- The frame for student-portal pages that are not the dashboard: the school's mark, the student's first
+    name and a way out. A page fills `title` and `content`, and `scripts` if it needs one. -#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Student Portal{% endblock %} — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='parent-portal.css', v='1') }}">
+</head>
+<body class="school-ui pp-body">{{ connectivity_banner() }}
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="fp-bar">
+  <a class="fp-bar__brand" href="{{ home_url }}">
+    {{ school_mark(school_brand) }}
+    <span class="fp-bar__brand-text">
+      <span class="fp-bar__name">{{ school_brand.name }}</span>
+      <span class="fp-bar__kind">{{ home_kind }}</span>
+    </span>
+  </a>
+  <div class="fp-bar__actions">
+    <span class="fp-bar__person">{{ person_name }}</span>
+    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+  </div>
+</header>
+<main class="fp-main pp-main" id="main">
+  {% block content %}{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='interactions.js', v='1') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

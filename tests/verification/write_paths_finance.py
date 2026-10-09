@@ -32,7 +32,7 @@ What a parent sees
 * the dashboard and the fee page show the lifetime balance across every session, so a debt left in an
   older session is never hidden, with the older session called out; an unallocated payment is shown
   on the side and never netted off;
-* assessing a fee or recording a payment tells the guardian by email and WhatsApp (through the school's
+* assessing a fee or recording a payment tells the parent by email and SMS (through the school's
   own accounts, caught at the last step) and in the app; a failure of either channel never stops the
   charge or the payment being saved; a notification is "New" once and "Old" afterwards;
 * a parent can download their own child's receipt and nobody else's, and never another family's account.
@@ -91,12 +91,13 @@ from core import delivery as _delivery  # noqa: E402
 from core.security import ADMIN_ENDPOINT_PERMISSIONS  # noqa: E402
 from werkzeug.security import generate_password_hash  # noqa: E402
 
-# app.py has just read the developer's .env, which may hold real mail and WhatsApp credentials. A test
+# app.py has just read the developer's .env, which may hold real mail and SMS credentials. A test
 # must never be able to reach them: start from a platform with no shared account at all.
 for name in ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-             "BRIGHTSTARS_WHATSAPP_TOKEN", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID", "BRIGHTSTARS_DELIVERY_KEY",
+             "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
+             "BRIGHTSTARS_DELIVERY_KEY",
              "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS",
-             "BRIGHTSTARS_WHATSAPP_GRAPH_VERSION"):
+             ):
     os.environ.pop(name, None)
 
 results = []
@@ -114,7 +115,7 @@ def check(name, ok, detail=""):
 class Outbox:
     """Everything the application tried to send, caught at the very last step."""
     mail = []        # (the account it went through, the message)
-    whatsapp = []    # (the token it was sent with, the JSON that was sent)
+    sms = []         # (the token it was sent with, the JSON that was sent)
     outage = False   # when set, both channels fail, as if the providers were down
 
 
@@ -150,12 +151,9 @@ class FakeResponse:
 
 def fake_urlopen(request, timeout=0):
     if Outbox.outage:
-        raise OSError("simulated WhatsApp outage")
-    url = request.full_url
-    if url.endswith("/media"):
-        return FakeResponse({"id": "media-1"})
-    Outbox.whatsapp.append((request.headers.get("Authorization"), json.loads(request.data.decode())))
-    return FakeResponse({"messages": [{"id": "wamid.1"}]})
+        raise OSError("simulated SMS outage")
+    Outbox.sms.append((request.headers.get("Authorization"), json.loads(request.data.decode())))
+    return FakeResponse({"status": "success", "data": {"id": "MSG1", "cost": 2.5}})
 
 
 _delivery._open_smtp = lambda settings: FakeSMTP(settings)
@@ -281,18 +279,18 @@ def add_admin(school, username, role_name):
 
 op_alpha, op_beta = operator_in(alpha), operator_in(beta)
 
-# Each school sets up its own mail and WhatsApp account, so every alert can be traced to the right sender.
+# Each school sets up its own mail and SMS account, so every alert can be traced to the right sender.
 for school, person in ((alpha, op_alpha), (beta, op_beta)):
     person.post("/admin/school/delivery/email/save", {
         "smtp_host": f"smtp.{school.code}.test", "smtp_port": "587", "smtp_security": "starttls",
         "smtp_user": f"mailer-{school.code}", "smtp_password": "mail-pass-123",
         "smtp_from": f"office@{school.code}.example"}, page="/admin/school/delivery")
-    person.post("/admin/school/delivery/whatsapp/save", {
-        "whatsapp_phone_number_id": "1045123456789" + ("1" if school is alpha else "2"), "whatsapp_graph_version": "v23.0",
-        "whatsapp_token": f"token-{school.code}"}, page="/admin/school/delivery")
-check("each school set up its own email and WhatsApp account",
+    person.post("/admin/school/delivery/sms/save", {
+        "sms_sender_id": "ALPHASCH" if school is alpha else "BETASCH", "sms_gateway": "direct-refund",
+        "sms_api_token": f"token-{school.code}"}, page="/admin/school/delivery")
+check("each school set up its own email and SMS account",
       alpha.count("school_delivery_settings", "setting_key = 'smtp_host'") == 1
-      and beta.count("school_delivery_settings", "setting_key = 'whatsapp_token'") == 1)
+      and beta.count("school_delivery_settings", "setting_key = 'sms_api_token'") == 1)
 
 STATE_ROW = {"gender": "Female", "date_of_birth": "2014-05-01", "state_of_origin": "Lagos", "blood_group": "O+",
              "genotype": "AA"}
@@ -384,6 +382,11 @@ def new_item(person, **fields):
 
 def item_id(school, name):
     return school.one("SELECT id FROM finance_fee_items WHERE name = :n", n=name)
+
+
+def history_page(person):
+    """The assessment history is not part of the Fee Structure page any more (it is fetched when its tab is opened)."""
+    return person.text(f"{FIN_URL}/assessment-history")
 
 
 def history_rows(html, student_id):
@@ -499,7 +502,7 @@ check("…and the legacy label is gone", "(legacy)" not in op_alpha.text(f"{ITEM
 check("an unknown fee item is a 404, not an error", op_alpha.get(f"{ITEMS}/999999/edit").status_code == 404)
 
 # ================================================================ 2. charging students: who, what, when, how often
-Outbox.mail.clear(), Outbox.whatsapp.clear()
+Outbox.mail.clear(), Outbox.sms.clear()
 r = assess(op_alpha, JON, CURRENT, [CLUB], term="First Term", amount="1")
 check("a fee is charged to a student for a term", alpha.count("finance_fee_assessments", "student_id = :s", s=JON) == 1)
 row = alpha.sql("SELECT amount, term, category, fee_item_id, active FROM finance_fee_assessments WHERE student_id = :s", s=JON)[0]
@@ -546,7 +549,7 @@ assess(op_alpha, JON, CURRENT, [CLUB], term="Third Term")
 check("…and the next charge uses the new amount",
       alpha.one("SELECT amount FROM finance_fee_assessments WHERE student_id = :s AND term = 'Third Term'", s=JON) == 2500)
 check("a student with no guardian address or number is still charged, and nothing was sent for them",
-      alpha.count("finance_fee_assessments", "student_id = :s", s=JON) == 3 and not Outbox.mail and not Outbox.whatsapp)
+      alpha.count("finance_fee_assessments", "student_id = :s", s=JON) == 3 and not Outbox.mail and not Outbox.sms)
 
 # ================================================================ 3. paying, and what "paid" means
 assess(op_alpha, IVY, CURRENT, [TUITION, UNIFORM], term="First Term")
@@ -620,8 +623,8 @@ check("the fee it was applied to is Part Paid: 15,000 of 40,000, 25,000 still ow
       (mine["Tuition"]["status"], mine["Tuition"]["paid"], mine["Tuition"]["outstanding"]) == ("Part Paid", 15000, 25000))
 check("…and the other fees are untouched", mine["Uniform"]["status"] == "Unpaid" and mine["Development Levy"]["status"] == "Unpaid")
 
-fee_page = op_alpha.text(ITEMS)
-check("the Fee Structure page shows Part Paid for that charge, with a link to the student's account",
+fee_page = history_page(op_alpha)
+check("the assessment history shows Part Paid for that charge, with a link to the student's account",
       (CURRENT_NAME, "First Term", "Tuition (JSS 1)", "Part Paid") in history_rows(fee_page, IVY)
       and f"/admin/finance/students/{IVY}/account?session_id={CURRENT}" in fee_page)
 account_page = op_alpha.text(f"{FIN_URL}/students/{IVY}/account?session_id={CURRENT}")
@@ -645,8 +648,8 @@ allocate(op_alpha, P2, {A_TUI: 25000})
 mine = account(alpha, IVY)
 check("the second payment settles the fee: Paid, nothing owed",
       (mine["Tuition"]["status"], mine["Tuition"]["paid"], mine["Tuition"]["outstanding"]) == ("Paid", 40000, 0))
-check("…the Fee Structure page and the fee picker's JSON both say Paid",
-      (CURRENT_NAME, "First Term", "Tuition (JSS 1)", "Paid") in history_rows(op_alpha.text(ITEMS), IVY)
+check("…the assessment history and the fee picker's JSON both say Paid",
+      (CURRENT_NAME, "First Term", "Tuition (JSS 1)", "Paid") in history_rows(history_page(op_alpha), IVY)
       and op_alpha.get(f"{FIN_URL}/students/{IVY}/assessed-items.json?session_id={CURRENT}").get_json()
       ["First Term"][str(TUITION)]["paid"] is True)
 r, P3 = pay(op_alpha, IVY, CURRENT, "5000", payer="Ivy's Mum", category="Uniform")
@@ -743,15 +746,15 @@ allocate(op_alpha, PK2, {A_KEMI: 200.20})
 kobo = account(alpha, KEMI)["Development Levy"]
 check("…and once ₦200.20 more is applied it is Paid, with exactly nothing owed (not a rounding crumb)",
       (kobo["status"], kobo["outstanding"]) == ("Paid", 0), str(kobo))
-check("…the fee picker and the Fee Structure page agree",
+check("…the fee picker and the assessment history agree",
       op_alpha.get(f"{FIN_URL}/students/{KEMI}/assessed-items.json?session_id={CURRENT}").get_json()
       ["Full Session"][str(LEVY)]["paid"] is True
-      and (CURRENT_NAME, "Full Session", "Development levy", "Paid") in history_rows(op_alpha.text(ITEMS), KEMI))
+      and (CURRENT_NAME, "Full Session", "Development levy", "Paid") in history_rows(history_page(op_alpha), KEMI))
 dash = mum_kobo.text("/parent/dashboard")
 check("…and the parent's dashboard says there is no outstanding fee, instead of an outstanding balance of ₦0.00",
-      "No outstanding fees" in dash and "You have an outstanding balance" not in dash)
+      'class="pp-owing__amount">All paid<' in dash and "pp-owing is-owing" not in dash)
 check("…and the parent's fee page shows the levy as Paid",
-      'pcf-badge paid">Paid' in mum_kobo.text(f"/parent/children/{KEMI}/finance"))
+      'pp-badge is-paid">Paid' in mum_kobo.text(f"/parent/children/{KEMI}/finance"))
 
 # ================================================================ 4. no session's balance is ever hidden
 op_alpha.post("/admin/school/sessions", {"action": "create", "name": "2025/2026", "start_date": "2025-09-01",
@@ -785,8 +788,8 @@ check("last session's fee is Part Paid with 25,000 owed", account(alpha, ADA, PA
 check("this session's fees are Paid and Unpaid",
       (account(alpha, ADA)["Uniform"]["status"], account(alpha, ADA)["Books & Stationery"]["status"]) == ("Paid", "Unpaid"))
 
-fee_page = op_alpha.text(ITEMS)
-check("the Fee Structure page has a searchable list of students, and a dialog for each",
+fee_page = history_page(op_alpha) + op_alpha.text(ITEMS)
+check("the assessment history has a searchable list of students, and a dialog for each",
       'id="financeHistorySearch"' in fee_page and f'id="assessmentHistoryModal-{ADA}"' in fee_page)
 check("…whose dialog for Ada groups her charges by session, then term, each with its own Paid / Part Paid / Unpaid",
       sorted(history_rows(fee_page, ADA)) == sorted([
@@ -815,10 +818,10 @@ check("a hand-made request for the paid uniform is refused, and writes nothing",
       "already been fully paid" in said and allocations(alpha, PA3) == 0, said)
 
 dash = mum_obi.text("/parent/dashboard")
-check("the parent's dashboard has a Fees panel", "<span>Fees</span>" in dash)
+check("the parent's dashboard shows each child's fees at a glance", "<small>Fees</small>" in dash)
 check("…showing the lifetime balance, 33,000, not zero, though this session's debt is only 8,000",
-      "₦33,000.00" in dash and "₦33,000</strong>" in dash and "You have an outstanding balance" in dash,
-      re.findall(r"pd-outstanding-amount\">([^<]*)<", dash)[0] if "pd-outstanding-amount" in dash else "no banner")
+      'class="pp-owing__amount">₦33,000.00<' in dash and "₦33,000</b>" in dash and "pp-owing is-owing" in dash,
+      re.findall(r'pp-owing__amount">([^<]*)<', dash)[0] if "pp-owing__amount" in dash else "no banner")
 check("…and lists the child once, and links to their fee account, though Ada is enrolled in two sessions "
       "(listed twice, her balance was added up twice)", f"/parent/children/{ADA}/finance" in dash and dash.count(f'href="/parent/children/{ADA}"') == 1
       and alpha.count("student_enrolments", "student_id = :s AND active = 1", s=ADA) == 2)
@@ -826,17 +829,17 @@ check("…and shows nothing about another family's child", "Bola" not in dash an
 fee_account = mum_obi.text(f"/parent/children/{ADA}/finance")
 check("the parent's fee page opens with the same lifetime figures: 58,000 charged, 25,000 paid, 33,000 owed",
       all(f"₦{money(v)}" in fee_account for v in (58000, 25000, 33000)))
-check("…calls out that a balance is also outstanding in last session", "Balance also outstanding in:" in fee_account
+check("…calls out that a balance is also outstanding in last session", "Balance also outstanding in" in fee_account
       and f"{PAST_NAME} · ₦25,000" in fee_account)
 check("…reports the 5,000 received but not applied to a fee, separately",
-      "₦5,000.00 recently paid, not yet applied to a specific fee" in fee_account)
+      "₦5,000.00 received, not yet applied to a fee" in fee_account)
 check("…lists this session's fees with Paid and Unpaid",
-      'pcf-badge paid">Paid' in fee_account and 'pcf-badge unpaid">Unpaid' in fee_account)
+      'pp-badge is-paid">Paid' in fee_account and 'pp-badge is-unpaid">Unpaid' in fee_account)
 past_view = mum_obi.text(f"/parent/children/{ADA}/finance?session_id={PAST}")
 check("…and last session's fee, when chosen, as Part Paid with 25,000 owed",
-      'pcf-badge partial">Part Paid' in past_view and f"₦{money(25000)}" in past_view and "Tuition" in past_view)
+      'pp-badge is-part">Part paid' in past_view and f"₦{money(25000)}" in past_view and "Tuition" in past_view)
 check("the parent's payment list has a receipt link for each payment and uses real buttons",
-      f"/parent/children/{ADA}/receipts/{PA1}/pdf" in fee_account and 'class="btn btn-light btn-small"' in fee_account)
+      f"/parent/children/{ADA}/receipts/{PA1}/pdf" in fee_account and 'class="ui-btn ui-btn--light ui-btn--sm"' in fee_account)
 css = open(os.path.join(ROOT, "static", "app.css"), encoding="utf-8").read()
 check("the parent pages' stylesheet defines the button styles they use",
       all(needle in css for needle in (".btn{", ".btn-primary{", ".btn-light{")))
@@ -845,12 +848,12 @@ check("the parent pages' stylesheet defines the button styles they use",
 first = mum_obi.text(f"/parent/children/{ADA}")
 second = mum_obi.text(f"/parent/children/{ADA}")
 check("the alerts about a child are labelled New the first time the profile is opened",
-      'class="pcd-notif-tag is-new"' in first and "New fee charged for Ada Obi" in first)
-check("…and Old on every visit after that", 'class="pcd-notif-tag is-new"' not in second
-      and 'class="pcd-notif-tag is-old"' in second)
+      'class="pp-dot" title="New"' in first and "New fee charged for Ada Obi" in first)
+check("…and no longer marked new on every visit after that (the alert itself is still listed)", 'class="pp-dot" title="New"' not in second
+      and "New fee charged for Ada Obi" in second)
 
 # ================================================================ 5. what a parent is told, and never being blocked by it
-Outbox.mail.clear(), Outbox.whatsapp.clear()
+Outbox.mail.clear(), Outbox.sms.clear()
 
 
 def bola_alerts():
@@ -872,25 +875,26 @@ check("…saying what was charged, how much, and for which term and session",
       msg is not None and "Bola Eze" in msg["Subject"] and "Bus Transport (JSS 1)" in body and "₦30,000.00" in body
       and "First Term" in body and CURRENT_NAME in body, body[:200])
 check("…signed with the school's name, not another's", "Alpha School" in body and "Beta" not in body)
-texts = [(token, payload) for token, payload in Outbox.whatsapp if payload["to"] == "+2348035550002"]
-check("…and sent the guardian's WhatsApp number a message with the school's own token",
-      len(texts) == 1 and texts[0][0] == "Bearer token-alpha", str(Outbox.whatsapp))
-check("…mentioning the school, the child, the fee and the amount",
-      texts and all(s in texts[0][1]["text"]["body"] for s in ("Alpha School", "Bola Eze", "Bus Transport (JSS 1)", "₦30,000.00")))
+texts = [(token, payload) for token, payload in Outbox.sms if payload["to"] == "+2348055550000"]
+check("…and texted the PARENT ACCOUNT's phone (08055550000), not the guardian phone typed on the student's record (08035550002), with the school's own token and sender name",
+      len(texts) == 1 and texts[0][0] == "Bearer token-alpha" and texts[0][1]["from"] == "ALPHASCH"
+      and not any(p["to"] == "+2348035550002" for _, p in Outbox.sms), str(Outbox.sms))
+check("…mentioning the school, the child, the amount and the term",
+      texts and all(s in texts[0][1]["body"] for s in ("Alpha School", "Bola Eze", "₦30,000.00", "First Term")), str(texts))
 notice_rows = alpha.sql(
     "SELECT channel, status FROM notification_delivery_logs WHERE student_id = :s AND kind = 'fee_assessed'", s=BOLA)
 check("the school's own notice log recorded both attempts, both sent",
-      sorted(notice_rows) == [("email", "sent"), ("whatsapp", "sent")], notice_rows)
+      sorted(notice_rows) == [("email", "sent"), ("sms", "sent")], notice_rows)
 notice_page = op_alpha.text(f"/admin/school/notice-log?student_id={BOLA}")
 check("…and the notice log page itself names the student, the notice and both channels",
-      "Bola Eze" in notice_page and "Fee charged" in notice_page and ">email<" in notice_page and ">whatsapp<" in notice_page,
+      "Bola Eze" in notice_page and "Fee charged" in notice_page and ">email<" in notice_page and ">sms<" in notice_page,
       notice_page[:2000])
 check("…and left one in-app alert for that child's parent, and none for another family's",
       bola_alerts() == n_before + 1
       and "New fee charged for Bola Eze" in mum_eze.text("/parent/dashboard")
       and "New fee charged for Bola Eze" not in mum_obi.text("/parent/dashboard"))
 
-Outbox.mail.clear(), Outbox.whatsapp.clear()
+Outbox.mail.clear(), Outbox.sms.clear()
 r, PB1 = pay(op_alpha, BOLA, CURRENT, "20000", payer="Mrs Eze", category="Transport")
 receipt_b1 = alpha.one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=PB1)
 sent = [(s, m) for s, m in Outbox.mail if m["To"] == "eze.family@alpha.example"]
@@ -898,9 +902,9 @@ body = sent[0][1].get_body().get_content() if sent else ""
 check("recording a payment emailed the guardian a confirmation, with the amount and the receipt number",
       len(sent) == 1 and "Payment Receipt" in sent[0][1]["Subject"] and "₦20,000.00" in body and receipt_b1 in body
       and any(a.get_content_type() == "application/pdf" for a in sent[0][1].iter_attachments()), body[:200])
-check("…and sent it by WhatsApp too, with the receipt number",
-      any(isinstance(p, dict) and p.get("to") == "+2348035550002" and receipt_b1 in p.get("document", {}).get("caption", "")
-          for _, p in Outbox.whatsapp))
+check("…and texted the parent's phone too, with the amount and the receipt number",
+      any(p.get("to") == "+2348055550000" and receipt_b1 in p.get("body", "") and "20,000.00" in p.get("body", "")
+          for _, p in Outbox.sms), str(Outbox.sms))
 check("…and there are now two in-app alerts for Bola's parent: the charge and the payment", bola_alerts() == n_before + 2)
 
 # the 20,000 is recorded but not applied to any fee yet: it is not "paid", and does not hide the debt
@@ -908,10 +912,10 @@ totals = alpha.run(lambda: FIN._finance_student_lifetime_totals(BOLA))
 check("Bola owes the whole 30,000 for now, and the 20,000 is shown as received but unallocated",
       (totals["assessed"], totals["paid"], totals["outstanding"], totals["unallocated"]) == (30000, 0, 30000, 20000), str(totals))
 dash = mum_eze.text("/parent/dashboard")
-check("the dashboard says so: 30,000 outstanding", "₦30,000</strong>" in dash and "You have an outstanding balance" in dash)
+check("the dashboard says so: 30,000 outstanding", 'class="pp-owing__amount">₦30,000.00<' in dash and "pp-owing is-owing" in dash)
 page = mum_eze.text(f"/parent/children/{BOLA}/finance")
 check("the fee page shows the fee as Unpaid, and the 20,000 as received but not yet applied",
-      'pcf-badge unpaid">Unpaid' in page and "₦20,000.00 recently paid, not yet applied to a specific fee" in page)
+      'pp-badge is-unpaid">Unpaid' in page and "₦20,000.00 received, not yet applied to a fee" in page)
 check("…with the payment listed and its receipt one click away",
       receipt_b1 in page and f"/parent/children/{BOLA}/receipts/{PB1}/pdf" in page)
 pdf = mum_eze.get(f"/parent/children/{BOLA}/receipts/{PB1}/pdf")
@@ -924,15 +928,15 @@ allocate(op_alpha, PB1, {A_BUS: 20000})
 totals = alpha.run(lambda: FIN._finance_student_lifetime_totals(BOLA))
 check("once the office applies it, Bola's fee is Part Paid: 20,000 paid, 10,000 owed, nothing unallocated",
       (totals["paid"], totals["outstanding"], totals["unallocated"]) == (20000, 10000, 0)
-      and 'pcf-badge partial">Part Paid' in mum_eze.text(f"/parent/children/{BOLA}/finance"), str(totals))
+      and 'pp-badge is-part">Part paid' in mum_eze.text(f"/parent/children/{BOLA}/finance"), str(totals))
 r, PB2 = pay(op_alpha, BOLA, CURRENT, "10000", payer="Mrs Eze", category="Transport")
 allocate(op_alpha, PB2, {A_BUS: 10000})
 dash = mum_eze.text("/parent/dashboard")
 check("paid in full, the parent's dashboard says there is nothing outstanding",
-      "No outstanding fees" in dash and "You have an outstanding balance" not in dash)
+      'class="pp-owing__amount">All paid<' in dash and "pp-owing is-owing" not in dash)
 
-# a failed email or WhatsApp never stops a charge or a payment
-Outbox.mail.clear(), Outbox.whatsapp.clear()
+# a failed email or SMS never stops a charge or a payment
+Outbox.mail.clear(), Outbox.sms.clear()
 Outbox.outage = True
 try:
     n_before = bola_alerts()
@@ -940,12 +944,12 @@ try:
     r, PB3 = pay(op_alpha, BOLA, CURRENT, "1000", payer="Mrs Eze", category="Books & Stationery")
 finally:
     Outbox.outage = False
-check("with both email and WhatsApp down, the charge is still saved", alpha.count(
+check("with both email and SMS down, the charge is still saved", alpha.count(
     "finance_fee_assessments", "student_id = :s AND fee_item_id = :f", s=BOLA, f=BOOKS) == 1)
 check("…and the payment is still saved", PB3 is not None and alpha.one(
     "SELECT status FROM finance_payments WHERE id = :p", p=PB3) == "posted")
 check("…and the in-app alerts were still left for the parent", bola_alerts() == n_before + 2)
-check("…and nothing was sent", not Outbox.mail and not Outbox.whatsapp)
+check("…and nothing was sent", not Outbox.mail and not Outbox.sms)
 
 # a parent sees their own children, and only theirs
 cross = {
@@ -1036,7 +1040,7 @@ new_item(op_beta, name="Beta Lab Fee", category="Other", applicability="Full Ses
 LAB = item_id(beta, "Beta Lab Fee")
 CHIKE = register_student(op_beta, beta, "Chike", "Betaman", "chike.family@beta.example", "08035550009")
 mr_beta = make_parent(op_beta, beta, "Mr Betaman", "mr.betaman", "mr.betaman@beta.example", [CHIKE])
-Outbox.mail.clear(), Outbox.whatsapp.clear()
+Outbox.mail.clear(), Outbox.sms.clear()
 assess(op_beta, CHIKE, CURRENT_B, [LAB], term="Full Session")
 r, PBETA = pay(op_beta, CHIKE, CURRENT_B, "45000", payer="Beta Payer", category="Other")
 A_LAB = assessment_id(beta, CHIKE, LAB, "Full Session", CURRENT_B)
@@ -1045,12 +1049,12 @@ BETA_CODE = beta.one("SELECT code FROM schools ORDER BY id LIMIT 1")
 check("Beta charged, took a payment and applied it on its own, with its own receipt numbering from one",
       beta.one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=PBETA) == f"{BETA_CODE}-{YEAR}-00001"
       and account(beta, CHIKE, CURRENT_B)["Other"]["status"] == "Part Paid")
-check("Beta's alerts went out through Beta's own mail account and WhatsApp token, to Beta's own guardian",
+check("Beta's alerts went out through Beta's own mail account and SMS token, to Beta's own guardian and parent",
       Outbox.mail and all(s.source == "school" and s.host == "smtp.beta.test" and m["From"] == "office@beta.example"
                           and m["To"] == "chike.family@beta.example" for s, m in Outbox.mail)
-      and Outbox.whatsapp and all(t == "Bearer token-beta" and p["to"] == "+2348035550009" for t, p in Outbox.whatsapp)
+      and Outbox.sms and all(t == "Bearer token-beta" and p["to"] == "+2348055550000" and p["from"] == "BETASCH" for t, p in Outbox.sms)
       and all("Alpha" not in m.get_body().get_content() for _, m in Outbox.mail)
-      and all("Alpha" not in str(p) for _, p in Outbox.whatsapp))
+      and all("Alpha" not in str(p) for _, p in Outbox.sms))
 check("Alpha's receipt numbers are its own, unbroken from one, and never Beta's",
       [r[0] for r in alpha.sql("SELECT receipt_no FROM finance_payments ORDER BY id")]
       == [f"{SCHOOL_CODE}-{YEAR}-{n:05d}" for n in range(1, alpha.count("finance_payments") + 1)] and SCHOOL_CODE != BETA_CODE)

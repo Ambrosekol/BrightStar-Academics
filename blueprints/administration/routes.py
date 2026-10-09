@@ -363,7 +363,7 @@ def admin_account_new():
             errors=[msg]
             return render_template('admin_account_form.html',roles=roles,errors=errors,form=form,mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values)
         audit_log('admin_created','administration','admin',aid,{'username':username,'role_ids':role_ids,'access_boundaries':[_admin_scope_label(st,v) for st,vals in scope_groups.items() for v in vals],'direct_permissions':selected})
-        flash('Staff administrator created successfully.','success'); return render_template('admin_credentials.html',admin={'id':aid,'display_name':display,'username':username,'email':contact['email'],'phone':contact['phone'],'whatsapp':contact['whatsapp']},temporary_password=temporary_password)
+        flash('Staff account created successfully.','success'); return render_template('admin_credentials.html',admin={'id':aid,'display_name':display,'username':username,'email':contact['email'],'phone':contact['phone'],'whatsapp':contact['whatsapp']},temporary_password=temporary_password)
     return render_template('admin_account_form.html',roles=roles,errors=[],form={},mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(),selected_scope_values=['*'])
 
 @app.route('/admin/administration/admins/<int:aid>/edit',methods=['GET','POST'])
@@ -475,6 +475,8 @@ def admin_account_credentials_reset(aid):
     db.session.execute(sa_update(Admin).where(Admin.id==aid).values(
         password_hash=generate_password_hash(temporary_password),password_must_change=1))
     db.session.commit()
+    from core.session_guard import _invalidate_fingerprint_cache
+    _invalidate_fingerprint_cache('admin',aid)   # every browser signed in as them ends now, not when the cached copy expires
     audit_log('admin_credentials_reset','authentication','admin',aid,{'username':row['username'],'reset_by':me['username']},True,me)
     _notify_school_admins('Administrator login credentials reset',f'Login credentials for {row["username"]} were regenerated.','warning',url_for('admin_controls'),me['id'])
     flash('A new temporary password was generated. The previous password no longer works.','success')
@@ -520,7 +522,29 @@ def admin_messages():
     unread_map=dict(tuples(select(AdminMessage.sender_admin_id,func.count())
         .where(AdminMessage.recipient_admin_id==me['id'],AdminMessage.read_at.is_(None))
         .group_by(AdminMessage.sender_admin_id)))
-    return render_template('admin_messages.html',contacts=contacts,selected=selected,thread=thread,unread_messages=unread,unread_map=unread_map)
+
+    # Parents: the conversations with a student's parent live on this page too, on their own tab.
+    from blueprints.parents import messaging as parent_messaging
+    parents_allowed=parent_messaging.can_view(me)
+    tab='parents' if parents_allowed and (request.args.get('tab')=='parents' or request.args.get('thread',type=int)) and not selected_id else 'admins'
+    parents={'allowed':parents_allowed,'can_manage':parents_allowed and parent_messaging.can_manage(me),
+             'threads':[],'counts':{},'status':'','q':'','open':None,'statuses':parent_messaging.STATUS_LABELS}
+    if parents_allowed:
+        threads,counts=parent_messaging.staff_threads(me)
+        parents['counts']=counts
+        if tab=='parents':
+            status=request.args.get('status','')
+            parents['status']=status if status in parent_messaging.STATUSES else ''
+            parents['q']=request.args.get('q','').strip()
+            parents['threads']=parent_messaging.filter_threads(threads,parents['status'],parents['q'])
+            wanted=request.args.get('thread',type=int)
+            if wanted:
+                parents['open']=next((t for t in threads if t['id']==wanted),None) or parent_messaging.staff_thread(me,wanted)
+                if parents['open'] is None: flash('That conversation is not available to you.','error')
+    else:
+        counts={}
+    return render_template('admin_messages.html',contacts=contacts,selected=selected,thread=thread,unread_messages=unread,
+                           unread_map=unread_map,tab=tab,parents=parents,compose=bool(request.args.get('compose')))
 
 @app.get('/admin/administration/messages/unread-state')
 @admin_required

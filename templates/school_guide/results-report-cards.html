@@ -34,13 +34,15 @@ in the class is ready — download the whole class's cards as one PDF at once, f
 <p>The <a href="{{ url_for('admin_school_home') }}">School workspace's Overview page</a> also shows,
 for the current term, the single highest-scoring student in each class you can see — a quick "who's
 leading" view, updated automatically as results are released, needing nothing set up.</p>
-<p>A class teacher writes the <a href="{{ url_for('admin_school_report_card_comments') }}">comment</a>
-and rates <a href="{{ url_for('admin_school_report_card_traits') }}">traits</a> — Punctuality,
-Neatness, Leadership and the like — from the same page, and can do so before results are even
-released. Whoever last changes a comment or a rating is credited for it; saving the page unchanged
-never takes over someone else's.</p>
+<p>Choosing a class, session and term across the top of the page loads that class's students right
+there, with a spinning indicator and no page reload. Beside each student, a class teacher uses
+<strong>Comment</strong> to write the comment and <strong>Rate traits</strong> to rate Punctuality,
+Neatness, Leadership and the like; each opens a small window, and can be used before results are even
+released. Whoever last changes a comment or a rating is credited for it; saving it unchanged never takes
+over someone else's. <strong>My signature</strong>, at the top right, opens a window to draw or upload
+your own signature.</p>
 <div class="guide-tip">When a card becomes ready, the parent is told automatically — an in-app alert,
-an email and a WhatsApp message — that it is ready to view and download. Nobody has to remember to
+an email and a text message — that it is ready to view and download. Nobody has to remember to
 announce it.</div>
 
 <h2 id="settings">Setting up how a report card looks</h2>
@@ -49,8 +51,8 @@ announce it.</div>
 school's title (Principal, Headmistress, and so on) and their signature image, once for the whole
 school, plus how much of a subject's mark comes from Continuous Assessment versus the exam (see
 above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is different: it is where any
-member of staff uploads <em>their own</em> signature image, for use wherever their own name appears
-signed on a document.</p>
+member of staff draws or uploads <em>their own</em> signature image, for use wherever their own name
+appears signed on a document. It opens as a window on the Report cards page.</p>
 
 <h2 id="past-results">Bringing in past results</h2>
 <p>Step 3 of <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> brings in a student's graded

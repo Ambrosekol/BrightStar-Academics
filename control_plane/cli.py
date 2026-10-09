@@ -20,7 +20,7 @@
                                   generated.
     set-db-url CODE URL            point a school at a different connection string (a literal URL, or
                                   env:VARIABLE_NAME to read one from the environment instead)
-    rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/WhatsApp/Paystack secret
+    rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/SMS/Paystack secret
                                   from OLD to NEW - run this, then set BRIGHTSTARS_DELIVERY_KEY=NEW
                                   everywhere and restart; never change the environment variable first
     export-tenant CODE [--output DIR]   a school's whole database (pg_dump) plus its own uploads

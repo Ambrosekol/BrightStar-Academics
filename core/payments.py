@@ -1,7 +1,7 @@
 """A school's own Paystack account, so a parent can pay a fee online and have it land in the
 school's finance records exactly like a payment recorded by hand.
 
-The same shape as core/delivery.py's email/WhatsApp settings, for the same reasons:
+The same shape as core/delivery.py's email/SMS settings, for the same reasons:
 
 * **The secret key never touches a template or a log.** It is encrypted at rest, under a key
   derived from the application's secret and the school's code (its own domain, separate from

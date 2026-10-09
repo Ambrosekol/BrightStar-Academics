@@ -1,8 +1,8 @@
-"""The fee receipt: the PDF, the email, the WhatsApp message and the authorised signature, end to end
+"""The fee receipt: the PDF, the email, the payment text and the authorised signature, end to end
 on PostgreSQL.
 
 Three throw-away schools: "alpha" (own logo, address and phone), "beta" (own, different logo) and "gamma"
-(no logo, no contact details and no mail or WhatsApp account of its own). Everything is done through the
+(no logo, no contact details and no mail or SMS account of its own). Everything is done through the
 real admin, parent and finance routes with CSRF tokens read from real pages. The application's own PDF
 builder and its own sending code run for real; only the very last step is caught (the mail connection
 and ``urllib.request.urlopen``), so the messages can be read. The PDF is read without adding a library:
@@ -25,9 +25,9 @@ The authorised signature
 * the PDF and the pages show whichever signature is current, and none when there is none;
 * only a finance manager can change it, and one school's signature never appears on another's receipt.
 
-Email and WhatsApp
+Email and SMS
 * the email goes to the guardian on the student's record, from the school's own account, saying who,
-  how much and what for, with the very same PDF attached; the WhatsApp message carries the same PDF
+  how much and what for, with the very same PDF attached; the SMS is a short payment confirmation, not the PDF
   with a caption; each attempt is logged with its outcome and who sent it;
 * a school with no account of its own falls back to the platform's account, and one with neither says so;
 * no guardian address, no valid phone number, a provider that is down, a token the provider rejects, a
@@ -89,12 +89,11 @@ from core import delivery as _delivery  # noqa: E402
 from core.storage import uploads_dir  # noqa: E402
 from werkzeug.security import generate_password_hash  # noqa: E402
 
-# app.py has just read the developer's .env, which may hold real mail and WhatsApp credentials. A test
+# app.py has just read the developer's .env, which may hold real mail and SMS credentials. A test
 # must never be able to reach them: start from a platform with no shared account at all.
 PLATFORM_ENV = ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-                "BRIGHTSTARS_WHATSAPP_TOKEN", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID", "BRIGHTSTARS_DELIVERY_KEY",
-                "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS",
-                "BRIGHTSTARS_WHATSAPP_GRAPH_VERSION")
+                "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
+                "BRIGHTSTARS_DELIVERY_KEY", "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS")
 for name in PLATFORM_ENV:
     os.environ.pop(name, None)
 
@@ -113,8 +112,8 @@ def check(name, ok, detail=""):
 class Outbox:
     """Everything the application tried to send, caught at the very last step."""
     mail = []        # (the account it went through, the message)
-    whatsapp = []    # (the token, the address it was sent to, the JSON or the file)
-    mode = None      # None, "outage", "http401" or "nomedia"
+    sms = []         # (the token, the address it was sent to, the JSON)
+    mode = None      # None, "outage" or "http401"
 
 
 class FakeSMTP:
@@ -150,16 +149,11 @@ class FakeResponse:
 def fake_urlopen(request, timeout=0):
     url = request.full_url
     if Outbox.mode == "outage":
-        raise OSError("simulated WhatsApp outage")
+        raise OSError("simulated SMS outage")
     if Outbox.mode == "http401":
-        raise urllib.error.HTTPError(url, 401, "Unauthorized", {}, io.BytesIO(b"the token was not accepted"))
-    token = request.get_header("Authorization")
-    if url.endswith("/media"):
-        Outbox.whatsapp.append({"kind": "media", "url": url, "token": token, "body": request.data,
-                                "content_type": request.get_header("Content-type")})
-        return FakeResponse({} if Outbox.mode == "nomedia" else {"id": "media-1"})
-    Outbox.whatsapp.append({"kind": "message", "url": url, "token": token, "json": json.loads(request.data.decode())})
-    return FakeResponse({"messages": [{"id": "wamid.1"}]})
+        raise urllib.error.HTTPError(url, 401, "Unauthorized", {}, io.BytesIO(b"{}"))
+    Outbox.sms.append({"url": url, "token": request.get_header("Authorization"), "json": json.loads(request.data.decode())})
+    return FakeResponse({"status": "success", "data": {"id": "MSG1", "cost": 2.5}})
 
 
 _delivery._open_smtp = lambda settings: FakeSMTP(settings)
@@ -381,15 +375,15 @@ check("three schools were created, two with their own logo and one without",
       and beta.one("SELECT setting_value FROM school_public_settings WHERE setting_key = 'school_logo'") is not None
       and gamma.one("SELECT setting_value FROM school_public_settings WHERE setting_key = 'school_logo'") is None)
 
-# Alpha and Beta each set up their own mail and WhatsApp account. Gamma sets up nothing.
-for school, person, phone_id in ((alpha, op_alpha, "1045123456781"), (beta, op_beta, "1045123456782")):
+# Alpha and Beta each set up their own mail and SMS account. Gamma sets up nothing.
+for school, person, sender_id in ((alpha, op_alpha, "ALPHASCH"), (beta, op_beta, "BETASCH")):
     person.post("/admin/school/delivery/email/save", {
         "smtp_host": f"smtp.{school.code}.test", "smtp_port": "587", "smtp_security": "starttls",
         "smtp_user": f"mailer-{school.code}", "smtp_password": "mail-pass-123",
         "smtp_from": f"office@{school.code}.example"}, page="/admin/school/delivery")
-    person.post("/admin/school/delivery/whatsapp/save", {
-        "whatsapp_phone_number_id": phone_id, "whatsapp_graph_version": "v23.0",
-        "whatsapp_token": f"token-{school.code}"}, page="/admin/school/delivery")
+    person.post("/admin/school/delivery/sms/save", {
+        "sms_sender_id": sender_id, "sms_gateway": "direct-refund",
+        "sms_api_token": f"token-{school.code}"}, page="/admin/school/delivery")
 
 STATE_ROW = {"gender": "Female", "date_of_birth": "2014-05-01", "state_of_origin": "Lagos", "blood_group": "O+",
              "genotype": "AA"}
@@ -464,7 +458,7 @@ def logs(school, payment_id, channel):
 
 
 def send(person, path, payment_id, page=None):
-    """Press "Send by email" / "Send by WhatsApp" on the receipt page. Returns what the person is told."""
+    """Press "Send by email" / "Send text (SMS)" on the receipt page. Returns what the person is told."""
     r = person.post(f"{FIN_URL}/receipts/{payment_id}/{path}", {}, page=page or f"{FIN_URL}/receipts/{payment_id}")
     return r, person.said()
 
@@ -481,7 +475,7 @@ def body_of(msg):
 
 def clear_outbox():
     Outbox.mail.clear()
-    Outbox.whatsapp.clear()
+    Outbox.sms.clear()
     Outbox.mode = None
 
 
@@ -514,11 +508,16 @@ check("each school recorded its own payments, numbered with its own prefix, from
       and receipt_no(beta, PB) == f"BETA-{YEAR}-00001" and receipt_no(gamma, PG) == f"GAMMA-{YEAR}-00001",
       str([receipt_no(alpha, PA), receipt_no(beta, PB), receipt_no(gamma, PG)]))
 NO_A, NO_B, NO_G = receipt_no(alpha, PA), receipt_no(beta, PB), receipt_no(gamma, PG)
-# Recording a payment already sent the guardian the receipt, by itself (email with the PDF, and WhatsApp). Check that, then
+# Recording a payment already told the parents by itself (email with the PDF, and a text). Check that, then
 # start the rest of the run from a clean slate, so the checks below see only what they send by hand.
-check("recording a payment sent the guardian the receipt automatically: the PDF by email, and by WhatsApp",
-      len([m for m in Outbox.mail if NO_A in str(m[1]["Subject"])]) >= 1 and len(Outbox.whatsapp) >= 1
+check("recording a payment told the parent automatically: the receipt PDF by email, and a payment text by SMS",
+      len([m for m in Outbox.mail if NO_A in str(m[1]["Subject"])]) >= 1 and len(Outbox.sms) >= 1
       and alpha.count("finance_delivery_logs", "payment_id = :p AND status = 'sent'", p=PA) == 2)
+check("…the text went to the PARENT ACCOUNT's own phone number (08055550000), not to the guardian phone typed on the student's record (08031234567)",
+      any(c["token"] == "Bearer token-alpha" for c in Outbox.sms)
+      and all(c["json"]["to"] == "+2348055550000" for c in Outbox.sms if c["token"] == "Bearer token-alpha")
+      and not any(c["json"]["to"] == "+2348031234567" for c in Outbox.sms),
+      str([c["json"]["to"] for c in Outbox.sms]))
 for school in (alpha, beta, gamma):
     school.sql("DELETE FROM finance_delivery_logs")
 clear_outbox()
@@ -797,8 +796,8 @@ clear_outbox()
 r, said = send(cashier, "email", PA, page="/admin/password")
 check("…but not someone else's: refused, nothing sent, nothing logged",
       r.status_code == 403 and not Outbox.mail and len(logs(alpha, PA, "email")) == 1)
-r, said = send(cashier, "whatsapp", PA, page="/admin/password")
-check("…nor send it by WhatsApp", r.status_code == 403 and not Outbox.whatsapp and logs(alpha, PA, "whatsapp") == [])
+r, said = send(cashier, "sms", PA, page="/admin/password")
+check("…nor send its payment text", r.status_code == 403 and not Outbox.sms and logs(alpha, PA, "sms") == [])
 r, said = send(outsider, "email", PC, page="/admin/password")
 check("an administrator with no finance permission cannot send any receipt",
       r.status_code == 403 and not Outbox.mail and len(logs(alpha, PC, "email")) == 2)  # the automatic one, and the earlier manual one
@@ -808,7 +807,7 @@ clear_outbox()
 r = op_alpha.client.post(f"{FIN_URL}/receipts/{PA}/email", data={}, base_url=ALPHA)
 check("a request without a form token is refused, and sends nothing", r.status_code == 403 and not Outbox.mail)
 check("sending is a POST: opening the address is not allowed",
-      op_alpha.get(f"{FIN_URL}/receipts/{PA}/email").status_code == 405 and op_alpha.get(f"{FIN_URL}/receipts/{PA}/whatsapp").status_code == 405)
+      op_alpha.get(f"{FIN_URL}/receipts/{PA}/email").status_code == 405 and op_alpha.get(f"{FIN_URL}/receipts/{PA}/sms").status_code == 405)
 r, said = send(op_alpha, "email", 999999, page=f"{FIN_URL}/receipts/{PA}")
 check("a receipt that does not exist is a 404, not an email", r.status_code == 404 and not Outbox.mail)
 
@@ -826,68 +825,57 @@ check("…with nothing of Alpha's in the body or the attached PDF, and Beta's lo
 r, said = send(op_beta, "email", PNADIA, page=f"{FIN_URL}/receipts/{PB}")
 check("Beta cannot email Alpha's receipt by its number (there is no such receipt at Beta)", r.status_code == 404)
 
-# ================================================================ 5. sending a receipt by WhatsApp
+# ================================================================ 5. sending a payment text by SMS
 clear_outbox()
-r, said = send(op_alpha, "whatsapp", PA)
-media = [c for c in Outbox.whatsapp if c["kind"] == "media"]
-messages = [c for c in Outbox.whatsapp if c["kind"] == "message"]
-check("the Send by WhatsApp button uploads the receipt and then sends it, and says so",
-      r.status_code == 302 and said == "receipt sent through whatsapp business successfully." and len(media) == 1 and len(messages) == 1, said)
-check("…using the school's own WhatsApp account and token, not another's",
-      media and messages and all(c["token"] == "Bearer token-alpha" and "/v23.0/1045123456781/" in c["url"] for c in (media[0], messages[0])))
-boundary = re.search(r"boundary=(\S+)", media[0]["content_type"]).group(1) if media else ""
-part = media[0]["body"].split(b"Content-Type: application/pdf\r\n\r\n", 1)[1].rsplit(f"\r\n--{boundary}--".encode(), 1)[0] if media else b""
-uploaded = pdf_read(part)
-check("the file uploaded is the receipt PDF, named after the receipt number, and the very one the school prints",
-      f'filename="{NO_A}.pdf"'.encode() in media[0]["body"] and part.startswith(b"%PDF")
-      and uploaded["text"] == pdf_of(op_alpha, PA)[1]["text"] and draws(uploaded, RED))
-sent_json = messages[0]["json"] if messages else {}
-check("the message goes to the guardian's number in international form, as a document, with a caption naming the receipt and student",
-      sent_json.get("to") == "+2348031234567" and sent_json.get("type") == "document"
-      and sent_json["document"]["id"] == "media-1" and sent_json["document"]["filename"] == f"{NO_A}.pdf"
-      and sent_json["document"]["caption"] == f"Official payment receipt {NO_A} — Ada Obi", str(sent_json))
-check("the attempt is logged as sent, with WhatsApp's own message id",
-      len(logs(alpha, PA, "whatsapp")) == 1 and logs(alpha, PA, "whatsapp")[0][:3] == ("sent", "08031234567", "wamid.1"))
+r, said = send(op_alpha, "sms", PA)
+check("the Send text button sends the payment confirmation by SMS, and says so",
+      r.status_code == 302 and said == "payment text sent successfully." and len(Outbox.sms) == 1, said)
+sent_sms = Outbox.sms[0] if Outbox.sms else {"url": "", "token": "", "json": {}}
+check("…through BulkSMS Nigeria v2, with the school's own token, sender name and route, not another's",
+      sent_sms["url"] == "https://www.bulksmsnigeria.com/api/v2/sms" and sent_sms["token"] == "Bearer token-alpha"
+      and sent_sms["json"].get("from") == "ALPHASCH" and sent_sms["json"].get("gateway") == "direct-refund", str(sent_sms))
+check("…to the parent account's phone in international form (not the guardian phone on the student's record), naming the amount, student and receipt",
+      sent_sms["json"].get("to") == "+2348055550000" and NO_A in sent_sms["json"].get("body", "")
+      and "12,345.67" in sent_sms["json"]["body"] and "Ada Obi" in sent_sms["json"]["body"], str(sent_sms["json"]))
+check("the attempt is logged as sent, to that number",
+      len(logs(alpha, PA, "sms")) == 1 and logs(alpha, PA, "sms")[0][:3] == ("sent", "+2348055550000", "1 text sent"), str(logs(alpha, PA, "sms")))
 
 clear_outbox()
-r, said = send(op_alpha, "whatsapp", PNADIA)
-check("a student with no valid WhatsApp number: refused with a clear message, nothing sent, logged",
-      "no valid parent/guardian whatsapp number" in said and not Outbox.whatsapp
-      and logs(alpha, PNADIA, "whatsapp")[0][0] == "failed")
-r, said = send(op_gamma, "whatsapp", PG)
-check("a school with no WhatsApp account says it is not set up, and sends nothing",
-      "whatsapp is not set up" in said and not Outbox.whatsapp and logs(gamma, PG, "whatsapp")[0][0] == "failed")
+r, said = send(op_alpha, "sms", PNADIA)
+check("a student with no phone number anywhere (no parent account, no guardian phone): refused with a clear message, nothing sent, logged",
+      "no phone number on file" in said and not Outbox.sms and logs(alpha, PNADIA, "sms")[0][0] == "failed", said)
+r, said = send(op_gamma, "sms", PG)
+check("a school with no SMS account says it is not set up, and sends nothing",
+      "sms delivery is not set up" in said and not Outbox.sms and logs(gamma, PG, "sms")[0][0] == "failed", said)
 Outbox.mode = "http401"
-r, said = send(op_alpha, "whatsapp", PCASH)
-check("a token WhatsApp rejects: the error is reported and logged, and the token is not echoed",
-      "whatsapp api error 401" in said and "token-alpha" not in said
-      and logs(alpha, PCASH, "whatsapp")[-1][0] == "failed" and "token-alpha" not in (logs(alpha, PCASH, "whatsapp")[-1][3] or ""))
+r, said = send(op_alpha, "sms", PCASH)
+check("a token BulkSMS Nigeria rejects: the error is reported and logged, and the token is not echoed",
+      "token was not accepted" in said and "token-alpha" not in said
+      and logs(alpha, PCASH, "sms")[-1][0] == "failed" and "token-alpha" not in (logs(alpha, PCASH, "sms")[-1][3] or ""), said)
 Outbox.mode = "outage"
-r, said = send(op_alpha, "whatsapp", PCASH)
-check("WhatsApp unreachable: reported, logged, nothing sent",
-      "whatsapp delivery failed" in said and not Outbox.whatsapp and len(logs(alpha, PCASH, "whatsapp")) == 2)
-Outbox.mode = "nomedia"
-r, said = send(op_alpha, "whatsapp", PCASH)
-check("an upload WhatsApp does not give a media id for is not treated as sent",
-      "no media id" in said and not [c for c in Outbox.whatsapp if c["kind"] == "message"]
-      and logs(alpha, PCASH, "whatsapp")[-1][0] == "failed")
+r, said = send(op_alpha, "sms", PCASH)
+check("BulkSMS Nigeria unreachable: reported, logged, nothing sent",
+      "sms delivery failed" in said and not Outbox.sms and len(logs(alpha, PCASH, "sms")) == 2, said)
 Outbox.mode = None
 clear_outbox()
-r, said = send(op_beta, "whatsapp", PB)
-media, messages = ([c for c in Outbox.whatsapp if c["kind"] == k] for k in ("media", "message"))
-beta_upload = pdf_read(media[0]["body"].split(b"Content-Type: application/pdf\r\n\r\n", 1)[1]) if media else {"text": "", "images": []}
-check("Beta's WhatsApp receipt uses Beta's token and number, carries Beta's PDF, and names nobody at Alpha",
-      len(media) == 1 and len(messages) == 1 and media[0]["token"] == "Bearer token-beta" and "/1045123456782/" in media[0]["url"]
-      and messages[0]["json"]["to"] == "+2348035550009" and NO_B in messages[0]["json"]["document"]["caption"]
-      and "Alpha" not in messages[0]["json"]["document"]["caption"]
-      and NO_B in beta_upload["text"] and draws(beta_upload, BLUE) and not draws(beta_upload, RED) and "Alpha" not in beta_upload["text"])
-os.environ.update({"BRIGHTSTARS_WHATSAPP_TOKEN": "platform-token", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID": "111222333"})
+r, said = send(op_beta, "sms", PB)
+check("Beta's text uses Beta's token and sender name, names Beta's receipt, and nobody at Alpha",
+      len(Outbox.sms) == 1 and Outbox.sms[0]["token"] == "Bearer token-beta" and Outbox.sms[0]["json"]["from"] == "BETASCH"
+      and Outbox.sms[0]["json"]["to"] == "+2348055550000" and NO_B in Outbox.sms[0]["json"]["body"]
+      and "Alpha" not in Outbox.sms[0]["json"]["body"] and NO_A not in Outbox.sms[0]["json"]["body"], str(Outbox.sms))
+# who pays: the platform's account for a school with none of its own ('either'), then for every school ('platform')
+os.environ.update({"BRIGHTSTARS_SMS_API_TOKEN": "platform-token", "BRIGHTSTARS_SMS_SENDER_ID": "PLATFORM", "BRIGHTSTARS_SMS_PAYER": "either"})
 try:
     clear_outbox()
-    r, said = send(op_gamma, "whatsapp", PG)
-    check("with the platform's shared account a school with none of its own can send, through the platform's token",
-          said == "receipt sent through whatsapp business successfully." and Outbox.whatsapp
-          and all(c["token"] == "Bearer platform-token" and "/111222333/" in c["url"] for c in Outbox.whatsapp))
+    r, said = send(op_gamma, "sms", PG)
+    check("payer 'either': a school with none of its own can send, through the platform's token and sender name (to the guardian phone, there being no parent account)",
+          said == "payment text sent successfully." and Outbox.sms and all(c["token"] == "Bearer platform-token" and c["json"]["from"] == "PLATFORM" for c in Outbox.sms)
+          and Outbox.sms[0]["json"]["to"] == "+2348035550010", str(Outbox.sms))
+    os.environ["BRIGHTSTARS_SMS_PAYER"] = "platform"
+    clear_outbox()
+    r, said = send(op_alpha, "sms", PA)
+    check("payer 'platform': even a school with its own account sends through the platform's",
+          said == "payment text sent successfully." and Outbox.sms and Outbox.sms[0]["token"] == "Bearer platform-token", str(Outbox.sms))
 finally:
     for name in PLATFORM_ENV:
         os.environ.pop(name, None)
@@ -905,8 +893,8 @@ clear_outbox()
 r, said = send(op_alpha, "email", PV)
 check("a voided receipt is not emailed: a clear message, nothing sent, the attempt logged as failed",
       "voided" in said and not Outbox.mail and logs(alpha, PV, "email")[-1][0] == "failed")
-r, said = send(op_alpha, "whatsapp", PV)
-check("…nor sent by WhatsApp", "voided" in said and not Outbox.whatsapp and logs(alpha, PV, "whatsapp")[-1][0] == "failed")
+r, said = send(op_alpha, "sms", PV)
+check("…nor texted", "voided" in said and not Outbox.sms and logs(alpha, PV, "sms")[-1][0] == "failed")
 check("a receipt that is not voided never says VOIDED", "VOIDED" not in pdf_of(op_alpha, PA)[1]["text"])
 
 # ================================================================ 7. the school's own receipt prefix
