@@ -79,7 +79,9 @@ def test_interactions_js_is_loaded_everywhere_a_migrated_attribute_is_used():
     bases_with_it = set()
     for base in ("admin_base.html", "auth_base.html", "parent_base.html", "student_base.html", "platform/base.html", "platform/docs/_layout.html"):
         text = (ROOT / "templates" / base).read_text(encoding="utf-8")
-        if "interactions.js" in text:
+        # The parent and student portals share one frame (templates/portal_base.html), which loads it for both.
+        if "interactions.js" in text or "{% extends 'portal_base.html' %}" in text and "interactions.js" in (
+                ROOT / "templates" / "portal_base.html").read_text(encoding="utf-8"):
             bases_with_it.add(base)
     assert bases_with_it == {"admin_base.html", "auth_base.html", "parent_base.html", "student_base.html", "platform/base.html", "platform/docs/_layout.html"}, (
         f"a base template lost its interactions.js include: {bases_with_it}")

@@ -18,6 +18,48 @@
   ],
   "releases": [
     {
+      "version": "2.22.0",
+      "date": "2026-10-10",
+      "title": "New student and parent portals, with loading spinners",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The student and parent portals have been redesigned to match the staff portal: the same side menu and header, the school's colours, figures at the top of each page, and a menu bar along the bottom on phones. Every button and link shows a spinner while its page loads, so it is clear something is happening, also when the portal is installed as an app.",
+          "help": "families"
+        },
+        {
+          "audience": "staff",
+          "text": "A middle name typed as 'None', 'N/A', '-' or similar is no longer saved, whether a student is added by hand, imported or admitted, and the ones already saved that way have been cleared, so names no longer show 'None' in the middle.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "If a student's photo cannot be read from the school's file storage, the portal now shows their initials instead of a broken picture, and the server log says which file could not be read.",
+          "help": "students"
+        },
+        {
+          "audience": "family",
+          "text": "The parent portal has a new look: a menu with each of your children by name, a figures strip showing what is owed, and on your phone a menu bar along the bottom (Home, Children, Messages, Store). Pages open in place without reloading, and a spinner shows on every button or link you press until the page is ready."
+        },
+        {
+          "audience": "family",
+          "text": "On a child's page, the fee account, attendance and exam timetable open in a pop-up over the page; close it to carry on where you were. In the fee account, a balance in another session opens on top of it. On a phone, each fee shows as its own card, so nothing has to be scrolled sideways."
+        },
+        {
+          "audience": "family",
+          "text": "A child without a middle name no longer shows 'None' in their name, and a photo that cannot be loaded shows your child's initials instead of a broken picture."
+        },
+        {
+          "audience": "student",
+          "text": "Your portal has a new look, in the school's colours: a side menu (a bottom menu bar on your phone) with Home, Tests, Examinations, Practice, Timetable and Attendance, your work and results on the home page, and a spinner on every button you press until the next page is ready."
+        },
+        {
+          "audience": "student",
+          "text": "Your attendance and exam timetable open in a pop-up from the home page. The pages where you take a test, an examination, an assignment or a practice are now in the school's colours too; nothing about how they work has changed, and your timer still starts only after you press Start."
+        }
+      ]
+    },
+    {
       "version": "2.21.1",
       "date": "2026-10-10",
       "title": "The portal as an app, the store on the Overview, and Back from the dashboard",

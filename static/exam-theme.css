@@ -1,0 +1,41 @@
+/* The pages a student takes a test, an examination, an assignment or a practice on (student_assessment_take,
+   student_assignment_take, student_practice_take): their layout and scripts are the exam's own (static/app.css), so a
+   live paper is never disturbed; this only puts them in the school's colours and the portal's look. --navy and --blue
+   are the school's own (app.py's apply_school_theme writes them on every page), with the platform's as the fallback. */
+:root { --ex-brand: var(--navy, #0d2b52); --ex-accent: var(--blue, #1674b9); }
+body.student-assessment-page, body.student-portal-page { background: color-mix(in srgb, var(--ex-brand) 4%, #f7f6f3); }
+.student-exam-top { background: var(--ex-brand) !important; color: #fff; box-shadow: 0 6px 18px color-mix(in srgb, var(--ex-brand) 25%, transparent); }
+.student-exam-top .portal-brand strong, .student-exam-top .portal-brand span { color: #fff; }
+.student-exam-top .portal-brand img { border-radius: 10px; background: #fff; padding: 3px; }
+.student-assessment-timer { background: color-mix(in srgb, #fff 16%, var(--ex-brand)) !important; border: 1px solid color-mix(in srgb, #fff 30%, transparent); }
+.student-eyebrow { color: var(--ex-accent) !important; }
+.student-assessment-heading h1, .student-panel h2, .student-question-card h2 { color: color-mix(in srgb, var(--ex-brand) 85%, #000) !important; }
+.student-question-card, .student-panel { border-color: color-mix(in srgb, var(--ex-brand) 12%, #e4e1da) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ex-brand) 6%, transparent) !important; border-radius: 16px !important; }
+.student-option { border-color: color-mix(in srgb, var(--ex-brand) 14%, #e4e1da) !important; transition: border-color .12s ease, background .12s ease; }
+.student-option:hover { background: color-mix(in srgb, var(--ex-accent) 6%, #fff) !important; border-color: var(--ex-accent) !important; }
+.student-option:has(input:checked) { background: color-mix(in srgb, var(--ex-accent) 11%, #fff) !important; border-color: var(--ex-accent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ex-accent) 20%, transparent); }
+.student-option input { accent-color: var(--ex-accent); }
+.btn-primary, .student-start-btn { background: var(--ex-brand) !important; color: #fff !important; border-radius: 10px !important; }
+.btn-primary:hover, .student-start-btn:hover { background: color-mix(in srgb, var(--ex-brand) 86%, #000) !important; }
+.qnum { border-color: color-mix(in srgb, var(--ex-brand) 18%, #e4e1da) !important; color: var(--ex-brand) !important; }
+.qnum.answered { background: color-mix(in srgb, var(--ex-accent) 14%, #fff) !important; border-color: var(--ex-accent) !important; }
+.qnum.current { outline: 3px solid var(--ex-accent) !important; outline-offset: 1px; }
+/* A button pressed (Save & Next, Submit) spins until the next page arrives (static/parent-loading.js). */
+.pp-busy { position: relative; pointer-events: none; opacity: .9; }
+.pp-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: ex-spin .7s linear infinite; }
+.pp-loadbar { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483600; height: 3px; overflow: hidden; pointer-events: none; opacity: 0; }
+.pp-loadbar::before { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; background: linear-gradient(90deg, transparent, var(--ex-accent), #fff); }
+.is-loading .pp-loadbar { opacity: 1; }
+.is-loading .pp-loadbar::before { animation: ex-load 1.1s ease-in-out infinite; }
+.pp-loadveil { display: none; }
+@keyframes ex-spin { to { transform: rotate(360deg); } }
+@keyframes ex-load { 0% { left: -40%; } 100% { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pp-busy::after, .is-loading .pp-loadbar::before { animation-duration: 2.4s; } }
+@media (max-width: 640px) {
+  .student-question-card { padding: 16px !important; }
+  .student-assessment-heading h1 { font-size: 22px !important; overflow-wrap: anywhere; }
+  .student-option { padding: 12px !important; }
+}

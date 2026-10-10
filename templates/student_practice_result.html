@@ -1,38 +1,38 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Practice Result — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-</head>
-<body class="student-portal-page">{{ connectivity_banner() }}
-<header class="student-topbar">
-  <div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Student Portal</span></div></div>
-  <div class="student-top-actions"><span>{{student.first_name}} {{student.last_name}}</span><a href="{{url_for('logout')}}">Sign out</a></div>
-</header>
-<main class="student-dashboard-shell">
-  <section class="student-result-card">
-    <p class="student-eyebrow">PRACTICE RESULT &middot; NOT RECORDED</p>
-    <h1>{{assessment.title}}</h1>
-    <p>{{assessment.subject_name}} &middot; {{assessment.class_name}}</p>
-    <div class="student-result-score"><strong>{{score}}</strong><span>/ {{total}}</span></div>
-    <div class="student-result-percent">{{'%.0f'|format(percentage)}}%</div>
-    <p class="student-result-note">This was practice only. It is not saved and does not affect your grades. Take it again for a new question order.</p>
-    <a class="student-start-btn student-result-back" href="{{url_for('student_practice_take',assessment_id=assessment.id)}}">Retake this practice &rarr;</a>
-    <a class="student-start-btn student-result-back" href="{{url_for('student_assessment_list',kind='practice')}}">All practice tests</a>
-  </section>
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head"><h2>Review your answers</h2></div>
+{% extends 'student_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Practice Result{% endblock %}
+{#- A practice run's score (never recorded) and every question with the answer given and, where it was wrong, the
+    right one. -#}
+{% block content %}
+{% set right = results|selectattr('right')|list|length %}
+<div class="ac pf pf-narrow">
+<section class="pf-card pf-result">
+  <span class="pf-result__ico{{ ' is-good' if percentage >= 50 }}">{{ icon('nav-practice') }}</span>
+  <span class="pf-hero__kicker">PRACTICE RESULT &middot; NOT RECORDED</span>
+  <h1>{{ assessment.title }}</h1>
+  <p>{{ assessment.subject_name }} &middot; {{ assessment.class_name }}</p>
+  <div class="pf-result__score"><strong>{{ score }}</strong><span>/ {{ total }}</span></div>
+  <div class="pf-result__pct">{{ '%.0f'|format(percentage) }}%</div>
+  <span class="pf-meter pf-meter--lg"><i style="width:{{ [percentage, 100]|min }}%"></i></span>
+  <p class="pf-result__note">This was practice only. It is not saved and does not affect your grades. Take it again for a new question order.</p>
+  <div class="pf-hero__act" style="justify-content:center">
+    <a class="ac-btn ac-btn--primary pf-big-btn" href="{{ url_for('student_practice_take', assessment_id=assessment.id) }}" data-full>Retake this practice &rarr;</a>
+    <a class="ac-btn pf-big-btn" href="{{ url_for('student_assessment_list', kind='practice') }}">All practice tests</a>
+  </div>
+</section>
+<section class="pf-card" style="margin-top:14px">
+  <div class="pf-card__h"><h2>Review your answers</h2><span class="ac-tag ac-tag--good">{{ right }} right</span></div>
+  <ul class="pf-list">
     {% for r in results %}
-    <article class="student-list-row">
-      <div>
-        <strong>Q{{loop.index}}. {{r.text}}</strong>
-        <small>Your answer: {% if r.selected >= 0 %}{{'ABCD'[r.selected]}}. {{r.options[r.selected]}}{% else %}Not answered{% endif %}</small>
-        {% if not r.right %}<small>Correct answer: {{'ABCD'[r.correct]}}. {{r.options[r.correct]}}</small>{% endif %}
-      </div>
-      <span class="student-status" {% if not r.right %}style="background:#fdeceb;color:#a32626"{% endif %}>{{'Correct' if r.right else 'Review'}}</span>
-    </article>
+    <li class="pf-item">
+      <span class="pf-item__ico{{ ' is-good' if r.right else ' is-alert' }}">{{ icon('check' if r.right else 'close') }}</span>
+      <span class="pf-item__main"><strong>Q{{ loop.index }}. {{ r.text }}</strong>
+        <small>Your answer: {% if r.selected >= 0 %}{{ 'ABCD'[r.selected] }}. {{ r.options[r.selected] }}{% else %}Not answered{% endif %}</small>
+        {% if not r.right %}<small>Correct answer: {{ 'ABCD'[r.correct] }}. {{ r.options[r.correct] }}</small>{% endif %}</span>
+      <span class="pf-item__end"><span class="ac-tag {{ 'ac-tag--good' if r.right else 'ac-tag--attn' }}">{{ 'Correct' if r.right else 'Review' }}</span></span>
+    </li>
     {% endfor %}
-  </section>
-</main>
-</body></html>
+  </ul>
+</section>
+</div>
+{% endblock %}

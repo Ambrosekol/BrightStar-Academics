@@ -30,6 +30,7 @@ from app import _provision_student_account, _school_current_session, app
 from blueprints.school.helpers import _school_class_allowed, import_allowed, import_permission_required
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
 from core.uploads import data_upload_limit_bytes, format_limit
+from core.names import clean_part
 from models import School, SchoolClass, Student, StudentEnrolment, StudentNumberAllocation, db
 from services.student_number_generator import StudentNumberAllocationError, allocate_student_number
 
@@ -146,7 +147,7 @@ def admin_school_students_import_run():
             outcomes.append({'line': line_no, 'ok': False, 'name': '', 'reason': f'Only the first {MAX_ROWS} rows were processed; the rest of the file was not read.'})
             break
 
-        first, middle, last = get(row, 'first_name'), get(row, 'middle_name'), get(row, 'last_name')
+        first, middle, last = get(row, 'first_name'), clean_part(get(row, 'middle_name')) or '', get(row, 'last_name')
         gender = _GENDERS.get(get(row, 'gender').casefold())
         class_raw = get(row, 'class')
         class_row = classes.get(class_raw.casefold())

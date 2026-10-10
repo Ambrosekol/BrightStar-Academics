@@ -350,3 +350,55 @@
 @media (max-width: 760px) { .pp-bell { position: static; } .pp-bell__panel { right: var(--sp-3); left: var(--sp-3); width: auto; max-width: none; } }
 
 @media (max-width: 760px) { .pp-tabbar { flex-direction: column; align-items: stretch; border-bottom: 0; } .pp-tabbar .pp-tablist { border-bottom: var(--border); } .pp-sessionpick { margin: var(--sp-2) 0 0; } .pp-sessionpick .ui-input { flex: 1; } }
+
+/* ---- loading feedback (static/parent-portal.js): a bar along the top, the pressed button spinning and, if the page is
+   slow, a spinner in the middle. Every colour is the school's own. */
+.pp-loadbar { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483600; height: 3px; overflow: hidden; pointer-events: none;
+  opacity: 0; transition: opacity .15s ease; }
+.pp-loadbar::before { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--brand-accent, var(--brand)), var(--brand)); }
+.is-loading .pp-loadbar { opacity: 1; }
+.is-loading .pp-loadbar::before { animation: pp-load 1.1s ease-in-out infinite; }
+@keyframes pp-load { 0% { left: -40%; } 100% { left: 100%; } }
+.pp-loadveil { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; pointer-events: none;
+  background: color-mix(in srgb, var(--surface-0, #fff) 55%, transparent); opacity: 0; visibility: hidden; transition: opacity .2s ease; }
+.is-loading-slow .pp-loadveil { opacity: 1; visibility: visible; }
+.pp-loadveil__spin { width: 38px; height: 38px; border-radius: 50%; border: 3.5px solid color-mix(in srgb, var(--brand) 18%, transparent);
+  border-top-color: var(--brand); animation: pp-spin .7s linear infinite; }
+.pp-loadveil__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+.pp-busy { position: relative; pointer-events: none; opacity: .88; }
+.pp-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: pp-spin .7s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .is-loading .pp-loadbar::before, .pp-loadveil__spin, .pp-busy::after { animation-duration: 2.4s; } }
+.pp-avatar-initials { display: grid; place-items: center; width: 100%; height: 100%; font-weight: 700; }
+
+/* ---- phones, the child profile and the top bar (after everything above, so these win) ----
+   A grid column may not grow to its widest content: the tab row (which never wraps) used to widen the page past the
+   screen, pushing every panel off its right edge. The tab row scrolls sideways instead. */
+@media (max-width: 960px) {
+  .pp-split { grid-template-columns: minmax(0, 1fr); }
+  .pp-split > *, .pp-tabs, .pp-panel, .pp-block { min-width: 0; }
+}
+@media (max-width: 760px) {
+  .pp-main { overflow-x: clip; }
+  .pp-tabbar, .pp-tabbar .pp-tablist { max-width: 100%; }
+  .pp-tablist { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .pp-tablist::-webkit-scrollbar { display: none; }
+  .pp-sessionpick { width: 100%; }
+  .pp-sessionpick .ui-input { min-width: 0; width: 100%; }
+  .pp-siblings { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .pp-row__main { min-width: 0; overflow-wrap: anywhere; }
+  .pp-block__head { flex-wrap: wrap; }
+  .pp-table { display: block; max-width: 100%; overflow-x: auto; }
+}
+/* Small phones: the school's mark alone, and each link an icon with a small label under it. */
+@media (max-width: 560px) {
+  .fp-bar { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+  .fp-bar__brand-text { display: none; }
+  .fp-bar__actions { gap: 2px; }
+  .fp-bar__link.pp-nav { flex-direction: column; gap: 2px; min-width: 52px; padding: 4px 6px; font-size: 10.5px; line-height: 1.1; border-radius: 10px; }
+  .fp-bar__actions .fp-bar__link.pp-nav .ico { display: block; width: 19px; height: 19px; }
+  .fp-bar__link.pp-nav.is-here { color: var(--brand); background: var(--brand-tint); }
+  .pp-profile h1 { font-size: var(--fs-xl); overflow-wrap: anywhere; }
+}

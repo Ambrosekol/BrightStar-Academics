@@ -621,7 +621,7 @@ def dashboard_results(portal):
     body = portal.get("/student/dashboard").get_data(as_text=True)
     panel = body[body.index('id="results"'):]
     panel = panel[:panel.index("</section>")]
-    return [(float(a), float(b)) for a, b in re.findall(r'student-score">\s*([\d.]+)/([\d.]+)', panel)]
+    return [(float(a), float(b)) for a, b in re.findall(r'student-score">\s*([\d.]+)(?:<small>)?/([\d.]+)', panel)]
 
 
 def result_id(student, assessment):

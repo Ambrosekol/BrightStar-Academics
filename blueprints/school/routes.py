@@ -37,6 +37,7 @@ from core.security import (
     audit_log, current_admin, csrf_protect, is_school_admin,
 )
 from core.uploads import _save_image_upload
+from core.names import clean_part
 from core.notifications import _notify_guardians_of_school_work
 from blueprints.school.report_card_data import class_term_stats, grade_for
 from blueprints.school.result_notices import announce_ready_report_cards
@@ -234,7 +235,7 @@ def admin_school_student_new():
 
     if request.method=='POST':
         first=request.form.get('first_name','').strip()
-        middle=request.form.get('middle_name','').strip()
+        middle=clean_part(request.form.get('middle_name',''))
         last=request.form.get('last_name','').strip()
         gender=request.form.get('gender','').strip()
         dob=request.form.get('date_of_birth','').strip()
@@ -581,7 +582,7 @@ def admin_school_student_edit(sid):
     student_dict={c.key:getattr(student,c.key) for c in student.__mapper__.column_attrs}
     session_dict=dict(session_row) if session_row else None
     if request.method=='POST':
-        admission=request.form.get('admission_no','').strip(); first=request.form.get('first_name','').strip(); middle=request.form.get('middle_name','').strip(); last=request.form.get('last_name','').strip(); gender=request.form.get('gender','').strip(); dob=request.form.get('date_of_birth','').strip(); blood_group=request.form.get('blood_group','').strip(); genotype=request.form.get('genotype','').strip(); guardian=request.form.get('guardian_name','').strip(); phone=request.form.get('guardian_phone','').strip(); email=request.form.get('guardian_email','').strip(); photo_path=student.photo_path
+        admission=request.form.get('admission_no','').strip(); first=request.form.get('first_name','').strip(); middle=clean_part(request.form.get('middle_name','')); last=request.form.get('last_name','').strip(); gender=request.form.get('gender','').strip(); dob=request.form.get('date_of_birth','').strip(); blood_group=request.form.get('blood_group','').strip(); genotype=request.form.get('genotype','').strip(); guardian=request.form.get('guardian_name','').strip(); phone=request.form.get('guardian_phone','').strip(); email=request.form.get('guardian_email','').strip(); photo_path=student.photo_path
         try: class_id=int(request.form.get('class_id',''))
         except (TypeError,ValueError): class_id=0
         errors=[]

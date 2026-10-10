@@ -1,1 +1,25 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1"><title>{{assessment.title}} — Student Portal</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head><body class="student-portal-page">{{ connectivity_banner() }}<header class="student-topbar"><div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Student Portal</span></div></div><a href="{{url_for('student_dashboard')}}">Dashboard</a></header><main class="student-dashboard-shell"><section class="student-page-heading"><p class="student-eyebrow">{{assessment.assessment_type|upper}}</p><h1>{{assessment.title}}</h1><p>{{assessment.subject_name}} · {{assessment.question_count}} questions · {{assessment.duration_minutes}} minutes</p></section><section class="student-instructions"><h2>Before you begin</h2><p>{{assessment.instructions or 'Read each question carefully. Select an answer and use Save & Next to continue. You may move between questions and review your answers before submitting.'}}</p><p><strong>Your timer does not start on this page.</strong> The countdown begins only after you press Start.</p><form method="post" action="{{url_for('student_assessment_start',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="student-start-btn" type="submit">Start {{assessment.assessment_type|replace('_',' ')|title}}</button></form></section></main></body></html>
+{% extends 'student_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}{{ assessment.title }}{% endblock %}
+{#- Before a test or examination: what it is, and Start. The timer starts only on the next page. -#}
+{% block content %}
+<div class="ac pf pf-narrow">
+<section class="pf-hero">
+  <span class="pf-hero__ava">{{ icon('nav-academics') }}</span>
+  <div class="pf-hero__copy">
+    <span class="pf-hero__kicker">{{ assessment.assessment_type|upper }}</span>
+    <h1>{{ assessment.title }}</h1>
+    <p>{{ assessment.subject_name }} · {{ assessment.question_count }} questions · {{ assessment.duration_minutes }} minutes</p>
+  </div>
+</section>
+<section class="pf-card">
+  <div class="pf-card__h"><h2>Before you begin</h2></div>
+  <p class="pf-copy">{{ assessment.instructions or 'Read each question carefully. Select an answer and use Save & Next to continue. You may move between questions and review your answers before submitting.' }}</p>
+  <p class="sto-note pf-note">{{ icon('stopwatch') }}<span><strong>Your timer does not start on this page.</strong> The countdown begins only after you press Start.</span></p>
+  <form method="post" action="{{ url_for('student_assessment_start', assessment_id=assessment.id) }}" data-full>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="ac-btn ac-btn--primary pf-big-btn" type="submit">Start {{ assessment.assessment_type|replace('_', ' ')|title }}</button>
+  </form>
+</section>
+</div>
+{% endblock %}

@@ -101,7 +101,8 @@ def admin_candidate_admit(cid):
         flash('This candidate has already been admitted.', 'error')
         return redirect(url_for(ADMISSIONS))
     first = request.form.get('first_name', '').strip()
-    middle = request.form.get('middle_name', '').strip()
+    from core.names import clean_part
+    middle = clean_part(request.form.get('middle_name', '')) or ''
     last = request.form.get('last_name', '').strip()
     gender = request.form.get('gender', '').strip()
     date_of_birth = request.form.get('date_of_birth', '').strip()

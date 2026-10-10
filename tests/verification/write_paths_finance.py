@@ -823,7 +823,7 @@ check("…showing the lifetime balance, 33,000, not zero, though this session's 
       'class="pp-owing__amount">₦33,000.00<' in dash and "₦33,000</b>" in dash and "pp-owing is-owing" in dash,
       re.findall(r'pp-owing__amount">([^<]*)<', dash)[0] if "pp-owing__amount" in dash else "no banner")
 check("…and lists the child once, and links to their fee account, though Ada is enrolled in two sessions "
-      "(listed twice, her balance was added up twice)", f"/parent/children/{ADA}/finance" in dash and dash.count(f'href="/parent/children/{ADA}"') == 1
+      "(listed twice, her balance was added up twice)", f"/parent/children/{ADA}/finance" in dash and dash.count(f'href="/parent/children/{ADA}">Open profile') == 1
       and alpha.count("student_enrolments", "student_id = :s AND active = 1", s=ADA) == 2)
 check("…and shows nothing about another family's child", "Bola" not in dash and "Kemi" not in dash)
 fee_account = mum_obi.text(f"/parent/children/{ADA}/finance")

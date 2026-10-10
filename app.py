@@ -50,6 +50,8 @@ BASE=os.path.dirname(os.path.abspath(__file__))
 # the real environment always wins — load_dotenv() never overrides one.
 load_dotenv(os.path.join(BASE,'.env'))
 app=Flask(__name__)
+from core.names import full_name as _full_name  # noqa: E402
+app.jinja_env.globals['full_name'] = _full_name
 # Static files the browser can keep, and compressed responses (core/speed.py).
 from core import speed as _speed  # noqa: E402
 _speed.init_app(app)
@@ -672,10 +674,24 @@ def init_db(school):
         return _init_db(school)
 
 
+def _clear_placeholder_middle_names():
+    """A middle name that only says "none" ("None", "null", "-", ...) is no middle name (core/names.py). Older imports
+    and forms stored some; clear them, so no page ever shows one. Idempotent, and one UPDATE on each upgrade."""
+    from core.names import PLACEHOLDERS
+    try:
+        db.session.execute(sa_update(Student)
+                           .where(func.lower(func.trim(Student.middle_name)).in_(sorted(PLACEHOLDERS | {''})))
+                           .values(middle_name=None))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
 def _init_db(school):
     db.metadata.create_all(current_engine())
     _add_missing_columns()
     _allow_fractional_marks()
+    _clear_placeholder_middle_names()
     from core.retired_tables import drop_empty  # deferred: it imports the models
     drop_empty()
     now=datetime.now(timezone.utc).isoformat()
@@ -1206,6 +1222,7 @@ import blueprints.finance.paystack  # noqa: F401,E402
 import blueprints.library.routes  # noqa: F401,E402
 import blueprints.store.routes  # noqa: F401,E402
 import blueprints.pwa  # noqa: F401,E402
+import blueprints.portal_shell  # noqa: F401,E402
 
 # ---------------- the Brightstars Academics platform console ----------------
 # Served only on the platform hostnames. Imported here, at the end, because its
@@ -1317,8 +1334,16 @@ def uploaded_file(filename):
     if control_plane_config.storage_backend()=='s3':
         import mimetypes
         from flask import Response
-        data=read_upload_bytes(f'uploads/{clean}')
+        try:
+            data=read_upload_bytes(f'uploads/{clean}')
+        except Exception:
+            # The bucket refused or failed the read (credentials without read access, a wrong region or
+            # endpoint, a network fault). Say exactly which file in the log, and answer like a missing file
+            # rather than with an error page the browser shows as a broken picture.
+            app.logger.exception('Could not read uploads/%s from object storage', clean)
+            abort(404)
         if data is None:
+            app.logger.warning('uploads/%s is named by the database but is not in object storage', clean)
             abort(404)
         mime=mimetypes.guess_type(clean)[0] or 'application/octet-stream'
         response=Response(data,mimetype=mime)

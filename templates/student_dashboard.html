@@ -1,264 +1,131 @@
+{% extends 'student_base.html' %}
 {% from 'includes/_nav_icons.html' import icon %}
-{% from 'includes/_school_mark.html' import school_mark %}
+{% block title %}Student Dashboard{% endblock %}
 {#-
-  A student's front door: what needs their attention (notifications, work still to do),
-  then the five places their work lives, then reference lists (results, profile).
+  A student's front door, in the staff portal's look (templates/portal_base.html): who they are, the figures that
+  matter, then what to do (assignments and projects), and beside it what has happened (notifications, released
+  results, report cards). Tests, examinations and practice are in the menu; an assignment opens as its own page.
 -#}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Student Dashboard — {{ school_brand.name }}</title>
-<link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='family-portal.css', v='1') }}">
-</head>
-<body class="school-ui">{{ connectivity_banner() }}
-<a class="skip-link" href="#main">Skip to main content</a>
-
-<header class="fp-bar">
-  <a class="fp-bar__brand" href="{{ url_for('student_dashboard') }}">
-    {{ school_mark(school_brand) }}
-    <span class="fp-bar__brand-text">
-      <span class="fp-bar__name">{{ school_brand.name }}</span>
-      <span class="fp-bar__kind">Student Portal</span>
-    </span>
-  </a>
-  <div class="fp-bar__actions">
-    <span class="fp-bar__person">{{ student.first_name }} {{ student.last_name }}</span>
-    <a class="fp-bar__link" href="{{ url_for('logout') }}">{{ icon('logout') }} Sign out</a>
+{% block content %}
+{% set to_do = assignments|selectattr('status', 'in', ['assigned', 'in_progress', 'pending', 'not_started'])|list %}
+{% set name = full_name(student.first_name, student.middle_name, student.last_name) %}
+<div class="ac pf">
+<section class="pf-hero">
+  <span class="pf-hero__ava">{% if student.photo_path %}<img src="{{ url_for('static', filename=student.photo_path) }}" alt="{{ student.first_name }} {{ student.last_name }}" data-avatar-fallback="{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}">{% else %}{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}{% endif %}</span>
+  <div class="pf-hero__copy">
+    <span class="pf-hero__kicker">My student portal</span>
+    <h1>Welcome, {{ student.first_name }}!</h1>
+    <p>{{ student.class_name or 'Class not assigned' }}{% if student.session_name %} · {{ student.session_name }} Academic Session{% endif %}</p>
+    <div class="pf-hero__chips"><span>Student ID {{ student.login_username or student.admission_no }}</span>{% if student.login_username and student.login_username|upper != (student.admission_no or "")|upper %}<span>{{ student.admission_no }}</span>{% endif %}</div>
   </div>
-</header>
+</section>
 
-<main class="fp-main" id="main">
+<dl class="fi-k">
+  <div class="{{ 'is-alert' if to_do else 'is-lead' }}"><dt>Assignments to do</dt><dd>{{ to_do|length }}</dd><small>{{ assignments|length }} assigned in all</small></div>
+  <div><dt>Projects</dt><dd>{{ projects|length }}</dd><small>practical work</small></div>
+  <div><dt>Tests</dt><dd><a href="{{ url_for('student_assessment_list', kind='tests') }}">{{ assessment_counts.test }}</a></dd><small>available</small></div>
+  <div><dt>Examinations</dt><dd><a href="{{ url_for('student_assessment_list', kind='examinations') }}">{{ assessment_counts.examination }}</a></dd><small>available</small></div>
+  <div><dt>Practice</dt><dd><a href="{{ url_for('student_assessment_list', kind='practice') }}">{{ assessment_counts.practice }}</a></dd><small>to retake any time</small></div>
+</dl>
 
-  <section class="fp-hero">
-    <div>
-      <p class="fp-hero__eyebrow">My student portal</p>
-      <h1>Welcome, {{ student.first_name }}!</h1>
-      <p class="fp-hero__meta">{{ student.class_name or 'Class not assigned' }}{% if student.session_name %} · {{ student.session_name }} Academic Session{% endif %}</p>
-      <ul class="fp-chips">
-        <li class="fp-chip">Student ID <strong>{{ student.login_username or student.admission_no }}</strong></li>
-        <li class="fp-chip">{{ student.admission_no }}</li>
-      </ul>
-    </div>
-    <div class="fp-avatar fp-avatar--lg">
-      {% if student.photo_path %}
-      <img src="{{ url_for('static', filename=student.photo_path) }}" alt="{{ student.first_name }} {{ student.last_name }}">
-      {% else %}
-      {{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}
-      {% endif %}
-    </div>
-  </section>
-
-  {% if notifications %}
-  <section class="fp-panel">
-    <div class="fp-panel__head">
-      <div>
-        <p class="fp-panel__eyebrow">Notifications</p>
-        <h2>Recent school activity</h2>
-      </div>
-      <span class="fp-count">{{ notifications|length }}</span>
-    </div>
-    <div class="fp-list">
-      {% for n in notifications %}
-      <a class="fp-row" href="{{ n.action_url or url_for('student_dashboard') }}">
-        <span class="fp-row__icon">{{ icon('bell') }}</span>
-        <span class="fp-row__body">
-          <span class="fp-row__title">{{ n.title }}</span>
-          <span class="fp-row__sub">{{ n.message }} · {{ n.created_at[:10] }}</span>
-        </span>
-        <span class="fp-row__go">{{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-
-  <div class="fp-tiles">
-    <a class="fp-tile" href="#assignments">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('assignment') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Assignments</span><span class="fp-tile__meta">{{ assignments|length }} assigned</span></span>
-    </a>
-    <a class="fp-tile" href="#projects">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('folder') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Projects</span><span class="fp-tile__meta">{{ projects|length }} assigned</span></span>
-    </a>
-    <a class="fp-tile" href="{{ url_for('student_assessment_list', kind='tests') }}">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('edit') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Tests</span><span class="fp-tile__meta">{{ assessment_counts.test }} available</span></span>
-    </a>
-    <a class="fp-tile" href="{{ url_for('student_assessment_list', kind='practice') }}">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('target') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Practice</span><span class="fp-tile__meta">{{ assessment_counts.practice }} to retake any time</span></span>
-    </a>
-    <a class="fp-tile" href="{{ url_for('student_assessment_list', kind='examinations') }}">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('stopwatch') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Examinations</span><span class="fp-tile__meta">{{ assessment_counts.examination }} available</span></span>
-    </a>
-    <a class="fp-tile" href="#results">
-      <span class="fp-tile__top"><span class="fp-tile__icon">{{ icon('trend') }}</span><span class="fp-tile__go">{{ icon('arrow-right', 'ico-sm') }}</span></span>
-      <span><span class="fp-tile__label">Performance</span><span class="fp-tile__meta">Track released results</span></span>
-    </a>
-  </div>
-
-  <div class="fp-cols">
-    <section class="fp-panel" id="assignments">
-      <div class="fp-panel__head">
-        <div>
-          <p class="fp-panel__eyebrow">Academic work</p>
-          <h2>My assignments</h2>
-        </div>
-        <span class="fp-count">{{ assignments|length }}</span>
-      </div>
-      <div class="fp-list">
+<div class="pf-grid">
+  <div class="pf-stack">
+    <section class="pf-card" id="assignments" aria-labelledby="pf-asg">
+      <div class="pf-card__h"><h2 id="pf-asg">My assignments <span class="ac-tag">{{ assignments|length }}</span></h2></div>
+      <ul class="pf-list">
         {% for a in assignments %}
-        <a class="fp-row" href="{{ url_for('student_assignment_detail', assignment_id=a.id) }}">
-          <span class="fp-row__body">
-            <span class="fp-row__title">{{ a.title }}</span>
-            <span class="fp-row__sub">{{ a.subject_name }} · Given {{ a.date_given or '—' }}{% if a.due_date %} · Due {{ a.due_date }}{% endif %}</span>
-            {% if a.assignment_type == 'quiz' %}
-            <span class="fp-row__sub">CBT-style{% if a.timing_mode == 'overall' %} · {{ a.time_limit_seconds // 60 }} min overall{% elif a.timing_mode == 'per_question' %} · {{ a.per_question_seconds }} sec/question{% endif %}</span>
-            {% endif %}
-          </span>
-          <span class="fp-row__aside">
-            <span class="fp-status is-{{ a.status }}">{{ a.status|replace('_', ' ')|title }}</span>
-            {% if a.score is not none %}<span class="fp-score">{{ a.score }}/{{ a.max_score }}</span>{% endif %}
-          </span>
-        </a>
+        <li><a class="pf-item" href="{{ url_for('student_assignment_detail', assignment_id=a.id) }}">
+          <span class="pf-item__ico{{ ' is-good' if a.status in ('submitted', 'marked', 'graded') }}">{{ icon('assignment') }}</span>
+          <span class="pf-item__main"><strong>{{ a.title }}</strong>
+            <small>{{ a.subject_name }} · Given {{ a.date_given or '—' }}{% if a.due_date %} · Due {{ a.due_date }}{% endif %}{% if a.assignment_type == 'quiz' %} · CBT-style{% if a.timing_mode == 'overall' %} · {{ a.time_limit_seconds // 60 }} min overall{% elif a.timing_mode == 'per_question' %} · {{ a.per_question_seconds }} sec/question{% endif %}{% endif %}</small></span>
+          <span class="pf-item__end"><span class="ac-tag{{ ' ac-tag--good' if a.status in ('submitted', 'marked', 'graded') else ' ac-tag--blue' }}">{{ a.status|replace('_', ' ')|title }}</span>{% if a.score is not none %}<span class="pf-score">{{ a.score }}<small>/{{ a.max_score }}</small></span>{% endif %}</span>
+        </a></li>
         {% else %}
-        <div class="fp-empty"><strong>No assignments yet.</strong><span>Your teacher's assigned work will appear here.</span></div>
+        <li class="pf-empty"><strong>No assignments yet.</strong>Your teacher's assigned work will appear here.</li>
         {% endfor %}
-      </div>
+      </ul>
     </section>
 
-    <section class="fp-panel" id="projects">
-      <div class="fp-panel__head">
-        <div>
-          <p class="fp-panel__eyebrow">Practical work</p>
-          <h2>My projects</h2>
-        </div>
-        <span class="fp-count">{{ projects|length }}</span>
-      </div>
-      <div class="fp-list">
+    <section class="pf-card" id="projects" aria-labelledby="pf-prj">
+      <div class="pf-card__h"><h2 id="pf-prj">My projects <span class="ac-tag">{{ projects|length }}</span></h2></div>
+      <ul class="pf-list">
         {% for p in projects %}
-        <div class="fp-row">
-          <span class="fp-row__body">
-            <span class="fp-row__title">{{ p.title }}</span>
-            <span class="fp-row__sub">{{ p.subject_name }} · Given {{ p.date_given }}{% if p.due_date %} · Required {{ p.due_date }}{% endif %}</span>
-            {% if p.remark %}<span class="fp-row__sub">{{ p.remark }}</span>{% endif %}
-          </span>
-          <span class="fp-row__aside">
-            <span class="fp-status is-{{ p.status }}">{{ p.status|replace('_', ' ')|title }}</span>
-            {% if p.score is not none %}<span class="fp-score">{{ p.score }}/{{ p.max_score }}</span>{% endif %}
-          </span>
-        </div>
+        <li class="pf-item">
+          <span class="pf-item__ico">{{ icon('folder') }}</span>
+          <span class="pf-item__main"><strong>{{ p.title }}</strong>
+            <small>{{ p.subject_name }} · Given {{ p.date_given }}{% if p.due_date %} · Required {{ p.due_date }}{% endif %}{% if p.remark %} · {{ p.remark }}{% endif %}</small></span>
+          <span class="pf-item__end"><span class="ac-tag">{{ p.status|replace('_', ' ')|title }}</span>{% if p.score is not none %}<span class="pf-score">{{ p.score }}<small>/{{ p.max_score }}</small></span>{% endif %}</span>
+        </li>
         {% else %}
-        <div class="fp-empty"><strong>No projects yet.</strong><span>Practical tasks from your teachers will appear here.</span></div>
+        <li class="pf-empty"><strong>No projects yet.</strong>Practical tasks from your teachers will appear here.</li>
         {% endfor %}
-      </div>
+      </ul>
     </section>
   </div>
 
-  {% if report_periods %}
-  <section class="fp-panel" id="report-cards">
-    <div class="fp-panel__head">
-      <div>
-        <p class="fp-panel__eyebrow">Term results</p>
-        <h2>Report cards</h2>
-      </div>
-      <span class="fp-count">{{ report_periods|length }}</span>
-    </div>
-    <div class="fp-list">
-      {% for p in report_periods %}
-      <div class="fp-row">
-        <span class="fp-row__body">
-          <span class="fp-row__title">{{ p.term }}</span>
-          <span class="fp-row__sub">{{ p.session_name }} session</span>
-        </span>
-        <span class="fp-row__aside">
-          <a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('student_report_card_view', session_id=p.session_id, slug=p.slug) }}">View</a>
-          <a class="ui-btn ui-btn--light ui-btn--sm" href="{{ url_for('student_report_card_pdf', session_id=p.session_id, slug=p.slug) }}">PDF</a>
-        </span>
-      </div>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
+  <div class="pf-stack">
+    {% if notifications %}
+    <section class="pf-card" aria-labelledby="pf-note">
+      <div class="pf-card__h"><h2 id="pf-note">Recent school activity <span class="ac-tag">{{ notifications|length }}</span></h2></div>
+      <ul class="pf-list">
+        {% for n in notifications %}
+        <li><a class="pf-item" href="{{ n.action_url or url_for('student_dashboard') }}">
+          <span class="pf-item__ico">{{ icon('bell') }}</span>
+          <span class="pf-item__main"><strong>{{ n.title }}</strong><small>{{ n.message }} · {{ n.created_at[:10] }}</small></span>
+        </a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
 
-  <section class="fp-panel" id="attendance">
-    <div class="fp-panel__head">
-      <div>
-        <p class="fp-panel__eyebrow">Every day</p>
-        <h2>Attendance</h2>
-      </div>
-    </div>
-    <div class="fp-list">
-      <div class="fp-row">
-        <span class="fp-row__body"><span class="fp-row__title">See how many days you've been present, late, absent or excused</span></span>
-        <span class="fp-row__aside"><a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('student_attendance') }}">View</a></span>
-      </div>
-    </div>
-  </section>
+    {% if report_periods %}
+    <section class="pf-card" id="report-cards" aria-labelledby="pf-rc">
+      <div class="pf-card__h"><h2 id="pf-rc">Report cards <span class="ac-tag">{{ report_periods|length }}</span></h2></div>
+      <ul class="pf-list">
+        {% for p in report_periods %}
+        <li class="pf-item">
+          <span class="pf-item__ico">{{ icon('nav-reportcard') }}</span>
+          <span class="pf-item__main"><strong>{{ p.term }}</strong><small>{{ p.session_name }} session</small></span>
+          <span class="pf-item__end">
+            <a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('student_report_card_view', session_id=p.session_id, slug=p.slug) }}" target="_blank" rel="noopener">View</a>
+            <a class="ac-btn ac-btn--sm" href="{{ url_for('student_report_card_pdf', session_id=p.session_id, slug=p.slug) }}" data-no-loader>PDF</a>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
 
-  <section class="fp-panel" id="timetable">
-    <div class="fp-panel__head">
-      <div>
-        <p class="fp-panel__eyebrow">Exams and tests</p>
-        <h2>Exam timetable</h2>
-      </div>
-    </div>
-    <div class="fp-list">
-      <div class="fp-row">
-        <span class="fp-row__body"><span class="fp-row__title">See released exam and test dates, times and venues, and download it as a PDF</span></span>
-        <span class="fp-row__aside"><a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('student_timetable') }}">View</a></span>
-      </div>
-    </div>
-  </section>
+    <section class="pf-card" id="results" aria-labelledby="pf-res">
+      <div class="pf-card__h"><h2 id="pf-res">Recent results <span class="ac-tag">{{ results|length }}</span></h2></div>
+      <ul class="pf-list">
+        {% for r in results %}
+        {% set pct = (100 * r.score / r.max_score)|round(0)|int if (r.score is not none and r.max_score) else none %}
+        <li class="pf-item">
+          <span class="pf-item__ico">{{ icon('nav-academics') }}</span>
+          <span class="pf-item__main"><strong>{{ r.subject_name }}</strong><small>{{ r.term or 'Full Session' }} · {{ r.status|title }}</small>
+            {% if pct is not none %}<span class="pf-meter"><i style="width:{{ pct }}%"></i></span>{% endif %}</span>
+          <span class="pf-item__end"><span class="pf-score student-score">{% if r.score is not none %}{{ r.score }}{% if r.max_score %}<small>/{{ r.max_score }}</small>{% endif %}{% else %}—{% endif %}</span></span>
+        </li>
+        {% else %}
+        <li class="pf-empty"><strong>No released academic records yet.</strong></li>
+        {% endfor %}
+      </ul>
+    </section>
 
-  <section class="fp-panel" id="results">
-    <div class="fp-panel__head">
-      <div>
-        <p class="fp-panel__eyebrow">Academic progress</p>
-        <h2>Recent results</h2>
-      </div>
-      <span class="fp-count">{{ results|length }}</span>
-    </div>
-    <div class="fp-list">
-      {% for r in results %}
-      <div class="fp-row">
-        <span class="fp-row__body">
-          <span class="fp-row__title">{{ r.subject_name }}</span>
-          <span class="fp-row__sub">{{ r.term or 'Full Session' }} · {{ r.status|title }}</span>
-        </span>
-        <span class="student-score">{% if r.score is not none %}{{ r.score }}{% if r.max_score %}/{{ r.max_score }}{% endif %}{% else %}—{% endif %}</span>
-      </div>
-      {% else %}
-      <div class="fp-empty"><strong>No released academic records yet.</strong></div>
-      {% endfor %}
-    </div>
-  </section>
+    <section class="pf-tiles" aria-label="More">
+      <a class="pf-tile" href="{{ url_for('student_timetable') }}" id="timetable" data-modal><span class="pf-item__ico">{{ icon('nav-timetable') }}</span><strong>Exam timetable</strong><small>Released exam and test dates, times and venues</small></a>
+      <a class="pf-tile" href="{{ url_for('student_attendance') }}" id="attendance" data-modal><span class="pf-item__ico">{{ icon('nav-attendance') }}</span><strong>Attendance</strong><small>Days present, late, absent or excused</small></a>
+    </section>
 
-  <section class="fp-profile">
-    <div class="fp-avatar fp-avatar--sm">
-      {% if student.photo_path %}
-      <img src="{{ url_for('static', filename=student.photo_path) }}" alt="">
-      {% else %}
-      {{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}
-      {% endif %}
-    </div>
-    <div class="fp-profile__text">
-      <strong>{{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}</strong>
-      <span>{{ student.gender or 'Student' }} · {{ student.class_name or 'Class not assigned' }}</span>
-    </div>
-    <a class="fp-profile__link ui-link" href="{{ url_for('student_password_change') }}">Change password</a>
-  </section>
-
-</main>
-<script nonce="{{ csp_nonce() }}">setInterval(function(){fetch('{{url_for("presence_heartbeat")}}',{credentials:'same-origin'}).catch(function(){});},30000);</script>
-{% include '_family_notice.html' %}
-</body>
-</html>
+    <section class="pf-card" aria-label="My profile">
+      <div class="pf-item" style="padding:0">
+        <span class="pf-item__ico">{{ icon('nav-students') }}</span>
+        <span class="pf-item__main"><strong>{{ name }}</strong><small>{{ student.gender or 'Student' }} · {{ student.class_name or 'Class not assigned' }}</small></span>
+        <span class="pf-item__end"><a class="ac-link" href="{{ url_for('student_password_change') }}">Change password</a></span>
+      </div>
+    </section>
+  </div>
+</div>
+</div>
+{% endblock %}

@@ -13,7 +13,7 @@
 {% set can_record = admin_has_permission(aid, 'finance.record') %}
 {% set posted = payment.status == 'posted' %}
 {% set applied = payment_allocated %}
-{% set student_name = [payment.first_name, payment.middle_name, payment.last_name]|select|join(' ') %}
+{% set student_name = full_name(payment.first_name, payment.middle_name, payment.last_name) %}
 {% set receipt_url = url_for('admin_finance_receipt', payment_id=payment.id) %}
 {% set apply_url = url_for('admin_finance_payment_allocate', payment_id=payment.id) %}
 <div class="ac fi fp" data-fi data-fp="{{ payment.id }}" data-modal-scope="{{ receipt_url }} {{ apply_url }}" data-modal-size="wide">

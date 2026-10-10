@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{assessment.title}} — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"><link rel="stylesheet" href="{{ url_for('static', filename='exam-theme.css') }}">
 </head>
 <body class="exam-page student-assessment-page">{{ connectivity_banner() }}
 <header class="top exam-top student-exam-top">
@@ -92,4 +92,4 @@ form.addEventListener('submit',e=>{
   if(!choice && !confirm('No answer is selected. Continue without saving an answer?')) e.preventDefault();
 });
 </script>
-</body></html>
+<script src="{{ url_for('static', filename='parent-loading.js') }}"></script></body></html>

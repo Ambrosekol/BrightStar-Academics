@@ -6,11 +6,9 @@
 -#}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='1') }}">
-<p class="rv-back"><a href="{{ back_url }}">&larr; {{ back_label }}</a></p>
-
-<header class="rv-head">
-  <div>
-    <p class="pp-eyebrow">Exam timetable</p>
+<header class="pf-hero rv-head">
+  <div class="pf-hero__copy">
+    <span class="pf-hero__kicker"><span class="pf-crumbs"><a class="rv-back" href="{{ back_url }}">&larr; {{ back_label }}</a> / </span>Exam timetable</span>
     <h1>{{ title }}</h1>
   </div>
   <form method="get" class="rv-filters">

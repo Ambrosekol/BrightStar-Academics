@@ -7,7 +7,7 @@
    pop-up (static/inplace.js stacks them); anything saved there comes back here. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set aid = current_admin['id'] %}
-{% set full_name = [student.first_name, student.middle_name, student.last_name]|select|join(' ') %}
+{% set student_name = full_name(student.first_name, student.middle_name, student.last_name) %}
 {% set can_edit = admin_has_permission(aid, 'school.students.edit') %}
 {% set can_history = admin_has_permission(aid, 'student.history.manage') %}
 {% set can_fees = admin_has_permission(aid, 'finance.view_own') or admin_has_permission(aid, 'finance.view_all') %}
@@ -17,10 +17,10 @@
 <a class="fi-back" href="{{ url_for('admin_school_students', **({'class': current_enrol.class_name} if current_enrol else {})) }}">← {{ current_enrol.class_name if current_enrol else 'Students' }}</a>{% endif %}
 
 <header class="sp-head">
-  <span class="sp-ava">{% if student.photo_path %}<img src="{{ url_for('static', filename=student.photo_path) }}" alt="Photo of {{ full_name }}">{% else %}{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}{% endif %}</span>
+  <span class="sp-ava">{% if student.photo_path %}<img src="{{ url_for('static', filename=student.photo_path) }}" alt="Photo of {{ student_name }}">{% else %}{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}{% endif %}</span>
   <div class="sp-who">
     <span class="acq-kind">Student</span>
-    <h2>{{ full_name }}</h2>
+    <h2>{{ student_name }}</h2>
     <p><span class="st-code">{{ student.admission_no }}</span>
       <span class="ac-tag ac-tag--blue">{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</span>
       {% if student.department %}<span class="ac-tag">{{ student.department }}</span>{% endif %}
@@ -47,7 +47,7 @@
   <div><dt>Projects</dt><dd>{{ projects|length }}</dd></div>
 </dl>
 
-<div class="ac-seg sp-tabs" role="tablist" aria-label="About {{ full_name }}">
+<div class="ac-seg sp-tabs" role="tablist" aria-label="About {{ student_name }}">
   <button type="button" role="tab" data-sp-tab="profile">Profile</button>
   <button type="button" role="tab" data-sp-tab="terms">Term results <small>{{ term_reports|length }}</small></button>
   <button type="button" role="tab" data-sp-tab="marks">Every mark <small>{{ completed }}</small></button>
@@ -60,7 +60,7 @@
   <div class="sp-grid">
     <div class="sp-card"><h3>Personal details</h3>
       <dl class="sp-dl">
-        <dt>Full name</dt><dd>{{ full_name }}</dd>
+        <dt>Full name</dt><dd>{{ student_name }}</dd>
         <dt>Admission no.</dt><dd>{{ student.admission_no }}</dd>
         <dt>Gender</dt><dd>{{ student.gender or '—' }}</dd>
         <dt>Date of birth</dt><dd>{{ student.date_of_birth or '—' }}</dd>

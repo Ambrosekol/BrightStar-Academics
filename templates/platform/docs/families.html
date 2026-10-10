@@ -28,6 +28,16 @@ they have bought for each child and whether it has been collected. They can pay 
 own Paystack account; otherwise they pay at the office and the purchase appears there once recorded. See
 {{ page('school-portal', 'The School portal') }}.</p>
 
+<h2 id="portal-frame">One frame for both portals</h2>
+<p>Both portals are drawn by {{ tpl('portal_base.html') }} ({{ tpl('parent_base.html') }} and {{ tpl('student_base.html') }} only extend it), in the staff portal's look: the same rail, header and account menu ({{ file('static/school-ui.css') }}), the page components of {{ file('static/academics.css') }} and {{ file('static/finance.css') }}, and the portal's own in {{ file('static/portal.css') }}. What each menu holds, its bottom tab bar on phones and which addresses load in place is decided in one place, {{ file('blueprints/portal_shell.py') }} (the Jinja global <code>portal_frame</code>). No colour is fixed: everything reads the school's theme tokens.</p>
+<ul>
+  <li><strong>In place and pop-ups.</strong> {{ file('static/inplace.js') }} loads in-scope addresses with <code>X-Fragment</code>, and a link marked <code>data-modal</code> opens its page in a pop-up (the fee account, attendance and timetable); pop-ups stack. Paying, messages and the pages where a paper is taken are <code>data-full</code>: they always load as a whole page.</li>
+  <li><strong>Spinners.</strong> {{ file('static/parent-loading.js') }} shows a loading bar (and, if slow, a veil) on every same-site link and a spinner on the pressed button of every form, which an installed app (PWA) otherwise gives no sign of. It also swaps a photo that fails to load (<code>data-avatar-fallback</code>) for the person's initials.</li>
+  <li><strong>Taking a paper.</strong> The take pages keep their own layout and scripts ({{ file('static/app.css') }}); {{ file('static/exam-theme.css') }} only puts them in the school's colours and adds the spinner.</li>
+  <li><strong>Names.</strong> {{ file('core/names.py') }} treats "None", "N/A", "-" and the like as no name part, on input (by hand, import, admission) and on display (the Jinja global <code>full_name</code>); <code>_init_db</code> clears the ones already stored.</li>
+  <li><strong>Photos from object storage.</strong> When <code>uploaded_file</code> cannot read a photo from the bucket it logs <code>Could not read uploads/&lt;key&gt; from object storage</code> and answers 404 rather than 500.</li>
+</ul>
+
 <h2 id="delivery">Email and SMS: a school's own accounts</h2>
 <p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. The school's own top-level administrator sets them up on <em>Email &amp; SMS</em> ({{ route('admin_school_delivery') }}) - restricted to that one admin type, not a permission any other role can be granted - each with a button to test before relying on it.</p>
 <div class="table-scroll"><table>
