@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import shot with context %}
 {% block guide %}
 <p>A mark goes through the same journey everywhere it comes from — a test, an assignment, a manually
 entered score — before it ever reaches a student or parent.</p>
@@ -47,6 +48,7 @@ themselves, so it can never disagree with what is actually on record.</p>
 
 <h2 id="cards">Report cards</h2>
 <p>Report cards opens with the class chips across the top and the session and term beside them; choosing a class loads its students in place. Each student's comment and trait ratings are written in a small pop-up without leaving the page. <strong>View</strong> and <strong>PDF</strong> open the card in a new tab, ready to print, and a student's name opens their own pop-up.</p>
+{{ shot('reportcards', 'Report cards: choose the class with the chips; comments and ratings are written in a small pop-up.') }}
 <p>For a student in SSS 1 to 3, the report card also shows their <strong>department</strong> (Science, Art or
 Commercial), beside their class.</p>
 <p>A student's report card for a term appears — to the student, a linked parent, and staff — the

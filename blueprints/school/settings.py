@@ -124,8 +124,8 @@ def _groups(me, workspace, statuses=True):
         ('oversight', 'Controls & activity', 'Keeping an eye on what happens.', [
             E('Controls & alerts', 'Important changes that need attention, and locks on examination resources.',
               'admin_controls', 'set-controls', can('audit.view'), _alerts_status, 'notifications review lock'),
-            E('Activity log', 'Who signed in, what they changed and any access that was refused.',
-              'admin_audit_logs', 'set-history', can('audit.view'), keywords='audit security history'),
+            E('Activity & notice logs', 'Who signed in, what they changed and any access refused; and every email and text sent to parents.',
+              'admin_audit_logs', 'set-history', can('audit.view'), keywords='audit security history notice sms email delivered'),
             E('Online now', 'Who is signed in to the portal at this moment.',
               'admin_presence', 'presence', can('presence.view'), keywords='presence sessions'),
         ]),

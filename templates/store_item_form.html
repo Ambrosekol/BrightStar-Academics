@@ -1,0 +1,79 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}{{ 'Edit ' ~ item.name if item else 'Add an item' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Adding an item to the store, or editing one: what it is, its price, up to three pictures (the first is the one on
+   its card) and, for a new item, how many are in stock. A pop-up over Inventory; it works as a page too. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+<div class="ac sto" data-sto-item data-modal-size="wide">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_store') }}">← Inventory</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">{{ 'Store item' if item else 'New store item' }}</span>
+  <h2>{{ item.name if item else 'Add something to the store' }}</h2>
+  <p>{% if item %}{{ item.stock }} in stock · ₦{{ '{:,.2f}'.format(item.price) }}. Add stock from its card on Inventory.{% else %}Parents see it in their Store with its pictures; it can be bought while any are left.{% endif %}</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form method="post" enctype="multipart/form-data" action="{{ url_for('admin_store_item_edit', item_id=item.id) if item else url_for('admin_store_item_new') }}" class="fi-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset class="fi-step"><legend><span class="fi-step__n">1</span>What it is</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="stoName">Name</label><input id="stoName" name="name" required maxlength="120" value="{{ f.get('name', item.name if item else '') }}" placeholder="e.g. School sweater (size 8)"></div>
+      <div class="ac-field"><label for="stoCat">Category <span class="ac-hint">optional</span></label><input id="stoCat" name="category" maxlength="60" value="{{ f.get('category', (item.category or '') if item else '') }}" placeholder="Uniform, Books, Sports…" list="stoCats">
+        <datalist id="stoCats"><option value="Uniform"><option value="Books"><option value="Stationery"><option value="Sportswear"><option value="Bags"></datalist></div>
+      <div class="ac-field"><label for="stoPrice">Price (₦)</label><input id="stoPrice" name="price" required inputmode="decimal" value="{{ f.get('price', ('%.2f'|format(item.price)) if item else '') }}" placeholder="0.00"></div>
+      <div class="ac-field ac-field--wide"><label for="stoDesc">Description <span class="ac-hint">optional: sizes, colours, what is included</span></label>
+        <textarea id="stoDesc" name="description" rows="3" maxlength="2000">{{ f.get('description', (item.description or '') if item else '') }}</textarea></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fi-step"><legend><span class="fi-step__n">2</span>Pictures <small class="ac-hint">up to three; the first is shown on its card</small></legend>
+    {% set pics = [item.photo_1, item.photo_2, item.photo_3] if item else [none, none, none] %}
+    <div class="sto-slots">
+      {% for n in [1, 2, 3] %}
+      {% set pic = pics[n - 1] %}
+      <div class="sto-slot" data-slot>
+        <label class="sto-slot__pic{{ ' has-pic' if pic }}" for="stoPhoto{{ n }}">
+          <span class="sto-slot__n">{{ n }}</span>
+          {% if pic %}<img src="{{ url_for('static', filename=pic) }}" alt="Picture {{ n }}">{% endif %}
+          <span data-slot-empty{% if pic %} hidden{% endif %}>{{ icon('set-plus') }}<br>Add a picture</span>
+        </label>
+        <input type="file" id="stoPhoto{{ n }}" name="photo_{{ n }}" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+        {% if pic %}<label class="sto-remove"><input type="checkbox" name="remove_{{ n }}" value="1"> Remove</label>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {{ upload_hint() }}
+  </fieldset>
+
+  {% if not item %}
+  <fieldset class="fi-step"><legend><span class="fi-step__n">3</span>Stock</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="stoStock">How many are in stock</label><input id="stoStock" name="stock" type="number" min="0" step="1" required value="{{ f.get('stock', '0') }}"></div>
+    </div>
+  </fieldset>
+  {% endif %}
+
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_store') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">{{ 'Save the item' if item else 'Add to the store' }}</button></div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var roots=document.querySelectorAll('[data-sto-item]:not([data-ready])'); var root=roots[roots.length-1]; if(!root) return; root.setAttribute('data-ready','1');
+  // A chosen picture shows in its slot at once, before anything is saved.
+  root.querySelectorAll('[data-slot]').forEach(function(slot){
+    var input=slot.querySelector('input[type=file]'), box=slot.querySelector('.sto-slot__pic'), empty=slot.querySelector('[data-slot-empty]');
+    input.addEventListener('change',function(){
+      var file=input.files&&input.files[0]; if(!file) return;
+      var img=box.querySelector('img'); if(!img){ img=document.createElement('img'); img.alt=''; box.appendChild(img); }
+      img.src=URL.createObjectURL(file); box.classList.add('has-pic'); if(empty) empty.hidden=true;
+      var rm=slot.querySelector('input[name^=remove_]'); if(rm) rm.checked=false;
+    });
+  });
+})();
+</script>
+{% endblock %}

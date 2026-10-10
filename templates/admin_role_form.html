@@ -10,7 +10,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set editing = mode == 'edit' and role is defined %}
 {% set picked = selected or [] %}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 <div class="sa" data-rl-form data-modal-size="wide" data-modal-scope="/admin/administration/roles/">
 {% if not modal %}<p style="margin:0 0 10px"><a class="btn btn-light btn-small" href="{{ url_for('admin_roles') }}">← All roles</a></p>{% endif %}
 <header class="sa-head">

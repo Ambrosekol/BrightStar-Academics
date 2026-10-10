@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import shot with context %}
 {% block guide %}
 <p>Finance covers what a student is charged, what has been paid, and the receipt that proves it. It is
 one page with four tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong> and
@@ -12,6 +13,7 @@ the total for the period you choose (7 days, 30 days, 90 days or 12 months) agai
 chart shows every day, week or month in that period; hover over or tab to a column for its amount and number of
 payments, and <strong>Table</strong> under it lists the same figures. Beside it: how the money was paid (cash, bank
 transfer, POS, online) and, for a bursar or the School Admin, which member of staff took it.</p>
+{{ shot('finance', 'Collections: what came in today, this term and this session, and how the fees stand.') }}
 <p>For those who may see school-wide figures, <strong>Where the fees stand</strong> follows, for the session you
 pick: the share of charged fees collected so far (the striped part of the bar is owed and already past its due
 date), how many students have paid in full, part paid, paid nothing or have no fees yet (each a link to that list),
@@ -31,6 +33,7 @@ or lowest share paid. Each choice loads in place. The figures across the top alw
 it charges — tuition, a term's dues, a one-off charge — and which classes each applies to (<strong>+ Add fee
 item</strong>), charges students, and looks back over every charge made. This is the fourth step of the
 new-school setup checklist.</p>
+{{ shot('fees', 'Fee structure: every fee item with the classes it applies to. Adding and editing one is a pop-up.') }}
 
 <h2 id="billing-class">Billing a whole class</h2>
 <p>On <a href="{{ url_for('admin_finance_fee_items') }}">Fee Structure</a>, the top of the page chooses
@@ -54,6 +57,7 @@ one, a due date; the fees offered are the ones assigned to that class.</p>
 admission number to narrow the list; it shows where the receipt will be sent) and <em>what was paid</em> (the amount, what
 it is for, how it was paid, and a reference or note if there is one). Saving makes a numbered receipt at once, sends it to
 the guardian, and opens the payment's own page, ready to apply it to fees.</p>
+{{ shot('payments', 'Payments: every payment in one place, with anything not yet applied to a fee shown first.') }}
 <p><a href="{{ url_for('admin_finance_payments') }}">Payments</a> lists every payment: all of them, those
 <em>not yet applied</em> to a fee, those fully applied, or voided ones, for one session or every session, by method, or
 found by student, admission number, receipt number or payer. A cashier sees only the payments they recorded.</p>

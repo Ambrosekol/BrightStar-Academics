@@ -132,6 +132,13 @@ disappears on its own, the request after the last one is allocated — and
   <li><strong>Permission.</strong> Both endpoints need the same <code>finance.manage</code> permission as the single-student route.</li>
 </ul>
 
+<h2 id="store-money">The store's money</h2>
+<p>A store purchase ({{ table('store_purchases') }}) is not a {{ table('finance_payments') }} row, so it never counts
+as a fee payment waiting to be applied, and fee balances are unaffected. An online store purchase does share the fee
+checkout: it is a {{ table('finance_online_payments') }} row whose <code>items</code> list store items, and
+<code>_finalize</code> in {{ file('blueprints/finance/paystack.py') }} hands such a row to the store instead of creating a
+fee payment.</p>
+
 <h2 id="perms">Permissions</h2>
 <ul>
   <li>{{ perm('finance.view_all') }} sees every payment; {{ perm('finance.view_own') }} sees only payments the person recorded (a cashier).</li>

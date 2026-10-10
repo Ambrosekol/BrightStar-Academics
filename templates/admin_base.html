@@ -95,6 +95,19 @@
                  'show': finance_shown and admin_has_permission(aid,'finance.manage'),
                  'active': path.startswith('/admin/finance/fee-items')},
             ]},
+            {'label':'Store', 'items':[
+                {'label':'Inventory','endpoint':'admin_store','icon':'nav-store',
+                 'show': signed and admin_has_permission(aid,'store.view'),
+                 'active': path == '/admin/store' or path.startswith('/admin/store/items')},
+                {'label':'Purchase claims','endpoint':'admin_store_claims','icon':'nav-claims',
+                 'badge': store_waiting if (signed and store_waiting and admin_has_permission(aid,'store.view')) else 0,
+                 'title': (store_waiting ~ ' waiting to be collected') if store_waiting else '',
+                 'show': signed and admin_has_permission(aid,'store.view'),
+                 'active': path.startswith(('/admin/store/claims','/admin/store/purchases'))},
+                {'label':'Record a payment','endpoint':'admin_store_sell','icon':'nav-till',
+                 'show': signed and admin_has_permission(aid,'store.manage'),
+                 'active': path.startswith('/admin/store/sell')},
+            ]},
             {'label':'Resources', 'items':[
                 {'label':'Library','endpoint':'admin_library','icon':'nav-library',
                  'show': signed and admin_has_permission(aid,'library.view'),
@@ -172,7 +185,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='4') }}">
 </head>
-<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable">
+<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable">
 {{ connectivity_banner() }}
 {% if finance_unallocated and finance_unallocated.count %}
 <div class="finance-unallocated-banner" role="status">
@@ -285,7 +298,7 @@
         {% set in_modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
         {% set sx = settings_nav() if (has_rail and not in_modal) else none %}
         {% if sx %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
         <div class="sx" data-sx>
         {% include 'includes/_settings_side.html' %}
         <section class="sx-pane" aria-label="{{ sx.current.title if sx.current else 'Settings' }}">

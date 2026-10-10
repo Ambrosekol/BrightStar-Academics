@@ -17,6 +17,7 @@ candidates   staff, and the candidate the photograph belongs to                 
 students     staff, the student it belongs to, and a parent linked to that student        student records
 questions    staff, students and candidates (they take the exams the pictures belong to)  question banks, tests
 assignments  staff and students (quiz pictures)                                           assignments
+store        staff and parents (pictures of what the school store sells)                  store items
 anything     staff only                                                                   (nothing writes here)
 else
 ===========  ===========================================================================  =============
@@ -60,6 +61,7 @@ FOLDER_RULES = {
     'students': frozenset({'admin', 'own_student', 'parent_of_student'}),
     'questions': frozenset({'admin', 'student', 'candidate'}),
     'assignments': frozenset({'admin', 'student'}),
+    'store': frozenset({'admin', 'parent'}),
 }
 # A folder with no rule (and a file directly in the uploads folder) is for staff.
 DEFAULT_RULE = frozenset({'admin'})

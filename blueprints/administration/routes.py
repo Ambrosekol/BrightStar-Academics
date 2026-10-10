@@ -869,6 +869,22 @@ def admin_scopes():
 def admin_audit_logs():
     me=current_admin()
     if not admin_has_permission(me['id'],'audit.view'): return admin_access_error('audit.view')
-    logs=db.session.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(250)).all()
+    # Fifty at a time, searched and filtered on the server. The Notices tab beside it is its own address
+    # (blueprints/school/notice_log.py), so this page never reads the notice log.
+    q=request.args.get('q','').strip()[:80]
+    refused=request.args.get('only')=='refused'
+    conditions=[]
+    if refused: conditions.append(AuditLog.success==0)
+    if q:
+        words=q.replace(' ','_')
+        conditions.append(or_(AuditLog.username_snapshot.icontains(q,autoescape=True),AuditLog.action.icontains(words,autoescape=True),
+                              AuditLog.module.icontains(words,autoescape=True),AuditLog.ip_address.icontains(q,autoescape=True),
+                              AuditLog.target_id.icontains(q,autoescape=True)))
+    total=one_scalar(select(func.count()).select_from(AuditLog).where(*conditions),0)
+    pages=max(1,-(-total//50))
+    try: page=int(request.args.get('page','1'))
+    except (TypeError,ValueError): page=1
+    page=min(max(page,1),pages)
+    logs=db.session.scalars(select(AuditLog).where(*conditions).order_by(AuditLog.id.desc()).limit(50).offset((page-1)*50)).all()
     logs=[dict(row, display_detail=audit_display_detail(row)) for row in logs]
-    return render_template('admin_audit_logs.html',logs=logs)
+    return render_template('admin_audit_logs.html',tab='activity',logs=logs,q=q,refused=refused,page=page,pages=pages,total=total)

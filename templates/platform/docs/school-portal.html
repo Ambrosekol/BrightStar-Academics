@@ -111,8 +111,39 @@ student items are complete on their own and never carry one, because families ca
   It needs no database read, and it always matches What's new, because both come from the same file.</li>
 </ul>
 
+<h2 id="store">The school store</h2>
+<p>{{ file('blueprints/store/routes.py') }} sells what parents buy from the school. {{ table('store_items') }} holds each
+item (price, a count in stock, up to three pictures under <code>uploads/store/</code>, hidden or shown);
+{{ table('store_purchases') }} holds each purchase for one child, with the item's name and price as they were when it
+was bought, until it is collected (by the student or a parent) or cancelled. Store money is not a
+{{ table('finance_payments') }} row, so it never counts as a fee payment waiting to be applied; its receipt number is
+<code>STR-</code> and the purchase id.</p>
+<ul>
+  <li><strong>Staff pages</strong>: {{ route('admin_store') }} (Inventory, with adding, editing and restocking items),
+  {{ route('admin_store_claims') }} (purchases, fifty at a time, handed over in a pop-up by
+  {{ route('admin_store_purchase_claim') }}, which texts the parent) and {{ route('admin_store_sell') }} (a payment taken
+  in person). {{ perm('store.view') }} opens the first two; {{ perm('store.manage') }} does everything. The preset role
+  <em>Store Keeper</em> has both.</li>
+  <li><strong>Parents</strong>: {{ route('parent_store') }} shows the items and their own purchases. With the school's own
+  Paystack account, {{ route('parent_store_buy') }} starts a checkout through the same
+  {{ table('finance_online_payments') }} row a fee payment uses, with <code>items</code> naming store items and a child
+  each; the callback ({{ route('parent_store_pay_callback') }}), the webhook and the self-healing reconcile all settle it
+  exactly once, and settling it calls <code>settle_online_purchase</code>.</li>
+  <li><strong>Stock</strong> is taken with a conditional <code>UPDATE ... WHERE stock &gt;= quantity</code>, so two sales
+  at once can never sell the last one twice. An online payment that arrives after the last one has gone is still
+  recorded (the money is in) and marked <code>short</code> for the office to settle.</li>
+</ul>
+
+<h2 id="settings-hub">Settings, and the activity and notice logs</h2>
+<p>{{ route('admin_settings') }} ({{ file('blueprints/school/settings.py') }}) is one list of every setting, each shown
+only to whoever may open it. Every settings page is drawn inside the same frame by {{ file('templates/admin_base.html') }}
+(the list on the left, the page beside it) and loads in place; staff and roles open in pop-ups. The activity log
+({{ route('admin_audit_logs') }}) and the notice log ({{ route('admin_audit_notices') }}) are two tabs, two addresses, so
+opening one never reads the other; both page fifty records at a time and search on the server. A student's notice log
+({{ route('admin_notification_log') }}) opens in a pop-up from their record.</p>
+
 <h2 id="staff-guide">The staff guide</h2>
-<p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Fifteen pages, in six groups that follow the order of a school year (getting started, setting up the school, students and families, academics, money and library, and the entrance workspace), with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>
+<p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Seventeen pages, in six groups that follow the order of a school year (getting started, setting up the school, students and families, academics, money, store and library, and the entrance workspace), with screenshots of the screens they describe ({{ file('templates/school_guide/_macros.html') }}'s <code>shot</code>, pictures in <code>static/guide/</code> taken from a demonstration school), with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>
 
 <h2 id="accounts">Accounts other people get</h2>
 <p>Students, parents and entrance candidates are created by staff, never self-registered. Each receives a generated one-time password and must change it at first sign-in (students and parents; candidates use the credentials printed for them). Student sign-in names come from the admission number; numbers themselves come from the school's numbering rules.</p>

@@ -4,7 +4,7 @@
 {% block title %}Online now — {{ school_brand.name }}{% endblock %}
 {% block content %}
 {# Who is signed in right now, inside Settings. "Online" means active in the last few minutes; it lapses on its own. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 <div class="on-k">
   <div><span class="on-pulse"></span><div><strong>{{ counts.admins }}</strong><span>staff online</span></div></div>
   <div><span class="on-pulse"></span><div><strong>{{ counts.students }}</strong><span>students online</span></div></div>

@@ -1,0 +1,94 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Inventory — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# The store's inventory: what is for sale, its price and how many are left. Adding and editing an item, and a sale,
+   open in a pop-up (static/inplace.js); restocking and hiding happen in place. Purchase claims and Record a payment
+   are the other two Store pages (blueprints/store/routes.py). #}
+{% set can_manage = admin_has_permission(current_admin['id'], 'store.manage') %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+<div class="ac sto">
+<header class="ac-top">
+  <h1>Inventory</h1>
+  <span class="ac-hint">What the school store sells, at what price, and how many are left.</span>
+  {% if can_manage %}<div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('admin_store_sell') }}" data-modal>{{ icon('nav-till', 'ico-sm') }} Record a payment</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_store_item_new') }}" data-modal>+ Add an item</a>
+  </div>{% endif %}
+</header>
+
+{% if not online %}
+<p class="sto-note">{{ icon('nav-payments') }}<span><strong>Parents can see the store but cannot pay for it online</strong> until the school's online payments are set up{% if is_school_admin_ui %} (<a href="{{ url_for('admin_finance_paystack_settings') }}">Settings › Online payments</a>){% endif %}. Until then, take payment at the office and record it with <strong>Record a payment</strong>.</span></p>
+{% endif %}
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>For sale</dt><dd>{{ k.n_items or 0 }}</dd><small>items in the store</small></div>
+  <div><dt>In stock</dt><dd>{{ k.units or 0 }}</dd><small>units on the shelf</small></div>
+  <div class="{{ 'is-alert' if k.low }}"><dt>Running low</dt><dd><a href="{{ url_for('admin_store', show='low') }}">{{ k.low or 0 }}</a></dd><small>{{ low }} or fewer left</small></div>
+  <div class="{{ 'is-alert' if k.out }}"><dt>Sold out</dt><dd><a href="{{ url_for('admin_store', show='out') }}">{{ k.out or 0 }}</a></dd><small>none left</small></div>
+  <div><dt>To be collected</dt><dd><a href="{{ url_for('admin_store_claims') }}">{{ waiting }}</a></dd><small>paid, not yet handed over</small></div>
+  <div><dt>Sales this month</dt><dd>₦{{ '{:,.0f}'.format(sales.total or 0) }}</dd><small>{{ sales.n or 0 }} purchase{{ '' if sales.n == 1 else 's' }}</small></div>
+</dl>
+
+<div class="fi-tools">
+  <nav class="sto-filters" aria-label="Show">
+    {% for key, label in [('all','Everything'),('in','In stock'),('low','Running low'),('out','Sold out'),('hidden','Hidden')] %}
+    <a class="{{ 'is-on' if show == key }}" href="{{ url_for('admin_store', show=key if key != 'all' else None, q=q or None) }}"{% if show == key %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <form method="get" action="{{ url_for('admin_store') }}" class="ac-search lb-search" role="search">
+    {% if show != 'all' %}<input type="hidden" name="show" value="{{ show }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Name, category or description" aria-label="Search the inventory">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if q %}<a class="ac-link" href="{{ url_for('admin_store', show=show if show != 'all' else None) }}">Clear</a>{% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="sto-grid">
+  {% for it in items %}
+  {% set pics = store_photos(it) %}
+  {% set sold_n = sold.get(it.id, 0) %}
+  {% set out = it.stock <= 0 %}
+  {% set is_low = not out and it.stock <= low %}
+  <article class="sto-card{{ ' is-out' if out }}">
+    <a class="sto-pic" href="{{ url_for('admin_store_item_edit', item_id=it.id) if can_manage else '#' }}"{% if can_manage %} data-modal{% endif %} aria-label="{{ it.name }}">
+      {% if pics %}<img src="{{ url_for('static', filename=pics[0]) }}" alt="" loading="lazy">{% if pics|length > 1 %}<span class="sto-pic__n">{{ pics|length }} pictures</span>{% endif %}{% else %}{{ icon('nav-store') }}{% endif %}
+      {% if not it.active %}<span class="sto-flag is-hidden">Hidden</span>{% elif out %}<span class="sto-flag is-out">Sold out</span>{% elif is_low %}<span class="sto-flag is-low">Only {{ it.stock }} left</span>{% endif %}
+    </a>
+    <div class="sto-body">
+      {% if it.category %}<span class="sto-cat">{{ it.category }}</span>{% endif %}
+      <h2 class="sto-name">{% if can_manage %}<a href="{{ url_for('admin_store_item_edit', item_id=it.id) }}" data-modal>{{ it.name }}</a>{% else %}{{ it.name }}{% endif %}</h2>
+      <span class="sto-price">₦{{ '{:,.2f}'.format(it.price) }}</span>
+      {% set pct = (100 * it.stock / (it.stock + sold_n))|round(0)|int if (it.stock + sold_n) else 0 %}
+      <span class="sto-stock{{ ' is-low' if is_low }}" title="{{ it.stock }} left, {{ sold_n }} sold"><span><i style="width:{{ pct }}%"></i></span>{{ it.stock }} left · {{ sold_n }} sold</span>
+    </div>
+    {% if can_manage %}
+    <div class="sto-foot">
+      {% if it.active and not out %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('admin_store_sell', item_id=it.id) }}" data-modal>Sell</a>{% endif %}
+      <form method="post" action="{{ url_for('admin_store_item_restock', item_id=it.id, q=q or None, show=show if show != 'all' else None) }}" class="sto-restock">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="number" name="change" step="1" placeholder="+0" aria-label="How many to add to {{ it.name }}" class="ac-input">
+        <button class="ac-btn ac-btn--sm" type="submit">Add stock</button>
+      </form>
+      <span class="sto-grow"></span>
+      <form method="post" action="{{ url_for('admin_store_item_toggle', item_id=it.id) }}"{% if it.active %} data-confirm="Hide {{ it.name }} from parents? It stays in the inventory and can be brought back."{% endif %}>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="ac-link" type="submit">{{ 'Hide' if it.active else 'Show again' }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sto-empty">
+  <strong>{% if q or show != 'all' %}Nothing matches{% else %}The store is empty{% endif %}</strong>
+  {% if q or show != 'all' %}<a class="ac-link" href="{{ url_for('admin_store') }}">Show everything</a>
+  {% elif can_manage %}Add what the school sells: uniforms, books, sportswear. <a class="ac-link" href="{{ url_for('admin_store_item_new') }}" data-modal>Add the first item →</a>{% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

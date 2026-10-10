@@ -4,7 +4,7 @@
 {% block content %}
 {# The staff Overview: a dense report built for the person looking at it (blueprints/school/dashboard.py).
    Each block is present only when its panel was worked out for this person's role and duties. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='3') }}">
 {% set p = panels %}
 <div class="ov">
 
@@ -22,37 +22,7 @@
   {% endif %}
 </header>
 
-{# The setup checklist (School Admin only): one compact strip, open or folded away, in the school's own colours. #}
-{% if onboarding.show or (onboarding.dismissed and not onboarding.complete) %}
-{% set setup_pct = (100 * onboarding.done_count / onboarding.total)|round(0)|int if onboarding.total else 0 %}
-{% endif %}
-{% if onboarding.show %}
-<details class="ov-p ov-setup" style="margin-bottom:10px">
-  <summary class="ov-setup__bar">
-    <span class="ov-setup__title"><strong>Setting up the school</strong> <small>{{ onboarding.major_done }} of {{ onboarding.major_total }} essentials · {{ onboarding.done_count }} of {{ onboarding.total }} steps</small></span>
-    <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
-    <span class="ov-setup__toggle">Show steps</span>
-  </summary>
-  <table class="ov-t" style="margin-top:8px">
-    {% for step in onboarding.steps %}
-    <tr data-step="{{ step.label }}" data-done="{{ 1 if step.done else 0 }}" data-optional="{{ 0 if step.major else 1 }}"><td style="width:22px"><span class="ov-setup__n{{ ' is-done' if step.done }}">{{ '✓' if step.done else loop.index }}</span></td>
-      <td><strong>{{ step.label }}</strong>{% if not step.major %} <small>optional</small>{% endif %}<br><small>{{ step.text }}{% if step.warning and not step.done %} ⚠ {{ step.warning }}{% endif %}</small></td>
-      <td class="n">{% if not step.done and step.can_open %}<a class="ov-setup__go" href="{{ url_for(step.endpoint) }}">Open →</a>{% elif step.done %}<small>Done</small>{% endif %}</td></tr>
-    {% endfor %}
-  </table>
-  <form method="post" action="{{ url_for('admin_school_onboarding_dismiss') }}" class="ov-setup__foot">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <button class="ov-setup__link" type="submit">Hide this checklist</button>
-  </form>
-</details>
-{% elif onboarding.dismissed and not onboarding.complete %}
-<form method="post" action="{{ url_for('admin_school_onboarding_show') }}" class="ov-p ov-setup ov-setup__bar" style="margin-bottom:10px">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <span class="ov-setup__title"><strong>Setup checklist hidden</strong> <small>{{ onboarding.done_count }} of {{ onboarding.total }} steps done</small></span>
-  <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
-  <button class="ov-setup__btn" type="submit">Show setup checklist</button>
-</form>
-{% endif %}
+<div data-setup-box aria-live="polite">{% include "includes/_setup_checklist.html" %}</div>
 
 {# ---------------------------------------------------------------- the whole school #}
 {% if p.academic %}{% set a = p.academic %}
@@ -277,6 +247,22 @@
 <div class="ov-tip" id="ovTip" role="tooltip" hidden></div>
 </div>
 <script nonce="{{ csp_nonce() }}">
+(function(){
+  // Hide or show the setup checklist without reloading the Overview: the button spins while only that box is
+  // fetched and swapped. Without JavaScript the form simply posts and the page reloads, as before.
+  var box=document.querySelector('[data-setup-box]'); if(!box||!window.fetch) return;
+  box.addEventListener('submit',function(e){
+    var form=e.target; if(!form.matches('form')) return;
+    e.preventDefault();
+    var button=form.querySelector('button[type=submit]'); if(button){ button.setAttribute('data-inplace-busy',''); button.classList.add('is-busy'); }
+    box.classList.add('is-loading');
+    fetch(form.action,{method:'POST',body:new FormData(form),credentials:'same-origin',headers:{'X-Setup-Box':'1'}})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(html){ box.innerHTML=html; var f=box.querySelector('summary,button'); if(f) f.focus({preventScroll:true}); })
+      .catch(function(){ form.submit(); })
+      .finally(function(){ box.classList.remove('is-loading'); });
+  });
+})();
 (function(){
   // One tooltip for every mark that carries data-tip: it follows the pointer and also shows on keyboard focus.
   var tip=document.getElementById('ovTip'), root=document.querySelector('.ov'); if(!tip||!root) return;

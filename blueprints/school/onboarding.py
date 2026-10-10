@@ -15,13 +15,13 @@ report card settings, so no new table is needed for one flag.
 
 from datetime import datetime, timezone
 
-from flask import flash, redirect, url_for
+from flask import flash, redirect, render_template, request, url_for
 
 from app import app
 from models import FinanceFeeItem, SchoolClass, SchoolPublicSetting, SchoolSetting, SchoolSubject, Student, db
 from core.db_helpers import one_scalar
 from core.security import admin_access_error, admin_has_permission, admin_required, current_admin, csrf_protect
-from sqlalchemy import func, select
+from sqlalchemy import func, literal, select
 from blueprints.finance.helpers import _primary_school_id
 
 DISMISSED_KEY = 'onboarding_checklist_dismissed'
@@ -67,6 +67,41 @@ def _public(keys):
                   func.length(func.trim(SchoolPublicSetting.setting_value)) > 0) > 0
 
 
+def _flags():
+    """Whether each kind of record exists at all, answered together in one query.
+
+    The checklist only needs "is there any?", never "how many?": EXISTS stops at the first row it finds, where
+    COUNT(*) read every attendance mark and payment the school ever had, and one query for all of them replaces a
+    dozen and a half round trips."""
+    from models import (AcademicSession, Admin, AttendanceRecord, ClassSubject, ExamTimetableEntry,
+                        FinanceFeeAssessment, FinancePayment, LibraryBook, ParentStudentLink, ReportCardTrait)
+
+    def any_of(model, *where):
+        return select(literal(1)).select_from(model).where(*where).exists()
+
+    checks = {
+        'session': any_of(AcademicSession, AcademicSession.active == 1, AcademicSession.is_current == 1,
+                          func.length(func.trim(func.coalesce(AcademicSession.start_date, ''))) > 0,
+                          func.length(func.trim(func.coalesce(AcademicSession.end_date, ''))) > 0),
+        'classes': any_of(SchoolClass, SchoolClass.active == 1),
+        'subjects': any_of(SchoolSubject, SchoolSubject.active == 1),
+        'class_subjects': any_of(ClassSubject),
+        # More than one active account: the School Admin's own, and at least one other.
+        'staff': select(literal(1)).select_from(Admin).where(Admin.active == 1).offset(1).exists(),
+        'students': any_of(Student, Student.active == 1),
+        'parents': any_of(ParentStudentLink),
+        'fees': any_of(FinanceFeeItem, FinanceFeeItem.active == 1),
+        'billing': any_of(FinanceFeeAssessment),
+        'first_payment': any_of(FinancePayment),
+        'traits': any_of(ReportCardTrait),
+        'attendance': any_of(AttendanceRecord),
+        'timetable': any_of(ExamTimetableEntry),
+        'library': any_of(LibraryBook),
+    }
+    row = db.session.execute(select(*(c.label(k) for k, c in checks.items()))).mappings().first()
+    return {k: bool(row[k]) for k in checks} if row else {}
+
+
 def _safe(check):
     """A step's state must never take the whole page down: a check that cannot be answered counts as
     not done."""
@@ -88,6 +123,13 @@ def _step_definitions():
     from blueprints.school.report_card_data import SETTING_HEAD_NAME
     from models import (AcademicSession, Admin, AttendanceRecord, ClassSubject, ExamTimetableEntry,
                         FinanceFeeAssessment, FinancePayment, LibraryBook, ParentStudentLink, ReportCardTrait)
+
+    found = {}
+
+    def has(name):
+        if not found:
+            found.update(_flags())
+        return found.get(name, False)
 
     def S(group, key, label, text, endpoint, permission, check, major=True, admin_only=False, warning=''):
         return {'group': group, 'key': key, 'label': label, 'text': text, 'endpoint': endpoint,
@@ -113,43 +155,41 @@ def _step_definitions():
           'admin_school_sessions', 'school.view',
           # A new school is given a placeholder session with no dates; it counts as reviewed once the
           # current session has been given its dates.
-          lambda: _count(AcademicSession, AcademicSession.active == 1, AcademicSession.is_current == 1,
-                         func.length(func.trim(func.coalesce(AcademicSession.start_date, ''))) > 0,
-                         func.length(func.trim(func.coalesce(AcademicSession.end_date, ''))) > 0) > 0,
+          lambda: has('session'),
           admin_only=True,
           warning='Your school starts with a placeholder session. It is probably not the right one, so check its name and dates before you bill fees or enter results.'),
         S(YEAR, 'classes', 'Review your classes',
           'Every school starts with the standard class list (Primary, JSS, SSS). Switch off any your school does not use, or add the ones it does.',
           'admin_school_classes', 'school.classes.view',
-          lambda: _count(SchoolClass, SchoolClass.active == 1) > 0),
+          lambda: has('classes')),
         S(YEAR, 'subjects', 'Add your subjects',
           'Create the subjects taught at your school.',
           'admin_school_subjects', 'school.subjects.view',
-          lambda: _count(SchoolSubject, SchoolSubject.active == 1) > 0),
+          lambda: has('subjects')),
         S(YEAR, 'class_subjects', 'Offer subjects to classes',
           'Choose which subjects each class takes. Assignments, tests, results and report cards only list a subject for the classes it is offered to.',
           'admin_school_subjects', 'school.subjects.view',
-          lambda: _count(ClassSubject) > 0),
+          lambda: has('class_subjects')),
         S(PEOPLE, 'staff', 'Add your teachers and staff',
           'Create an account for each member of staff and give them a role, so they sign in with their own login rather than sharing yours.',
           'admin_accounts', 'admins.view',
-          lambda: _count(Admin, Admin.active == 1) > 1, admin_only=True),
+          lambda: has('staff'), admin_only=True),
         S(PEOPLE, 'students', 'Enrol your students',
           'Register students and place each one in a class, so results, assignments and fees have someone to belong to. Many at once can be imported from a spreadsheet.',
           'admin_school_students', 'school.students.view',
-          lambda: _count(Student, Student.active == 1) > 0),
+          lambda: has('students')),
         S(PEOPLE, 'parents', 'Link parents to their children',
           'Give each parent a portal account linked to their child, so they can see fees, results and notices and pay online.',
           'admin_school_parents', 'parent.view',
-          lambda: _count(ParentStudentLink) > 0),
+          lambda: has('parents')),
         S(MONEY, 'fees', 'Set up your fee items',
           'Add the fee items your school charges (tuition, uniform, transport…) and the classes each applies to.',
           'admin_finance_fee_items', 'finance.manage',
-          lambda: _count(FinanceFeeItem, FinanceFeeItem.active == 1) > 0),
+          lambda: has('fees')),
         S(MONEY, 'billing', 'Bill your students',
           'Charge the fees to a student, or to a whole class at once, for the session and term. Parents see what they owe only after this.',
           'admin_finance_fee_items', 'finance.manage',
-          lambda: _count(FinanceFeeAssessment) > 0),
+          lambda: has('billing')),
         S(MONEY, 'online_payments', 'Connect online payments',
           "Add your school's own Paystack keys so parents can pay fees from their portal, one fee or several at a time.",
           'admin_finance_paystack_settings', 'school.view',
@@ -161,7 +201,7 @@ def _step_definitions():
         S(MONEY, 'first_payment', 'Record your first payment',
           'Try recording a payment and allocating it to a fee, so you know the whole money flow works before the term starts.',
           'admin_finance_record', 'finance.manage',
-          lambda: _count(FinancePayment) > 0, major=False),
+          lambda: has('first_payment'), major=False),
         S(RESULTS, 'report_settings', 'Set up your report cards',
           "Enter the head teacher's name, title and signature and the date the next term begins. They are printed on every report card.",
           'admin_school_report_card_settings', 'report_cards.view',
@@ -169,15 +209,15 @@ def _step_definitions():
         S(RESULTS, 'traits', 'Set the report card traits',
           'Review the behaviour and skills traits teachers rate on each report card.',
           'admin_school_report_cards', 'report_cards.view',
-          lambda: _count(ReportCardTrait) > 0, major=False),
+          lambda: has('traits'), major=False),
         S(RESULTS, 'attendance', 'Start taking attendance',
           'Mark the register for a class. Attendance feeds the summaries and the report cards.',
           'admin_school_attendance', 'school.attendance.view',
-          lambda: _count(AttendanceRecord) > 0, major=False),
+          lambda: has('attendance'), major=False),
         S(RESULTS, 'timetable', 'Build the exam timetable',
           'Schedule the examinations by class and subject so students and parents know when each paper is.',
           'admin_school_timetable', 'school.timetable.view',
-          lambda: _count(ExamTimetableEntry) > 0, major=False),
+          lambda: has('timetable'), major=False),
         S(EXTRAS, 'delivery', 'Connect email and SMS',
           "Add the school's own email (and SMS) account so receipts, results and notices reach parents from your school, not from the platform's shared address.",
           'admin_school_delivery', 'school.view',
@@ -189,7 +229,7 @@ def _step_definitions():
         S(EXTRAS, 'library', 'Stock the library',
           'Add your books so students can be lent them and returns are tracked.',
           'admin_library', 'library.view',
-          lambda: _count(LibraryBook) > 0, major=False),
+          lambda: has('library'), major=False),
     ]
 
 
@@ -232,6 +272,8 @@ def admin_school_onboarding_dismiss():
     if not admin_has_permission(me['id'], 'school.view'):
         return admin_access_error('school.view')
     _set_dismissed(True)
+    if request.headers.get('X-Setup-Box') == '1':
+        return _setup_box()
     flash('The setup checklist is hidden. Bring it back any time with Show setup checklist at the top of this page.', 'success')
     return redirect(url_for('admin_school_home'))
 
@@ -244,4 +286,11 @@ def admin_school_onboarding_show():
     if not admin_has_permission(me['id'], 'school.view'):
         return admin_access_error('school.view')
     _set_dismissed(False)
+    if request.headers.get('X-Setup-Box') == '1':
+        return _setup_box(open_steps=True)
     return redirect(url_for('admin_school_home'))
+
+
+def _setup_box(open_steps=False):
+    """Just the checklist's box, for the Overview to swap in place (no reload of the whole dashboard)."""
+    return render_template('includes/_setup_checklist.html', onboarding=onboarding_status(), setup_open=open_steps)

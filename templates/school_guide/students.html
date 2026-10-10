@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import page with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>A student account is never self-registered — staff always create it, one at a time or many at
 once — and it always starts on a one-time password the student must replace at first sign-in.</p>
@@ -9,6 +9,7 @@ once — and it always starts on a one-time password the student must replace at
 students each has, boys and girls, and how many can sign in to the student portal, with a count of anyone not
 placed in a class this session. Choose a class with the chips at the top (or a row of the table) and its register
 loads in place; the search box finds a student in that class, or in any class when none is chosen.</p>
+{{ shot('students', 'Students: every class with its numbers. Choosing a class lists its students in place.') }}
 <p>Clicking a student opens them in a pop-up over the register: their class, department and admission number at
 the top, four figures (term results, overall mark, assignments, projects), and one tab at a time for their
 <strong>Profile</strong> (personal details, parent or guardian, and their portal login), <strong>Term results</strong>,
@@ -69,6 +70,7 @@ deactivate students. The bulk-import permission covers both (see <em>Roles, perm
 <p>From a student's pop-up you can edit their details, reset their password to a new one-time password (shown once,
 with a button to print it), or turn their sign-in off or on without touching anything else about their record. Enrolment history — previous schools, earlier levels — is
 kept separately and can be corrected with a reason if it was entered wrong.</p>
+{{ shot('student-modal', 'A student opens in a pop-up: their profile, results, every mark, work and school journey, each a tab.') }}
 
 <h2 id="archive">Archiving a student who has left</h2>
 <p>When a student leaves, <strong>archive</strong> them rather than deleting them. Archiving keeps their whole

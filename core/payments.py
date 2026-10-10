@@ -81,7 +81,12 @@ def decrypt(stored):
 # ----------------------------------------------------------------- reading what is set up
 
 def payment_settings():
-    """This school's own Paystack settings, secret key decrypted, or None if not set up."""
+    """This school's own Paystack settings, secret key decrypted, or None if not set up. Read once per request."""
+    from core.speed import request_memo
+    return request_memo('payment-settings', _payment_settings)
+
+
+def _payment_settings():
     from models import SchoolPaymentSetting, db
 
     try:
@@ -117,11 +122,15 @@ def set_payment_settings(public_key, secret_key, admin_id):
             row.updated_at = now
             row.updated_by = admin_id
     db.session.commit()
+    from core.speed import request_forget
+    request_forget('payment-settings')
 
 
 def clear_payment_settings():
     from models import SchoolPaymentSetting, db
 
+    from core.speed import request_forget
+    request_forget('payment-settings')
     db.session.execute(SchoolPaymentSetting.__table__.delete())
     db.session.commit()
 

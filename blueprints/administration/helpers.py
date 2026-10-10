@@ -44,7 +44,7 @@ def _duty_form_options(admin=None):
     """The classes and subjects a duty can name, for the duty editor (templates/includes/_teaching_duties.html).
     ``admin``, when given and not the School Admin, limits the classes to those within their own reach."""
     from sqlalchemy import select
-    from models import SchoolClass, SchoolSubject
+    from models import ClassSubject, SchoolClass, SchoolSubject
     from core.school_structure import DEPARTMENTS, is_senior
     from core.security import admin_scope_allows
     classes=[{'id':c.id,'name':c.name,'senior':is_senior(c.stage,c.name)}
@@ -52,7 +52,11 @@ def _duty_form_options(admin=None):
                                          .order_by(SchoolClass.level_order,SchoolClass.name)).all()]
     if admin is not None and not admin['admin_type_system']:
         classes=[c for c in classes if admin_scope_allows(admin['id'],'class',c['name'])]
-    subjects=[{'id':s.id,'name':s.name} for s in db.session.scalars(
+    # Which classes take each subject (class_subjects), so the editor lists only a class's own subjects.
+    offered={}
+    for class_id,subject_id in db.session.execute(select(ClassSubject.class_id,ClassSubject.subject_id)).all():
+        offered.setdefault(subject_id,[]).append(class_id)
+    subjects=[{'id':s.id,'name':s.name,'class_ids':sorted(offered.get(s.id,[]))} for s in db.session.scalars(
         select(SchoolSubject).where(SchoolSubject.active==1).order_by(SchoolSubject.name)).all()]
     return {'duty_classes':classes,'duty_subjects':subjects,'duty_departments':DEPARTMENTS}
 

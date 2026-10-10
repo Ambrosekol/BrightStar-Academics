@@ -6,7 +6,7 @@
 {# Staff: everyone who signs in to the school's side of the portal. Shown inside Settings (the frame and its
    "Add staff" button come from templates/admin_base.html); the figures filter, the search narrows, and adding or
    managing someone opens a pop-up (static/inplace.js) that can open a role's pop-up on top of it. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 {% set keep_q = q or None %}
 <nav class="sf-k" aria-label="Filter staff">
   <a class="{{ 'is-on' if status == 'all' }}" href="{{ url_for('admin_accounts', q=keep_q) }}"{% if status == 'all' %} aria-current="page"{% endif %}><span>Everyone</span><strong>{{ everyone_count }}</strong></a>

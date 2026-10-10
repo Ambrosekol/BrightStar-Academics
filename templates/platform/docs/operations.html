@@ -48,11 +48,33 @@
 <tr><td>Administrator account, permissions and scopes</td><td><code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>, 15</td><td>A deactivation, role or permission change applies within that time on other workers, and at once on the worker that made it.</td></tr>
 <tr><td>Admin page counts (notifications, open controls, unallocated payments)</td><td><code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>, 10</td><td>Within that time on other workers; at once where the change was made.</td></tr>
 <tr><td>Who is online (presence)</td><td>Written at most every 20 seconds per session; the 30-second heartbeat keeps it current</td><td>Within about 30 seconds.</td></tr>
+<tr><td>Purchases waiting to be collected (the badge on Store › Purchase claims)</td><td>30 seconds</td><td>At once on the worker where a sale, a collection or a cancellation happened; within 30 seconds elsewhere.</td></tr>
 <tr><td>A school's idle database connections</td><td><code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code>, 600</td><td>Not a freshness setting: connections are closed after this long unused and rebuilt on the next request.</td></tr>
 </table>
 
+<h2 id="speed">Page speed: what is not asked twice</h2>
+<p>Beyond the caches above, three things keep each page cheap without changing what it shows:</p>
+<ul>
+  <li><strong>Once per request.</strong> A page asks the same question many times over — may this person do that (once
+  per menu entry), what do they teach (once per student in a list), the school's id, its payment and delivery settings.
+  Each is answered once and kept for the rest of that request only ({{ file('core/security.py') }}'s
+  <code>_per_request</code>, {{ file('core/speed.py') }}'s <code>request_memo</code>), then thrown away; a change made
+  during the request drops it. The message preview, role names and workspaces in the menu are read only if the page
+  actually draws them, and the preview only when there is an unread message. The setup checklist asks whether each kind
+  of record exists with one <code>EXISTS</code> query instead of a <code>COUNT(*)</code> per table.</li>
+  <li><strong>Static files kept by the browser.</strong> {{ file('core/speed.py') }} adds <code>m=</code> (the file's
+  modification time) to every <code>url_for('static', ...)</code> for the portal's own files, and such an address is
+  served with <code>Cache-Control: public, max-age=31536000, immutable</code>: the browser stops asking again on every
+  page, and a changed file has a new address, so nobody is left with an old copy. Uploads keep their own rule
+  ({{ file('app.py') }}'s <code>uploaded_file</code>).</li>
+  <li><strong>Compression.</strong> Pages, fragments loaded in place, JSON and static text files are gzip-compressed for a
+  browser that accepts it; a static file is compressed once per version and kept in the worker. Set
+  <code>BRIGHTSTARS_GZIP=0</code> where a proxy already compresses.</li>
+</ul>
+
 <h2 id="uploads">Uploaded files</h2>
-<p>Files under <code>/static/uploads/...</code> are <em>not</em> open to every signed-in account. Each folder has its own rule ({{ file('core/upload_access.py') }}); ownership is read from the database row that holds the file, and a refusal is a plain 404 so a file's existence is not confirmed. A school's logo and photographs are public; message attachments are never served there.</p>
+<p>Files under <code>/static/uploads/...</code> are <em>not</em> open to every signed-in account. Each folder has its own rule ({{ file('core/upload_access.py') }}); ownership is read from the database row that holds the file, and a refusal is a plain 404 so a file's existence is not confirmed. A school's logo and photographs are public; message attachments are never served there. Store item pictures
+(<code>uploads/store/</code>) are open to the school's staff and parents.</p>
 
 <h2 id="reading">Reading what happened</h2>
 <div class="table-scroll"><table>

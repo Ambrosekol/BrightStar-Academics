@@ -1,30 +1,48 @@
 {% extends "admin_base.html" %}
 {% from 'includes/_nav_icons.html' import icon %}
-{% block title %}Activity log — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_notice_rows.html' import notice_rows, pager %}
+{% block title %}{{ 'Notice log' if tab == 'notices' else 'Activity log' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{# The activity log, inside Settings: the latest 250 records, newest first, by day. Search and "Refused only" narrow
-   it as you type; each record's details open under it. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
-{% set failed = logs|rejectattr('success')|list %}
-<div class="lg-tools" data-lg>
-  <label class="sf-search">{{ icon('set-search') }}<input type="search" placeholder="Search by person, action or address" aria-label="Search the activity log" data-lg-find autocomplete="off"></label>
-  <div class="lg-seg" role="group" aria-label="Show">
-    <button type="button" aria-pressed="true" data-lg-show="all">Everything</button>
-    <button type="button" aria-pressed="false" data-lg-show="fail">Refused only{% if failed %} ({{ failed|length }}){% endif %}</button>
-  </div>
-  <span class="sf-count sf-count" data-lg-count>{{ logs|length }} record{{ '' if logs|length == 1 else 's' }}</span>
-  <a class="btn btn-light btn-small" href="/admin/school/notice-log" data-full>Notice log</a>
-  <a class="btn btn-light btn-small" href="/admin/administration/audit-logs/export" data-full>Download (CSV)</a>
-</div>
+{# The activity log and the notice log, inside Settings, as two tabs side by side. Each tab is its own address loaded
+   in place, so only the open one is read from the database (blueprints/administration/routes.py admin_audit_logs,
+   blueprints/school/notice_log.py admin_audit_notices). Fifty records at a time; the search and filter run on the
+   server and load in place. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
+<nav class="lg-tabs" aria-label="Logs">
+  <a class="{{ 'is-on' if tab == 'activity' }}" href="{{ url_for('admin_audit_logs') }}"{% if tab == 'activity' %} aria-current="page"{% endif %}>{{ icon('set-history', 'ico-sm') }} Activity{% if tab == 'activity' %} <b>{{ total }}</b>{% endif %}</a>
+  <a class="{{ 'is-on' if tab == 'notices' }}" href="{{ url_for('admin_audit_notices') }}"{% if tab == 'notices' %} aria-current="page"{% endif %}>{{ icon('set-delivery', 'ico-sm') }} Notices to parents{% if tab == 'notices' %} <b>{{ total }}</b>{% endif %}</a>
+</nav>
 
+{% if tab == 'notices' %}
+<p class="sf-how" style="margin:0 0 10px">Every email and text the school tried to send a parent — a new assignment, a fee charged, a report card, an exam timetable, a store purchase collected — and whether it got through. Receipts keep their own on each receipt.</p>
+<form class="lg-tools" method="get" action="{{ url_for('admin_audit_notices') }}" role="search">
+  <label class="sf-search">{{ icon('set-search') }}<input type="search" name="q" value="{{ q }}" placeholder="Student, notice, email or phone" aria-label="Search notices"></label>
+  <div class="lg-seg" role="group" aria-label="Show">
+    <button type="submit" name="only" value="" aria-pressed="{{ 'false' if failed else 'true' }}">Everything</button>
+    <button type="submit" name="only" value="failed" aria-pressed="{{ 'true' if failed else 'false' }}">Not delivered</button>
+  </div>
+  <span class="sf-count">{{ total }} notice{{ '' if total == 1 else 's' }}{% if q or failed %} found{% endif %}</span>
+</form>
+{% if logs %}{{ notice_rows(logs) }}{% else %}<div class="adm-empty"><strong>{% if q or failed %}No notice matches.{% else %}No notice has been sent yet.{% endif %}</strong></div>{% endif %}
+{{ pager(page, pages, total, 'admin_audit_notices', 'notices', {'q': q or None, 'only': 'failed' if failed else None}) }}
+
+{% else %}
+<form class="lg-tools" method="get" action="{{ url_for('admin_audit_logs') }}" role="search">
+  <label class="sf-search">{{ icon('set-search') }}<input type="search" name="q" value="{{ q }}" placeholder="Person, action, area or address" aria-label="Search the activity log"></label>
+  <div class="lg-seg" role="group" aria-label="Show">
+    <button type="submit" name="only" value="" aria-pressed="{{ 'false' if refused else 'true' }}">Everything</button>
+    <button type="submit" name="only" value="refused" aria-pressed="{{ 'true' if refused else 'false' }}">Refused only</button>
+  </div>
+  <span class="sf-count">{{ total }} record{{ '' if total == 1 else 's' }}{% if q or refused %} found{% endif %}</span>
+  <a class="btn btn-light btn-small" href="/admin/administration/audit-logs/export" data-full>Download (CSV)</a>
+</form>
 {% if logs %}
-<div class="lg-list" data-lg-list>
+<div class="lg-list">
   {% set day = namespace(v='') %}
   {% for log in logs %}
   {% set stamp = (log.created_at|string).replace('T', ' ').replace('+00:00', '') %}
-  {% if stamp[:10] != day.v %}{% set day.v = stamp[:10] %}<div class="lg-day" data-lg-day="{{ day.v }}">{{ day.v }}</div>{% endif %}
-  <div class="lg-row{{ '' if log.success else ' is-fail' }}" data-day="{{ day.v }}" data-ok="{{ 1 if log.success else 0 }}"
-       data-find="{{ ((log.username_snapshot or 'system') ~ ' ' ~ log.action ~ ' ' ~ log.module ~ ' ' ~ (log.ip_address or '') ~ ' ' ~ (log.display_detail or ''))|lower|replace('_', ' ') }}">
+  {% if stamp[:10] != day.v %}{% set day.v = stamp[:10] %}<div class="lg-day">{{ day.v }}</div>{% endif %}
+  <div class="lg-row{{ '' if log.success else ' is-fail' }}">
     <span class="lg-time">{{ stamp[11:16] }}</span>
     <span class="lg-mark" title="{{ 'Done' if log.success else 'Refused' }}">{{ icon('check') if log.success else icon('close') }}</span>
     <span class="lg-what"><strong>{{ log.username_snapshot or 'System' }}</strong> · {{ staffwords(log.action|replace('_', ' ')|capitalize) }}
@@ -33,33 +51,9 @@
   </div>
   {% endfor %}
 </div>
-<p class="adm-empty" data-lg-none hidden>Nothing matches.</p>
 {% else %}
-<div class="adm-empty"><strong>Nothing has been recorded yet.</strong></div>
+<div class="adm-empty"><strong>{% if q or refused %}Nothing matches.{% else %}Nothing has been recorded yet.{% endif %}</strong></div>
 {% endif %}
-<script nonce="{{ csp_nonce() }}">
-(function(){
-  var bar=document.querySelector('[data-lg]:not([data-ready])'); if(!bar) return; bar.setAttribute('data-ready','');
-  var list=document.querySelector('[data-lg-list]'); if(!list) return;
-  var rows=[].slice.call(list.querySelectorAll('.lg-row')), days=[].slice.call(list.querySelectorAll('[data-lg-day]'));
-  var find=bar.querySelector('[data-lg-find]'), countEl=bar.querySelector('[data-lg-count]'), none=document.querySelector('[data-lg-none]'), only='all';
-  function apply(){
-    var q=find.value.trim().toLowerCase(), shown=0, seen={};
-    rows.forEach(function(r){
-      var hit=(!q || r.getAttribute('data-find').indexOf(q)!==-1) && (only==='all' || r.getAttribute('data-ok')==='0');
-      r.hidden=!hit; if(hit){ shown++; seen[r.getAttribute('data-day')]=1; }
-    });
-    days.forEach(function(d){ d.hidden=!seen[d.getAttribute('data-lg-day')]; });
-    countEl.textContent=shown+' of '+rows.length+' records'; if(none) none.hidden=shown>0;
-  }
-  find.addEventListener('input',apply);
-  bar.querySelectorAll('[data-lg-show]').forEach(function(b){
-    b.addEventListener('click',function(){
-      only=b.getAttribute('data-lg-show');
-      bar.querySelectorAll('[data-lg-show]').forEach(function(x){ x.setAttribute('aria-pressed', x===b ? 'true' : 'false'); });
-      apply();
-    });
-  });
-})();
-</script>
+{{ pager(page, pages, total, 'admin_audit_logs', 'records', {'q': q or None, 'only': 'refused' if refused else None}) }}
+{% endif %}
 {% endblock %}

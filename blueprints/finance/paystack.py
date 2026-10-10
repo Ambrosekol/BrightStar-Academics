@@ -335,6 +335,13 @@ def _finalize(settings, row):
 
     # Paystack's own amount (kobo) is what is trusted, not whatever this row was opened with.
     paid_naira = round((data.get('amount') or 0) / 100, 2)
+
+    # A store purchase (blueprints/store/routes.py) settles as store purchases, not as a fee payment.
+    from blueprints.store.routes import settle_online_purchase, store_lines
+    lines = store_lines(row)
+    if lines:
+        settle_online_purchase(row, lines, paid_naira, now)
+        return
     admin_id = _payments_admin_id()
     receipt = _next_receipt_no()
     items = _row_items(row)

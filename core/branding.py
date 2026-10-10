@@ -143,15 +143,26 @@ def school_brand():
             return hit[1]
 
     logo = _setting('school_logo')
+    # The school's own row, read once for every field below that falls back to it (it used to be one query each).
+    row = {}
+    try:
+        from core.db_helpers import one
+        found = one(select(School.motto, School.tagline, School.email, School.phone, School.address)
+                    .order_by(School.id).limit(1))
+        row = {k: (found[k] or '').strip() for k in ('motto', 'tagline', 'email', 'phone', 'address')} if found else {}
+    except Exception:
+        from models import db
+        db.session.rollback()   # a database mid-upgrade: brand without the row, as _school_row does
+        row = {}
     primary = _brand_colour(theme.PRIMARY_KEY, 'main')
     accent = _brand_colour(theme.ACCENT_KEY, 'accent')
     brand = {
         'name': school_name(),
-        'motto': _setting('school_motto') or _school_row(School.motto),
-        'tagline': _setting('school_tagline') or _school_row(School.tagline),
-        'email': _setting('school_email') or _school_row(School.email),
-        'phone': _setting('school_phone') or _school_row(School.phone),
-        'address': _setting('school_address') or _school_row(School.address),
+        'motto': _setting('school_motto') or (row.get('motto') if row else None) or '',
+        'tagline': _setting('school_tagline') or (row.get('tagline') if row else None) or '',
+        'email': _setting('school_email') or (row.get('email') if row else None) or '',
+        'phone': _setting('school_phone') or (row.get('phone') if row else None) or '',
+        'address': _setting('school_address') or (row.get('address') if row else None) or '',
         # A school's own logo is served out of its own uploads folder.
         'logo_url': url_for('static', filename=logo or PLACEHOLDER_LOGO) if has_request_context() else None,
         'logo_path': logo,

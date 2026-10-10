@@ -110,6 +110,7 @@ from .finance import (
 )
 
 from .library import LibraryBook, LibraryLoan
+from .store import StoreItem, StorePurchase
 
 from .parents import (
     ParentAccount,
@@ -162,6 +163,8 @@ __all__ = [
     'FinanceRefund',
     # library
     'LibraryBook', 'LibraryLoan',
+    # store
+    'StoreItem', 'StorePurchase',
     # parents
     'ParentAccount', 'ParentFeedback', 'ParentFeedbackReply',
     'ParentStudentLink',

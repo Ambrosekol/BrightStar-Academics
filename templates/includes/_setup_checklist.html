@@ -1,0 +1,34 @@
+{#- The setup checklist on the Overview (School Admin only): one compact strip, open or folded away. Hiding it and
+    showing it again swap just this box, with a spinner (the script on admin_school_home.html, and
+    blueprints/school/onboarding.py, which answers with this box alone when asked by that script). -#}
+{% if onboarding.show or (onboarding.dismissed and not onboarding.complete) %}
+{% set setup_pct = (100 * onboarding.done_count / onboarding.total)|round(0)|int if onboarding.total else 0 %}
+{% endif %}
+{% if onboarding.show %}
+<details class="ov-p ov-setup" style="margin-bottom:10px"{% if setup_open %} open{% endif %}>
+  <summary class="ov-setup__bar">
+    <span class="ov-setup__title"><strong>Setting up the school</strong> <small>{{ onboarding.major_done }} of {{ onboarding.major_total }} essentials · {{ onboarding.done_count }} of {{ onboarding.total }} steps</small></span>
+    <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
+    <span class="ov-setup__toggle">Show steps</span>
+  </summary>
+  <table class="ov-t" style="margin-top:8px">
+    {% for step in onboarding.steps %}
+    <tr data-step="{{ step.label }}" data-done="{{ 1 if step.done else 0 }}" data-optional="{{ 0 if step.major else 1 }}"><td style="width:22px"><span class="ov-setup__n{{ ' is-done' if step.done }}">{{ '✓' if step.done else loop.index }}</span></td>
+      <td><strong>{{ step.label }}</strong>{% if not step.major %} <small>optional</small>{% endif %}<br><small>{{ step.text }}{% if step.warning and not step.done %} ⚠ {{ step.warning }}{% endif %}</small></td>
+      <td class="n">{% if not step.done and step.can_open %}<a class="ov-setup__go" href="{{ url_for(step.endpoint) }}">Open →</a>{% elif step.done %}<small>Done</small>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="{{ url_for('admin_school_onboarding_dismiss') }}" class="ov-setup__foot">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="ov-setup__link" type="submit">Hide this checklist</button>
+  </form>
+</details>
+{% elif onboarding.dismissed and not onboarding.complete %}
+<form method="post" action="{{ url_for('admin_school_onboarding_show') }}" class="ov-p ov-setup ov-setup__bar" style="margin-bottom:10px">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <span class="ov-setup__title"><strong>Setup checklist hidden</strong> <small>{{ onboarding.done_count }} of {{ onboarding.total }} steps done</small></span>
+  <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
+  <button class="ov-setup__btn" type="submit">Show setup checklist</button>
+</form>
+{% endif %}
+

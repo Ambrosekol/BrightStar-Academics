@@ -214,6 +214,14 @@ VARIABLES = [
         breaks_if_wrong='Set very high, a deactivated administrator can keep working on other workers for that '
                         'long. Set to 0, every administrator request reads the account from the database.'),
     Variable(
+        name='BRIGHTSTARS_GZIP', category='Platform', risk=RISK_LOW, default='1',
+        purpose='Whether pages, in-place fragments, JSON and the static text files are gzip-compressed for a browser '
+                'that accepts it (core/speed.py). A static file is compressed once per version and kept.',
+        when_to_change='Set to 0 where a proxy or CDN in front of the application already compresses responses.',
+        affects='The size of every page and static file sent; not what any page shows.',
+        breaks_if_wrong='Off with no proxy compressing: pages travel several times larger, slow on mobile data. On '
+                        'behind a proxy that also compresses: harmless, the proxy sees it is already compressed.'),
+    Variable(
         name='BRIGHTSTARS_BADGE_CACHE_SECONDS', category='Platform', risk=RISK_LOW, default='10',
         purpose='How long the counts on every admin page (unread notifications, open controls, unallocated '
                'payments) are kept in each worker.',

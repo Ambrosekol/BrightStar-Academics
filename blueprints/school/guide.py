@@ -39,8 +39,9 @@ GUIDE_GROUPS = (
         ('timetable', 'Exam and test timetables', 'Building a draft, then releasing it'),
         ('results-report-cards', 'Results and report cards', 'From a mark to a report card a parent can see'),
     )),
-    ('Money and library', (
+    ('Money, store and library', (
         ('finance', 'Fees, payments and receipts', 'Charging, collecting and receipting'),
+        ('store', 'The school store', 'Inventory, selling, and handing purchases over'),
         ('library', 'Library', 'Books, members and loans'),
     )),
     ('Entrance workspace', (

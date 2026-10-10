@@ -1,0 +1,94 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Record a payment — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# A store payment taken in person (cash, bank transfer, POS): which item, how many, for which student. The stock goes
+   down at once and the purchase waits on Purchase claims to be collected. A page of its own (Store › Record a payment)
+   or a pop-up from an item's Sell; the purchase it makes opens in the same pop-up (data-modal-scope). #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+<div class="ac sto" data-sto-sell data-modal-scope="/admin/store/purchases/">
+{% if modal %}
+<div class="ac-modal-head"><span class="acq-kind">Record a payment</span><h2>A store payment taken in person</h2>
+  <p>Cash, a bank transfer or POS. The stock goes down now; the item waits on Purchase claims until it is collected.</p></div>
+{% else %}
+<header class="ac-top"><h1>Record a payment</h1><span class="ac-hint">For store items paid for at the office: cash, a bank transfer or POS.</span>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_store_claims') }}">{{ icon('nav-claims', 'ico-sm') }} Purchase claims</a></div></header>
+{% endif %}
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+{% if not items %}
+<div class="sto-empty"><strong>Nothing to sell yet</strong>Add items on Inventory first. <a class="ac-link" href="{{ url_for('admin_store') }}">Inventory →</a></div>
+{% else %}
+<form method="post" action="{{ url_for('admin_store_sell') }}" class="fi-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset class="fi-step"><legend><span class="fi-step__n">1</span>What was bought</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field ac-field--wide"><label for="stoItem">Item</label>
+        <select id="stoItem" name="item_id" required data-sto-pick>
+          <option value="">Choose the item</option>
+          {% for it in items %}<option value="{{ it.id }}" data-price="{{ it.price }}" data-stock="{{ it.stock }}" {% if it.id == item_id %}selected{% endif %} {% if it.stock <= 0 %}disabled{% endif %}>{{ it.name }} — ₦{{ '{:,.2f}'.format(it.price) }} ({{ it.stock if it.stock > 0 else 'sold out' }}{{ ' left' if it.stock > 0 }})</option>{% endfor %}
+        </select></div>
+      <div class="ac-field"><label for="stoQty">How many</label>
+        <span class="sto-qty"><button type="button" data-step="-1" aria-label="One fewer">−</button><input id="stoQty" name="quantity" type="number" min="1" step="1" value="{{ f.get('quantity', '1') }}" required><button type="button" data-step="1" aria-label="One more">+</button></span>
+        <small class="ac-hint" data-sto-left></small></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fi-step"><legend><span class="fi-step__n">2</span>For which student</legend>
+    <div class="ac-field ac-field--wide">
+      <input type="search" class="ac-input" placeholder="Type to narrow: name, admission no. or class" data-sto-find aria-label="Find a student">
+      <select id="stoStudent" name="student_id" required size="6" aria-label="Student">
+        {% for s in students %}<option value="{{ s.id }}" {% if f.get('student_id') == s.id|string %}selected{% endif %}>{{ s.last_name }} {{ s.first_name }} · {{ s.admission_no }}{% if s.class_name %} · {{ s.class_name }}{% endif %}</option>{% endfor %}
+      </select></div>
+  </fieldset>
+
+  <fieldset class="fi-step"><legend><span class="fi-step__n">3</span>How it was paid</legend>
+    <div class="fi-methods" role="radiogroup" aria-label="Paid by">
+      {% for m in methods %}<label><input type="radio" name="method" value="{{ m }}" {% if f.get('method', 'Cash') == m %}checked{% endif %} required><span>{{ m }}</span></label>{% endfor %}
+    </div>
+    <div class="ac-fields" style="margin-top:8px">
+      <div class="ac-field" data-sto-ref><label for="stoRef">Reference <span class="ac-hint">for a transfer or POS</span></label><input id="stoRef" name="reference" maxlength="80" value="{{ f.get('reference', '') }}"></div>
+      <div class="ac-field"><label for="stoNotes">Note <span class="ac-hint">optional</span></label><input id="stoNotes" name="notes" maxlength="500" value="{{ f.get('notes', '') }}" placeholder="e.g. size 10, collect on Friday"></div>
+    </div>
+  </fieldset>
+
+  <div class="sto-total" aria-live="polite"><span data-sto-what>Choose an item</span><strong data-sto-total>₦0.00</strong></div>
+
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_store') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Record the payment</button></div>
+</form>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var roots=document.querySelectorAll('[data-sto-sell]:not([data-ready])'); var root=roots[roots.length-1]; if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('form'); if(!form) return;
+  var pick=root.querySelector('[data-sto-pick]'), qty=root.querySelector('#stoQty'), left=root.querySelector('[data-sto-left]');
+  var total=root.querySelector('[data-sto-total]'), what=root.querySelector('[data-sto-what]');
+  function naira(n){ return '₦'+n.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  // The running total, and never more than is left in stock.
+  function sum(){
+    var o=pick.selectedOptions[0], price=o&&o.value?parseFloat(o.dataset.price):0, stock=o&&o.value?parseInt(o.dataset.stock,10):0;
+    var n=Math.max(1,parseInt(qty.value,10)||1); if(stock&&n>stock) n=stock; qty.value=n; qty.max=stock||'';
+    left.textContent=o&&o.value?(stock+' in stock'):''; total.textContent=naira(price*n);
+    what.textContent=o&&o.value?(n+' × '+o.textContent.split(' — ')[0]):'Choose an item';
+  }
+  pick.addEventListener('change',sum); qty.addEventListener('input',sum);
+  root.querySelectorAll('[data-step]').forEach(function(b){ b.addEventListener('click',function(){ qty.value=(parseInt(qty.value,10)||1)+parseInt(b.dataset.step,10); sum(); }); });
+  sum();
+  var find=root.querySelector('[data-sto-find]'), sel=root.querySelector('#stoStudent');
+  find.addEventListener('input',function(){ var q=find.value.trim().toLowerCase(), first=null;
+    [].forEach.call(sel.options,function(o){ var hit=!q||o.textContent.toLowerCase().indexOf(q)!==-1; o.hidden=!hit; if(hit&&!first) first=o; });
+    if(q&&first&&(!sel.value||sel.selectedOptions[0].hidden)) sel.value=first.value; });
+  // The reference is asked for only when the money came by transfer or POS.
+  var ref=root.querySelector('[data-sto-ref]');
+  function method(){ var m=form.querySelector('input[name=method]:checked'); var need=m&&m.value!=='Cash'; ref.querySelector('input').required=need; ref.style.opacity=need?1:.6; }
+  form.querySelectorAll('input[name=method]').forEach(function(r){ r.addEventListener('change',method); }); method();
+})();
+</script>
+{% endblock %}

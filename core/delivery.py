@@ -129,7 +129,12 @@ def decrypt(stored):
 # ----------------------------------------------------------------- reading what is set up
 
 def _school_values():
-    """The current school's own delivery settings, secrets decrypted."""
+    """The current school's own delivery settings, secrets decrypted. Read once per request; a save drops it."""
+    from core.speed import request_memo
+    return dict(request_memo('delivery-settings', _read_school_values))
+
+
+def _read_school_values():
     from models import SchoolDeliverySetting, db
 
     try:
@@ -277,6 +282,8 @@ def resolve_public(host):
 # ----------------------------------------------------------------- saving
 
 def _upsert(session, model, key, value, admin_id):
+    from core.speed import request_forget
+    request_forget('delivery-settings')
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc).isoformat()
@@ -357,6 +364,8 @@ def clear_channel(channel):
     from models import SchoolDeliverySetting, db
 
     keys = EMAIL_KEYS if channel == 'email' else SMS_KEYS
+    from core.speed import request_forget
+    request_forget('delivery-settings')
     db.session.execute(delete(SchoolDeliverySetting).where(SchoolDeliverySetting.setting_key.in_(keys)))
     db.session.commit()
 

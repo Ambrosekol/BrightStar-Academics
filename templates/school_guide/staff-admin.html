@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import page with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>Running the school itself — its staff, its roles, its look, and who did what.</p>
 
@@ -25,6 +25,7 @@ gear for Settings and two arrows for Switch workspace.</p>
 portal up, decides who can use it and records what happened: the school profile, academic sessions, staff and their
 roles, report card settings, Email &amp; SMS, online payments, receipts, controls and alerts, the activity log and who
 is online. You see only what your role allows.</p>
+{{ shot('settings', 'Settings opens on what needs attention (Worth a look), then every setting by group with its state. The list on the left stays on every Settings page.') }}
 <ul>
   <li><strong>The overview</strong> comes first. <em>Worth a look</em> lists anything that needs attention (online
   payments not connected, the head's signature missing, alerts left open); below it is every setting by group, each
@@ -49,11 +50,14 @@ gaps: classes with no class teacher, and subjects offered but taught by nobody. 
 class with its class teacher and subject teachers) or <strong>By teacher</strong>, and tick <strong>Only what needs a
 teacher</strong> to see the gaps alone. <strong>Change duties</strong> opens a pop-up with the classes they are class
 teacher of and the subjects they teach.</p>
+{{ shot('teachers', 'Teachers: the gaps first (classes with no class teacher, subjects nobody teaches), by class or by teacher.') }}
 <p><a href="{{ url_for('admin_accounts') }}">Staff</a>, in Settings, is everyone who signs in to the school's side of
 the portal: teachers, the bursar, the secretary, the librarian. Each person has a card with their name, username,
 whether they are active or suspended, their roles, their contact details and when they last signed in, and it says in
 plain words what they can reach: full access (the School Admin), a teacher's own classes and subjects, a limited area,
 or standard access from their roles.</p>
+{{ shot('staff', 'Staff, in Settings. The figures at the top are also the filters; + Add staff is at the top right of the page.') }}
+{{ shot('staff-modal', 'Manage opens the person in a pop-up with four tabs: Profile, Roles, Teaching duties and Limits.') }}
 <ul>
   <li>The figures at the top (<em>Everyone</em>, <em>Can sign in</em>, <em>Suspended</em>) are also the filters, and
   the search finds anyone by name, username or email.</li>
@@ -71,7 +75,8 @@ or standard access from their roles.</p>
   second pop-up on top, to check or change what it allows; closing it brings you back to the staff member exactly as you
   left them.</li>
   <li><strong>Teaching duties</strong>, for teachers: the class they are class teacher of, and the subjects they teach
-  in each class (and, in SSS, which department). See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</li>
+  in each class (and, in SSS, which department). Choose the class first: the subject list then shows only the
+  subjects that class takes (set on {{ page('classes-subjects', 'Subjects') }}). See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</li>
   <li><strong>Limits</strong>, rarely needed: keeps anyone else to chosen classes, subjects, sessions or question
   banks.</li>
   <li><strong>Overrides</strong> (the School Admin only) gives single permissions for the exceptional case.</li>
@@ -89,6 +94,8 @@ how much it allows (a bar, and the number of permissions), the first few things 
 then its permissions grouped by area, with a search, a count of what is ticked in each area and <strong>Tick
 all</strong> for an area. An existing role also lists the staff who hold it; a name opens that person's pop-up on top.
 Saving keeps the pop-up open on the saved role; closing it brings the page up to date.</p>
+{{ shot('roles', 'Staff roles: how much each role allows, and who holds it.') }}
+{{ shot('role-over-staff', 'A role opened on top of a staff member\'s pop-up (See beside a role). Closing it returns you to the staff member with nothing lost.') }}
 <p>Two further pages exist mainly for checking your own work, reached by typing their address rather
 than a button in the menu (so do not worry if you never notice them):
 <a href="{{ url_for('admin_permissions_catalogue') }}">the permissions catalogue</a> lists every
@@ -121,18 +128,22 @@ are signed in and active, then each of them with when they were last seen — us
 person you want to message is at their screen right now. <strong>Refresh</strong> brings it up to date; someone who
 stops using the portal drops off on their own after a few minutes.</p>
 
-<h2 id="audit">Activity log</h2>
-<p>The <a href="{{ url_for('admin_audit_logs') }}">Activity log</a>, in Settings, records who did what, to which
-record, from which address, and whether it went through — every release, every account change, every sign-in, and
-every refused attempt, including someone trying to open a workspace that is not theirs. The newest 250 records are
-grouped by day; the search finds a person, an action or an address as you type, and <strong>Refused only</strong>
-shows just what was turned away. <strong>Download (CSV)</strong> gives the whole log as a spreadsheet. Some actions
+<h2 id="audit">Activity and notice logs</h2>
+<p><a href="{{ url_for('admin_audit_logs') }}">Activity &amp; notice logs</a>, in Settings, has two tabs side by side.
+<strong>Activity</strong> records who did what, to which record, from which address, and whether it went through —
+every release, every account change, every sign-in, and every refused attempt, including someone trying to open a
+workspace that is not theirs. <strong>Notices to parents</strong> is every email and text the school tried to send a
+parent, and whether it got through. Each tab opens on its own, so looking at one never slows down by reading the other.</p>
+<p>Both show fifty records at a time, newest first and grouped by day; <strong>Older</strong> and
+<strong>Newer</strong> at the foot page through the rest. The search finds a person, an action, a student, an email
+address or a phone number across the whole log, and <strong>Refused only</strong> (or <strong>Not delivered</strong>)
+shows just what went wrong. <strong>Download (CSV)</strong> gives the whole activity log as a spreadsheet. Some actions
 also notify School Admins directly.</p>
-<p>A link from that page, or from a student's own record, opens the <strong>Notice log</strong> —
-every attempt to tell a guardian something by email or SMS (a new assignment, a fee charged, a
-released report card or exam timetable), whether it actually went through or not, so you can answer
-"did she get it?" yourself. Payment receipts keep their own version of this on each receipt's own
-page.</p>
+{{ shot('logs', 'The Activity log, with the Notices to parents tab beside it. Fifty records at a time; Older and Newer page through the rest.') }}
+<p>A student's own notice log opens in a pop-up from their record (<strong>Notice log</strong>): every attempt to
+tell their guardians something by email or SMS (a new assignment, a fee charged, a released report card or exam
+timetable, a store purchase collected), whether it went through or not, so you can answer "did she get it?" yourself.
+It pages and searches the same way. Payment receipts keep their own version of this on each receipt's own page.</p>
 
 <h2 id="controls">Controls and locks</h2>
 <p><a href="{{ url_for('admin_controls') }}">Controls &amp; alerts</a>, in Settings, gathers what needs a senior

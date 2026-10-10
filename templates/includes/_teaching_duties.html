@@ -1,6 +1,8 @@
 {# The teaching duties editor, shared by the staff form and the Teachers page.
    Needs: duties ({'class_teacher':[class ids], 'subjects':[{class_id, subject_id, department}]}),
-   duty_classes ([{id, name, senior}]), duty_subjects ([{id, name}]) and duty_departments.
+   duty_classes ([{id, name, senior}]), duty_subjects ([{id, name, class_ids}]) and duty_departments.
+   A row's subject list shows only the subjects its chosen class takes (class_ids, from class_subjects); a subject
+   already saved on a duty stays listed even if the class no longer offers it, marked so, so nothing is dropped.
    Posts duty_class_teacher (repeated), and duty_class / duty_subject / duty_department (one of each per row). #}
 <style>
 .td-block{margin-top:4px}
@@ -42,9 +44,10 @@
         <option value="">Class…</option>
         {% for c in duty_classes %}<option value="{{ c.id }}" data-senior="{{ 1 if c.senior else 0 }}" {% if c.id == row.class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
       </select>
-      <select name="duty_subject" aria-label="Subject">
+      <select name="duty_subject" aria-label="Subject" data-duty-subject>
         <option value="">Subject…</option>
-        {% for s in duty_subjects %}<option value="{{ s.id }}" {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        {% for s in duty_subjects %}<option value="{{ s.id }}" data-classes=" {{ s.class_ids|join(' ') }} " {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        <option value="" disabled data-duty-none hidden>No subject is offered to this class yet</option>
       </select>
       <select name="duty_department" aria-label="Department (SSS only)" class="td-dept">
         <option value="">All departments</option>
@@ -64,9 +67,28 @@
     var cls=row.querySelector('[data-duty-class]'), dept=row.querySelector('.td-dept');
     var opt=cls.options[cls.selectedIndex], senior=opt && opt.getAttribute('data-senior')==='1';
     dept.hidden=!senior; if(!senior) dept.value='';
+    // Only the subjects the chosen class takes. A subject already chosen stays (marked) if the class does not
+    // offer it any more, so editing someone never drops a duty they hold without anyone noticing.
+    var subj=row.querySelector('[data-duty-subject]'), none=subj.querySelector('[data-duty-none]'), shown=0;
+    Array.prototype.forEach.call(subj.options,function(o){
+      if(!o.value || o===none) return;
+      if(!o.dataset.name) o.dataset.name=o.textContent;
+      var offered=!cls.value || o.getAttribute('data-classes').indexOf(' '+cls.value+' ')!==-1;
+      var keep=offered || o.selected;
+      o.hidden=!keep; o.disabled=!keep;
+      o.textContent=o.dataset.name+(offered ? '' : ' (not offered to this class)');
+      if(offered) shown++;
+    });
+    none.hidden=!(cls.value && !shown);
   }
   function wire(row){
-    row.querySelector('[data-duty-class]').addEventListener('change',function(){ sync(row); });
+    row.querySelector('[data-duty-class]').addEventListener('change',function(){
+      var subj=row.querySelector('[data-duty-subject]'), o=subj.options[subj.selectedIndex];
+      // A new class: a subject it does not take is cleared rather than kept.
+      if(o && o.value && o.getAttribute('data-classes').indexOf(' '+this.value+' ')===-1) subj.value='';
+      sync(row);
+    });
+    row.querySelector('[data-duty-subject]').addEventListener('change',function(){ sync(row); });
     row.querySelector('[data-duty-remove]').addEventListener('click',function(){
       if(rows.children.length>1){ row.remove(); }
       else { row.querySelectorAll('select').forEach(function(s){ s.value=''; }); sync(row); }
@@ -77,6 +99,7 @@
   box.querySelector('[data-duty-add]').addEventListener('click',function(){
     var copy=rows.lastElementChild.cloneNode(true);
     copy.querySelectorAll('select').forEach(function(s){ s.value=''; });
+    copy.querySelectorAll('option').forEach(function(o){ if(o.dataset.name) o.textContent=o.dataset.name; });
     rows.appendChild(copy); wire(copy); copy.querySelector('select').focus();
   });
 })();

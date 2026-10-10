@@ -1,4 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>Everything in the School workspace — students, subjects, assignments, results, attendance,
 timetables — is organised around <strong>classes</strong>, <strong>sessions</strong> and
@@ -28,6 +29,7 @@ just a choice on a form, not something you create.</p>
 
 <h2 id="subjects">Subjects</h2>
 <p>Subjects shows every subject as a list, or as a grid of subjects against classes, so a class missing a subject stands out; the search narrows either at once. <strong>+ New subject</strong> and <strong>Edit</strong> open a pop-up: the name and code, the classes that take it, and (for SSS) the departments that take it. When editing, the same pop-up lists each class with its lock, where you can lock or unlock it, and the School Admin can apply the final lock.</p>
+{{ shot('subjects', 'Subjects, as a list or as a grid of subjects against classes. + New subject and Edit open in a pop-up.') }}
 <p><a href="{{ url_for('admin_school_subjects') }}">Subjects</a> are not seeded: a brand-new school has
 none, which is the second step of the setup checklist. Creating a subject attaches it to one or more
 classes at the same time, and a subject you have added is then listed on every form that asks for a subject.
@@ -43,6 +45,8 @@ you cannot find in a drop-down is almost always one that has not been created ye
 
 <h2 id="promotion">Moving a class up a session</h2>
 <p>Promotion shows the four steps across the top (class progression, a draft, review and approval, commit) with the ones done ticked. <strong>Class progression</strong> opens a pop-up with every class and the class it moves up to; choosing saves at once. Make a draft from one session into the next, then open it (a pop-up): every student with the class they would move to and the decision for them. Choose a class with the chips and set one decision for everyone shown (a whole class repeating, say), then change any student on their own. A run is saved, approved, then committed; a committed or cancelled run stays readable.</p>
+{{ shot('promotion', 'Promotion: the four steps across the top, and each run listed below it.') }}
+{{ shot('run-modal', 'A run opens in a pop-up: every student with the class they move to. Choose a class with the chips and set one decision for all of them, then change anyone on their own.') }}
 <p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> lets you
 generate a <strong>draft</strong> of who moves where, for every student currently enrolled — using
 progression rules you set once beforehand under

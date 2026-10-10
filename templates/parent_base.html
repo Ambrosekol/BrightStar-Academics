@@ -34,6 +34,7 @@
     {% set here = request.endpoint %}
     <a class="fp-bar__link pp-nav{% if here == 'parent_dashboard' %} is-here{% endif %}" href="{{ url_for('parent_dashboard') }}"{% if here == 'parent_dashboard' %} aria-current="page"{% endif %}>{{ icon('dashboard') }} Dashboard</a>
     <a class="fp-bar__link pp-nav{% if here == 'parent_feedback' %} is-here{% endif %}" href="{{ url_for('parent_feedback') }}"{% if here == 'parent_feedback' %} aria-current="page"{% endif %}>{{ icon('message') }} Messages</a>
+    <a class="fp-bar__link pp-nav{% if here == 'parent_store' %} is-here{% endif %}" href="{{ url_for('parent_store') }}"{% if here == 'parent_store' %} aria-current="page"{% endif %}>{{ icon('nav-store') }} Store</a>
     {% set bell = parent_bell %}
     {% if bell %}
     <details class="pp-bell" id="pp-bell" data-state-url="{{ url_for('parent_notifications_state') }}" data-read-url="{{ url_for('parent_notifications_read_all') }}" data-csrf="{{ csrf_token() }}">

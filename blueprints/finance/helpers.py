@@ -130,7 +130,8 @@ def _receipt_payload(payment_id):
 RECEIPT_SIGNATURE_SETTING_KEY='receipt_authorised_signature'
 
 def _primary_school_id():
-    return one_scalar(select(School.id).where(School.active==1).order_by(School.id))
+    from core.speed import request_memo
+    return request_memo('primary-school-id', lambda: one_scalar(select(School.id).where(School.active==1).order_by(School.id)))
 
 def _receipt_signature_setting_row():
     school_id=_primary_school_id()

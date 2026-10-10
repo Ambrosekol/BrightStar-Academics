@@ -11,7 +11,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set reset_url = url_for('admin_account_credentials_reset', aid=editing.id) if (mode == 'edit' and editing) else '' %}
 {% set can_peek_roles = is_school_admin_ui and admin_has_permission(current_admin.id, 'roles.edit') %}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 <div class="sa" data-sa data-modal-size="wide" data-modal-stay data-modal-scope="{{ reset_url }}">
 
 {% if not modal %}<p style="margin:0 0 10px"><a class="btn btn-light btn-small" href="{{ url_for('admin_accounts') }}">← All staff</a></p>{% endif %}

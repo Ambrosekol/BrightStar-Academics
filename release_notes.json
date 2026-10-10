@@ -18,6 +18,71 @@
   ],
   "releases": [
     {
+      "version": "2.20.27.0",
+      "date": "2026-10-10",
+      "title": "The school store, faster pages, and a guide with pictures",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "New: the school store. A Store group in the menu has Inventory (items with a price, stock and up to three pictures), Purchase claims (everything bought, until it is handed over) and Record a payment (store payments taken in cash, by transfer or POS). Stock goes down with every sale, from the office or online.",
+          "help": "store"
+        },
+        {
+          "audience": "staff",
+          "text": "Handing over a store purchase records who collected it, the student or a parent, and texts the parent. A purchase not yet collected can be cancelled, which puts it back in stock.",
+          "help": "store"
+        },
+        {
+          "audience": "staff",
+          "text": "A new preset role, Store Keeper, runs the store; View the store and Run the store can also be given to any role.",
+          "help": "store"
+        },
+        {
+          "audience": "staff",
+          "text": "Teaching duties (on a member of staff in Settings, and on Teachers): once you choose a class, the subject list shows only the subjects that class takes. A subject already given to someone stays listed, marked, if the class no longer offers it.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Settings: the Activity log and the notice log (emails and texts sent to parents) are now two tabs side by side, fifty records at a time with Older and Newer, searched across the whole log.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "A student's notice log now opens in a pop-up on top of their record, with the same paging and search.",
+          "help": "families"
+        },
+        {
+          "audience": "staff",
+          "text": "Hiding or showing the setup checklist on the Overview now happens in place, with a spinner, instead of reloading the whole page.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "Pages load faster: the browser now keeps the portal's own files, pages are sent compressed, and many pages ask the database far fewer questions. Nothing on them has changed.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The sign-in page gives the school's photographs more room: the school's name, the version and the privacy link now sit on a see-through strip over the photographs, and the school's logo is shown, centred, above Portal Sign In.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The staff guide now has pictures of the screens it describes, and a new page on the school store.",
+          "help": "store"
+        },
+        {
+          "audience": "family",
+          "text": "New: the Store, beside Dashboard and Messages. See what the school sells, with pictures and prices, and what you have bought for each child and whether it has been collected. Where the school takes payment online you can buy for any of your children; otherwise pay at the school office."
+        },
+        {
+          "audience": "family",
+          "text": "When something you bought from the school store is collected, you get a text saying who collected it."
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.8: the head teacher / class teacher / subject teacher chain, teaching duties, SSS departments, and Crèche and Nursery classes.",
       "version": "2.20.26.9",
       "date": "2026-10-09",

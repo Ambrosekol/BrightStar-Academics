@@ -50,6 +50,9 @@ BASE=os.path.dirname(os.path.abspath(__file__))
 # the real environment always wins — load_dotenv() never overrides one.
 load_dotenv(os.path.join(BASE,'.env'))
 app=Flask(__name__)
+# Static files the browser can keep, and compressed responses (core/speed.py).
+from core import speed as _speed  # noqa: E402
+_speed.init_app(app)
 app.jinja_env.filters.setdefault('display_date', format_display_date)
 # Marks are decimals (a 40-question paper gives 2.5 a question), so a page would print a mark
 # of 100 as "100.0". A float with nothing after the point is shown as a whole number.
@@ -721,10 +724,30 @@ def csp_nonce():
         g.csp_nonce=secrets.token_urlsafe(16)
     return g.csp_nonce
 
+class _Lazy:
+    """A list worked out the first time a template looks at it, and only then."""
+    __slots__ = ('_fn', '_value')
+
+    def __init__(self, fn):
+        self._fn, self._value = fn, None
+
+    def _get(self):
+        if self._value is None:
+            self._value = list(self._fn() or [])
+        return self._value
+
+    def __iter__(self): return iter(self._get())
+    def __len__(self): return len(self._get())
+    def __bool__(self): return bool(self._get())
+    def __getitem__(self, i): return self._get()[i]
+    def __contains__(self, x): return x in self._get()
+
+
 @app.context_processor
 def inject_csrf_token():
     admin=current_admin()
     unread=open_controls=0
+    unread_messages=_unread_admin_messages(admin['id']) if admin else 0
     finance_unallocated=None
     if admin:
         # Once a day (and not more often than every half hour) the school looks for birthdays coming up.
@@ -746,10 +769,12 @@ def inject_csrf_token():
         'current_admin': admin,
         'admin_unread_notifications': unread,
         'admin_open_controls': open_controls,
-        'admin_unread_messages': _unread_admin_messages(admin['id']) if admin else 0,
-        'admin_unread_message_summaries': _unread_admin_message_summaries(admin['id']) if admin else [],
-        'admin_role_names': admin_role_names(admin['id']) if admin else [],
-        'admin_workspaces': admin_workspaces(admin['id']) if admin else [],
+        'admin_unread_messages': unread_messages,
+        # Read only if a page shows them (a preview of unread messages only when there are any; the role names
+        # and workspaces only where the menu is drawn), so a page that does not costs no query for them.
+        'admin_unread_message_summaries': _Lazy(lambda: _unread_admin_message_summaries(admin['id']) if unread_messages else []) if admin else [],
+        'admin_role_names': _Lazy(lambda: remember('admin-role-names', admin_cache_seconds(), admin_role_names, admin['id'])) if admin else [],
+        'admin_workspaces': _Lazy(lambda: admin_workspaces(admin['id'])) if admin else [],
         'is_school_admin_ui': is_school_admin(admin),
         'finance_unallocated': finance_unallocated,
         'admin_has_permission': admin_has_permission,
@@ -838,7 +863,7 @@ def csrf_check_request():
 # Moved to core/public_settings.py.
 from core.public_settings import _public_settings  # noqa: E402
 from core.short_cache import forget_here, remember  # noqa: E402
-from control_plane.config import badge_cache_seconds  # noqa: E402
+from control_plane.config import admin_cache_seconds, badge_cache_seconds  # noqa: E402
 
 # ---------------- unified login/logout/password recovery ----------------
 # Moved to blueprints/auth/routes.py.
@@ -1179,6 +1204,7 @@ import blueprints.finance.paystack  # noqa: F401,E402
 # ---------------- admin library ----------------
 # Moved to blueprints/library/routes.py.
 import blueprints.library.routes  # noqa: F401,E402
+import blueprints.store.routes  # noqa: F401,E402
 
 # ---------------- the Brightstars Academics platform console ----------------
 # Served only on the platform hostnames. Imported here, at the end, because its

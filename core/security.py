@@ -129,6 +129,8 @@ ADMIN_PERMISSION_DEFS = [
     ('finance.paystack.manage','Manage online payments','finance','Set up and test the school\'s own Paystack account for parents to pay online.'),
     ('library.view','View library','library','View library books, members, loans and availability.'),
     ('library.manage','Manage library','library','Add books, issue/return books and manage library records.'),
+    ('store.view','View the store','store','See the store inventory and the purchases waiting to be collected.'),
+    ('store.manage','Run the store','store','Add and edit store items and stock, record payments taken in person, and mark purchases collected.'),
     ('student.history.manage','Manage enrollment history','school','Record and review a student historical enrollment including Daycare, Crèche and Nursery.'),
     ('branding.manage','Manage school profile and branding','school','Change the school name, contact details, colours, logo and sign-in photographs.'),
     ('report_cards.view','View report cards','school','See and download students\' report cards for the classes you may access.'),
@@ -205,6 +207,10 @@ ADMIN_ROLE_PRESETS = {
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
         'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage']
+    },
+    'Store Keeper': {
+        'description': 'Runs the school store: items and stock, payments taken in person, and handing over what parents have bought.',
+        'permissions': ['school.view','school.students.view','store.view','store.manage']
     },
     'Librarian': {
         'description': 'Manages books, loans, returns and library records.',
@@ -292,6 +298,10 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
     'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
     'admin_library':'library.view',
+    'admin_store':'store.view','admin_store_claims':'store.view','admin_store_purchase':'store.view',
+    'admin_store_item_new':'store.manage','admin_store_item_edit':'store.manage','admin_store_item_toggle':'store.manage',
+    'admin_store_item_restock':'store.manage','admin_store_sell':'store.manage',
+    'admin_store_purchase_claim':'store.manage','admin_store_purchase_cancel':'store.manage',
     'admin_library_book_new':'library.manage','admin_library_book_new_form':'library.manage','admin_library_issue_form':'library.manage',
 'admin_library_book_edit':'library.manage','admin_library_book_toggle':'library.manage',
     'admin_library_issue':'library.manage',
@@ -367,7 +377,10 @@ def _snapshot(admin):
 def clear_school_admin_caches():
     """Forget what this school's administrators were read as: their account rows, permissions and scopes.
     Called after any change a school makes, so the next request sees it."""
-    forget_here('admin-perms', 'admin-scopes', 'admin-duties', 'admin-levels')
+    forget_here('admin-perms', 'admin-scopes', 'admin-duties', 'admin-levels', 'admin-role-names')
+    if has_request_context():
+        for kind in ('perms', 'duties', 'scopes', 'levels'):
+            g.pop('_per_request_' + kind, None)
     tenant = current_tenant(required=False)
     scope = tenant.id if tenant is not None else None
     for key in [k for k in _ADMIN_CACHE if k[0] == scope]:
@@ -486,7 +499,19 @@ def _cached_permission_codes(admin_id):
     """The permission codes an administrator holds, read once and kept for BRIGHTSTARS_ADMIN_CACHE_SECONDS.
     A permission may come from the account's own admin type, from an assigned role, or as a direct
     override; ``admin_permission_codes`` reads all three. A school's own writes clear this at once."""
-    return remember('admin-perms', config.admin_cache_seconds(), admin_permission_codes, admin_id)
+    return _per_request('perms', admin_id, lambda: remember('admin-perms', config.admin_cache_seconds(), admin_permission_codes, admin_id))
+
+
+def _per_request(kind, key, compute):
+    """``compute()`` once per request for ``key``. A page asks the same question (may they do this, what do they
+    teach) dozens of times - once per menu entry, once per student in a list - and the answer cannot change in
+    the middle of a request, so only the first ask reaches the cache or the database."""
+    if not has_request_context():
+        return compute()
+    memo = g.setdefault('_per_request_' + kind, {})
+    if key not in memo:
+        memo[key] = compute()
+    return memo[key]
 
 
 def admin_permission_codes(admin_id):
@@ -530,7 +555,7 @@ def teaching_duties(admin_id):
     Empty for the School Admin and for anyone who has not been given a duty."""
     admin=_active_admin(admin_id)
     if not admin or admin['admin_type_system']: return ()
-    return remember('admin-duties', config.admin_cache_seconds(), _teaching_duties, admin.id)
+    return _per_request('duties', admin.id, lambda: remember('admin-duties', config.admin_cache_seconds(), _teaching_duties, admin.id))
 
 
 def duty_covers(admin_id, class_id, subject_id=None, department=None):
@@ -591,7 +616,7 @@ def admin_rank(admin_id):
     admin=_active_admin(admin_id)
     if not admin: return 99
     if admin['admin_type_system']: return 0
-    levels=remember('admin-levels', config.admin_cache_seconds(), _admin_level_codes, admin.id)
+    levels=_per_request('levels', admin.id, lambda: remember('admin-levels', config.admin_cache_seconds(), _admin_level_codes, admin.id))
     return min((LEVEL_RANK[level_or_default(level)] for level in levels), default=LEVEL_RANK['executive'])
 
 
@@ -602,7 +627,7 @@ def admin_covers_whole_school(admin_id):
     if not admin: return False
     if admin['admin_type_system']: return True
     if teaching_duties(admin_id): return False
-    scopes=remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id)
+    scopes=_per_request('scopes', admin.id, lambda: remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id))
     return not any(t=='class' and v!='*' for t,v in scopes)
 
 
@@ -621,7 +646,7 @@ def admin_scope_allows(admin_id, scope_type=None, scope_value=None):
             if scope_type=='class':
                 return any(d['class_name']==value for d in duties)
             return any(d['subject_id'] is None or d['subject_name']==value for d in duties)
-    scopes=remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id)
+    scopes=_per_request('scopes', admin.id, lambda: remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id))
     # An administrator with no explicit boundary works across the whole permitted area.
     # A boundary only narrows the dimension it names (class, subject, bank, etc.).
     if not scopes: return True
@@ -655,6 +680,8 @@ def admin_access_error(item):
         'report_cards.view':'View report cards',
         'report_cards.comment':'Write report card comments',
         'report_cards.manage':'Manage report card settings',
+        'store.view':'View the store',
+        'store.manage':'Run the store',
         'candidates.view':'View candidates',
         'candidates.create':'Register candidates',
         'question_banks.view':'View question banks',

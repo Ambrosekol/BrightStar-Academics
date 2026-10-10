@@ -6,7 +6,7 @@
 {# Staff roles, inside Settings (the frame and its "New role" button come from templates/admin_base.html). Each card
    shows how much a role allows and who holds it; Edit opens the role in a pop-up, where a holder's name opens their
    own pop-up on top. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 {% set level_names = {} %}{% for code,label,help in STAFF_LEVELS %}{% set _ = level_names.update({code: label}) %}{% endfor %}
 <div class="sf-tools">
   <label class="sf-search">{{ icon('set-search') }}<input type="search" placeholder="Find a role" aria-label="Find a role" data-rl-find autocomplete="off"></label>

@@ -1,9 +1,11 @@
 {% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>Attendance is taken once per student per day — not per subject — by whoever teaches that class.</p>
 
 <h2 id="register">Taking the register</h2>
 <p>Choose the class with the chips at the top. The day shows with the school week beside it: a green dot under a day means its register was taken, and the arrows step to the school day before or after. Each student gets one tap: <strong>Present</strong>, <strong>Late</strong>, <strong>Absent</strong> or <strong>Excused</strong>. <strong>Everyone present</strong> and <strong>The rest present</strong> save time on a normal day, and the counts across the top follow as you go. Nothing is saved until <strong>Save the register</strong>, which stays at the foot of the screen. A student's name opens their own pop-up.</p>
+{{ shot('attendance', 'The register: class chips across the top, the school week with the days already taken, and one tap per student.') }}
 <p>Open <a href="{{ url_for('admin_school_attendance') }}">Attendance</a>, choose the class, session,
 term and date, and mark each student present, late, absent or excused. A student left blank simply has
 no record for that day — nothing assumes a student was present by default. Saving the same marks again

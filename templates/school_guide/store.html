@@ -1,0 +1,76 @@
+{% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
+{% block guide %}
+<p>The school store sells what parents buy from the school — uniforms, books, sportswear, bags — and keeps track of
+everything until it is handed over. Store money is kept apart from school fees: a store purchase never shows as a fee
+payment waiting to be applied.</p>
+
+<p>The menu has a <strong>Store</strong> group with three pages: <a href="{{ url_for('admin_store') }}">Inventory</a>,
+<a href="{{ url_for('admin_store_claims') }}">Purchase claims</a> and <a href="{{ url_for('admin_store_sell') }}">Record a
+payment</a>. You see them if your role includes <em>View the store</em>
+(Inventory and Purchase claims) or <em>Run the store</em> (everything, including adding items, recording payments and
+handing purchases over). The <strong>Store Keeper</strong> role has both; the School Admin always has every page. See
+{{ page('roles-permissions', 'Roles, permissions and scope') }}.</p>
+
+<h2 id="inventory">Inventory: what the store sells</h2>
+<p>Inventory shows every item as a card: its picture, category, price, and how many are left against how many have been
+sold. The figures across the top count what is for sale, the units on the shelf, what is running low (5 or fewer left),
+what is sold out, what is waiting to be collected and this month's sales. The chips (<em>Everything</em>, <em>In
+stock</em>, <em>Running low</em>, <em>Sold out</em>, <em>Hidden</em>) and the search narrow the cards in place.</p>
+{{ shot('store', 'Inventory: each item with its picture, price and stock. Sell, Add stock and Hide are on its card.') }}
+<ul>
+  <li><strong>+ Add an item</strong> opens a pop-up: the name, a category, the price, a description (sizes, colours,
+  what is included), up to <strong>three pictures</strong> and how many are in stock. The first picture is the one on
+  the item's card; a picture shows in its box as soon as you choose it, before anything is saved.</li>
+  <li>Click an item's name or picture to <strong>edit</strong> it in the same pop-up. Tick <em>Remove</em> under a
+  picture to take it away.</li>
+  <li><strong>Add stock</strong> on a card adds that many to the shelf. For a correction, enter a minus number (for
+  example <code>-2</code>); stock never goes below nought.</li>
+  <li><strong>Hide</strong> takes an item out of the parents' Store without deleting it or its sales; <em>Show
+  again</em> (under <em>Hidden</em>) brings it back.</li>
+</ul>
+{{ shot('item-modal', 'Adding or editing an item: what it is, its price and up to three pictures, in a pop-up.') }}
+<div class="guide-note">An item can be bought again and again while any are left. When the last one goes it shows
+<em>Sold out</em> to parents and cannot be bought until you add stock.</div>
+
+<h2 id="selling">Recording a payment taken at the office</h2>
+<p>For a store payment made in person — cash, a bank transfer or POS — use <strong>Record a payment</strong> (in the
+menu, or <strong>Sell</strong> on an item's card, which opens it in a pop-up with that item chosen). Choose the item and
+how many, find the student as you type, and say how it was paid; a transfer or POS needs its reference so the payment
+can be traced. The total follows as you go. Saving takes the items off the shelf at once and gives the purchase its
+receipt number (for example <code>STR-000012</code>); the parent sees it in their Store.</p>
+{{ shot('sell-modal', 'Record a payment: the item and how many, the student, how it was paid, and the running total.') }}
+<p>This is also how a school <strong>without online payments</strong> runs its store: parents can see the store and
+its prices in their portal, and pay at the office.</p>
+
+<h2 id="online">When parents pay online</h2>
+<p>If the school has its own online payments set up (Settings › Online payments, see
+{{ page('finance', 'Fees, payments and receipts') }}), a parent can buy from their portal: they choose how many for
+each of their children and pay on Paystack's secure page. As soon as Paystack confirms the payment, the stock goes down
+and the purchase appears under Purchase claims, exactly as if it had been recorded at the office. If two people buy the
+last one at the same moment, the second payment is still recorded (the money has come in) and marked <em>Paid · out of
+stock</em>: add stock and hand it over, or cancel it and refund the parent.</p>
+{{ shot('parent-store', 'The parents\' Store: every item with its picture and price, and their own purchases below.') }}
+{{ shot('parent-store-item', 'An item opens in a pop-up with its pictures. With online payment, the parent chooses how many for each child and pays.') }}
+
+<h2 id="claims">Purchase claims: handing over</h2>
+<p>Purchase claims lists everything bought, newest first, with what is <em>To be collected</em> shown first, fifty at
+a time. The chips switch between to be collected, collected, cancelled and everything; the search finds a student, an
+item, a receipt number or a payment reference.</p>
+{{ shot('claims', 'Purchase claims: what is waiting to be collected, with Hand over on each.') }}
+<p><strong>Hand over</strong> opens the purchase in a pop-up. Say who collected it — the student, or a parent (choose
+from the parents linked to the child, or type a name) — and press <strong>Mark collected</strong>. The parent is sent a
+text saying what was collected and by whom, and the purchase moves to <em>Collected</em> with the date and who handed it
+over.</p>
+{{ shot('handover-modal', 'Handing a purchase over: who collected it, and Mark collected. The parent gets a text.') }}
+<p>A purchase not yet collected can be <strong>cancelled</strong> (recorded by mistake, or refunded): give a reason, and
+what it took goes back on the shelf. For an online payment, refund the parent through Paystack or by hand.</p>
+
+<h2 id="permissions">Who can do what</h2>
+<ul>
+  <li><strong>View the store</strong>: Inventory and Purchase claims, to look.</li>
+  <li><strong>Run the store</strong>: add and edit items and their pictures, add stock, hide items, record payments,
+  hand purchases over and cancel them.</li>
+  <li>Parents see their own Store, and only what was bought for their own children.</li>
+</ul>
+{% endblock %}

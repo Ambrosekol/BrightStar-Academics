@@ -369,3 +369,15 @@
 .sa .sa-field input:focus, .sa .sa-field select:focus, .sa .sa-perm-search input:focus { outline: 2px solid var(--brand-accent); outline-offset: 0; border-color: transparent; }
 .sa .sa-scope__values select { min-height: 110px; padding: 4px; }
 .rl-module__h b { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--brand); }
+
+/* The two logs side by side (admin_audit_logs.html): each tab is its own page, loaded in place. */
+.lg-tabs { display: flex; gap: 2px; margin: 0 0 12px; border-bottom: 1px solid var(--line); }
+.lg-tabs a { display: inline-flex; align-items: center; gap: 6px; margin-bottom: -1px; padding: 8px 14px; border-bottom: 2px solid transparent;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--ink-3); text-decoration: none; }
+.lg-tabs a:hover { color: var(--ink); }
+.lg-tabs a.is-on { color: var(--brand); border-bottom-color: var(--brand); }
+.lg-tabs b { padding: 0 7px; border-radius: 999px; font-size: 11px; background: var(--brand-tint); color: var(--brand); }
+.lg-tools .lg-seg button { font: inherit; }
+.lg-chan { text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--ink-3); }
+.lg-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+.lg-pager span:last-child { display: inline-flex; gap: 6px; }

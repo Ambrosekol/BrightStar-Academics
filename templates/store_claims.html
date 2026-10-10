@@ -1,0 +1,66 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Purchase claims — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Everything bought from the store, waiting to be collected first. Each purchase opens in a pop-up where it is handed
+   over (to the student or a parent, who gets a text) or cancelled. Fifty at a time; the filters and search load in
+   place. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+{% set can_manage = admin_has_permission(current_admin['id'], 'store.manage') %}
+<div class="ac sto">
+<header class="ac-top">
+  <h1>Purchase claims</h1>
+  <span class="ac-hint">What parents have paid for, until it is handed over.</span>
+  {% if can_manage %}<div class="ac-top__act"><a class="ac-btn ac-btn--primary" href="{{ url_for('admin_store_sell') }}" data-modal>{{ icon('nav-till', 'ico-sm') }} Record a payment</a></div>{% endif %}
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>To be collected</dt><dd><a href="{{ url_for('admin_store_claims') }}">{{ counts.get('paid', 0) }}</a></dd><small>paid, waiting at the school</small></div>
+  <div class="{{ 'is-alert' if short }}"><dt>Paid but out of stock</dt><dd>{{ short }}</dd><small>{{ 'restock, then hand over' if short else 'none' }}</small></div>
+  <div><dt>Collected this week</dt><dd>{{ collected_week }}</dd><small>handed over</small></div>
+  <div><dt>Collected in all</dt><dd><a href="{{ url_for('admin_store_claims', status='claimed') }}">{{ counts.get('claimed', 0) }}</a></dd><small>since the store opened</small></div>
+</dl>
+
+<div class="fi-tools">
+  <nav class="sto-filters" aria-label="Show">
+    {% for key, label in [('paid','To be collected'),('claimed','Collected'),('cancelled','Cancelled'),('all','Everything')] %}
+    <a class="{{ 'is-on' if status == key }}" href="{{ url_for('admin_store_claims', status=key if key != 'paid' else None, q=q or None) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }}{% if key != 'all' %}<small>{{ counts.get(key, 0) }}</small>{% endif %}</a>
+    {% endfor %}
+  </nav>
+  <form method="get" action="{{ url_for('admin_store_claims') }}" class="ac-search lb-search" role="search">
+    {% if status != 'paid' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Student, item, receipt (STR-…) or reference" aria-label="Search purchases">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if q %}<a class="ac-link" href="{{ url_for('admin_store_claims', status=status if status != 'paid' else None) }}">Clear</a>{% endif %}
+  </form>
+</div>
+
+<section class="ac-panel">
+{% if purchases %}
+<div class="ac-scroll"><table class="ac-t">
+  <thead><tr><th>Receipt</th><th>Student</th><th>Item</th><th>Paid</th><th>When</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for row in purchases %}{% set p = row.p %}<tr>
+    <td><a class="ac-title" href="{{ url_for('admin_store_purchase', purchase_id=p.id) }}" data-modal>{{ store_receipt(p.id) }}</a></td>
+    <td><b>{{ row.first_name }} {{ row.last_name }}</b><small>{{ row.admission_no }}</small></td>
+    <td>{{ p.quantity }} × {{ p.item_name }}</td>
+    <td>₦{{ '{:,.2f}'.format(p.amount) }}<small>{{ 'Online' if p.method == 'Paystack' else p.method }}</small></td>
+    <td>{{ p.created_at[:10] }}</td>
+    <td>{% if p.status == 'paid' and p.short %}<span class="sto-status is-short">Out of stock</span>{% elif p.status == 'paid' %}<span class="sto-status is-paid">To be collected</span>{% elif p.status == 'claimed' %}<span class="sto-status is-claimed">Collected</span><small>{{ p.claimed_at[:10] }} · {{ p.claimed_by_type }}</small>{% else %}<span class="sto-status is-cancelled">Cancelled</span>{% endif %}</td>
+    <td class="ac-actions">{% if p.status == 'paid' and can_manage %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('admin_store_purchase', purchase_id=p.id) }}" data-modal>Hand over</a>{% else %}<a class="ac-link" href="{{ url_for('admin_store_purchase', purchase_id=p.id) }}" data-modal>View</a>{% endif %}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="ac-empty"><strong>{% if q %}Nothing matches “{{ q }}”{% elif status == 'paid' %}Nothing is waiting to be collected{% elif status == 'claimed' %}Nothing collected yet{% elif status == 'cancelled' %}Nothing cancelled{% else %}Nothing bought yet{% endif %}</strong>{% if status == 'paid' and not q %}Purchases appear here as soon as they are paid for, online or at the office.{% endif %}</div>
+{% endif %}
+</section>
+{% if pages > 1 %}
+<div class="sto-pager"><span>Page {{ page }} of {{ pages }} · {{ total }} purchases</span>
+  <span class="ac-chips">
+    {% if page > 1 %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_store_claims', status=status if status != 'paid' else None, q=q or None, page=page - 1) }}">← Newer</a>{% endif %}
+    {% if page < pages %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_store_claims', status=status if status != 'paid' else None, q=q or None, page=page + 1) }}">Older →</a>{% endif %}
+  </span></div>
+{% endif %}
+</div>
+{% endblock %}

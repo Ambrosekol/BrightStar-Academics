@@ -23,6 +23,11 @@
   <li>Staff create parent accounts (and link them to students), each with a one-time password. A brother or sister is linked to the <em>same</em> parent account, not a new one.</li>
 </ul>
 
+<p>Parents also have a Store ({{ route('parent_store') }}): what the school sells, with pictures and prices, and what
+they have bought for each child and whether it has been collected. They can pay online only where the school has its
+own Paystack account; otherwise they pay at the office and the purchase appears there once recorded. See
+{{ page('school-portal', 'The School portal') }}.</p>
+
 <h2 id="delivery">Email and SMS: a school's own accounts</h2>
 <p>What parents receive (receipts, password-recovery emails, alerts) is sent from <strong>the school's own accounts</strong>, so a parent sees the school, not the platform. Code and rules: {{ file('core/delivery.py') }}. The school's own top-level administrator sets them up on <em>Email &amp; SMS</em> ({{ route('admin_school_delivery') }}) - restricted to that one admin type, not a permission any other role can be granted - each with a button to test before relying on it.</p>
 <div class="table-scroll"><table>

@@ -30,7 +30,7 @@
   <div class="sp-acts">
     {% if can_edit %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_student_edit', sid=student.id) }}" data-modal>Edit record</a>{% endif %}
     {% if can_fees and current_enrol %}<a class="ac-btn" href="{{ url_for('admin_finance_student_account', student_id=student.id, session_id=current_enrol.session_id) }}" data-modal>Fee account</a>{% endif %}
-    {% if admin_has_permission(aid, 'audit.view') %}<a class="ac-btn" href="{{ url_for('admin_notification_log', student_id=student.id) }}" data-full>Notice log</a>{% endif %}
+    {% if admin_has_permission(aid, 'audit.view') %}<a class="ac-btn" href="{{ url_for('admin_notification_log', student_id=student.id) }}" data-modal>Notice log</a>{% endif %}
   </div>
 </header>
 

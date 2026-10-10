@@ -73,6 +73,8 @@
           {% if school_brand.email %}<li>{{ school_brand.email }}</li>{% endif %}
         </ul>
         {% endif %}
+        {#- A page may add more to the school's side (the sign-in page puts its help and version here). -#}
+        {% block plate_extra %}{% endblock %}
       </div>
     </aside>
 
@@ -80,7 +82,7 @@
       <div class="auth-card">
         {% block card %}{% endblock %}
       </div>
-      <p class="auth-legal"><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
+      {% block legal %}<p class="auth-legal"><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>{% endblock %}
     </main>
 
   </div>

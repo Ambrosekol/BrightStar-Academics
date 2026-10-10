@@ -1,0 +1,29 @@
+{#- The notice log's rows (blueprints/school/notice_log.py), shared by the Notices tab in Settings and a student's
+    notice pop-up. Every attempt to email or text a guardian, newest first, by day. ``show_student`` leaves the
+    student out when the list is already one student's. -#}
+{% from 'includes/_nav_icons.html' import icon %}
+{% macro notice_rows(logs, show_student=true) -%}
+<div class="lg-list">
+  {% set day = namespace(v='') %}
+  {% for log in logs %}
+  {% set stamp = (log.created_at|string).replace('T', ' ').replace('+00:00', '') %}
+  {% if stamp[:10] != day.v %}{% set day.v = stamp[:10] %}<div class="lg-day">{{ day.v }}</div>{% endif %}
+  <div class="lg-row{{ '' if log.status == 'sent' else ' is-fail' }}">
+    <span class="lg-time">{{ stamp[11:16] }}</span>
+    <span class="lg-mark" title="{{ 'Sent' if log.status == 'sent' else 'Not delivered' }}">{{ icon('check') if log.status == 'sent' else icon('close') }}</span>
+    <span class="lg-what"><strong>{{ log.kind_label }}</strong> · <span class="lg-chan">{{ log.channel }}</span>{% if show_student and log.student_id %} · {{ log.first_name }} {{ log.last_name }}{% endif %}
+      <small>{{ 'Sent to' if log.status == 'sent' else 'Not delivered to' }} {{ log.recipient or 'nobody on file' }}{% if log.status != 'sent' and log.detail %} — {{ log.detail }}{% endif %}{% if show_student and log.admission_no %} · {{ log.admission_no }}{% endif %}</small></span>
+    <span class="lg-ip">{{ 'Sent' if log.status == 'sent' else 'Failed' }}</span>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{#- Older/newer for a list fifty at a time; the links keep the search and filter. -#}
+{% macro pager(page, pages, total, endpoint, noun, args={}) -%}
+{% if pages > 1 %}
+<div class="lg-pager"><span>Page {{ page }} of {{ pages }} · {{ total }} {{ noun }}</span>
+  <span>{% if page > 1 %}<a class="btn btn-light btn-small" href="{{ url_for(endpoint, page=page - 1, **args) }}">← Newer</a>{% endif %}
+  {% if page < pages %}<a class="btn btn-light btn-small" href="{{ url_for(endpoint, page=page + 1, **args) }}">Older →</a>{% endif %}</span></div>
+{% endif %}
+{%- endmacro %}

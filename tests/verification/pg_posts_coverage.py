@@ -16,6 +16,17 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 # Rules the script cannot submit, each with the reason. Empty is the goal. A rule here is
 # reported in the coverage summary on every run.
 EXEMPT = {
+    # The school store: every write (items with pictures in a multipart form, restocking, hiding, a sale at the office,
+    # handing over with the parent's text, cancelling, and the parent's online purchase with a faked Paystack behind it)
+    # is exercised for real, valid and hostile, in tests/verification/write_paths_store.py.
+    "/admin/store/items/new": "see write_paths_store.py",
+    "/admin/store/items/<int:item_id>/edit": "see write_paths_store.py",
+    "/admin/store/items/<int:item_id>/restock": "see write_paths_store.py",
+    "/admin/store/items/<int:item_id>/toggle": "see write_paths_store.py",
+    "/admin/store/sell": "see write_paths_store.py",
+    "/admin/store/purchases/<int:purchase_id>/claim": "see write_paths_store.py",
+    "/admin/store/purchases/<int:purchase_id>/cancel": "see write_paths_store.py",
+    "/parent/store/buy": "see write_paths_store.py",
     # A parent-authenticated write and a signature-verified webhook, not an admin CSRF form:
     # neither fits this file's generic Actor/junk-submission shape (a "valid" post to either
     # needs a real outstanding balance and a live fake Paystack server behind it, and the webhook

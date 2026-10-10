@@ -998,6 +998,26 @@ html.rail-locked { overflow: hidden; }
 .auth-plate__contact { margin: var(--sp-5) 0 0; padding: var(--sp-4) 0 0; border-top: 1px solid rgba(255, 255, 255, .35); font-size: var(--fs-sm); list-style: none; }
 .auth-plate__contact li + li { margin-top: 2px; }
 
+/* With photographs, the photographs come first: a wider side for them, and the school's name on a compact,
+   see-through strip along the bottom instead of a solid block over them. Without photographs nothing changes. */
+@media (min-width: 901px) {
+.auth-shell:has(.auth-panel--photos) { grid-template-columns: minmax(360px, 7fr) minmax(360px, 5fr); }
+.auth-panel--photos .login-slides-tint { opacity: 0; }
+.auth-panel--photos::after { content: ""; position: absolute; inset: auto 0 0 0; z-index: 1; height: 42%; pointer-events: none;
+    background: linear-gradient(to top, color-mix(in srgb, var(--brand) 72%, transparent), transparent); }
+.auth-panel--photos .auth-plate { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sp-4);
+    margin: var(--sp-5); padding: var(--sp-3) var(--sp-4); border: 1px solid color-mix(in srgb, #fff 22%, transparent); border-radius: 16px;
+    background: color-mix(in srgb, var(--brand) 62%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--brand-dark) 35%, transparent); }
+.auth-panel--photos .auth-plate .school-mark { grid-row: span 2; width: 52px; height: 52px; }
+.auth-panel--photos .auth-plate .school-mark--mono { font-size: 22px; }
+.auth-panel--photos .auth-plate__name { margin: 0; font-size: 24px; line-height: 1.2; }
+.auth-panel--photos .auth-plate__motto { margin: 2px 0 0; max-width: none; font-size: var(--fs-sm); opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auth-panel--photos .auth-plate__contact { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: var(--sp-2) 0 0; padding: var(--sp-2) 0 0;
+    font-size: 12px; opacity: .9; }
+.auth-panel--photos .auth-plate__contact li + li { margin-top: 0; }
+}
+
 .auth-main {
     display: flex;
     flex-direction: column;
@@ -1027,6 +1047,24 @@ html.rail-locked { overflow: hidden; }
 }
 .auth-note strong { color: var(--ink); }
 
+/* The sign-in page's help, version and privacy link, on the school's side (login.html, block plate_extra). */
+.auth-plate__extra { margin: var(--sp-3) 0 0; padding: var(--sp-2) 0 0; border-top: 1px solid color-mix(in srgb, #fff 30%, transparent); font-size: 12.5px; line-height: 1.5; }
+.auth-plate__extra .auth-note { margin: 0; padding: 0; border: 0; color: color-mix(in srgb, #fff 88%, transparent); font-size: 12.5px; }
+.auth-plate__extra .auth-note strong { color: #fff; }
+.auth-plate__extra p { margin: var(--sp-2) 0 0; }
+.auth-plate__extra .auth-help { font-size: 13px; }
+.auth-plate__extra a, .auth-plate__extra .ui-link { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.auth-plate__extra .auth-version { margin-top: var(--sp-2); text-align: left; font-size: 11.5px; color: color-mix(in srgb, #fff 75%, transparent); }
+.auth-plate__extra .auth-legal { width: auto; max-width: none; margin: 2px 0 0; text-align: left; }
+.auth-plate__extra .auth-legal a { color: color-mix(in srgb, #fff 80%, transparent); font-size: 11.5px; }
+.auth-panel--photos .auth-plate__extra { grid-column: 1 / -1; }
+/* The school's logo above "Portal Sign In". */
+.auth-card__mark { display: flex; justify-content: center; margin: 0 0 var(--sp-4); }
+.auth-fit .auth-card > .auth-title, .auth-fit .auth-card > .auth-lead { text-align: center; }   /* the sign-in page only */
+.auth-card__mark .school-mark { width: 60px; height: 60px; }
+.auth-card__mark .school-mark--logo { object-fit: contain; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.auth-card__mark .school-mark--mono { display: grid; place-items: center; border-radius: var(--radius); background: var(--brand); color: #fff; font-size: 24px; }
+
 /* Narrow screens: the school's side shrinks to a strip carrying its mark and name. */
 @media (max-width: 900px) {
     .auth-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; min-height: 100vh; }
@@ -1042,6 +1080,11 @@ html.rail-locked { overflow: hidden; }
     .auth-plate__name { margin: 0; font-size: 22px; }
     .auth-plate__motto,
     .auth-plate__contact { display: none; }
+    .auth-plate { flex-wrap: wrap; }
+    .auth-plate__extra { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; width: 100%; margin-top: var(--sp-2); padding-top: var(--sp-2); }
+    .auth-plate__extra .auth-note { display: none; }
+    .auth-plate__extra p { margin: 0; }
+    .auth-card__mark { display: none; }
     .auth-main { justify-content: flex-start; padding: var(--sp-6) var(--sp-4) var(--sp-7); }
     .auth-title { font-size: 26px; }
 }
@@ -1058,6 +1101,8 @@ html.rail-locked { overflow: hidden; }
     .auth-fit .auth-main { padding: var(--sp-5); }
     .auth-fit .auth-plate { padding: var(--sp-5); }
     .auth-fit .auth-plate__name { margin-top: var(--sp-3); font-size: 32px; }
+    .auth-fit .auth-panel--photos .auth-plate { padding: var(--sp-3) var(--sp-4); }
+    .auth-fit .auth-panel--photos .auth-plate__name { margin-top: 0; font-size: 22px; }
     .auth-fit .auth-plate__contact { margin-top: var(--sp-3); padding-top: var(--sp-3); }
     .auth-fit .auth-title { font-size: 26px; }
     .auth-fit .auth-lead { margin-bottom: var(--sp-4); }
@@ -1328,6 +1373,13 @@ a.wd-online:hover { background: var(--surface-1); }
 }
 .guide-tip { border-color: var(--success); background: var(--success-bg); }
 .guide-warn { border-color: var(--warning); background: var(--warning-bg); }
+.guide-shot { margin: var(--sp-4) 0 var(--sp-5); }
+.guide-shot a { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 9%, transparent); transition: box-shadow .15s ease, transform .15s ease; }
+.guide-shot a:hover { box-shadow: 0 12px 30px color-mix(in srgb, var(--ink) 14%, transparent); transform: translateY(-1px); }
+.guide-shot img { display: block; width: 100%; height: auto; }
+.guide-shot figcaption { margin-top: var(--sp-2); font-size: var(--fs-sm); line-height: 1.45; color: var(--ink-3); }
+.guide-shot figcaption::before { content: "▲ "; color: var(--brand-accent); font-size: 10px; }
 .guide-note > :first-child, .guide-tip > :first-child, .guide-warn > :first-child { margin-top: 0; }
 .guide-note > :last-child, .guide-tip > :last-child, .guide-warn > :last-child { margin-bottom: 0; }
 .guide-pager { display: flex; justify-content: space-between; gap: var(--sp-4); margin-top: var(--sp-7); padding-top: var(--sp-4); border-top: var(--border); }
@@ -1384,3 +1436,5 @@ a.wd-online:hover { background: var(--surface-1); }
 dialog.ac-modal ~ dialog.ac-modal { margin-top: 7vh; max-height: calc(100vh - 7vh - 24px); }
 dialog.ac-modal ~ dialog.ac-modal[data-size="wide"] { width: min(1040px, calc(100vw - 88px)); }
 dialog.ac-modal ~ dialog.ac-modal::backdrop { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+/* (More specific than .auth-fit .auth-version, which centres it in the form column.) */
+.auth .auth-plate .auth-plate__extra .auth-version { margin: var(--sp-2) 0 0; text-align: left; font-size: 11.5px; color: color-mix(in srgb, #fff 80%, transparent); }

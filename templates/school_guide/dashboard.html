@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import page with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>The School portal's home page (<a href="{{ url_for('admin_school_home') }}">Overview</a>) is made for the person
 looking at it. Nobody sees a general page: each part only appears when your role and your teaching duties call for it,
@@ -7,6 +7,7 @@ so a bursar sees money and never a ranking of students, and a subject teacher se
 nothing about fees. Your name and your level (for example Head teacher or Class teacher) are at the top.</p>
 
 <h2 id="numbers">What each person sees</h2>
+{{ shot('overview', 'The Overview as the School Admin sees it: the setup checklist strip, then the whole school\'s figures. Someone with another role sees only their own part.') }}
 <ul>
   <li><strong>Proprietor / School Admin:</strong> the setup checklist, the whole school this term (students, classes,
   subjects, work, and how many marks are ready to release or still with teachers, class by class, and any class with
@@ -53,7 +54,9 @@ step shows as done when the school has the data for it, and it links straight to
 See {{ page('classes-subjects', 'Classes and subjects') }}, {{ page('students', 'Students') }} and
 {{ page('finance', 'Fees, payments and receipts') }}.</p>
 <p>Closing the checklist (<em>Hide this checklist</em>) folds it into a small bar at the top of the Overview that
-still shows how far setup has got; <strong>Show setup checklist</strong> brings it back. Closing it hides it for the whole school, as it always has. Its progress is refreshed about every
+still shows how far setup has got; <strong>Show setup checklist</strong> brings it back, open. Both happen in place:
+the button spins for a moment and only the checklist changes, so the rest of the Overview stays where it is. Closing it
+hides it for the whole school, as it always has. Its progress is refreshed about every
 fifteen minutes, so a step you have just finished may take that long to show as done.</p>
 
 <h2 id="top-of-class">Top of the Class</h2>

@@ -1,0 +1,141 @@
+{% extends 'parent_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}Store{% endblock %}
+{#-
+  The school store, for parents: what the school sells, with its pictures, and what you have bought and whether it
+  has been collected. An item opens in a pop-up; when the school takes payment online, choose how many for each
+  child and pay through Paystack (blueprints/store/routes.py). Without online payment the store is to look at: pay
+  at the school office.
+-#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+{% set waiting = bought|selectattr('p.status', 'equalto', 'paid')|list %}
+<header class="pst-hero">
+  <div>
+    <h1>{{ icon('nav-store') }} Store</h1>
+    <p>{% if online %}Uniforms, books and more from {{ school_brand.name }}. Pay online for any of your children, then collect it from the school.{% else %}What {{ school_brand.name }} sells. Payment is taken at the school office; you can see prices and what is available here.{% endif %}</p>
+  </div>
+  <div class="pst-hero__k">
+    <div><strong>{{ items|length }}</strong><span>items</span></div>
+    <div><strong>{{ waiting|length }}</strong><span>to collect</span></div>
+  </div>
+</header>
+
+{% if not online %}
+<p class="sto-note">{{ icon('nav-payments') }}<span><strong>Online payment is not available for the store yet.</strong> Pay at the school office; anything bought there for your child shows below under Your purchases.</span></p>
+{% endif %}
+{% if online and not children %}
+<p class="sto-note is-warn">{{ icon('alert') }}<span>No child is linked to your account yet, so nothing can be bought. Ask the school to link your children.</span></p>
+{% endif %}
+
+{% if items %}
+<div class="sto-grid">
+  {% for it in items %}
+  {% set pics = store_photos(it) %}
+  {% set out = it.stock <= 0 %}
+  <button type="button" class="sto-card pst-card{{ ' is-out' if out }}" data-open="pst-{{ it.id }}" aria-haspopup="dialog">
+    <span class="sto-pic">{% if pics %}<img src="{{ url_for('static', filename=pics[0]) }}" alt="" loading="lazy">{% if pics|length > 1 %}<span class="sto-pic__n">{{ pics|length }} pictures</span>{% endif %}{% else %}{{ icon('nav-store') }}{% endif %}
+      {% if out %}<span class="sto-flag is-out">Sold out</span>{% elif it.stock <= 5 %}<span class="sto-flag is-low">Only {{ it.stock }} left</span>{% endif %}</span>
+    <span class="sto-body">
+      {% if it.category %}<span class="sto-cat">{{ it.category }}</span>{% endif %}
+      <span class="sto-name">{{ it.name }}</span>
+      <span class="sto-price">₦{{ '{:,.2f}'.format(it.price) }}</span>
+    </span>
+    <span class="sto-foot"><small class="pp-hint">{{ 'Sold out' if out else (it.stock ~ ' available') }}</small><b>{{ 'Buy' if online and not out and children else 'View' }} →</b></span>
+  </button>
+
+  <dialog class="pst-dialog" id="pst-{{ it.id }}" aria-label="{{ it.name }}">
+    <button type="button" class="pst-close" data-close aria-label="Close">×</button>
+    <div class="pst-dialog__in">
+      <div class="pst-gallery" data-gallery>
+        <div class="pst-gallery__main">{% if pics %}<img src="{{ url_for('static', filename=pics[0]) }}" alt="{{ it.name }}" data-main>{% else %}{{ icon('nav-store') }}{% endif %}</div>
+        {% if pics|length > 1 %}<div class="pst-thumbs">{% for ph in pics %}<button type="button" aria-pressed="{{ 'true' if loop.first else 'false' }}" data-src="{{ url_for('static', filename=ph) }}" aria-label="Picture {{ loop.index }}"><img src="{{ url_for('static', filename=ph) }}" alt="" loading="lazy"></button>{% endfor %}</div>{% endif %}
+      </div>
+      <div class="pst-buy">
+        <div>{% if it.category %}<span class="sto-cat">{{ it.category }}</span>{% endif %}<h2>{{ it.name }}</h2></div>
+        <span class="sto-price">₦{{ '{:,.2f}'.format(it.price) }} <small class="pp-hint" style="font-size:12px;font-weight:500">each · {{ 'sold out' if out else (it.stock ~ ' available') }}</small></span>
+        {% if it.description %}<p>{{ it.description }}</p>{% endif %}
+        {% if online and not out and children %}
+        <form method="post" action="{{ url_for('parent_store_buy') }}" data-buy data-price="{{ it.price }}" data-stock="{{ it.stock }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="item_id" value="{{ it.id }}">
+          <div class="pst-kids">
+            {% for c in children %}
+            <div class="pst-kid"><span><strong>{{ c.first_name }} {{ c.last_name }}</strong><small>{{ c.class_name or '' }}</small></span>
+              <span class="sto-qty"><button type="button" data-step="-1" aria-label="One fewer for {{ c.first_name }}">−</button><input type="number" name="qty_{{ c.id }}" min="0" max="{{ it.stock }}" step="1" value="{{ 1 if children|length == 1 else 0 }}" aria-label="How many for {{ c.first_name }}"><button type="button" data-step="1" aria-label="One more for {{ c.first_name }}">+</button></span></div>
+            {% endfor %}
+          </div>
+          <div class="sto-total" aria-live="polite"><span data-what>Choose how many</span><strong data-total>₦0.00</strong></div>
+          <button type="submit" class="pst-pay" data-pay>Pay online</button>
+          <small class="pp-hint">You pay on Paystack's secure page, then come back here. Collect it from the school.</small>
+        </form>
+        {% elif out %}
+        <p class="sto-note is-warn">{{ icon('alert') }}<span>Sold out for now. The school may restock it.</span></p>
+        {% elif not online %}
+        <p class="sto-note">{{ icon('nav-payments') }}<span>Pay for it at the school office. It then shows under Your purchases until it is collected.</span></p>
+        {% endif %}
+      </div>
+    </div>
+  </dialog>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sto-empty"><strong>Nothing in the store yet</strong>The school has not added anything to its store.</div>
+{% endif %}
+
+<h2 class="pst-section">Your purchases</h2>
+{% if bought %}
+<div class="pst-bought">
+  {% for row in bought %}{% set p = row.p %}
+  <div class="pst-row">
+    <div class="pst-row__main"><strong>{{ p.quantity }} × {{ p.item_name }}</strong><small>for {{ row.first_name }} · ₦{{ '{:,.2f}'.format(p.amount) }} · {{ 'paid online' if p.method == 'Paystack' else 'paid at the office' }} · {{ p.created_at[:10] }} · {{ store_receipt(p.id) }}</small></div>
+    {% if p.status == 'claimed' %}<span class="sto-status is-claimed">Collected {{ p.claimed_at[:10] }} by {{ p.claimed_by_name }}</span>
+    {% elif p.short %}<span class="sto-status is-short">Paid · waiting for stock</span>
+    {% else %}<span class="sto-status is-paid">Ready to collect</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sto-empty"><strong>Nothing bought yet</strong>What you buy for your children appears here until it is collected.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  function naira(n) { return '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  document.querySelectorAll('[data-open]').forEach(function (card) {
+    var dlg = document.getElementById(card.dataset.open);
+    card.addEventListener('click', function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
+  });
+  document.querySelectorAll('.pst-dialog').forEach(function (dlg) {
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+    // The pictures: a thumbnail shows its picture large.
+    var main = dlg.querySelector('[data-main]');
+    dlg.querySelectorAll('.pst-thumbs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        main.src = b.dataset.src;
+        dlg.querySelectorAll('.pst-thumbs button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      });
+    });
+    // How many for each child: the total follows, never more than are left.
+    var form = dlg.querySelector('[data-buy]'); if (!form) return;
+    var price = parseFloat(form.dataset.price), stock = parseInt(form.dataset.stock, 10);
+    var inputs = [].slice.call(form.querySelectorAll('input[type=number]')), pay = form.querySelector('[data-pay]');
+    function sum(changed) {
+      var n = 0; inputs.forEach(function (i) { var v = Math.max(0, parseInt(i.value, 10) || 0); i.value = v; n += v; });
+      if (n > stock && changed) { changed.value = Math.max(0, (parseInt(changed.value, 10) || 0) - (n - stock)); return sum(); }
+      form.querySelector('[data-total]').textContent = naira(price * n);
+      form.querySelector('[data-what]').textContent = n ? n + ' item' + (n === 1 ? '' : 's') : 'Choose how many';
+      pay.disabled = !n; pay.textContent = n ? 'Pay ' + naira(price * n) + ' online' : 'Pay online';
+    }
+    inputs.forEach(function (i) { i.addEventListener('input', function () { sum(i); }); });
+    form.querySelectorAll('[data-step]').forEach(function (b) {
+      b.addEventListener('click', function () { var i = b.parentNode.querySelector('input'); i.value = (parseInt(i.value, 10) || 0) + parseInt(b.dataset.step, 10); sum(i); });
+    });
+    form.addEventListener('submit', function () { pay.classList.add('is-busy'); pay.disabled = true; pay.textContent = 'Opening Paystack…'; });
+    sum();
+  });
+})();
+</script>
+{% endblock %}

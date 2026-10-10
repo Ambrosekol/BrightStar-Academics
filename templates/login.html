@@ -1,8 +1,10 @@
 {% extends 'auth_base.html' %}
 {% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_school_mark.html' import school_mark %}
 {% block title %}Portal Sign In — {{ school_title }}{% endblock %}
 {% block body_class %}auth-fit{% endblock %}
 {% block card %}
+        <div class="auth-card__mark">{{ school_mark(school_brand) }}</div>
         <h1 class="auth-title">Portal Sign In</h1>
         <p class="auth-lead">Enter your assigned ID or username to continue</p>
 
@@ -28,7 +30,6 @@
             <label for="password">Password</label>
             <input class="ui-input" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
           </div>
-
           <button type="submit" class="ui-btn ui-btn--primary ui-btn--block">Sign In Securely {{ icon('arrow-right', 'ico-sm') }}</button>
         </form>
 
@@ -38,5 +39,13 @@
         </div>
 
         <p class="auth-help"><a class="ui-link" href="{% if school_brand.email %}mailto:{{ school_brand.email }}{% else %}{{ url_for('forgot_password') }}{% endif %}">Need Help or Forgot Password?</a></p>
-        <p class="auth-version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
 {% endblock %}
+
+{#- The version and the privacy link sit on the school's side, on its glass strip. -#}
+{% block plate_extra %}
+        <div class="auth-plate__extra">
+          <p class="auth-version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
+          <p class="auth-legal"><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
+        </div>
+{% endblock %}
+{% block legal %}{% endblock %}

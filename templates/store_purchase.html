@@ -1,0 +1,78 @@
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% block title %}{{ store_receipt(purchase.id) }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# One store purchase: what, for whom, how it was paid, and handing it over. Marking it collected says by whom (the
+   student, or a parent) and sends the parent a text; a purchase not yet collected can be cancelled, which puts it
+   back in stock. Usually a pop-up over Purchase claims; every action comes back here. #}
+{% set p = purchase %}
+{% set pics = store_photos(item) %}
+{% set child = (student.first_name ~ ' ' ~ student.last_name) if student else 'the student' %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+<div class="ac sto" data-sto-claim>
+{% if not (request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1') %}<a class="fi-back" href="{{ url_for('admin_store_claims') }}">← Purchase claims</a>{% endif %}
+<div class="sto-receipt">
+  <span class="sto-receipt__pic">{% if pics %}<img src="{{ url_for('static', filename=pics[0]) }}" alt="">{% else %}{{ icon('nav-store') }}{% endif %}</span>
+  <div style="flex:1;min-width:0">
+    <span class="acq-kind">Store purchase · {{ store_receipt(p.id) }}</span>
+    <h2>{{ p.quantity }} × {{ p.item_name }}</h2>
+    {% if p.status == 'paid' and p.short %}<span class="sto-status is-short">Paid · out of stock</span>{% elif p.status == 'paid' %}<span class="sto-status is-paid">To be collected</span>{% elif p.status == 'claimed' %}<span class="sto-status is-claimed">Collected</span>{% else %}<span class="sto-status is-cancelled">Cancelled</span>{% endif %}
+  </div>
+</div>
+
+<dl class="sto-dl">
+  <div><dt>For</dt><dd>{{ child }}</dd></div>
+  <div><dt>Admission no.</dt><dd>{{ student.admission_no if student else '—' }}</dd></div>
+  <div><dt>Amount</dt><dd>₦{{ '{:,.2f}'.format(p.amount) }}</dd></div>
+  <div><dt>Each</dt><dd>₦{{ '{:,.2f}'.format(p.unit_price) }}</dd></div>
+  <div><dt>Paid by</dt><dd>{{ 'Online (Paystack)' if p.method == 'Paystack' else p.method }}</dd></div>
+  <div><dt>{{ 'Bought by' if buyer else 'Recorded by' }}</dt><dd>{{ buyer or staff.get(p.recorded_by) or '—' }}</dd></div>
+  <div><dt>When</dt><dd>{{ p.created_at[:16].replace('T', ' ') }}</dd></div>
+  {% if p.reference %}<div><dt>Reference</dt><dd style="word-break:break-all">{{ p.reference }}</dd></div>{% endif %}
+</dl>
+{% if p.notes %}<p class="ac-hint" style="margin:0 0 12px">{{ p.notes }}</p>{% endif %}
+
+{% if p.status == 'claimed' %}
+<div class="sto-done">{{ icon('check-circle') }}<span><strong>Collected by {{ p.claimed_by_name }} ({{ 'the student' if p.claimed_by_type == 'student' else 'parent' }})</strong> on {{ p.claimed_at[:16].replace('T', ' ') }}{% if staff.get(p.claimed_marked_by) %}, handed over by {{ staff.get(p.claimed_marked_by) }}{% endif %}.</span></div>
+{% elif p.status == 'cancelled' %}
+<p class="sto-note is-warn">{{ icon('alert') }}<span><strong>Cancelled</strong> on {{ (p.cancelled_at or '')[:10] }}{% if staff.get(p.cancelled_by) %} by {{ staff.get(p.cancelled_by) }}{% endif %}: {{ p.cancel_reason }}</span></p>
+{% elif can_manage %}
+  {% if p.short %}<p class="sto-note is-warn">{{ icon('alert') }}<span><strong>Paid for, but the stock had run out</strong> when the payment arrived. Add stock on Inventory and hand it over, or cancel it and refund the parent.</span></p>{% endif %}
+  <form method="post" action="{{ url_for('admin_store_purchase_claim', purchase_id=p.id) }}" class="fi-form" data-sto-claimform>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <fieldset class="fi-step"><legend><span class="fi-step__n">{{ icon('nav-claims', 'ico-sm') }}</span>Hand it over</legend>
+      <div class="fi-methods" role="radiogroup" aria-label="Collected by">
+        <label><input type="radio" name="claimed_by_type" value="student" checked><span>{{ student.first_name if student else 'The student' }} (the student)</span></label>
+        <label><input type="radio" name="claimed_by_type" value="parent"><span>A parent</span></label>
+      </div>
+      <div class="ac-field" data-sto-parent hidden style="margin-top:8px"><label for="stoWho">Which parent</label>
+        <input id="stoWho" name="claimed_by_name" list="stoParents" maxlength="120" placeholder="Their name" value="{{ parents[0].display_name if parents|length == 1 else '' }}">
+        <datalist id="stoParents">{% for pa in parents %}<option value="{{ pa.display_name }}">{{ pa.relationship or 'Parent' }}</option>{% endfor %}</datalist></div>
+    </fieldset>
+    <div class="ac-form-foot"><span class="ac-hint">The parent gets a text saying who collected it.</span><span class="ac-grow"></span>
+      <button class="ac-btn ac-btn--primary" type="submit">Mark collected</button></div>
+  </form>
+  <details style="margin-top:10px"><summary class="ac-link">Cancel this purchase</summary>
+    <form method="post" action="{{ url_for('admin_store_purchase_cancel', purchase_id=p.id) }}" class="fi-form" style="margin-top:8px" data-confirm="Cancel {{ store_receipt(p.id) }}?{{ '' if p.short else ' ' ~ p.quantity ~ ' go back in stock.' }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="ac-field"><label for="stoWhy">Why</label><input id="stoWhy" name="reason" required maxlength="300" placeholder="e.g. recorded twice; refunded at the office"></div>
+      <div class="ac-form-foot"><span class="ac-hint">{% if p.method == 'Paystack' %}Paid online: refund the parent through Paystack or by hand.{% else %}Return the money by hand.{% endif %}</span><span class="ac-grow"></span><button class="ac-btn" type="submit">Cancel the purchase</button></div>
+    </form>
+  </details>
+{% else %}
+<p class="sto-note">{{ icon('nav-claims') }}<span>Waiting to be collected. Someone who runs the store marks it handed over.</span></p>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var roots=document.querySelectorAll('[data-sto-claim]:not([data-ready])'); var root=roots[roots.length-1]; if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-sto-claimform]'); if(!form) return;
+  var box=root.querySelector('[data-sto-parent]'), name=box.querySelector('input');
+  // A parent's name is asked for only when a parent collects it.
+  function who(){ var p=form.querySelector('input[name=claimed_by_type]:checked').value==='parent'; box.hidden=!p; name.required=p; name.disabled=!p; if(p) name.focus(); }
+  form.querySelectorAll('input[name=claimed_by_type]').forEach(function(r){ r.addEventListener('change',who); }); who();
+})();
+</script>
+{% endblock %}
