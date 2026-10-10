@@ -1,74 +1,50 @@
 {% extends 'parent_base.html' if home_kind == 'Parent Portal' else 'student_base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {#-
-  Attendance for one term, for a student or for their parent. The rate comes first, then how the days
-  divided, then the days that need a second look, then every recorded day laid out month by month.
+  Attendance for one term, for a student or for their parent, in the staff portal's page language. The rate and how
+  the days divided come first as a figure strip with one bar, then the days that need a second look, then every
+  recorded day laid out month by month.
 -#}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='1') }}">
-<header class="pf-hero rv-head">
-  <div class="pf-hero__copy">
-    <span class="pf-hero__kicker"><span class="pf-crumbs"><a class="rv-back" href="{{ back_url }}">&larr; {{ back_label }}</a> / </span>Attendance</span>
+<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='2') }}">
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <span class="acq-kind"><span class="pf-back"><a href="{{ back_url }}">{{ back_label }}</a> / </span>Attendance</span>
     <h1>{{ title }}</h1>
-  </div>
-  <form method="get" class="rv-filters">
+  </div></div>
+  <form method="get" class="ac-top__act rv-filters">
     <label><span>Session</span>
-      <select class="ui-input" name="session_id" data-autosubmit>
+      <select class="ac-select" name="session_id" data-autosubmit>
         {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
       </select></label>
     <label><span>Term</span>
-      <select class="ui-input" name="term" data-autosubmit>
+      <select class="ac-select" name="term" data-autosubmit>
         {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></label>
-    <noscript><button class="ui-btn ui-btn--light ui-btn--sm" type="submit">Show</button></noscript>
+    <noscript><button class="ac-btn ac-btn--sm" type="submit">Show</button></noscript>
   </form>
 </header>
 
 {% if summary and summary.total %}
 {% set rate = summary.percentage %}
-<section class="rv-summary" aria-label="Summary for {{ term }}">
-  <div class="rv-rate">
-    <div class="rv-donut" style="--pct: {{ rate }}" role="img" aria-label="{{ '%.1f'|format(rate) }} percent attendance">
-      <span><b>{{ '%.0f'|format(rate) }}%</b><small>attended</small></span>
-    </div>
-    <p>{{ summary.present + summary.late }} of {{ summary.total }} recorded days attended<br><small>{{ term }} · {{ session_row.name }}</small></p>
-  </div>
+<dl class="fi-k rv-k" aria-label="Summary for {{ term }}">
+  <div class="{{ 'is-lead' if rate >= 90 else 'is-alert' if rate < 75 }}"><dt>Attended</dt><dd>{{ '%.0f'|format(rate) }}%</dd><small>{{ summary.present + summary.late }} of {{ summary.total }} days · {{ term }}</small></div>
+  <div class="is-present"><dt>Present</dt><dd>{{ summary.present }}</dd></div>
+  <div class="is-late"><dt>Late</dt><dd>{{ summary.late }}</dd></div>
+  <div class="is-absent"><dt>Absent</dt><dd>{{ summary.absent }}</dd></div>
+  <div class="is-excused"><dt>Excused</dt><dd>{{ summary.excused }}</dd></div>
+</dl>
+<div class="rv-bar" role="img" aria-label="Present {{ summary.present }}, late {{ summary.late }}, absent {{ summary.absent }}, excused {{ summary.excused }}">
+  {% for key in ('present', 'late', 'excused', 'absent') %}{% if summary[key] %}<i class="is-{{ key }}" style="flex: {{ summary[key] }}"></i>{% endif %}{% endfor %}
+</div>
 
-  <div class="rv-split">
-    <div class="rv-bar" role="img" aria-label="Present {{ summary.present }}, late {{ summary.late }}, absent {{ summary.absent }}, excused {{ summary.excused }}">
-      {% for key in ('present', 'late', 'excused', 'absent') %}{% if summary[key] %}<i class="is-{{ key }}" style="flex: {{ summary[key] }}"></i>{% endif %}{% endfor %}
-    </div>
-    <dl class="rv-counts">
-      <div class="is-present"><dt>Present</dt><dd>{{ summary.present }}</dd></div>
-      <div class="is-late"><dt>Late</dt><dd>{{ summary.late }}</dd></div>
-      <div class="is-absent"><dt>Absent</dt><dd>{{ summary.absent }}</dd></div>
-      <div class="is-excused"><dt>Excused</dt><dd>{{ summary.excused }}</dd></div>
-    </dl>
-  </div>
-</section>
-
-<div class="rv-cols">
-  <section class="pp-block rv-note">
-    <div class="pp-block__head"><h2>Days to note</h2>{% if notable %}<span class="pp-count">{{ notable|length }}</span>{% endif %}</div>
-    {% if notable %}
-    <ul class="pp-rows pp-scroll-y">
-      {% for n in notable %}
-      <li class="pp-row">
-        <span class="pp-row__main"><strong>{{ n.pretty }}</strong><small>{{ n.class_name }}</small></span>
-        <span class="rv-chip is-{{ n.status }}">{{ n.status|capitalize }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="pp-none">Present on every recorded day this term.</p>
-    {% endif %}
-  </section>
-
-  <section class="pp-block">
-    <div class="pp-block__head"><h2>Every recorded day</h2>
+<div class="pf-cols rv-cols">
+  <section class="ac-panel">
+    <div class="pf-ph"><h2>Every recorded day<small>{{ session_row.name }}</small></h2>
       <ul class="rv-legend" aria-label="Key"><li class="is-present">Present</li><li class="is-late">Late</li><li class="is-absent">Absent</li><li class="is-excused">Excused</li></ul>
     </div>
-    <div class="rv-months pp-scroll-y">
+    <div class="rv-months">
       {% for m in months|reverse %}
       <div class="rv-month">
         <h3>{{ m.label }}<small>{{ m.days|length }} day{{ '' if m.days|length == 1 else 's' }}</small></h3>
@@ -79,9 +55,25 @@
       {% endfor %}
     </div>
   </section>
+
+  <section class="ac-panel rv-note">
+    <div class="pf-ph"><h2>Days to note<small>{{ notable|length }}</small></h2></div>
+    {% if notable %}
+    <div class="pf-scroll"><table class="ac-t">
+      <tbody>
+      {% for n in notable %}
+      <tr><td><b>{{ n.pretty }}</b><small>{{ n.class_name }}</small></td><td class="ac-actions"><span class="rv-chip is-{{ n.status }}">{{ n.status|capitalize }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty">Present on every recorded day this term.</div>
+    {% endif %}
+  </section>
 </div>
 
 {% else %}
-<section class="pp-block"><p class="pp-none" style="padding:0">No attendance has been recorded for {{ term }} yet.</p></section>
+<section class="ac-panel"><div class="ac-empty"><strong>Nothing recorded yet</strong>No attendance has been recorded for {{ term }} yet.</div></section>
 {% endif %}
+</div>
 {% endblock %}

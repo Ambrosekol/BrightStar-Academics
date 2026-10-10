@@ -29,8 +29,10 @@
 .ac a { color: inherit; }
 
 /* Loading: the previous view stays, dimmed, under a small spinner in the school's accent (static/inplace.js). */
-[data-page-body] { position: relative; transition: opacity .12s ease; }
-[data-page-body].is-loading { opacity: .55; pointer-events: none; }
+[data-page-body] { position: relative; }
+[data-page-body] > * { transition: opacity .12s ease; }
+[data-page-body].is-loading { pointer-events: none; }
+[data-page-body].is-loading > * { opacity: .55; }
 [data-page-body].is-loading::after { content: ""; position: fixed; top: 50%; left: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px;
   border: 3px solid color-mix(in srgb, var(--blue) 18%, var(--card)); border-top-color: var(--blue); border-radius: 50%; animation: ac-spin .7s linear infinite; z-index: 60; }
 @keyframes ac-spin { to { transform: rotate(360deg); } }
@@ -249,7 +251,8 @@ a.ac-step--done:hover b { text-decoration: underline; }
   color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; }
 .ac-modal__close:hover { background: var(--line); }
 .ac-modal__body { position: relative; padding: 14px 16px; overflow-y: auto; max-height: calc(100vh - 50px); transition: opacity .12s ease; }
-.ac-modal__body.is-loading { opacity: .55; pointer-events: none; }
+.ac-modal__body.is-loading { pointer-events: none; }
+.ac-modal__body.is-loading > * { opacity: .55; }
 .ac-modal__wait { width: 24px; height: 24px; margin: 36px auto; border: 3px solid color-mix(in srgb, var(--blue) 18%, var(--card)); border-top-color: var(--blue); border-radius: 50%; animation: ac-spin .7s linear infinite; }
 .ac-modal .ac-modal-head { margin: 0 34px 10px 0; }
 .ac-modal .ac-modal-head h2 { margin: 0; font-size: 16px; color: var(--navy); }

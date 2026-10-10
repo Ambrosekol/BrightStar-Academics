@@ -1,25 +1,27 @@
 {% extends 'parent_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Dashboard{% endblock %}
 {#-
-  A parent's front door, in the staff portal's look (templates/portal_base.html): what is owed across every child and
-  session first, then each child as a card - fees, average and completion at a glance, and the three things a parent
-  does next - and beside them what the school has said lately and the way to write to it. A child's profile loads in
-  place; paying always opens its own page (Paystack takes over from there).
+  A parent's front door, in the staff portal's page language (static/academics.css, static/portal.css): what is owed
+  across every child and session first, then the children as one table - fees, average and completion side by side,
+  and what to do for each - and beside it what the school has said lately. A child's profile loads in place; paying
+  always opens its own page (Paystack takes over from there).
 -#}
 {% block content %}
 {% set owing = total_outstanding_all > 0.005 %}
 {% set open_threads = feedback|rejectattr('status', 'equalto', 'resolved')|list %}
 {% set unread = notifications|rejectattr('read_at')|list %}
+{% set any_online = children|rejectattr('early_years')|list %}
 <div class="ac pf">
-<section class="pf-hero">
-  <div class="pf-hero__copy">
-    <span class="pf-hero__kicker">Parent portal</span>
-    <h1>Welcome, {{ parent.display_name }}</h1>
-    <p>{{ children|length }} {{ 'child' if children|length == 1 else 'children' }} linked to your account</p>
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <h1>Overview</h1>
+    <p>{{ parent.display_name }} · {{ children|length }} {{ 'child' if children|length == 1 else 'children' }} linked to your account</p>
+  </div></div>
+  <div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('parent_store') }}">Store</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('parent_feedback') }}" data-full>{{ 'Open messages' if open_threads else 'Message the school' }}</a>
   </div>
-  <div class="pf-hero__act"><a class="ac-btn ac-btn--primary" href="{{ url_for('parent_feedback') }}" data-full>{{ icon('nav-messages', 'ico-sm') }} {{ 'Open messages' if open_threads else 'Message the school' }}</a></div>
-</section>
+</header>
 
 <dl class="fi-k">
   <div class="pp-owing {{ 'is-owing is-alert' if owing else 'is-lead' }}"><dt>{{ 'Total Outstanding fees' if owing else 'Fees' }}</dt><dd class="pp-owing__amount">{% if owing %}₦{{ '{:,.2f}'.format(total_outstanding_all) }}{% else %}All paid{% endif %}</dd><small>{{ 'Across every session and child' if owing else 'Nothing owing in any session' }}</small></div>
@@ -28,56 +30,52 @@
   <div><dt>Conversations</dt><dd>{{ open_threads|length }}</dd><small>open with the school</small></div>
 </dl>
 
-<div class="pf-grid">
-  <section class="pf-stack" aria-labelledby="pp-children-h">
-    <h2 class="pf-section-title" id="pp-children-h" style="margin-top:0">{{ 'Your child' if children|length == 1 else 'Your children' }}</h2>
-    {% for item in children %}
-    {% set child = item.child %}
-    {% set fees = item.fee_summary %}
-    {% set owed = fees.outstanding if fees else 0 %}
-    <article class="pf-card pf-child">
-      <div class="pf-child__top">
-        <span class="pf-child__ava">{% if child.photo_path %}<img src="{{ url_for('static', filename=child.photo_path) }}" alt="" data-avatar-fallback="{{ (child.first_name or '?')[0]|upper }}{{ (child.last_name or '')[:1]|upper }}">{% else %}{{ (child.first_name or '?')[0]|upper }}{{ (child.last_name or '')[:1]|upper }}{% endif %}</span>
-        <span class="pf-item__main"><strong>{{ full_name(child.first_name, child.last_name) }}</strong><small>{{ child.class_name or 'Class not assigned' }}{% if child.relationship %} · {{ child.relationship }}{% endif %}</small></span>
-      </div>
-      <div class="pf-child__facts">
-        <span class="pf-fact{% if owed > 0.005 %} is-owing{% endif %}"><small>Fees</small><b>{% if owed > 0.005 %}₦{{ '{:,.0f}'.format(owed) }}{% else %}Paid{% endif %}</b></span>
-        {% if not item.early_years %}
-        <span class="pf-fact"><small>Average</small><b>{{ item.avg ~ '%' if item.avg is not none else '—' }}</b></span>
-        <span class="pf-fact"><small>Completion</small><b>{{ item.completion ~ '%' if item.completion is not none else '—' }}</b></span>
+<div class="pf-cols">
+  <section class="ac-panel" aria-labelledby="pp-children-h">
+    <div class="pf-ph"><h2 id="pp-children-h">{{ 'Your child' if children|length == 1 else 'Your children' }}<small>{{ children|length }}</small></h2></div>
+    {% if children %}
+    <div class="ac-scroll"><table class="ac-t pf-rt">
+      <thead><tr><th>Child</th><th class="n">Fees owing</th>{% if any_online %}<th class="n">Average</th><th class="n">Completion</th>{% endif %}<th></th></tr></thead>
+      <tbody>
+      {% for item in children %}
+      {% set child = item.child %}
+      {% set fees = item.fee_summary %}
+      {% set owed = fees.outstanding if fees else 0 %}
+      <tr>
+        <td class="pf-rt__lead"><a class="ac-title" href="{{ url_for('parent_child_detail', student_id=child.id) }}">{{ full_name(child.first_name, child.last_name) }}</a>
+          <small>{{ child.class_name or 'Class not assigned' }}{% if child.relationship %} · {{ child.relationship }}{% endif %}</small></td>
+        <td class="n" data-label="Fees owing">{% if owed > 0.005 %}<span class="pf-owe">₦{{ '{:,.2f}'.format(owed) }}</span>{% else %}<span class="pf-ok">Paid</span>{% endif %}</td>
+        {% if any_online %}
+        <td class="n" data-label="Average">{% if item.early_years %}<span title="Crèche and Nursery work is on paper">—</span>{% else %}{{ item.avg ~ '%' if item.avg is not none else '—' }}{% endif %}</td>
+        <td class="n" data-label="Completion">{% if item.early_years %}—{% else %}{{ item.completion ~ '%' if item.completion is not none else '—' }}{% endif %}</td>
         {% endif %}
-      </div>
-      <div class="pf-child__act">
-        <a class="ac-btn ac-btn--primary" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile</a>
-        <a class="ac-btn" href="{{ url_for('parent_feedback', student=child.id) }}" data-full>Message school</a>
-        {% if owed > 0.005 %}<a class="ac-btn pf-btn-pay" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Pay fee</a>
-        {% else %}<a class="ac-btn" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Already paid fees</a>{% endif %}
-      </div>
-    </article>
+        <td class="ac-actions">
+          <a class="ac-link" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Profile</a>
+          <a class="ac-link" href="{{ url_for('parent_feedback', student=child.id) }}" data-full>Message</a>
+          {% if owed > 0.005 %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Pay fees</a>
+          {% else %}<a class="ac-link" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Fee account</a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
     {% else %}
-    <div class="pf-card pf-empty"><strong>No students are linked to this account.</strong>Please contact the school office if this is unexpected.</div>
-    {% endfor %}
+    <div class="ac-empty"><strong>No students are linked to this account</strong>Please contact the school office if this is unexpected.</div>
+    {% endif %}
   </section>
 
-  <aside class="pf-stack">
-    <section class="pf-card" aria-labelledby="pp-notif-h">
-      <div class="pf-card__h"><h2 id="pp-notif-h">Recent activity <span class="ac-tag">{{ notifications|length }}</span></h2></div>
-      <ul class="pf-list pf-scroll" tabindex="0" aria-label="School notifications">
-        {% for n in notifications %}
-        <li><a class="pf-item" href="{{ url_for('parent_notification_open', nid=n.id) }}">
-          <span class="pf-item__ico{{ ' is-alert' if n.category == 'finance' }}">{% if n.category == 'finance' %}{{ icon('nav-collections') }}{% elif n.category == 'feedback' %}{{ icon('nav-messages') }}{% elif n.category == 'store' %}{{ icon('nav-store') }}{% else %}{{ icon('bell') }}{% endif %}</span>
-          <span class="pf-item__main"><strong>{{ n.title }}{% if not n.read_at %} <i class="pf-dot" title="Not opened yet"></i>{% endif %}</strong><small>{{ n.message }} · {{ n.created_at[:10] }}</small></span>
-        </a></li>
-        {% else %}
-        <li class="pf-empty"><strong>Nothing yet</strong>Notices about fees, results and work will appear here.</li>
-        {% endfor %}
-      </ul>
-    </section>
-    <section class="pf-tiles" aria-label="More">
-      <a class="pf-tile" href="{{ url_for('parent_feedback') }}" data-full><span class="pf-item__ico">{{ icon('nav-messages') }}</span><strong>The school</strong><small>{% if open_threads %}{{ open_threads|length }} conversation{{ '' if open_threads|length == 1 else 's' }} open with the school.{% else %}Ask a question or send feedback to the school team.{% endif %}</small></a>
-      <a class="pf-tile" href="{{ url_for('parent_store') }}"><span class="pf-item__ico">{{ icon('nav-store') }}</span><strong>Store</strong><small>Uniforms, books and more from the school</small></a>
-    </section>
-  </aside>
+  <section class="ac-panel" aria-labelledby="pp-notif-h">
+    <div class="pf-ph"><h2 id="pp-notif-h">From the school<small>{{ unread|length }} new</small></h2></div>
+    {% if notifications %}
+    <ul class="pf-log pf-scroll" tabindex="0" aria-label="School notifications">
+      {% for n in notifications %}
+      <li><a href="{{ url_for('parent_notification_open', nid=n.id) }}" class="{{ 'is-new' if not n.read_at }}"><time>{{ n.created_at[:10] }}</time><div><b>{{ n.title }}</b><span>{{ n.message }}</span></div></a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ac-empty"><strong>Nothing yet</strong>Notices about fees, results and work appear here.</div>
+    {% endif %}
+  </section>
 </div>
 </div>
 {% endblock %}

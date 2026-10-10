@@ -5,7 +5,7 @@ with a tab bar along the bottom on a phone, where the installed app (blueprints/
 ``portal`` is worked out once per request for a signed-in student or parent: who they are, their menu, the tab bar,
 and which addresses load in place. Pages a person takes a timed test on, pays through Paystack from, or chats in are
 deliberately left out of the in-place list: they always load as whole pages (with the loading bar of
-static/parent-loading.js), so nothing interrupts a timer, a payment or a live conversation.
+static/page-loading.js), so nothing interrupts a timer, a payment or a live conversation.
 """
 
 from flask import g, request, session, url_for

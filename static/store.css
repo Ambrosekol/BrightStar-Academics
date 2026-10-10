@@ -93,25 +93,17 @@
 .sto-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--ink-3); }
 
 /* ---- parents ----------------------------------------------------------------------------- */
-.pst-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; margin: 0 0 16px; padding: 22px 22px 18px;
-  border-radius: 18px; color: var(--surface-0);
-  background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--brand-accent) 55%, var(--brand)) 0%, var(--brand) 60%); }
-.pst-hero h1 { margin: 0; font-size: 26px; color: inherit; }
-.pst-hero p { margin: 4px 0 0; max-width: 60ch; font-size: 14px; opacity: .88; }
-.pst-hero__k { display: flex; gap: 18px; }
-.pst-hero__k div { text-align: right; }
-.pst-hero__k strong { display: block; font-size: 22px; }
-.pst-hero__k span { font-size: 12px; opacity: .8; }
 .pst-card { cursor: pointer; text-align: left; font: inherit; padding: 0; }
 .pst-card:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 2px; }
 .pst-card .sto-foot { justify-content: space-between; }
 .pst-card .sto-foot b { font-size: 13px; color: var(--brand); }
-.pst-section { margin: 26px 0 10px; font-size: 17px; color: var(--ink); }
-.pst-bought { display: flex; flex-direction: column; gap: 8px; }
-.pst-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-0); }
+.pst-section { margin: 16px 0 6px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.pst-bought { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-0); }
+.pst-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 12px; font-size: 12px; }
+.pst-row + .pst-row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, var(--surface-0)); }
 .pst-row__main { flex: 1 1 220px; min-width: 0; }
-.pst-row__main strong { display: block; color: var(--ink); }
-.pst-row__main small { color: var(--ink-3); }
+.pst-row__main strong { display: block; font-size: 13px; color: var(--ink); }
+.pst-row__main small { font-size: 11px; color: var(--ink-3); }
 .pst-dialog { width: min(760px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 0; border-radius: 18px; background: var(--surface-0); color: var(--ink);
   box-shadow: 0 24px 60px color-mix(in srgb, var(--ink) 30%, transparent); }
 .pst-dialog::backdrop { background: color-mix(in srgb, var(--brand) 40%, transparent); backdrop-filter: blur(2px); }
@@ -146,12 +138,9 @@
   .pst-dialog__in { grid-template-columns: 1fr; }
   .pst-gallery__main { aspect-ratio: 16 / 10; }
   .sto-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .pst-hero__k { width: 100%; }
-  .pst-hero__k div { text-align: left; }
 }
 
-.sto .ico-sm, .pst-hero .ico { width: 15px; height: 15px; vertical-align: -2px; }
-.pst-hero h1 .ico { width: 24px; height: 24px; vertical-align: -3px; }
+.sto .ico-sm { width: 15px; height: 15px; vertical-align: -2px; }
 .ac .sto-restock { flex-wrap: nowrap; }
 .ac .sto-restock input[type=number] { width: 62px !important; flex: 0 0 62px; }
 .ac .sto-foot { flex-wrap: nowrap; }

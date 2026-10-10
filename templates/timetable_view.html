@@ -1,73 +1,66 @@
 {% extends 'parent_base.html' if home_kind == 'Parent Portal' else 'student_base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {#-
-  Released exam and test dates for one term. The next paper is picked out first, then every day in order
-  with its papers; days already gone are quieter.
+  Released exam and test dates for one term, in the staff portal's page language. The next paper and the tally come
+  first as a figure strip, then every day in order with its papers; days already gone are quieter.
 -#}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='1') }}">
-<header class="pf-hero rv-head">
-  <div class="pf-hero__copy">
-    <span class="pf-hero__kicker"><span class="pf-crumbs"><a class="rv-back" href="{{ back_url }}">&larr; {{ back_label }}</a> / </span>Exam timetable</span>
+<link rel="stylesheet" href="{{ url_for('static', filename='records.css', v='2') }}">
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <span class="acq-kind"><span class="pf-back"><a href="{{ back_url }}">{{ back_label }}</a> / </span>Exam timetable</span>
     <h1>{{ title }}</h1>
-  </div>
-  <form method="get" class="rv-filters">
+  </div></div>
+  <form method="get" class="ac-top__act rv-filters">
     <label><span>Session</span>
-      <select class="ui-input" name="session_id" data-autosubmit>
+      <select class="ac-select" name="session_id" data-autosubmit>
         {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
       </select></label>
     <label><span>Term</span>
-      <select class="ui-input" name="term" data-autosubmit>
+      <select class="ac-select" name="term" data-autosubmit>
         {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></label>
-    <noscript><button class="ui-btn ui-btn--light ui-btn--sm" type="submit">Show</button></noscript>
+    <noscript><button class="ac-btn ac-btn--sm" type="submit">Show</button></noscript>
   </form>
 </header>
 
 {% if rows %}
-<section class="rv-top">
+<dl class="fi-k">
   {% if next_up %}
-  <div class="rv-next">
-    <span class="rv-next__date"><small>{{ next_up.month }}</small><b>{{ next_up.day }}</b><small>{{ next_up.weekday[:3] }}</small></span>
-    <div class="rv-next__body">
-      <p class="pp-eyebrow">Next paper · {{ next_up.when }}</p>
-      <strong>{{ next_up.subject_name }}</strong>
-      <span>{{ next_up.start_time }}{% if next_up.end_time %} – {{ next_up.end_time }}{% endif %}{% if next_up.venue %} · {{ next_up.venue }}{% endif %} · {{ 'Test' if next_up.exam_type == 'test' else 'Examination' }}</span>
-    </div>
-  </div>
+  <div class="is-lead rv-next-k"><dt>Next paper · {{ next_up.when }}</dt><dd>{{ next_up.subject_name }}</dd>
+    <small>{{ next_up.weekday[:3] }} {{ next_up.day }} {{ next_up.month }} · {{ next_up.start_time }}{% if next_up.end_time %}–{{ next_up.end_time }}{% endif %}{% if next_up.venue %} · {{ next_up.venue }}{% endif %} · {{ 'Test' if next_up.exam_type == 'test' else 'Examination' }}</small></div>
   {% else %}
-  <div class="rv-next is-done"><div class="rv-next__body"><p class="pp-eyebrow">All done</p><strong>Every paper on this timetable has passed.</strong></div></div>
+  <div class="rv-next-k"><dt>Next paper</dt><dd>All done</dd><small>Every paper on this timetable has passed</small></div>
   {% endif %}
-  <div class="rv-tally">
-    <div><b>{{ rows|length }}</b><span>papers</span></div>
-    <div><b>{{ upcoming }}</b><span>to come</span></div>
-    <div><b>{{ done }}</b><span>done</span></div>
-  </div>
-  {% if pdf_url %}
-  <div class="rv-tools">
-    <a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ pdf_url }}">Download PDF</a>
-    <button type="button" class="ui-btn ui-btn--light ui-btn--sm" data-print>Print</button>
-  </div>
-  {% endif %}
-</section>
+  <div><dt>Papers</dt><dd>{{ rows|length }}</dd></div>
+  <div><dt>To come</dt><dd>{{ upcoming }}</dd></div>
+  <div><dt>Done</dt><dd>{{ done }}</dd></div>
+</dl>
 
-<ol class="rv-timeline">
-  {% for d in days %}
-  <li class="rv-dayrow{% if d.past %} is-past{% endif %}{% if d.today %} is-today{% endif %}">
-    <div class="rv-dayrow__date"><small>{{ d.month }} {{ d.year }}</small><b>{{ d.day }}</b><span>{{ d.weekday }}{% if d.today %} · today{% endif %}</span></div>
-    <ul class="rv-papers">
-      {% for r in d.entries %}
-      <li class="rv-paper">
-        <span class="rv-paper__time">{{ r.start_time }}{% if r.end_time %}<small>to {{ r.end_time }}</small>{% endif %}</span>
-        <span class="rv-paper__what"><strong>{{ r.subject_name }}</strong><small>{{ r.venue or 'Venue to be announced' }}</small></span>
-        <span class="rv-chip is-{{ 'test' if r.exam_type == 'test' else 'exam' }}">{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-  </li>
-  {% endfor %}
-</ol>
+<section class="ac-panel">
+  <div class="pf-ph"><h2>{{ term }}<small>{{ days|length }} day{{ '' if days|length == 1 else 's' }}</small></h2>
+    {% if pdf_url %}<span class="pf-ph__act rv-tools"><a class="ac-link" href="{{ pdf_url }}">Download PDF</a><button type="button" class="ac-link" data-print>Print</button></span>{% endif %}
+  </div>
+  <ol class="rv-timeline">
+    {% for d in days %}
+    <li class="rv-dayrow{% if d.past %} is-past{% endif %}{% if d.today %} is-today{% endif %}">
+      <div class="rv-dayrow__date"><b>{{ d.day }}</b><span>{{ d.weekday[:3] }} · {{ d.month }} {{ d.year }}{% if d.today %} · today{% endif %}</span></div>
+      <ul class="rv-papers">
+        {% for r in d.entries %}
+        <li class="rv-paper">
+          <span class="rv-paper__time">{{ r.start_time }}{% if r.end_time %}<small>to {{ r.end_time }}</small>{% endif %}</span>
+          <span class="rv-paper__what"><strong>{{ r.subject_name }}</strong><small>{{ r.venue or 'Venue to be announced' }}</small></span>
+          <span class="rv-chip is-{{ 'test' if r.exam_type == 'test' else 'exam' }}">{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
 {% else %}
-<section class="pp-block"><p class="pp-none" style="padding:0">No timetable has been released for {{ term }} yet.</p></section>
+<section class="ac-panel"><div class="ac-empty"><strong>Nothing released yet</strong>No timetable has been released for {{ term }} yet.</div></section>
 {% endif %}
+</div>
 {% endblock %}

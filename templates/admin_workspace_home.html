@@ -29,7 +29,7 @@
     <div class="door-bar__user"><a href="{{ url_for('admin_logout') }}">Sign out</a></div>
   </header>
 
-  <main class="door-main" id="main">
+  <main class="door-main" id="main" data-page-body>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
@@ -84,5 +84,7 @@
 
   </main>
 </div>
+{#- Opening a workspace dims this page under a spinner until it arrives (static/page-loading.js). -#}
+<script src="{{ url_for('static', filename='page-loading.js') }}"></script>
 </body>
 </html>

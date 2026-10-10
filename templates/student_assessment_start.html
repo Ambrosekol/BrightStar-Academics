@@ -1,24 +1,28 @@
 {% extends 'student_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}{{ assessment.title }}{% endblock %}
 {#- Before a test or examination: what it is, and Start. The timer starts only on the next page. -#}
 {% block content %}
 <div class="ac pf pf-narrow">
-<section class="pf-hero">
-  <span class="pf-hero__ava">{{ icon('nav-academics') }}</span>
-  <div class="pf-hero__copy">
-    <span class="pf-hero__kicker">{{ assessment.assessment_type|upper }}</span>
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <span class="acq-kind">{{ assessment.assessment_type|replace('_', ' ') }}</span>
     <h1>{{ assessment.title }}</h1>
-    <p>{{ assessment.subject_name }} · {{ assessment.question_count }} questions · {{ assessment.duration_minutes }} minutes</p>
-  </div>
-</section>
-<section class="pf-card">
-  <div class="pf-card__h"><h2>Before you begin</h2></div>
+    <p>{{ assessment.subject_name }}</p>
+  </div></div>
+</header>
+<dl class="fi-k">
+  <div><dt>Questions</dt><dd>{{ assessment.question_count }}</dd></div>
+  <div class="is-lead"><dt>Time allowed</dt><dd>{{ assessment.duration_minutes }} min</dd></div>
+  <div><dt>Subject</dt><dd>{{ assessment.subject_name }}</dd></div>
+</dl>
+<section class="ac-panel">
+  <div class="pf-ph"><h2>Before you begin</h2></div>
   <p class="pf-copy">{{ assessment.instructions or 'Read each question carefully. Select an answer and use Save & Next to continue. You may move between questions and review your answers before submitting.' }}</p>
-  <p class="sto-note pf-note">{{ icon('stopwatch') }}<span><strong>Your timer does not start on this page.</strong> The countdown begins only after you press Start.</span></p>
-  <form method="post" action="{{ url_for('student_assessment_start', assessment_id=assessment.id) }}" data-full>
+  <p class="ac-note"><strong>Your timer does not start on this page.</strong> The countdown begins only after you press Start.</p>
+  <form class="pf-go" method="post" action="{{ url_for('student_assessment_start', assessment_id=assessment.id) }}" data-full>
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <button class="ac-btn ac-btn--primary pf-big-btn" type="submit">Start {{ assessment.assessment_type|replace('_', ' ')|title }}</button>
+    <button class="ac-btn ac-btn--primary ac-btn--lg" type="submit">Start {{ assessment.assessment_type|replace('_', ' ')|title }}</button>
+    <span>{{ assessment.duration_minutes }} minutes once you start</span>
   </form>
 </section>
 </div>

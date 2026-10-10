@@ -1408,8 +1408,10 @@ a.wd-online:hover { background: var(--surface-1); }
    dimmed, under a spinner in the school's accent; a pop-up does the same inside itself; the button that was pressed
    spins until the answer arrives. Kept here, with the shell, so it shows on every page whatever else it loads. */
 @keyframes ui-spin { to { transform: rotate(360deg); } }
-[data-page-body] { position: relative; transition: opacity .12s ease; }
-[data-page-body].is-loading { opacity: .55; pointer-events: none; }
+[data-page-body] { position: relative; }
+[data-page-body] > * { transition: opacity .12s ease; }
+[data-page-body].is-loading { pointer-events: none; }
+[data-page-body].is-loading > * { opacity: .55; }
 [data-page-body].is-loading::after,
 .ac-modal__body.is-loading::after {
     content: "";
@@ -1425,7 +1427,8 @@ a.wd-online:hover { background: var(--surface-1); }
     border-radius: 50%;
     animation: ui-spin .7s linear infinite;
 }
-.ac-modal__body.is-loading { opacity: .6; pointer-events: none; }
+.ac-modal__body.is-loading { pointer-events: none; }
+.ac-modal__body.is-loading > * { opacity: .6; }
 .ac-modal__body.is-loading::after { position: absolute; top: 50%; }
 .ac-modal__wait { width: 26px; height: 26px; margin: 40px auto; border: 3px solid color-mix(in srgb, var(--brand-accent) 18%, var(--surface-0)); border-top-color: var(--brand-accent); border-radius: 50%; animation: ui-spin .7s linear infinite; }
 [data-inplace-busy].is-busy { pointer-events: none; opacity: .85; }

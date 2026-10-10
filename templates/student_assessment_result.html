@@ -1,27 +1,29 @@
 {% extends 'student_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Assessment Result{% endblock %}
 {#- After a test or examination: the score if the school has released it, otherwise that it was received. -#}
 {% block content %}
 <div class="ac pf pf-narrow">
-<section class="pf-card pf-result">
-  {% if visible_to_student %}
-  <span class="pf-result__ico is-good">{{ icon('check-circle') }}</span>
-  <span class="pf-hero__kicker">ASSESSMENT COMPLETE</span>
-  <h1>{{ assessment.title }}</h1>
-  <p>{{ assessment.subject_name }} · {{ assessment.class_name }}</p>
-  <div class="pf-result__score"><strong>{{ result.score }}</strong><span>/ {{ result.max_score }}</span></div>
-  <div class="pf-result__pct">{{ '%.1f'|format(percentage) }}%</div>
-  <span class="pf-meter pf-meter--lg"><i style="width:{{ [percentage, 100]|min }}%"></i></span>
-  <p class="pf-result__note">Your result has been released and is now part of your academic records.</p>
-  {% else %}
-  <span class="pf-result__ico">{{ icon('check') }}</span>
-  <span class="pf-hero__kicker">ASSESSMENT SUBMITTED</span>
-  <h1>Submission received</h1>
-  <p>{{ assessment.title }} · {{ assessment.subject_name }}</p>
-  <p class="pf-result__note">Your submission has been recorded successfully. The score is currently withheld and will appear in your Performance and Results area when the school releases the results.</p>
-  {% endif %}
-  <a class="ac-btn ac-btn--primary pf-big-btn" href="{{ url_for('student_dashboard') }}">Return to dashboard →</a>
-</section>
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <span class="acq-kind">{{ 'Assessment complete' if visible_to_student else 'Assessment submitted' }}</span>
+    <h1>{{ assessment.title }}</h1>
+    <p>{{ assessment.subject_name }}{% if assessment.class_name %} · {{ assessment.class_name }}{% endif %}</p>
+  </div></div>
+</header>
+{% if visible_to_student %}
+<dl class="fi-k">
+  <div class="is-lead"><dt>Score</dt><dd>{{ result.score }} / {{ result.max_score }}</dd></div>
+  <div><dt>Percentage</dt><dd>{{ '%.1f'|format(percentage) }}%</dd><span class="ac-progress"><i style="width:{{ [percentage, 100]|min }}%"></i></span></div>
+  <div><dt>Status</dt><dd><span class="ac-tag ac-tag--good">Released</span></dd></div>
+</dl>
+<p class="ac-note">Your result has been released and is now part of your academic records.</p>
+{% else %}
+<dl class="fi-k">
+  <div class="is-lead"><dt>Submission</dt><dd>Received</dd></div>
+  <div><dt>Score</dt><dd>Withheld</dd><small>until the school releases results</small></div>
+</dl>
+<p class="ac-note">Your submission has been recorded. The score is withheld for now and will appear with your results when the school releases them.</p>
+{% endif %}
+<div class="pf-go"><a class="ac-btn ac-btn--primary" href="{{ url_for('student_dashboard') }}">Back to dashboard</a></div>
 </div>
 {% endblock %}

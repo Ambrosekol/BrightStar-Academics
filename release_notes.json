@@ -18,6 +18,31 @@
   ],
   "releases": [
     {
+      "version": "2.22.1",
+      "date": "2026-10-10",
+      "title": "Clearer portal pages for parents and students",
+      "changes": [
+        {
+          "audience": "family",
+          "text": "The parent portal's pages are simpler and easier to scan. Your children are listed in one table with what each owes, their average and completion, with Profile, Message and Pay fees beside each name. A child's fees, results, work and messages are clear tables, and on a phone each row folds into a short list you can read without scrolling sideways. While a page loads, the page you are on dims under a small spinner and the button you pressed spins, instead of a bar across the top of the screen."
+        },
+        {
+          "audience": "student",
+          "text": "Your student portal pages are simpler and easier to scan. Your assignments, projects and results are clear tables with the due date, status and score side by side, and your tests and examinations are listed with their questions and minutes and an Open button. Your exam timetable and attendance are at the top of your dashboard. While a page loads, the page you are on dims under a small spinner and the button you pressed spins."
+        },
+        {
+          "audience": "staff",
+          "text": "The student and parent portal pages now use the same page design as Academics and Finance: a title line with its buttons, the figures strip, panels with compact tables and the same status tags. The coloured banners and tiles are gone. While a portal page loads, it dims under the same spinner the staff pages use.",
+          "help": "families"
+        },
+        {
+          "audience": "staff",
+          "text": "Moving from one page to another now always shows that it is working: the page you are on dims under a spinner and the button or link you pressed spins until the next page is ready. Before, only some sections did this, and the installed app sat still with no sign of progress when you used the side menu to go to another section, sent a form or opened a workspace. Downloads such as PDFs and CSV files are not affected.",
+          "help": "welcome"
+        }
+      ]
+    },
+    {
       "version": "2.22.0",
       "date": "2026-10-10",
       "title": "New student and parent portals, with loading spinners",

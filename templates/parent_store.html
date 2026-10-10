@@ -8,18 +8,21 @@
   at the school office.
 -#}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='2') }}">
 {% set waiting = bought|selectattr('p.status', 'equalto', 'paid')|list %}
-<header class="pst-hero">
-  <div>
-    <h1>{{ icon('nav-store') }} Store</h1>
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <h1>Store</h1>
     <p>{% if online %}Uniforms, books and more from {{ school_brand.name }}. Pay online for any of your children, then collect it from the school.{% else %}What {{ school_brand.name }} sells. Payment is taken at the school office; you can see prices and what is available here.{% endif %}</p>
-  </div>
-  <div class="pst-hero__k">
-    <div><strong>{{ items|length }}</strong><span>items</span></div>
-    <div><strong>{{ waiting|length }}</strong><span>to collect</span></div>
-  </div>
+  </div></div>
 </header>
+<dl class="fi-k">
+  <div><dt>Items for sale</dt><dd>{{ items|length }}</dd></div>
+  <div class="{{ 'is-lead' if waiting }}"><dt>To collect</dt><dd>{{ waiting|length }}</dd><small>paid, not yet collected</small></div>
+  <div><dt>Payment</dt><dd>{{ 'Online or office' if online else 'At the office' }}</dd></div>
+</dl>
+</div>
 
 {% if not online %}
 <p class="sto-note">{{ icon('nav-payments') }}<span><strong>Online payment is not available for the store yet.</strong> Pay at the school office; anything bought there for your child shows below under Your purchases.</span></p>

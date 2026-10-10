@@ -141,6 +141,15 @@ only to whoever may open it. Every settings page is drawn inside the same frame 
 ({{ route('admin_audit_logs') }}) and the notice log ({{ route('admin_audit_notices') }}) are two tabs, two addresses, so
 opening one never reads the other; both page fifty records at a time and search on the server. A student's notice log
 ({{ route('admin_notification_log') }}) opens in a pop-up from their record.</p>
+<p><strong>Loading.</strong> A view that loads in place ({{ file('static/inplace.js') }}) dims its page body under a
+spinner in the school's accent while the next one is fetched. Every other load - the side menu into another section,
+a form sent as a whole page, a workspace opened from the door - shows the same thing through
+{{ file('static/page-loading.js') }}, which {{ file('templates/admin_base.html') }} and
+{{ file('templates/admin_workspace_home.html') }} load (and the student and parent portals too). It acts only on a
+click or form that nothing else has handled, leaves addresses that answer with a file alone (<code>.../pdf</code>,
+<code>/export/...</code>, CSV templates, attachments, uploads), and clears itself after fifteen seconds if the page has
+not gone, so a "leave this page?" answered Stay never leaves it dimmed. The installed app has no browser bar of its
+own, so without this it sat still until the next page appeared.</p>
 
 <h2 id="staff-guide">The staff guide</h2>
 <p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Seventeen pages, in six groups that follow the order of a school year (getting started, setting up the school, students and families, academics, money, store and library, and the entrance workspace), with screenshots of the screens they describe ({{ file('templates/school_guide/_macros.html') }}'s <code>shot</code>, pictures in <code>static/guide/</code> taken from a demonstration school), with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>

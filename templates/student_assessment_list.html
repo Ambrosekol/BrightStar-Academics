@@ -1,30 +1,40 @@
 {% extends 'student_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
 {% block title %}{{ title }}{% endblock %}
-{#- Tests, examinations or practice for the student's class: each a card that opens the paper. Opening one is always a
-    whole page (a timer may start), so the link is not loaded in place. -#}
+{#- Tests, examinations or practice for the student's class, as one table in the staff portal's page language: what
+    each paper is, how long it runs, and the button that opens it. Opening one is always a whole page (a timer may
+    start), so the link is not loaded in place. -#}
 {% block content %}
 <div class="ac pf">
 <header class="ac-top">
-  <h1>{{ title }}</h1>
-  <span class="ac-hint">{% if assessment_type == 'practice' %}Practice tests are always open. Take them as often as you like: every run mixes the questions into a new order, and nothing you do here counts towards your grades.{% else %}Only active assessments prepared for your class and current academic session are shown here.{% endif %}</span>
+  <div class="pf-title"><div>
+    <h1>{{ title }}</h1>
+    <p>{% if assessment_type == 'practice' %}Always open. Every run mixes the questions into a new order, and nothing here counts towards your grades.{% else %}Active papers prepared for your class in the current session.{% endif %}</p>
+  </div></div>
 </header>
 <p class="sr-only">ACADEMIC ASSESSMENT</p>
-{% if assessments %}
-<div class="pf-tiles pf-tiles--wide">
-  {% for a in assessments %}
-  <article class="pf-tile pf-paper">
-    <span class="pf-paper__top"><span class="pf-item__ico">{{ icon('nav-practice' if assessment_type == 'practice' else ('nav-academics' if assessment_type == 'test' else 'nav-reportcard')) }}</span><span class="ac-tag ac-tag--blue">{{ a.subject_name }}</span></span>
-    <strong>{{ a.title }}</strong>
-    <small>{{ a.question_count }} questions · {{ a.duration_minutes }} minutes{% if assessment_type == 'practice' %} · retake any time{% endif %}</small>
-    {% if a.instructions %}<small class="pf-paper__note">{{ a.instructions|replace('\n', ' ')|truncate(115, true, '…') }}</small>{% endif %}
-    {% if assessment_type == 'practice' %}<a class="ac-btn ac-btn--primary pf-paper__go" href="{{ url_for('student_practice_take', assessment_id=a.id) }}" data-full>Practise →</a>
-    {% else %}<a class="ac-btn ac-btn--primary pf-paper__go" href="{{ url_for('student_assessment_take', assessment_id=a.id) }}" data-full>Open →</a>{% endif %}
-  </article>
-  {% endfor %}
-</div>
-{% else %}
-<div class="pf-card pf-empty"><strong>No active {{ title|lower }} available.</strong>Your school administrator or teacher has not made an eligible assessment available for your class yet.</div>
-{% endif %}
+<section class="ac-panel">
+  <div class="pf-ph"><h2>{{ 'Practice tests' if assessment_type == 'practice' else 'Open now' }}<small>{{ assessments|length }}</small></h2></div>
+  {% if assessments %}
+  <div class="ac-scroll"><table class="ac-t pf-rt">
+    <thead><tr><th>Paper</th><th>Subject</th><th class="n">Questions</th><th class="n">Minutes</th><th></th></tr></thead>
+    <tbody>
+    {% for a in assessments %}
+    <tr>
+      <td class="pf-rt__lead"><b>{{ a.title }}</b>{% if a.instructions %}<small class="ac-clip" title="{{ a.instructions }}">{{ a.instructions|replace('\n', ' ') }}</small>{% endif %}</td>
+      <td data-label="Subject">{{ a.subject_name }}</td>
+      <td class="n" data-label="Questions">{{ a.question_count }}</td>
+      <td class="n" data-label="Minutes">{{ a.duration_minutes }}</td>
+      <td class="ac-actions">
+        {% if assessment_type == 'practice' %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('student_practice_take', assessment_id=a.id) }}" data-full>Practice</a>
+        {% else %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('student_assessment_take', assessment_id=a.id) }}" data-full>Open</a>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No active {{ title|lower }} available</strong>Your teacher has not made one available for your class yet.</div>
+  {% endif %}
+</section>
 </div>
 {% endblock %}
