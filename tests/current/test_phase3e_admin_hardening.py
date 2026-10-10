@@ -25,7 +25,7 @@ def test_admin_creation_has_one_time_credentials_and_no_plain_password_field():
     assert "password_must_change=1" in APP
     assert 'admin_credentials.html' in ADMIN_ROUTES
     assert 'name="password"' not in FORM
-    assert 'Admin Login ID / Username' in (ROOT/'templates/admin_credentials.html').read_text(encoding='utf-8')
+    assert 'credential-password' in (ROOT/'templates/admin_credentials.html').read_text(encoding='utf-8')
 
 
 def test_composite_multi_value_scopes_are_supported():

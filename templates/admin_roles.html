@@ -1,7 +1,57 @@
 {% extends 'admin_base.html' %}
-{% block title %}Staff Roles — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_initials.html' import initials %}
+{% block title %}Staff roles — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>Staff roles</h1><p class="hero-copy">A role is a job description translated into safe system access. Assign the role instead of building access one permission at a time.</p></div>{% if is_school_admin_ui %}<div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_role_new') }}">+ Create custom role</a></div>{% endif %}</div>
-<div class="role-library">{% for r in roles %}<div class="card role-card-modern"><div class="role-card-head"><div class="role-mark">{{ r.name[:1]|upper }}</div><div><h2>{{ r.name }}</h2><p>{{ r.description }}</p></div>{% if is_school_admin_ui %}<a class="btn btn-light btn-small" href="{{ url_for('admin_role_edit',rid=r.id) }}">Edit</a>{% endif %}</div><div class="role-capabilities"><span class="capability-count">{{ role_perms[r.id]|length }} capabilities</span>{% for p in role_perms[r.id][:6] %}<span class="capability">{{ p.name }}</span>{% endfor %}{% if role_perms[r.id]|length > 6 %}<span class="capability more">+{{ role_perms[r.id]|length - 6 }} more</span>{% endif %}</div></div>{% endfor %}</div>
-<div class="info-banner"><strong>School Admin only</strong><span>Individual permission codes remain an internal security mechanism. They are available only under Advanced controls when an exceptional access arrangement is genuinely required.</span></div>
+{# Staff roles, inside Settings (the frame and its "New role" button come from templates/admin_base.html). Each card
+   shows how much a role allows and who holds it; Edit opens the role in a pop-up, where a holder's name opens their
+   own pop-up on top. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+{% set level_names = {} %}{% for code,label,help in STAFF_LEVELS %}{% set _ = level_names.update({code: label}) %}{% endfor %}
+<div class="sf-tools">
+  <label class="sf-search">{{ icon('set-search') }}<input type="search" placeholder="Find a role" aria-label="Find a role" data-rl-find autocomplete="off"></label>
+  <span class="sf-count">{{ roles|length }} role{{ '' if roles|length == 1 else 's' }}</span>
+</div>
+{% if roles %}
+<div class="rl-grid" data-rl-grid>
+  {% for r in roles %}
+  {% set perms = role_perms[r.id] %}
+  {% set people = holders.get(r.id, []) %}
+  <article class="rl-card" data-find="{{ (r.name ~ ' ' ~ (r.description or '') ~ ' ' ~ (perms|map(attribute='name')|join(' ')))|lower }}">
+    <div class="rl-card__top">
+      <span class="rl-mark">{{ icon('set-roles') }}</span>
+      <div style="min-width:0;flex:1">
+        <h3>{{ r.name }}</h3>
+        <span class="rl-level">{{ level_names.get(staff_level_of(r.level), 'Executive') }}</span>
+        {% if r.description %}<p>{{ r.description }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="rl-meter" title="{{ perms|length }} of {{ total_perms }} permissions"><span><i style="width:{{ ((perms|length) / (total_perms or 1) * 100)|round(1) }}%"></i></span>{{ perms|length }} permission{{ '' if perms|length == 1 else 's' }}</div>
+    <div class="rl-caps">{% for p in perms[:5] %}<span class="rl-cap">{{ staffwords(p.name) }}</span>{% endfor %}{% if perms|length > 5 %}<span class="rl-cap">+{{ perms|length - 5 }} more</span>{% endif %}</div>
+    <div class="rl-foot">
+      <span class="rl-people" title="{{ people|map(attribute='display_name')|join(', ') }}">
+        {% for h in people[:4] %}<span>{{ initials(h.display_name) }}</span>{% endfor %}
+        <em style="font-style:normal;margin-left:8px">{% if people %}{{ people|length }} {{ 'person' if people|length == 1 else 'people' }}{% else %}Nobody yet{% endif %}</em>
+      </span>
+      {% if is_school_admin_ui %}<a class="btn btn-light btn-small" href="{{ url_for('admin_role_edit', rid=r.id) }}" data-modal>Edit</a>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+<p class="adm-empty" data-rl-none hidden>No role matches.</p>
+{% else %}
+<div class="adm-empty"><strong>No roles yet.</strong></div>
+{% endif %}
+<p class="rl-note">Roles are job descriptions turned into access. Give someone a role rather than single permissions; an override on one person is for the exceptional case. The School Admin's own role is fixed and not listed.</p>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var box=document.querySelector('[data-rl-find]:not([data-ready])'); if(!box) return; box.setAttribute('data-ready','');
+  var cards=[].slice.call(document.querySelectorAll('[data-rl-grid] [data-find]')), none=document.querySelector('[data-rl-none]');
+  box.addEventListener('input',function(){
+    var q=box.value.trim().toLowerCase(), any=false;
+    cards.forEach(function(c){ var hit=!q || c.getAttribute('data-find').indexOf(q)!==-1; c.hidden=!hit; if(hit) any=true; });
+    if(none) none.hidden=any;
+  });
+})();
+</script>
 {% endblock %}

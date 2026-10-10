@@ -1,58 +1,28 @@
 {% extends 'admin_base.html' %}
-{% block title %}Edit Question — {{assessment.title}}{% endblock %}
+{% from 'includes/_question_fields.html' import question_fields %}
+{% block title %}Edit question — {{ assessment.title }}{% endblock %}
 {% block content %}
-<div class="page-hero">
-  <div>
-    <div class="eyebrow">SCHOOL PORTAL / {{assessment.assessment_type|upper}} / QUESTION</div>
-    <h1>Edit Question</h1>
-    <p class="hero-copy">{{assessment.title}} · Question {{question.id}}</p>
+{# A question's own edit page. Mostly seen when a save from the questions list needs correcting (a missing
+   option, a picture that is too large); inside the pop-up it stays in the pop-up, and Back returns to the list. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac acq">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+{% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
+<header class="acq-head">
+  <div class="acq-head__text">
+    <span class="acq-kind">Edit question</span>
+    <h2>{{ assessment.title }}</h2>
   </div>
-  <div class="hero-actions">
-    <a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=assessment.id)}}">← Back to Assessment</a>
-  </div>
-</div>
-<div class="card modern-form" style="margin-top:18px">
-  {% if errors %}
-  <div class="flash error" style="margin-bottom:18px">{% for error in errors %}<div>{{error}}</div>{% endfor %}</div>
-  {% endif %}
-  <form method="post" enctype="multipart/form-data" action="{{url_for('admin_school_assessment_question_edit',assessment_id=assessment.id,question_id=question.id)}}">
-    <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-    <div class="field">
-      <label>Question instruction <span class="optional">(optional)</span></label>
-      <textarea name="instruction" rows="3">{{question.instruction or ''}}</textarea>
-    </div>
-    <div class="field" style="margin-top:14px">
-      <label>Question</label>
-      <textarea name="question_text" rows="4" required>{{question.question_text}}</textarea>
-    </div>
-    {% if question.image_path %}
-    <div class="field" style="margin-top:14px">
-      <label>Current image</label>
-      <div class="question-editor-image"><img src="{{url_for('static',filename=question.image_path)}}" alt="Current question image"></div>
-      <label class="checkbox-field"><input type="checkbox" name="remove_image" value="1"> Remove current image</label>
-    </div>
-    {% endif %}
-    <div class="field" style="margin-top:14px">
-      <label>Replace / add question image <span class="optional">(optional)</span></label>
-      <input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
-      {{ upload_hint() }}
-    </div>
-    <div class="form-grid" style="margin-top:14px">
-      <div class="field"><label>Option A</label><input name="option_a" value="{{question.option_a}}" required></div>
-      <div class="field"><label>Option B</label><input name="option_b" value="{{question.option_b}}" required></div>
-      <div class="field"><label>Option C</label><input name="option_c" value="{{question.option_c}}" required></div>
-      <div class="field"><label>Option D</label><input name="option_d" value="{{question.option_d}}" required></div>
-      <div class="field"><label>Correct option</label>
-        <select name="correct_option">
-          {% for x in range(4) %}<option value="{{x}}" {% if question.correct_option==x %}selected{% endif %}>{{'ABCD'[x]}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Points</label><input type="number" min="1" name="points" value="{{question.points or 1}}" required></div>
-    </div>
-    <div class="form-actions">
-      <a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=assessment.id)}}">Cancel</a>
-      <button class="btn btn-primary" type="submit">Save Question</button>
-    </div>
-  </form>
+  <a class="ac-btn" href="{{ url_for('admin_school_assessment_detail', assessment_id=assessment.id) }}"{% if modal %} data-modal="replace"{% endif %}>← All questions</a>
+</header>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="acq-card"
+      action="{{ url_for('admin_school_assessment_question_edit', assessment_id=assessment.id, question_id=question.id) }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {{ question_fields(question, 'page') }}
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    <a class="ac-link" href="{{ url_for('admin_school_assessment_detail', assessment_id=assessment.id) }}"{% if modal %} data-modal="replace"{% endif %}>Cancel</a>
+    <button class="ac-btn ac-btn--primary" type="submit">Save question</button></div>
+</form>
 </div>
 {% endblock %}

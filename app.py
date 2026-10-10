@@ -142,7 +142,7 @@ from core.security import (  # noqa: E402
     ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
     admin_required, current_admin, is_school_admin, admin_has_permission,
     SCHOOL_ADMIN_ROLE, LEGACY_TOP_ROLE_NAMES, RETIRED_PERMISSIONS, RENAMED_PRESET_ROLES,
-    admin_permission_codes, admin_scope_allows,
+    PRESET_ROLE_LEVELS, admin_permission_codes, admin_scope_allows,
     audit_log, admin_access_error, csrf_protect,
 )
 
@@ -525,6 +525,11 @@ def init_admin_security():
         for code in spec['permissions']
         if code in perm_ids
     ])
+    # Place the teaching roles in the chain of authority, once: a level a school later changes is kept.
+    for role_name,level in PRESET_ROLE_LEVELS.items():
+        db.session.execute(sa_update(AdminType)
+            .where(AdminType.name==role_name,AdminType.is_system==0,AdminType.level.is_(None))
+            .values(level=level))
     # No account is ever seeded into a school. The platform's own operators are
     # the school admins (control_plane/), and a school's first administrator is
     # created deliberately, from the platform console or the CLI, so that its
@@ -671,12 +676,16 @@ def _init_db(school):
     from core.retired_tables import drop_empty  # deferred: it imports the models
     drop_empty()
     now=datetime.now(timezone.utc).isoformat()
-    # Seed the supported class structure. Primary 5 is deliberately optional.
+    # Seed the supported class structure. Primary 5 and the early-years classes are optional.
     class_seed=[
         ('Primary 1','Primary',1,0,1),('Primary 2','Primary',2,0,1),('Primary 3','Primary',3,0,1),
         ('Primary 4','Primary',4,0,1),('Primary 5','Primary',5,1,0),('Primary 6','Primary',6,0,1),
         ('JSS 1','JSS',7,0,1),('JSS 2','JSS',8,0,1),('JSS 3','JSS',9,0,1),
-        ('SSS 1','SSS',10,0,1),('SSS 2','SSS',11,0,1),('SSS 3','SSS',12,0,1)
+        ('SSS 1','SSS',10,0,1),('SSS 2','SSS',11,0,1),('SSS 3','SSS',12,0,1),
+        # Early years, before Primary 1. Off until a school that has them switches them on (Classes);
+        # their pupils never sign in, and their parents see fees and report cards.
+        ('Crèche','Crèche',-3,1,0),('Nursery 1','Nursery',-2,1,0),('Nursery 2','Nursery',-1,1,0),
+        ('Nursery 3','Nursery',0,1,0),
     ]
     _ignore_insert(SchoolClass, [
         {'name':name,'stage':stage,'level_order':level,'optional':optional,'active':active,'created_at':now}
@@ -740,6 +749,7 @@ def inject_csrf_token():
         'admin_unread_messages': _unread_admin_messages(admin['id']) if admin else 0,
         'admin_unread_message_summaries': _unread_admin_message_summaries(admin['id']) if admin else [],
         'admin_role_names': admin_role_names(admin['id']) if admin else [],
+        'admin_workspaces': admin_workspaces(admin['id']) if admin else [],
         'is_school_admin_ui': is_school_admin(admin),
         'finance_unallocated': finance_unallocated,
         'admin_has_permission': admin_has_permission,
@@ -784,8 +794,17 @@ def enforce_admin_workspace_boundary():
     required = _admin_workspace_for_path(request.path)
     selected = session.get('admin_workspace')
 
-    
-    
+    if required == 'entrance':
+        admin = current_admin()
+        if admin and not admin_has_workspace_access(admin['id'], 'entrance'):
+            # Not theirs at all, whether or not a workspace was chosen yet: say so and send them to the school portal,
+            # rather than to a chooser with one door. A refusal is a refusal: it goes in the activity log like one at
+            # the permission check.
+            audit_log('authorization_denied', 'administration', 'endpoint', request.endpoint,
+                      {'workspace': 'entrance', 'permission': ADMIN_ENDPOINT_PERMISSIONS.get(request.endpoint)}, False, admin)
+            flash('The Entrance examination workspace is not open to your account.', 'error')
+            return redirect(_workspace_home_url(selected or 'school'))
+
     if not selected:
         return redirect(url_for('admin_workspace_home'))
 
@@ -1014,11 +1033,28 @@ def admin_password_change():
 # moved to blueprints/school/helpers.py, which has no dependency on app.py.
 from blueprints.school.helpers import _school_class_allowed  # noqa: E402
 
+# What opens the Entrance examination workspace: a permission to work with candidates, question banks, the
+# exam configuration, sittings or entrance results. "View the examination overview" (dashboard.view) on its own
+# does not: that overview has nothing to show without one of these, and school roles such as the bursar's and the
+# librarian's carried it for years. So by default no school staff - subject teachers included - has the entrance
+# workspace; anyone granted one of these permissions (or the School Admin) gets it.
+ENTRANCE_WORKSPACE_PREFIXES = ('candidates.', 'question_banks.', 'questions.', 'entrance.', 'examinations.',
+                               'attempts.', 'results.')
+ENTRANCE_WORKSPACE_PERMISSIONS = frozenset(code for code, _n, _m, _d in ADMIN_PERMISSION_DEFS
+                                           if code.startswith(ENTRANCE_WORKSPACE_PREFIXES))
+
 def admin_has_workspace_access(admin_id, workspace):
     if is_school_admin(): return True
     if workspace=='school':
         return any(admin_has_permission(admin_id,c) for c,_,_,_ in ADMIN_PERMISSION_DEFS if c.startswith('school.'))
-    return any(admin_has_permission(admin_id,c) for c,_,_,_ in ADMIN_PERMISSION_DEFS if c in {'dashboard.view','candidates.view','question_banks.view','attempts.view','results.view'})
+    return any(admin_has_permission(admin_id,c) for c in ENTRANCE_WORKSPACE_PERMISSIONS)
+
+def admin_workspaces(admin_id):
+    """The workspaces this administrator may enter, school first."""
+    return [w for w in ('school','entrance') if admin_has_workspace_access(admin_id,w)]
+
+def _workspace_home_url(workspace):
+    return url_for('admin_school_home') if workspace=='school' else url_for('admin_dashboard')
 
 @app.route('/admin/presence')
 @admin_required
@@ -1060,17 +1096,29 @@ def admin_workspace_home():
     # Workspace Home is a neutral boundary. No workspace remains selected here.
     session.pop('admin_workspace', None)
     me=current_admin()
-    return render_template('admin_workspace_home.html',admin=me,can_entrance=admin_has_workspace_access(me['id'],'entrance'),can_school=admin_has_workspace_access(me['id'],'school'),facts=_workspace_facts())
+    # Without the entrance workspace there is nothing to choose: straight to the school portal (every teacher, by
+    # default). Someone whose only workspace is the entrance one goes straight there. The chooser is for those who
+    # may enter both.
+    workspaces=admin_workspaces(me['id'])
+    if 'entrance' not in workspaces or workspaces==['entrance']:
+        target='entrance' if workspaces==['entrance'] else 'school'
+        session['admin_workspace']=target
+        return redirect(_workspace_home_url(target))
+    return render_template('admin_workspace_home.html',admin=me,can_entrance='entrance' in workspaces,can_school='school' in workspaces,facts=_workspace_facts())
 
 @app.route('/admin/workspace/entrance')
 @admin_required
 def select_entrance_workspace():
+    if not admin_has_workspace_access(current_admin()['id'],'entrance'):
+        flash('The Entrance examination workspace is not open to your account. Ask the School Admin if you need it.','error')
+        return redirect(url_for('admin_workspace_home'))
     session['admin_workspace']='entrance'
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/workspace/school')
 @admin_required
 def select_school_workspace():
+    # The school portal is every staff member's home; its pages each check their own permission.
     session['admin_workspace']='school'
     return redirect(url_for('admin_school_home'))
 
@@ -1095,6 +1143,7 @@ import blueprints.school.onboarding  # noqa: F401,E402
 import blueprints.school.settings  # noqa: F401,E402
 import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
+import blueprints.school.teaching  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402
 import blueprints.school.student_history_import  # noqa: F401,E402
 import blueprints.school.results_import  # noqa: F401,E402

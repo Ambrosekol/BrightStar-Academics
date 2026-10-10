@@ -1,15 +1,33 @@
 {% extends 'school_guide/_layout.html' %}
 {% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
-<p>Five kinds of work sit under the School workspace's navigation rail — Assignments, Projects, Tests,
-Practice Tests and Examinations — and every one except Practice feeds the same term result once
-marked (see {{ page('results-report-cards', 'Results and report cards') }}).</p>
+<p>Results and the five kinds of work (Assignments, Projects, Tests, Practice Tests and Examinations) share one
+page: <strong>Academics</strong> in the menu. Every kind except Practice feeds the same term result once marked
+(see {{ page('results-report-cards', 'Results and report cards') }}).</p>
 
-<h2 id="finding-work">Finding work: the class tiles</h2>
-<p>Both the Assignments and the Projects pages open on a grid of tiles, one for each class, with how many
-items each class has. Pick a tile to see that class's work as cards, one card for each assignment or project,
-showing its subject, its due date and how many students it reaches. The search box narrows the cards you can
-see. A card's buttons open it, edit it or delete it.</p>
+<h2 id="finding-work">Finding your way around Academics</h2>
+<p>Across the top are the sections you can open — <a href="{{ url_for('admin_school_results') }}">Results</a>,
+<a href="{{ url_for('admin_school_assignments') }}">Assignments</a>, <a href="{{ url_for('admin_school_projects') }}">Projects</a>,
+<a href="{{ url_for('admin_school_tests') }}">Tests</a>, <a href="{{ url_for('admin_school_practice_tests') }}">Practice tests</a>
+and <a href="{{ url_for('admin_school_examinations') }}">Examinations</a> — with the one thing to create in that
+section on the right (for example <em>New assignment</em> or <em>Enter offline scores</em>).</p>
+<p>Below them is a row of classes, each with its count; <em>All classes</em> lists everything you can see, with a
+Class column. The chosen class stays chosen when you switch section.</p>
+<p>Everything opens in place: choosing, searching, saving, deleting and releasing load just the part that changes,
+with a small spinner while it does. The address bar still changes, so <strong>Back</strong> and bookmarks work as
+before, and a PDF or print view still opens on its own.</p>
+
+<h2 id="new-work">Setting new work, step by step</h2>
+<p><em>New assignment</em>, <em>New project</em>, <em>New test</em>, <em>New practice test</em> and <em>New examination</em>
+are guided forms. They ask one thing at a time: <strong>Class and subject</strong> first, then the <strong>Details</strong>
+(title, dates and instructions), then for an assignment its <strong>Format</strong> (written or CBT, and any time
+limit), and for assignments and projects the <strong>Students</strong> it goes to. <strong>Next</strong> only moves
+on once the open step is filled in properly, and <strong>Back</strong> returns to an earlier one. A test, practice
+test or examination is created first, and its questions are added in the pop-up that follows (see
+<a href="#questions">Adding and editing questions</a>).</p>
+<p><strong>Editing</strong> an assignment or a project opens over the list in a pop-up with the same steps. Click any
+step to jump to it, change what you need and <strong>Save changes</strong> from any of them; the pop-up closes and
+the list shows the change. <strong>Cancel</strong>, the × or a click outside closes it without saving.</p>
 
 <h2 id="issuing">Issuing work to a whole class or to chosen students</h2>
 <p>On the new-work form, the Students section has two choices. <strong>Whole class</strong> is the default for
@@ -53,6 +71,26 @@ which list a piece of work sits on and which permission controls it, so a school
 smaller, in-term tests apart from its bigger, formal end-of-term examinations, and decide separately
 who may create or edit each kind. Put a piece of work under whichever of the two your school calls it;
 nothing about how it behaves changes either way.</p>
+
+<h2 id="questions">Adding and editing questions</h2>
+<p>On the Tests, Practice tests and Examinations lists, <strong>Questions</strong> (or the title) opens that piece
+of work in a pop-up over the list. At the top are its class, subject and term, whether students can see it
+(<strong>Open to students</strong> or <strong>Draft</strong>, with the button that changes it), and four figures:
+the number of questions, the total marks, the time allowed and the time that leaves for each question. Below them,
+three tabs:</p>
+<ul>
+  <li><strong>Questions</strong> shows each question the way a student sees it, with its four options and the right
+  answer marked in green. <strong>Edit</strong> opens the question where it is; <strong>Delete</strong> removes it
+  after asking. The <strong>↑</strong> and <strong>↓</strong> arrows move a question, and a bar then offers
+  <strong>Save the new order</strong> (or <strong>Undo</strong>).</li>
+  <li><strong>Add a question</strong> takes the question, an optional instruction and picture, the four options
+  and the marks. Tick the circle beside the correct option. After you save, the same tab is ready for the next
+  question, so you can add a whole paper without leaving the pop-up.</li>
+  <li><strong>Settings</strong> changes the title, time allowed, session, term and instructions. The class and
+  subject stay as they were set.</li>
+</ul>
+<p>A test can only be opened to students once it has at least one question. When you close the pop-up, the list
+underneath shows the new question count.</p>
 
 <h2 id="practice">Practice tests</h2>
 <p><a href="{{ url_for('admin_school_practice_tests') }}">Practice</a> is a self-study bank: nothing a

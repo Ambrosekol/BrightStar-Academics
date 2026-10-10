@@ -1,203 +1,186 @@
 {% extends 'admin_base.html' %}
 {% block title %}Student — {{student.first_name}} {{student.last_name}}{% endblock %}
 {% block content %}
-<div class="profile-hero"><div><a class="text-back" href="{{url_for('admin_school_students',class=current_enrol.class_name if current_enrol else '')}}">← Back to Students</a><div class="eyebrow">STUDENT PROFILE</div><h1>{{student.first_name}} {{student.middle_name or ''}} {{student.last_name}}</h1><div class="profile-subline"><span class="level-badge">{{current_enrol.class_name if current_enrol else 'Not enrolled'}}</span><span class="candidate-code">{{student.admission_no}}</span></div></div><div class="hero-actions"><a class="btn btn-light" href="{{url_for('admin_school_student_edit',sid=student.id)}}">Edit Student</a>{% if current_admin and admin_has_permission(current_admin['id'],'audit.view') %}<a class="btn btn-light" href="{{url_for('admin_notification_log',student_id=student.id)}}">Notice log</a>{% endif %}<button type="button" class="btn btn-primary" data-modal-open="modal-academic-record">Check Performance →</button></div></div>
+{# One student, usually in a pop-up over the register: who they are and how to reach their family, their portal
+   login, then one tab at a time for their term results, every recorded mark, assignments, projects and school
+   journey. Editing them, their fee account, their login details and correcting their journey open on top of this
+   pop-up (static/inplace.js stacks them); anything saved there comes back here. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set aid = current_admin['id'] %}
+{% set full_name = [student.first_name, student.middle_name, student.last_name]|select|join(' ') %}
+{% set can_edit = admin_has_permission(aid, 'school.students.edit') %}
+{% set can_history = admin_has_permission(aid, 'student.history.manage') %}
+{% set can_fees = admin_has_permission(aid, 'finance.view_own') or admin_has_permission(aid, 'finance.view_all') %}
+<div class="ac st sp" data-sp="{{ student.id }}" data-modal-size="wide">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}
+<a class="fi-back" href="{{ url_for('admin_school_students', **({'class': current_enrol.class_name} if current_enrol else {})) }}">← {{ current_enrol.class_name if current_enrol else 'Students' }}</a>{% endif %}
+
+<header class="sp-head">
+  <span class="sp-ava">{% if student.photo_path %}<img src="{{ url_for('static', filename=student.photo_path) }}" alt="Photo of {{ full_name }}">{% else %}{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}{% endif %}</span>
+  <div class="sp-who">
+    <span class="acq-kind">Student</span>
+    <h2>{{ full_name }}</h2>
+    <p><span class="st-code">{{ student.admission_no }}</span>
+      <span class="ac-tag ac-tag--blue">{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</span>
+      {% if student.department %}<span class="ac-tag">{{ student.department }}</span>{% endif %}
+      {% if student.archived_at %}<span class="ac-tag ac-tag--attn">Archived</span>{% endif %}
+      {% if current_enrol %}<span>{{ current_enrol.session_name }}</span>{% endif %}</p>
+  </div>
+  <div class="sp-acts">
+    {% if can_edit %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_student_edit', sid=student.id) }}" data-modal>Edit record</a>{% endif %}
+    {% if can_fees and current_enrol %}<a class="ac-btn" href="{{ url_for('admin_finance_student_account', student_id=student.id, session_id=current_enrol.session_id) }}" data-modal>Fee account</a>{% endif %}
+    {% if admin_has_permission(aid, 'audit.view') %}<a class="ac-btn" href="{{ url_for('admin_notification_log', student_id=student.id) }}" data-full>Notice log</a>{% endif %}
+  </div>
+</header>
 
 {% if student.archived_at %}
-<div class="info-banner segmentation-note"><strong>This student is archived.</strong><span>Archived {{student.archived_at[:10]}}{% if archived_by %} by {{archived_by}}{% endif %}{% if student.archive_reason %} · {{student.archive_reason}}{% endif %}. They are not in the register, the student count or sign-in. Their record stays on file.</span>
-  {% if is_school_admin %}<form method="post" action="{{url_for('admin_school_students_restore')}}" style="margin-top:10px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="student_ids" value="{{student.id}}"><button class="btn btn-success" type="submit" data-confirm="Restore this student to the current register? Their login will work again.">Restore student</button></form>{% endif %}
+<div class="sp-note sp-note--archived"><strong>This student is archived.</strong> Archived {{ student.archived_at[:10] }}{% if archived_by %} by {{ archived_by }}{% endif %}{% if student.archive_reason %} · {{ student.archive_reason }}{% endif %}. They are not in the register, the student count or sign-in; their record stays on file.
+  {% if is_school_admin %}<form method="post" action="{{ url_for('admin_school_students_restore') }}" style="margin-top:6px"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="student_ids" value="{{ student.id }}"><button class="ac-btn" type="submit" data-confirm="Restore this student to the current register? Their login will work again.">Restore student</button></form>{% endif %}
 </div>
-{% elif can_archive %}
-<details class="info-banner segmentation-note" style="margin-bottom:16px"><summary><strong>Archive this student</strong> — take them off the register and stop their sign-in, keeping their record.</summary>
-  <form method="post" action="{{url_for('admin_school_students_archive')}}" class="register-search" style="margin-top:10px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><input type="hidden" name="student_ids" value="{{student.id}}"><input name="reason" maxlength="300" placeholder="Reason (optional), e.g. left the school, transferred out"><button class="btn btn-danger" type="submit" data-confirm="Archive this student? Their login stops working until they are restored from Archived students.">Archive student</button></form>
-</details>
 {% endif %}
 
-<div class="profile-grid-3">
-  <section class="card profile-card">
-    <div class="section-label">STUDENT INFORMATION</div>
-    <div class="student-detail-heading"><div class="student-detail-avatar">{% if student.photo_path %}<img src="{{url_for('static',filename=student.photo_path)}}" alt="Student photo">{% else %}{{student.first_name[:1]|upper}}{{student.last_name[:1]|upper}}{% endif %}</div><h2>Personal details</h2></div>
-    <dl class="detail-list">
-      <div><dt>Full name</dt><dd>{{student.first_name}} {{student.middle_name or ''}} {{student.last_name}}</dd></div>
-      <div><dt>Admission number</dt><dd>{{student.admission_no}}</dd></div>
-      <div><dt>Gender</dt><dd>{{student.gender or '—'}}</dd></div>
-      <div><dt>Date of birth</dt><dd>{{student.date_of_birth or '—'}}</dd></div>
-      <div><dt>Blood group</dt><dd>{{student.blood_group or 'Not recorded'}}</dd></div>
-      <div><dt>Genotype</dt><dd>{{student.genotype or 'Not recorded'}}</dd></div>
-      <div><dt>Record created</dt><dd>{{student.created_at.replace('T',' ')[:19]}}</dd></div>
-      <div><dt>Account status</dt><dd>{% if student.archived_at %}<span class="status">Archived</span>{% else %}<span class="status submitted">Active</span>{% endif %}</dd></div>
-    </dl>
-  </section>
-  <section class="card profile-card">
-    <div class="section-label">PARENT / GUARDIAN</div>
-    <h2>Contact information</h2>
-    <dl class="detail-list">
-      <div><dt>Name</dt><dd>{{student.guardian_name or '—'}}</dd></div>
-      <div><dt>Phone</dt><dd>{{student.guardian_phone or '—'}}</dd></div>
-      <div><dt>Email</dt><dd>{{student.guardian_email or '—'}}</dd></div>
-      <div><dt>Current class</dt><dd>{{current_enrol.class_name if current_enrol else 'Not enrolled'}}</dd></div>
-      <div><dt>Current session</dt><dd>{{current_enrol.session_name if current_enrol else '—'}}</dd></div>
-    </dl>
-  </section>
-  <section class="card profile-card student-account-admin-card">
-    <div class="section-label">STUDENT ACCOUNT</div>
-    <h2>Portal login</h2>
-    <p class="muted">Routes the pupil to the Student Portal, separate from any entrance-exam candidate account.</p>
-    <div class="account-admin-grid">
-      <div><span>Student ID / Username</span><strong>{{student.login_username or 'Not provisioned'}}</strong></div>
-      <div><span>Account status</span><strong><span class="status {% if not student.login_password_hash %}role-chip{% elif student.account_active %}submitted{% else %}expired{% endif %}">{% if not student.login_password_hash %}Not provisioned{% elif student.account_active %}Active{% else %}Disabled{% endif %}</span></strong></div>
-      <div><span>Last login</span><strong>{{(student.last_login_at or 'Never').replace('T',' ')[:19]}}</strong></div>
-      <div><span>Password</span><strong>{{'Set securely' if student.login_password_hash else 'Not created'}}</strong></div>
-    </div>
-    <div class="account-admin-actions">
-      {% if student.login_username and student.login_password_hash %}
-      <form method="post" action="{{url_for('admin_school_student_account_reset',sid=student.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-primary" type="submit">Reset Password</button></form>
-      <a class="btn btn-light" target="_blank" href="{{url_for('admin_school_student_account_print',sid=student.id)}}">Print Login ID</a>
-      {% else %}
-      <form method="post" action="{{url_for('admin_school_student_account_reset',sid=student.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-primary" type="submit">Create Student Account</button></form>
-      {% endif %}
-      {% if student.login_username and student.login_password_hash %}
-      <form method="post" action="{{url_for('admin_school_student_account_toggle',sid=student.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn {% if student.account_active %}btn-danger{% else %}btn-success{% endif %}" type="submit">{{'Disable Login' if student.account_active else 'Enable Login'}}</button></form>
-      {% endif %}
-    </div>
-  </section>
+<dl class="sp-figures">
+  <div><dt>Term results</dt><dd>{{ term_reports|length }}</dd></div>
+  <div><dt>Overall</dt><dd>{% if total_max %}{{ '%.1f'|format(pct) }}%{% else %}—{% endif %}</dd></div>
+  <div><dt>Assignments</dt><dd>{% if assignment_avg is not none %}{{ '%.1f'|format(assignment_avg) }}%{% else %}{{ assignments|length }}{% endif %}</dd></div>
+  <div><dt>Projects</dt><dd>{{ projects|length }}</dd></div>
+</dl>
+
+<div class="ac-seg sp-tabs" role="tablist" aria-label="About {{ full_name }}">
+  <button type="button" role="tab" data-sp-tab="profile">Profile</button>
+  <button type="button" role="tab" data-sp-tab="terms">Term results <small>{{ term_reports|length }}</small></button>
+  <button type="button" role="tab" data-sp-tab="marks">Every mark <small>{{ completed }}</small></button>
+  <button type="button" role="tab" data-sp-tab="assignments">Assignments <small>{{ assignments|length }}</small></button>
+  <button type="button" role="tab" data-sp-tab="projects">Projects <small>{{ projects|length }}</small></button>
+  <button type="button" role="tab" data-sp-tab="journey">School journey <small>{{ enrollment_history|length }}</small></button>
 </div>
 
-<div class="quick-access-grid">
-  <div class="quick-access-tile">
-    <span class="qa-label">ACADEMIC</span>
-    <h3>Term Results</h3>
-    <p class="qa-stat">{{term_reports|length}} term{{'' if term_reports|length==1 else 's'}} recorded — Exam + CA out of 100 per subject.</p>
-    <button type="button" class="btn btn-light" data-modal-open="modal-term-results">View</button>
-  </div>
-  <div class="quick-access-tile">
-    <span class="qa-label">ACADEMIC</span>
-    <h3>Academic Record</h3>
-    <p class="qa-stat">{{completed}} result{{'' if completed==1 else 's'}} recorded{% if total_max %} · {{'%.1f'|format(pct)}}% overall{% endif %}.</p>
-    <button type="button" class="btn btn-light" id="modal-academic-record-btn" data-modal-open="modal-academic-record">View</button>
-  </div>
-  <div class="quick-access-tile">
-    <span class="qa-label">ACADEMIC</span>
-    <h3>Assignments</h3>
-    <p class="qa-stat">{{assignments|length}} assigned{% if assignment_avg is not none %} · {{'%.1f'|format(assignment_avg)}}% average{% else %} · not graded yet{% endif %}.</p>
-    <button type="button" class="btn btn-light" data-modal-open="modal-assignments">View</button>
-  </div>
-  <div class="quick-access-tile">
-    <span class="qa-label">ACADEMIC</span>
-    <h3>Projects</h3>
-    <p class="qa-stat">{{projects|length}} project{{'' if projects|length==1 else 's'}} assigned to this student.</p>
-    <button type="button" class="btn btn-light" data-modal-open="modal-projects">View</button>
-  </div>
-  <div class="quick-access-tile">
-    <span class="qa-label">RECORD</span>
-    <h3>Enrolment History</h3>
-    <p class="qa-stat">{{enrollment_history|length}} school-journey entr{{'y' if enrollment_history|length==1 else 'ies'}} recorded.</p>
-    <button type="button" class="btn btn-light" data-modal-open="modal-enrolment-history">View</button>
-  </div>
-</div>
-
-<dialog class="cr-modal" id="modal-term-results">
-  <div class="cr-modal-head">
-    <div><div class="section-label">TERM RESULTS</div><h2>Exam + Continuous Assessment, by term</h2><p>Each subject's term result is Continuous Assessment (tests, assignments and projects) plus the term's Exam, out of 100.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-term-results">×</button>
-  </div>
-  <div class="cr-modal-body">
-    {% for t in term_reports %}
-    <div class="term-report-block">
-      <div class="term-report-head"><strong>{{t.session_name}}</strong><span>{{t.term}}</span></div>
-      <div class="paper-overview-table"><table><thead><tr><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th></tr></thead><tbody>
-        {% for s in t.subjects %}
-        <tr>
-          <td><strong>{{s.subject_name}}</strong></td>
-          <td>{{'%.1f'|format(s.ca_score)}} / {{s.ca_max|int}}</td>
-          <td>{{'%.1f'|format(s.exam_score)}} / {{s.exam_max|int}}</td>
-          <td><strong>{{'%.1f'|format(s.total_score)}} / {{s.total_max|int}}</strong></td>
-        </tr>
-        {% endfor %}
-      </tbody></table></div>
+<section class="sp-panel" data-sp-panel="profile" role="tabpanel">
+  <div class="sp-grid">
+    <div class="sp-card"><h3>Personal details</h3>
+      <dl class="sp-dl">
+        <dt>Full name</dt><dd>{{ full_name }}</dd>
+        <dt>Admission no.</dt><dd>{{ student.admission_no }}</dd>
+        <dt>Gender</dt><dd>{{ student.gender or '—' }}</dd>
+        <dt>Date of birth</dt><dd>{{ student.date_of_birth or '—' }}</dd>
+        <dt>Blood group</dt><dd>{{ student.blood_group or 'Not recorded' }}</dd>
+        <dt>Genotype</dt><dd>{{ student.genotype or 'Not recorded' }}</dd>
+        <dt>On file since</dt><dd>{{ student.created_at.replace('T', ' ')[:10] }}</dd>
+      </dl></div>
+    <div class="sp-card"><h3>Parent or guardian</h3>
+      <dl class="sp-dl">
+        <dt>Name</dt><dd>{{ student.guardian_name or '—' }}</dd>
+        <dt>Phone</dt><dd>{% if student.guardian_phone %}<a class="ac-link" href="tel:{{ student.guardian_phone }}" data-full>{{ student.guardian_phone }}</a>{% else %}—{% endif %}</dd>
+        <dt>Email</dt><dd>{% if student.guardian_email %}<a class="ac-link" href="mailto:{{ student.guardian_email }}" data-full>{{ student.guardian_email }}</a>{% else %}—{% endif %}</dd>
+        <dt>Class</dt><dd>{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</dd>
+        {% if student.department or (current_enrol and is_senior_class(None, current_enrol.class_name)) %}<dt>Department</dt><dd>{{ student.department or 'Not chosen yet (edit the record to set it)' }}</dd>{% endif %}
+        <dt>Session</dt><dd>{{ current_enrol.session_name if current_enrol else '—' }}</dd>
+      </dl></div>
+    <div class="sp-card"><h3>Student portal login</h3>
+      <dl class="sp-dl">
+        <dt>Username</dt><dd>{{ student.login_username or 'Not made yet' }}</dd>
+        <dt>Status</dt><dd>{% if not student.login_password_hash %}<span class="ac-tag">No login</span>{% elif student.account_active %}<span class="ac-tag ac-tag--good">Active</span>{% else %}<span class="ac-tag ac-tag--attn">Disabled</span>{% endif %}</dd>
+        <dt>Last sign-in</dt><dd>{{ (student.last_login_at or 'Never').replace('T', ' ')[:16] }}</dd>
+      </dl>
+      {% if can_edit %}
+      <div class="sp-row">
+        <form method="post" action="{{ url_for('admin_school_student_account_reset', sid=student.id) }}"{% if student.login_password_hash %} data-confirm="Make a new temporary password for {{ student.first_name }}? The old one stops working."{% endif %}><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn{{ '' if student.login_password_hash else ' ac-btn--primary' }}" type="submit">{{ 'Reset password' if student.login_password_hash else 'Create their login' }}</button></form>
+        {% if student.login_username and student.login_password_hash %}
+        <a class="ac-btn" target="_blank" rel="noopener" href="{{ url_for('admin_school_student_account_print', sid=student.id) }}">Print login card</a>
+        <form method="post" action="{{ url_for('admin_school_student_account_toggle', sid=student.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn{{ ' ac-btn--danger' if student.account_active }}" type="submit">{{ 'Turn off sign-in' if student.account_active else 'Turn on sign-in' }}</button></form>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="empty-state">No term-based results yet. Tests, examinations, assignments and projects created with a session and term will appear here once graded.</div>
-    {% endfor %}
   </div>
-</dialog>
+  {% if can_archive and not student.archived_at %}
+  <details class="sp-danger"><summary>Archive this student</summary>
+    <p class="ac-hint" style="margin:4px 0 0">Takes them off the register and stops their sign-in; their record stays on file and they can be restored.</p>
+    <form method="post" action="{{ url_for('admin_school_students_archive') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="student_ids" value="{{ student.id }}"><input type="hidden" name="class" value="{{ current_enrol.class_name if current_enrol else '' }}"><input class="ac-input" name="reason" maxlength="300" placeholder="Reason, e.g. left the school, transferred out"><button class="ac-btn ac-btn--danger" type="submit" data-confirm="Archive this student? Their login stops working until they are restored from Archived.">Archive student</button></form>
+  </details>
+  {% endif %}
+</section>
 
-<dialog class="cr-modal" id="modal-academic-record">
-  <div class="cr-modal-head">
-    <div><div class="section-label">ACADEMIC RECORD</div><h2>Check performance</h2><p>All recorded academic results for this student, grouped by subject and assessment.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-academic-record">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <div class="mini-metric-grid">
-      <div><span>Recorded results</span><strong>{{completed}}</strong></div>
-      <div><span>Total score</span><strong>{% if total_max %}{{'%.1f'|format(total_score)}} / {{'%.1f'|format(total_max)}}{% else %}—{% endif %}</strong></div>
-      <div><span>Overall percentage</span><strong>{% if total_max %}{{'%.1f'|format(pct)}}%{% else %}—{% endif %}</strong></div>
-      <div><span>Current class</span><strong>{{current_enrol.class_name if current_enrol else '—'}}</strong></div>
-    </div>
-    <div class="paper-overview-table"><table><thead><tr><th>Assessment</th><th>Subject</th><th>Class</th><th>Score</th><th>Term</th><th>Status</th></tr></thead><tbody>
-      {% for r in results %}
-      <tr><td><strong>{{r.assessment_title or 'Academic record'}}</strong></td><td>{{r.subject_name}}</td><td>{{r.class_name or '—'}}</td><td>{% if r.score is not none %}{{r.score}} / {{r.max_score}}{% else %}—{% endif %}</td><td>{{r.term or 'Full Session'}}</td><td><span class="role-chip">{{r.status}}</span></td></tr>
-      {% else %}
-      <tr><td colspan="6"><div class="empty-state">No academic results have been recorded for this student yet.</div></td></tr>
+<section class="sp-panel" data-sp-panel="terms" role="tabpanel" hidden>
+  <p class="ac-hint" style="margin:0 0 8px">{{ term_reports|length }} term{{ '' if term_reports|length == 1 else 's' }} recorded — each subject's Continuous Assessment (tests, assignments, projects) plus the Exam, out of 100.</p>
+  {% for t in term_reports %}
+  <div class="term-report-block">
+    <div class="term-report-head"><strong>{{t.session_name}}</strong><span>{{t.term}}</span></div>
+    <div class="ac-scroll"><table><thead><tr><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th></tr></thead><tbody>
+      {% for s in t.subjects %}
+      <tr>
+        <td><strong>{{s.subject_name}}</strong></td>
+        <td>{{'%.1f'|format(s.ca_score)}} / {{s.ca_max|int}}</td>
+        <td>{{'%.1f'|format(s.exam_score)}} / {{s.exam_max|int}}</td>
+        <td><strong>{{'%.1f'|format(s.total_score)}} / {{s.total_max|int}}</strong></td>
+      </tr>
       {% endfor %}
     </tbody></table></div>
   </div>
-</dialog>
+  {% else %}
+  <div class="ac-empty"><strong>No term results yet</strong>Tests, examinations, assignments and projects set with a session and term show here once marked.</div>
+  {% endfor %}
+</section>
 
-<dialog class="cr-modal" id="modal-assignments">
-  <div class="cr-modal-head">
-    <div><div class="section-label">ASSIGNMENTS</div><h2>Assignment performance</h2><p>{{assignments|length}} assigned · {% if assignment_avg is not none %}{{'%.1f'|format(assignment_avg)}}% average{% else %}No graded assignments yet{% endif %}</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-assignments">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <div class="activity-list">
-      {% for a in assignments %}
-      <div class="activity-row"><div><strong>{{a.title}}</strong><small>{{a.subject_name}} · Given {{a.date_given or a.created_at[:10]}}{% if a.due_date %} · Due {{a.due_date}}{% endif %}</small>{% if a.assignment_remark %}<small>{{a.assignment_remark}}</small>{% endif %}</div><div><span class="role-chip">{{a.assignment_status|replace('_',' ')|title}}</span>{% if a.assignment_score is not none %}<strong>{{a.assignment_score}}/{{a.assignment_max_score}}</strong>{% endif %}</div></div>
-      {% else %}
-      <div class="empty-state">No assignments are currently connected to this student.</div>
-      {% endfor %}
-    </div>
-  </div>
-</dialog>
+<section class="sp-panel" data-sp-panel="marks" role="tabpanel" hidden>
+  <p class="ac-hint" style="margin:0 0 8px">{{ completed }} mark{{ '' if completed == 1 else 's' }} recorded{% if total_max %} · {{ '%.1f'|format(total_score) }} of {{ '%.1f'|format(total_max) }} ({{ '%.1f'|format(pct) }}%) overall{% endif %}.</p>
+  <div class="ac-panel ac-scroll"><table class="ac-t">
+    <thead><tr><th>Assessment</th><th>Subject</th><th>Class</th><th class="n">Score</th><th>Term</th><th>Status</th></tr></thead>
+    <tbody>{% for r in results %}<tr><td><strong>{{ r.assessment_title or r.component_name or 'Academic record' }}</strong></td><td>{{ r.subject_name }}</td><td>{{ r.class_name or '—' }}</td><td class="n">{% if r.score is not none %}{{ r.score }} / {{ r.max_score }}{% else %}—{% endif %}</td><td>{{ r.term or 'Full Session' }}</td><td><span class="ac-tag{{ ' ac-tag--good' if r.status == 'released' else (' ac-tag--blue' if r.status in ('verified','approved') else '') }}">{{ r.status|capitalize }}</span></td></tr>
+    {% else %}<tr><td colspan="6"><div class="ac-empty">No marks recorded for this student yet.</div></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
 
-<dialog class="cr-modal" id="modal-projects">
-  <div class="cr-modal-head">
-    <div><div class="section-label">PROJECTS</div><h2>Project performance</h2></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-projects">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <div class="activity-list">
-      {% for p in projects %}
-      <div class="activity-row"><div><strong>{{p.title}}</strong><small>{{p.subject_name}} · Given {{p.date_given}}{% if p.due_date %} · Required {{p.due_date}}{% endif %}</small>{% if p.project_remark %}<small>{{p.project_remark}}</small>{% endif %}</div><div><span class="role-chip">{{p.project_status|replace('_',' ')|title}}</span>{% if p.project_score is not none %}<strong>{{p.project_score}}/{{p.max_score}}</strong>{% endif %}</div></div>
-      {% else %}
-      <div class="empty-state">No projects are currently connected to this student.</div>
-      {% endfor %}
-    </div>
-  </div>
-</dialog>
+<section class="sp-panel" data-sp-panel="assignments" role="tabpanel" hidden>
+  {% if assignments %}<ul class="sp-items">{% for a in assignments %}
+    <li><span><b>{{ a.title }}</b><small>{{ a.subject_name }} · given {{ a.date_given or a.created_at[:10] }}{% if a.due_date %} · due {{ a.due_date }}{% endif %}{% if a.assignment_remark %} · {{ a.assignment_remark }}{% endif %}</small></span>
+      <span class="sp-items__end"><span class="ac-tag">{{ a.assignment_status|replace('_', ' ')|capitalize }}</span>{% if a.assignment_score is not none %}{{ a.assignment_score }}/{{ a.assignment_max_score }}{% endif %}</span></li>{% endfor %}</ul>
+  {% else %}<div class="ac-empty"><strong>No assignments yet</strong>Work set for this student's class shows here.</div>{% endif %}
+</section>
 
-<dialog class="cr-modal" id="modal-enrolment-history">
-  <div class="cr-modal-head">
-    <div><div class="section-label">ENROLMENT HISTORY</div><h2>School journey</h2><p>Manual school-journal record. Early years use the school's own terms. CBT is not required for these history entries.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="modal-enrolment-history">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <form method="post" action="{{url_for('admin_school_student_history_add',sid=student.id)}}" style="margin-bottom:18px;padding:16px;background:#f7f9fc;border-radius:12px"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid two"><label><span>Enrollment level</span><select name="level_name" required><option value="">Select level</option><optgroup label="Daycare / Playgroup"><option>Daycare</option><option>Toddler 1</option><option>Toddler 2</option><option>Crèche</option></optgroup><optgroup label="Nursery"><option>Junior Reception</option><option>Middle Reception</option><option>Senior Reception</option></optgroup><optgroup label="Primary">{% for level in ['Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6'] %}<option>{{level}}</option>{% endfor %}</optgroup><optgroup label="College">{% for level in ['JSS 1','JSS 2','JSS 3','SSS 1','SSS 2','SSS 3'] %}<option>{{level}}</option>{% endfor %}</optgroup></select></label><label><span>Academic session</span><select name="session_id"><option value="">Not specified</option>{% for s in sessions %}<option value="{{s.id}}">{{s.name}}</option>{% endfor %}</select></label><label><span>Enrolled date</span><input type="date" name="enrolled_at"></label><label><span>Completed date</span><input type="date" name="completed_at"></label><label style="grid-column:1/-1"><span>Reason / movement note</span><input type="text" name="notes" placeholder="e.g. Promoted after assessment; remained in Senior Reception by school-parent agreement"></label></div><button class="btn btn-light" type="submit">Record class movement</button></form>
-    <div class="activity-list">
-      {% for e in enrollment_history %}
-      <div class="activity-row"><div><strong>{{e.level_name}}</strong><small>{{e.session_name or 'Session not specified'}} · Enrolled {{e.enrolled_at or '—'}}{% if e.completed_at %} · Completed {{e.completed_at}}{% endif %}</small></div><div class="row-actions"><span class="role-chip">{{'Current' if e.active else 'Inactive'}}</span><a class="btn btn-light btn-small" href="{{url_for('admin_school_student_history_edit',sid=student.id,history_id=e.id)}}">Correct</a></div></div>
-      {% else %}
-      <div class="empty-state">No enrolment history found.</div>
-      {% endfor %}
-    </div>
-  </div>
-</dialog>
+<section class="sp-panel" data-sp-panel="projects" role="tabpanel" hidden>
+  {% if projects %}<ul class="sp-items">{% for p in projects %}
+    <li><span><b>{{ p.title }}</b><small>{{ p.subject_name }} · given {{ p.date_given }}{% if p.due_date %} · due {{ p.due_date }}{% endif %}{% if p.project_remark %} · {{ p.project_remark }}{% endif %}</small></span>
+      <span class="sp-items__end"><span class="ac-tag">{{ p.project_status|replace('_', ' ')|capitalize }}</span>{% if p.project_score is not none %}{{ p.project_score }}/{{ p.max_score }}{% endif %}</span></li>{% endfor %}</ul>
+  {% else %}<div class="ac-empty"><strong>No projects yet</strong></div>{% endif %}
+</section>
 
+<section class="sp-panel" data-sp-panel="journey" role="tabpanel" hidden>
+  {% if can_history %}
+  <details class="sp-journey-form"><summary>+ Record a class movement</summary>
+    <form method="post" action="{{ url_for('admin_school_student_history_add', sid=student.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="ac-fields ac-fields--3">
+        <div class="ac-field"><label for="spLevel{{ student.id }}">Level</label><select id="spLevel{{ student.id }}" name="level_name" required><option value="">Choose a level</option><optgroup label="Daycare / Playgroup"><option>Daycare</option><option>Toddler 1</option><option>Toddler 2</option><option>Crèche</option></optgroup><optgroup label="Nursery"><option>Junior Reception</option><option>Middle Reception</option><option>Senior Reception</option></optgroup><optgroup label="Primary">{% for level in ['Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6'] %}<option>{{ level }}</option>{% endfor %}</optgroup><optgroup label="College">{% for level in ['JSS 1','JSS 2','JSS 3','SSS 1','SSS 2','SSS 3'] %}<option>{{ level }}</option>{% endfor %}</optgroup></select></div>
+        <div class="ac-field"><label for="spSess{{ student.id }}">Session</label><select id="spSess{{ student.id }}" name="session_id"><option value="">Not specified</option>{% for s in sessions %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="spIn{{ student.id }}">Started</label><input id="spIn{{ student.id }}" type="date" name="enrolled_at"></div>
+        <div class="ac-field"><label for="spOut{{ student.id }}">Finished <span class="ac-hint">optional</span></label><input id="spOut{{ student.id }}" type="date" name="completed_at"></div>
+        <div class="ac-field ac-field--wide"><label for="spNote{{ student.id }}">Note</label><input id="spNote{{ student.id }}" type="text" name="notes" placeholder="e.g. Promoted after assessment"></div>
+      </div>
+      <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Record it</button></div>
+    </form>
+  </details>
+  {% endif %}
+  {% if enrollment_history %}<ul class="sp-items">{% for e in enrollment_history %}
+    <li><span><b>{{ e.level_name }}</b><small>{{ e.session_name or 'Session not specified' }} · started {{ e.enrolled_at or '—' }}{% if e.completed_at %} · finished {{ e.completed_at }}{% endif %}</small></span>
+      <span class="sp-items__end"><span class="ac-tag{{ ' ac-tag--good' if e.active }}">{{ 'Current' if e.active else 'Past' }}</span>{% if can_history %}<a class="ac-link" href="{{ url_for('admin_school_student_history_edit', sid=student.id, history_id=e.id) }}" data-modal>Correct</a>{% endif %}</span></li>{% endfor %}</ul>
+  {% else %}<div class="ac-empty"><strong>No school journey recorded</strong>Classes from before this school, or movements recorded by hand, show here.</div>{% endif %}
+</section>
+</div>
 <script nonce="{{ csp_nonce() }}">
 (function(){
-  var hashToModal={'#enrolment-history':'modal-enrolment-history','#academic-record':'modal-academic-record','#term-results':'modal-term-results'};
-  var id=hashToModal[window.location.hash];
-  if(id){var dlg=document.getElementById(id); if(dlg) dlg.showModal();}
+  var root=document.querySelector('[data-sp="{{ student.id }}"]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var key='sp-tab', map={'#enrolment-history':'journey','#academic-record':'marks','#term-results':'terms'};
+  function show(name){
+    root.querySelectorAll('[data-sp-tab]').forEach(function(b){ var on=b.dataset.spTab===name; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
+    root.querySelectorAll('[data-sp-panel]').forEach(function(p){ p.hidden=p.dataset.spPanel!==name; });
+    try{ sessionStorage.setItem(key,name); }catch(e){}
+  }
+  root.querySelectorAll('[data-sp-tab]').forEach(function(b){ b.addEventListener('click',function(){ show(b.dataset.spTab); }); });
+  // The tab you were on stays open when the student is shown again (after a save, or the next student).
+  var start=map[window.location.hash]; if(!start){ try{ start=sessionStorage.getItem(key); }catch(e){} }
+  show(root.querySelector('[data-sp-tab="'+start+'"]') ? start : 'profile');
 })();
 </script>
 {% endblock %}

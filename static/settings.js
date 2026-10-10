@@ -1,36 +1,40 @@
-/* Settings page: filter the rows as you type, and mark the section you are reading in the index. */
+/* Settings: "Find a setting" narrows the list on the left (and, on the overview, its cards) as you type.
+   The frame is drawn again with each page loaded in place, so this runs again for each; data-ready keeps it
+   from binding twice to the same box. */
 (function () {
   'use strict';
-  var app = document.getElementById('set-app');
+  var app = document.querySelector('[data-sx]');
   if (!app) { return; }
-  var filter = document.getElementById('set-filter');
-  var groups = [].slice.call(app.querySelectorAll('.set-group'));
-  var links = [].slice.call(app.querySelectorAll('.set-nav a'));
+  var box = app.querySelector('[data-sx-find]');
+  if (!box || box.hasAttribute('data-ready')) { return; }
+  box.setAttribute('data-ready', '');
 
-  filter.addEventListener('input', function () {
-    var needle = filter.value.trim().toLowerCase(), any = false;
-    groups.forEach(function (g) {
+  function filter() {
+    var needle = box.value.trim().toLowerCase(), any = false;
+    app.querySelectorAll('[data-sx-group]').forEach(function (group) {
       var shown = 0;
-      g.querySelectorAll('li[data-find]').forEach(function (li) {
-        var hit = !needle || li.dataset.find.indexOf(needle) !== -1;
-        li.hidden = !hit; if (hit) { shown++; }
+      group.querySelectorAll('[data-find]').forEach(function (item) {
+        var hit = !needle || item.getAttribute('data-find').indexOf(needle) !== -1;
+        item.hidden = !hit;
+        if (hit) { shown++; }
       });
-      g.hidden = shown === 0; if (shown) { any = true; }
-      var link = app.querySelector('.set-nav a[data-group="' + g.id.replace('set-', '') + '"]');
-      if (link) { link.parentNode.hidden = shown === 0; }
+      group.hidden = shown === 0;
+      if (shown) { any = true; }
     });
-    document.getElementById('set-none').hidden = any;
-    document.getElementById('set-none-q').textContent = filter.value.trim();
+    var none = app.querySelector('[data-sx-none]');
+    if (none) { none.hidden = any; }
+  }
+  box.addEventListener('input', filter);
+  // Enter opens the first setting still showing.
+  box.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') { return; }
+    e.preventDefault();
+    var first = app.querySelector('.sx-side li:not([hidden]) .sx-link');
+    if (first) { first.click(); }
   });
-
-  if ('IntersectionObserver' in window) {
-    var seen = {};
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
-      var first = groups.filter(function (g) { return !g.hidden && seen[g.id]; })[0];
-      if (!first) { return; }
-      links.forEach(function (a) { a.classList.toggle('is-on', a.getAttribute('href') === '#' + first.id); });
-    }, { rootMargin: '-10% 0px -70% 0px' });
-    groups.forEach(function (g) { io.observe(g); });
+  // The open entry stays in view in a long list.
+  var on = app.querySelector('.sx-link.is-on');
+  if (on && on.scrollIntoView && window.matchMedia('(max-width: 900px)').matches) {
+    on.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 })();

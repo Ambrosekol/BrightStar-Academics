@@ -1,0 +1,82 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Unallocated Payments' if view == 'unallocated' else 'Payments' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Every payment in one list: all of them, those not yet applied to a fee, those fully applied, or voided ones.
+   A payment opens in a pop-up with its receipt and everything that can be done with it - apply it to fees,
+   print or send it, void or refund it - so nobody has to move between pages to finish the job. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set base = {'view': view if view != 'all' else none, 'session_id': session_id, 'q': q or none, 'method': method or none} %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'payments' %}{% include 'includes/_finance_frame.html' %}
+
+{% if counts.unallocated %}
+<div class="fi-callout" role="status">
+  <span class="fi-callout__n">{{ counts.unallocated }}</span>
+  <span><strong>{{ counts.unallocated }} payment{{ '' if counts.unallocated == 1 else 's' }} not yet applied to a fee</strong>
+    {{ naira(totals.free) }} has been collected but nobody has said which fee it pays. Open a payment and choose <em>Apply to fees</em>; it leaves this list on its own once applied.</span>
+  {% if view != 'unallocated' %}<a class="ac-btn" href="{{ url_for('admin_finance_payments', **dict(base, view='unallocated')) }}">Show them</a>{% endif %}
+</div>
+{% endif %}
+
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_payments') }}" role="search">
+  {% if view != 'all' %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
+  <span class="ac-bar__label">Session</span>
+  <select class="ac-select" name="session_id" aria-label="Academic session" data-autosubmit>
+    <option value="">Every session</option>
+    {% for s in sessions %}<option value="{{ s.id }}" {% if s.id == session_id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}
+  </select>
+  {% if methods|length > 1 %}
+  <span class="ac-bar__label">Method</span>
+  <select class="ac-select" name="method" aria-label="Payment method" data-autosubmit>
+    <option value="">Any</option>{% for m in methods %}<option value="{{ m }}" {% if m == method %}selected{% endif %}>{{ m }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Student, admission no., receipt or payer" aria-label="Find a payment"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Which payments">
+    {% for key, label in views.items() %}<a href="{{ url_for('admin_finance_payments', **dict(base, view=key if key != 'all' else none)) }}" class="{{ 'is-active' if view == key }}"{% if view == key %} aria-current="true"{% endif %}>{{ label }} <small>{{ counts[key] }}</small></a>{% endfor %}
+  </nav>
+  <span class="ac-count">{{ naira(totals.amount) }} posted{% if own %} by you{% endif %}{% if totals.free %} · <b class="fi-owe">{{ naira(totals.free) }}</b> still to apply{% endif %}</span>
+</div>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t fi-paylist">
+    <thead><tr><th>Receipt</th><th>Student</th><th>Paid</th><th>Method</th><th class="n">Amount</th><th>Applied to fees</th><th></th></tr></thead>
+    <tbody>{% for p in rows %}<tr class="{{ 'is-voided' if p.state == 'voided' }}">
+      <td><a class="ac-title" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>{{ p.receipt_no }}</a><small>{{ p.category }}</small></td>
+      <td>{{ p.name }}<small>{{ p.admission_no }}{% if p.payer_name %} · from {{ p.payer_name }}{% endif %}</small></td>
+      <td>{{ p.paid_at[:10] if p.paid_at else '—' }}{% if p.paid_at and p.paid_at|length >= 16 %}<small>{{ p.paid_at[11:16] }}</small>{% endif %}</td>
+      <td><span class="ac-tag">{{ p.method }}</span></td>
+      <td class="n"><strong>{{ naira(p.amount) }}</strong></td>
+      <td>
+        {% if p.state == 'voided' %}<span class="ac-tag">Voided</span>
+        {% elif p.state == 'applied' %}<span class="ac-tag ac-tag--good">Fully applied</span>
+        {% else %}{% set pct = (100 * p.applied / p.amount)|round(0)|int if p.amount else 0 %}
+          <span class="fi-meter" data-tip="{{ naira(p.applied) }} applied, {{ naira(p.free) }} free"><span><i style="width:{{ pct }}%"></i></span><b class="fi-owe">{{ naira(p.free) }}</b>&nbsp;free</span>
+        {% endif %}
+      </td>
+      <td class="ac-actions">
+        {% if p.state == 'unallocated' %}<a class="ac-btn ac-btn--primary ac-btn--sm" href="{{ url_for('admin_finance_payment_allocate', payment_id=p.id) }}" data-modal>Apply to fees</a>{% endif %}
+        <a class="ac-link" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>Open</a>
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% if pages > 1 %}
+  <div class="fi-pager"><span>Showing {{ (page - 1) * 50 + 1 }}–{{ [page * 50, total_rows]|min }} of {{ total_rows }}</span>
+    <nav aria-label="Pages">{% for n in range(1, pages + 1) %}{% if n == page %}<span class="is-current">{{ n }}</span>{% else %}<a href="{{ url_for('admin_finance_payments', page=n, **base) }}">{{ n }}</a>{% endif %}{% endfor %}</nav></div>
+  {% endif %}
+  {% else %}
+  <div class="ac-empty">
+    {% if view == 'unallocated' %}<strong>Nothing waiting to be applied</strong>Every posted payment you can see has been applied to a fee.
+    {% elif q or method or session_id %}<strong>No payment matches</strong><a class="ac-link" href="{{ url_for('admin_finance_payments') }}">Show every payment</a>
+    {% else %}<strong>No payments recorded yet</strong>{% if admin_has_permission(current_admin['id'], 'finance.record') %}<a class="ac-link" href="{{ url_for('admin_finance_record') }}" data-modal>Record the first payment →</a>{% endif %}{% endif %}
+  </div>
+  {% endif %}
+</section>
+<div class="fi-tip" data-fi-tip role="tooltip" hidden></div>
+</div>
+{% include 'includes/_finance_tip.html' %}
+{% endblock %}

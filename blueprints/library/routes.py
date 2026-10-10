@@ -51,8 +51,30 @@ def admin_library():
         .outerjoin(Admin,and_(LibraryLoan.member_type=='staff',
                               Admin.id==LibraryLoan.member_id))
         .where(LibraryLoan.status=='borrowed')
-        .order_by(LibraryLoan.due_at,LibraryLoan.id.desc()).limit(30))]
-    return render_template('library_dashboard.html',books=books,borrowed=borrowed,overdue=overdue,q=q,status=status,students=students,staff=staff,loans=loans)
+        .order_by(LibraryLoan.due_at,LibraryLoan.id.desc()).limit(300))]
+    for loan in loans:
+        loan['days_over']=(datetime.fromisoformat(today)-datetime.fromisoformat(loan['due_at'][:10])).days if loan['due_at'] and loan['due_at'][:10]<today else 0
+    copies=sum(int(b.total_copies or 0) for b in books)
+    return render_template('library_dashboard.html',books=books,borrowed=borrowed,overdue=overdue,q=q,status=status,students=students,staff=staff,loans=loans,copies=copies,today=today)
+
+@app.get('/admin/library/books/new')
+@admin_required
+def admin_library_book_new_form():
+    """Adding a book: the form, usually in a pop-up over the library. It posts to admin_library_book_new."""
+    return render_template('library_book_form.html',book={'total_copies':1,'on_loan':0},errors=[],new=True)
+
+@app.get('/admin/library/issue')
+@admin_required
+def admin_library_issue_form():
+    """Lending a book: choose the book (or come with one chosen), who borrows it and for how long. Usually in a
+    pop-up over the library; it posts to admin_library_issue."""
+    books=db.session.scalars(select(LibraryBook).where(LibraryBook.active==1,LibraryBook.available_copies>0)
+                             .order_by(LibraryBook.title)).all()
+    students=all_rows(select(Student.id,Student.admission_no,Student.first_name,Student.middle_name,Student.last_name)
+                      .where(Student.active==1).order_by(Student.last_name,Student.first_name))
+    staff=all_rows(select(Admin.id,Admin.display_name,Admin.username).where(Admin.active==1).order_by(Admin.display_name))
+    return render_template('library_lend.html',books=books,students=students,staff=staff,
+                           book_id=request.args.get('book_id',type=int))
 
 @app.post('/admin/library/books/new')
 @admin_required

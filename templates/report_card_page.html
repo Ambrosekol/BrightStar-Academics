@@ -100,6 +100,7 @@
       <dt>Name</dt><dd>{{ card.student.name }}</dd>
       {% if card.student.admission_no %}<dt>Admission no.</dt><dd>{{ card.student.admission_no }}</dd>{% endif %}
       {% if card.student.class_name %}<dt>Class</dt><dd>{{ card.student.class_name }}</dd>{% endif %}
+      {% if card.student.department %}<dt>Department</dt><dd>{{ card.student.department }}</dd>{% endif %}
       {% if card.student.gender %}<dt>Gender</dt><dd>{{ card.student.gender }}</dd>{% endif %}
     </dl>
     {% if card.web.photo %}<img class="rc-photo" src="{{ card.web.photo }}" alt="{{ card.student.name }}">{% endif %}

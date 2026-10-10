@@ -25,6 +25,7 @@ from models import (
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _flatten
 from core.security import audit_log, csrf_protect
+from core.school_structure import class_is_early_years, student_department_filter
 from core.session_guard import refresh_password_stamp
 from blueprints.student_portal.helpers import (
     _student_assessment_context, _student_practice_context,
@@ -69,7 +70,8 @@ def student_dashboard():
     if not sid: return redirect(url_for('login'))
     # The helper already restricts to active students with an active account.
     student=_student_with_enrolment(sid)
-    if not student:
+    if not student or class_is_early_years(student['class_id']):
+        # Crèche and Nursery pupils do not use the portal; their parents do.
         _clear_identity_sessions(); return redirect(url_for('login'))
     if student['password_must_change']: return redirect(url_for('student_password_change'))
     _release_due_school_results()
@@ -121,6 +123,7 @@ def student_dashboard():
                    SchoolAssessment.question_count,SchoolSubject.name.label('subject_name'))
             .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
             .where(SchoolAssessment.class_id==student['class_id'],SchoolAssessment.active==1,
+                   student_department_filter(student,SchoolSubject.departments),
                    SchoolAssessment.question_count>0,SchoolAssessment.assessment_type!='practice',
                    or_(SchoolAssessment.session_id==student['session_id'],
                        SchoolAssessment.session_id.is_(None)))
@@ -284,6 +287,7 @@ def student_assessment_list(kind):
               .join(SchoolSubject,SchoolSubject.id==SchoolAssessment.subject_id)
               .where(SchoolAssessment.assessment_type==assessment_type,
                      SchoolAssessment.class_id==student['class_id'],
+                     student_department_filter(student,SchoolSubject.departments),
                      SchoolAssessment.active==1,SchoolAssessment.question_count>0))
         if assessment_type!='practice':
             # Practice is a standing question bank; tests and examinations belong to a session.

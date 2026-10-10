@@ -19,7 +19,7 @@ from flask import Response, abort, flash, jsonify, redirect, render_template, re
 from sqlalchemy import select
 
 from app import ACADEMIC_TERMS, _release_due_school_results, _school_current_session, app
-from blueprints.school.helpers import _school_class_allowed
+from blueprints.school.helpers import _class_teacher_allowed
 from blueprints.school.report_card_data import (
     HEAD_TITLES, MAX_COMMENT_LENGTH, SETTING_HEAD_NAME, SETTING_HEAD_SIGNATURE, SETTING_HEAD_TITLE,
     SETTING_NEXT_TERM, TRAIT_GROUPS, TRAIT_SCALE, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
@@ -43,7 +43,9 @@ def _my_classes():
     """The classes the signed-in staff member may work with, in class order."""
     me = current_admin()
     classes = db.session.scalars(select(SchoolClass).where(SchoolClass.active == 1).order_by(SchoolClass.level_order)).all()
-    return [c for c in classes if _school_class_allowed(me['id'], c.id)]
+    # Report cards are the class teacher's: a teacher who only teaches a subject in a class never opens
+    # its cards (they hold every subject's marks) or writes its comments.
+    return [c for c in classes if _class_teacher_allowed(me['id'], c.id)]
 
 
 def _sessions():
@@ -70,7 +72,7 @@ def _class_of(student_id, session_id):
 
 
 def _may_see(student_id, session_id):
-    """Whether the signed-in staff member may open this student's card: the class scope decides.
+    """Whether the signed-in staff member may open this student's card: the class teacher rule decides.
 
     A student or session this school does not have is never visible (so a number from another school is a 404)."""
     if db.session.get(Student, student_id) is None or db.session.get(AcademicSession, session_id) is None:
@@ -79,7 +81,7 @@ def _may_see(student_id, session_id):
     class_id = _class_of(student_id, session_id)
     if class_id is None:
         return bool(me['admin_type_system'])
-    return _school_class_allowed(me['id'], class_id)
+    return _class_teacher_allowed(me['id'], class_id)
 
 
 def _file_name(card):

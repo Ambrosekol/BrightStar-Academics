@@ -890,10 +890,10 @@ check("…and so does its page and its print page", "VOIDED" in op_alpha.text(f"
       and "VOIDED" in op_alpha.text(f"{FIN_URL}/receipts/{PV}/print"))
 check("…and the parent's copy", "VOIDED" in pdf_read(mum_obi.get(f"/parent/children/{ADA}/receipts/{PV}/pdf").data)["text"])
 clear_outbox()
-r, said = send(op_alpha, "email", PV)
+r, said = send(op_alpha, "email", PV, page="/admin/password")  # a voided payment offers no Send button: post directly
 check("a voided receipt is not emailed: a clear message, nothing sent, the attempt logged as failed",
       "voided" in said and not Outbox.mail and logs(alpha, PV, "email")[-1][0] == "failed")
-r, said = send(op_alpha, "sms", PV)
+r, said = send(op_alpha, "sms", PV, page="/admin/password")
 check("…nor texted", "voided" in said and not Outbox.sms and logs(alpha, PV, "sms")[-1][0] == "failed")
 check("a receipt that is not voided never says VOIDED", "VOIDED" not in pdf_of(op_alpha, PA)[1]["text"])
 

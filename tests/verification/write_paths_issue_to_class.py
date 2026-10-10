@@ -265,8 +265,8 @@ r = op.post(PROJECT_NEW, {"title": "Whole class project", "class_id": str(J1), "
 pissued = alpha.one("SELECT COUNT(*) FROM project_students p JOIN school_projects s ON s.id = p.project_id WHERE s.title = 'Whole class project'")
 check("a project issued to the whole class reaches every student enrolled in it", r.status_code == 302 and pissued == IN_CLASS, f"{pissued} of {IN_CLASS}")
 
-check("the assignments page shows the class's work as cards", 'class="wk-card"' in op.text(f"/admin/school/assignments?class={alpha.one('SELECT name FROM school_classes WHERE id = :c', c=J1)}"))
-check("the projects page shows the class's work as cards", 'class="wk-card"' in op.text(f"/admin/school/projects?class={alpha.one('SELECT name FROM school_classes WHERE id = :c', c=J1)}"))
+check("the assignments page lists the class's work", 'class="ac-row"' in op.text(f"/admin/school/assignments?class={alpha.one('SELECT name FROM school_classes WHERE id = :c', c=J1)}"))
+check("the projects page lists the class's work", 'class="ac-row"' in op.text(f"/admin/school/projects?class={alpha.one('SELECT name FROM school_classes WHERE id = :c', c=J1)}"))
 
 # ================================================================ no traceback, no server error
 check("no page in this run was a server error, and none showed a traceback", not PROBLEMS, "; ".join(PROBLEMS[:4]))

@@ -9,6 +9,7 @@ to some classes only ever sees, creates or releases entries for those classes.
 """
 
 import re
+from datetime import datetime
 
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from sqlalchemy import select
@@ -32,7 +33,7 @@ def _sessions():
 def _context():
     """The classes this staff member may work with, the sessions, the chosen session and term.
     Returns ``(classes, subjects, sessions, session_row, term)``."""
-    classes, subjects, _students = _assignment_form_data(current_admin()['id'])
+    classes, subjects, _students = _assignment_form_data(current_admin()['id'], online_work=False)
     sessions = _sessions()
     current = _school_current_session()
     wanted = request.values.get('session_id', type=int) or (current['id'] if current else None)
@@ -55,9 +56,58 @@ def admin_school_timetable():
     class_ids = [c.id for c in classes]
     rows = entry_rows(class_ids, session_row.id, term) if session_row else []
     draft_count = sum(1 for r in rows if not r['released'])
+    _mark_clashes(rows)
+    days = []
+    for r in rows:
+        if not days or days[-1]['date'] != r['date']:
+            days.append({'date': r['date'], 'label': _day_label(r['date']), 'rows': []})
+        days[-1]['rows'].append(r)
+    grid_classes = sorted({(r['class_id'], r['class_name']) for r in rows}, key=lambda c: next(
+        (i for i, k in enumerate(classes) if k.id == c[0]), 999))
     return render_template('admin_school_timetable.html', classes=classes, subjects=subjects, sessions=sessions,
                            terms=TERMS, session_row=session_row, term=term, rows=rows, exam_types=EXAM_TYPES,
-                           draft_count=draft_count)
+                           draft_count=draft_count, days=days, grid_classes=grid_classes,
+                           clash_count=sum(1 for r in rows if r['clashes']))
+
+
+def _minutes(hhmm):
+    try:
+        h, m = str(hhmm or '')[:5].split(':')
+        return int(h) * 60 + int(m)
+    except ValueError:
+        return None
+
+
+def _day_label(iso):
+    try:
+        return datetime.strptime(iso, '%Y-%m-%d').strftime('%A %d %B').replace(' 0', ' ')
+    except (TypeError, ValueError):
+        return iso
+
+
+def _mark_clashes(rows):
+    """Note on each entry what it overlaps on the same day: another paper for the same class, or another
+    paper in the same venue. A paper with no end time is taken to last an hour."""
+    for r in rows:
+        r['clashes'] = []
+    by_day = {}
+    for r in rows:
+        by_day.setdefault(r['date'], []).append(r)
+    for day_rows in by_day.values():
+        for i, a in enumerate(day_rows):
+            a0 = _minutes(a['start_time'])
+            a1 = _minutes(a['end_time']) or (a0 + 60 if a0 is not None else None)
+            for b in day_rows[i + 1:]:
+                b0 = _minutes(b['start_time'])
+                b1 = _minutes(b['end_time']) or (b0 + 60 if b0 is not None else None)
+                if None in (a0, a1, b0, b1) or not (a0 < b1 and b0 < a1):
+                    continue
+                if a['class_id'] == b['class_id']:
+                    a['clashes'].append(f"{a['class_name']} also sits {b['subject_name']} at {b['start_time']}")
+                    b['clashes'].append(f"{b['class_name']} also sits {a['subject_name']} at {a['start_time']}")
+                elif a['venue'] and a['venue'].lower() == b['venue'].lower():
+                    a['clashes'].append(f"{a['venue']} is also used by {b['class_name']} {b['subject_name']}")
+                    b['clashes'].append(f"{b['venue']} is also used by {a['class_name']} {a['subject_name']}")
 
 
 def _form_values():

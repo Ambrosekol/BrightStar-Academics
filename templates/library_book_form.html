@@ -1,10 +1,31 @@
 {% extends 'admin_base.html' %}
-{% block title %}Edit Library Book — {{ school_brand.name }}{% endblock %}
+{% block title %}{{ 'Add a Library Book' if new else 'Edit Library Book' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY / CATALOGUE</div><h1>Edit library book</h1><p class="hero-copy">Correct catalogue details or adjust the number of copies. Copies currently on loan cannot be removed from inventory.</p></div></div>
-<div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
-<form method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-<div class="form-grid two"><div class="field"><label>Title</label><input name="title" value="{{book.title}}" required></div><div class="field"><label>Author</label><input name="author" value="{{book.author or ''}}"></div><div class="field"><label>ISBN</label><input name="isbn" value="{{book.isbn or ''}}"></div><div class="field"><label>Publisher</label><input name="publisher" value="{{book.publisher or ''}}"></div><div class="field"><label>Category</label><input name="category" value="{{book.category or ''}}"></div><div class="field"><label>Shelf</label><input name="shelf" value="{{book.shelf or ''}}"></div><div class="field"><label>Publication year</label><input type="number" name="publication_year" min="0" value="{{book.publication_year or ''}}"></div><div class="field"><label>Total copies</label><input type="number" name="total_copies" min="0" value="{{book.total_copies}}" required><small>{{book.on_loan}} currently on loan.</small></div></div>
-<div class="form-actions"><button class="btn btn-primary" type="submit">Save book changes</button><a class="btn btn-light" href="{{url_for('admin_library')}}">Cancel</a></div>
-</form></div>
+{# Adding a book to the catalogue, or correcting one. Opens in a pop-up over the library; saving closes it and the
+   catalogue shows the change. Copies on loan can never be taken out of the count. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac st lb">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_library') }}">← Library</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">{{ 'New book' if new else 'Book' }}</span><h2>{{ 'Add a book' if new else book.title }}</h2>
+  <p>{{ 'Details can be corrected later without touching the loan history.' if new else book.on_loan ~ ' cop' ~ ('y' if book.on_loan == 1 else 'ies') ~ ' on loan now; the total cannot go below that.' }}</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" action="{{ url_for('admin_library_book_new') if new else request.path }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="ac-fields ac-fields--3">
+    <div class="ac-field ac-field--wide"><label for="lbTitle">Title</label><input id="lbTitle" name="title" value="{{ book.title or '' }}" required placeholder="e.g. Things Fall Apart"></div>
+    <div class="ac-field"><label for="lbAuthor">Author</label><input id="lbAuthor" name="author" value="{{ book.author or '' }}"></div>
+    <div class="ac-field"><label for="lbIsbn">ISBN</label><input id="lbIsbn" name="isbn" value="{{ book.isbn or '' }}"></div>
+    <div class="ac-field"><label for="lbPub">Publisher</label><input id="lbPub" name="publisher" value="{{ book.publisher or '' }}"></div>
+    <div class="ac-field"><label for="lbCat">Category</label><input id="lbCat" name="category" value="{{ book.category or '' }}" placeholder="e.g. Fiction, Science"></div>
+    <div class="ac-field"><label for="lbShelf">Shelf</label><input id="lbShelf" name="shelf" value="{{ book.shelf or '' }}" placeholder="e.g. F2"></div>
+    <div class="ac-field"><label for="lbYear">Year</label><input id="lbYear" type="number" name="publication_year" min="0" value="{{ book.publication_year or '' }}"></div>
+    {% if new %}<div class="ac-field"><label for="lbCopies">Copies</label><input id="lbCopies" type="number" name="copies" min="1" value="1" required></div>
+    {% else %}<div class="ac-field"><label for="lbTotal">Total copies</label><input id="lbTotal" type="number" name="total_copies" min="{{ book.on_loan }}" value="{{ book.total_copies }}" required><small>{{ book.on_loan }} on loan now.</small></div>{% endif %}
+  </div>
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_library') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">{{ 'Add the book' if new else 'Save changes' }}</button></div>
+</form>
+</div>
 {% endblock %}

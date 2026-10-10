@@ -1,0 +1,91 @@
+{% extends 'admin_base.html' %}
+{% block title %}Teachers — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Who teaches what: every class with its class teacher and subject teachers, and the gaps (a class with no class
+   teacher, a subject nobody teaches). Two views of the same thing, by class or by teacher; a teacher's duties open
+   in a pop-up (static/inplace.js) and saving refreshes this page. A teacher only reaches the classes, subjects and
+   (in SSS) departments given to them here. #}
+{% set no_ct = board|rejectattr('class_teachers')|list %}
+{% set untaught = board|map(attribute='untaught')|sum(start=[]) %}
+{% set no_duties = teachers|rejectattr('duties')|list %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<div class="ac st tc" data-tc>
+<header class="ac-top">
+  <h1>Teachers</h1>
+  <span class="ac-hint">Class teachers, subject teachers, and what nobody teaches yet. New staff and roles are under Settings.</span>
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Teachers</dt><dd>{{ teachers|length }}</dd><small>you can assign</small></div>
+  <div><dt>Classes</dt><dd>{{ board|length }}</dd><small>{{ board|length - no_ct|length }} with a class teacher</small></div>
+  <div class="{{ 'is-alert' if no_ct }}"><dt>No class teacher</dt><dd>{{ no_ct|length }}</dd><small>{{ no_ct|map(attribute='class.name')|join(', ') if no_ct else 'every class has one' }}</small></div>
+  <div class="{{ 'is-alert' if untaught }}"><dt>Subjects not taught</dt><dd>{{ untaught|length }}</dd><small>offered, but no subject teacher</small></div>
+  {% if no_duties %}<div><dt>No duties yet</dt><dd>{{ no_duties|length }}</dd><small>they can reach every class</small></div>{% endif %}
+</dl>
+
+<div class="fi-tools">
+  <div class="ac-seg" role="tablist" aria-label="View">
+    <label><input type="radio" name="tc-view" value="classes" checked><span>By class</span></label>
+    <label><input type="radio" name="tc-view" value="teachers"><span>By teacher</span></label>
+  </div>
+  <label class="ac-hint" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-tc-gaps> Only what needs a teacher</label>
+  <span class="ac-search" style="margin-left:auto"><input type="search" placeholder="Find a class, subject or teacher" aria-label="Find" data-tc-find></span>
+</div>
+
+<div data-tc-view="classes">
+  <div class="tc-grid">
+    {% for b in board %}
+    <section class="tc-class{{ ' has-gap' if not b.class_teachers or b.untaught }}" data-tc-item data-gap="{{ 1 if not b.class_teachers or b.untaught else 0 }}"
+             data-search="{{ (b.class.name ~ ' ' ~ b.class_teachers|join(' ') ~ ' ' ~ (b.subjects|map(attribute='name')|join(' ')) ~ ' ' ~ (b.subjects|map(attribute='teachers')|sum(start=[])|join(' ')) ~ ' ' ~ b.untaught|join(' '))|lower }}">
+      <header><h2>{{ b.class.name }}</h2><span class="ac-hint">{{ b.subjects|length }} taught{% if b.untaught %} · {{ b.untaught|length }} not{% endif %}</span></header>
+      <div class="tc-ct">{% if b.class_teachers %}<span class="tc-ct__label">Class teacher</span><b>{{ b.class_teachers|join(', ') }}</b>{% else %}<span class="ac-tag ac-tag--attn">Class teacher: Not assigned</span>{% endif %}</div>
+      {% if b.subjects %}<ul class="tc-subjects">{% for s in b.subjects %}<li><span>{{ s.name }}</span><b>{{ s.teachers|join(', ') }}</b></li>{% endfor %}</ul>{% endif %}
+      {% if b.untaught %}<p class="tc-untaught"><b>No subject teacher:</b> {{ b.untaught|join(', ') }}{% if b.class_teachers %} <small>(the class teacher covers these)</small>{% endif %}</p>{% endif %}
+    </section>
+    {% else %}
+    <div class="ac-empty"><strong>No classes yet</strong>Switch classes on under Classes first.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div data-tc-view="teachers" hidden>
+  <section class="ac-panel">
+    {% if teachers %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Teacher</th><th>Role</th><th>Duties</th><th></th></tr></thead>
+      <tbody>{% for t in teachers %}
+      <tr data-tc-item data-gap="{{ 0 if t.duties else 1 }}" data-search="{{ (t.name ~ ' ' ~ t.roles|join(' ') ~ ' ' ~ t.duties|join(' '))|lower }}">
+        <td><a class="st-who" href="{{ url_for('admin_school_teaching_edit', aid=t.id) }}" data-modal><span class="st-ava">{{ t.name[:1]|upper }}{{ (t.name.split()[-1] if t.name.split()|length > 1 else '')[:1]|upper }}</span><span><b>{{ t.name }}</b><small>{{ t.level }}</small></span></a></td>
+        <td>{{ t.roles|join(', ') or '—' }}</td>
+        <td><span class="pe-kids">{% for d in t.duties %}<span class="fi-chip fi-chip--type">{{ d }}</span>{% else %}<span class="ac-tag ac-tag--attn">No duties yet</span>{% endfor %}</span></td>
+        <td class="ac-actions"><a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_teaching_edit', aid=t.id) }}" data-modal>Change duties</a></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty"><strong>No teachers you can assign yet</strong>Give a member of staff the Class Teacher or Subject Teacher role on their staff record first.</div>
+    {% endif %}
+  </section>
+</div>
+<div class="ac-empty" data-tc-none hidden><strong>Nothing matches</strong>Clear the search, or untick “Only what needs a teacher”.</div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-tc]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var gaps=root.querySelector('[data-tc-gaps]'), find=root.querySelector('[data-tc-find]'), none=root.querySelector('[data-tc-none]');
+  var radios=root.querySelectorAll('input[name=tc-view]'), view='classes';
+  function apply(){
+    var q=(find.value||'').trim().toLowerCase(), n=0;
+    root.querySelectorAll('[data-tc-view]').forEach(function(p){ p.hidden=p.dataset.tcView!==view; });
+    root.querySelectorAll('[data-tc-view="'+view+'"] [data-tc-item]').forEach(function(el){
+      var ok=(!gaps.checked||el.dataset.gap==='1')&&(!q||el.dataset.search.indexOf(q)!==-1); el.hidden=!ok; if(ok) n++; });
+    none.hidden=n!==0;
+    try{ sessionStorage.setItem('tc-view',view); }catch(e){}
+  }
+  radios.forEach(function(r){ r.addEventListener('change',function(){ view=r.value; apply(); }); });
+  try{ var saved=sessionStorage.getItem('tc-view'); if(saved==='teachers'){ view=saved; radios.forEach(function(r){ r.checked=r.value===view; }); } }catch(e){}
+  gaps.addEventListener('change',apply); find.addEventListener('input',apply); apply();
+})();
+</script>
+{% endblock %}

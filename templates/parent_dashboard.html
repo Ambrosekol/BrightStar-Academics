@@ -43,8 +43,10 @@
         </span>
         <span class="pp-facts">
           <span class="pp-fact{% if owed > 0.005 %} is-owing{% endif %}"><small>Fees</small><b>{% if owed > 0.005 %}₦{{ '{:,.0f}'.format(owed) }}{% else %}Paid{% endif %}</b></span>
+          {% if not item.early_years %}
           <span class="pp-fact"><small>Average</small><b>{{ item.avg ~ '%' if item.avg is not none else '—' }}</b></span>
           <span class="pp-fact"><small>Completion</small><b>{{ item.completion ~ '%' if item.completion is not none else '—' }}</b></span>
+          {% endif %}
         </span>
         <span class="pp-actions">
           <a class="ui-btn ui-btn--primary ui-btn--sm" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile</a>

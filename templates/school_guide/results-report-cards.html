@@ -3,15 +3,41 @@
 <p>A mark goes through the same journey everywhere it comes from — a test, an assignment, a manually
 entered score — before it ever reaches a student or parent.</p>
 
-<h2 id="workflow">Entered, verified, approved, released</h2>
-<p>Under <a href="{{ url_for('admin_school_results') }}">Results &amp; Records</a>, a result moves
-through four stages: entered, verified, approved, released. Only <strong>released</strong> results
+<h2 id="workflow">Recorded, sent to the class teacher, released</h2>
+<p>Under <strong>Academics → <a href="{{ url_for('admin_school_results') }}">Results</a></strong>, pick a class; its
+students are listed on the left, and choosing one shows their sessions and terms on the right, each with how many
+results are released. Choosing a term lists that term's marks with the step each is waiting for. The work is shared
+out the way a school does it:</p>
+<ol>
+  <li>The <strong>subject teacher</strong> records the scores (<em>Enter offline result</em>), then sends them to the
+  class teacher: <strong>Send to class teacher</strong> on one mark, <strong>Send all to class teacher</strong> on a
+  student's term, or <strong>Send all my results for this class</strong> from the class's student list. The marks are
+  then <em>ready to release</em>. A subject teacher only ever sees their own subjects, and in SSS only the students of
+  the departments they teach.</li>
+  <li>The <strong>class teacher</strong> sees every subject of their class, and releases the term to the student and
+  parents. A mark that looks wrong can be <strong>sent back</strong> to its subject teacher to correct and send again.
+  Only the class teacher of a class (or a head teacher, or the School Admin) can release it.</li>
+  <li>The <strong>head teacher</strong> can do all of this for any class, and sets the whole school's release date.</li>
+</ol>
+<p>Behind the scenes a result still moves through four stages: recorded (entered), checked (verified), ready to release
+(approved) and released, and a head teacher can use the separate check and approve steps if the school wants a mark
+looked at twice. Only <strong>released</strong> results
 count toward a student's official term result and their report card; the earlier stages let more than
 one person check a mark before it becomes visible to anyone outside staff. Opening a student's own
 term has one button that releases every subject of it at once, instead of one at a time; going the
 other way, <strong>Release the whole class's term at once</strong> (from the students list, before
 you pick one) previews exactly who is ready — how many subjects, how many already released, how many
 still waiting — before releasing everyone who actually has something approved, in one step.</p>
+
+<h2 id="entering">Entering offline scores</h2>
+<p><strong>Enter offline scores</strong> (the button on Results, or <a href="{{ url_for('admin_school_result_manual_new') }}">this
+page</a>) is for marks from paper tests and exams, and is made for working down a whole class. Choose the session, term
+and subject at the top and a class below; the class's students are listed on the left with the score each already has
+in that subject (only the students who take it, in SSS), and a bar shows how many are done. Choose a student, say
+whether they took the Test (or why they missed it), and type the Test and Exam scores; the percentage shows as you type.
+<strong>Save and next</strong> moves straight to the next student without a score and keeps the same maxima. A subject
+the class does not have yet can be created from the same bar. When the class is done, send the marks to the class
+teacher from Results.</p>
 
 <h2 id="term-result">How a term result is worked out</h2>
 <p>Each subject's term result is Continuous Assessment (test, assignment and project, out of 40
@@ -20,6 +46,9 @@ stops counting; the arithmetic is worked out fresh every time it is needed, from
 themselves, so it can never disagree with what is actually on record.</p>
 
 <h2 id="cards">Report cards</h2>
+<p>Report cards opens with the class chips across the top and the session and term beside them; choosing a class loads its students in place. Each student's comment and trait ratings are written in a small pop-up without leaving the page. <strong>View</strong> and <strong>PDF</strong> open the card in a new tab, ready to print, and a student's name opens their own pop-up.</p>
+<p>For a student in SSS 1 to 3, the report card also shows their <strong>department</strong> (Science, Art or
+Commercial), beside their class.</p>
 <p>A student's report card for a term appears — to the student, a linked parent, and staff — the
 moment <strong>every</strong> one of that student's results for the term has been released, whether by
 hand or by a session's own release date. One result still waiting holds the whole card back. It shows

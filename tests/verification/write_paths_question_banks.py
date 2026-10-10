@@ -523,10 +523,11 @@ with c_c.session_transaction(base_url=u_c) as sess:
     sess["_csrf_token"] = "t" * 32
 files_before = folder_state("alpha")
 r = c_c.get("/admin/banks/import", base_url=u_c)
+# Without any entrance permission the clerk has no Entrance workspace at all: they are sent to the school portal.
 check("an administrator without the permission cannot open the import page",
-      r.status_code == 403 and "Import bank" not in text_of(r), str(r.status_code))
+      r.status_code in (302, 403) and "Import bank" not in text_of(r), str(r.status_code))
 r = post_import(c_c, u_c, good_bank("clerk_bank"), token="t" * 32)
-check("…nor import, even with a valid form token", r.status_code == 403 and folder_state("alpha") == files_before, str(r.status_code))
+check("…nor import, even with a valid form token", r.status_code in (302, 403) and folder_state("alpha") == files_before, str(r.status_code))
 check("…and the bank list does not offer the import button to them",
       "Import from file" not in text_of(c_c.get("/admin/banks", base_url=u_c)))
 
@@ -543,6 +544,8 @@ check("the import page does not exist on the platform host",
       c_pl.get("/admin/banks/import", base_url=u_pl).status_code == 404)
 
 grant(role_id, "question_banks.create")
+# Being granted an entrance permission gives them the Entrance workspace.
+c_c.get("/admin/workspace/entrance", base_url=u_c)
 r = c_c.get("/admin/banks/import", base_url=u_c)
 check("once a role is granted question_banks.create, its holders can open the page",
       r.status_code == 200 and "Import bank" in text_of(r))
@@ -581,7 +584,9 @@ check("…and each replacement is logged as one", any(u == "alpha_admin" and t =
       and any(u == "clerk" and t == "clerk_bank" for u, t, _ in replaced), str(replaced))
 denied = in_school("alpha", lambda: A.db.session.scalars(sa.select(AuditLog).where(
     AuditLog.action == "authorization_denied", AuditLog.username_snapshot == "clerk")).all())
-check("a refused attempt is logged too", any("question_banks.create" in (d.details or "") for d in denied))
+# (Without any entrance permission the clerk is turned away at the workspace; that refusal is logged with the
+# permission the page needs.)
+check("a refused attempt is logged too", any("question_banks.create" in (d.details or "") for d in denied), str([d.details for d in denied]))
 check("no other school's audit log has alpha's imports",
       in_school("gamma", lambda: [a for a in A.db.session.scalars(sa.select(AuditLog).where(
           AuditLog.target_id == "clerk_bank")).all()]) == [])

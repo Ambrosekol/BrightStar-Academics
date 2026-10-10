@@ -1,0 +1,19 @@
+{# The Students frame: the current register and the archived students, switched by the tabs below, in the same
+   look as Academics and in the school's own colours (static/academics.css, static/students.css). Set students_tab
+   before including it. Registering a student opens in a pop-up; everything else loads in place (static/inplace.js). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<header class="ac-top">
+  <h1>Students</h1>
+  <nav class="ac-tabs" aria-label="Student lists">
+    <a href="{{ url_for('admin_school_students') }}" class="{{ 'is-active' if students_tab == 'current' }}"{% if students_tab == 'current' %} aria-current="page"{% endif %}>Current students</a>
+    {% if is_school_admin %}<a href="{{ url_for('admin_school_students_archived') }}" class="{{ 'is-active' if students_tab == 'archived' }}"{% if students_tab == 'archived' %} aria-current="page"{% endif %}>Archived <small class="st-count">{{ archived_count }}</small></a>{% endif %}
+  </nav>
+  {% if current_admin and admin_has_permission(current_admin['id'], 'school.students.create') %}
+  <div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('admin_school_students_import') }}">Import from a spreadsheet</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_student_new') }}" data-modal>+ Register a student</a>
+  </div>
+  {% endif %}
+</header>

@@ -321,20 +321,40 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
     scrollbar-color: var(--line-strong) transparent;
 }
 
-.rail-section { margin: 0 var(--sp-3); }
-.rail-section + .rail-section { margin-top: var(--sp-2); border-top: var(--border); }
+/* Groups: Overview and Messages on top with no heading, then People, Teaching, Finance, Resources. Open, each
+   group has a small heading; narrow, the heading folds into a short hairline so the icons stay grouped. */
+.rail-section { margin: 0 var(--sp-2); }
+/* Each group starts with a hairline across the menu, so the groups read apart at a glance, open or narrow. */
+.rail-section + .rail-section { margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 1px solid var(--line-strong); }
 .rail-section__label {
+    position: relative;
     display: flex;
     align-items: center;
-    height: 26px;
+    height: 24px;
     padding: 0 var(--sp-3);
     color: var(--ink-3);
     font-size: var(--fs-xs);
     font-weight: 600;
-    letter-spacing: .07em;
+    letter-spacing: .08em;
     text-transform: uppercase;
     white-space: nowrap;
+    transition: height var(--dur) var(--ease), opacity .1s ease;
 }
+.rail-section__label::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 24px;
+    height: 1px;
+    background: var(--line-strong);
+    opacity: 1;
+    transition: opacity .1s ease;
+}
+.rail.is-open .rail-section__label::after,
+html[data-rail="pinned"] .rail .rail-section__label::after { opacity: 0; }
+.rail:not(.is-open) .rail-section__label { height: 13px; }
+html[data-rail="pinned"] .rail .rail-section__label { height: 24px; }
 .rail-list { margin: 0; padding: 0; list-style: none; }
 
 .rail-link {
@@ -342,14 +362,14 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 38px;
+    min-height: 34px;
     margin: 1px 0;
     padding: 0;
     border: 0;
     border-radius: var(--radius);
     background: none;
     color: var(--ink-2);
-    font: 500 14px/1.25 var(--font-ui);
+    font: 500 13.5px/1.25 var(--font-ui);
     text-align: left;
     text-decoration: none;
     cursor: pointer;
@@ -360,8 +380,10 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
     flex: none;
     place-items: center;
     width: 40px;
-    height: 38px;
+    height: 34px;
+    color: var(--ink-3);
 }
+.rail-link:hover .rail-ico { color: var(--ink-2); }
 .rail-label { min-width: 0; padding-right: var(--sp-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-link--sub .rail-label { font-size: var(--fs-sm); }
 
@@ -384,9 +406,9 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
 .rail-link.active::after {
     content: "";
     position: absolute;
-    top: 6px;
-    bottom: 6px;
-    left: calc(-1 * var(--sp-3));
+    top: 7px;
+    bottom: 7px;
+    left: calc(-1 * var(--sp-2));
     width: 3px;
     border-radius: 0 3px 3px 0;
     background: var(--brand);
@@ -452,7 +474,11 @@ html:not(.js) .rail:focus-within .rail-label { opacity: 1; transition-delay: .07
 .rail.is-open .rail-dot,
 html[data-rail="pinned"] .rail .rail-dot { visibility: hidden; }
 
-.rail-foot { flex: none; padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: var(--border); }
+.rail-foot { flex: none; padding: var(--sp-1) var(--sp-2) var(--sp-2); border-top: var(--border); }
+.rail-list--foot { padding-bottom: var(--sp-1); margin-bottom: var(--sp-1); border-bottom: var(--border); }
+.rail-list--foot .rail-link { min-height: 32px; font-size: 13px; }
+.rail-list--foot .rail-ico { height: 32px; }
+.rail-foot .rail-person { padding-left: 0; }
 .rail-person { display: flex; align-items: center; min-height: 48px; }
 .rail-person__ava { display: grid; flex: none; place-items: center; width: 40px; height: 40px; }
 .rail-avatar {
@@ -725,6 +751,8 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
     html.js .rail .rail-section__label,
     html.js .rail .rail-brand__text,
     html.js .rail .rail-person__copy { opacity: 1; }
+    html .rail .rail-section__label { height: 24px; }
+    html .rail .rail-section__label::after { opacity: 0; }
     html.js .rail .rail-dot { visibility: hidden; }
     html.js .rail .rail-pin { display: none; }
     html.js .rail-edge { display: none; }
@@ -1321,3 +1349,38 @@ a.wd-online:hover { background: var(--surface-1); }
     .guide-shell { grid-template-columns: 1fr; }
     .guide-nav, .guide-toc { position: static; }
 }
+
+
+/* ---------- 4c. Loading in place (static/inplace.js) ------------------------------------------
+   Every page that loads in place shows the same thing while the next view is on its way: the current view stays,
+   dimmed, under a spinner in the school's accent; a pop-up does the same inside itself; the button that was pressed
+   spins until the answer arrives. Kept here, with the shell, so it shows on every page whatever else it loads. */
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+[data-page-body] { position: relative; transition: opacity .12s ease; }
+[data-page-body].is-loading { opacity: .55; pointer-events: none; }
+[data-page-body].is-loading::after,
+.ac-modal__body.is-loading::after {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 60;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    border: 3px solid color-mix(in srgb, var(--brand-accent) 18%, var(--surface-0));
+    border-top-color: var(--brand-accent);
+    border-radius: 50%;
+    animation: ui-spin .7s linear infinite;
+}
+.ac-modal__body.is-loading { opacity: .6; pointer-events: none; }
+.ac-modal__body.is-loading::after { position: absolute; top: 50%; }
+.ac-modal__wait { width: 26px; height: 26px; margin: 40px auto; border: 3px solid color-mix(in srgb, var(--brand-accent) 18%, var(--surface-0)); border-top-color: var(--brand-accent); border-radius: 50%; animation: ui-spin .7s linear infinite; }
+[data-inplace-busy].is-busy { pointer-events: none; opacity: .85; }
+[data-inplace-busy].is-busy::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ui-spin .7s linear infinite; }
+@media (prefers-reduced-motion: reduce) { [data-page-body].is-loading::after, .ac-modal__body.is-loading::after, .ac-modal__wait, [data-inplace-busy].is-busy::before { animation-duration: 2s; } }
+
+/* A pop-up opened on top of another sits a little lower and narrower, so the one beneath stays in view. */
+dialog.ac-modal ~ dialog.ac-modal { margin-top: 7vh; max-height: calc(100vh - 7vh - 24px); }
+dialog.ac-modal ~ dialog.ac-modal[data-size="wide"] { width: min(1040px, calc(100vw - 88px)); }
+dialog.ac-modal ~ dialog.ac-modal::backdrop { background: color-mix(in srgb, var(--brand) 22%, transparent); }

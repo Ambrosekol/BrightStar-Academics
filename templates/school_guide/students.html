@@ -5,16 +5,26 @@
 once — and it always starts on a one-time password the student must replace at first sign-in.</p>
 
 <h2 id="list">The students list</h2>
-<p><a href="{{ url_for('admin_school_students') }}">Students</a> is the full list of everyone
-currently enrolled, searchable by name or admission number and filterable by class. Clicking a name
-opens that one student's own page: their details, their class history, their results so far, and
-buttons to edit them, print their account slip, or reset their password.</p>
+<p><a href="{{ url_for('admin_school_students') }}">Students</a> opens on every class at a glance: how many
+students each has, boys and girls, and how many can sign in to the student portal, with a count of anyone not
+placed in a class this session. Choose a class with the chips at the top (or a row of the table) and its register
+loads in place; the search box finds a student in that class, or in any class when none is chosen.</p>
+<p>Clicking a student opens them in a pop-up over the register: their class, department and admission number at
+the top, four figures (term results, overall mark, assignments, projects), and one tab at a time for their
+<strong>Profile</strong> (personal details, parent or guardian, and their portal login), <strong>Term results</strong>,
+<strong>Every mark</strong>, <strong>Assignments</strong>, <strong>Projects</strong> and <strong>School journey</strong>.
+<strong>Edit record</strong>, <strong>Fee account</strong>, a new password, and <em>Correct</em> on a journey entry open in
+a second pop-up on top; saving there brings you back to the student, up to date. Close a pop-up with ×, Escape or a
+click outside it.</p>
 
 <h2 id="one-at-a-time">Registering one student</h2>
-<p><a href="{{ url_for('admin_school_student_new') }}">Register Student</a> creates the student
+<p><a href="{{ url_for('admin_school_student_new') }}">+ Register a student</a> opens in a pop-up and creates the student
 record, enrols them in the class and session you choose, and generates their admission number and
 login in one step. The admission number is always generated from your school's own numbering rules —
 nobody types one in by hand, so it can never clash with another student's.</p>
+<p>For a student in SSS 1 to 3, the form also asks for their <strong>department</strong> (Science, Art or Commercial).
+It can be left as <em>Not chosen yet</em> and filled in later; until then the student is treated as taking every
+subject of their class, so nothing is hidden from them.</p>
 
 <h2 id="bulk">Bringing in new students at once</h2>
 <p>Use <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> from the Students page to
@@ -56,9 +66,8 @@ Required columns: <code>admission_no</code>, <code>level</code>, <code>session</
 deactivate students. The bulk-import permission covers both (see <em>Roles, permissions and scope</em>).</p>
 
 <h2 id="account">A student's account afterwards</h2>
-<p>From a student's own page you can edit their details, deactivate them (which also switches their
-login off), reset their password to a new one-time password, or switch their login on or off without
-touching anything else about their record. Enrolment history — previous schools, earlier levels — is
+<p>From a student's pop-up you can edit their details, reset their password to a new one-time password (shown once,
+with a button to print it), or turn their sign-in off or on without touching anything else about their record. Enrolment history — previous schools, earlier levels — is
 kept separately and can be corrected with a reason if it was entered wrong.</p>
 
 <h2 id="archive">Archiving a student who has left</h2>
@@ -69,14 +78,15 @@ record and takes them out of everything current:</p>
   <li>their sign-in stops working straight away, including a session that is already open;</li>
   <li>their results, report cards and fee history stay on file.</li>
 </ul>
-<p>To archive one student, open their page and use <em>Archive student</em>. To archive several, tick them in the
-class register and use <em>Archive selected</em>. You can give a reason, such as "Left the school" or "Transferred
+<p>To archive one student, open them and use <em>Archive this student</em> at the foot of their Profile. To archive
+several, tick them in the class register; a bar appears with a box for the reason and <em>Archive selected</em>. You can give a reason, such as "Left the school" or "Transferred
 out". Archiving needs the permission to deactivate students, and it applies only to students in your own classes.</p>
 <p>A graduate is archived automatically when a history import records their graduating year (see step 2 above).</p>
 <p>Archived students are kept in <a href="{{ url_for('admin_school_students_archived') }}">Archived students</a>,
-which only a School Admin can open. Each archived student has a record you can read: their class placements, their
-school journey, and their results by term. A School Admin can <em>restore</em> someone from that list, which puts
-them back in their class register and turns their sign-in back on.</p>
+which only a School Admin can open. Each archived student opens in the same pop-up as everyone else, marked as
+archived, with their results and school journey. A School Admin can <em>restore</em> one from that pop-up, or tick
+several in the list and use <em>Restore selected</em>; it puts them back in their class register and turns their
+sign-in back on.</p>
 <div class="guide-tip">Parents keep access to an archived child. The child's record, results and fee account stay on
 the parent's portal, and only the child's own sign-in stops.</div>
 <div class="guide-tip">Deactivating a student hides them without marking them as having left. The deactivate switch

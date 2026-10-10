@@ -1,0 +1,32 @@
+{# Narrows a work form's Subject list to what this person teaches in the chosen Class (core/security.py,
+   subject_reach): a subject teacher of Mathematics in JSS 1 and Physics in SSS 1 sees only Mathematics for
+   JSS 1. A class teacher sees every subject of their own class. Nothing changes for anyone without teaching
+   duties. The server checks the same pairing on save; this only keeps impossible choices out of the list. #}
+{% set reach = subject_reach() %}
+{% if reach %}
+<script type="application/json" id="subjectReach" nonce="{{ csp_nonce() }}">{{ {'by': reach[0], 'every': reach[1]}|tojson }}</script>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var data=JSON.parse(document.getElementById('subjectReach').textContent), by={};
+  Object.keys(data.by).forEach(function(sid){ by[sid]=data.by[sid].map(String); });
+  var every=data.every.map(String);
+  Array.prototype.forEach.call(document.querySelectorAll('form'),function(form){
+    var cls=form.querySelector('select[name=class_id]'), subj=form.querySelector('select[name=subject_id]');
+    if(!cls||!subj) return;
+    function sync(){
+      var c=cls.value, allowed=0, only=null;
+      Array.prototype.forEach.call(subj.options,function(o){
+        if(!o.value) return;
+        var ok=!c || every.indexOf(c)>-1 || (by[o.value]||[]).indexOf(c)>-1;
+        o.hidden=!ok; o.disabled=!ok;
+        if(ok){ allowed++; only=o; }
+        if(!ok && o.selected) subj.value='';
+      });
+      if(c && allowed===1 && !subj.value) only.selected=true;   // one subject in this class: pick it
+      subj.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    cls.addEventListener('change',sync); sync();
+  });
+})();
+</script>
+{% endif %}

@@ -1,1 +1,25 @@
-{% extends 'admin_base.html' %}{% block title %}Parent Credentials — {{ school_brand.name }}{% endblock %}{% block content %}<div class="page-hero"><div><div class="eyebrow">PARENT ACCOUNT</div><h1>{{'Password regenerated' if reset else 'Parent account ready'}}</h1><p class="hero-copy">{{'The previous password is no longer valid. Give the new temporary password to the parent securely.' if reset else 'Give these credentials to the parent securely. The temporary password is shown only on this confirmation page.'}}</p></div></div><div class="card" style="padding:28px;max-width:720px"><p><strong>Name:</strong> {{parent.display_name}}</p><p><strong>Username:</strong> {{parent.username}}</p><p><strong>Temporary password:</strong> <code>{{password}}</code></p><p class="muted">The parent must change this temporary password after first sign-in.</p><div class="form-actions"><a class="btn btn-primary" href="{{url_for('admin_school_parent_edit',pid=parent.id)}}">Manage parent</a><a class="btn btn-light" href="{{url_for('admin_school_parents')}}">Back to parent accounts</a></div></div>{% endblock %}
+{% extends 'admin_base.html' %}
+{% block title %}Parent Credentials — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# A parent's sign-in details, shown once: after adding them, or after making them a new password. Usually in the
+   pop-up the form was in. The password is never stored readable, so this is the only time it can be seen. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac st pe" data-modal-scope="{{ url_for('admin_school_parent_edit', pid=parent.id) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<style>.pe-print{display:none}@media print{body *{visibility:hidden}.pe-print,.pe-print *{visibility:visible}.pe-print{display:block;position:fixed;inset:0;padding:24px;background:#fff}}</style>
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_parents') }}">← Parents</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">{{ 'New password' if reset else 'Parent added' }}</span>
+  <h2>{{ parent.display_name }}</h2>
+  <p>{{ 'Their old password no longer works.' if reset else 'Their parent-portal account is ready.' }} The password below is shown only now and is not stored.</p></div>
+<div class="sp-cred"><div><span>Username</span><strong>{{ parent.username }}</strong></div><div><span>Temporary password</span><strong><code>{{ password }}</code></strong></div><div><span>Signs in at</span><strong style="font-family:inherit;font-size:13px">Parent portal</strong></div></div>
+<p class="fi-callout fi-callout--quiet" style="margin:0 0 10px">Give these to the parent privately. They are asked to choose their own password the first time they sign in.</p>
+<div class="ac-form-foot"><span class="ac-grow"></span>
+  <button type="button" class="ac-btn" data-print>Print sign-in details</button>
+  <a class="ac-btn" href="{{ url_for('admin_school_parent_edit', pid=parent.id) }}"{% if modal %} data-modal="replace"{% endif %}>Manage this parent</a>
+  {% if modal %}<button type="button" class="ac-btn ac-btn--primary" data-modal-dismiss>Done</button>{% else %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_parents') }}">Back to parents</a>{% endif %}
+</div>
+<section class="pe-print" aria-hidden="true"><p>{{ school_brand.name }} · Parent portal</p><h1>Parent sign-in details</h1>
+  <p>Name: <strong>{{ parent.display_name }}</strong></p><p>Username: <strong>{{ parent.username }}</strong><br>Temporary password: <strong>{{ password }}</strong></p>
+  <p>You must change this temporary password the first time you sign in. Keep these details private.</p></section>
+</div>
+{% endblock %}

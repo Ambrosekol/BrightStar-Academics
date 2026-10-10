@@ -1,46 +1,30 @@
 {% extends "admin_base.html" %}
-{% block title %}Live Presence — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_initials.html' import initials %}
+{% block title %}Online now — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-.presence-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:22px}
-.presence-kpi{padding:18px}
-.presence-kpi-label{display:block;font-size:12px;font-weight:800;color:#637b91;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.presence-kpi-value{font-size:28px;font-weight:800;color:#102f3e}
-.presence-table{width:100%;border-collapse:collapse}
-.presence-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#637b91;padding:10px 14px;border-bottom:1px solid #e2e9ef}
-.presence-table td{padding:10px 14px;border-bottom:1px solid #eef2f6;font-size:13px;color:#102f3e}
-.presence-badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#eef2f6;color:#334a5e;border:1px solid #dce6ee;text-transform:capitalize}
-.presence-empty{padding:28px;text-align:center;color:#637b91}
-@media (max-width:720px){.presence-kpis{grid-template-columns:1fr}}
-</style>
-<div class="page-hero"><div><div class="eyebrow">LIVE PRESENCE</div><h1>Online now</h1><p class="hero-copy">Online status is based on recent server activity and automatically expires after inactivity.</p></div></div>
-
-<div class="presence-kpis">
-  <div class="card presence-kpi"><span class="presence-kpi-label">Administrators online</span><span class="presence-kpi-value">{{ counts.admins }}</span></div>
-  <div class="card presence-kpi"><span class="presence-kpi-label">Students online</span><span class="presence-kpi-value">{{ counts.students }}</span></div>
-  <div class="card presence-kpi"><span class="presence-kpi-label">Parents online</span><span class="presence-kpi-value">{{ counts.parents }}</span></div>
+{# Who is signed in right now, inside Settings. "Online" means active in the last few minutes; it lapses on its own. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<div class="on-k">
+  <div><span class="on-pulse"></span><div><strong>{{ counts.admins }}</strong><span>staff online</span></div></div>
+  <div><span class="on-pulse"></span><div><strong>{{ counts.students }}</strong><span>students online</span></div></div>
+  <div><span class="on-pulse"></span><div><strong>{{ counts.parents }}</strong><span>parents online</span></div></div>
 </div>
-
-<div class="card" style="padding:0;overflow:hidden">
-  {% if rows %}
-  <table class="presence-table">
-    <thead>
-      <tr><th>Account</th><th>Name</th><th>Identifier</th><th>Class</th><th>Last seen (WAT)</th></tr>
-    </thead>
-    <tbody>
-      {% for r in rows %}
-      <tr>
-        <td><span class="presence-badge">{{ r.account_type }}</span></td>
-        <td>{{ r.display_name or '—' }}</td>
-        <td>{{ r.identifier or '—' }}</td>
-        <td>{{ r.class_name or '—' }}</td>
-        <td>{{ r.last_seen_wat }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="presence-empty">Nobody is currently online.</div>
-  {% endif %}
+<div class="lg-tools">
+  <p class="sf-how" style="margin:0">Counted from activity in the last few minutes. Someone who stops using the portal drops off on their own.</p>
+  <a class="btn btn-light btn-small" style="margin-left:auto" href="{{ url_for('admin_presence') }}">{{ icon('set-history', 'ico-sm') }} Refresh</a>
 </div>
+{% if rows %}
+<div class="on-list">
+  {% for r in rows %}
+  <div class="on-row">
+    <span class="adm-avatar" aria-hidden="true">{{ initials(r.display_name or r.identifier) }}</span>
+    <div><strong>{{ r.display_name or '—' }}</strong><small>{{ r.identifier or '' }}{% if r.class_name %} · {{ r.class_name }}{% endif %} · seen {{ r.last_seen_wat[11:16] if r.last_seen_wat|length > 15 else r.last_seen_wat }} WAT</small></div>
+    <span class="on-type is-{{ r.account_type }}">{{ 'staff' if r.account_type == 'admin' else r.account_type }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="adm-empty"><strong>Nobody is signed in right now.</strong></div>
+{% endif %}
 {% endblock %}

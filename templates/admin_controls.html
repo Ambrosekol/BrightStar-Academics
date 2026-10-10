@@ -1,1 +1,81 @@
-{% extends 'admin_base.html' %}{% block title %}Controls &amp; Alerts — {{ school_brand.name }}{% endblock %}{% block content %}<div class="page-hero"><div><div class="eyebrow">ADMINISTRATION / NOTIFICATIONS</div><h1>Controls &amp; Alerts</h1><p class="hero-copy">Important activity, messages and governance items that need your attention.</p></div></div><div class="control-grid"><section class="card"><div class="section-head"><div><h2>Notifications</h2><p class="muted">Click any notification to open the exact record or conversation it refers to.</p></div></div>{% for n in notifications %}<div class="alert-row {% if n.read_at %}read{% endif %}"><a class="alert-row-main" href="{{url_for('admin_notification_open',nid=n.id)}}"><div class="alert-dot {{n.severity}}"></div><div class="alert-copy"><strong>{{n.title}}</strong><p>{{n.message}}</p><small class="notification-meta"><strong>By:</strong> {{n.actor_display_name_snapshot or n.actor_username_snapshot or 'System'}} · {{n.created_at[:19].replace('T',' ')}} UTC</small></div><span class="alert-open">Open →</span></a>{% if not n.read_at %}<form method="post" action="{{url_for('admin_notification_read',nid=n.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">Mark read</button></form>{% endif %}</div>{% else %}<div class="empty-state">No important activity is waiting for your attention.</div>{% endfor %}</section><section class="card"><div class="section-head"><div><h2>Direct messages</h2><p class="muted">Messages identify the sender and open the private conversation ready for reply.</p></div><a class="btn btn-primary btn-small" href="{{url_for('admin_messages')}}">Open Messages</a></div>{% for n in admin_unread_message_summaries %}<a class="message-alert-row" href="{{url_for('admin_messages', **{'with':n.sender_id})}}"><span class="table-avatar">{{n.sender_name[:1]|upper}}</span><span><strong>{{n.sender_name}}</strong><small>{{n.body[:140]}}{% if n.body|length>140 %}…{% endif %}</small><em>{{n.sent_at[:19].replace('T',' ')}} UTC</em></span><b>Reply →</b></a>{% else %}<div class="empty-state">No unread direct messages.</div>{% endfor %}</section></div><section class="card" style="margin-top:20px;padding:28px"><div class="section-head"><div><h2>Review queue</h2><p class="muted">Items that may require administrative attention.</p></div></div>{% if controls %}{% for c in controls %}<div class="review-row"><div><strong>{{c.title}}</strong><p>{{c.description}}</p><small>Requested by {{c.requester_name or 'System'}} · {{c.created_at[:19].replace('T',' ')}} UTC</small></div>{% if is_school_admin %}<form method="post" action="{{url_for('admin_control_resolve',cid=c.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small">Resolve</button></form>{% endif %}</div>{% endfor %}{% else %}<div class="empty-state">Nothing currently requires review.</div>{% endif %}</section>{% if workspace=='entrance' %}<section class="card" style="margin-top:20px;padding:28px"><div class="section-head"><div><h2>Protected examination resources</h2><p class="muted">Locking a question bank blocks all edits to it — adding, changing, deleting and reordering questions — until it is unlocked. Use it to freeze a bank while you check a staff change.</p></div>{% set locked_banks = banks|selectattr('locked')|list %}{% if locked_banks %}<span class="control-pill">{{ locked_banks|length }} locked</span>{% endif %}</div>{% if is_school_admin %}{% for b in banks %}<div class="resource-row"><div><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong><span>{{ b.level }}</span>{% if b.locked %}<small class="lock-note">Locked{% if b.lock_reason %} — {{ b.lock_reason }}{% endif %}</small>{% endif %}</div><div>{% if b.locked %}<form method="post" action="{{ url_for('admin_unlock_resource',resource_type='bank',resource_id=b.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success btn-small" type="submit">Unlock</button></form>{% else %}<form method="post" action="{{ url_for('admin_lock_resource',resource_type='bank',resource_id=b.id) }}" class="inline-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="reason" placeholder="Reason for locking (optional)" aria-label="Reason for locking {{ entrance_bank_display_name(b.id, b.name) }}"><button class="btn btn-danger btn-small" type="submit">Lock</button></form>{% endif %}</div></div>{% else %}<div class="empty-state">No question banks are available.</div>{% endfor %}{% else %}{% for b in locked_banks %}<div class="resource-row"><div><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong><span>{{ b.level }}</span><small class="lock-note">Locked{% if b.lock_reason %} — {{ b.lock_reason }}{% endif %}</small></div><span class="control-pill">School Admin only</span></div>{% else %}<div class="empty-state">No question banks are currently locked.</div>{% endfor %}{% endif %}</section>{% endif %}{% if workspace=='school' %}<section class="card" style="margin-top:20px;padding:28px"><div class="section-head"><div><h2>Subject governance</h2><p class="muted">Subjects are created by authorized school staff. Ordinary locks protect a class-subject connection; only School Admin can apply the final permanent lock.</p></div></div>{% for s in subjects %}<div class="review-row"><div><strong>{{s.subject_name}}</strong><small>{{s.class_name}}</small></div><span class="muted">{{'Final locked' if s.final_locked else ('Locked' if s.locked else 'Editable')}}</span></div>{% else %}<div class="empty-state">No class-subject connections have been configured.</div>{% endfor %}</section>{% endif %}{% endblock %}
+{% extends 'admin_base.html' %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_initials.html' import initials %}
+{% block title %}Controls &amp; alerts — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Controls & alerts, inside Settings: what needs attention (alerts, unread messages, the review queue), and the
+   locks on examination resources (entrance) or subjects (school). Every action here loads in place. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+{% set unread = notifications|rejectattr('read_at')|list %}
+<div class="ct-grid">
+  <section class="ct-box" aria-labelledby="ct-alerts">
+    <h2 id="ct-alerts">{{ icon('bell', 'ico-sm') }} Alerts{% if unread %}<span class="sx-chip is-warn">{{ unread|length }} unread</span>{% endif %}</h2>
+    {% for n in notifications %}
+    <div class="ct-row{{ ' is-read' if n.read_at }}">
+      <span class="ct-dot {{ n.severity }}"></span>
+      <a class="ct-main" href="{{ url_for('admin_notification_open', nid=n.id) }}" data-full>
+        <strong>{{ n.title }}</strong><p>{{ n.message }}</p>
+        <small>{{ n.actor_display_name_snapshot or n.actor_username_snapshot or 'System' }} · {{ n.created_at[:16].replace('T',' ') }} UTC</small>
+      </a>
+      {% if not n.read_at %}<form method="post" action="{{ url_for('admin_notification_read', nid=n.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-light btn-small" type="submit">Mark read</button></form>{% endif %}
+    </div>
+    {% else %}<div class="ct-empty">Nothing important is waiting for you.</div>{% endfor %}
+  </section>
+
+  <section class="ct-box" aria-labelledby="ct-msgs">
+    <h2 id="ct-msgs">{{ icon('nav-messages', 'ico-sm') }} Unread messages<a class="btn btn-light btn-small" style="margin-left:auto" href="{{ url_for('admin_messages') }}" data-full>Open Messages</a></h2>
+    {% for n in admin_unread_message_summaries %}
+    <div class="ct-row">
+      <span class="adm-avatar" style="width:28px;height:28px;font-size:11px" aria-hidden="true">{{ initials(n.sender_name) }}</span>
+      <a class="ct-main" href="{{ url_for('admin_messages', **{'with': n.sender_id}) }}" data-full><strong>{{ n.sender_name }}</strong><p>{{ n.body[:140] }}{% if n.body|length > 140 %}…{% endif %}</p><small>{{ n.sent_at[:16].replace('T',' ') }} UTC · Reply →</small></a>
+    </div>
+    {% else %}<div class="ct-empty">No unread messages.</div>{% endfor %}
+  </section>
+</div>
+
+<section class="ct-box" aria-labelledby="ct-review" style="margin-bottom:12px">
+  <h2 id="ct-review">{{ icon('set-controls', 'ico-sm') }} Review queue{% if controls %}<span class="sx-chip is-warn">{{ controls|length }} open</span>{% endif %}</h2>
+  {% for c in controls %}
+  <div class="ct-row">
+    <span class="ct-dot warning"></span>
+    <div class="ct-main"><strong>{{ c.title }}</strong><p>{{ c.description }}</p><small>Requested by {{ c.requester_name or 'System' }} · {{ c.created_at[:16].replace('T',' ') }} UTC</small></div>
+    {% if is_school_admin %}<form method="post" action="{{ url_for('admin_control_resolve', cid=c.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-light btn-small" type="submit">Resolve</button></form>{% endif %}
+  </div>
+  {% else %}<div class="ct-empty">Nothing needs review.</div>{% endfor %}
+</section>
+
+{% if workspace == 'entrance' %}
+{% set locked_banks = banks|selectattr('locked')|list %}
+<section class="ct-box" aria-labelledby="ct-banks">
+  <h2 id="ct-banks">{{ icon('lock', 'ico-sm') }} Protected examination resources{% if locked_banks %}<span class="sx-chip is-warn">{{ locked_banks|length }} locked</span>{% endif %}</h2>
+  <p>Locking a question bank blocks all edits to it — adding, changing, deleting and reordering questions — until it is unlocked. Use it to freeze a bank while you check a staff change.</p>
+  {% if is_school_admin %}
+    {% for b in banks %}
+    <div class="ct-row">
+      <span class="ct-dot{{ ' warning' if b.locked }}"></span>
+      <div class="ct-main"><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong><small>{{ b.level }}{% if b.locked %} · Locked{% if b.lock_reason %} — {{ b.lock_reason }}{% endif %}{% endif %}</small></div>
+      {% if b.locked %}
+      <form method="post" action="{{ url_for('admin_unlock_resource', resource_type='bank', resource_id=b.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success btn-small" type="submit">Unlock</button></form>
+      {% else %}
+      <form method="post" action="{{ url_for('admin_lock_resource', resource_type='bank', resource_id=b.id) }}" class="inline-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="reason" placeholder="Why? (optional)" aria-label="Reason for locking {{ entrance_bank_display_name(b.id, b.name) }}"><button class="btn btn-danger btn-small" type="submit">Lock</button></form>
+      {% endif %}
+    </div>
+    {% else %}<div class="ct-empty">No question banks are available.</div>{% endfor %}
+  {% else %}
+    {% for b in locked_banks %}
+    <div class="ct-row"><span class="ct-dot warning"></span><div class="ct-main"><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong><small>{{ b.level }} · Locked{% if b.lock_reason %} — {{ b.lock_reason }}{% endif %}</small></div><span class="sx-chip">School Admin only</span></div>
+    {% else %}<div class="ct-empty">No question banks are locked.</div>{% endfor %}
+  {% endif %}
+</section>
+{% endif %}
+
+{% if workspace == 'school' %}
+<section class="ct-box" aria-labelledby="ct-subjects">
+  <h2 id="ct-subjects">{{ icon('nav-subjects', 'ico-sm') }} Subject locks</h2>
+  <p>A lock protects a class's subject from change; only the School Admin can apply the final, permanent lock. Locks are set on Subjects.</p>
+  {% for s in subjects %}
+  <div class="ct-row"><span class="ct-dot{{ ' warning' if s.locked or s.final_locked }}"></span><div class="ct-main"><strong>{{ s.subject_name }}</strong><small>{{ s.class_name }}</small></div><span class="sx-chip{{ ' is-warn' if s.final_locked else (' is-good' if not s.locked) }}">{{ 'Final lock' if s.final_locked else ('Locked' if s.locked else 'Open to change') }}</span></div>
+  {% else %}<div class="ct-empty">No class has subjects yet.</div>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

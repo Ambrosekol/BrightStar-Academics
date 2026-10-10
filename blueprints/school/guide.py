@@ -27,7 +27,7 @@ GUIDE_GROUPS = (
     ('Set up the school', (
         ('classes-subjects', 'Classes and subjects', 'The shape of a school year'),
         ('roles-permissions', 'Roles, permissions and scope', 'Who can do what, and how it is limited'),
-        ('staff-admin', 'Staff, roles and branding', 'Accounts, audit and how the portal looks'),
+        ('staff-admin', 'Staff, roles and branding', 'Settings, staff, roles, activity and how the portal looks'),
     )),
     ('Students and families', (
         ('students', 'Students', 'Registering, importing, archiving'),

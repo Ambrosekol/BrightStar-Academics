@@ -37,6 +37,12 @@ EXEMPT = {
     "/admin/school/assignments/<int:assignment_id>/restore": "see write_paths_work_delete.py",
     "/admin/school/projects/<int:project_id>/restore": "see write_paths_work_delete.py",
     "/admin/school/students/archived/restore": "see write_paths_student_archive.py",
+    # The teaching chain (head teacher -> class teacher -> subject teacher): sending marks to the class teacher, one
+    # student's term or a whole class, and a head teacher assigning teaching duties. Exercised for real, valid and
+    # refused (wrong class, wrong subject, wrong department, wrong level), in tests/verification/write_paths_staff_hierarchy.py.
+    "/admin/school/results/submit-term": "see write_paths_staff_hierarchy.py",
+    "/admin/school/results/submit-class": "see write_paths_staff_hierarchy.py",
+    "/admin/school/teaching/<int:aid>": "see write_paths_staff_hierarchy.py",
     # The platform Settings / Terminal-actions area (control_plane/settings_console.py): system
     # operations, not an ordinary admin CSRF form this file's generic Actor/junk-submission shape
     # fits. Several are one-way or state-changing in ways this fuzzer cannot safely cover: a new

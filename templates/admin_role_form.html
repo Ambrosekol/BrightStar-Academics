@@ -1,9 +1,110 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Edit Staff Role' if mode == 'edit' else 'Create Staff Role' }} — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_initials.html' import initials %}
+{% block title %}{{ 'Edit staff role' if mode == 'edit' else 'New staff role' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>{{ 'Edit staff role' if mode == 'edit' else 'Create custom staff role' }}</h1><p class="hero-copy">Build a role around a real school responsibility. Keep the role small, understandable and least-privilege by design.</p></div></div>
-{% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
-<form method="post" class="card modern-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="form-section"><div class="form-grid"><div class="field"><label>Role name</label><input name="name" value="{{ form.get('name',role.name if role is defined else '') }}" required></div><div class="field"><label>What is this role for?</label><input name="description" value="{{ form.get('description',role.description if role is defined else '') }}" placeholder="Describe the staff responsibility in plain language"></div></div></div>
-<details class="advanced-panel" open><summary>Role capabilities</summary><p class="muted">These are the underlying system capabilities. Select only what the job genuinely needs.</p><div class="permission-grid compact">{% for p in permissions %}<label class="permission-item"><input type="checkbox" name="permissions" value="{{ p.id }}" {% if p.id in (selected or []) %}checked{% endif %}><span><strong>{{ p.name }}</strong><small>{{ p.description }}</small></span></label>{% endfor %}</div></details>
-<div class="form-actions"><button class="btn btn-primary" type="submit">{{ 'Save role' if mode == 'edit' else 'Create role' }}</button><a class="btn btn-light" href="{{ url_for('admin_roles') }}">Cancel</a></div></form>
+{# A staff role: its name, level and the permissions it gives, grouped by area with a search. Opens as a pop-up over
+   Staff roles, or over a member of staff's pop-up (a double pop-up); it works as a page on its own too. Saving
+   in a pop-up keeps it open and shows the role again; closing it refreshes what is underneath. A holder's name
+   opens their own pop-up on top. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set editing = mode == 'edit' and role is defined %}
+{% set picked = selected or [] %}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<div class="sa" data-rl-form data-modal-size="wide" data-modal-scope="/admin/administration/roles/">
+{% if not modal %}<p style="margin:0 0 10px"><a class="btn btn-light btn-small" href="{{ url_for('admin_roles') }}">← All roles</a></p>{% endif %}
+<header class="sa-head">
+  <span class="sa-head__ava" aria-hidden="true">{{ icon('set-roles') }}</span>
+  <div class="sa-head__copy">
+    <span class="sa-kicker">{{ 'Staff role' if editing else 'New staff role' }}</span>
+    <h2>{{ role.name if editing else 'Build a role around a real job' }}</h2>
+    <div class="sa-head__meta"><span>Keep it small and clear: only what the job needs.</span>{% if editing %}<span class="adm-pill adm-pill--you" data-rl-total>{{ picked|length }} permissions</span>{% endif %}</div>
+  </div>
+</header>
+{% if errors %}<div class="ac-errors error" role="alert" style="margin-bottom:12px">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_role_edit', rid=role.id) if editing else url_for('admin_role_new') }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% if modal %}<input type="hidden" name="modal" value="1">{% endif %}
+  <section class="sa-card">
+    <h3>About the role</h3>
+    <div class="sa-fields">
+      <div class="sa-field"><label for="rl-name">Name</label><input id="rl-name" name="name" value="{{ form.get('name', role.name if editing else '') }}" required placeholder="e.g. Exams Officer"></div>
+      <div class="sa-field"><label for="rl-level">Level in the school</label>
+        {% set current_level = form.get('level', staff_level_of(role.level) if editing else 'executive') %}
+        <select id="rl-level" name="level">{% for code,label,help in STAFF_LEVELS %}<option value="{{ code }}" {% if code == current_level %}selected{% endif %}>{{ label }} — {{ help }}</option>{% endfor %}</select>
+        <small>Where it sits below the {{ TOP_STAFF_LEVEL_LABEL }}: it orders roles on the staff form and decides whose teaching duties a head teacher may set.</small></div>
+      <div class="sa-field" style="grid-column:1/-1"><label for="rl-desc">What is it for?</label><input id="rl-desc" name="description" value="{{ form.get('description', role.description if editing else '') }}" placeholder="One plain sentence about the job"></div>
+    </div>
+  </section>
+
+  <section class="sa-card">
+    <h3>What it allows <small class="sa-hint" data-rl-count></small></h3>
+    <div class="sa-perm-search"><input type="search" placeholder="Search permissions, e.g. “attendance” or “receipt”" aria-label="Search permissions" data-rl-find autocomplete="off"></div>
+    {% for module, items in permissions|groupby('module') %}
+    <div class="rl-module" data-rl-module>
+      <div class="rl-module__h">{{ (module or 'general')|replace('_', ' ') }} <b data-rl-modn></b><button type="button" data-rl-all>Tick all</button></div>
+      <div class="rl-perms">
+        {% for p in items %}
+        <label class="rl-perm" data-text="{{ (p.name ~ ' ' ~ (p.description or '') ~ ' ' ~ (p.module or '') ~ ' ' ~ p.code)|lower }}">
+          <input type="checkbox" name="permissions" value="{{ p.id }}" {% if p.id in picked %}checked{% endif %}>
+          <span><strong>{{ staffwords(p.name) }}</strong>{% if p.description %}<small>{{ staffwords(p.description) }}</small>{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  {% if editing %}
+  <section class="sa-card">
+    <h3>Who holds it</h3>
+    {% if holders %}
+    <p class="sa-card__lede">A change here applies to all of them from their next page. A name opens their account on top of this.</p>
+    <ul class="rl-holders">
+      {% for h in holders %}
+      <li><a href="{{ url_for('admin_account_edit', aid=h.id) }}" data-modal>
+        <span class="adm-avatar" aria-hidden="true">{% if h.photo_path %}<img src="{{ url_for('static', filename=h.photo_path) }}" alt="">{% else %}{{ initials(h.display_name) }}{% endif %}</span>
+        <span><strong>{{ h.display_name }}</strong><small>{{ h.username }}{% if not h.active %} · suspended{% endif %}</small></span></a></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="sa-card__lede" style="margin:0">Nobody holds this role yet. Give it to someone from their account in Staff.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <div class="sa-bar">
+    <span class="sa-hint" data-rl-sum></span>
+    <div class="sa-bar__actions">
+      {% if modal %}<button class="btn btn-light" type="button" data-modal-dismiss>{{ 'Close' if editing else 'Cancel' }}</button>{% else %}<a class="btn btn-light" href="{{ url_for('admin_roles') }}">Cancel</a>{% endif %}
+      <button class="btn btn-primary" type="submit">{{ 'Save role' if editing else 'Create role' }}</button>
+    </div>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var roots=document.querySelectorAll('[data-rl-form]:not([data-ready])'); var root=roots[roots.length-1]; if(!root) return; root.setAttribute('data-ready','');
+  var boxes=[].slice.call(root.querySelectorAll('.rl-perm input')), sum=root.querySelector('[data-rl-sum]'), count=root.querySelector('[data-rl-count]');
+  function tally(){ root.querySelectorAll('[data-rl-module]').forEach(function(m){ var all=m.querySelectorAll('.rl-perm input'), on=m.querySelectorAll('.rl-perm input:checked').length; m.querySelector('[data-rl-modn]').textContent=on ? on+' of '+all.length : ''; });
+    var n=boxes.filter(function(b){ return b.checked; }).length; var t=n+' of '+boxes.length+' permissions ticked'; if(sum) sum.textContent=t; if(count) count.textContent='· '+t; }
+  boxes.forEach(function(b){ b.addEventListener('change',tally); }); tally();
+  root.querySelectorAll('[data-rl-all]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var mod=btn.closest('[data-rl-module]'), items=[].slice.call(mod.querySelectorAll('.rl-perm:not(.is-filtered-out) input'));
+      var all=items.every(function(i){ return i.checked; });
+      items.forEach(function(i){ i.checked=!all; }); btn.textContent=all?'Tick all':'Untick all'; tally();
+    });
+  });
+  var find=root.querySelector('[data-rl-find]');
+  find.addEventListener('keydown',function(e){ if(e.key==='Enter') e.preventDefault(); });
+  find.addEventListener('input',function(){
+    var words=find.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    root.querySelectorAll('[data-rl-module]').forEach(function(mod){
+      var shown=0;
+      mod.querySelectorAll('.rl-perm').forEach(function(l){ var hit=words.every(function(w){ return l.getAttribute('data-text').indexOf(w)!==-1; }); l.classList.toggle('is-filtered-out',!hit); if(hit) shown++; });
+      mod.classList.toggle('is-empty',shown===0);
+    });
+  });
+})();
+</script>
 {% endblock %}

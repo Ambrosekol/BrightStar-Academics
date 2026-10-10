@@ -232,7 +232,7 @@ def admin_school_onboarding_dismiss():
     if not admin_has_permission(me['id'], 'school.view'):
         return admin_access_error('school.view')
     _set_dismissed(True)
-    flash('The setup checklist is hidden. You can bring it back from the link at the bottom of this page.', 'success')
+    flash('The setup checklist is hidden. Bring it back any time with Show setup checklist at the top of this page.', 'success')
     return redirect(url_for('admin_school_home'))
 
 

@@ -3,48 +3,50 @@
 {% block content %}
 {% set can_comment = current_admin and admin_has_permission(current_admin['id'], 'report_cards.comment') %}
 {% set can_manage = current_admin and admin_has_permission(current_admin['id'], 'report_cards.manage') %}
-<link rel="stylesheet" href="{{ url_for('static', filename='report-cards.css', v='1') }}">
-
-<div class="page-hero"><div>
-  <div class="eyebrow">SCHOOL PORTAL / RESULTS</div>
+{# Report cards for one class, session and term: which cards are ready (every result released), the class teacher's
+   comment and the trait ratings for each student, written in small pop-ups without leaving the page, and the cards
+   themselves to view or download. The students load in place whenever the class, session or term changes
+   (static/report-cards.js); a name opens the student's own pop-up. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-cards.css', v='2') }}">
+<div class="ac">
+<header class="ac-top">
   <h1>Report cards</h1>
-  <p class="hero-copy">A card is ready once every result for the term has been released, and then reaches the student's and parent's portal by itself. Comments and trait ratings can be added at any time.</p>
-</div></div>
+  <span class="ac-hint">A card is ready once every result for the term is released; it then reaches the student and parent by itself.</span>
+  <div class="ac-top__act">
+    {% if can_comment %}<button type="button" class="ac-btn" id="rc-signature-open"><span class="rc-dot {{ 'is-on' if signature_path else 'is-off' }}" aria-hidden="true"></span>{{ 'My signature' if signature_path else 'Set my signature' }}</button>{% endif %}
+    {% if can_manage %}<a class="ac-btn" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature and settings</a>{% endif %}
+  </div>
+</header>
+</div>
 
-<div class="rc-app" id="rc-app"
+<div class="rc-app ac" id="rc-app"
      data-students-url="{{ url_for('admin_school_report_card_students') }}"
      data-comment-url="{{ url_for('admin_school_report_card_comments_save') }}"
      data-traits-url="{{ url_for('admin_school_report_card_traits_save') }}"
+     data-student-url="{{ url_for('admin_school_student_detail', sid=0) }}"
      data-csrf="{{ csrf_token() }}"
      data-can-comment="{{ 1 if can_comment else 0 }}"
      data-max-length="{{ max_length }}"
      data-open-signature="{{ 1 if open_signature else 0 }}">
 
-  <section class="rc-bar" aria-label="Choose what to show">
-    <div class="rc-bar__pickers">
-      <label class="rc-pick"><span>Class</span>
-        <select id="rc-class">
-          <option value="">Choose a class</option>
-          {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
-        </select></label>
-      <label class="rc-pick"><span>Session</span>
-        <select id="rc-session">
-          {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-        </select></label>
-      <label class="rc-pick"><span>Term</span>
-        <select id="rc-term">
-          {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-        </select></label>
-    </div>
-    <div class="rc-bar__actions">
-      {% if can_comment %}
-      <button type="button" class="rc-btn" id="rc-signature-open">
-        <span class="rc-dot {{ 'is-on' if signature_path else 'is-off' }}" aria-hidden="true"></span>
-        {{ 'My signature' if signature_path else 'Set my signature' }}
-      </button>
-      {% endif %}
-      {% if can_manage %}<a class="rc-btn rc-btn--quiet" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature &amp; settings</a>{% endif %}
-    </div>
+  <section class="ac-bar rc-bar" aria-label="Choose what to show">
+    <span class="ac-bar__label">Class</span>
+    <nav class="ac-chips" aria-label="Class" data-rc-chips>
+      {% for c in classes %}<button type="button" class="ac-chip{{ ' is-active' if class_row and class_row.id == c.id }}" data-rc-class="{{ c.id }}">{{ c.name }}</button>{% else %}<span class="ac-hint">No class whose report cards you write. Report cards belong to the class teacher.</span>{% endfor %}
+    </nav>
+    <select id="rc-class" hidden aria-hidden="true" tabindex="-1">
+      <option value="">Choose a class</option>
+      {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <span class="rc-bar__pickers">
+      <select id="rc-session" class="ac-select" aria-label="Session">
+        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}
+      </select>
+      <select id="rc-term" class="ac-select" aria-label="Term">
+        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </span>
   </section>
 
   {% if not settings.head_name or not settings.head_signature %}
@@ -149,6 +151,18 @@
 </dialog>
 {% endif %}
 
-<script nonce="{{ csp_nonce() }}">window.RC_TRAITS = {{ trait_groups|tojson }}; window.RC_SCALE = {{ trait_scale|tojson }};</script>
-<script src="{{ url_for('static', filename='report-cards.js', v='1') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+window.RC_TRAITS = {{ trait_groups|tojson }}; window.RC_SCALE = {{ trait_scale|tojson }};
+(function(){
+  // The class chips choose the class: they set the picker static/report-cards.js listens to.
+  var chips=document.querySelector('[data-rc-chips]:not([data-ready])'), sel=document.getElementById('rc-class');
+  if(!chips||!sel) return; chips.setAttribute('data-ready','1');
+  chips.addEventListener('click',function(e){
+    var b=e.target.closest('[data-rc-class]'); if(!b) return;
+    chips.querySelectorAll('[data-rc-class]').forEach(function(x){ x.classList.toggle('is-active',x===b); });
+    sel.value=b.dataset.rcClass; sel.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+})();
+</script>
+<script src="{{ url_for('static', filename='report-cards.js', v='2') }}"></script>
 {% endblock %}

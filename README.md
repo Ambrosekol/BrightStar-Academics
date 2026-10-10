@@ -377,12 +377,35 @@ sign-in and a plain description of what they can reach. It can be searched by na
 to everyone, active or suspended. Each card's ⋯ menu sends a message, resets the login, or suspends or reactivates
 the account; nobody can suspend or reset their own access.
 
-A person's own page is organised into profile, job roles, where they work (scope) and overrides. The overrides
+A person's own page is organised into profile, job roles, teaching duties, other limits (scope) and overrides. The overrides
 list has a loose search: capital letters, accents, word order and small spelling mistakes do not matter. Overrides
 are for exceptions; ordinary access comes from roles.
 
 The bulk-import permission (`school.bulk_import`) lets a role run all three import steps without holding each step's
 own permission. See [Bulk import](#bulk-import-students-history-and-past-results).
+
+### The chain of authority and teaching duties
+
+Staff follow a Nigerian school's order (`core/school_structure.py`): the School Admin (proprietor) at the top, then
+each role's *level* (`admin_types.level`): `executive` (bursar, admissions, secretary, HR, librarian), `head_teacher`,
+`class_teacher`, `subject_teacher`. The Head Teacher, Class Teacher and Subject Teacher presets carry those levels.
+
+*Where* a teacher works comes from their **teaching duties** (`teaching_duties`), set on the staff form or on the
+**Teachers** page (`/admin/school/teaching`): a row with no subject makes them the class teacher of that class (every
+subject, the register, report card comments, releasing results); a row with a subject makes them its subject teacher
+there, optionally for one SSS department. Once someone has duties, `admin_scope_allows` answers class and subject
+questions from them alone, and `_school_pair_allowed` checks the exact class-and-subject (and department) pair.
+Results move subject teacher -> class teacher: `school.results.submit` sends recorded marks on (they become
+`approved`, ready to release), and only the class teacher of the class (or someone with no duties and the class in
+reach, such as a head teacher) can release or send a mark back. Only someone covering the whole school can set the
+release date. A head teacher (`school.staff.assign`) can change the duties of staff ranked below them, in their own
+classes; creating accounts and choosing roles stays with the School Admin.
+
+**Early years and SSS departments.** Crèche and Nursery 1-3 are seeded switched off. Their pupils never sign in and get
+no online work (`class_is_early_years`); teachers record their scores as usual and parents see fees, results and report
+cards. In SSS 1-3 each student has a `department` (Science, Art, Commercial) and each subject lists the departments that
+take it (`school_subjects.departments`, empty for all), which filters what students see and whom work is issued to.
+`tests/verification/write_paths_staff_hierarchy.py` proves all of it end to end.
 
 ## How a school numbers its people
 
@@ -677,7 +700,7 @@ Every school gives each student a **report card for each term**, as a page and a
   (write the class teacher's comment, rate affective/psychomotor traits, and keep **your own
   signature** under *My signature*) and `report_cards.manage` (set the head's title, name and
   signature, and when the next term begins). The
-  *Primary Class Teacher* and *School Academic Administrator* roles have them, and there is a
+  *Class Teacher*, *Head Teacher* and *School Academic Administrator* roles have them, and there is a
   *Report Card Officer* role. A comment can be written before results are released; a card with no
   comment still appears on release, with an empty comment box. Whoever last changes a comment is its
   author: their name and their signature are printed beside it, and saving the page without changing a
@@ -896,6 +919,7 @@ python tests/verification/write_paths_student_import.py      # bulk CSV student 
 python tests/verification/write_paths_student_history_import.py # bulk enrolment-history import: valid/skipped rows, an archived session accepted, permissions and CSRF, isolation
 python tests/verification/write_paths_guide.py                # the staff guide: every page renders, no permission of its own, search, isolation
 python tests/verification/write_paths_admissions.py           # admissions: the waitlist, admitting (student + parent), declining, scope, isolation
+python tests/verification/write_paths_staff_hierarchy.py      # head/class/subject teachers: teaching duties, SSS departments, the results hand-off, early years
 python tests/verification/write_paths_resilience.py           # durable background jobs, retry-safe writes, the exam page's connection-drop retry logic, and the connectivity banner, in a real browser
 python tests/verification/write_paths_paystack.py              # online payments: encrypted keys, starting/confirming a payment, callback-vs-webhook idempotency, signature checks, permissions
 python tests/verification/report_card_pdf_selfcheck.py     # the report card PDF drawing itself (needs no database)

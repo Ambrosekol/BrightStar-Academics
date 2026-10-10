@@ -43,6 +43,18 @@ _PAGES_THAT_SHOW_A_MESSAGE = ('/admin/', '/platform/')
 app.add_template_global(uploads.upload_attrs, 'upload_attrs')
 app.add_template_global(uploads.upload_hint, 'upload_hint')
 
+# How the school is organised (early years, SSS departments, staff levels), for any template to ask.
+from core import school_structure  # noqa: E402
+app.add_template_global(school_structure.is_early_years, 'is_early_years')
+app.add_template_global(school_structure.is_senior, 'is_senior_class')
+app.add_template_global(school_structure.DEPARTMENTS, 'SSS_DEPARTMENTS')
+app.add_template_global(school_structure.parse_departments, 'parse_departments')
+app.add_template_global(school_structure.STAFF_LEVELS, 'STAFF_LEVELS')
+app.add_template_global(school_structure.level_or_default, 'staff_level_of')
+app.add_template_global(school_structure.TOP_LEVEL_LABEL, 'TOP_STAFF_LEVEL_LABEL')
+from core.security import subject_reach  # noqa: E402
+app.add_template_global(subject_reach, 'subject_reach')
+
 
 def _is_bad_input(exc):
     original = getattr(exc, 'orig', None)

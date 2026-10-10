@@ -1,28 +1,68 @@
-{% extends 'admin_base.html' %}{% block title %}{{'Create Project' if mode=='new' else 'Edit Project'}} — {{ school_brand.name }}{% endblock %}{% block content %}{% include 'school_work_styles.html' %}<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>{{'Create project' if mode=='new' else 'Edit project'}}</h1><p class="hero-copy">Give students a practical task with a clear date and recordable completion.</p></div></div>{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}<div class="card modern-form academic-work-form"><form method="post" class="wk-page"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-section"><div class="form-section-title"><div class="step">1</div><div><h2>Project details</h2><p>Choose the class and an existing subject.</p></div></div><div class="form-grid"><div class="field"><label>Class</label><select name="class_id" id="projectClass" required><option value="">Select class</option>{% for c in classes %}<option value="{{c.id}}" {% if project and project.get('class_id')|int==c.id %}selected{% endif %}>{{c.name}}</option>{% endfor %}</select></div><div class="field"><label>Subject</label><select name="subject_id" id="projectSubject" required><option value="">Select subject</option>{% for s in subjects %}<option value="{{s.id}}" data-classes="{{s.class_ids or ''}}" {% if project and project.get('subject_id')|int==s.id %}selected{% endif %}>{{s.name}}</option>{% endfor %}</select></div><div class="field"><label>Academic session</label><select name="session_id" required>{% for s in sessions %}<option value="{{s.id}}" {% if (project and project.get('session_id')|int==s.id) or (not project and loop.first) %}selected{% endif %}>{{s.name}}{% if s.is_current %} — Current{% endif %}</option>{% endfor %}</select></div><div class="field"><label>Term</label><select name="term" required><option value="">Select term</option>{% for t in terms %}<option value="{{t}}" {% if project and project.term==t %}selected{% endif %}>{{t}}</option>{% endfor %}</select></div><div class="field"><label>Project title</label><input name="title" value="{{project.title if project else ''}}" required placeholder="e.g. Make a wall clock using cardboard"></div><div class="field"><label>Date given</label><input type="date" name="date_given" value="{{project.date_given if project else ''}}"></div><div class="field"><label>Required / due date</label><input type="date" name="due_date" value="{{project.due_date if project else ''}}"></div><div class="field"><label>Maximum score <span class="optional">(optional)</span></label><input type="number" min="0" step="0.01" name="max_score" value="{{project.max_score if project else ''}}" placeholder="e.g. 10"></div><div class="field" style="grid-column:1/-1"><label>Instructions</label><textarea name="instructions" rows="6" placeholder="Example: Bring an ice block to school for our lesson on condensation, melting and changes of state.">{{project.instructions if project else ''}}</textarea></div></div></div><div class="form-section" id="studentSection"><div class="form-section-title"><div class="step">2</div><div><h2>Students</h2><p>Select the students who should receive the project.</p></div></div><div class="wk-choice" role="radiogroup" aria-label="Who receives this">
-  <label><input type="radio" name="issue_to" value="class" {{ 'checked' if mode == 'new' }}><span><strong>Whole class</strong><small>Everyone enrolled in the selected class receives it, including students who join the class later.</small></span></label>
-  <label><input type="radio" name="issue_to" value="students" {{ 'checked' if mode != 'new' }}><span><strong>Selected students</strong><small>Tick the students you want below.</small></span></label>
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'New project' if mode=='new' else 'Edit project' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# New project: a guided form, one section at a time (Class and subject -> Details -> Students).
+   Edit project: the same sections in a pop-up over the projects list (static/inplace.js), any section
+   reachable from the step bar and Save always there. The behaviour is includes/_work_form.html. #}
+{% set modal = request.values.get('modal') == '1' %}
+{% set p = project or {} %}
+<div class="ac">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<div class="ac-modal-head"><h2>Edit project</h2><p>{{ p.get('title', '') }}</p></div>
+{% else %}{% set work_tab = 'projects' %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
+
+<form method="post" class="ac-form" data-guided="{{ 'free' if mode == 'edit' else 'steps' }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% if modal %}<input type="hidden" name="modal" value="1"><input type="hidden" name="return_to" value="{{ request.values.get('return_to', '') }}">{% endif %}
+  <nav class="ac-steps" aria-label="Steps" data-guided-steps></nav>
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <section class="ac-stage" data-step-panel data-title="Class and subject">
+    <div class="ac-stage__head"><div><h2>Which class and subject is it for?</h2><p>And the session and term it counts towards.</p></div></div>
+    <div class="ac-fields">
+      <div class="ac-field"><label for="projectClass">Class</label>
+        <select name="class_id" id="projectClass" required><option value="">Choose a class</option>{% for c in classes %}<option value="{{ c.id }}" {% if p.get('class_id')|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="projectSubject">Subject</label>
+        <select name="subject_id" id="projectSubject" required data-offered><option value="">Choose a subject</option>{% for s in subjects %}<option value="{{ s.id }}" data-classes="{{ s.class_ids or '' }}" {% if p.get('subject_id')|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+        <small>A subject not yet offered to the class is offered to it when you save.</small></div>
+      <div class="ac-field"><label for="projectSession">Academic session</label>
+        <select name="session_id" id="projectSession" required>{% for s in sessions %}<option value="{{ s.id }}" {% if p.get('session_id')|string == s.id|string or (not p.get('session_id') and loop.first) %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="projectTerm">Term</label>
+        <select name="term" id="projectTerm" required><option value="">Choose a term</option>{% for t in terms %}<option value="{{ t }}" {% if p.get('term') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Details">
+    <div class="ac-stage__head"><div><h2>What is the project?</h2><p>A practical task with the date it is given and the date it is due.</p></div></div>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field ac-field--wide"><label for="projectTitle">Title</label><input id="projectTitle" name="title" value="{{ p.get('title', '') }}" required placeholder="e.g. Make a wall clock with cardboard"></div>
+      <div class="ac-field"><label for="projectGiven">Date given</label><input id="projectGiven" type="date" name="date_given" value="{{ p.get('date_given') or '' }}"></div>
+      <div class="ac-field"><label for="projectDue">Due date <span class="ac-hint">optional</span></label><input id="projectDue" type="date" name="due_date" value="{{ p.get('due_date') or '' }}"></div>
+      <div class="ac-field"><label for="projectMax">Marked out of <span class="ac-hint">optional</span></label><input id="projectMax" type="number" min="0" step="0.01" name="max_score" value="{{ p.get('max_score') or '' }}" placeholder="e.g. 10"></div>
+      <div class="ac-field ac-field--wide"><label for="projectInstructions">Instructions</label><textarea id="projectInstructions" name="instructions" rows="4" placeholder="e.g. Bring an ice block to school for our lesson on melting and changes of state.">{{ p.get('instructions') or '' }}</textarea></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Students" id="studentSection" data-student-section>
+    <div class="ac-stage__head"><div><h2>Who does it?</h2><p>The whole class, or only the students you choose.</p></div></div>
+    <div class="ac-choices" role="radiogroup" aria-label="Who receives this">
+      <label><input type="radio" name="issue_to" value="class" {{ 'checked' if mode == 'new' }}><span><strong>Whole class</strong><small>Everyone in the class who takes the subject, including students who join later.</small></span></label>
+      <label><input type="radio" name="issue_to" value="students" {{ 'checked' if mode != 'new' }}><span><strong>Chosen students</strong><small>Tick the students below.</small></span></label>
+    </div>
+    <p class="ac-notice" hidden></p>
+    <div class="ac-pickbar"><input type="search" placeholder="Find a student" aria-label="Find a student"></div>
+    <div class="ac-pickgrid">{% for st in students %}<label data-class="{{ st.class_id }}" data-search="{{ (st.first_name ~ ' ' ~ st.last_name ~ ' ' ~ st.admission_no)|lower }}"><input type="checkbox" name="student_ids" value="{{ st.id }}" {% if st.id in selected_students %}checked{% endif %}><span>{{ st.last_name }}, {{ st.first_name }} <small>{{ st.admission_no }}</small></span></label>{% endfor %}</div>
+  </section>
+
+  <div class="ac-form-foot">
+    <button type="button" class="ac-btn" data-guided-back hidden>← Back</button>
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>
+    {% else %}<a class="ac-link" href="{{ url_for('admin_school_projects') }}">Cancel</a>{% endif %}
+    <button type="button" class="ac-btn ac-btn--primary" data-guided-next hidden>Next →</button>
+    <button type="submit" class="ac-btn ac-btn--primary" data-guided-save>{{ 'Create project' if mode == 'new' else 'Save changes' }}</button>
+  </div>
+</form>
 </div>
-<p class="wk-notice" id="wholeClassNote" hidden></p>
-<div class="student-search-bar"><input id="projectStudentSearch" type="search" placeholder="Search student name or admission number"></div><div class="student-pick-grid">{% for st in students %}<label class="student-pick searchable-project-student" data-class="{{st.class_id}}" data-search="{{(st.first_name ~ ' ' ~ st.last_name ~ ' ' ~ st.admission_no)|lower}}"><input type="checkbox" name="student_ids" value="{{st.id}}" {% if st.id in selected_students %}checked{% endif %}><span><strong>{{st.first_name}} {{st.last_name}}</strong><small>{{st.admission_no}} · {{st.class_name}}</small></span></label>{% endfor %}</div></div><div class="form-actions"><button class="btn btn-primary" type="submit">{{'Create project' if mode=='new' else 'Save changes'}}</button><a class="btn btn-light" href="{{url_for('admin_school_projects')}}">Cancel</a></div><script nonce="{{ csp_nonce() }}">(function(){
-  var section=document.getElementById('studentSection'); if(!section) return;
-  var radios=[].slice.call(section.querySelectorAll('input[name=issue_to]'));
-  var search=section.querySelector('.student-search-bar'), grid=section.querySelector('.student-pick-grid');
-  var cls=document.getElementById('assignmentClass')||document.getElementById('projectClass');
-  var note=document.getElementById('wholeClassNote');
-  function sync(){
-    var whole=radios.some(function(r){ return r.checked && r.value==='class'; });
-    if(search) search.hidden=whole;
-    if(grid) grid.hidden=whole;
-    if(!note) return;
-    var value=cls?cls.value:'';
-    var count=grid?[].slice.call(grid.querySelectorAll('[data-class]')).filter(function(e){ return e.dataset.class===value; }).length:0;
-    var name=cls&&cls.selectedOptions[0]?cls.selectedOptions[0].textContent:'the class';
-    note.hidden=!whole || !value;
-    note.textContent=whole&&value ? 'Everyone enrolled in '+name+' ('+count+' student'+(count===1?'':'s')+') receives this.' : '';
-  }
-  radios.forEach(function(r){ r.addEventListener('change',sync); });
-  if(cls) cls.addEventListener('change',sync);
-  sync();
-})();
-</script>
-</form></div><script nonce="{{ csp_nonce() }}">(function(){const c=document.getElementById('projectClass'),s=document.getElementById('projectSubject'),q=document.getElementById('projectStudentSearch');function f(){[...s.options].forEach(o=>{if(!o.value)return;if(!o.dataset.base)o.dataset.base=o.textContent;const offered=!!c.value&&(o.dataset.classes||'').split(',').includes(c.value);o.hidden=false;o.textContent=o.dataset.base+(c.value&&!offered?' — will be offered to this class on save':'');});if(s.selectedOptions[0]?.hidden)s.value='';const n=(q.value||'').toLowerCase();document.querySelectorAll('.searchable-project-student').forEach(x=>x.style.display=(!c.value||x.dataset.class===c.value)&&(!n||x.dataset.search.includes(n))?'flex':'none')}c.onchange=f;q.oninput=f;f()})();</script>{% endblock %}
+{% include 'includes/_work_form.html' %}
+{% endblock %}

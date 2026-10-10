@@ -138,8 +138,9 @@
       btn(Object.keys(s.ratings || {}).length ? 'Edit traits' : 'Rate traits', function () { openTraits(s); });
     }
     if (s.view_url) {
-      var v = el('a', 'rc-btn rc-btn--sm', 'View'); v.href = s.view_url; box.appendChild(v);
-      var p = el('a', 'rc-btn rc-btn--sm', 'PDF'); p.href = s.pdf_url; box.appendChild(p);
+      // The card is a printable document of its own: it opens in a new tab, as does its PDF.
+      var v = el('a', 'rc-btn rc-btn--sm', 'View'); v.href = s.view_url; v.target = '_blank'; v.rel = 'noopener'; box.appendChild(v);
+      var p = el('a', 'rc-btn rc-btn--sm', 'PDF'); p.href = s.pdf_url; p.target = '_blank'; p.rel = 'noopener'; box.appendChild(p);
     }
     td.appendChild(box);
     return td;
@@ -147,7 +148,12 @@
 
   function rowFor(s) {
     var tr = el('tr'); tr.dataset.id = s.student_id;
-    var name = el('td', 'rc-name'); name.appendChild(el('strong', '', s.name));
+    var name = el('td', 'rc-name');
+    if (app.dataset.studentUrl) {
+      // The student's own pop-up, with their results, from the name (static/inplace.js).
+      var who = el('a', 'rc-who'); who.href = app.dataset.studentUrl.replace('/0', '/' + s.student_id); who.setAttribute('data-modal', '');
+      who.appendChild(el('strong', '', s.name)); name.appendChild(who);
+    } else { name.appendChild(el('strong', '', s.name)); }
     if (s.admission_no) { name.appendChild(el('small', '', s.admission_no)); }
     tr.appendChild(name);
     var st = el('td'); st.appendChild(stateCell(s)); tr.appendChild(st);

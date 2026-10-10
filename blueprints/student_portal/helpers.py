@@ -15,6 +15,7 @@ from models import (
 )
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
+from core.school_structure import class_is_senior, student_is_early_years, takes_subject
 
 
 def student_required(fn):
@@ -25,7 +26,7 @@ def student_required(fn):
             return redirect(url_for('login',next=request.path))
         row=one(select(Student.id,Student.active,Student.account_active,
                        Student.password_must_change).where(Student.id==sid))
-        if not row or not row['active'] or not row['account_active']:
+        if not row or not row['active'] or not row['account_active'] or student_is_early_years(sid):
             _clear_identity_sessions(); return redirect(url_for('login'))
         if row['password_must_change'] and request.endpoint != 'student_password_change':
             return redirect(url_for('student_password_change'))
@@ -46,6 +47,10 @@ def _student_assessment_context(assessment_id, sid):
     if not student or not a or not student['class_id'] or a['class_id']!=student['class_id']:
         return None,None,[]
     if a['session_id'] is not None and a['session_id']!=student['session_id']:
+        return None,None,[]
+    # In SSS, a test in a subject the student's department does not take is not theirs.
+    if class_is_senior(student['class_id']) and not takes_subject(
+            student.get('department'),one_scalar(select(SchoolSubject.departments).where(SchoolSubject.id==a['subject_id']))):
         return None,None,[]
     questions=db.session.scalars(select(SchoolQuestion)
         .where(SchoolQuestion.assessment_id==assessment_id)

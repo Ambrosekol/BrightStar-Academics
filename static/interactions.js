@@ -19,7 +19,9 @@
         var el = e.target;
         if (!el) return;
         if ("autosubmit" in el.dataset && el.form) {
-            el.form.submit();
+            // requestSubmit fires the submit event, so a page that loads its next view in place
+            // (static/inplace.js) can take the submission over; submit() would skip it.
+            if (el.form.requestSubmit) el.form.requestSubmit(); else el.form.submit();
             return;
         }
         var fn = el.dataset.onchange;

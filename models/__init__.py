@@ -59,6 +59,7 @@ from .auth import (
     AuditLog,
     Permission,
     SecurityEvent,
+    TeachingDuty,
     _LegacyAttachmentColumns,
 )
 
@@ -141,7 +142,7 @@ __all__ = [
     'Admin', 'AdminControlItem', 'AdminMessage', 'AdminNotification',
     'AdminPermission', 'AdminResourceLock', 'AdminRoleAssignment',
     'AdminScope', 'AdminType', 'AdminTypePermission', 'AuditLog',
-    'Permission', 'SecurityEvent', '_LegacyAttachmentColumns',
+    'Permission', 'SecurityEvent', 'TeachingDuty', '_LegacyAttachmentColumns',
     # school
     'AcademicPromotionItem', 'AcademicPromotionRun', 'AcademicSession',
     'AssignmentQuestion', 'AssignmentStudent', 'AttendanceRecord', 'ClassSubject', 'ExamTimetableEntry',

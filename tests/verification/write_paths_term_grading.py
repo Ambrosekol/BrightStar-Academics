@@ -514,8 +514,13 @@ grade_assignment(A2, BOLA, "5")
 MANUAL = "/admin/school/results/manual/new"
 form = admin.text(MANUAL)
 options = re.findall(r'<option value="([^"]*)"', re.search(r'<select name="term".*?</select>', form, re.S).group(0))
-check("the offline results form offers the terms the report reads: First, Second, Third Term and Full Session",
-      options == ["First Term", "Second Term", "Third Term", "Full Session"], str(options))
+check("the offline results form offers only the three terms of the school year: First, Second and Third Term",
+      options == ["First Term", "Second Term", "Third Term"], str(options))
+r = admin.post(MANUAL, {"class_id": JSS1, "session_id": CURRENT, "student_id": EMEKA, "subject_id": MATHS, "term": "Full Session",
+                        "took_test": "yes", "test_score": "5", "test_max": "10", "exam_score": "30", "exam_max": "60"}, page=MANUAL)
+check("…and a mark sent for 'Full Session' is refused, nothing is written",
+      "Select First Term, Second Term or Third Term." in html.unescape(r.get_data(as_text=True))
+      and not sql("SELECT 1 FROM school_student_results WHERE student_id = :s AND term = 'Full Session'", s=EMEKA))
 
 
 def manual(student, **fields):

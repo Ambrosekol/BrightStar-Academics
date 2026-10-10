@@ -1,172 +1,70 @@
 {% extends "admin_base.html" %}
-
+{% block title %}Promotion — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="cr-promo-page">
+{# Promotion and the session rollover, in four plain steps: say which class follows which (Class progression, a
+   pop-up), make a draft for one session into the next, review and approve it (each run opens in a pop-up), then
+   commit it. Nothing about a student changes until a run is committed. #}
+{% set open_runs = runs|selectattr('status', 'in', ['draft', 'approved'])|list %}
+{% set by_from = {} %}{% for p in progressions %}{% set _ = by_from.update({p.from_class_id: p}) %}{% endfor %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<div class="ac st pr">
+<header class="ac-top">
+  <h1>Promotion</h1>
+  <span class="ac-hint">Move every student into next session's classes, safely and all at once.</span>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_school_promotion_progressions') }}" data-modal>Class progression</a></div>
+</header>
 
-    <div class="page-hero">
-        <div>
-            <div class="eyebrow">ACADEMIC ADMINISTRATION</div>
-            <h1>Promotion &amp; Session Rollover</h1>
-            <p>
-                Prepare the next-session class placement for students,
-                review exceptions, and commit the rollover safely in bulk.
-            </p>
-        </div>
-        <div class="hero-actions">
-            <a class="btn btn-secondary"
-               href="{{ url_for('admin_school_promotion_progressions') }}">
-                Configure Progression
-            </a>
-        </div>
-    </div>
+<ol class="pr-steps">
+  <li class="{{ 'is-done' if progressions }}"><b>1</b><span><strong>Class progression</strong><small>{{ progressions|length }} of {{ classes|selectattr('active')|list|length }} classes have a next class</small></span></li>
+  <li class="{{ 'is-done' if runs }}"><b>2</b><span><strong>Make a draft</strong><small>for one session into the next</small></span></li>
+  <li class="{{ 'is-done' if runs|selectattr('status', 'in', ['approved', 'committed'])|list }}"><b>3</b><span><strong>Review and approve</strong><small>promote, repeat, graduate, hold</small></span></li>
+  <li class="{{ 'is-done' if runs|selectattr('status', 'equalto', 'committed')|list }}"><b>4</b><span><strong>Commit</strong><small>the new enrolments are made</small></span></li>
+</ol>
 
-    <div class="cr-promo-notice">
-        <strong>No automatic silent promotion.</strong>
-        Generating a draft does not change any student enrolment.
-        Changes occur only after an authorised administrator reviews,
-        approves and commits the promotion run.
-    </div>
+<div class="fi-g">
+  <section class="fi-p fi-p--5">
+    <div class="fi-h"><h2>Make a promotion draft</h2></div>
+    <p class="ac-hint" style="margin:0 0 8px">A draft changes nobody's enrolment. It lists every student with the class they would move to, for you to review.</p>
+    <form method="post" action="{{ url_for('admin_school_promotion') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="generate">
+      <div class="ac-fields">
+        <div class="ac-field"><label for="prFrom">From the session</label>
+          <select id="prFrom" name="from_session_id" required><option value="">Choose</option>{% for s in sessions %}<option value="{{ s.id }}" {% if current_session and s.id == current_session.id %}selected{% endif %}>{{ s.name }}{% if current_session and s.id == current_session.id %} · current{% endif %}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="prTo">Into the session</label>
+          <select id="prTo" name="to_session_id" required><option value="">Choose</option>{% for s in sessions %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="ac-form-foot"><span class="ac-hint">{% if not progressions %}Set the class progression first, or every student will need a decision.{% endif %}</span><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Make the draft</button></div>
+    </form>
+  </section>
 
-    <section class="cr-promo-card">
-        <div class="cr-promo-card-head">
-            <div>
-                <span class="cr-promo-kicker">CREATE ROLLOVER</span>
-                <h2>Prepare a Promotion Draft</h2>
-                <p>Select the completed session and the destination session.</p>
-            </div>
-        </div>
+  <section class="fi-p fi-p--7">
+    <div class="fi-h"><h2>Class progression <small>who moves where by default</small></h2><a class="ac-link" href="{{ url_for('admin_school_promotion_progressions') }}" data-modal>Change →</a></div>
+    {% if classes %}
+    <ul class="pr-chain">{% for c in classes if c.active %}{% set p = by_from.get(c.id) %}
+      <li><span class="fi-chip fi-chip--type">{{ c.name }}</span><i aria-hidden="true">→</i>{% if p and p.to_class_name %}<span class="fi-chip">{{ p.to_class_name }}</span>{% elif p %}<span class="ac-tag">Leaves / last class</span>{% else %}<span class="ac-tag ac-tag--attn">Not set</span>{% endif %}</li>
+    {% endfor %}</ul>
+    {% else %}<div class="ac-empty">No classes yet.</div>{% endif %}
+  </section>
+</div>
 
-        <form method="post" class="cr-promo-form">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="action" value="generate">
-
-            <label>
-                From Session
-                <select name="from_session_id" required>
-                    <option value="">Select source session</option>
-                    {% for s in sessions %}
-                    <option value="{{ s.id }}"
-                        {% if current_session and s.id == current_session.id %}selected{% endif %}>
-                        {{ s.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </label>
-
-            <label>
-                To Session
-                <select name="to_session_id" required>
-                    <option value="">Select destination session</option>
-                    {% for s in sessions %}
-                    <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-
-            <button class="btn btn-primary" type="submit">
-                Generate Promotion Draft
-            </button>
-        </form>
-    </section>
-
-    <section class="cr-promo-card">
-        <div class="cr-promo-card-head">
-            <div>
-                <span class="cr-promo-kicker">HISTORY</span>
-                <h2>Promotion Runs</h2>
-                <p>Every draft ever generated, including one already committed - opening it
-                   again shows exactly what happened and to how many students.</p>
-            </div>
-        </div>
-
-        <div class="cr-promo-table-wrap">
-            <table class="cr-promo-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>From</th>
-                        <th>To</th>
-                        <th>Students</th>
-                        <th>Status</th>
-                        <th>Started</th>
-                        <th>By</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for r in runs %}
-                    <tr>
-                        <td>{{ r.id }}</td>
-                        <td>{{ r.from_session_name }}</td>
-                        <td>{{ r.to_session_name }}</td>
-                        <td>{{ r.student_count }}</td>
-                        <td><span class="cr-promo-status">{{ r.status|capitalize }}</span></td>
-                        <td>{{ r.created_at[:10] if r.created_at else '—' }}</td>
-                        <td>{{ r.created_by_name or '—' }}</td>
-                        <td>
-                            <a class="btn btn-secondary"
-                               href="{{ url_for('admin_school_promotion_run', run_id=r.id) }}">
-                                Open
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="cr-promo-empty">
-                            No promotion run has been generated yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="cr-promo-card">
-        <div class="cr-promo-card-head">
-            <div>
-                <span class="cr-promo-kicker">CONFIGURATION</span>
-                <h2>Current Class Progression</h2>
-                <p>
-                    These rules determine the default proposed destination
-                    for each class.
-                </p>
-            </div>
-        </div>
-
-        <div class="cr-promo-table-wrap">
-            <table class="cr-promo-table">
-                <thead>
-                    <tr>
-                        <th>Current Class</th>
-                        <th>Next Class</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in progressions %}
-                    <tr>
-                        <td><strong>{{ p.from_class_name }}</strong></td>
-                        <td>
-                            {% if p.to_class_name %}
-                                {{ p.to_class_name }}
-                            {% else %}
-                                <span class="cr-promo-muted">Terminal / no default</span>
-                            {% endif %}
-                        </td>
-                        <td><span class="cr-promo-status">Active</span></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="3" class="cr-promo-empty">
-                            No progression rules configured yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
+<section class="fi-p">
+  <div class="fi-h"><h2>Promotion runs <small>every draft, including committed ones</small></h2>{% if open_runs %}<span class="ac-tag ac-tag--blue">{{ open_runs|length }} waiting</span>{% endif %}</div>
+  {% if runs %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Run</th><th>From → into</th><th class="n">Students</th><th>Status</th><th>Started</th><th></th></tr></thead>
+    <tbody>{% for r in runs %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_school_promotion_run', run_id=r.id) }}" data-modal>#{{ r.id }}</a></td>
+      <td>{{ r.from_session_name }} → {{ r.to_session_name }}</td>
+      <td class="n">{{ r.student_count }}</td>
+      <td><span class="ac-tag{{ ' ac-tag--good' if r.status == 'committed' else (' ac-tag--blue' if r.status == 'approved' else (' ac-tag--attn' if r.status == 'draft' else '')) }}">{{ r.status|capitalize }}</span></td>
+      <td>{{ r.created_at[:10] if r.created_at else '—' }}<small>{{ r.created_by_name or '' }}</small></td>
+      <td class="ac-actions"><a class="ac-btn ac-btn--sm{{ ' ac-btn--primary' if r.status in ['draft', 'approved'] }}" href="{{ url_for('admin_school_promotion_run', run_id=r.id) }}" data-modal>{{ 'Review' if r.status == 'draft' else ('Commit' if r.status == 'approved' else 'Open') }}</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>No promotion run yet</strong>Make a draft above when the session ends.</div>{% endif %}
+</section>
 </div>
 {% endblock %}

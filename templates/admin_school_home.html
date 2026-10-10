@@ -1,259 +1,292 @@
 {% extends 'admin_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
-{% block title %}School Portal — {{ school_brand.name }}{% endblock %}
+{% import 'includes/_dash.html' as d %}
+{% block title %}Overview — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-/* The stat boxes sit three to a row, in two rows, beside Enrolled students. */
-.wd-stat-hero__secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-/* The second row: People and Top of the Class side by side. */
-.wd-top-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-5); align-items: stretch; margin: 0 0 var(--sp-5); }
-.wd-top-row .wd-people .wd-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.wd-top-row .wd-top-class { min-width: 0; }
-@media (max-width: 560px) {
-  .wd-stat-hero__secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 760px) {
-  .wd-top-row { grid-template-columns: 1fr; }
-}
-/* Top of the class: a card that fills its column, a featured leader, then ranked rows with score bars. */
-.tc-card { display: flex; flex-direction: column; height: 100%; min-width: 0; background: var(--surface-0, #fff); border: 1px solid var(--line, #e2e8f0); border-radius: 16px; padding: 20px 20px 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-.tc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.tc-eyebrow { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand, #0d2b52); }
-.tc-title { margin: 4px 0 0; font-size: 17px; font-weight: 700; color: var(--ink, #0f172a); line-height: 1.25; }
-.tc-title span { font-weight: 500; color: var(--ink-3, #64748b); }
-.tc-count { flex: none; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--brand, #0d2b52) 9%, #fff); color: var(--brand, #0d2b52); font-size: 12px; font-weight: 600; }
-.tc-leader { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--brand, #0d2b52); color: #fff; margin-bottom: 14px; }
-.tc-medal { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .18); font-weight: 800; font-size: 16px; }
-.tc-leader__body { min-width: 0; display: flex; flex-direction: column; }
-.tc-leader__name { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tc-leader__meta { font-size: 12px; opacity: .8; }
-.tc-leader__score { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
-.tc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.tc-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 6px; border-radius: 10px; }
-.tc-row:hover { background: #f8fafc; }
-.tc-pos { font-size: 13px; font-weight: 700; color: var(--ink-3, #64748b); padding-top: 1px; text-align: center; }
-.tc-row__main { min-width: 0; }
-.tc-row__top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.tc-row__name { font-size: 14px; font-weight: 600; color: var(--ink, #0f172a); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tc-row__score { font-size: 13px; font-weight: 700; flex: none; }
-.tc-bar { height: 6px; margin: 7px 0 5px; border-radius: 999px; background: #e9eef4; overflow: hidden; }
-.tc-bar span { display: block; height: 100%; border-radius: 999px; background: var(--brand, #0d2b52); }
-.tc-row__meta { font-size: 12px; color: var(--ink-3, #64748b); }
-.tc-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 12px; text-align: center; color: var(--ink-3, #64748b); font-size: 14px; line-height: 1.5; }
-.tc-empty p { margin: 0; max-width: 260px; }
-</style>
+{# The staff Overview: a dense report built for the person looking at it (blueprints/school/dashboard.py).
+   Each block is present only when its panel was worked out for this person's role and duties. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='2') }}">
+{% set p = panels %}
+<div class="ov">
 
-<div class="wd-head">
+<header class="ov-top">
   <div>
-    <h1 class="wd-head__title">School portal</h1>
-    <p class="wd-head__lead">Enrolled students, classes, subjects and academic assessment, kept separate from the Entrance Examination workspace.</p>
+    <h1>Overview{% if role_label %}<span>{{ role_label }}</span>{% endif %}</h1>
+    <p>{{ current_admin.display_name }}{% if admin_role_names %} · {{ admin_role_names|join(', ') }}{% endif %}{% if session_name %} · {{ session_name }}{% endif %}{% if show_term_picker %} · {{ term }}{% if previous_label %}, compared with {{ previous_label }}{% endif %}{% endif %}</p>
   </div>
-</div>
-
-<div class="wd-stat-hero">
-  <div class="wd-stat-hero__primary">
-    <span class="wd-stat-hero__icon">{{ icon('user') }}</span>
-    <span class="wd-stat-hero__value">{{ stats.students }}</span>
-    <span class="wd-stat-hero__label">Enrolled students</span>
-    <span class="wd-stat-hero__note">{{ stats.classes }} class{{ 'es' if stats.classes != 1 else '' }} · {{ stats.subjects }} subject{{ '' if stats.subjects == 1 else 's' }}</span>
-  </div>
-  <div class="wd-stat-hero__secondary">
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('grid') }}</span><span class="wd-stat-chip__value">{{ stats.classes }}</span><span class="wd-stat-chip__label">Classes</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('book') }}</span><span class="wd-stat-chip__value">{{ stats.subjects }}</span><span class="wd-stat-chip__label">Subjects</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('assignment') }}</span><span class="wd-stat-chip__value">{{ stats.assignments }}</span><span class="wd-stat-chip__label">Assignments</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('folder') }}</span><span class="wd-stat-chip__value">{{ stats.projects }}</span><span class="wd-stat-chip__label">Projects</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('edit') }}</span><span class="wd-stat-chip__value">{{ stats.tests }}</span><span class="wd-stat-chip__label">Tests</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('stopwatch') }}</span><span class="wd-stat-chip__value">{{ stats.examinations }}</span><span class="wd-stat-chip__label">Examinations</span></div>
-  </div>
-</div>
-
-{% if onboarding.show %}
-<section class="wd-setup" aria-label="Setup checklist">
-  <div class="wd-setup__head">
-    <div>
-      <h2 class="wd-setup__title">Finish setting up your school</h2>
-      <p class="wd-setup__lead">{{ onboarding.major_total }} essentials get your school ready to run, plus a few smaller things worth doing. Go in order, or jump straight to whichever you need. {{ onboarding.major_done }} of {{ onboarding.major_total }} essentials done.</p>
-    </div>
-    <div class="wd-setup__progress" role="img" aria-label="{{ onboarding.done_count }} of {{ onboarding.total }} steps done">
-      <svg viewBox="0 0 42 42" class="wd-setup__ring">
-        <circle cx="21" cy="21" r="17.5" class="wd-setup__ring-track"/>
-        <circle cx="21" cy="21" r="17.5" class="wd-setup__ring-fill"
-                style="stroke-dasharray:{{ (110 * onboarding.done_count / onboarding.total)|round(1) }} 110"/>
-      </svg>
-      <span class="wd-setup__progress-text">{{ onboarding.done_count }}/{{ onboarding.total }}</span>
-    </div>
-  </div>
-  <ol class="wd-setup__list">
-    {% for step in onboarding.steps %}
-    {% if step.group_start %}<li class="wd-setup__group" aria-hidden="true">{{ step.group }}</li>{% endif %}
-    <li class="wd-setup__step {{ 'is-done' if step.done else '' }}">
-      <span class="wd-setup__step-num">{{ icon('check') if step.done else loop.index }}</span>
-      <div class="wd-setup__step-body">
-        <strong>{{ step.label }}{% if not step.major %} <span class="wd-setup__tag">Optional</span>{% endif %}</strong>
-        <p>{{ step.text }}</p>
-        {% if step.warning and not step.done %}<p class="wd-setup__warn">⚠ {{ step.warning }}</p>{% endif %}
-      </div>
-      {% if not step.done and step.can_open %}
-      <a class="btn btn-light btn-small wd-setup__step-go" href="{{ url_for(step.endpoint) }}">Open {{ icon('arrow-right', 'ico-sm') }}</a>
-      {% elif step.done %}
-      <span class="wd-setup__step-done">Done</span>
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ol>
-  <form method="post" action="{{ url_for('admin_school_onboarding_dismiss') }}" class="wd-setup__dismiss">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <button class="linklike" type="submit">Hide this checklist</button>
+  {% if show_term_picker %}
+  <form method="get" class="ov-filter">
+    <label for="ovTerm">Term</label>
+    <select id="ovTerm" name="term" data-autosubmit>{% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+    <noscript><button class="btn btn-light btn-small" type="submit">Show</button></noscript>
   </form>
-</section>
+  {% endif %}
+</header>
+
+{# The setup checklist (School Admin only): one compact strip, open or folded away, in the school's own colours. #}
+{% if onboarding.show or (onboarding.dismissed and not onboarding.complete) %}
+{% set setup_pct = (100 * onboarding.done_count / onboarding.total)|round(0)|int if onboarding.total else 0 %}
+{% endif %}
+{% if onboarding.show %}
+<details class="ov-p ov-setup" style="margin-bottom:10px">
+  <summary class="ov-setup__bar">
+    <span class="ov-setup__title"><strong>Setting up the school</strong> <small>{{ onboarding.major_done }} of {{ onboarding.major_total }} essentials · {{ onboarding.done_count }} of {{ onboarding.total }} steps</small></span>
+    <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
+    <span class="ov-setup__toggle">Show steps</span>
+  </summary>
+  <table class="ov-t" style="margin-top:8px">
+    {% for step in onboarding.steps %}
+    <tr data-step="{{ step.label }}" data-done="{{ 1 if step.done else 0 }}" data-optional="{{ 0 if step.major else 1 }}"><td style="width:22px"><span class="ov-setup__n{{ ' is-done' if step.done }}">{{ '✓' if step.done else loop.index }}</span></td>
+      <td><strong>{{ step.label }}</strong>{% if not step.major %} <small>optional</small>{% endif %}<br><small>{{ step.text }}{% if step.warning and not step.done %} ⚠ {{ step.warning }}{% endif %}</small></td>
+      <td class="n">{% if not step.done and step.can_open %}<a class="ov-setup__go" href="{{ url_for(step.endpoint) }}">Open →</a>{% elif step.done %}<small>Done</small>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="{{ url_for('admin_school_onboarding_dismiss') }}" class="ov-setup__foot">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="ov-setup__link" type="submit">Hide this checklist</button>
+  </form>
+</details>
 {% elif onboarding.dismissed and not onboarding.complete %}
-<form method="post" action="{{ url_for('admin_school_onboarding_show') }}" class="wd-setup__reshow">
+<form method="post" action="{{ url_for('admin_school_onboarding_show') }}" class="ov-p ov-setup ov-setup__bar" style="margin-bottom:10px">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <button class="linklike" type="submit">Show setup checklist ({{ onboarding.done_count }}/{{ onboarding.total }} done)</button>
+  <span class="ov-setup__title"><strong>Setup checklist hidden</strong> <small>{{ onboarding.done_count }} of {{ onboarding.total }} steps done</small></span>
+  <span class="ov-setup__meter" role="img" aria-label="{{ setup_pct }}% done"><i style="width:{{ setup_pct }}%"></i></span>
+  <button class="ov-setup__btn" type="submit">Show setup checklist</button>
 </form>
 {% endif %}
 
-<div class="wd-top-row">
-  <section class="wd-people">
-    <h2 class="wd-module-group__label">People</h2>
-    <div class="wd-module-grid">
-      <a class="wd-module-card" href="{{ url_for('admin_school_students') }}">
-        <span class="wd-module-card__ico">{{ icon('user') }}</span>
-        <h3 class="wd-module-card__title">Students</h3>
-        <p class="wd-module-card__text">Register and maintain enrolled student records and their class connections.</p>
-        <span class="wd-module-card__go">Open Students {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_parents') }}">
-        <span class="wd-module-card__ico">{{ icon('user') }}</span>
-        <h3 class="wd-module-card__title">Parents</h3>
-        <p class="wd-module-card__text">Parent and guardian accounts, and the students each one is linked to.</p>
-        <span class="wd-module-card__go">Open Parents {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
+{# ---------------------------------------------------------------- the whole school #}
+{% if p.academic %}{% set a = p.academic %}
+<h2 class="ov-sec">The school</h2>
+{{ d.kpis(a.kpis) }}
+<div class="ov-g" style="margin-top:10px">
+  <section class="ov-p ov-p--8" aria-labelledby="ovClasses">
+    <div class="ov-h"><h2 id="ovClasses">Classes this term</h2><a href="{{ url_for('admin_school_results') }}">Results &amp; Records →</a></div>
+    <div class="ov-scroll">
+      <table class="ov-t">
+        <thead><tr><th>Class</th><th class="n">Students</th><th class="n">Average</th><th class="n">Attendance</th><th style="width:22%">Results</th><th>Top student</th></tr></thead>
+        <tbody>
+        {% for c in a.classes %}
+        <tr>
+          <td><a href="{{ c.href }}">{{ c.name }}</a>{% if not c.class_teacher %} <span class="ov-flag" title="No class teacher assigned">no class teacher</span>{% endif %}</td>
+          <td class="n">{{ c.students }}{% if c.students_before is not none and c.students_before != c.students %} <small>({{ '%+d'|format(c.students - c.students_before) }})</small>{% endif %}</td>
+          <td class="n">{% if c.score is not none %}{{ '%.1f'|format(c.score) }}% {{ d.delta_text(c.score_delta) }}{% else %}<small>—</small>{% endif %}</td>
+          <td class="n">{% if c.attendance is not none %}{{ '%.1f'|format(c.attendance) }}%{% else %}<small>—</small>{% endif %}</td>
+          <td>{% if c.pipeline_total %}{{ d.stack(c.pipeline, legend=False) }}{% else %}<small>no marks</small>{% endif %}</td>
+          <td>{% if c.top %}{{ c.top.name }} <small>{{ '%.0f'|format(c.top.percentage) }}% · {{ c.top.grade }}</small>{% else %}<small>—</small>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
+    <p class="dz-key"><i class="dz-k ds-waiting"></i>Not sent by subject teachers <i class="dz-k ds-ready"></i>Ready to release <i class="dz-k ds-released"></i>Released · student change vs last session in brackets</p>
   </section>
-  <div class="wd-top-class">
-    <section class="tc-card" aria-labelledby="tcTitle">
-      <header class="tc-head">
-        <div>
-          <span class="tc-eyebrow">Top of the class</span>
-          <h2 class="tc-title" id="tcTitle">{{ top_of_class_term }}{% if top_of_class_session %} <span>· {{ top_of_class_session }}</span>{% endif %}</h2>
-        </div>
-        {% if top_of_class %}<span class="tc-count">{{ top_of_class|length }} class{{ '' if top_of_class|length == 1 else 'es' }}</span>{% endif %}
-      </header>
-      {% if top_of_class %}
-        {% set leader = top_of_class[0] %}
-        <div class="tc-leader">
-          <span class="tc-medal" aria-hidden="true">1</span>
-          <div class="tc-leader__body">
-            <strong class="tc-leader__name">{{ leader.student_name }}</strong>
-            <span class="tc-leader__meta">{{ leader.class_name }} · Grade {{ leader.grade }}</span>
-          </div>
-          <span class="tc-leader__score">{{ '%.1f'|format(leader.percentage) }}%</span>
-        </div>
-        {% if top_of_class|length > 1 %}
-        <ol class="tc-list">
-          {% for row in top_of_class[1:] %}
-          {% set tone = 'good' if row.percentage >= 70 else ('fair' if row.percentage >= 50 else 'poor') %}
-          <li class="tc-row">
-            <span class="tc-pos">{{ loop.index + 1 }}</span>
-            <div class="tc-row__main">
-              <div class="tc-row__top">
-                <span class="tc-row__name">{{ row.student_name }}</span>
-                <span class="tc-row__score tone-{{ tone }}">{{ '%.1f'|format(row.percentage) }}%</span>
-              </div>
-              <div class="tc-bar" aria-hidden="true"><span style="width: {{ [row.percentage, 100]|min }}%"></span></div>
-              <div class="tc-row__meta">{{ row.class_name }} · Grade {{ row.grade }}</div>
-            </div>
-          </li>
-          {% endfor %}
-        </ol>
-        {% endif %}
-      {% else %}
-        <div class="tc-empty">
-          {{ icon('podium') }}
-          <p>No released results for {{ top_of_class_term }} yet. A class appears here once its report card results are released.</p>
-        </div>
-      {% endif %}
-    </section>
+  <section class="ov-p ov-p--4" aria-labelledby="ovAtt">
+    <div class="ov-h"><h2 id="ovAtt">Attendance <small>last {{ a.attendance_days|length }} days recorded</small></h2></div>
+    {{ d.rate_line(a.attendance_days) }}
+    <div class="ov-h" style="margin-top:12px"><h2>Enrolment by section</h2></div>
+    {{ d.hbars(a.sections, unit='', compare_label='Last session', now_label='This session', empty='No students enrolled yet.') }}
+    {% if a.gender %}<div style="margin-top:8px">{{ d.stack(a.gender, kind='split') }}</div>{% endif %}
+  </section>
+  <section class="ov-p ov-p--6" aria-labelledby="ovClassAvg">
+    <div class="ov-h"><h2 id="ovClassAvg">Class averages</h2></div>
+    {{ d.hbars(a.class_scores, compare_label=previous_label, empty='No marks recorded this term yet.') }}
+    {% if a.class_scores %}{{ d.table_of(a.class_scores, 'Average %', '%', previous_label) }}{% endif %}
+  </section>
+  <section class="ov-p ov-p--6" aria-labelledby="ovSubj">
+    <div class="ov-h"><h2 id="ovSubj">Subjects, strongest to weakest</h2></div>
+    {{ d.hbars(a.subjects, compare_label=previous_label, scroll=True, empty='No marks recorded this term yet.') }}
+    {% if a.subjects %}{{ d.table_of(a.subjects, 'Average %', '%', previous_label) }}{% endif %}
+  </section>
+</div>
+{% endif %}
+
+{# ---------------------------------------------------------------- my classes (class teacher) #}
+{% for c in p.my_classes or [] %}
+{% if loop.first %}<h2 class="ov-sec">My class{{ 'es' if p.my_classes|length > 1 }}</h2>{% endif %}
+<section class="ov-p" style="margin-bottom:10px" aria-label="{{ c.name }}">
+  <div class="ov-h"><h2>{{ c.name }} <small>class teacher</small></h2>
+    <span class="ov-links">
+      {% if c.can_mark %}<a href="{{ url_for('admin_school_attendance', class_id=c.id) }}">Register</a>{% endif %}
+      <a href="{{ url_for('admin_school_results', **{'class': c.name}) }}">{{ 'Review & release' if c.can_release else 'Results' }}</a>
+      {% if c.can_comment %}<a href="{{ url_for('admin_school_report_cards') }}">Report cards</a>{% endif %}
+    </span>
   </div>
+  {{ d.kpis(c.kpis) }}
+  <div class="ov-g" style="margin:0">
+    <div class="ov-in ov-in--5">
+      <h3 class="ov-sec" style="margin-top:0">Subject averages · school average as tick</h3>
+      {{ d.hbars(c.subjects, compare_label='School average', now_label=c.name, scroll=True, empty='No marks recorded this term yet.') }}
+    </div>
+    <div class="ov-in ov-in--4">
+      <h3 class="ov-sec" style="margin-top:0">Attendance, last days recorded</h3>
+      {{ d.rate_line(c.attendance_days) }}
+      <h3 class="ov-sec">Results</h3>
+      {{ d.stack(c.pipeline) }}
+    </div>
+    <div class="ov-in ov-in--3">
+      <h3 class="ov-sec" style="margin-top:0">Best this term</h3>
+      <ul class="ov-list">{% for s in c.best %}<li><span>{{ s.name }}</span><span>{{ '%.0f'|format(s.percentage) }}% {{ s.grade }}</span></li>{% else %}<li><span class="dz-empty">No marks yet</span></li>{% endfor %}</ul>
+      <h3 class="ov-sec">Needs support</h3>
+      <ul class="ov-list">{% for s in c.weakest %}<li><span>{{ s.name }}</span><span>{{ '%.0f'|format(s.percentage) }}%</span></li>{% endfor %}
+        {% for s in c.absent %}<li><span>{{ s.name }}</span><span>{{ s.days }} day{{ '' if s.days == 1 else 's' }} absent</span></li>{% endfor %}
+        {% if not c.weakest and not c.absent %}<li><span class="dz-empty">Nothing to flag</span></li>{% endif %}</ul>
+    </div>
+  </div>
+</section>
+{% endfor %}
+
+{# ---------------------------------------------------------------- my subjects (subject teacher) #}
+{% if p.my_teaching %}{% set t = p.my_teaching %}
+<h2 class="ov-sec">The subjects I teach</h2>
+<section class="ov-p" style="margin-bottom:10px" aria-labelledby="ovTeach">
+  <div class="ov-h"><h2 id="ovTeach">{{ term }}</h2>
+    <span class="ov-links">
+      {% if admin_has_permission(current_admin['id'], 'school.results.enter') %}<a href="{{ url_for('admin_school_result_manual_new') }}">Enter offline scores</a>{% endif %}
+      {% if admin_has_permission(current_admin['id'], 'school.assignments.create') %}<a href="{{ url_for('admin_school_assignment_new') }}">Set an assignment</a>{% endif %}
+    </span>
+  </div>
+  {{ d.kpis(t.kpis) }}
+  <div class="ov-scroll">
+    <table class="ov-t">
+      <thead><tr><th>Subject · class</th><th class="n">Marked</th><th style="width:18%">Results</th><th class="n">To send</th><th class="n">Average</th><th class="n">School</th><th style="width:16%">Spread (0–100)</th></tr></thead>
+      <tbody>
+      {% for r in t.rows %}
+      <tr>
+        <td><strong>{{ r.subject_name }}</strong> · <a href="{{ r.href }}">{{ r.class_name }}</a>{% if r.department %} <small>{{ r.department }}</small>{% endif %}</td>
+        <td class="n">{{ r.marked }}/{{ r.students }}</td>
+        <td>{{ d.stack(r.pipeline, legend=False) }}</td>
+        <td class="n">{% if r.to_send %}<span class="ov-flag">{{ r.to_send }}</span>{% else %}<small>—</small>{% endif %}</td>
+        <td class="n">{% if r.score is not none %}{{ '%.1f'|format(r.score) }}% {{ d.delta_text(r.score_delta) }}{% else %}<small>—</small>{% endif %}</td>
+        <td class="n">{% if r.school is not none %}{{ '%.1f'|format(r.school) }}%{% else %}<small>—</small>{% endif %}</td>
+        <td>{{ d.spread(r.low, r.score, r.high) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="dz-key"><i class="dz-k ds-waiting"></i>To send <i class="dz-k ds-ready"></i>With the class teacher <i class="dz-k ds-released"></i>Released · Spread: lowest to highest student, dot = average</p>
+  <div class="ov-g" style="margin:10px 0 0">
+    <div class="ov-in ov-in--5">
+      <h3 class="ov-sec" style="margin-top:0">My classes against the school</h3>
+      {{ d.hbars(t.vs_school, compare_label='School average for the subject', now_label='My class', empty='No marks recorded this term yet.') }}
+    </div>
+    <div class="ov-in ov-in--4">
+      <h3 class="ov-sec" style="margin-top:0">Grades across my students</h3>
+      {{ d.hbars(t.grades, unit='', empty='No marks recorded this term yet.') }}
+      {% if t.grades|sum(attribute='value') %}{{ d.table_of(t.grades, 'Students', '') }}{% endif %}
+    </div>
+    <div class="ov-in ov-in--3">
+      <h3 class="ov-sec" style="margin-top:0">Needs support</h3>
+      <ul class="ov-list">{% for s in t.support %}<li><span>{{ s.name }} <small style="color:var(--ov-muted)">{{ s.where }}</small></span><span>{{ '%.0f'|format(s.percentage) }}%</span></li>{% else %}<li><span class="dz-empty">Nothing to flag</span></li>{% endfor %}</ul>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- money #}
+{% if p.finance %}{% set f = p.finance %}
+<h2 class="ov-sec">{{ 'Fees and collections' if not f.own else 'My collections' }}</h2>
+{{ d.kpis(f.kpis) }}
+<div class="ov-g" style="margin-top:10px">
+  <section class="ov-p{{ ' ov-p--8' if not f.own }}" aria-labelledby="ovDaily">
+    <div class="ov-h"><h2 id="ovDaily">Collections, last 30 days <small>{{ 'every payment posted' if not f.own else 'payments you recorded' }}</small></h2><a href="{{ url_for('admin_finance_dashboard') }}">Finance →</a></div>
+    {{ d.columns(f.columns, f.column_max, unit='₦', empty='No payments in the last 30 days.') }}
+    {% if f.methods %}<h3 class="ov-sec">How it was paid this month</h3>{{ d.stack(f.methods, kind='split', unit='₦') }}{% endif %}
+    {{ d.table_of(f.columns, 'Collected', '₦') }}
+    <div class="ov-g" style="margin:10px 0 0">
+      <div class="ov-in ov-in--{{ '5' if not f.own else '12' }}">
+        <h3 class="ov-sec" style="margin-top:0">Month by month</h3>
+        {{ d.columns(f.monthly, f.monthly_max, unit='₦', empty='No payments yet.') }}
+      </div>
+      {% if not f.own %}
+      <div class="ov-in" style="grid-column:span 7;min-width:0">
+        <h3 class="ov-sec" style="margin-top:0">By fee item</h3>
+        <table class="ov-t"><thead><tr><th>Item</th><th class="n">Billed</th><th class="n">Collected</th><th class="n">Owed</th><th class="n">Rate</th></tr></thead><tbody>
+        {% for i in f.by_item %}<tr><td>{{ i.name }}</td><td class="n">{{ d.fmt(i.billed, '₦') }}</td><td class="n">{{ d.fmt(i.paid, '₦') }}</td><td class="n">{{ d.fmt(i.owed, '₦') }}</td><td class="n">{{ '%.0f'|format(i.rate or 0) }}%</td></tr>
+        {% else %}<tr><td colspan="5" class="dz-empty">Nothing billed yet.</td></tr>{% endfor %}
+        </tbody></table>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% if not f.own %}
+  <section class="ov-p ov-p--4" aria-labelledby="ovDebt">
+    <div class="ov-h"><h2 id="ovDebt">Largest balances <small>{{ f.owing_students }} owing</small></h2></div>
+    <table class="ov-t"><tbody>
+      {% for x in f.debtors %}<tr><td><a href="{{ x.href }}">{{ x.name }}</a> <small>{{ x.class }}</small></td><td class="n">₦{{ '{:,.0f}'.format(x.amount) }}</td></tr>
+      {% else %}<tr><td class="dz-empty">Nobody owes anything.</td></tr>{% endfor %}
+    </tbody></table>
+    <div class="ov-h" style="margin-top:12px"><h2>Owed, by class</h2></div>
+    {{ d.hbars(f.owed_by_class, unit='₦', empty='Nothing owed.') }}
+    <div class="ov-h" style="margin-top:12px"><h2>Collection rate, by class <small>paid of billed</small></h2></div>
+    {{ d.hbars(f.rate_by_class, max_value=100, empty='Nothing billed yet.') }}
+  </section>
+  {% endif %}
 </div>
+{% endif %}
 
-<div class="wd-module-groups">
-
-  <section>
-    <h2 class="wd-module-group__label">Academic structure</h2>
-    <div class="wd-module-grid">
-      <a class="wd-module-card" href="{{ url_for('admin_school_classes') }}">
-        <span class="wd-module-card__ico">{{ icon('grid') }}</span>
-        <h3 class="wd-module-card__title">Classes</h3>
-        <p class="wd-module-card__text">Daycare / Playgroup / Nursery Reception, Primary 1–6, JSS 1–3 and SSS 1–3.</p>
-        <span class="wd-module-card__go">Open Classes {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_subjects') }}">
-        <span class="wd-module-card__ico">{{ icon('book') }}</span>
-        <h3 class="wd-module-card__title">Subjects</h3>
-        <p class="wd-module-card__text">Create subjects for the classes where they are offered, with School Admin locking.</p>
-        <span class="wd-module-card__go">Open Subjects {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-    </div>
+{# ---------------------------------------------------------------- the rest of the office #}
+{% if p.records or p.library or p.admissions or p.parents %}
+<div class="ov-g">
+  {% if p.records %}{% set r = p.records %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovRecords">
+    <div class="ov-h"><h2 id="ovRecords">Student records</h2><a href="{{ url_for('admin_school_student_new') }}">Register a student →</a></div>
+    {{ d.kpis(r.kpis) }}
+    <h3 class="ov-sec">Students by class</h3>
+    {{ d.hbars(r.by_class, unit='', compare_label='Last session', now_label='This session', scroll=True, empty='No students enrolled yet.') }}
+    {% if r.gender %}<div style="margin-top:8px">{{ d.stack(r.gender, kind='split') }}</div>{% endif %}
   </section>
-
-  <section>
-    <h2 class="wd-module-group__label">Assessment</h2>
-    <div class="wd-module-grid">
-      <a class="wd-module-card" href="{{ url_for('admin_school_assignments') }}">
-        <span class="wd-module-card__ico">{{ icon('assignment') }}</span>
-        <h3 class="wd-module-card__title">Assignments</h3>
-        <p class="wd-module-card__text">Create written or CBT-style assignments, set timing and track completion.</p>
-        <span class="wd-module-card__go">Open Assignments {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_projects') }}">
-        <span class="wd-module-card__ico">{{ icon('folder') }}</span>
-        <h3 class="wd-module-card__title">Projects</h3>
-        <p class="wd-module-card__text">Create practical classroom projects with required dates, completion and scores.</p>
-        <span class="wd-module-card__go">Open Projects {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_tests') }}">
-        <span class="wd-module-card__ico">{{ icon('edit') }}</span>
-        <h3 class="wd-module-card__title">Tests</h3>
-        <p class="wd-module-card__text">Create teacher-managed tests and load questions into each assessment.</p>
-        <span class="wd-module-card__go">Open Tests {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_practice_tests') }}">
-        <span class="wd-module-card__ico">{{ icon('target') }}</span>
-        <h3 class="wd-module-card__title">Practice Tests</h3>
-        <p class="wd-module-card__text">Manage practice assessments separately from official school examinations.</p>
-        <span class="wd-module-card__go">Open Practice Tests {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_school_examinations') }}">
-        <span class="wd-module-card__ico">{{ icon('stopwatch') }}</span>
-        <h3 class="wd-module-card__title">Examinations</h3>
-        <p class="wd-module-card__text">Create formal school examinations and load their questions.</p>
-        <span class="wd-module-card__go">Open Examinations {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
+  {% endif %}
+  {% if p.library %}{% set l = p.library %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovLibrary">
+    <div class="ov-h"><h2 id="ovLibrary">Library</h2><a href="{{ url_for('admin_library') }}">Library →</a></div>
+    {{ d.kpis(l.kpis) }}
+    <div class="ov-g" style="margin:0">
+      <div class="ov-in ov-in--6"><h3 class="ov-sec" style="margin-top:0">Loans per week</h3>{{ d.columns(l.columns, l.column_max, empty='No loans yet.') }}</div>
+      <div class="ov-in ov-in--6"><h3 class="ov-sec" style="margin-top:0">Most borrowed</h3>{{ d.hbars(l.popular, unit='', empty='No loans yet.') }}</div>
     </div>
+    {% if l.overdue %}<h3 class="ov-sec">Overdue</h3>
+    <table class="ov-t"><tbody>{% for o in l.overdue %}<tr><td>{{ o.title }}</td><td>{{ o.who }}</td><td class="n"><span class="ov-flag">{{ o.days }} day{{ '' if o.days == 1 else 's' }}</span></td></tr>{% endfor %}</tbody></table>{% endif %}
   </section>
-
-  <section>
-    <h2 class="wd-module-group__label">Records &amp; communication</h2>
-    <div class="wd-module-grid">
-      <a class="wd-module-card" href="{{ url_for('admin_school_results') }}">
-        <span class="wd-module-card__ico">{{ icon('trend') }}</span>
-        <h3 class="wd-module-card__title">Results &amp; Records</h3>
-        <p class="wd-module-card__text">View connected academic records for enrolled students.</p>
-        <span class="wd-module-card__go">Open Results {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-      <a class="wd-module-card" href="{{ url_for('admin_messages', tab='parents') }}">
-        <span class="wd-module-card__ico">{{ icon('message') }}</span>
-        <h3 class="wd-module-card__title">Messages</h3>
-        <p class="wd-module-card__text">Message colleagues, answer parents and reach out to a student's parent.</p>
-        <span class="wd-module-card__go">Open Messages {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
-    </div>
+  {% endif %}
+  {% if p.admissions %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovAdm">
+    <div class="ov-h"><h2 id="ovAdm">Admissions</h2><a href="{{ url_for('admin_candidate_admissions') }}">Admissions →</a></div>
+    {{ d.kpis(p.admissions.kpis) }}
+    <h3 class="ov-sec">Waiting, by entry class</h3>
+    {{ d.hbars(p.admissions.groups, unit='', empty='Nobody is waiting.') }}
   </section>
-
+  {% endif %}
+  {% if p.parents %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovParents">
+    <div class="ov-h"><h2 id="ovParents">Parents' messages</h2><a href="{{ url_for('admin_messages', tab='parents') }}">Messages →</a></div>
+    {{ d.kpis(p.parents.kpis) }}
+    <h3 class="ov-sec">New conversations, last 14 days</h3>
+    {{ d.columns(p.parents.columns, p.parents.column_max, empty='No new conversations.') }}
+  </section>
+  {% endif %}
 </div>
+{% endif %}
 
+{% if not has_panels %}<p class="ov-p dz-empty" style="margin-bottom:10px">Nothing on this page needs your attention. Your pages are in the menu.</p>{% endif %}
 
-<div class="ui-alert"><strong>Portal boundary.</strong> This workspace is for enrolled school students; entrance-examination candidates stay in the separate Entrance Examination workspace. Students sign in through the shared school sign-in page, which routes them to the Student Portal.</div>
+{% if shortcuts %}
+<nav class="ov-p ov-links" aria-label="Your pages"><strong style="color:var(--ov-muted);font-weight:600">Go to</strong>{% for s in shortcuts %}<a href="{{ s.url }}">{{ s.label }}</a>{% endfor %}</nav>
+{% endif %}
+
+<div class="ov-tip" id="ovTip" role="tooltip" hidden></div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  // One tooltip for every mark that carries data-tip: it follows the pointer and also shows on keyboard focus.
+  var tip=document.getElementById('ovTip'), root=document.querySelector('.ov'); if(!tip||!root) return;
+  function show(el,x,y){ tip.textContent=el.getAttribute('data-tip'); tip.hidden=false;
+    var w=tip.offsetWidth, h=tip.offsetHeight;
+    tip.style.left=Math.min(window.innerWidth-w-8, x+12)+'px'; tip.style.top=Math.max(8, y-h-10)+'px'; }
+  root.addEventListener('mousemove',function(e){ var el=e.target.closest('[data-tip]'); if(el) show(el,e.clientX,e.clientY); else tip.hidden=true; });
+  root.addEventListener('mouseleave',function(){ tip.hidden=true; });
+  root.addEventListener('focusin',function(e){ var el=e.target.closest('[data-tip]'); if(!el) return; var r=el.getBoundingClientRect(); show(el,r.left,r.top); });
+  root.addEventListener('focusout',function(){ tip.hidden=true; });
+})();
+</script>
 {% endblock %}

@@ -320,7 +320,7 @@ check("with candidates.view only, the viewer is refused (403) the whole waitlist
       and viewer.post(f"{CANDS}/{LOW_SCORE}/admit", {"first_name": "X", "last_name": "Y"}, page="/admin/password").status_code == 403
       and viewer.post(f"{CANDS}/{LOW_SCORE}/decline", {}, page="/admin/password").status_code == 403)
 check("…nor do they see 'Admissions' in the menu, while an officer does",
-      "admissions" not in viewer.text("/admin/examination").lower() and "admissions" in officer.text("/admin/examination").lower())
+      'href="/admin/candidates/admissions"' not in viewer.text("/admin/examination") and 'href="/admin/candidates/admissions"' in officer.text("/admin/examination"))
 SSS_CAND = register(op, "Sss Candidate", target_class="SSS 1")
 submit_attempt(SSS_CAND, 65)
 check("an officer scoped to JSS 1 candidates only can act on one of them",

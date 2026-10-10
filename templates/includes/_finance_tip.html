@@ -1,0 +1,15 @@
+{# One tooltip for every finance mark that carries data-tip: it follows the pointer and shows on keyboard
+   focus too. Runs again after an in-place load (static/inplace.js), on the new content only. #}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-fi]:not([data-fi-ready])'); if(!root) return; root.setAttribute('data-fi-ready','1');
+  var tip=root.querySelector('[data-fi-tip]'); if(!tip) return;
+  function show(el,x,y){ tip.textContent=el.getAttribute('data-tip'); tip.hidden=false;
+    var w=tip.offsetWidth, h=tip.offsetHeight;
+    tip.style.left=Math.max(8,Math.min(window.innerWidth-w-8,x+12))+'px'; tip.style.top=Math.max(8,y-h-10)+'px'; }
+  root.addEventListener('mousemove',function(e){ var el=e.target.closest('[data-tip]'); if(el&&root.contains(el)) show(el,e.clientX,e.clientY); else tip.hidden=true; });
+  root.addEventListener('mouseleave',function(){ tip.hidden=true; });
+  root.addEventListener('focusin',function(e){ var el=e.target.closest('[data-tip]'); if(!el) return; var r=el.getBoundingClientRect(); show(el,r.left,r.top); });
+  root.addEventListener('focusout',function(){ tip.hidden=true; });
+})();
+</script>

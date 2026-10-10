@@ -1,26 +1,64 @@
 {% extends 'school_guide/_layout.html' %}
 {% from 'school_guide/_macros.html' import page with context %}
 {% block guide %}
-<p>The School portal's home page is the first thing you see after choosing the School workspace. It gives the
-school's numbers, the next steps for a new school, which term's top students each class has, and the panel
-that tells you what has changed. You can reach every area of the school from its cards.</p>
+<p>The School portal's home page (<a href="{{ url_for('admin_school_home') }}">Overview</a>) is made for the person
+looking at it. Nobody sees a general page: each part only appears when your role and your teaching duties call for it,
+so a bursar sees money and never a ranking of students, and a subject teacher sees their own subjects' marks and
+nothing about fees. Your name and your level (for example Head teacher or Class teacher) are at the top.</p>
 
-<h2 id="numbers">The numbers at the top</h2>
-<p>The large tile counts the students enrolled in the current session. The smaller tiles count classes,
-subjects, assignments, projects, tests and examinations. Each one is a live count, so it changes as work is
-added or removed. Deleted work is not counted.</p>
+<h2 id="numbers">What each person sees</h2>
+<ul>
+  <li><strong>Proprietor / School Admin:</strong> the setup checklist, the whole school this term (students, classes,
+  subjects, work, and how many marks are ready to release or still with teachers, class by class, and any class with
+  no class teacher yet), and the top student of every class.</li>
+  <li><strong>Head teacher:</strong> the same whole-school picture and top students, without the setup checklist.</li>
+  <li><strong>Class teacher:</strong> a card for each class they are in charge of: whether today's register has been
+  taken, marks ready for them to release, marks the subject teachers have not sent yet, how many report card comments
+  are written, and the class's top student.</li>
+  <li><strong>Subject teacher:</strong> each subject they teach in each class: how many students are marked, the marks
+  still to send, the class average against last term and against the school, the spread of scores, the grades across
+  all their students, who needs support, and work waiting to be graded.</li>
+  <li><strong>Bursar and finance officers:</strong> collections today, month to date and this session (each against
+  yesterday or last month), the last 30 days and the last six months as charts, how payments were made, fees owed,
+  the collection rate overall, by class and by fee item, and the largest balances. A cashier who only records payments
+  sees only their own takings.</li>
+  <li><strong>Librarian:</strong> titles, copies on the shelf, books on loan and overdue loans.</li>
+  <li><strong>Admissions officer:</strong> candidates waiting for an admissions decision.</li>
+  <li><strong>Whoever answers parents:</strong> new conversations nobody has taken yet, open and in progress.</li>
+  <li><strong>Secretary and records officers:</strong> students registered this month, SSS students with no
+  department, and students with no parent account.</li>
+</ul>
+<h2 id="reading">Reading the numbers and charts</h2>
+<ul>
+  <li><strong>Every headline number has a comparison</strong> beneath it: the term before, last session, yesterday, the
+  same days last month or the week before. ▲ and ▼ show the direction; green means the change is good, red that it
+  is not (fewer new parent complaints is good, so that one turns green going down).</li>
+  <li><strong>Bars</strong> are sorted largest first. A thin grey tick on a bar marks the comparison: last term for class
+  and subject averages, the school average on a teacher's own class, last session for enrolment.</li>
+  <li><strong>The results bar</strong> runs light to dark: not yet sent by the subject teacher, ready to release, released.</li>
+  <li><strong>Spread</strong> (for a subject teacher) shows the lowest and highest student in a class, with the class
+  average as a dot.</li>
+  <li>A yellow tile is something waiting on someone: marks to release, a register not taken, fees owed, books overdue.</li>
+  <li>Hover over (or tab to) any bar, column or point to see its exact figure, and open <em>Table</em> under a chart to
+  read every value as a list.</li>
+</ul>
+<p>Someone with several roles sees every part their roles allow. At the bottom, <em>Go to</em> lists only the pages
+your role can open. The academic parts count one term at a time: the latest term with results, or the one you
+choose at the top right.</p>
 
 <h2 id="setup">Finish setting up your school</h2>
-<p>A new school has four steps to finish before it can really run: review its classes (the standard list is
+<p>Only the School Admin sees this checklist. A new school has four steps to finish before it can really run: review its classes (the standard list is
 already there, so usually this is done), add its subjects, enrol its students, and set up its fee items. Each
 step shows as done when the school has the data for it, and it links straight to the page where that happens.
 See {{ page('classes-subjects', 'Classes and subjects') }}, {{ page('students', 'Students') }} and
 {{ page('finance', 'Fees, payments and receipts') }}.</p>
-<p>Closing the checklist hides it for the whole school, as it always has. Its progress is refreshed about every
+<p>Closing the checklist (<em>Hide this checklist</em>) folds it into a small bar at the top of the Overview that
+still shows how far setup has got; <strong>Show setup checklist</strong> brings it back. Closing it hides it for the whole school, as it always has. Its progress is refreshed about every
 fifteen minutes, so a step you have just finished may take that long to show as done.</p>
 
 <h2 id="top-of-class">Top of the Class</h2>
-<p>This card shows the highest-scoring student in each class for the current term and session. A class appears
+<p>This card shows the highest-scoring student in each class for the chosen term and session (for a class teacher,
+only their own classes; staff outside the teaching chain never see it). A class appears
 only once its report card results for that term are released, so a class with no released results is left off
 rather than shown empty. The leader is featured at the top, and the other classes follow with their percentage
 and grade. The term and session are shown in the card's heading.</p>
@@ -33,7 +71,7 @@ page when you arrive. Read more about it in {{ page('staff-admin', 'Staff, roles
 <em>The panel at the bottom right</em>.</p>
 
 <h2 id="where-to-go">Where to go from here</h2>
-<p>The cards below the numbers are grouped by area: people and access, academic structure, assessment, and records
-and communication. Each card opens its page and says what that page is for. If a card you expect is missing, the
-reason is almost always a permission. See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</p>
+<p>The <em>Go to</em> links at the bottom, and the buttons on each card, open the pages behind them. If something you
+expect is missing, the reason is almost always your role or your teaching duties. See
+{{ page('roles-permissions', 'Roles, permissions and scope') }}.</p>
 {% endblock %}

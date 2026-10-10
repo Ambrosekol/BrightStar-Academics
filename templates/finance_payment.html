@@ -1,0 +1,166 @@
+{% extends 'admin_base.html' %}
+{% block title %}Receipt {{ payment.receipt_no }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# One payment and everything that can be done with it, on one page: the receipt exactly as issued (printing, the
+   PDF and the copies sent to parents are this same receipt), applying the payment to the student's fees, sending
+   it to the family, and voiding or refunding it. It opens in a pop-up from the payments list, a student's account
+   or the Collections page; the receipt and "allocate" addresses both show it, so a save from either stays in the
+   pop-up (data-modal-scope). After recording a payment it opens as a page of its own. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set aid = current_admin['id'] %}
+{% set can_manage = admin_has_permission(aid, 'finance.manage') %}
+{% set can_record = admin_has_permission(aid, 'finance.record') %}
+{% set posted = payment.status == 'posted' %}
+{% set applied = payment_allocated %}
+{% set student_name = [payment.first_name, payment.middle_name, payment.last_name]|select|join(' ') %}
+{% set receipt_url = url_for('admin_finance_receipt', payment_id=payment.id) %}
+{% set apply_url = url_for('admin_finance_payment_allocate', payment_id=payment.id) %}
+<div class="ac fi fp" data-fi data-fp="{{ payment.id }}" data-modal-scope="{{ receipt_url }} {{ apply_url }}" data-modal-size="wide">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% else %}{% set fin_tab = 'payments' %}{% include 'includes/_finance_frame.html' %}
+<a class="fi-back" href="{{ url_for('admin_finance_payments') }}">← Payments</a>{% endif %}
+<link rel="stylesheet" href="{{ url_for('static', filename='receipt.css', v='2') }}">
+
+<header class="fp-head">
+  <div>
+    <span class="acq-kind">Payment · {{ payment.receipt_no }}</span>
+    <h2>{{ naira(payment.amount) }} <small>from {{ payment.payer_name or '—' }}</small></h2>
+    <p>For <a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=payment.student_id, session_id=payment.session_id) }}"{% if modal %} data-modal{% endif %}>{{ student_name }}</a>
+      · {{ payment.admission_no }}{% if payment.class_name %} · {{ payment.class_name }}{% endif %}{% if payment.session_name %} · {{ payment.session_name }}{% endif %}</p>
+  </div>
+  <div class="fp-state">
+    {% if not posted %}<span class="ac-tag ac-tag--attn">Voided</span>
+    {% elif refund and refund.status in ('pending','settling') %}<span class="ac-tag ac-tag--attn" title="Requested {{ refund.requested_at }}">Refund pending with Paystack</span>
+    {% elif available_payment > 0.005 %}<span class="ac-tag ac-tag--attn">{{ naira(available_payment) }} not yet applied</span>
+    {% else %}<span class="ac-tag ac-tag--good">Fully applied to fees</span>{% endif %}
+  </div>
+</header>
+<dl class="fp-facts">
+  <div><dt>Paid</dt><dd>{{ payment.paid_at[:16]|replace('T', ' ') if payment.paid_at else '—' }}</dd></div>
+  <div><dt>Method</dt><dd>{{ payment.method or '—' }}{% if payment.reference %} · <span title="Reference">{{ payment.reference }}</span>{% endif %}</dd></div>
+  <div><dt>For</dt><dd>{{ payment.category or 'School Fees' }}</dd></div>
+  <div><dt>Recorded by</dt><dd>{{ recorded_by_name or '—' }}</dd></div>
+</dl>
+
+<div class="fp-grid">
+  <section class="fp-receipt" aria-label="The receipt">
+    {% include 'includes/_receipt_sheet.html' %}
+    <div class="fp-receipt__acts">
+      <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_receipt_print', payment_id=payment.id) }}" target="_blank" rel="noopener">Print receipt</a>
+      <a class="ac-btn" href="{{ url_for('admin_finance_receipt_pdf', payment_id=payment.id) }}" target="_blank" rel="noopener">Open PDF</a>
+      {% if can_manage %}<a class="ac-link" href="{{ url_for('admin_finance_receipt_settings') }}" data-full>{{ 'Change' if signature_path else 'Add' }} the authorised signature</a>{% endif %}
+    </div>
+  </section>
+
+  <div class="fp-side">
+    {% if posted %}
+    <section class="fp-card{{ ' is-focus' if focus == 'apply' or available_payment > 0.005 }}" id="fpApply" aria-labelledby="fpApplyH">
+      <div class="fi-h"><h2 id="fpApplyH">Apply to fees</h2><small class="ac-hint">says which fee this money pays</small></div>
+      {% set pct = (100 * applied / payment.amount)|round(0)|int if payment.amount else 0 %}
+      <div class="fp-meter"><span><i style="width:{{ pct }}%"></i></span>
+        <p><b>{{ naira(applied) }}</b> applied · <b class="{{ 'fi-owe' if available_payment > 0.005 }}">{{ naira(available_payment) }}</b> free</p></div>
+
+      {% if available_payment > 0.005 and outstanding and can_record %}
+      <form method="post" action="{{ apply_url }}" class="fp-apply" data-fp-apply data-available="{{ available_payment }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="allocations" value="{}" data-fp-payload>
+        <ul class="fp-fees">
+          {% for a in outstanding %}
+          <li class="fp-fee" data-assessment-id="{{ a.id }}" data-outstanding="{{ a.outstanding }}">
+            <span class="fp-fee__what"><b>{{ a.category }}</b><small>{{ a.fee_type }}{% if a.due_date %} · due {{ a.due_date }}{% endif %} · owes {{ naira(a.outstanding) }}</small></span>
+            <button type="button" class="ac-link" data-fp-fill title="Apply as much as this fee owes">Fill</button>
+            <label class="fp-amt"><span>₦</span><input type="number" min="0" max="{{ a.outstanding }}" step="0.01" value="" placeholder="0.00" inputmode="decimal" data-assessment-id="{{ a.id }}" aria-label="Amount for {{ a.category }}"></label>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="fp-apply__foot">
+          <button type="button" class="ac-btn" data-fp-auto title="Pays the oldest fees first until the money runs out">Fill oldest first</button>
+          <span class="fp-apply__sum" data-fp-msg aria-live="polite">Applying <b data-fp-total>₦0.00</b> · <span data-fp-left>{{ naira(available_payment) }}</span> left</span>
+          <button type="submit" class="ac-btn ac-btn--primary" data-fp-save disabled>Apply</button>
+        </div>
+      </form>
+      {% elif available_payment > 0.005 and not outstanding %}
+      <p class="fi-callout fi-callout--quiet">Nothing is owed for {{ payment.session_name or 'this session' }}, so this {{ naira(available_payment) }} stays unapplied. Charge the fee it was meant for under Fee structure first, then apply it here.</p>
+      {% elif available_payment <= 0.005 %}
+      <p class="fp-done">Every naira of this payment has been applied.</p>
+      {% endif %}
+
+      {% if existing %}
+      <h3 class="fp-sub">Applied so far</h3>
+      <ul class="fp-applied">
+        {% for x in existing %}<li class="{{ 'is-voided' if x.voided_at }}"><span>{{ x.category }} <small>{{ x.term or 'Full Session' }}</small></span><b>{{ naira(x.amount) }}</b></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+
+    <section class="fp-card" aria-labelledby="fpSendH">
+      <div class="fi-h"><h2 id="fpSendH">Send to the family</h2></div>
+      <p class="ac-hint" style="margin:0 0 8px">The receipt went to the guardian when the payment was recorded. Send it again if they ask.</p>
+      <div class="fp-row">
+        <form method="post" action="{{ url_for('admin_finance_receipt_email', payment_id=payment.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn" type="submit"{% if not payment.guardian_email %} title="No guardian email on file"{% endif %}>Email the receipt</button></form>
+        <form method="post" action="{{ url_for('admin_finance_receipt_sms', payment_id=payment.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn" type="submit"{% if not payment.guardian_phone %} title="No guardian phone on file"{% endif %}>Send a text (SMS)</button></form>
+      </div>
+      <small class="ac-hint">{{ payment.guardian_email or 'No email' }} · {{ payment.guardian_phone or 'no phone' }}</small>
+    </section>
+
+    {% if can_manage and posted %}
+    <details class="fp-card fp-danger">
+      <summary>Correct a mistake</summary>
+      <form method="post" action="{{ url_for('admin_finance_payment_void', payment_id=payment.id) }}" data-confirm="Void this payment? Its receipt stays in the history, marked VOID, and what it paid is owed again.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label class="ac-hint" for="fpVoid{{ payment.id }}">Void it, for example if it was recorded twice or for the wrong student</label>
+        <div class="fp-row"><input id="fpVoid{{ payment.id }}" class="ac-input" name="reason" required placeholder="Reason for voiding"><button class="ac-btn ac-btn--danger" type="submit">Void payment</button></div>
+      </form>
+      {% if is_online_payment and not (refund and refund.status in ('pending','settling')) %}
+      <form method="post" action="{{ url_for('admin_finance_payment_refund', payment_id=payment.id) }}" data-confirm="Refund this payment through Paystack? The money goes straight back to whoever paid it.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label class="ac-hint" for="fpRefund{{ payment.id }}">Paid online: refund it through Paystack{% if refund and refund.status == 'failed' %} (the last attempt failed{% if refund.failure_reason %}: {{ refund.failure_reason }}{% endif %}){% endif %}</label>
+        <div class="fp-row"><input id="fpRefund{{ payment.id }}" class="ac-input" name="reason" required placeholder="Reason for refunding"><button class="ac-btn ac-btn--danger" type="submit">Refund via Paystack</button></div>
+      </form>
+      {% endif %}
+    </details>
+    {% endif %}
+    {% else %}
+    <section class="fp-card"><p class="fp-done fp-done--void">This payment was voided. Its receipt is kept, marked VOID, for the record; nothing it paid counts any more.</p></section>
+    {% endif %}
+  </div>
+</div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-fp="{{ payment.id }}"]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-fp-apply]'); if(!form) return;
+  var available=Number(form.dataset.available)||0, inputs=[].slice.call(form.querySelectorAll('input[data-assessment-id]'));
+  var payload=form.querySelector('[data-fp-payload]'), save=form.querySelector('[data-fp-save]');
+  var totalEl=form.querySelector('[data-fp-total]'), leftEl=form.querySelector('[data-fp-left]'), msg=form.querySelector('[data-fp-msg]');
+  function money(v){ return '₦'+Number(v||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function cents(v){ return Math.round(Number(v||0)*100)/100; }
+  // The running total: what is being applied, what is left of the payment, and whether it can be saved.
+  function calc(){
+    var total=0, out={};
+    inputs.forEach(function(i){ var max=Number(i.max)||0, v=cents(i.value);
+      if(v<0){ v=0; i.value=''; } if(v>max){ v=max; i.value=max.toFixed(2); }
+      if(v>0){ out[i.dataset.assessmentId]=v; total+=v; }
+      i.closest('.fp-fee').classList.toggle('is-set', v>0); });
+    total=cents(total); var left=cents(available-total);
+    totalEl.textContent=money(total); leftEl.textContent=money(Math.max(0,left));
+    payload.value=JSON.stringify(out);
+    msg.classList.toggle('is-over', left<-0.004);
+    if(left<-0.004){ leftEl.textContent=money(-left)+' too much'; }
+    save.disabled=!(total>0 && left>=-0.004);
+    save.textContent=total>0 ? 'Apply '+money(total) : 'Apply';
+  }
+  function remaining(except){ return cents(available-inputs.reduce(function(s,i){ return i===except?s:s+cents(i.value); },0)); }
+  form.addEventListener('input',calc);
+  form.querySelectorAll('[data-fp-fill]').forEach(function(b){ b.addEventListener('click',function(){
+    var i=b.closest('.fp-fee').querySelector('input'); var v=Math.max(0,Math.min(Number(i.max)||0, remaining(i)));
+    i.value=v?v.toFixed(2):''; calc(); i.focus(); }); });
+  form.querySelector('[data-fp-auto]').addEventListener('click',function(){
+    var left=available; inputs.forEach(function(i){ var v=Math.max(0,Math.min(Number(i.max)||0,left)); i.value=v?v.toFixed(2):''; left=cents(left-v); }); calc(); });
+  form.addEventListener('submit',function(e){ calc(); if(save.disabled){ e.preventDefault(); return; } save.classList.add('is-busy'); });
+  calc();
+  {% if focus == 'apply' %}if(inputs[0]) inputs[0].focus({preventScroll:true});{% endif %}
+})();
+</script>
+{% endblock %}

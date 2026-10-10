@@ -1,11 +1,92 @@
 {% extends 'admin_base.html' %}
 {% block title %}Record Payment — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">FINANCE &amp; BURSARY</div><h1>Record Payment</h1><p class="hero-copy">Record the actual payment received. A unique official receipt will be generated automatically.</p></div></div>
-<div class="card form-card"><form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">{% if errors %}<div class="alert error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
-<div class="form-grid two"><label><span>Student</span><select name="student_id" required><option value="">Select student</option>{% for s in students %}<option value="{{ s.id }}" {% if form and form.get('student_id')|int==s.id %}selected{% endif %}>{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>{% endfor %}</select></label><label><span>Academic session</span><select name="session_id" required>{% for s in sessions %}<option value="{{ s.id }}" {% if (form and form.get('session_id')|int==s.id) or (not form and current_session and current_session.id==s.id) %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></label></div>
-<div class="form-grid two"><label><span>Received from (payer)</span><input name="payer_name" value="{{ form.get('payer_name','') if form else '' }}" placeholder="Parent/guardian or actual payer"><small>Printed on the official receipt. Leave blank to use the linked guardian name.</small></label><label><span>Amount paid (₦)</span><input type="number" name="amount" min="0.01" step="0.01" value="{{ form.get('amount','') if form else '' }}" required></label><label><span>Payment category</span><select name="category"><option>School Fees</option><option>Books</option><option>Uniform</option><option>Transport</option><option>Daycare</option><option>Other</option></select></label></div>
-<div class="form-grid two"><label><span>Payment method</span><select name="method"><option>Bank Transfer</option><option>Cash</option><option>POS</option><option>Cheque</option><option>Other</option></select></label><label><span>Transaction/reference number</span><input name="reference" value="{{ form.get('reference','') if form else '' }}"></label></div>
-<div class="form-grid two"><label><span>Payment date/time</span><input type="datetime-local" name="paid_at" value="{{ form.get('paid_at','') if form else '' }}"></label><label><span>Notes</span><input name="notes" value="{{ form.get('notes','') if form else '' }}"></label></div>
-<div class="form-actions"><button class="btn btn-primary" type="submit">Record Payment &amp; Generate Receipt</button><a class="btn btn-light" href="{{ url_for('admin_finance_dashboard') }}">Cancel</a></div></form></div>
+{# Recording money received. Opens in a pop-up from any finance page (static/inplace.js); a mistake keeps it open
+   with the form as typed, and a save opens the new payment's own page - its receipt, and applying it to fees. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+{% set want_student = f.get('student_id') or request.args.get('student_id', '') %}
+{% set want_session = f.get('session_id') or request.args.get('session_id', '') or (current_session.id if current_session else '') %}
+<div class="ac fi" data-fi-pay>
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<div class="ac-modal-head"><h2>Record a payment</h2><p>Money received. A numbered receipt is made at once and sent to the guardian.</p></div>
+{% else %}{% set fin_tab = 'payments' %}{% include 'includes/_finance_frame.html' %}
+<div class="fi-who"><div><h2>Record a payment</h2><p>Money received. A numbered receipt is made at once and sent to the guardian.</p></div></div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_finance_record') }}" class="fi-form" data-fi-payform>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">1</span>Who paid</legend>
+    <div class="ac-fields">
+      <div class="ac-field ac-field--wide"><label for="payStudent">Student</label>
+        <input type="search" class="fi-find" placeholder="Type to narrow the list: name or admission no." aria-label="Find a student" data-fi-find>
+        <select name="student_id" id="payStudent" required size="1">
+          <option value="">Choose the student</option>
+          {% for s in students %}<option value="{{ s.id }}" data-guardian="{{ s.guardian_email or '' }}{{ ' · ' if s.guardian_email and s.guardian_phone }}{{ s.guardian_phone or '' }}" {% if want_student|string == s.id|string %}selected{% endif %}>{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} · {{ s.admission_no }}</option>{% endfor %}
+        </select>
+        <small data-fi-guardian>The receipt goes to the guardian's email and phone on file.</small></div>
+      <div class="ac-field"><label for="paySession">Academic session</label>
+        <select name="session_id" id="paySession" required>{% for s in sessions %}<option value="{{ s.id }}" {% if want_session|string == s.id|string %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="payPayer">Received from <span class="ac-hint">optional</span></label>
+        <input id="payPayer" name="payer_name" value="{{ f.get('payer_name', '') }}" placeholder="Parent, guardian or whoever paid">
+        <small>Printed on the receipt. Left blank, the guardian's name is used.</small></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">2</span>What was paid</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="payAmount">Amount (₦)</label>
+        <input id="payAmount" class="fi-amount" type="number" name="amount" min="0.01" step="0.01" value="{{ f.get('amount', '') }}" required placeholder="0.00" inputmode="decimal"></div>
+      <div class="ac-field"><label for="payCategory">For</label>
+        <select id="payCategory" name="category">{% for c in ['School Fees','Books','Uniform','Transport','Daycare','Other'] %}<option {% if f.get('category') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="payWhen">Date and time <span class="ac-hint">blank = now</span></label>
+        <input id="payWhen" type="datetime-local" name="paid_at" value="{{ f.get('paid_at', '') }}"></div>
+    </div>
+    <div class="fi-methods" role="radiogroup" aria-label="How it was paid">
+      {% set chosen = f.get('method') or 'Bank Transfer' %}
+      {% for m in ['Bank Transfer','Cash','POS','Cheque','Other'] %}
+      <label><input type="radio" name="method" value="{{ m }}" {% if chosen == m %}checked{% endif %}><span>{{ m }}</span></label>
+      {% endfor %}
+    </div>
+    <div class="ac-fields" style="margin-top:10px">
+      <div class="ac-field"><label for="payRef">Reference <span class="ac-hint">teller, transfer or POS number</span></label><input id="payRef" name="reference" value="{{ f.get('reference', '') }}"></div>
+      <div class="ac-field"><label for="payNotes">Note <span class="ac-hint">optional, printed on the receipt</span></label><input id="payNotes" name="notes" value="{{ f.get('notes', '') }}" placeholder="e.g. Part payment for First Term"></div>
+    </div>
+  </fieldset>
+
+  <div class="ac-form-foot">
+    <span class="fi-paysum" data-fi-paysum>Enter the amount</span>
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_finance_payments') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit" data-fi-paysave>Record payment and make the receipt</button>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-fi-pay]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-fi-payform]'), sel=form.elements.student_id, find=root.querySelector('[data-fi-find]');
+  var guard=root.querySelector('[data-fi-guardian]'), sum=root.querySelector('[data-fi-paysum]'), amount=form.elements.amount;
+  // Narrowing the student list as you type; the first match is chosen so Enter moves on.
+  find.addEventListener('input',function(){
+    var q=find.value.trim().toLowerCase(), first=null;
+    [].forEach.call(sel.options,function(o){ if(!o.value) return; var hit=!q||o.textContent.toLowerCase().indexOf(q)!==-1; o.hidden=!hit; if(hit&&!first) first=o; });
+    if(q&&first&&(!sel.value||sel.selectedOptions[0].hidden)) sel.value=first.value;
+    show();
+  });
+  function show(){
+    var o=sel.selectedOptions[0];
+    guard.textContent=o&&o.value ? (o.dataset.guardian ? 'The receipt goes to '+o.dataset.guardian+'.' : 'No guardian email or phone on file: print the receipt for them.') : 'The receipt goes to the guardian’s email and phone on file.';
+    var v=Number(amount.value||0), who=o&&o.value?o.textContent.split(' · ')[0]:'';
+    sum.textContent=v>0 ? '₦'+v.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2})+(who?' from '+who:'') : 'Enter the amount';
+  }
+  sel.addEventListener('change',show); amount.addEventListener('input',show); show();
+  form.addEventListener('submit',function(){ var b=form.querySelector('[data-fi-paysave]'); b.classList.add('is-busy'); });
+  (sel.value?amount:find).focus({preventScroll:true});
+})();
+</script>
 {% endblock %}

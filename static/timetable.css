@@ -1,0 +1,63 @@
+/* The exam timetable (templates/admin_school_timetable.html), on top of static/academics.css: the same
+   tokens, so every colour is the school's own. Released papers carry a solid dot in the accent, drafts a
+   hollow one; a clash is marked in the theme's danger colour with words saying what it overlaps. */
+.tt-bar { gap: 6px 12px; }
+.ac form.tt-session { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.tt-facts { font-size: 12px; color: var(--ac-ink-2); }
+.tt-facts b { color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+.tt-bar .ac-grow { flex: 1; }
+.tt-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ac-ink-2); }
+.tt-state--live { color: var(--ac-good); font-weight: 600; }
+.ac .tt-bar form[data-confirm] { margin: 0; }
+
+.tt-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ac-accent); flex: none; }
+.tt-state--live .tt-dot { background: var(--ac-good); }
+.tt-dot--draft { background: transparent; border: 1.5px dashed var(--ac-muted); }
+.tt-dot--clash { background: var(--ac-attn); }
+
+.tt-views { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.tt-legend { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ac-muted); }
+.tt-legend .tt-dot:not(:first-child) { margin-left: 8px; }
+
+/* Day by day */
+.tt-day { margin: 0 0 10px; background: var(--ac-surface); border: 1px solid var(--ac-line); border-radius: 10px; overflow: hidden; }
+.tt-day__head { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; background: var(--ac-wash); border-bottom: 1px solid var(--ac-line); }
+.tt-day__head h2 { margin: 0; font-size: 13px; color: var(--ac-brand); }
+.tt-day__head small { font-size: 11px; color: var(--ac-muted); }
+.tt-list { margin: 0; padding: 0; list-style: none; }
+.tt-row { display: grid; grid-template-columns: 74px minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .9fr) 88px auto; align-items: center; gap: 4px 12px;
+  padding: 6px 12px; border-top: 1px solid var(--ac-grid); font-size: 12px; }
+.tt-row:first-child { border-top: 0; }
+.tt-row:hover { background: var(--ac-wash); }
+.tt-row.is-draft { background: linear-gradient(90deg, var(--ac-brand-tint) 0 3px, transparent 3px); }
+.tt-row.is-clash { background: linear-gradient(90deg, var(--ac-attn) 0 3px, var(--ac-attn-tint) 3px); }
+.tt-time { font-size: 13px; font-weight: 700; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+.tt-time small { display: block; font-size: 11px; font-weight: 500; color: var(--ac-muted); }
+.tt-what b { font-size: 13px; color: var(--ac-ink); }
+.tt-clash { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--ac-attn); }
+.tt-class { font-weight: 600; color: var(--ac-ink-2); }
+.tt-venue { color: var(--ac-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-status { display: inline-flex; align-items: center; gap: 6px; color: var(--ac-ink-2); }
+.tt-acts { display: inline-flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.ac .tt-acts form { display: inline; margin: 0; }
+.ac .tt-acts button.ac-link { border: 0; background: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+@media (max-width: 760px) {
+  .tt-row { grid-template-columns: 64px minmax(0, 1fr); }
+  .tt-class, .tt-venue, .tt-status, .tt-acts { grid-column: 2; }
+  .tt-acts { justify-content: flex-start; }
+}
+
+/* Grid: days down, classes across */
+.admin-shell .ac .tt-grid th[scope=row] { white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--ac-brand); vertical-align: top; }
+.admin-shell .ac .tt-grid td { vertical-align: top; min-width: 120px; }
+.tt-cell { display: block; margin: 0 0 4px; padding: 4px 6px; border-radius: 6px; background: var(--ac-accent-tint); border: 1px solid transparent; }
+.tt-cell b { display: block; font-size: 12px; color: var(--ac-ink); }
+.tt-cell small { display: block; font-size: 11px; color: var(--ac-ink-2); }
+.tt-cell.is-draft { background: var(--ac-surface); border: 1px dashed var(--ac-line); }
+.tt-cell.is-clash { border: 1px solid var(--ac-attn); background: var(--ac-attn-tint); }
+
+/* The add / edit pop-up */
+.tt-dialog { width: min(720px, calc(100vw - 32px)); }
+.ac .tt-again { display: inline-flex !important; align-items: center; gap: 6px; font-size: 12px; color: var(--ac-ink-2); }
+.tt-again[hidden] { display: none !important; }
+.tt-empty .ac-empty { padding: 28px 12px; }

@@ -27,6 +27,7 @@ from sqlalchemy import case, func, or_, select
 
 from app import ACADEMIC_TERMS
 from blueprints.school.helpers import _primary_school_id, _term_reports_bulk
+from core.school_structure import class_is_senior
 from core.branding import school_brand
 from core.db_helpers import tuples
 from core.storage import upload_exists
@@ -398,6 +399,8 @@ def build_cards(student_ids, session_id, term):
             'student': {'id': student_id, 'name': full_name,
                         'admission_no': student.student_number or student.admission_no or '',
                         'class_name': person.class_name or '', 'gender': student.gender or '',
+                        # Senior secondary only: the department the student belongs to, on a card earned in an SSS class.
+                        'department': (student.department or '') if class_is_senior(class_id) else '',
                         'photo_path': _file(student.photo_path)},
             'subjects': rows,
             'summary': {'total': mine['total'], 'total_max': mine['total_max'], 'percentage': mine['percentage'],

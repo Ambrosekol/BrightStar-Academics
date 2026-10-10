@@ -578,11 +578,11 @@ def _title_block(card, theme, styles):
 
 
 def _student_block(card, theme, styles, pictures):
-    """Name, admission number, class, gender (blanks skipped) with the photograph on the right."""
+    """Name, admission number, class, department (SSS only), gender (blanks skipped), photograph on the right."""
     student = _dict(card, 'student')
     name = _line(student.get('name'), 120)
     pairs = [(label, _line(student.get(key), 60)) for label, key in
-             (('ADMISSION NO.', 'admission_no'), ('CLASS', 'class_name'), ('GENDER', 'gender'))]
+             (('ADMISSION NO.', 'admission_no'), ('CLASS', 'class_name'), ('DEPARTMENT', 'department'), ('GENDER', 'gender'))]
     pairs = [(label, value) for label, value in pairs if value]
     photo = pictures.flowable(student.get('photo_path'), 28 * mm, 34 * mm, photo=True, max_px=500)
 

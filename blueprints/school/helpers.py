@@ -22,7 +22,8 @@ from models import (
     StudentEnrolment, StudentEnrollmentHistory, PresenceSession, db,
 )
 from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten
-from core.security import admin_access_error, admin_has_permission, admin_scope_allows, audit_log, current_admin, is_school_admin
+from core.security import admin_access_error, admin_has_permission, admin_scope_allows, audit_log, class_teacher_of, current_admin, duty_covers, is_school_admin
+from core.school_structure import class_is_early_years, class_is_senior, early_years_class_ids, takes_subject
 from core.storage import uploads_dir
 from blueprints.finance.helpers import _primary_school_id
 
@@ -52,18 +53,90 @@ def _school_class_allowed(admin_id,class_id):
     return bool(name and admin_scope_allows(admin_id,'class',name))
 
 def _school_subject_allowed(admin_id,subject_id):
+    """The subject on its own, with no class in view. Where a class is known, use _school_pair_allowed:
+    a subject teacher of Mathematics in JSS 1 passes this for Mathematics in any class."""
     admin=current_admin()
     if admin and admin['admin_type_system']: return True
     name=one_scalar(select(SchoolSubject.name).where(SchoolSubject.id==subject_id))
+    if name and duty_covers(admin_id,None) is not None:
+        return admin_scope_allows(admin_id,'subject',name)
     any_subject_scope=one(select(AdminScope.id).where(
         AdminScope.admin_id==admin_id,AdminScope.scope_type=='subject').limit(1))
-    # Primary class teachers normally receive class scope and manage all subjects
-    # offered by that class. College subject teachers can additionally receive a
-    # subject scope, which restricts them to their own subject.
+    # Without teaching duties: a class limit alone reaches every subject of those classes, and a
+    # subject limit narrows that to the named subjects.
     return bool(name and (not any_subject_scope or admin_scope_allows(admin_id,'subject',name)))
 
-def _school_pair_allowed(admin_id,class_id,subject_id):
+def _school_pair_allowed(admin_id,class_id,subject_id,department=None):
+    """This subject in this class: exactly what a teacher was given (a class teacher has every subject
+    of their class). ``department`` narrows it to a senior student of that department."""
+    admin=current_admin()
+    if admin and admin['admin_type_system']: return True
+    try: class_id=int(class_id); subject_id=int(subject_id)
+    except (TypeError,ValueError): return False
+    covered=duty_covers(admin_id,class_id,subject_id,department)
+    if covered is not None: return covered
     return _school_class_allowed(admin_id,class_id) and _school_subject_allowed(admin_id,subject_id)
+
+def _subject_departments(subject_ids):
+    return {sid:deps for sid,deps in tuples(select(SchoolSubject.id,SchoolSubject.departments)
+                                             .where(SchoolSubject.id.in_(set(subject_ids) or {0})))}
+
+def _students_for_subject(students,class_id,subject_id,admin_id=None):
+    """Of one class's students (rows with an 'id'), those who take the subject - in SSS, by department -
+    and, when ``admin_id`` is given, whom that member of staff teaches it to."""
+    if not class_is_senior(class_id):
+        if admin_id is not None and not _school_pair_allowed(admin_id,class_id,subject_id):
+            return []
+        return list(students)
+    deps=_subject_departments([subject_id]).get(subject_id)
+    ids=[s['id'] for s in students]
+    student_dept={sid:dept for sid,dept in tuples(select(Student.id,Student.department).where(Student.id.in_(ids or [0])))}
+    out=[]
+    for s in students:
+        dept=student_dept.get(s['id'])
+        if not takes_subject(dept,deps): continue
+        if admin_id is not None and not _school_pair_allowed(admin_id,class_id,subject_id,dept): continue
+        out.append(s)
+    return out
+
+def _student_subject_allowed(admin_id,student_id,class_id,subject_id):
+    """Whether this member of staff may record or act on this student's mark in this subject."""
+    return bool(_students_for_subject([{'id':student_id}],class_id,subject_id,admin_id))
+
+def _work_student_ids(student_ids,class_id,subject_id,admin_id,whole_class):
+    """The students a piece of work goes to, and an error or None. Issued to the whole class, it quietly
+    goes only to the students who take the subject (in SSS, by department) and whom this member of staff
+    teaches; picked by hand, anyone outside that is refused with a message."""
+    if not class_id or not subject_id:
+        return student_ids,None
+    reachable={s['id'] for s in _students_for_subject([{'id':x} for x in student_ids],class_id,subject_id,admin_id)}
+    if whole_class:
+        return [x for x in student_ids if x in reachable],None
+    if any(x not in reachable for x in student_ids):
+        return student_ids,'Some of the chosen students do not take this subject in their department, or are not students you teach it to.'
+    return student_ids,None
+
+def _class_teacher_allowed(admin_id,class_id):
+    """The class teacher's own work on a class: its register, its report cards (comments, traits and the
+    cards themselves) and releasing its results. A teacher with duties must be the class teacher of that
+    class - teaching a subject there is not enough; anyone else (a head teacher, say) needs the class in reach."""
+    if duty_covers(admin_id,None) is not None:
+        return class_teacher_of(admin_id,class_id)
+    return _school_class_allowed(admin_id,class_id)
+
+def _may_release_class(admin_id,class_id):
+    """Releasing (or sending back) a class's results is the class teacher's call."""
+    return _class_teacher_allowed(admin_id,class_id)
+
+def _online_work_class_error(class_id):
+    """Crèche and Nursery pupils do everything on paper, so no online work is set for them."""
+    if class_is_early_years(class_id):
+        return 'Crèche and Nursery classes work on paper: online assignments, projects and tests are not set for them. Record their scores under Results instead.'
+    return None
+
+def _without_early_years(classes):
+    early=early_years_class_ids()
+    return [c for c in classes if c['id'] not in early]
 
 def _school_form_context():
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
@@ -128,7 +201,9 @@ def _notify_school_work(student_ids, category, title, message, action_url, creat
                 title=title,message=f'{child_name}: {message}',action_url=parent_url,
                 created_at=now,created_by=created_by))
 
-def _assignment_form_data(admin_id):
+def _assignment_form_data(admin_id, online_work=True):
+    """Classes, subjects and students for setting work. ``online_work`` leaves out Crèche and Nursery,
+    which do everything on paper; the exam timetable passes False, since paper exams still have dates."""
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     subjects=[_flatten(r,'SchoolSubject','class_ids') for r in all_rows(
@@ -149,6 +224,10 @@ def _assignment_form_data(admin_id):
         classes=[x for x in classes if _school_class_allowed(admin_id,x.id)]
         subjects=[x for x in subjects if _school_subject_allowed(admin_id,x['id'])]
         students=[x for x in students if _school_class_allowed(admin_id,x['class_id'])]
+    if online_work:
+        early=early_years_class_ids()
+        classes=[x for x in classes if x.id not in early]
+        students=[x for x in students if x['class_id'] not in early]
     return classes,subjects,students
 
 def _work_with_class_subject(model, work_id):
@@ -177,7 +256,7 @@ def _school_assessments(kind):
     if admin and not admin['admin_type_system']:
         classes=[c for c in classes if admin_scope_allows(admin['id'],'class',c['name'])]
         rows=[r for r in rows if _school_pair_allowed(admin['id'],r['class_id'],r['subject_id'])]
-    return rows,classes
+    return rows,_without_early_years(classes)
 
 def _school_assessment_title(kind): return {'test':'Tests','practice':'Practice Tests','examination':'Examinations'}[kind]
 
@@ -431,6 +510,7 @@ def _student_term_periods(student_id):
 
 def _school_assessment_new(kind):
     classes,subjects,_,session_row=_school_form_context()
+    classes=_without_early_years(classes)
     if request.method=='POST':
         title=request.form.get('title','').strip(); instructions=request.form.get('instructions','').strip()
         term=request.form.get('term','').strip() or None
@@ -439,6 +519,7 @@ def _school_assessment_new(kind):
         errors=[]
         if not title: errors.append('Title is required.')
         if not _school_pair_allowed(current_admin()['id'],cid,sid): errors.append('Select a class and subject within your authorised scope.')
+        if _online_work_class_error(cid): errors.append(_online_work_class_error(cid))
         if not session_id: errors.append('An academic session is required.')
         if kind!='practice' and term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
         elif kind=='practice' and term and term not in ACADEMIC_TERMS: errors.append('Select a valid term.')

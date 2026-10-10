@@ -274,7 +274,7 @@ nobody, _ = mk_staff(alpha, "nobody", "Nora Nothing", "Nothing Special", "JSS 1"
 mum_ada = mk_parent(alpha, "mum.ada", "Mrs Obi", [ADA])
 ada_portal = Person(ALPHA, "/student/password", label="alpha student ada")
 ada_portal.post("/login", {"username": "Ada.Obi".lower(), "password": PASSWORD}, page="/login")
-beta_teacher, _ = mk_staff(beta, "teacher", "Beta Teacher", "Primary Class Teacher", "JSS 1")
+beta_teacher, _ = mk_staff(beta, "teacher", "Beta Teacher", "Class Teacher", "JSS 1")
 
 REG = "/admin/school/attendance"
 DAY1, DAY2, DAY3 = "2026-09-14", "2026-09-15", "2026-09-16"

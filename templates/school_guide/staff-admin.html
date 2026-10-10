@@ -13,43 +13,82 @@ no longer has it.</p>
 <p>The menu opens while you hover over it. A small box on its right edge, at the bottom of the screen,
 keeps it open: click it once and the menu stays open on every page until you click it again. While the
 menu is open from hovering, that box steps aside so it never covers an item.</p>
+<p>Each entry has its own icon, drawn for what it opens, so the closed menu can be read at a glance: a compass for
+Overview, two speech bubbles for Messages, a mortarboard for Students, a parent with a child for Parents, a teacher at a
+board for Teachers, rows of desks for Classes, a register with ticks for Attendance, an A+ for Academics, a calendar with
+a clock for the exam timetable, a document with a rosette for Report cards, stairs for Promotion, coins for Collections,
+a card for Payments, a ledger for Student accounts, a price tag for Fee structure, books on a shelf for the Library, a
+gear for Settings and two arrows for Switch workspace.</p>
 
-<h2 id="administration-hub">The Administration page</h2>
-<p><a href="{{ url_for('admin_administration') }}">Administration</a> is a hub, not one page of its
-own content: it shows a few counts (how many staff accounts, how many roles, how many unread control
-items) and links into the real pages described below.</p>
-<div class="guide-warn">Administration is one of four areas kept for the School Admin alone — the
-account created when the school itself was set up, never a role you build or grant. Email &amp;
-SMS, Online Payments and School Profile, further down this page, are the other three. Nobody
-else can be given access to any of the four, no matter what permissions their role carries; if you
-cannot see this link at all, that is why, and it is normal for every account except the School
-Admin's own.</div>
-
-<h2 id="staff">Staff accounts</h2>
-<p><a href="{{ url_for('admin_accounts') }}">Accounts</a> is a directory of everyone who can sign in to the school's
-administration. Each person has a card showing their name, username, whether they are active or suspended, their roles,
-their contact details and their last sign-in. The card also says in plain words what they can reach: full access for
-the School Admin, limited to a number of access areas, or standard access from their roles.</p>
+<h2 id="settings">Settings</h2>
+<p><a href="{{ url_for('admin_settings') }}">Settings</a>, at the foot of the menu, holds everything that sets the
+portal up, decides who can use it and records what happened: the school profile, academic sessions, staff and their
+roles, report card settings, Email &amp; SMS, online payments, receipts, controls and alerts, the activity log and who
+is online. You see only what your role allows.</p>
 <ul>
-  <li><strong>Search</strong> by name, username or email, and switch between <em>Everyone</em>, <em>Active</em> and
-  <em>Suspended</em>.</li>
-  <li><strong>Manage</strong> opens the person's own page.</li>
-  <li>The <strong>⋯</strong> menu on a card sends them a message, resets their login (they get a new one-time password),
-  or suspends or reactivates their access. Suspending stops their sign-in straight away; their record stays, and they
-  can be reactivated at any time. You cannot suspend or reset your own access.</li>
+  <li><strong>The overview</strong> comes first. <em>Worth a look</em> lists anything that needs attention (online
+  payments not connected, the head's signature missing, alerts left open); below it is every setting by group, each
+  with its state at a glance, such as which session is current or whether Email &amp; SMS is the school's own
+  account.</li>
+  <li><strong>The list on the left</strong> stays on every Settings page. Each setting opens beside it, in place,
+  without leaving Settings. <strong>Find a setting</strong> narrows the list as you type (Enter opens the first match),
+  and a dot marks a setting that needs a look.</li>
+  <li><strong>Each page</strong> opens with its name, what it is for and its state, plus its main action where it has
+  one: <strong>+ Add staff</strong> on Staff, <strong>+ New role</strong> on Staff roles.</li>
+  <li><strong>The entrance examination's set-up</strong> is a workspace of its own, so it opens as its own page (its
+  entry carries a small arrow).</li>
 </ul>
-<p>A person's own page has four sections, listed down the side. <em>Profile</em> holds their name, contact details and
-photo; the username cannot be changed once created. <em>Job roles</em> is where you tick every role they do, with a
-summary that updates as you tick. <em>Where they work</em> leaves them with access to the whole school, or limits them
-to chosen classes, subjects, sessions or question banks. <em>Overrides</em> (shown to the School Admin) grants individual
-permissions for exceptions only. The bar at the bottom saves your changes, cancels, or resets their login.</p>
-<p>A new account always starts on a one-time password that must be changed at first sign-in. Nobody, not even the School
-Admin, can see a password, only reset it to a new one-time password.</p>
+<div class="guide-warn">Four areas are kept for the School Admin alone — the account created when the school itself
+was set up, never a role you build or grant: Staff and Staff roles, Email &amp; SMS, Online payments and the School
+profile. Nobody else can be given access to them, no matter what permissions their role carries; if you cannot see them
+in Settings, that is why, and it is normal for every account except the School Admin's own.</div>
 
-<h2 id="roles">Roles</h2>
-<p><a href="{{ url_for('admin_roles') }}">Roles</a> is where the named bundles of permissions
-described in {{ page('roles-permissions', 'Roles, permissions and scope') }} are actually built and
-edited — pick which permissions a role carries by ticking them, from the full list.</p>
+<h2 id="staff">Staff</h2>
+<p><strong>Teachers</strong> (in the menu under People) shows who teaches what. The figures across the top count the
+gaps: classes with no class teacher, and subjects offered but taught by nobody. View it <strong>By class</strong> (each
+class with its class teacher and subject teachers) or <strong>By teacher</strong>, and tick <strong>Only what needs a
+teacher</strong> to see the gaps alone. <strong>Change duties</strong> opens a pop-up with the classes they are class
+teacher of and the subjects they teach.</p>
+<p><a href="{{ url_for('admin_accounts') }}">Staff</a>, in Settings, is everyone who signs in to the school's side of
+the portal: teachers, the bursar, the secretary, the librarian. Each person has a card with their name, username,
+whether they are active or suspended, their roles, their contact details and when they last signed in, and it says in
+plain words what they can reach: full access (the School Admin), a teacher's own classes and subjects, a limited area,
+or standard access from their roles.</p>
+<ul>
+  <li>The figures at the top (<em>Everyone</em>, <em>Can sign in</em>, <em>Suspended</em>) are also the filters, and
+  the search finds anyone by name, username or email.</li>
+  <li><strong>+ Add staff</strong> and <strong>Manage</strong> open the person in a pop-up over the list.</li>
+  <li>The <strong>⋯</strong> menu on a card sends them a message, resets their password (they get a new one-time
+  password) or suspends or reactivates their access. Suspending stops their sign-in straight away; their record stays,
+  and they can be reactivated at any time. You cannot suspend or reset your own account.</li>
+</ul>
+<p>The staff pop-up has four tabs, all one form, so moving between them keeps what you typed:</p>
+<ul>
+  <li><strong>Profile</strong>: their name, username, contact details and photo. The username is how they sign in and
+  cannot be changed once made.</li>
+  <li><strong>Roles</strong>: tick every job they do, grouped from the most senior down (head teacher, class teacher,
+  subject teacher), with a summary that updates as you tick. <strong>See</strong> beside a role opens that role in a
+  second pop-up on top, to check or change what it allows; closing it brings you back to the staff member exactly as you
+  left them.</li>
+  <li><strong>Teaching duties</strong>, for teachers: the class they are class teacher of, and the subjects they teach
+  in each class (and, in SSS, which department). See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</li>
+  <li><strong>Limits</strong>, rarely needed: keeps anyone else to chosen classes, subjects, sessions or question
+  banks.</li>
+  <li><strong>Overrides</strong> (the School Admin only) gives single permissions for the exceptional case.</li>
+</ul>
+<p>The bar at the foot saves, cancels, resets their password or suspends them. When you add someone, or reset a
+password, their username and one-time password show in the same pop-up, ready to print; it is shown once, and must be
+changed at their first sign-in. Nobody, not even the School Admin, can see a password, only reset it.</p>
+
+<h2 id="roles">Staff roles</h2>
+<p><a href="{{ url_for('admin_roles') }}">Staff roles</a>, in Settings, are the named bundles of permissions described
+in {{ page('roles-permissions', 'Roles, permissions and scope') }}. Each role's card shows its level in the school,
+how much it allows (a bar, and the number of permissions), the first few things it allows and who holds it.
+<strong>Find a role</strong> searches names, descriptions and permissions.</p>
+<p><strong>+ New role</strong> and <strong>Edit</strong> open the role in a pop-up: its name, level and what it is for,
+then its permissions grouped by area, with a search, a count of what is ticked in each area and <strong>Tick
+all</strong> for an area. An existing role also lists the staff who hold it; a name opens that person's pop-up on top.
+Saving keeps the pop-up open on the saved role; closing it brings the page up to date.</p>
 <p>Two further pages exist mainly for checking your own work, reached by typing their address rather
 than a button in the menu (so do not worry if you never notice them):
 <a href="{{ url_for('admin_permissions_catalogue') }}">the permissions catalogue</a> lists every
@@ -57,16 +96,12 @@ permission that exists in the whole system, grouped by area, so you can see exac
 carry before you build one; <a href="{{ url_for('admin_scopes') }}">scopes</a> lists every account in
 the school that is currently limited to particular classes, subjects or banks, all in one place.</p>
 
-<h2 id="settings-page">Settings</h2>
-<p><a href="{{ url_for('admin_settings') }}">Settings</a> is the one menu entry that leads to every
-setting, control and record of activity — school profile, academic sessions, report card settings,
-Email &amp; SMS, online payments, receipts, Administration, controls and alerts, the activity log
-and who is online. It groups them, shows at a glance whether each is set up (for example whether
-Email &amp; SMS is the school's own account or the platform default) and offers only what your role
-allows. Type in the box at the top to find a setting by name.</p>
+<h2 id="administration-hub">The Administration page</h2>
+<p>The older <a href="{{ url_for('admin_administration') }}">Administration</a> page, a few counts with links to staff,
+roles, controls and the activity log, still opens from its address, but everything on it now lives in Settings.</p>
 
 <h2 id="messages">Messages</h2>
-<p><a href="{{ url_for('admin_messages') }}">Messages</a> has two tabs. <strong>Administrators</strong> is a
+<p><a href="{{ url_for('admin_messages') }}">Messages</a> has two tabs. <strong>Staff</strong> is a
 private inbox between members of staff — pick a colleague, write a note, attach a file if you need to; a
 parent or a student never sees it. <strong>Parents</strong> holds the conversations with parents (see
 {{ page('families', 'Parents') }}). A small number by the link in the navigation rail shows how many
@@ -81,14 +116,18 @@ twice. It reads the date of birth on each student's record, so a student whose d
 readable date gets no reminder.</p>
 
 <h2 id="presence">Who is online now</h2>
-<p><a href="{{ url_for('admin_presence') }}">Online Now</a> shows which staff, students and parents are
-currently signed in and active — useful, for example, to know whether the person you want to message
-is actually at their screen right now.</p>
+<p><a href="{{ url_for('admin_presence') }}">Online now</a>, in Settings, shows how many staff, students and parents
+are signed in and active, then each of them with when they were last seen — useful, for example, to know whether the
+person you want to message is at their screen right now. <strong>Refresh</strong> brings it up to date; someone who
+stops using the portal drops off on their own after a few minutes.</p>
 
-<h2 id="audit">Audit log</h2>
-<p>The <a href="{{ url_for('admin_audit_logs') }}">Activity Log</a> records who did what, to which
-record, from which address, and whether it succeeded — every release, every account change, every
-sign-in. Some actions also notify School Admins directly.</p>
+<h2 id="audit">Activity log</h2>
+<p>The <a href="{{ url_for('admin_audit_logs') }}">Activity log</a>, in Settings, records who did what, to which
+record, from which address, and whether it went through — every release, every account change, every sign-in, and
+every refused attempt, including someone trying to open a workspace that is not theirs. The newest 250 records are
+grouped by day; the search finds a person, an action or an address as you type, and <strong>Refused only</strong>
+shows just what was turned away. <strong>Download (CSV)</strong> gives the whole log as a spreadsheet. Some actions
+also notify School Admins directly.</p>
 <p>A link from that page, or from a student's own record, opens the <strong>Notice log</strong> —
 every attempt to tell a guardian something by email or SMS (a new assignment, a fee charged, a
 released report card or exam timetable), whether it actually went through or not, so you can answer
@@ -96,15 +135,17 @@ released report card or exam timetable), whether it actually went through or not
 page.</p>
 
 <h2 id="controls">Controls and locks</h2>
-<p><a href="{{ url_for('admin_controls') }}">Controls &amp; Alerts</a> lists things raised automatically
-that need a senior person's review, and lets a resource — a question bank during a live exam, say — be
-frozen against changes, with a reason, until it is unlocked.</p>
+<p><a href="{{ url_for('admin_controls') }}">Controls &amp; alerts</a>, in Settings, gathers what needs a senior
+person's attention: <strong>Alerts</strong> (open one to go to what it is about, or mark it read), unread
+<strong>Messages</strong>, and the <strong>Review queue</strong> of things raised automatically, which the School Admin
+resolves. In the Entrance examination workspace it also lets a question bank — during a live exam, say — be frozen
+against changes, with a reason, until it is unlocked; in the School workspace it lists the subject locks.</p>
 
 <h2 id="branding">How the portal looks</h2>
-<p><a href="{{ url_for('admin_school_branding') }}">School Profile</a> sets the school's name, motto,
+<p><a href="{{ url_for('admin_school_branding') }}">School profile</a> sets the school's name, motto,
 logo, brand colours and sign-in photographs — everything a receipt, a report card and every page of
-the portal wear as their own. School Admin only, like Administration above: changing what the school
-is called or how it looks is kept out of ordinary staff reach.</p>
+the portal wear as their own. School Admin only: changing what the school is called or how it looks is
+kept out of ordinary staff reach.</p>
 
 <h2 id="delivery">Email and SMS</h2>
 <p><a href="{{ url_for('admin_school_delivery') }}">Email &amp; SMS</a> is where the school
@@ -114,7 +155,7 @@ School Admin only, since whoever holds these accounts can send a message that lo
 from the school.</p>
 
 <h2 id="panel">The panel at the bottom right</h2>
-<p>Every administrator sees a small panel at the bottom right of each page, with up to two cards.</p>
+<p>Every member of staff sees a small panel at the bottom right of each page, with up to two cards.</p>
 <ul>
   <li><strong>What's new</strong> lists the latest changes to the portal in plain language, each with a link to the guide
   page that explains it. It shows only the changes you have not yet closed. Closing it hides those changes for you in

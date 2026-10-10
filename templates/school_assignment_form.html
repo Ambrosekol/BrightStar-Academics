@@ -1,62 +1,84 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{'Create Assignment' if mode=='new' else 'Edit Assignment'}} — {{ school_brand.name }}{% endblock %}
+{% block title %}{{ 'New assignment' if mode=='new' else 'Edit assignment' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{% include 'school_work_styles.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / ASSIGNMENTS</div><h1>{{'Create assignment' if mode=='new' else 'Edit assignment'}}</h1><p class="hero-copy">Choose the class and subject first, then decide whether this is a normal written task or a CBT-style assignment.</p></div></div>
-{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
-<div class="card modern-form academic-work-form">
-<form method="post" class="wk-page"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-<div class="form-section"><div class="form-section-title"><div class="step">1</div><div><h2>Assignment basics</h2><p>These details tell students and parents exactly what the work is and when it was given.</p></div></div>
-<div class="form-grid">
-<div class="field"><label>Class</label><select name="class_id" id="assignmentClass" required><option value="">Select class</option>{% for c in classes %}<option value="{{c.id}}" {% if assignment and assignment.get('class_id')|int==c.id %}selected{% endif %}>{{c.name}}</option>{% endfor %}</select></div>
-<div class="field"><label>Subject</label><select name="subject_id" id="assignmentSubject" required><option value="">Select subject</option>{% for s in subjects %}{% set class_ids=(s.class_ids or '').split(',') %}<option value="{{s.id}}" data-classes="{{s.class_ids or ''}}" {% if assignment and assignment.get('subject_id')|int==s.id %}selected{% endif %}>{{s.name}}</option>{% endfor %}</select><small class="field-help">Every subject is listed. A subject not yet offered to the selected class is offered to it when you save.</small></div>
-<div class="field"><label>Academic session</label><select name="session_id" required>{% for s in sessions %}<option value="{{s.id}}" {% if (assignment and assignment.get('session_id')|int==s.id) or (not assignment and loop.first) %}selected{% endif %}>{{s.name}}{% if s.is_current %} — Current{% endif %}</option>{% endfor %}</select></div>
-<div class="field"><label>Term</label><select name="term" required><option value="">Select term</option>{% for t in terms %}<option value="{{t}}" {% if assignment and assignment.term==t %}selected{% endif %}>{{t}}</option>{% endfor %}</select></div>
-<div class="field"><label>Assignment title</label><input name="title" value="{{assignment.title if assignment else ''}}" required placeholder="e.g. Parts of Speech Practice"></div>
-<div class="field"><label>Date given</label><input type="date" name="date_given" value="{{assignment.date_given if assignment else ''}}"></div>
-<div class="field"><label>Due date <span class="optional">(optional)</span></label><input type="date" name="due_date" value="{{assignment.due_date if assignment else ''}}"></div>
-<div class="field"><label>Maximum score <span class="optional">(optional for written work)</span></label><input type="number" min="0" step="0.01" name="max_score" value="{{assignment.max_score if assignment else ''}}" placeholder="e.g. 20"></div>
-<div class="field" style="grid-column:1/-1"><label>Instructions / task</label><textarea name="instructions" rows="5" placeholder="Describe the work clearly. For example: Make a wall clock using cardboard and bring it to school on Monday.">{{assignment.instructions if assignment else ''}}</textarea></div>
-</div></div>
-<div class="form-section"><div class="form-section-title"><div class="step">2</div><div><h2>Assignment format</h2><p>Use Written for normal classroom work or CBT-style for objective questions.</p></div></div>
-<div class="choice-cards"><label class="choice-card"><input type="radio" name="assignment_type" value="written" {% if not assignment or assignment.assignment_type|default('written')=='written' %}checked{% endif %}><span><strong>Written / Task</strong><small>Teacher records Done, Undone and score where applicable.</small></span></label><label class="choice-card"><input type="radio" name="assignment_type" value="quiz" {% if assignment and assignment.assignment_type=='quiz' %}checked{% endif %}><span><strong>CBT-style questions</strong><small>Students answer objective questions online and receive a recorded score.</small></span></label></div>
-<div id="timingPanel" class="timing-panel"><div class="form-grid"><div class="field"><label>Timing</label><select name="timing_mode"><option value="untimed" {% if not assignment or assignment.timing_mode|default('untimed')=='untimed' %}selected{% endif %}>Untimed</option><option value="overall" {% if assignment and assignment.timing_mode=='overall' %}selected{% endif %}>Overall time for the whole assignment</option><option value="per_question" {% if assignment and assignment.timing_mode=='per_question' %}selected{% endif %}>Time per question</option></select></div><div class="field" id="overallTime"><label>Overall time (minutes)</label><input type="number" min="1" name="time_limit_minutes" value="{{(assignment.time_limit_seconds // 60) if assignment and assignment.time_limit_seconds else ''}}" placeholder="e.g. 30"></div><div class="field" id="questionTime"><label>Time per question (seconds)</label><input type="number" min="1" name="per_question_seconds" value="{{assignment.per_question_seconds if assignment else ''}}" placeholder="e.g. 60"></div></div><p class="field-help">The timer applies only to CBT-style assignments. Written tasks remain untimed.</p></div></div>
-<div class="form-section" id="studentSection"><div class="form-section-title"><div class="step">3</div><div><h2>Students</h2><p>Select the students in the chosen class who should receive this assignment.</p></div></div>
-<div class="wk-choice" role="radiogroup" aria-label="Who receives this">
-  <label><input type="radio" name="issue_to" value="class" {{ 'checked' if mode == 'new' }}><span><strong>Whole class</strong><small>Everyone enrolled in the selected class receives it, including students who join the class later.</small></span></label>
-  <label><input type="radio" name="issue_to" value="students" {{ 'checked' if mode != 'new' }}><span><strong>Selected students</strong><small>Tick the students you want below.</small></span></label>
+{# New assignment: a guided form, one section at a time (Class and subject -> Details -> Format -> Students).
+   Edit assignment: the same sections, opened over the assignments list in a pop-up (static/inplace.js), any
+   section reachable from the step bar and Save always there. The behaviour is includes/_work_form.html. #}
+{% set modal = request.values.get('modal') == '1' %}
+{% set a = assignment or {} %}
+<div class="ac">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<div class="ac-modal-head"><h2>Edit assignment</h2><p>{{ a.get('title', '') }}</p></div>
+{% else %}{% set work_tab = 'assignments' %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
+
+<form method="post" class="ac-form" data-guided="{{ 'free' if mode == 'edit' else 'steps' }}"{% if errors %} data-start-step="0"{% endif %}>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% if modal %}<input type="hidden" name="modal" value="1"><input type="hidden" name="return_to" value="{{ request.values.get('return_to', '') }}">{% endif %}
+  <nav class="ac-steps" aria-label="Steps" data-guided-steps></nav>
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <section class="ac-stage" data-step-panel data-title="Class and subject">
+    <div class="ac-stage__head"><div><h2>Which class and subject is it for?</h2><p>And the session and term it counts towards.</p></div></div>
+    <div class="ac-fields">
+      <div class="ac-field"><label for="assignmentClass">Class</label>
+        <select name="class_id" id="assignmentClass" required><option value="">Choose a class</option>{% for c in classes %}<option value="{{ c.id }}" {% if a.get('class_id')|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="assignmentSubject">Subject</label>
+        <select name="subject_id" id="assignmentSubject" required data-offered><option value="">Choose a subject</option>{% for s in subjects %}<option value="{{ s.id }}" data-classes="{{ s.class_ids or '' }}" {% if a.get('subject_id')|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+        <small>Every subject you may teach is listed. A subject not yet offered to the class is offered to it when you save.</small></div>
+      <div class="ac-field"><label for="assignmentSession">Academic session</label>
+        <select name="session_id" id="assignmentSession" required>{% for s in sessions %}<option value="{{ s.id }}" {% if a.get('session_id')|string == s.id|string or (not a.get('session_id') and loop.first) %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="assignmentTerm">Term</label>
+        <select name="term" id="assignmentTerm" required><option value="">Choose a term</option>{% for t in terms %}<option value="{{ t }}" {% if a.get('term') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Details">
+    <div class="ac-stage__head"><div><h2>What is the work?</h2><p>What students and parents see, and when it is due.</p></div></div>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field ac-field--wide"><label for="assignmentTitle">Title</label><input id="assignmentTitle" name="title" value="{{ a.get('title', '') }}" required placeholder="e.g. Parts of speech practice"></div>
+      <div class="ac-field"><label for="assignmentGiven">Date given</label><input id="assignmentGiven" type="date" name="date_given" value="{{ a.get('date_given') or '' }}"></div>
+      <div class="ac-field"><label for="assignmentDue">Due date <span class="ac-hint">optional</span></label><input id="assignmentDue" type="date" name="due_date" value="{{ a.get('due_date') or '' }}"></div>
+      <div class="ac-field"><label for="assignmentMax">Marked out of <span class="ac-hint">optional</span></label><input id="assignmentMax" type="number" min="0" step="0.01" name="max_score" value="{{ a.get('max_score') or '' }}" placeholder="e.g. 20"></div>
+      <div class="ac-field ac-field--wide"><label for="assignmentInstructions">Instructions</label><textarea id="assignmentInstructions" name="instructions" rows="4" placeholder="Describe the work clearly, e.g. answer questions 1 to 10 on page 42 in your exercise book.">{{ a.get('instructions') or '' }}</textarea></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Format">
+    <div class="ac-stage__head"><div><h2>How will students do it?</h2><p>Written work is marked by hand; CBT-style questions are answered online and marked automatically.</p></div></div>
+    {% set kind = a.get('assignment_type') or 'written' %}
+    <div class="ac-choices">
+      <label><input type="radio" name="assignment_type" value="written" {% if kind == 'written' %}checked{% endif %}><span><strong>Written / task</strong><small>You record done, not done and a score where there is one.</small></span></label>
+      <label><input type="radio" name="assignment_type" value="quiz" {% if kind == 'quiz' %}checked{% endif %}><span><strong>CBT-style questions</strong><small>Students answer objective questions online; you add the questions next.</small></span></label>
+    </div>
+    {% set timing = a.get('timing_mode') or 'untimed' %}
+    <div class="ac-fields ac-fields--3" data-timing style="margin-top:10px">
+      <div class="ac-field"><label for="assignmentTiming">Timing</label>
+        <select id="assignmentTiming" name="timing_mode"><option value="untimed" {% if timing == 'untimed' %}selected{% endif %}>Untimed</option><option value="overall" {% if timing == 'overall' %}selected{% endif %}>A time limit for the whole assignment</option><option value="per_question" {% if timing == 'per_question' %}selected{% endif %}>A time limit for each question</option></select></div>
+      <div class="ac-field" data-when="overall"><label for="assignmentMinutes">Minutes for the whole assignment</label><input id="assignmentMinutes" type="number" min="1" name="time_limit_minutes" value="{{ (a.get('time_limit_seconds') // 60) if a.get('time_limit_seconds') else (a.get('time_limit_minutes') or '') }}" placeholder="e.g. 30"></div>
+      <div class="ac-field" data-when="per_question"><label for="assignmentSeconds">Seconds for each question</label><input id="assignmentSeconds" type="number" min="1" name="per_question_seconds" value="{{ a.get('per_question_seconds') or '' }}" placeholder="e.g. 60"></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Students" id="studentSection" data-student-section>
+    <div class="ac-stage__head"><div><h2>Who receives it?</h2><p>The whole class, or only the students you choose.</p></div></div>
+    <div class="ac-choices" role="radiogroup" aria-label="Who receives this">
+      <label><input type="radio" name="issue_to" value="class" {{ 'checked' if mode == 'new' }}><span><strong>Whole class</strong><small>Everyone in the class who takes the subject, including students who join later.</small></span></label>
+      <label><input type="radio" name="issue_to" value="students" {{ 'checked' if mode != 'new' }}><span><strong>Chosen students</strong><small>Tick the students below.</small></span></label>
+    </div>
+    <p class="ac-notice" hidden></p>
+    <div class="ac-pickbar"><input type="search" placeholder="Find a student" aria-label="Find a student"></div>
+    <div class="ac-pickgrid">{% for st in students %}<label data-class="{{ st.class_id }}" data-search="{{ (st.first_name ~ ' ' ~ (st.middle_name or '') ~ ' ' ~ st.last_name ~ ' ' ~ st.admission_no)|lower }}"><input type="checkbox" name="student_ids" value="{{ st.id }}" {% if st.id in selected_students %}checked{% endif %}><span>{{ st.last_name }}, {{ st.first_name }} <small>{{ st.admission_no }}</small></span></label>{% endfor %}</div>
+  </section>
+
+  <div class="ac-form-foot">
+    <button type="button" class="ac-btn" data-guided-back hidden>← Back</button>
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>
+    {% else %}<a class="ac-link" href="{{ url_for('admin_school_assignments') }}">Cancel</a>{% endif %}
+    <button type="button" class="ac-btn ac-btn--primary" data-guided-next hidden>Next →</button>
+    <button type="submit" class="ac-btn ac-btn--primary" data-guided-save>{{ 'Create assignment' if mode == 'new' else 'Save changes' }}</button>
+  </div>
+</form>
 </div>
-<p class="wk-notice" id="wholeClassNote" hidden></p>
-<div class="student-search-bar"><input id="assignmentStudentSearch" type="search" placeholder="Search student name or admission number"><span>Use the class filter below to narrow the list.</span></div>
-<div class="student-pick-grid" id="assignmentStudents">{% for st in students %}<label class="student-pick searchable-student" data-search="{{(st.first_name ~ ' ' ~ (st.middle_name or '') ~ ' ' ~ st.last_name ~ ' ' ~ st.admission_no)|lower}}" data-class="{{st.class_id}}"><input type="checkbox" name="student_ids" value="{{st.id}}" {% if st.id in selected_students %}checked{% endif %}><span><strong>{{st.first_name}} {{st.middle_name or ''}} {{st.last_name}}</strong><small>{{st.admission_no}} · {{st.class_name}}</small></span></label>{% else %}<div class="empty-state">No students are available in your current school scope.</div>{% endfor %}</div></div>
-<div class="form-actions"><button class="btn btn-primary" type="submit">{{'Create assignment' if mode=='new' else 'Save changes'}}</button><a class="btn btn-light" href="{{url_for('admin_school_assignments')}}">Cancel</a></div>
-<script nonce="{{ csp_nonce() }}">(function(){
-  var section=document.getElementById('studentSection'); if(!section) return;
-  var radios=[].slice.call(section.querySelectorAll('input[name=issue_to]'));
-  var search=section.querySelector('.student-search-bar'), grid=section.querySelector('.student-pick-grid');
-  var cls=document.getElementById('assignmentClass')||document.getElementById('projectClass');
-  var note=document.getElementById('wholeClassNote');
-  function sync(){
-    var whole=radios.some(function(r){ return r.checked && r.value==='class'; });
-    if(search) search.hidden=whole;
-    if(grid) grid.hidden=whole;
-    if(!note) return;
-    var value=cls?cls.value:'';
-    var count=grid?[].slice.call(grid.querySelectorAll('[data-class]')).filter(function(e){ return e.dataset.class===value; }).length:0;
-    var name=cls&&cls.selectedOptions[0]?cls.selectedOptions[0].textContent:'the class';
-    note.hidden=!whole || !value;
-    note.textContent=whole&&value ? 'Everyone enrolled in '+name+' ('+count+' student'+(count===1?'':'s')+') receives this.' : '';
-  }
-  radios.forEach(function(r){ r.addEventListener('change',sync); });
-  if(cls) cls.addEventListener('change',sync);
-  sync();
-})();
-</script>
-</form></div>
-<script nonce="{{ csp_nonce() }}">
-(function(){const cls=document.getElementById('assignmentClass'),sub=document.getElementById('assignmentSubject'),students=[...document.querySelectorAll('.searchable-student')],search=document.getElementById('assignmentStudentSearch'),timing=document.querySelector('[name=timing_mode]'),panel=document.getElementById('timingPanel');
-function filter(){const cid=cls.value,q=(search.value||'').toLowerCase();[...sub.options].forEach(o=>{if(!o.value)return;if(!o.dataset.base)o.dataset.base=o.textContent;const offered=!!cid&&(o.dataset.classes||'').split(',').includes(cid);o.hidden=false;o.textContent=o.dataset.base+(cid&&!offered?' — will be offered to this class on save':'');});if(sub.selectedOptions[0]?.hidden)sub.value='';students.forEach(x=>{x.style.display=(!cid||x.dataset.class===cid)&&(!q||x.dataset.search.includes(q))?'flex':'none';});}
-function timingUI(){const quiz=document.querySelector('[name=assignment_type]:checked')?.value==='quiz';panel.style.display=quiz?'block':'none';document.getElementById('overallTime').style.display=timing.value==='overall'?'block':'none';document.getElementById('questionTime').style.display=timing.value==='per_question'?'block':'none';}
-cls?.addEventListener('change',filter);search?.addEventListener('input',filter);document.querySelectorAll('[name=assignment_type]').forEach(x=>x.addEventListener('change',timingUI));timing?.addEventListener('change',timingUI);filter();timingUI();})();
-</script>
+{% include 'includes/_work_form.html' %}
 {% endblock %}

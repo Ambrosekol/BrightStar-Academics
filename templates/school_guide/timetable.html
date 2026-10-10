@@ -3,9 +3,16 @@
 <p>Build the exam or test timetable as a draft, check it, then release it all at once.</p>
 
 <h2 id="draft">Building the draft</h2>
-<p>Under <a href="{{ url_for('admin_school_timetable') }}">Exam Timetable</a>, add one entry per
-class, subject, date and time, with an optional venue. Entries can be edited or deleted freely while
-they are a draft — nothing outside staff sees them yet.</p>
+<p>Under <a href="{{ url_for('admin_school_timetable') }}">Exam timetable</a>, choose the term with the tabs at the
+top and the session beside it, then <strong>+ Add paper</strong>: class, subject, test or examination, date, start
+and end time, and an optional venue. With <strong>Keep this open for the next paper</strong> ticked, the form opens
+again after each save with the same class, day, room and type, so a class's whole week goes in quickly. Papers can
+be edited (<strong>Edit</strong> opens the same form) or deleted freely while they are a draft — nothing outside
+staff sees them yet.</p>
+<p>The papers show <strong>Day by day</strong>, each day with its papers in time order, or as a <strong>Grid</strong>
+of days against classes. A paper that overlaps another for the same class, or uses a room another paper is using at
+the same time, is marked as a clash and says what it overlaps; the count of clashes sits at the top. A solid dot
+means released, a dashed one draft.</p>
 
 <h2 id="release">Releasing</h2>
 <p>Releasing turns every not-yet-released entry for the session and term into a released one, in one

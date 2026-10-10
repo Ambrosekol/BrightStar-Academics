@@ -1,0 +1,33 @@
+{#- The list of settings on the left of every Settings page (templates/admin_base.html wraps the page in it).
+    Every link opens its page beside the list, in place; the entrance examination's set-up is its own workspace
+    and opens as a page of its own (data-full). A dot marks a setting that needs attention. -#}
+{% from 'includes/_nav_icons.html' import icon %}
+<aside class="sx-side" aria-label="Settings">
+  <a class="sx-home{{ ' is-on' if not sx.current }}" href="{{ url_for('admin_settings') }}"{% if not sx.current %} aria-current="page"{% endif %}>
+    <span class="sx-home__ico">{{ icon('nav-settings') }}</span>
+    <span><strong>Settings</strong><small>{% if sx.attention %}{{ sx.attention|length }} need{{ 's' if sx.attention|length == 1 }} attention{% else %}Everything in order{% endif %}</small></span>
+  </a>
+  <label class="sx-find"><span class="sx-sr">Find a setting</span>{{ icon('set-search') }}
+    <input type="search" placeholder="Find a setting" autocomplete="off" data-sx-find></label>
+  <nav class="sx-groups" aria-label="Settings sections">
+    {% for grp in sx.groups %}
+    <div class="sx-group" data-sx-group>
+      <div class="sx-group__t">{{ grp.title }}</div>
+      <ul>
+        {% for e in grp.entries %}
+        {% set on = sx.current and sx.current.endpoint == e.endpoint %}
+        <li data-find="{{ (e.title ~ ' ' ~ e.text ~ ' ' ~ e.keywords ~ ' ' ~ grp.title)|lower }}">
+          <a class="sx-link{{ ' is-on' if on }}" href="{{ e.path }}"{% if on %} aria-current="page"{% endif %}{% if not e.inplace %} data-full{% endif %}>
+            <span class="sx-ico">{{ icon(e.icon) }}</span>
+            <span class="sx-t">{{ e.title }}</span>
+            {% if e.status and e.status[1] == 'warn' %}<span class="sx-dot" title="{{ e.status[0] }}"><span class="sx-sr">{{ e.status[0] }}</span></span>{% endif %}
+            {% if not e.inplace %}<span class="sx-out" title="Opens its own page">{{ icon('arrow-right') }}</span>{% endif %}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+    <p class="sx-none" data-sx-none hidden>No setting matches.</p>
+  </nav>
+</aside>

@@ -29,7 +29,7 @@
   <aside class="msg-side{% if (tab == 'admins' and selected) or (tab == 'parents' and parents.open) %} has-open{% endif %}">
     <nav class="msg-tabs" aria-label="Who to message">
       <a class="msg-tab{% if tab == 'admins' %} is-on{% endif %}" href="{{ url_for('admin_messages') }}"{% if tab == 'admins' %} aria-current="page"{% endif %}>
-        Administrators{% if admin_unread_messages %}<b class="msg-count">{{ admin_unread_messages }}</b>{% endif %}
+        Staff{% if admin_unread_messages %}<b class="msg-count">{{ admin_unread_messages }}</b>{% endif %}
       </a>
       {% if parents.allowed %}
       <a class="msg-tab{% if tab == 'parents' %} is-on{% endif %}" href="{{ url_for('admin_messages', tab='parents') }}"{% if tab == 'parents' %} aria-current="page"{% endif %}>

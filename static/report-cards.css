@@ -123,3 +123,23 @@
   .rc-rate { margin-left: 0; }
   .rc-rate span { width: 40px; }
 }
+
+/* ---- the Academics look (static/academics.css tokens): compact controls, hairline panels, the school's colours ---- */
+.rc-app.ac .rc-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px 10px; margin: 0 0 10px; padding: 6px 8px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-surface); }
+.rc-app.ac .rc-bar__pickers { display: inline-flex; gap: 6px; margin-left: auto; }
+.rc-app.ac .ac-chip { font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ac .rc-btn, .rc-modal .rc-btn { height: auto; padding: 5px 10px; border-radius: 6px; font-size: 12px; border-color: var(--line); }
+.ac .rc-btn--sm, .rc-modal .rc-btn--sm { padding: 3px 8px; font-size: 11px; }
+.ac .rc-btn--primary, .rc-modal .rc-btn--primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.ac .rc-btn--primary:hover, .rc-modal .rc-btn--primary:hover { background: var(--blue-2, var(--blue)); }
+.rc-app.ac .rc-panel { margin-top: 0; border-radius: 10px; min-height: 140px; }
+.rc-app.ac .rc-summary { padding: 8px 12px; }
+.rc-app.ac .rc-stat { padding: 2px 9px; font-size: 12px; }
+.rc-app.ac .rc-summary input { height: auto; padding: 5px 9px; font-size: 12px; border-radius: 6px; }
+.rc-app.ac .rc-table th { padding: 6px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; background: none; }
+.rc-app.ac .rc-table td { padding: 6px 12px; font-size: 12px; }
+.rc-app.ac .rc-name strong { font-size: 12px; }
+.rc-who { color: inherit; text-decoration: none; }
+.rc-who:hover strong { color: var(--blue); text-decoration: underline; }
+.rc-app.ac .rc-note { margin: 0 0 10px; font-size: 12px; border-radius: 8px; }
+.ac .ac-top .rc-dot { display: inline-block; }

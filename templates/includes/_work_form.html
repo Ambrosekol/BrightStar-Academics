@@ -1,0 +1,116 @@
+{# Behaviour shared by the new/edit work forms (assignments, projects, tests, practice tests, examinations).
+
+   A form marked data-guided has sections marked data-step-panel (each with data-title and data-hint). The
+   script builds the step bar from them and shows one at a time: data-guided="steps" (new work) moves with
+   Back and Next, and Next only goes on once that section's fields are filled in properly; data-guided="free"
+   (editing) lets the person jump between the sections from the step bar and save from any of them. On
+   submit every section is checked in order, and the first one with a mistake is opened. Without JavaScript
+   every section simply shows, one after another.
+
+   It also narrows the student list to the chosen class, says how many students "whole class" means, shows
+   the timing settings only for CBT assignments, and closes the pop-up a form was opened in. #}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  Array.prototype.forEach.call(document.querySelectorAll('form[data-guided]'),function(form){
+    if(form.dataset.ready) return; form.dataset.ready='1';
+    form.noValidate=true;
+    var free=form.dataset.guided==='free';
+    var panels=[].slice.call(form.querySelectorAll('[data-step-panel]'));
+    var bar=form.querySelector('[data-guided-steps]');
+    var back=form.querySelector('[data-guided-back]'), next=form.querySelector('[data-guided-next]'), save=form.querySelector('[data-guided-save]');
+    var current=0;
+
+    // A field counts unless it is switched off or tucked away inside its own section (the section itself
+    // may be the hidden one, when it is checked on submit).
+    function hiddenWithin(f,panel){ for(var el=f; el && el!==panel; el=el.parentElement){ if(el.hidden) return true; } return false; }
+    function fieldsOf(panel){ return [].slice.call(panel.querySelectorAll('input,select,textarea')).filter(function(f){ return !f.disabled && f.type!=='hidden' && !hiddenWithin(f,panel); }); }
+    function valid(panel){ return fieldsOf(panel).every(function(f){ return f.checkValidity(); }); }
+    function report(panel){ var bad=fieldsOf(panel).filter(function(f){ return !f.checkValidity(); })[0]; if(bad){ bad.reportValidity(); bad.focus(); } }
+
+    function draw(){
+      panels.forEach(function(p,i){ p.hidden=i!==current; });
+      if(bar){
+        var ol=document.createElement('ol');
+        panels.forEach(function(p,i){
+          var li=document.createElement('li'), b=document.createElement('button'), n=document.createElement('span');
+          b.type='button'; n.className='ac-step__n'; n.textContent=String(i+1);
+          b.className='ac-step '+(i===current?'ac-step--current':(i<current||free?'ac-step--done':''));
+          b.appendChild(n); b.appendChild(document.createTextNode(p.dataset.title));
+          if(i===current) b.setAttribute('aria-current','step');
+          b.disabled=!free && i>current;
+          b.addEventListener('click',function(){ if(free||i<current){ current=i; draw(); } });
+          li.appendChild(b); ol.appendChild(li);
+        });
+        bar.innerHTML=''; bar.appendChild(ol);
+      }
+      if(back) back.hidden=current===0 || free;
+      if(next) next.hidden=free || current===panels.length-1;
+      if(save) save.hidden=!free && current!==panels.length-1;
+      var first=fieldsOf(panels[current])[0]; if(first && form.dataset.drawn) first.focus({preventScroll:true});
+      form.dataset.drawn='1';
+    }
+    if(next) next.addEventListener('click',function(){ if(valid(panels[current])){ current++; draw(); } else { report(panels[current]); } });
+    if(back) back.addEventListener('click',function(){ if(current>0){ current--; draw(); } });
+    // Submitting checks every section in order and opens the first with a mistake (fields of a hidden
+    // section cannot show their own message, so the browser's check is done here instead).
+    form.addEventListener('submit',function(e){
+      for(var i=0;i<panels.length;i++){
+        if(!valid(panels[i])){ e.preventDefault(); current=i; draw(); report(panels[i]); return; }
+      }
+    });
+    if(panels.length){ var start=form.dataset.startStep?parseInt(form.dataset.startStep,10):0; current=Math.min(Math.max(start,0),panels.length-1); draw(); }
+  });
+
+  // Students: only the chosen class's, a search, and what "whole class" means in numbers.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-student-section]'),function(section){
+    var form=section.closest('form'), cls=form.querySelector('select[name=class_id]');
+    var radios=[].slice.call(section.querySelectorAll('input[name=issue_to]'));
+    var grid=section.querySelector('.ac-pickgrid'), bar=section.querySelector('.ac-pickbar'), note=section.querySelector('.ac-notice');
+    var search=section.querySelector('input[type=search]');
+    var items=grid?[].slice.call(grid.querySelectorAll('[data-class]')):[];
+    function sync(){
+      var whole=radios.some(function(r){ return r.checked && r.value==='class'; });
+      var cid=cls?cls.value:'', q=search?search.value.toLowerCase():'';
+      items.forEach(function(el){ el.hidden=!(el.dataset.class===cid && (!q || el.dataset.search.indexOf(q)>-1)); });
+      if(grid) grid.hidden=whole; if(bar) bar.hidden=whole;
+      var count=items.filter(function(el){ return el.dataset.class===cid; }).length;
+      var name=cls&&cls.selectedOptions[0]&&cls.value?cls.selectedOptions[0].textContent.trim():'';
+      if(note){ note.hidden=!name; note.textContent=!name?'':(whole?'Everyone enrolled in '+name+' who takes the subject receives this ('+count+' student'+(count===1?'':'s')+' in the class).':'Tick the students in '+name+' who should receive this.'); }
+    }
+    radios.forEach(function(r){ r.addEventListener('change',sync); });
+    if(cls) cls.addEventListener('change',sync); if(search) search.addEventListener('input',sync);
+    sync();
+  });
+
+  // A subject the chosen class does not have yet is still allowed; say so beside it.
+  Array.prototype.forEach.call(document.querySelectorAll('select[data-offered]'),function(sub){
+    var cls=sub.form.querySelector('select[name=class_id]'); if(!cls) return;
+    function label(){
+      Array.prototype.forEach.call(sub.options,function(o){
+        if(!o.value) return; if(!o.dataset.base) o.dataset.base=o.textContent;
+        var offered=!cls.value || (o.dataset.classes||'').split(',').indexOf(cls.value)>-1;
+        o.textContent=o.dataset.base+(offered?'':' (not yet offered here)');
+      });
+    }
+    cls.addEventListener('change',label); label();
+  });
+
+  // Assignment timing: only for CBT-style work.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-timing]'),function(box){
+    var form=box.closest('form'), mode=box.querySelector('select[name=timing_mode]');
+    var overall=box.querySelector('[data-when=overall]'), per=box.querySelector('[data-when=per_question]');
+    function sync(){
+      var quiz=(form.querySelector('[name=assignment_type]:checked')||{}).value==='quiz';
+      box.hidden=!quiz; overall.hidden=mode.value!=='overall'; per.hidden=mode.value!=='per_question';
+    }
+    [].forEach.call(form.querySelectorAll('[name=assignment_type]'),function(r){ r.addEventListener('change',sync); });
+    mode.addEventListener('change',sync); sync();
+  });
+
+  // Cancel inside a pop-up closes it.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-modal-dismiss]'),function(b){
+    b.addEventListener('click',function(e){ var d=b.closest('dialog'); if(d){ e.preventDefault(); d.close(); } });
+  });
+})();
+</script>
+{% include 'includes/_subject_reach.html' %}

@@ -9,6 +9,15 @@ timetables — is organised around <strong>classes</strong>, <strong>sessions</s
 3 — under <a href="{{ url_for('admin_school_classes') }}">Classes</a>, so this is usually the one step
 already done on the setup checklist. You can rename, reorder or add to this list if your school uses
 different names.</p>
+<p><strong>Crèche and Nursery</strong> (Crèche, Nursery 1 to 3) are there too, switched off. A school that runs them
+switches them on with <em>Activate</em>; a school that is only primary, or only secondary, simply leaves the classes it
+does not run switched off. Crèche and Nursery pupils work on paper: they never sign in, and no online test, assignment
+or project can be set for them. Their teachers record their scores under Results &amp; Records as usual, and their
+parents see the fees and the report card in the parent portal.</p>
+<p><strong>SSS departments.</strong> In SSS 1 to 3 every student belongs to a department: Science, Art or Commercial,
+chosen on the student's record. A subject can be taken by one, several or all departments (see Subjects below), and the
+portal keeps to that: a student only sees the tests of subjects their department takes, work issued to the whole class
+only goes to the students who take the subject, and a subject teacher can be limited to one department.</p>
 
 <h2 id="sessions">Sessions and terms</h2>
 <p>An <strong>academic session</strong> is a school year, e.g. "2025/2026" — set up and switched under
@@ -18,6 +27,7 @@ different names.</p>
 just a choice on a form, not something you create.</p>
 
 <h2 id="subjects">Subjects</h2>
+<p>Subjects shows every subject as a list, or as a grid of subjects against classes, so a class missing a subject stands out; the search narrows either at once. <strong>+ New subject</strong> and <strong>Edit</strong> open a pop-up: the name and code, the classes that take it, and (for SSS) the departments that take it. When editing, the same pop-up lists each class with its lock, where you can lock or unlock it, and the School Admin can apply the final lock.</p>
 <p><a href="{{ url_for('admin_school_subjects') }}">Subjects</a> are not seeded: a brand-new school has
 none, which is the second step of the setup checklist. Creating a subject attaches it to one or more
 classes at the same time, and a subject you have added is then listed on every form that asks for a subject.
@@ -25,10 +35,14 @@ A subject that is not yet attached to the class you pick on a form is still list
 that class. Saving the work offers the subject to the class, so you never have to go back to Subjects first. A
 subject can be <strong>locked</strong> once its results are being finalised, which stops further changes to it
 for that class.</p>
+<p>A subject also says which <strong>SSS departments</strong> take it: tick Science for Physics, Art and Commercial for
+Literature, and leave all unticked for a subject every department takes, such as English and Mathematics. Junior classes
+ignore this.</p>
 <div class="guide-note">The assignment, project, timetable and result forms all follow this rule, so a subject
 you cannot find in a drop-down is almost always one that has not been created yet, not one that has been hidden.</div>
 
 <h2 id="promotion">Moving a class up a session</h2>
+<p>Promotion shows the four steps across the top (class progression, a draft, review and approval, commit) with the ones done ticked. <strong>Class progression</strong> opens a pop-up with every class and the class it moves up to; choosing saves at once. Make a draft from one session into the next, then open it (a pop-up): every student with the class they would move to and the decision for them. Choose a class with the chips and set one decision for everyone shown (a whole class repeating, say), then change any student on their own. A run is saved, approved, then committed; a committed or cancelled run stays readable.</p>
 <p>At the end of a session, <a href="{{ url_for('admin_school_promotion') }}">Promotion</a> lets you
 generate a <strong>draft</strong> of who moves where, for every student currently enrolled — using
 progression rules you set once beforehand under

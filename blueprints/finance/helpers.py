@@ -512,3 +512,41 @@ def _legacy_stage_for(selected_rows, selected_ids, all_ids):
         return 'All'
     stages={str(r['stage'] or 'General') for r in selected_rows}
     return next(iter(stages)) if len(stages)==1 else 'Mixed'
+
+
+def finance_snapshot(admin):
+    """The money figures a finance page leads with: today's and this month's posted collections (cash and
+    bank today), the school-wide amount still owed, and payments not yet allocated to fees. A cashier
+    without ``finance.view_all`` only ever sees their own takings, and no school-wide balance."""
+    from datetime import datetime
+    from sqlalchemy import func, select
+    from models import FinanceFeeAssessment, FinancePayment, FinancePaymentAllocation
+    own=not _finance_can_view_all(admin)
+    scope=[FinancePayment.status=='posted']
+    if own: scope.append(FinancePayment.recorded_by==admin['id'])
+    today=datetime.now().strftime('%Y-%m-%d'); month=datetime.now().strftime('%Y-%m')
+    day=func.substr(FinancePayment.paid_at,1,10)
+    mon=func.substr(FinancePayment.paid_at,1,7)
+
+    def total(*extra):
+        return one_scalar(select(func.coalesce(func.sum(FinancePayment.amount),0)).where(*scope,*extra), 0)
+
+    outstanding=None
+    if not own:
+        assessed=one_scalar(select(func.coalesce(func.sum(FinanceFeeAssessment.amount),0))
+                            .where(FinanceFeeAssessment.active==1), 0)
+        allocated=one_scalar(
+            select(func.coalesce(func.sum(FinancePaymentAllocation.amount),0))
+            .select_from(FinancePaymentAllocation)
+            .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
+            .join(FinanceFeeAssessment,FinanceFeeAssessment.id==FinancePaymentAllocation.assessment_id)
+            .where(FinancePayment.status=='posted',FinanceFeeAssessment.active==1,
+                   FinancePaymentAllocation.voided_at.is_(None)), 0)
+        outstanding=max(0, float(assessed)-float(allocated))
+    return {'view_all':not own,
+            'today_total':total(day==today),'month_total':total(mon==month),
+            'count_today':one_scalar(select(func.count()).select_from(FinancePayment).where(*scope,day==today), 0),
+            'cash':total(day==today,func.lower(FinancePayment.method)=='cash'),
+            'bank':total(day==today,func.lower(FinancePayment.method)!='cash'),
+            'outstanding':outstanding,
+            'unallocated':_finance_unallocated_summary(None if not own else admin['id'])}

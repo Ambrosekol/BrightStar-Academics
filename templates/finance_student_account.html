@@ -1,119 +1,97 @@
 {% extends 'admin_base.html' %}
 {% block title %}Student Fee Account — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="cr-finance-page">
-  <div class="cr-finance-hero">
-    <div>
-      <div class="cr-finance-eyebrow">FINANCE &amp; BURSARY / STUDENT ACCOUNT</div>
-      <h1>{{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %} {{ student.last_name }}</h1>
-      <p>{{ student.admission_no }} &middot; every fee assessed to this student, what has been paid against it, and what is still outstanding.</p>
-    </div>
-    <div class="cr-finance-hero-actions">
-      <a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_fee_items') }}">← Fee Structure</a>
-      <a class="cr-finance-primary-btn" href="{{ url_for('admin_finance_record') }}">+ Record Payment</a>
-    </div>
+{# One student's fees for a session: what was charged (and how each is billed: one-time, the full session or a
+   term), what has been applied to each charge, what is still owed, and every payment made in that session with the
+   fees it paid and its receipt. Opens in a pop-up from Student accounts; changing the session stays in it, and a
+   receipt opens in the same pop-up. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set view_all = admin_has_permission(current_admin['id'], 'finance.view_all') or is_school_admin_ui %}
+{% set acct_url = url_for('admin_finance_student_account', student_id=student.id) %}
+<div class="ac fi" data-fi data-modal-scope="{{ acct_url }}" data-modal-size="wide">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% else %}{% set fin_tab = 'accounts' if view_all else 'collections' %}{% include 'includes/_finance_frame.html' %}
+{% if view_all %}<a class="fi-back" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id if fin_session else none) }}">← Student accounts</a>{% endif %}{% endif %}
+<div class="fi-who{{ ' fi-who--modal' if modal }}">
+  <div>
+    <span class="acq-kind">Fee account</span>
+    <h2>{{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %} {{ student.last_name }}</h2>
+    <p>{{ student.admission_no }}{% if class_name %} · {{ class_name }}{% endif %}{% if fin_session %} · {{ fin_session.name }}{% endif %}</p>
   </div>
-
-  <div class="cr-finance-form-card">
-    <form method="get" class="cr-finance-form-grid" style="margin:0">
-      <div class="cr-finance-field">
-        <label for="session_id">Academic session</label>
-        <select id="session_id" name="session_id" data-autosubmit>
-          {% for s in sessions %}
-          <option value="{{ s.id }}" {% if session and s.id==session.id %}selected{% endif %}>{{ s.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </form>
-  </div>
-
-  {% if not session %}
-  <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">₦</div><strong>No active academic session is available.</strong><p>Create or activate a session before fees can be tracked.</p></div>
-  {% else %}
-
-  <div class="finance-kpi-grid" style="margin:20px 0">
-    <article class="finance-kpi-card finance-kpi-featured">
-      <div class="finance-kpi-heading"><span class="finance-kpi-label">Total Assessed</span><span class="finance-kpi-icon">₦</span></div>
-      <strong class="finance-kpi-value">₦{{ '{:,.2f}'.format(total_assessed or 0) }}</strong>
-      <span class="finance-kpi-note">Every fee charged for {{ session.name }}</span>
-    </article>
-    <article class="finance-kpi-card">
-      <div class="finance-kpi-heading"><span class="finance-kpi-label">Total Paid</span><span class="finance-kpi-icon">₦</span></div>
-      <strong class="finance-kpi-value">₦{{ '{:,.2f}'.format(total_paid or 0) }}</strong>
-      <span class="finance-kpi-note">Allocated from posted payments</span>
-    </article>
-    <article class="finance-kpi-card finance-kpi-outstanding">
-      <div class="finance-kpi-heading"><span class="finance-kpi-label">Outstanding</span><span class="finance-kpi-icon finance-kpi-warning">!</span></div>
-      <strong class="finance-kpi-value">₦{{ '{:,.2f}'.format(total_outstanding or 0) }}</strong>
-      <span class="finance-kpi-note">Still owed for {{ session.name }}</span>
-    </article>
-  </div>
-
-  <section class="cr-finance-catalogue-section">
-    <div class="cr-finance-section-heading">
-      <div><span class="cr-finance-section-kicker">FEES ASSESSED</span><h2>Fees for {{ session.name }}</h2><p>Each row is one fee obligation charged to this student. Record a payment, then allocate it here to mark items paid.</p></div>
-    </div>
-    <div class="cr-finance-catalogue-card">
-      {% if account %}
-      <div class="cr-finance-catalogue-table-wrap">
-        <table class="cr-finance-catalogue-table">
-          <thead><tr><th>Fee</th><th>Term</th><th>Due</th><th class="numeric">Assessed</th><th class="numeric">Paid</th><th class="numeric">Outstanding</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for item in account %}
-            <tr>
-              <td><strong>{{ item.category }}</strong></td>
-              <td>{{ item.term or 'Full Session' }}</td>
-              <td>{{ item.due_date or '—' }}</td>
-              <td class="numeric">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
-              <td class="numeric">₦{{ '{:,.2f}'.format(item.paid) }}</td>
-              <td class="numeric"><strong>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
-              <td>{% if item.status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif item.status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">✓</div><strong>No fees have been assessed to this student for this session.</strong><p>Assess a fee item from the Fee Structure page first.</p></div>
-      {% endif %}
-    </div>
-  </section>
-
-  <section class="cr-finance-assessments-section">
-    <div class="cr-finance-section-heading">
-      <div><span class="cr-finance-section-kicker">PAYMENT HISTORY</span><h2>Payments</h2><p>Every payment ever recorded for this student, across all sessions. Voided payments remain listed for audit.</p></div>
-    </div>
-    <div class="cr-finance-catalogue-card">
-      {% if payments %}
-      <div class="cr-finance-catalogue-table-wrap">
-        <table class="cr-finance-catalogue-table">
-          <thead><tr><th>Receipt</th><th>Paid at</th><th>Method</th><th>Purpose</th><th class="numeric">Amount</th><th>Status</th><th class="actions">Actions</th></tr></thead>
-          <tbody>
-            {% for p in payments %}
-            <tr>
-              <td><strong>{{ p.receipt_no }}</strong></td>
-              <td>{{ p.paid_at }}</td>
-              <td>{{ p.method }}</td>
-              <td>{{ p.category }}</td>
-              <td class="numeric">₦{{ '{:,.2f}'.format(p.amount or 0) }}</td>
-              <td>{% if p.status=='voided' %}<span class="cr-finance-status archived">Voided</span>{% else %}<span class="cr-finance-status active">Posted</span>{% endif %}</td>
-              <td class="actions">
-                <div class="cr-finance-row-actions">
-                  <a class="cr-finance-row-action" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}">Receipt</a>
-                  {% if p.status!='voided' %}<a class="cr-finance-row-action" href="{{ url_for('admin_finance_payment_allocate', payment_id=p.id) }}">Allocate</a>{% endif %}
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="cr-finance-history-empty"><div class="cr-finance-empty-icon">₦</div><strong>No payments have been recorded for this student.</strong></div>
-      {% endif %}
-    </div>
-  </section>
-
-  {% endif %}
+  <form method="get" action="{{ acct_url }}">
+    <label class="ac-hint" for="session_id">Session</label>
+    <select class="ac-select" id="session_id" name="session_id" data-autosubmit>
+      {% for s in sessions %}<option value="{{ s.id }}" {% if fin_session and s.id == fin_session.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}
+    </select>
+    {% if admin_has_permission(current_admin['id'], 'finance.record') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_record', student_id=student.id, session_id=fin_session.id if fin_session else none) }}" data-modal>+ Record a payment</a>{% endif %}
+  </form>
 </div>
+
+{% if not fin_session %}
+<div class="fi-p"><div class="ac-empty"><strong>No active academic session is available.</strong>Create or activate a session before fees can be tracked.</div></div>
+{% else %}
+{% set rate = (100 * total_paid / total_assessed)|round(0)|int if total_assessed else none %}
+{% set free_total = session_payments|sum(attribute='free') %}
+<dl class="fi-k">
+  <div><dt>Charged</dt><dd>{{ naira(total_assessed) }}</dd><small>{{ account|length }} fee{{ '' if account|length == 1 else 's' }} for {{ fin_session.name }}</small></div>
+  <div><dt>Paid</dt><dd>{{ naira(total_paid) }}</dd><small>Applied from {{ session_payments|length }} payment{{ '' if session_payments|length == 1 else 's' }}</small></div>
+  <div class="{{ 'is-alert' if total_outstanding }}"><dt>Outstanding</dt><dd>{{ naira(total_outstanding) }}</dd><small>{{ 'Still owed for ' ~ fin_session.name if total_outstanding else 'Nothing owed' }}</small></div>
+  <div class="is-lead"><dt>Collected</dt><dd>{{ rate if rate is not none else '—' }}{% if rate is not none %}%{% endif %}</dd>
+    {% if rate is not none %}<small><span class="fi-meter{{ ' is-done' if rate >= 100 }}" style="min-width:0;width:100%"><span><i style="width:{{ rate }}%"></i></span></span></small>{% else %}<small>No fees charged</small>{% endif %}</div>
+</dl>
+{% if free_total > 0.005 %}
+<p class="fi-callout"><span class="fi-callout__n">!</span><span><strong>{{ naira(free_total) }} paid but not yet applied to a fee</strong>Open the payment and choose the fee it pays, so the balance below is right.</span></p>
+{% endif %}
+
+<div class="fi-g">
+<section class="fi-p fi-p--7" aria-labelledby="fiFeesH">
+  <div class="fi-h"><h2 id="fiFeesH">Fees for {{ fin_session.name }}</h2></div>
+  {% if account %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Fee</th><th>Type</th><th class="n">Charged</th><th class="n">Paid</th><th class="n">Outstanding</th><th>Status</th></tr></thead>
+    <tbody>{% for item in account %}<tr>
+      <td><strong>{{ item.category }}</strong>{% if item.due_date %}<small>due {{ item.due_date }}</small>{% endif %}</td>
+      <td><span class="fi-chip fi-chip--type">{{ item.fee_type }}</span></td>
+      <td class="n">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
+      <td class="n">₦{{ '{:,.2f}'.format(item.paid) }}</td>
+      <td class="n"><strong{% if item.outstanding %} class="fi-owe"{% endif %}>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
+      <td>{% if item.status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif item.status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No fees have been charged to this student for this session.</strong>Charge a fee from the Fee structure first.</div>
+  {% endif %}
+</section>
+
+<section class="fi-p fi-p--5" aria-labelledby="fiPayH">
+  <div class="fi-h"><h2 id="fiPayH">Payments in {{ fin_session.name }} <small>and what each paid</small></h2></div>
+  {% for p in session_payments %}
+  <div class="fi-pay">
+    <div class="fi-pay__head">
+      <b>{{ naira(p.amount) }}</b>
+      <small>{{ p.receipt_no }} · {{ p.paid_at[:10] if p.paid_at else '' }} · {{ p.method }}</small>
+      {% if p.status == 'voided' %}<span class="cr-finance-status archived">Voided</span>{% endif %}
+      <span class="fi-pay__acts">
+        {% if p.free > 0.005 %}<a class="ac-link" href="{{ url_for('admin_finance_payment_allocate', payment_id=p.id) }}" data-modal>Apply to fees</a>{% endif %}
+        <a class="ac-link" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>Receipt</a>
+      </span>
+    </div>
+    <div class="fi-pay__fees">
+      {% for x in p.applied %}<span class="fi-chip">{{ x.fee }} <small>{{ x.type }}</small> {{ naira(x.amount) }}</span>{% endfor %}
+      {% if p.free > 0.005 %}<span class="fi-chip fi-chip--free">{{ naira(p.free) }} not applied</span>{% endif %}
+      {% if not p.applied and p.status != 'voided' and p.free <= 0.005 %}<span class="fi-chip fi-chip--type">{{ p.category }}</span>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="ac-empty"><strong>No payment in {{ fin_session.name }} yet.</strong></div>
+  {% endfor %}
+  {% set elsewhere = payments|rejectattr('session_id', 'equalto', fin_session.id)|list %}
+  {% if elsewhere %}<p class="ac-hint" style="margin:8px 0 0">{{ elsewhere|length }} more payment{{ '' if elsewhere|length == 1 else 's' }} in other sessions: choose the session above to see them.</p>{% endif %}
+</section>
+</div>
+{% endif %}
+<div class="fi-tip" data-fi-tip role="tooltip" hidden></div>
+</div>
+{% include 'includes/_finance_tip.html' %}
 {% endblock %}

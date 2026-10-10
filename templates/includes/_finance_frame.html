@@ -1,0 +1,31 @@
+{# The Finance frame: Collections, Payments, Student accounts and Fee structure, switched by the tabs below,
+   in the same look as Academics and in the school's own colours (static/academics.css, static/finance.css).
+   Set fin_tab before including it. Only the sections this person may open are shown. Recording a payment and
+   adding a fee item open in a pop-up over whatever page you are on; everything else loads in place
+   (static/inplace.js). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% set fin_aid = current_admin['id'] %}
+{% set fin_view_all = admin_has_permission(fin_aid, 'finance.view_all') or is_school_admin_ui %}
+{% set fin_to_apply = finance_unallocated.count if finance_unallocated and finance_unallocated.count else 0 %}
+{% set fin_tabs = [
+    ('collections', 'Collections', 'admin_finance_dashboard', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all),
+    ('payments', 'Payments', 'admin_finance_payments', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all),
+    ('accounts', 'Student accounts', 'admin_finance_accounts', fin_view_all),
+    ('fees', 'Fee structure', 'admin_finance_fee_items', admin_has_permission(fin_aid, 'finance.manage')),
+] %}
+<header class="ac-top">
+  <h1>Finance</h1>
+  <nav class="ac-tabs" aria-label="Finance sections">
+    {% for key, label, endpoint, shown in fin_tabs if shown %}
+    <a href="{{ url_for(endpoint) }}" class="{{ 'is-active' if fin_tab == key }}" {% if fin_tab == key %}aria-current="page"{% endif %}{% if key == 'fees' %} data-full{% endif %}>{{ label }}{% if key == 'payments' and fin_to_apply %} <b class="fi-count" title="{{ fin_to_apply }} payment{{ '' if fin_to_apply == 1 else 's' }} not yet applied to a fee">{{ fin_to_apply }}</b>{% endif %}</a>
+    {% endfor %}
+  </nav>
+  <div class="ac-top__act">
+    {% if fin_tab == 'fees' and admin_has_permission(fin_aid, 'finance.manage') %}
+      <a class="ac-btn" href="{{ url_for('admin_finance_receipt_settings') }}" data-full>Receipt settings</a>
+      <a class="ac-btn" href="{{ url_for('admin_finance_fee_item_new') }}" data-modal>+ Add fee item</a>
+    {% endif %}
+    {% if admin_has_permission(fin_aid, 'finance.record') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_record') }}" data-modal>+ Record payment</a>{% endif %}
+  </div>
+</header>

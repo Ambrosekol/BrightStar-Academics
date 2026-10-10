@@ -1,0 +1,27 @@
+{# The Attendance frame: taking the register and the term summary, switched by the tabs, then the class chips and the
+   session and term, all loading in place (static/inplace.js). Set at_tab ('register' or 'summary') and at_endpoint
+   before including it. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% set at_aid = current_admin['id'] %}
+{% set at_keep = {'session_id': session_row.id if session_row else none, 'term': term} %}
+<header class="ac-top">
+  <h1>Attendance</h1>
+  <nav class="ac-tabs" aria-label="Attendance">
+    {% if admin_has_permission(at_aid, 'school.attendance.mark') %}<a href="{{ url_for('admin_school_attendance', class_id=class_row.id if class_row else none, **at_keep) }}" class="{{ 'is-active' if at_tab == 'register' }}"{% if at_tab == 'register' %} aria-current="page"{% endif %}>Take the register</a>{% endif %}
+    <a href="{{ url_for('admin_school_attendance_summary', class_id=class_row.id if class_row else none, **at_keep) }}" class="{{ 'is-active' if at_tab == 'summary' }}"{% if at_tab == 'summary' %} aria-current="page"{% endif %}>Term summary</a>
+  </nav>
+</header>
+<form method="get" class="ac-bar" action="{{ url_for(at_endpoint) }}">
+  {% if class_row %}<input type="hidden" name="class_id" value="{{ class_row.id }}">{% endif %}
+  {% if at_tab == 'register' and date %}<input type="hidden" name="date" value="{{ date }}">{% endif %}
+  <span class="ac-bar__label">Class</span>
+  <nav class="ac-chips" aria-label="Class">
+    {% for c in classes %}<a class="ac-chip{{ ' is-active' if class_row and class_row.id == c.id }}" href="{{ url_for(at_endpoint, class_id=c.id, date=date if at_tab == 'register' else none, **at_keep) }}">{{ c.name }}</a>{% else %}<span class="ac-hint">{{ 'No class whose register you take. A class teacher takes their own class’s register.' if at_tab == 'register' else 'No class in your reach.' }}</span>{% endfor %}
+  </nav>
+  <span class="at-sel">
+    <select class="ac-select" name="session_id" aria-label="Session" data-autosubmit>{% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select>
+    <select class="ac-select" name="term" aria-label="Term" data-autosubmit>{% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  </span>
+</form>

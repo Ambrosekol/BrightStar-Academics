@@ -1,16 +1,18 @@
 {% extends 'admin_base.html' %}
 {% block title %}{{ 'Edit Fee Item' if editing else 'Add Fee Item to Catalogue' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="cr-finance-page">
-  <div class="cr-finance-hero">
-    <div><div class="cr-finance-eyebrow">FINANCE &amp; BURSARY / MASTER DATA</div><h1>{{ 'Edit Fee Item' if editing else 'Add Fee Item' }}</h1><p>Maintain an editable fee catalogue and assign each fee to the exact active classes that should see it.</p></div>
-    <div class="cr-finance-hero-actions"><a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_fee_items') }}">← Back to Fee Structure</a></div>
-  </div>
-
+{# Adding or editing one fee in the catalogue. Opens in a pop-up over the Fee structure (static/inplace.js); a
+   mistake keeps it open, a save closes it and the catalogue shows the change. Its look is static/fee-structure.css. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac fi fee fee-item" data-modal-size="wide">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% else %}{% set fin_tab = 'fees' %}{% include 'includes/_finance_frame.html' %}{% endif %}
+<link rel="stylesheet" href="{{ url_for('static', filename='fee-structure.css', v='3') }}">
+  <div class="ac-modal-head fee-item__head"><h2>{{ 'Edit ' ~ form.get('name', 'fee item') if editing else 'Add a fee to the catalogue' }}</h2>
+    <p>{{ 'A change applies to fees charged from now on; fees already charged keep their amount.' if editing else 'Name it, price it, say when it is charged and which classes it is for. Students are charged it from Fee structure.' }}</p></div>
   <div class="cr-finance-form-card">
-    <div class="cr-finance-section-heading"><div><span class="cr-finance-section-kicker">FEE CATALOGUE</span><h2>{{ 'Edit Fee Item' if editing else 'Add Fee Item to Catalogue' }}</h2><p>Changing this master record affects future assessments only. Existing assessments retain their historical amount.</p></div></div>
-    {% if errors %}<div class="cr-finance-form-errors">{% for error in errors %}<div>• {{ error }}</div>{% endfor %}</div>{% endif %}
-    <form method="post">
+    {% if errors %}<div class="ac-errors" role="alert"><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+    <form method="post" action="{{ request.path }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="cr-finance-form-grid">
         <div class="cr-finance-field"><label>Fee Item Name</label><input type="text" name="name" required value="{{ form.get('name','') }}" placeholder="e.g. JSS 1 Tuition Fee"></div>
@@ -102,8 +104,8 @@
           </div>
 
           <div class="fee-class-actions-v5">
-            <button type="button" class="btn btn-light btn-small" id="selectAllClasses">Select all classes</button>
-            <button type="button" class="btn btn-light btn-small" id="clearClasses">Clear all</button>
+            <button type="button" class="ac-btn ac-btn--sm" id="selectAllClasses">Select all classes</button>
+            <button type="button" class="ac-btn ac-btn--sm" id="clearClasses">Clear all</button>
           </div>
         </div>
 
@@ -112,7 +114,7 @@
           <section class="fee-class-group-v5" data-class-group="nursery">
             <div class="fee-class-group-heading-v5">
               <span class="fee-class-group-title-v5">Nursery</span>
-              <span class="fee-class-group-description-v5">Early years and reception classes</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="nursery">Select all Nursery</button>
+              <span class="fee-class-group-description-v5">Early years and reception classes</span><button type="button" class="ac-btn ac-btn--sm fee-category-select-btn" data-category-select="nursery">Select all Nursery</button>
             </div>
             <div class="fee-class-grid-v5">
               {% for c in classes if (c.stage or '')|lower not in ['primary','jss','sss','college'] %}
@@ -127,7 +129,7 @@
           <section class="fee-class-group-v5" data-class-group="primary">
             <div class="fee-class-group-heading-v5">
               <span class="fee-class-group-title-v5">Primary</span>
-              <span class="fee-class-group-description-v5">Primary school classes</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="primary">Select all Primary</button>
+              <span class="fee-class-group-description-v5">Primary school classes</span><button type="button" class="ac-btn ac-btn--sm fee-category-select-btn" data-category-select="primary">Select all Primary</button>
             </div>
             <div class="fee-class-grid-v5">
               {% for c in classes if (c.stage or '')|lower == 'primary' %}
@@ -142,13 +144,13 @@
           <section class="fee-class-group-v5" data-class-group="college">
             <div class="fee-class-group-heading-v5">
               <span class="fee-class-group-title-v5">College</span>
-              <span class="fee-class-group-description-v5">Junior and Senior Secondary School</span><button type="button" class="btn btn-light btn-small fee-category-select-btn" data-category-select="college">Select all College</button>
+              <span class="fee-class-group-description-v5">Junior and Senior Secondary School</span><button type="button" class="ac-btn ac-btn--sm fee-category-select-btn" data-category-select="college">Select all College</button>
             </div>
 
             <div class="fee-class-subgroup-v5" data-class-subgroup="jss">
   <div class="fee-class-subgroup-title-row-v6">
     <div class="fee-class-subgroup-title-v5">JSS</div>
-    <button type="button" class="btn btn-light btn-small fee-category-select-btn"
+    <button type="button" class="ac-btn ac-btn--sm fee-category-select-btn"
             data-category-select="jss">Select all JSS</button>
   </div>
               <div class="fee-class-grid-v5">
@@ -164,7 +166,7 @@
             <div class="fee-class-subgroup-v5" data-class-subgroup="sss">
   <div class="fee-class-subgroup-title-row-v6">
     <div class="fee-class-subgroup-title-v5">SSS</div>
-    <button type="button" class="btn btn-light btn-small fee-category-select-btn"
+    <button type="button" class="ac-btn ac-btn--sm fee-category-select-btn"
             data-category-select="sss">Select all SSS</button>
   </div>
               <div class="fee-class-grid-v5">
@@ -190,8 +192,10 @@
         </div>
       </div>
 
-      <div class="cr-finance-field cr-finance-notes-field"><label>Notes</label><textarea name="notes" rows="4" placeholder="Optional internal note">{{ form.get('notes','') }}</textarea></div>
-      <div class="cr-finance-form-actions"><a class="cr-finance-secondary-btn" href="{{ url_for('admin_finance_fee_items') }}">Cancel</a><button class="cr-finance-primary-btn" type="submit">{{ 'Save Changes' if editing else 'Create Fee Item' }} →</button></div>
+      <div class="cr-finance-field cr-finance-notes-field"><label>Notes</label><textarea name="notes" rows="4" placeholder="Optional internal note">{{ form.get('notes') or '' }}</textarea></div>
+      <div class="ac-form-foot"><span class="ac-grow"></span>
+        {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_finance_fee_items') }}">Cancel</a>{% endif %}
+        <button class="ac-btn ac-btn--primary" type="submit" data-fee-save>{{ 'Save changes' if editing else 'Add to the catalogue' }}</button></div>
     </form>
   </div>
 </div>
@@ -361,6 +365,8 @@
   }
 
   refreshCategoryButtons();
+  var saveBtn = document.querySelector('[data-fee-save]');
+  if (saveBtn) saveBtn.form.addEventListener('submit', function () { saveBtn.classList.add('is-busy'); });
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,12 @@
+{# One row of class chips for the Academics pages: each class with its count, the chosen one filled in. #}
+{% macro class_chips(cards, selected, endpoint, noun, all_label=None) -%}
+<div class="ac-bar">
+  <span class="ac-bar__label">Class</span>
+  <nav class="ac-chips" aria-label="Choose a class">
+    {%- if all_label %}<a class="ac-chip{{ ' is-active' if not selected }}" href="{{ url_for(endpoint) }}">{{ all_label }}</a>{% endif %}
+    {%- for c in cards %}
+    <a class="ac-chip{{ ' is-active' if selected == c.name }}{{ ' is-empty' if not c.count }}" href="{{ url_for(endpoint, **{'class': c.name}) }}" {% if selected == c.name %}aria-current="true"{% endif %} title="{{ c.count }} {{ noun }}{{ '' if c.count == 1 else 's' }}">{{ c.name }} <small>{{ c.count }}</small></a>
+    {%- else %}<span class="ac-empty" style="padding:0">No classes you can open yet.</span>{% endfor %}
+  </nav>
+</div>
+{%- endmacro %}

@@ -36,7 +36,7 @@ from models import (
     Admin, AdminControlItem, AdminMessage, AdminNotification, AdminPermission,
     AdminResourceLock, AdminRoleAssignment, AdminScope, AdminType,
     AdminTypePermission, AcademicSession, AuditLog, ClassSubject, Permission,
-    SchoolClass, SchoolStudentResult, SchoolSubject, db,
+    SchoolClass, SchoolStudentResult, SchoolSubject, TeachingDuty, db,
 )
 from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.security import (
@@ -44,11 +44,13 @@ from core.security import (
     audit_display_detail, audit_log, current_admin, csrf_protect, is_school_admin,
     _notify_school_admins,
 )
+from core.school_structure import level_or_default
 from core.storage import delete_upload, read_upload_bytes, save_upload_bytes
 from core.uploads import ATTACHMENT_EXTENSIONS, _save_image_upload
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
     _admin_contact_fields, _sync_admin_roles, _validate_admin_contact_fields,
+    _duties_of, _duty_form_options, _duty_labels, _parse_duties, _save_duties,
 )
 
 
@@ -214,6 +216,25 @@ def admin_administration():
 
 ADMIN_ACCOUNTS_PER_PAGE=50
 
+def _in_modal():
+    return request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1'
+
+
+def _after_staff_save(endpoint):
+    """Where a save goes next. From a pop-up (static/inplace.js), back to the page it was opened over, so the pop-up
+    closes and that page shows the change; otherwise to the given list."""
+    target = request.values.get('return_to', '')
+    if _in_modal() and target.startswith('/admin/') and not target.startswith('//') and '\\' not in target:
+        return redirect(target)
+    return redirect(url_for(endpoint))
+
+
+def _credentials_page(**context):
+    """New sign-in details: inside the pop-up or page they were made from when fetched in place, else a page of their own."""
+    template = 'admin_staff_credentials.html' if request.headers.get('X-Fragment') == '1' else 'admin_credentials.html'
+    return render_template(template, **context)
+
+
 @app.route('/admin/administration/admins')
 @admin_required
 def admin_accounts():
@@ -225,6 +246,8 @@ def admin_accounts():
     scope_count=sa.case((AdminType.is_system==1,0),
         else_=select(func.count()).select_from(AdminScope)
               .where(AdminScope.admin_id==Admin.id).scalar_subquery()).label('scope_count')
+    duty_count=(select(func.count()).select_from(TeachingDuty)
+        .where(TeachingDuty.admin_id==Admin.id).scalar_subquery().label('duty_count'))
     direct_permission_count=(select(func.count()).select_from(AdminPermission)
         .where(AdminPermission.admin_id==Admin.id).scalar_subquery()
         .label('direct_permission_count'))
@@ -259,7 +282,7 @@ def admin_accounts():
                       Admin.created_at,Admin.last_login_at,Admin.email,Admin.phone,
                       Admin.whatsapp,Admin.photo_path,
                       AdminType.name.label('admin_type_name'),AdminType.is_system.label('is_system'),
-                      scope_count,direct_permission_count,role_names)
+                      scope_count,duty_count,direct_permission_count,role_names)
                .join(AdminType,AdminType.id==Admin.admin_type_id))
     if filters: list_stmt=list_stmt.where(and_(*filters))
     rows=all_rows(list_stmt.order_by(Admin.display_name,Admin.id)
@@ -287,8 +310,10 @@ def admin_account_new():
         .order_by(SchoolSubject.name))
     sessions=all_rows(select(AcademicSession.name).where(AcademicSession.active==1)
         .order_by(AcademicSession.name.desc()))
+    duty_options=_duty_form_options(); duties={'class_teacher':[],'subjects':[]}
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
+        duties,duty_errors=_parse_duties(request.form,duty_options)
         username=request.form.get('username','').strip().lower(); display=request.form.get('display_name','').strip()
         role_ids=[int(x) for x in request.form.getlist('admin_type_ids') if x.isdigit()]
         contact=_admin_contact_fields(request.form)
@@ -312,6 +337,7 @@ def admin_account_new():
         elif not role_ids or not all(any(r['id']==rid for r in roles) for rid in role_ids): errors.append('Select at least one valid staff job role.')
         elif not is_school_admin(me) and not admin_can_delegate_roles(me['id'],role_ids): errors.append('You can only assign job roles whose permissions are already within your own authorised capabilities.')
         errors += _validate_admin_contact_fields(contact)
+        errors += duty_errors
         valid_scope={'academic_session','class','subject','bank'}
         if scope_type not in valid_scope|{'global'}: errors.append('Invalid access boundary.')
         if not selected_scope_types:
@@ -332,7 +358,7 @@ def admin_account_new():
             if not vals: errors.append(f'Select at least one valid {st.replace("_"," ")} restriction value.')
         form=dict(request.form); form['admin_type_ids']=role_ids; form.update(contact); form['scope_groups']=scope_groups
         if errors:
-            return render_template('admin_account_form.html',roles=roles,errors=errors,form=form,mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values)
+            return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,errors=errors,form=form,mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values)
         now=datetime.now(timezone.utc).isoformat()
         try:
             primary_role=role_ids[0]
@@ -348,6 +374,7 @@ def admin_account_new():
             if photo and photo.filename:
                 created.photo_path=_save_image_upload(photo,'admins',f'admin_{username}')
             _sync_admin_roles(aid,role_ids,me['id'],now)
+            _save_duties(aid,duties,me['id'],now)
             for st,vals in scope_groups.items():
                 for value in vals:
                     _ignore_insert(AdminScope, [{'admin_id':aid,'scope_type':st,
@@ -361,10 +388,10 @@ def admin_account_new():
             db.session.rollback()
             msg='That username is already in use.' if isinstance(exc,sa.exc.IntegrityError) else str(exc)
             errors=[msg]
-            return render_template('admin_account_form.html',roles=roles,errors=errors,form=form,mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values)
-        audit_log('admin_created','administration','admin',aid,{'username':username,'role_ids':role_ids,'access_boundaries':[_admin_scope_label(st,v) for st,vals in scope_groups.items() for v in vals],'direct_permissions':selected})
-        flash('Staff account created successfully.','success'); return render_template('admin_credentials.html',admin={'id':aid,'display_name':display,'username':username,'email':contact['email'],'phone':contact['phone'],'whatsapp':contact['whatsapp']},temporary_password=temporary_password)
-    return render_template('admin_account_form.html',roles=roles,errors=[],form={},mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(),selected_scope_values=['*'])
+            return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,errors=errors,form=form,mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values)
+        audit_log('admin_created','administration','admin',aid,{'username':username,'role_ids':role_ids,'access_boundaries':[_admin_scope_label(st,v) for st,vals in scope_groups.items() for v in vals],'teaching_duties':_duty_labels(duties,duty_options),'direct_permissions':selected})
+        flash('Staff account created successfully.','success'); return _credentials_page(admin={'id':aid,'display_name':display,'username':username,'email':contact['email'],'phone':contact['phone'],'whatsapp':contact['whatsapp']},temporary_password=temporary_password)
+    return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,errors=[],form={},mode='new',permissions=perms,show_advanced=is_school_admin(me),banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(),selected_scope_values=['*'])
 
 @app.route('/admin/administration/admins/<int:aid>/edit',methods=['GET','POST'])
 @admin_required
@@ -392,6 +419,7 @@ def admin_account_edit(aid):
                       .order_by(AcademicSession.name.desc()))
     if not row: abort(404)
     protected_school_admin = bool(row['admin_type_system'])
+    duty_options=_duty_form_options(); duties=_duties_of(aid)
     # School Admin is a system authority, not an ordinary scoped staff account.
     # A School Admin may manage the profile of a School Admin account, but the
     # protected system role itself cannot be replaced or narrowed by this form.
@@ -406,6 +434,9 @@ def admin_account_edit(aid):
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
         display=request.form.get('display_name','').strip(); role_ids=[int(x) for x in request.form.getlist('admin_type_ids') if x.isdigit()]; contact=_admin_contact_fields(request.form); scope_type=request.form.get('scope_type','global').strip() or 'global'; scope_values=request.form.getlist('scope_value') or [request.form.get('scope_value','*').strip() or '*']; errors=[]
+        if protected_school_admin: duties={'class_teacher':[],'subjects':[]}   # the School Admin reaches everything
+        else:
+            duties,duty_errors=_parse_duties(request.form,duty_options); errors+=duty_errors
         selected_scope_types=[x.strip() for x in request.form.getlist('scope_types') if x.strip()]
         if not selected_scope_types and scope_type!='global': selected_scope_types=[scope_type]
         scope_groups={}
@@ -435,7 +466,7 @@ def admin_account_edit(aid):
             scope_groups[st]=vals
             if not vals: errors.append(f'Select at least one valid {st.replace("_"," ")} restriction value.')
         form=dict(request.form); form['username']=row['username']; form['admin_type_ids']=role_ids; form.update(contact); form['scope_groups']=scope_groups
-        if errors: return render_template('admin_account_form.html',roles=roles,permissions=perms,errors=errors,form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
+        if errors: return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,permissions=perms,errors=errors,form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
         now=datetime.now(timezone.utc).isoformat()
         db.session.execute(sa_update(Admin).where(Admin.id==aid).values(
             display_name=display,admin_type_id=role_ids[0],email=contact['email'] or None,
@@ -444,9 +475,10 @@ def admin_account_edit(aid):
         if photo and photo.filename:
             try: photo_path=_save_image_upload(photo,'admins',f'admin_{row["username"]}')
             except ValueError as exc:
-                db.session.rollback(); return render_template('admin_account_form.html',roles=roles,permissions=perms,errors=[str(exc)],form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
+                db.session.rollback(); return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,permissions=perms,errors=[str(exc)],form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=set(role_ids),selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
             db.session.execute(sa_update(Admin).where(Admin.id==aid).values(photo_path=photo_path))
         _sync_admin_roles(aid,role_ids,me['id'],now)
+        _save_duties(aid,duties,me['id'],now)
         db.session.execute(sa_delete(AdminScope).where(AdminScope.admin_id==aid))
         db.session.add_all([AdminScope(admin_id=aid,scope_type=st,scope_value=value,
                                        created_at=now,granted_by=me['id'])
@@ -457,8 +489,8 @@ def admin_account_edit(aid):
             _ignore_insert(AdminPermission,[{'admin_id':aid,'permission_id':pid,
                                              'granted_at':now,'granted_by':me['id']}
                                             for pid in [int(x) for x in request.form.getlist('permissions') if x.isdigit()]])
-        db.session.commit(); audit_log('admin_access_updated','administration','admin',aid,{'role_ids':role_ids,'access_boundaries':[_admin_scope_label(st,v) for st,vals in scope_groups.items() for v in vals]}); flash('Administrator profile and access updated.','success'); return redirect(url_for('admin_accounts'))
-    return render_template('admin_account_form.html',roles=roles,permissions=perms,errors=[],form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=assigned,selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
+        db.session.commit(); audit_log('admin_access_updated','administration','admin',aid,{'role_ids':role_ids,'access_boundaries':[_admin_scope_label(st,v) for st,vals in scope_groups.items() for v in vals],'teaching_duties':_duty_labels(duties,duty_options)}); flash('Staff details and access saved.','success'); return _after_staff_save('admin_accounts')
+    return render_template('admin_account_form.html',duties=duties,**duty_options,roles=roles,permissions=perms,errors=[],form=form,mode='edit',editing=row,show_advanced=is_school_admin(me),direct_permissions=direct,banks=banks,classes=classes,subjects=subjects,sessions=sessions,selected_role_ids=assigned,selected_scope_values=scope_values,protected_school_admin=protected_school_admin)
 
 @app.route('/admin/administration/admins/<int:aid>/credentials/reset',methods=['POST'])
 @admin_required
@@ -478,9 +510,9 @@ def admin_account_credentials_reset(aid):
     from core.session_guard import _invalidate_fingerprint_cache
     _invalidate_fingerprint_cache('admin',aid)   # every browser signed in as them ends now, not when the cached copy expires
     audit_log('admin_credentials_reset','authentication','admin',aid,{'username':row['username'],'reset_by':me['username']},True,me)
-    _notify_school_admins('Administrator login credentials reset',f'Login credentials for {row["username"]} were regenerated.','warning',url_for('admin_controls'),me['id'])
+    _notify_school_admins('Staff password reset',f'Login credentials for {row["username"]} were regenerated.','warning',url_for('admin_controls'),me['id'])
     flash('A new temporary password was generated. The previous password no longer works.','success')
-    return render_template('admin_credentials.html',admin=dict(row),temporary_password=temporary_password,reset=True)
+    return _credentials_page(admin=dict(row),temporary_password=temporary_password,reset=True)
 
 @app.route('/admin/administration/admins/<int:aid>/toggle',methods=['POST'])
 @admin_required
@@ -489,12 +521,12 @@ def admin_account_toggle(aid):
     me=current_admin()
     if not is_school_admin(me): return admin_access_error('Administration')
     if not admin_has_permission(me['id'],'admins.deactivate'): return admin_access_error('admins.deactivate')
-    if aid==me['id']: flash('You cannot deactivate your own administrator account.','error'); return redirect(url_for('admin_accounts'))
+    if aid==me['id']: flash('You cannot suspend your own account.','error'); return _after_staff_save('admin_accounts')
     row=one(select(Admin.id,Admin.username,Admin.active).where(Admin.id==aid))
     if not row: abort(404)
     new=0 if row['active'] else 1
     db.session.execute(sa_update(Admin).where(Admin.id==aid).values(active=new))
-    db.session.commit(); audit_log('admin_status_changed','administration','admin',aid,{'username':row['username'],'active':new}); _notify_school_admins('Administrator access status changed',f'{row["username"]} was {"activated" if new else "suspended"}.','warning',url_for('admin_controls'),me['id']); flash('Administrator '+('activated.' if new else 'suspended.')+' School Admin has been notified.','success'); return redirect(url_for('admin_accounts'))
+    db.session.commit(); audit_log('admin_status_changed','administration','admin',aid,{'username':row['username'],'active':new}); _notify_school_admins('Staff access changed',f'{row["username"]} was {"activated" if new else "suspended"}.','warning',url_for('admin_controls'),me['id']); flash(f'{row["username"]} '+('can sign in again.' if new else 'is suspended and cannot sign in.')+' The School Admin has been notified.','success'); return _after_staff_save('admin_accounts')
 
 @app.route('/admin/administration/messages')
 @admin_required
@@ -726,6 +758,19 @@ def admin_message_attachment(message_id):
     response.headers['Cache-Control']='private, max-age=31536000, immutable'
     return response
 
+def _role_holders(rid=None):
+    """The staff holding a role (or, with no role given, every role's holders by role id), active first."""
+    stmt = (select(AdminRoleAssignment.admin_type_id, Admin.id, Admin.display_name, Admin.username, Admin.active, Admin.photo_path)
+            .join(Admin, Admin.id == AdminRoleAssignment.admin_id)
+            .order_by(Admin.active.desc(), Admin.display_name))
+    if rid is not None:
+        stmt = stmt.where(AdminRoleAssignment.admin_type_id == rid)
+    out = {}
+    for row in all_rows(stmt):
+        out.setdefault(row['admin_type_id'], []).append(row)
+    return out.get(rid, []) if rid is not None else out
+
+
 @app.route('/admin/administration/roles')
 @admin_required
 def admin_roles():
@@ -743,7 +788,8 @@ def admin_roles():
                 .where(AdminTypePermission.admin_type_id.in_([r.id for r in roles]))
                 .order_by(Permission.module,Permission.name)):
         role_perms[type_id].append(perm)
-    return render_template('admin_roles.html',roles=roles,role_perms=role_perms)
+    total_perms=one_scalar(select(func.count()).select_from(Permission),0)
+    return render_template('admin_roles.html',roles=roles,role_perms=role_perms,holders=_role_holders(),total_perms=total_perms)
 
 @app.route('/admin/administration/roles/new',methods=['GET','POST'])
 @admin_required
@@ -754,18 +800,20 @@ def admin_role_new():
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
         name=request.form.get('name','').strip(); desc=request.form.get('description','').strip(); selected=[int(x) for x in request.form.getlist('permissions') if x.isdigit()]; errors=[]
-        if not name: errors.append('Admin type name is required.')
+        level=level_or_default(request.form.get('level'))
+        if not name: errors.append('Give the role a name.')
         if errors: return render_template('admin_role_form.html',permissions=perms,errors=errors,form=request.form)
         now=datetime.now(timezone.utc).isoformat()
         try:
-            role=AdminType(name=name,description=desc,is_system=0,active=1,created_at=now)
+            role=AdminType(name=name,description=desc,is_system=0,active=1,created_at=now,level=level)
             db.session.add(role); db.session.flush(); rid=role.id
             _ignore_insert(AdminTypePermission,[{'admin_type_id':rid,'permission_id':pid,
                                                  'granted_at':now} for pid in selected])
             db.session.commit()
         except sa.exc.IntegrityError:
-            db.session.rollback(); return render_template('admin_role_form.html',permissions=perms,errors=['That admin type already exists.'],form=request.form)
-        audit_log('role_created','administration','admin_type',rid,{'name':name,'permissions':selected}); flash('Administrator type created.','success'); return redirect(url_for('admin_roles'))
+            db.session.rollback(); return render_template('admin_role_form.html',permissions=perms,errors=['There is already a role with that name.'],form=request.form)
+        audit_log('role_created','administration','admin_type',rid,{'name':name,'permissions':selected}); flash('Staff role created.','success')
+        return redirect(url_for('admin_role_edit',rid=rid,modal=1) if _in_modal() else url_for('admin_roles'))
     return render_template('admin_role_form.html',permissions=perms,errors=[],form={})
 
 @app.route('/admin/administration/roles/<int:rid>/edit',methods=['GET','POST'])
@@ -781,17 +829,19 @@ def admin_role_edit(rid):
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
         name=request.form.get('name','').strip(); desc=request.form.get('description','').strip(); ids=[int(x) for x in request.form.getlist('permissions') if x.isdigit()]
-        if not name: return render_template('admin_role_form.html',role=role,permissions=perms,selected=selected,errors=['Role name is required.'],form=request.form,mode='edit',show_advanced=True)
+        level=level_or_default(request.form.get('level'))
+        if not name: return render_template('admin_role_form.html',role=role,permissions=perms,selected=selected,errors=['Give the role a name.'],form=request.form,mode='edit',show_advanced=True,holders=_role_holders(rid))
         now=datetime.now(timezone.utc).isoformat()
         db.session.execute(sa_update(AdminType).where(AdminType.id==rid)
-                           .values(name=name,description=desc))
+                           .values(name=name,description=desc,level=level))
         db.session.execute(sa_delete(AdminTypePermission)
                            .where(AdminTypePermission.admin_type_id==rid))
         db.session.flush()
         db.session.add_all([AdminTypePermission(admin_type_id=rid,permission_id=pid,
                                                 granted_at=now) for pid in ids])
-        db.session.commit(); audit_log('role_updated','administration','admin_type',rid,{'name':name,'permissions':ids}); _notify_school_admins('Staff role changed',f'The {name} role was updated.','warning',url_for('admin_controls'),me['id']); flash('Staff role updated.','success'); return redirect(url_for('admin_roles'))
-    return render_template('admin_role_form.html',role=role,permissions=perms,selected=selected,errors=[],form={},mode='edit',show_advanced=True)
+        db.session.commit(); audit_log('role_updated','administration','admin_type',rid,{'name':name,'permissions':ids}); _notify_school_admins('Staff role changed',f'The {name} role was updated.','warning',url_for('admin_controls'),me['id']); flash('Staff role saved.','success')
+        return redirect(url_for('admin_role_edit',rid=rid,modal=1) if _in_modal() else url_for('admin_roles'))
+    return render_template('admin_role_form.html',role=role,permissions=perms,selected=selected,errors=[],form={},mode='edit',show_advanced=True,holders=_role_holders(rid))
 
 @app.route('/admin/administration/permissions')
 @admin_required

@@ -12,7 +12,8 @@
 .rc-head{position:absolute;left:0;right:0;top:0;height:13em;background:var(--rc-primary);color:#fff;
     display:flex;align-items:center;gap:2.4em;padding:0 3.8em}
 .rc-stripe{position:absolute;left:0;right:0;top:13em;height:1em;background:var(--rc-accent)}
-.rc-logo{flex:0 0 10em;width:10em;height:10em;border-radius:1.2em;background:#fff;display:flex;align-items:center;
+/* The box is 10 sheet-em square; its own font-size is 4.2em (for the initials), so its sizes are divided by 4.2. */
+.rc-logo{flex:0 0 2.381em;width:2.381em;height:2.381em;border-radius:.286em;background:#fff;display:flex;align-items:center;
     justify-content:center;overflow:hidden;color:var(--rc-primary);font-weight:800;font-size:4.2em}
 .rc-logo img{width:84%;height:84%;object-fit:contain}
 .rc-id{flex:1;min-width:0}
@@ -20,7 +21,7 @@
     -webkit-box-orient:vertical;overflow:hidden}
 .rc-motto{margin-top:.5em;font-size:1.6em;color:var(--rc-tint);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;
     -webkit-box-orient:vertical;overflow:hidden}
-.rc-contact{flex:0 0 30em;width:30em;text-align:right;font-size:1.5em;line-height:1.4}
+.rc-contact{flex:0 0 20em;width:20em;text-align:right;font-size:1.5em;line-height:1.4}
 .rc-contact div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rc-contact .addr{white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 
@@ -49,7 +50,7 @@
 .rc-side{position:absolute;right:3.8em;top:23.4em;width:27em}
 .rc-amount{height:11.5em;border-radius:1.2em;background:var(--rc-primary);color:#fff;padding:2em}
 .rc-amount small{display:block;font-size:1.25em;font-weight:800;letter-spacing:.04em;color:var(--rc-tint);opacity:.85}
-.rc-amount strong{display:block;margin-top:1.4em;font-size:4.1em;line-height:1;white-space:nowrap}
+.rc-amount strong{display:block;margin-top:.341em;font-size:4.1em;line-height:1;white-space:nowrap}
 .rc-account{margin-top:1.2em;height:11em;border-radius:1.2em;background:var(--rc-tint);border:.15em solid var(--rc-soft);padding:1.2em 2em}
 .rc-account small{display:block;font-size:1.2em;font-weight:800;letter-spacing:.04em;color:var(--muted)}
 .rc-account div{display:flex;justify-content:space-between;margin-top:.62em;font-size:1.6em}

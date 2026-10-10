@@ -876,9 +876,9 @@ check("a second session, 2027/2028, was made through the real form", NEXT is not
 # Staff. Three teachers each limited to their own class, a member of staff who may only look, one who may do nothing
 # here, the two preset roles that carry all three report card permissions.
 mk_role(alpha, "Report Viewer", ["school.view", "school.students.view", "report_cards.view"])
-teacher_a, TEACHER_A = mk_staff(alpha, "teacher.a", "Mrs Amaka Tutor", "Primary Class Teacher", "JSS 1")
-teacher_b, TEACHER_B = mk_staff(alpha, "teacher.b", "Mr Babatunde Guide", "Primary Class Teacher", "JSS 1")
-teacher_c, TEACHER_C = mk_staff(alpha, "teacher.c", "Ms Chioma Mentor", "Primary Class Teacher", "JSS 2")
+teacher_a, TEACHER_A = mk_staff(alpha, "teacher.a", "Mrs Amaka Tutor", "Class Teacher", "JSS 1")
+teacher_b, TEACHER_B = mk_staff(alpha, "teacher.b", "Mr Babatunde Guide", "Class Teacher", "JSS 1")
+teacher_c, TEACHER_C = mk_staff(alpha, "teacher.c", "Ms Chioma Mentor", "Class Teacher", "JSS 2")
 viewer, _ = mk_staff(alpha, "viewer", "Vera Viewer", "Report Viewer")
 nobody, _ = mk_staff(alpha, "librarian", "Lola Librarian", "Librarian")
 officer, _ = mk_staff(alpha, "officer", "Olu Officer", "Report Card Officer")
@@ -1618,7 +1618,7 @@ BETA_J1 = beta.one("SELECT id FROM school_classes WHERE name = 'JSS 1'")
 BETA_CUR = beta.one("SELECT id FROM academic_sessions WHERE is_current = 1")
 CHIKE = mk_students(beta, [("Chike", "Betaman", BETA_J1, BETA_CUR, {"login": "chike"})])[0]
 put(beta, CHIKE, BETA_MATHS, {"T": [(9, 10)], "E": [(48, 60)]}, session=BETA_CUR, class_id=BETA_J1, admin_id=beta.one("SELECT id FROM admins ORDER BY id LIMIT 1"))
-beta_teacher, BETA_TEACHER = mk_staff(beta, "beta.teacher", "Mr Beta Tutor", "Primary Class Teacher", "JSS 1")
+beta_teacher, BETA_TEACHER = mk_staff(beta, "beta.teacher", "Mr Beta Tutor", "Class Teacher", "JSS 1")
 beta_teacher.post(RC + "/my-signature", {"action": "draw", "signature_data_url": drawn(PINK_SIGN)}, page=RC)
 post_comment(beta_teacher, CHIKE, "Chike is a fine student.", session_id=BETA_CUR)
 op_beta.post(RC + "/settings", {"head_title": "Principal", "head_name": "Dr Beta Head", "next_term_begins": "Tuesday, 5 January 2027"}, page=RC + "/settings")
@@ -1814,7 +1814,8 @@ check("…a member of staff with no report card permission is refused (403) ever
                                                      f"{RC}/class.pdf?class_id={J1}&session_id={CUR}&term=First%20Term",
                                                      RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings")))
 # The staff guide's help page for results is named after report cards and is open to every administrator, so it is not a menu link.
-check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in nobody.text("/admin/school").replace("/admin/guide/results-report-cards", "") and "report-cards" in op.text("/admin/school"))
+# The body's data-inplace-scope lists the paths that load in place; it is not a link, so it is left out too.
+check("…nor can they see the 'Report cards' link in the menu", "report-cards" not in re.sub(r'data-inplace-scope="[^"]*"', "", nobody.text("/admin/school")).replace("/admin/guide/results-report-cards", "") and "report-cards" in op.text("/admin/school"))
 kept_comment = comment_row(ADA)
 kept_sigs = (admin_signature(TEACHER_A), signature_files(alpha))
 r1 = viewer.post(RC + "/comments", {"student_id": str(ADA), "session_id": str(CUR), "term": TERM, "comment": "The viewer must not write this."}, page="/admin/password")
@@ -1837,8 +1838,8 @@ check("the Report Card Officer and the School Academic Administrator presets can
       and all(p.get(u).status_code == 302 for p in (officer, academic) for u in (RC + "/comments", RC + "/traits", RC + "/my-signature")))
 perms = lambda role: {r[0] for r in alpha.sql("SELECT p.code FROM admin_types t JOIN admin_type_permissions x ON x.admin_type_id = t.id "  # noqa: E731
                                               "JOIN permissions p ON p.id = x.permission_id WHERE t.name = :n", n=role)}
-check("the presets carry what they should: Primary Class Teacher view + comment (not manage); School Academic Administrator and Report Card Officer all three",
-      {"report_cards.view", "report_cards.comment"} <= perms("Primary Class Teacher") and "report_cards.manage" not in perms("Primary Class Teacher")
+check("the presets carry what they should: Class Teacher view + comment (not manage); School Academic Administrator and Report Card Officer all three",
+      {"report_cards.view", "report_cards.comment"} <= perms("Class Teacher") and "report_cards.manage" not in perms("Class Teacher")
       and {"report_cards.view", "report_cards.comment", "report_cards.manage"} <= perms("School Academic Administrator")
       and {"report_cards.view", "report_cards.comment", "report_cards.manage"} <= perms("Report Card Officer")
       and not any(p.startswith("report_cards.") for p in perms("Librarian")))

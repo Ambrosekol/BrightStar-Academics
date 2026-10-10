@@ -1,632 +1,186 @@
 {% extends 'admin_base.html' %}
-
 {% block title %}Finance — {{ school_brand.name }}{% endblock %}
-
 {% block content %}
-
-<div class="finance-dashboard">
-
-    <!-- ======================================================
-         DASHBOARD HERO
-         ====================================================== -->
-
-    <section class="finance-dashboard-hero">
-
-        <div class="finance-dashboard-hero-copy">
-
-            <div class="finance-dashboard-eyebrow">
-                FINANCE &amp; BURSARY
-            </div>
-
-            <h1>Finance Dashboard</h1>
-
-            <p>
-                {% if view_all %}
-                    School-wide financial visibility for authorised management.
-                {% else %}
-                    View and manage the payments you have recorded.
-                {% endif %}
-            </p>
-
-        </div>
-
-
-        <div class="finance-dashboard-actions">
-
-            <a class="finance-btn finance-btn-primary"
-               href="{{ url_for('admin_finance_record') }}">
-
-                <span class="finance-btn-plus">+</span>
-
-                <span>Record Payment</span>
-
-            </a>
-
-
-            <a class="finance-btn finance-btn-secondary"
-               href="{{ url_for('admin_finance_fee_items') }}">
-
-                <span>Fee Structure</span>
-
-                <span class="finance-btn-arrow" aria-hidden="true">→</span>
-
-            </a>
-
-
-            {% if current_admin and admin_has_permission(current_admin['id'],'finance.manage') %}
-            <a class="finance-btn finance-btn-secondary"
-               href="{{ url_for('admin_finance_receipt_settings') }}">
-
-                <span>Receipt Settings</span>
-
-                <span class="finance-btn-arrow" aria-hidden="true">→</span>
-
-            </a>
-            {% endif %}
-
-        </div>
-
-    </section>
-
-
-    <!-- ======================================================
-         FINANCIAL OVERVIEW
-         ====================================================== -->
-
-    <section class="finance-overview">
-
-        <div class="finance-section-heading">
-
-            <div>
-                <div class="finance-section-kicker">
-                    FINANCIAL OVERVIEW
-                </div>
-
-                <h2>Collections at a glance</h2>
-            </div>
-
-            <span class="finance-section-caption">
-                Posted payments
-            </span>
-
-        </div>
-
-
-        <div class="finance-kpi-grid">
-
-            <!-- Today's Collections -->
-
-            <article class="finance-kpi-card finance-kpi-featured">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Today's Collections
-                    </span>
-
-                    <span class="finance-kpi-icon">
-                        ₦
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(today_total or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Total posted today
-                </span>
-
-            </article>
-
-
-            <!-- This Month -->
-
-            <article class="finance-kpi-card">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        This Month
-                    </span>
-
-                    <span class="finance-kpi-icon">
-                        ₦
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(month_total or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Month-to-date collections
-                </span>
-
-            </article>
-
-
-            <!-- Payments Today -->
-
-            <article class="finance-kpi-card">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Payments Today
-                    </span>
-
-                    <span class="finance-kpi-icon finance-kpi-icon-count">
-                        #
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    {{ count_today or 0 }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Posted payment records
-                </span>
-
-            </article>
-
-
-            <!-- Cash Today -->
-
-            <article class="finance-kpi-card">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Cash Today
-                    </span>
-
-                    <span class="finance-kpi-icon">
-                        ₦
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(cash or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Cash collections
-                </span>
-
-            </article>
-
-
-            <!-- Bank / Other -->
-
-            <article class="finance-kpi-card">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Bank / Other
-                    </span>
-
-                    <span class="finance-kpi-icon">
-                        ↗
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(bank or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Non-cash collections today
-                </span>
-
-            </article>
-
-
-            <!-- Outstanding -->
-
-            {% if view_all %}
-
-            <article class="finance-kpi-card finance-kpi-outstanding">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Outstanding Assessed Fees
-                    </span>
-
-                    <span class="finance-kpi-icon finance-kpi-warning">
-                        !
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(outstanding or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    Current assessed balance
-                </span>
-
-            </article>
-
-            {% endif %}
-
-
-            <!-- Unallocated -->
-
-            {% if unallocated and unallocated.count %}
-
-            <article class="finance-kpi-card finance-kpi-outstanding">
-
-                <div class="finance-kpi-heading">
-
-                    <span class="finance-kpi-label">
-                        Not Yet Allocated
-                    </span>
-
-                    <span class="finance-kpi-icon finance-kpi-warning">
-                        !
-                    </span>
-
-                </div>
-
-                <strong class="finance-kpi-value">
-                    ₦{{ '%.2f'|format(unallocated.total or 0) }}
-                </strong>
-
-                <span class="finance-kpi-note">
-                    <a href="{{ url_for('admin_finance_unallocated') }}">{{ unallocated.count }} payment{{ 's' if unallocated.count != 1 else '' }} to allocate →</a>
-                </span>
-
-            </article>
-
-            {% endif %}
-
-        </div>
-
-    </section>
-
-
-    <!-- ======================================================
-         TODAY'S COLLECTION SUMMARY
-         ====================================================== -->
-
-    <section class="finance-collection-summary">
-
-        <div class="finance-summary-intro">
-
-            <div class="finance-section-kicker">
-                TODAY'S ACTIVITY
-            </div>
-
-            <h2>Collection summary</h2>
-
-            <p>
-                A quick view of today's posted payment activity.
-            </p>
-
-        </div>
-
-
-        <div class="finance-summary-stat">
-
-            <div class="finance-summary-icon">
-                ₦
-            </div>
-
-            <div>
-                <span>Cash collected</span>
-
-                <strong>
-                    ₦{{ '%.2f'|format(cash or 0) }}
-                </strong>
-            </div>
-
-        </div>
-
-
-        <div class="finance-summary-divider"></div>
-
-
-        <div class="finance-summary-stat">
-
-            <div class="finance-summary-icon">
-                ↗
-            </div>
-
-            <div>
-                <span>Bank / Other</span>
-
-                <strong>
-                    ₦{{ '%.2f'|format(bank or 0) }}
-                </strong>
-            </div>
-
-        </div>
-
-
-        <div class="finance-summary-divider"></div>
-
-
-        <div class="finance-summary-stat">
-
-            <div class="finance-summary-icon">
-                #
-            </div>
-
-            <div>
-                <span>Payment records</span>
-
-                <strong>
-                    {{ count_today or 0 }}
-                </strong>
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ======================================================
-         RECENT TRANSACTIONS
-         ====================================================== -->
-
-    <section class="finance-transactions-card">
-
-        <header class="finance-transactions-header">
-
-            <div>
-
-                <div class="finance-section-kicker">
-                    TRANSACTION LEDGER
-                </div>
-
-                <h2>Recent Transactions</h2>
-
-                <p>
-                    {% if view_all %}
-                        Latest school-wide posted payments.
-                    {% else %}
-                        Latest payments recorded by you.
-                    {% endif %}
-                </p>
-
-            </div>
-
-
-            <a class="finance-ledger-action"
-               href="{{ url_for('admin_finance_record') }}">
-
-                Record payment
-
-                <span aria-hidden="true">→</span>
-
-            </a>
-
-        </header>
-
-
-        <div class="finance-table-container">
-
-            <table class="finance-transactions-table">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Receipt</th>
-
-                        <th>Student</th>
-
-                        <th>Amount</th>
-
-                        <th>Method</th>
-
-                        <th>Date</th>
-
-                        <th>Status</th>
-
-                        <th></th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    {% for p in rows %}
-
-                    <tr>
-
-                        <!-- Receipt -->
-
-                        <td>
-
-                            <span class="finance-receipt-number">
-                                {{ p.receipt_no }}
-                            </span>
-
-                        </td>
-
-
-                        <!-- Student -->
-
-                        <td>
-
-                            <div class="finance-student">
-
-                                <div class="finance-student-avatar">
-
-                                    {{ (p.first_name or '?')[0]|upper }}{{ (p.last_name or '')[0]|upper }}
-
-                                </div>
-
-
-                                <div class="finance-student-details">
-
-                                    <strong>
-                                        {{ p.first_name }}
-                                        {{ p.middle_name or '' }}
-                                        {{ p.last_name }}
-                                    </strong>
-
-                                    <small>
-                                        {{ p.admission_no }}
-                                    </small>
-
-                                </div>
-
-                            </div>
-
-                        </td>
-
-
-                        <!-- Amount -->
-
-                        <td>
-
-                            <strong class="finance-transaction-amount">
-                                ₦{{ '%.2f'|format(p.amount or 0) }}
-                            </strong>
-
-                        </td>
-
-
-                        <!-- Method -->
-
-                        <td>
-
-                            <span class="finance-method-badge">
-                                {{ p.method }}
-                            </span>
-
-                        </td>
-
-
-                        <!-- Date -->
-
-                        <td>
-
-                            <div class="finance-date-cell">
-
-                                <strong>
-                                    {{ p.paid_at[:10] if p.paid_at else '—' }}
-                                </strong>
-
-                                {% if p.paid_at and p.paid_at|length >= 16 %}
-                                <small>
-                                    {{ p.paid_at[11:16] }}
-                                </small>
-                                {% endif %}
-
-                            </div>
-
-                        </td>
-
-
-                        <!-- Status -->
-
-                        <td>
-
-                            <span class="finance-status-badge
-                                {% if (p.status or '')|lower == 'posted' %}
-                                    finance-status-posted
-                                {% else %}
-                                    finance-status-other
-                                {% endif %}">
-
-                                <span class="finance-status-dot"></span>
-
-                                {{ p.status or 'posted' }}
-
-                            </span>
-
-                        </td>
-
-
-                        <!-- Receipt -->
-
-                        <td class="finance-receipt-action">
-
-                            <a href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}"
-                               class="finance-receipt-link">
-
-                                Receipt
-
-                                <span aria-hidden="true">→</span>
-
-                            </a>
-
-                            <a href="{{ url_for('admin_finance_student_account', student_id=p.student_id, session_id=p.session_id) }}"
-                               class="finance-receipt-link">
-
-                                Account
-
-                                <span aria-hidden="true">→</span>
-
-                            </a>
-
-                        </td>
-
-                    </tr>
-
-
-                    {% else %}
-
-
-                    <!-- Empty state -->
-
-                    <tr>
-
-                        <td colspan="7">
-
-                            <div class="finance-empty-state">
-
-                                <div class="finance-empty-icon">
-                                    ₦
-                                </div>
-
-                                <strong>
-                                    No payments recorded yet
-                                </strong>
-
-                                <span>
-                                    Posted finance transactions will appear here after the first payment is recorded.
-                                </span>
-
-                                <a href="{{ url_for('admin_finance_record') }}">
-
-                                    Record the first payment
-
-                                    <span aria-hidden="true">→</span>
-
-                                </a>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
+{# Collections: what came in and when (everyone with finance access; a cashier sees only their own takings),
+   then - for those who may see school-wide figures - where the session's fees stand, by class and by fee,
+   the largest balances and the latest payments. blueprints/finance/analytics.py computes it all. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% macro short(v) -%}{% set v = v or 0 %}{% if v >= 1000000 %}₦{{ '%.2f'|format(v / 1000000) }}M{% elif v >= 10000 %}₦{{ '{:,.0f}'.format(v / 1000) }}K{% else %}₦{{ '{:,.0f}'.format(v) }}{% endif %}{%- endmacro %}
+{% macro meter(paid, assessed) -%}{% set pct = (100 * paid / assessed)|round(0)|int if assessed else 0 %}<span class="fi-meter{{ ' is-done' if assessed and paid >= assessed }}" data-tip="{{ naira(paid) }} of {{ naira(assessed) }} paid"><span><i style="width:{{ pct }}%"></i></span>{{ pct }}%</span>{%- endmacro %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'collections' %}{% include 'includes/_finance_frame.html' %}
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Today</dt><dd>{{ naira(snap.today_total) }}</dd><small>{{ snap.count_today }} payment{{ '' if snap.count_today == 1 else 's' }} · cash {{ short(snap.cash) }}, other {{ short(snap.bank) }}</small></div>
+  <div><dt>This month</dt><dd>{{ naira(snap.month_total) }}</dd><small>{{ 'Your' if not view_all else 'All' }} posted payments since the 1st</small></div>
+  <div><dt>{{ col.label }}</dt><dd>{{ short(col.total) }}{% if col.change is not none %}<span class="fi-delta fi-delta--{{ 'up' if col.change > 0 else ('down' if col.change < 0 else 'flat') }}" title="Compared with the {{ col.label|lower|replace('last ', '') }} before">{{ '▲' if col.change > 0 else ('▼' if col.change < 0 else '■') }} {{ col.change|abs }}%</span>{% endif %}</dd><small>{% if col.prev_total %}vs {{ short(col.prev_total) }} the period before{% else %}{{ col.count }} payments{% endif %}</small></div>
+  {% if view_all %}
+  <div><dt>Outstanding Assessed Fees</dt><dd>{{ naira(outstanding) }}</dd><small>Every session, charges less money applied</small></div>
+  {% endif %}
+  {% if unallocated and unallocated.count %}
+  <div class="is-alert"><dt>Not yet allocated</dt><dd><a href="{{ url_for('admin_finance_payments', view='unallocated') }}">{{ naira(unallocated.total) }}</a></dd><small>{{ unallocated.count }} payment{{ '' if unallocated.count == 1 else 's' }} not yet applied to a fee</small></div>
+  {% endif %}
+</dl>
+
+<div class="fi-g">
+  <section class="fi-p fi-p--8" aria-labelledby="fiColH">
+    <div class="fi-h">
+      <h2 id="fiColH">Money in <small>{{ col.start.strftime('%d %b') }} – {{ col.end.strftime('%d %b %Y') }}{% if not view_all %} · payments you recorded{% endif %}</small></h2>
+      <nav class="fi-seg" aria-label="Period">
+        {% for key, p in col.periods.items() %}<a href="{{ url_for('admin_finance_dashboard', period=key, session_id=fin_session.id if fin_session else none) }}" class="{{ 'is-active' if col.period == key }}"{% if col.period == key %} aria-current="true"{% endif %}>{{ {'7d':'7 days','30d':'30 days','90d':'90 days','12m':'12 months'}[key] }}</a>{% endfor %}
+      </nav>
+    </div>
+    {% if col.total %}
+    {% set top = col.max %}
+    <div class="fi-cols" role="img" aria-label="{{ col.label }}: {{ naira(col.total) }} collected from {{ col.count }} payments">
+      <div class="fi-cols__y" aria-hidden="true"><span>{{ short(top) }}</span><span>{{ short(top / 2) }}</span><span>₦0</span></div>
+      <div class="fi-cols__plot">
+        {% for b in col.buckets %}<span class="fi-col{{ ' is-zero' if not b.value }}{{ ' is-weekend' if b.weekend }}{{ ' is-best' if col.best and b.key == col.best.key }}" tabindex="0" data-tip="{{ b.tip }}"><i style="height:{{ (100 * b.value / top)|round(1) }}%"></i></span>{% endfor %}
+        {% set per_bucket = col.total / (col.buckets|length) %}
+        <span class="fi-avg" style="bottom:{{ (100 * per_bucket / top)|round(1) }}%"><span>avg {{ short(per_bucket) }}/{{ col.bucket }}</span></span>
+      </div>
+      <div class="fi-cols__x" aria-hidden="true"><span>{{ col.buckets[0].label }}</span><span>{{ col.buckets[(col.buckets|length) // 2].label }}</span><span>{{ col.buckets[-1].label }}</span></div>
+    </div>
+    <p class="fi-foot">
+      <span>Collected <b>{{ naira(col.total) }}</b></span>
+      <span>Payments <b>{{ col.count }}</b></span>
+      <span>Average payment <b>{{ naira(col.average) }}</b></span>
+      {% if col.best %}<span>Best {{ col.bucket }} <b>{{ col.best.label }}</b> · {{ short(col.best.value) }}</span>{% endif %}
+    </p>
+    <details class="fi-twin"><summary>Table</summary>
+      <table class="ac-t"><thead><tr><th>{{ col.bucket|capitalize }}</th><th class="n">Payments</th><th class="n">Collected</th></tr></thead>
+      <tbody>{% for b in col.buckets if b.value %}<tr><td>{{ b.tip.split(':')[0] }}</td><td class="n">{{ b.count }}</td><td class="n">{{ naira(b.value) }}</td></tr>{% endfor %}</tbody></table>
+    </details>
+    {% else %}
+    <div class="ac-empty"><strong>Nothing collected in this period</strong>Payments recorded here, or made online by parents, appear as they are posted.</div>
+    {% endif %}
+  </section>
+
+  <section class="fi-p fi-p--4" aria-labelledby="fiMethH">
+    <div class="fi-h"><h2 id="fiMethH">How it was paid <small>{{ col.label|lower }}</small></h2></div>
+    {% if col.methods %}
+    <div class="fi-bars">
+      {% for m in col.methods %}{% set share = (100 * m.value / col.total)|round(0)|int if col.total else 0 %}
+      <div class="fi-bar" data-tip="{{ m.label }}: {{ naira(m.value) }} from {{ m.count }} payment{{ '' if m.count == 1 else 's' }}">
+        <span class="fi-bar__l">{{ m.label }}</span><span class="fi-bar__t"><i style="width:{{ share }}%"></i></span><span class="fi-bar__v">{{ short(m.value) }}<small>{{ share }}%</small></span>
+      </div>{% endfor %}
+    </div>
+    {% else %}<p class="ac-hint">No payments in this period.</p>{% endif %}
+    {% if col.collectors %}
+    <div class="fi-h" style="margin-top:14px"><h2>Taken by <small>{{ col.label|lower }}</small></h2></div>
+    <div class="fi-bars">
+      {% set ctop = col.collectors[0].value or 1 %}
+      {% for c in col.collectors %}
+      <div class="fi-bar" data-tip="{{ c.label }}: {{ naira(c.value) }} from {{ c.count }} payment{{ '' if c.count == 1 else 's' }}">
+        <span class="fi-bar__l">{{ c.label }}</span><span class="fi-bar__t"><i style="width:{{ (100 * c.value / ctop)|round(1) }}%"></i></span><span class="fi-bar__v">{{ short(c.value) }}<small>{{ c.count }}</small></span>
+      </div>{% endfor %}
+    </div>
+    {% endif %}
+  </section>
 </div>
 
+{% if view_all %}
+<div class="fi-sec">
+  <h2>Where the fees stand</h2>
+  {% if sessions %}
+  <form method="get" action="{{ url_for('admin_finance_dashboard') }}">
+    <input type="hidden" name="period" value="{{ col.period }}">
+    <select class="ac-select" name="session_id" aria-label="Academic session" data-autosubmit>{% for s in sessions %}<option value="{{ s.id }}" {% if fin_session and s.id == fin_session.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select>
+  </form>
+  {% endif %}
+</div>
+{% if not breakdown or not breakdown.assessed %}
+<div class="fi-p"><div class="ac-empty"><strong>No fees charged{% if fin_session %} for {{ fin_session.name }}{% endif %} yet</strong>Charge fees to a class or a student from the Fee structure; their balances then show here.</div></div>
+{% else %}
+{% set b = breakdown %}
+<div class="fi-g">
+  <section class="fi-p fi-p--5" aria-labelledby="fiStandH">
+    <div class="fi-h"><h2 id="fiStandH">{{ fin_session.name }} <small>{{ b.billed }} of {{ b.students }} students charged</small></h2><a class="ac-link" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id) }}">All accounts →</a></div>
+    <div class="fi-stand">
+      <div class="fi-stand__big">{{ b.rate }}%<small>collected</small></div>
+      <div class="fi-stand__side">{{ naira(b.paid) }} of {{ naira(b.assessed) }}</div>
+      {% set late = (100 * b.overdue / b.assessed)|round(1) if b.assessed else 0 %}
+      <div class="fi-stand__bar" role="img" aria-label="{{ b.rate }}% of charged fees paid; {{ naira(b.balance) }} still owed, {{ naira(b.overdue) }} of it past its due date" data-tip="Paid {{ naira(b.paid) }} · owed {{ naira(b.balance) }}{% if b.overdue %} · overdue {{ naira(b.overdue) }}{% endif %}">
+        <i style="width:{{ b.rate }}%"></i>{% if b.overdue %}<b style="left:{{ b.rate }}%;width:{{ late }}%"></b>{% endif %}
+      </div>
+    </div>
+    <p class="fi-key"><span><i class="fi-sw"></i>Paid <b>{{ naira(b.paid) }}</b></span><span><i class="fi-sw fi-sw--owed"></i>Owed <b>{{ naira(b.balance) }}</b></span>{% if b.overdue %}<span><i class="fi-sw fi-sw--late"></i>Overdue <b>{{ naira(b.overdue) }}</b></span>{% endif %}</p>
+    <div class="fi-status">
+      {% for key, label in [('paid','Paid in full'),('part','Part paid'),('unpaid','Nothing paid'),('none','No fees yet')] %}
+      <a href="{{ url_for('admin_finance_accounts', session_id=fin_session.id, status=key) }}"><b>{{ b.status[key] }}</b>{{ label }}</a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="fi-p fi-p--7" aria-labelledby="fiDebtH">
+    <div class="fi-h"><h2 id="fiDebtH">Largest balances</h2><a class="ac-link" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id, status='owing') }}">Everyone owing →</a></div>
+    {% if b.debtors %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Student</th><th>Class</th><th>Paid</th><th class="n">Balance</th><th class="n">Last paid</th></tr></thead>
+      <tbody>{% for r in b.debtors %}<tr>
+        <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=fin_session.id) }}" data-modal>{{ r.name }}</a><small>{{ r.admission_no }}</small></td>
+        <td>{{ r.class_name or '—' }}</td>
+        <td>{{ meter(r.paid, r.assessed) }}</td>
+        <td class="n"><span class="fi-owe">{{ naira(r.balance) }}</span>{% if r.overdue %}<small>{{ short(r.overdue) }} overdue</small>{% endif %}</td>
+        <td class="n">{{ r.last_paid or 'Never' }}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="ac-empty"><strong>Nobody owes anything for {{ fin_session.name }}</strong>Every fee charged has been paid.</div>{% endif %}
+  </section>
+</div>
+
+<div class="fi-g">
+  <section class="fi-p fi-p--7" aria-labelledby="fiClassH">
+    <div class="fi-h"><h2 id="fiClassH">By class <small>charged, paid and still owed</small></h2></div>
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Class</th><th class="n">Students</th><th class="n">Charged</th><th>Collected</th><th class="n">Owed</th><th class="n">Owing</th></tr></thead>
+      <tbody>{% for c in b.classes %}<tr>
+        <td>{% if c.id %}<a class="ac-title" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id, **{'class': c.id}) }}">{{ c.label }}</a>{% else %}{{ c.label }}{% endif %}</td>
+        <td class="n">{{ c.students }}</td>
+        <td class="n">{{ short(c.assessed) }}</td>
+        <td>{% if c.assessed %}{{ meter(c.paid, c.assessed) }}{% else %}<span class="fi-zero">No fees</span>{% endif %}</td>
+        <td class="n">{% if c.balance %}{{ short(c.balance) }}{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+        <td class="n">{% if c.owing %}<a class="ac-link" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id, status='owing', **{'class': c.id}) }}">{{ c.owing }}</a>{% else %}<span class="fi-zero">0</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <section class="fi-p fi-p--5" aria-labelledby="fiCatH">
+    <div class="fi-h"><h2 id="fiCatH">By fee <small>share of each charge collected</small></h2></div>
+    <div class="fi-bars">
+      {% for c in b.categories %}
+      <div class="fi-bar" data-tip="{{ c.label }}: {{ naira(c.paid) }} of {{ naira(c.assessed) }} collected, {{ naira(c.balance) }} owed ({{ c.fees }} charge{{ '' if c.fees == 1 else 's' }})">
+        <span class="fi-bar__l">{{ c.label }}</span><span class="fi-bar__t"><i style="width:{{ c.rate or 0 }}%"></i></span><span class="fi-bar__v">{{ c.rate or 0 }}%<small>of {{ short(c.assessed) }}</small></span>
+      </div>{% endfor %}
+    </div>
+    <details class="fi-twin"><summary>Table</summary>
+      <table class="ac-t"><thead><tr><th>Fee</th><th class="n">Charged</th><th class="n">Paid</th><th class="n">Owed</th></tr></thead>
+      <tbody>{% for c in b.categories %}<tr><td>{{ c.label }}</td><td class="n">{{ naira(c.assessed) }}</td><td class="n">{{ naira(c.paid) }}</td><td class="n">{{ naira(c.balance) }}</td></tr>{% endfor %}</tbody></table>
+    </details>
+  </section>
+</div>
+{% endif %}
+{% endif %}
+
+<section class="fi-p" aria-labelledby="fiRecentH">
+  <div class="fi-h"><h2 id="fiRecentH">Latest payments <small>{{ 'school-wide' if view_all else 'that you recorded' }}</small></h2></div>
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Receipt</th><th>Student</th><th>For</th><th>Method</th><th>Paid</th><th class="n">Amount</th><th></th></tr></thead>
+    <tbody>{% for p in rows %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>{{ p.receipt_no }}</a></td>
+      <td>{{ p.first_name }} {{ p.last_name }}<small>{{ p.admission_no }}</small></td>
+      <td>{{ p.category }}</td>
+      <td><span class="ac-tag">{{ p.method }}</span></td>
+      <td>{{ p.paid_at[:10] if p.paid_at else '—' }}{% if p.paid_at and p.paid_at|length >= 16 %}<small>{{ p.paid_at[11:16] }}</small>{% endif %}</td>
+      <td class="n"><strong>{{ naira(p.amount) }}</strong></td>
+      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>Receipt</a><a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=p.student_id, session_id=p.session_id) }}" data-modal>Account</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No payments recorded yet</strong>{% if admin_has_permission(current_admin['id'], 'finance.record') %}<a class="ac-link" href="{{ url_for('admin_finance_record') }}" data-modal>Record the first payment →</a>{% endif %}</div>
+  {% endif %}
+</section>
+<div class="fi-tip" data-fi-tip role="tooltip" hidden></div>
+</div>
+{% include 'includes/_finance_tip.html' %}
 {% endblock %}

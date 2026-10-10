@@ -1,11 +1,36 @@
 {% extends 'school_guide/_layout.html' %}
 {% block guide %}
-<p>Finance covers what a student is charged, what has been paid, and the receipt that proves it.</p>
+<p>Finance covers what a student is charged, what has been paid, and the receipt that proves it. It is
+one page with four tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong> and
+<strong>Fee structure</strong> (each shown only to those allowed to open it), and <strong>+ Record payment</strong> always at
+the top right. Recording a payment, adding or editing a fee item, a payment and a student's account all open in a
+pop-up over the page you are on; Cancel, the × or a click outside closes it.</p>
+
+<h2 id="collections">Collections: what came in, and where the fees stand</h2>
+<p><a href="{{ url_for('admin_finance_dashboard') }}">Collections</a> opens with today's takings, this month's, and
+the total for the period you choose (7 days, 30 days, 90 days or 12 months) against the period before it. The
+chart shows every day, week or month in that period; hover over or tab to a column for its amount and number of
+payments, and <strong>Table</strong> under it lists the same figures. Beside it: how the money was paid (cash, bank
+transfer, POS, online) and, for a bursar or the School Admin, which member of staff took it.</p>
+<p>For those who may see school-wide figures, <strong>Where the fees stand</strong> follows, for the session you
+pick: the share of charged fees collected so far (the striped part of the bar is owed and already past its due
+date), how many students have paid in full, part paid, paid nothing or have no fees yet (each a link to that list),
+the largest balances, and the same figures by class and by fee. A cashier sees only the money they recorded
+themselves, and no school-wide balance.</p>
+
+<h2 id="student-accounts">Student accounts</h2>
+<p><a href="{{ url_for('admin_finance_accounts') }}">Student accounts</a> lists every student enrolled in a session,
+or charged for it, with what they were charged, what has been applied to those charges, how far along they are,
+their balance (and how much of it is overdue) and the date of their last payment. Narrow it by class with the
+chips, by where students stand (<em>Owing</em>, <em>Nothing paid</em>, <em>Part paid</em>, <em>Paid in full</em>,
+<em>No fees yet</em>), or by name or admission number, and order it by largest balance, name, class, most paid
+or lowest share paid. Each choice loads in place. The figures across the top always add up the students shown.</p>
 
 <h2 id="fee-items">Fee items</h2>
 <p><a href="{{ url_for('admin_finance_fee_items') }}">Fee Structure</a> is where a school defines what
-it charges — tuition, a term's dues, a one-off charge — and which classes each applies to. This is the
-fourth step of the new-school setup checklist.</p>
+it charges — tuition, a term's dues, a one-off charge — and which classes each applies to (<strong>+ Add fee
+item</strong>), charges students, and looks back over every charge made. This is the fourth step of the
+new-school setup checklist.</p>
 
 <h2 id="billing-class">Billing a whole class</h2>
 <p>On <a href="{{ url_for('admin_finance_fee_items') }}">Fee Structure</a>, the top of the page chooses
@@ -25,28 +50,42 @@ one, a due date; the fees offered are the ones assigned to that class.</p>
 </ul>
 
 <h2 id="payments">Recording a payment</h2>
-<p>From <a href="{{ url_for('admin_finance_dashboard') }}">Finance</a>, recording a payment updates the
-student's balance and generates a receipt at once. A payment can be voided, with a reason, if it was
-entered wrong; voiding never deletes it, it just stops it counting. Voiding is only ever a correction
-to the record - for a payment a parent actually made online, see <em>Refunding an online payment</em>
-below, which is the action that sends the money itself back.</p>
+<p><strong>+ Record payment</strong> opens a short form in a pop-up: <em>who paid</em> (type part of the student's name or
+admission number to narrow the list; it shows where the receipt will be sent) and <em>what was paid</em> (the amount, what
+it is for, how it was paid, and a reference or note if there is one). Saving makes a numbered receipt at once, sends it to
+the guardian, and opens the payment's own page, ready to apply it to fees.</p>
+<p><a href="{{ url_for('admin_finance_payments') }}">Payments</a> lists every payment: all of them, those
+<em>not yet applied</em> to a fee, those fully applied, or voided ones, for one session or every session, by method, or
+found by student, admission number, receipt number or payer. A cashier sees only the payments they recorded.</p>
+
+<h2 id="payment-page">A payment's own page</h2>
+<p>Opening a payment (from Payments, Collections or a student's account) shows everything about it in one place: the
+receipt exactly as issued, with <strong>Print receipt</strong> and <strong>Open PDF</strong>; <strong>Apply to fees</strong>;
+<strong>Send to the family</strong> (email the receipt, or send the payment text, again); and, for those who manage finance,
+<strong>Correct a mistake</strong>. A payment can be voided there, with a reason, if it was entered wrong; voiding never
+deletes it, it just stops it counting. Voiding is only ever a correction to the record - for a payment a parent actually
+made online, see <em>Refunding an online payment</em> below, which is the action that sends the money itself back.</p>
 
 <h2 id="allocation">Deciding what a payment covers</h2>
-<p>A payment on its own is just an amount received — <strong>allocating</strong> it is what says which
-particular charge (this term's tuition, say, or the uniform levy) it pays off. Open a payment from a
-student's account page to allocate it across one or more of that student's outstanding charges; a
-payment can cover several charges at once, or only part of one, and what is left unallocated still
-shows as credit on the account.</p>
+<p>A payment on its own is just an amount received — <strong>applying</strong> it is what says which
+particular charge (this term's tuition, say, or the uniform levy) it pays off. On the payment's page, <strong>Apply to
+fees</strong> lists the student's fees still owing for that session, each with how it is billed and what it still owes.
+Type an amount against each, use <strong>Fill</strong> to give one fee as much as it owes, or <strong>Fill oldest first</strong>
+to pay the oldest fees until the money runs out; the running total shows what is left, and <strong>Apply</strong> saves it.
+A payment can cover several charges at once, or only part of one, and what is left still shows as not yet applied.</p>
 <div class="guide-warn">For as long as any posted payment - by any means, including one paid online
 - has not been allocated to a charge, every finance officer sees a banner naming how many and how
 much, on every page, not just Finance. It is not a message you can dismiss: it goes away on its own,
 the moment the last one is allocated, precisely so a payment can never be quietly forgotten.</div>
 
 <h2 id="account">A student's own fee account</h2>
-<p>A student's account (opened from their own page under
-<a href="{{ url_for('admin_school_students') }}">Students</a>, or from a payment's receipt) lists
-everything ever charged to them and every payment ever recorded for them, session by session, with
-the running balance — the same page a linked parent sees their own version of.</p>
+<p>A student's account (opened from <strong>Student accounts</strong>, from their own page under
+<a href="{{ url_for('admin_school_students') }}">Students</a>, or from a payment's receipt) opens in a pop-up and
+shows, for the session you choose: every fee charged and how it is billed (<em>One-time</em>, <em>Full Session</em>, or
+<em>First</em>, <em>Second</em> or <em>Third Term</em>), what has been paid against each and what is still owed; and every payment
+made in that session, with the fees it paid and any part not yet applied. <strong>Receipt</strong> opens that payment in the
+same pop-up, and <strong>+ Record a payment</strong> starts one for this student — the same figures a linked parent sees in
+their own version.</p>
 
 <h2 id="receipts">The receipt</h2>
 <p>Every school's receipt carries its own branding — logo, colours, name, address, phone, a signature

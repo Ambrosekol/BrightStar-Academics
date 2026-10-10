@@ -1,0 +1,75 @@
+{% extends 'admin_base.html' %}
+{% block title %}Student accounts — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Every student's fee position for a session: charged, paid, balance, overdue and their last payment. Narrowed
+   by class (chips), by where they stand (the segmented control) and by name; every change loads in place. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% macro short(v) -%}{% set v = v or 0 %}{% if v >= 1000000 %}₦{{ '%.2f'|format(v / 1000000) }}M{% elif v >= 10000 %}₦{{ '{:,.0f}'.format(v / 1000) }}K{% else %}₦{{ '{:,.0f}'.format(v) }}{% endif %}{%- endmacro %}
+{% set base = {'session_id': fin_session.id if fin_session else none, 'class': class_id, 'status': status if status != 'all' else none, 'sort': sort if sort != 'balance' else none, 'q': q or none} %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'accounts' %}{% include 'includes/_finance_frame.html' %}
+
+{% if not fin_session %}
+<div class="fi-p"><div class="ac-empty"><strong>No active academic session</strong>Create or activate a session in Settings before fees can be tracked.</div></div>
+{% else %}
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_accounts') }}" role="search">
+  <span class="ac-bar__label">Session</span>
+  <select class="ac-select" name="session_id" aria-label="Academic session" data-autosubmit>{% for s in sessions %}<option value="{{ s.id }}" {% if s.id == fin_session.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select>
+  <span class="ac-bar__label">Class</span>
+  <nav class="ac-chips" aria-label="Class">
+    <a class="ac-chip{{ ' is-active' if not class_id }}" href="{{ url_for('admin_finance_accounts', **dict(base, **{'class': none, 'page': none})) }}">All <small>{{ everyone }}</small></a>
+    {% for c in classes %}<a class="ac-chip{{ ' is-active' if class_id == c.id }}" href="{{ url_for('admin_finance_accounts', **dict(base, **{'class': c.id})) }}" title="{{ c.owing }} owing">{{ c.name }} <small>{{ c.n }}</small></a>{% endfor %}
+  </nav>
+  {% if class_id %}<input type="hidden" name="class" value="{{ class_id }}">{% endif %}
+  {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  {% if sort != 'balance' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Find a student or admission no." aria-label="Find a student"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Collected</dt><dd>{{ totals.rate if totals.rate is not none else '—' }}{% if totals.rate is not none %}%{% endif %}</dd><small>{{ short(totals.paid) }} of {{ short(totals.assessed) }} charged</small></div>
+  <div><dt>Charged</dt><dd>{{ naira(totals.assessed) }}</dd><small>{{ total_rows }} student{{ '' if total_rows == 1 else 's' }} in this view</small></div>
+  <div><dt>Paid</dt><dd>{{ naira(totals.paid) }}</dd><small>Applied to these charges</small></div>
+  <div class="{{ 'is-alert' if totals.balance }}"><dt>Still owed</dt><dd>{{ naira(totals.balance) }}</dd><small>{% if totals.overdue %}{{ short(totals.overdue) }} past its due date{% else %}Nothing overdue{% endif %}</small></div>
+</dl>
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Where they stand">
+    {% for key, label in statuses.items() %}<a href="{{ url_for('admin_finance_accounts', **dict(base, status=key if key != 'all' else none)) }}" class="{{ 'is-active' if status == key }}"{% if status == key %} aria-current="true"{% endif %}>{{ label }} <small>{{ counts[key] }}</small></a>{% endfor %}
+  </nav>
+  <form method="get" action="{{ url_for('admin_finance_accounts') }}" style="display:inline-flex;align-items:center;gap:6px;margin:0">
+    {% for k, v in base.items() if k != 'sort' and v is not none %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <label class="ac-hint" for="fiSort">Order</label>
+    <select class="ac-select" id="fiSort" name="sort" data-autosubmit>{% for key, label in sorts.items() %}<option value="{{ key }}" {% if sort == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </form>
+  <span class="ac-count">{{ total_rows }} of {{ everyone }}</span>
+</div>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Class</th><th class="n">Charged</th><th class="n">Paid</th><th>Progress</th><th class="n">Balance</th><th class="n">Last payment</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}{% set pct = r.rate or 0 %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=fin_session.id) }}" data-modal>{{ r.name }}</a><small>{{ r.admission_no }}</small></td>
+      <td>{{ r.class_name or '—' }}</td>
+      <td class="n">{% if r.assessed %}{{ naira(r.assessed) }}{% else %}<span class="fi-zero">No fees</span>{% endif %}</td>
+      <td class="n">{{ naira(r.paid) if r.assessed else '' }}</td>
+      <td>{% if r.assessed %}<span class="fi-meter{{ ' is-done' if r.status == 'paid' }}" data-tip="{{ naira(r.paid) }} of {{ naira(r.assessed) }}"><span><i style="width:{{ pct }}%"></i></span>{{ pct }}%</span>{% endif %}</td>
+      <td class="n">{% if r.balance %}<span class="fi-owe">{{ naira(r.balance) }}</span>{% if r.overdue %}<small>{{ short(r.overdue) }} overdue</small>{% endif %}{% elif r.assessed %}<span class="ac-tag ac-tag--good">Cleared</span>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+      <td class="n">{{ r.last_paid or '—' }}</td>
+      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=fin_session.id) }}" data-modal>Account</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% if pages > 1 %}
+  <div class="fi-pager"><span>Showing {{ (page - 1) * 50 + 1 }}–{{ [page * 50, total_rows]|min }} of {{ total_rows }}</span>
+    <nav aria-label="Pages">{% for n in range(1, pages + 1) %}{% if n == page %}<span class="is-current">{{ n }}</span>{% else %}<a href="{{ url_for('admin_finance_accounts', page=n, **base) }}">{{ n }}</a>{% endif %}{% endfor %}</nav></div>
+  {% endif %}
+  {% else %}
+  <div class="ac-empty"><strong>No students match</strong>{% if q or status != 'all' or class_id %}<a class="ac-link" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id) }}">Show everyone</a>{% else %}No student is enrolled in {{ fin_session.name }} or charged for it yet.{% endif %}</div>
+  {% endif %}
+</section>
+{% endif %}
+<div class="fi-tip" data-fi-tip role="tooltip" hidden></div>
+</div>
+{% include 'includes/_finance_tip.html' %}
+{% endblock %}

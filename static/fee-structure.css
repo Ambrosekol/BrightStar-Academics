@@ -1,0 +1,249 @@
+/* Fee structure (templates/finance_fee_items.html and the history it loads, templates/_finance_assessment_history.html).
+   The page keeps every one of its controls and its layout - bill a student or a class with the summary and its
+   total held in view, the catalogue, the history, the review and progress pop-ups - and takes the Academics look:
+   static/academics.css tokens only, so every colour is the school's own. Scoped to .fee, which sits inside .ac. */
+
+.fee { --fee-radius: 10px; }
+
+/* Workspace tabs: Student billing / Fee catalogue / Recent assessments, as a segmented control */
+.fee .cr-finance-tabs-v7 { display: inline-flex; flex-wrap: wrap; gap: 2px; margin: 0 0 10px; padding: 2px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-wash); }
+.fee .cr-finance-tab-v7 { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 0; border-radius: 6px; background: none; color: var(--ac-ink-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.fee .cr-finance-tab-v7:hover { color: var(--ac-ink); }
+.fee .cr-finance-tab-v7.is-active { background: var(--ac-surface); color: var(--ac-brand); box-shadow: 0 1px 2px var(--ac-shadow); }
+.fee .cr-finance-tab-v7:focus-visible { outline: 2px solid var(--ac-accent); outline-offset: 1px; }
+.fee .cr-finance-tab-icon-v7, .fee .cr-finance-tab-v7 small { display: none; }
+.fee .cr-finance-tab-v7 strong { font-size: 12px; font-weight: 600; color: inherit; }
+.fee .cr-finance-tab-panel-v7 { min-width: 0; }
+.fee .cr-finance-tab-panel-v7[hidden] { display: none !important; }
+
+/* What to bill: a student or a whole class */
+.fee .cr-bill-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; }
+@media (max-width: 600px) { .fee .cr-bill-modes { grid-template-columns: 1fr; } }
+.fee .cr-bill-mode { padding: 8px 12px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-surface); color: var(--ac-muted); font: inherit; text-align: left; cursor: pointer; }
+.fee .cr-bill-mode strong { display: block; font-size: 13px; color: var(--ac-ink); }
+.fee .cr-bill-mode small { display: block; font-size: 11px; }
+.fee .cr-bill-mode:hover { border-color: color-mix(in srgb, var(--ac-accent) 45%, var(--ac-line)); }
+.fee .cr-bill-mode.is-active { border-color: var(--ac-accent); background: var(--ac-accent-tint); box-shadow: inset 3px 0 0 var(--ac-accent); }
+.fee .cr-bill-mode.is-active strong { color: var(--ac-accent-strong); }
+.fee .cr-bill-mode:focus-visible { outline: 2px solid var(--ac-accent); outline-offset: 1px; }
+
+/* Billing: the steps on the left, the summary on the right, held in view */
+.fee .cr-bill { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; align-items: start; }
+.fee .cr-bill[hidden], .fee .cr-bill [hidden] { display: none !important; }
+.fee .cr-bill-card { margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--ac-line); border-radius: var(--fee-radius); background: var(--ac-surface); }
+.fee .cr-bill-card:last-child { margin-bottom: 0; }
+.fee .cr-bill-card-head { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 10px; }
+.fee .cr-bill-step { display: grid; place-items: center; flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: var(--ac-brand); color: var(--ac-on-brand); font-size: 11px; font-weight: 700; }
+.fee .cr-bill-card-head h3 { margin: 1px 0 2px; font-size: 14px; font-weight: 700; color: var(--ac-brand); }
+.fee .cr-bill-card-head p { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ac-muted); }
+.fee .cr-bill-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px; }
+.fee .cr-bill-field label { display: block !important; margin: 0 0 4px !important; font-size: 12px; font-weight: 600; color: var(--ac-ink-2); text-transform: none; letter-spacing: 0; }
+.fee .cr-bill-field label span { font-weight: 500; color: var(--ac-muted); }
+.ac.fee .cr-bill-field select, .ac.fee .cr-bill-field input { width: 100% !important; height: auto; padding: 6px 9px !important; font-size: 13px !important; }
+.fee .cr-bill-class { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 6px 10px; border-radius: 8px; background: var(--ac-brand-tint); }
+.fee .cr-bill-class-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ac-muted); }
+.fee .cr-bill-class strong { display: block; font-size: 13px; color: var(--ac-brand); }
+.fee .cr-bill-class small { display: block; font-size: 11px; color: var(--ac-ink-2); }
+.fee .cr-bill-class.is-loading strong::after { content: ""; display: inline-block; width: 10px; height: 10px; margin-left: 8px; vertical-align: -1px; border: 2px solid var(--ac-accent); border-right-color: transparent; border-radius: 50%; animation: ac-spin .7s linear infinite; }
+
+.fee .cr-bill-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.fee .cr-bill-search { position: relative; flex: 1 1 200px; max-width: 320px; display: block !important; margin: 0 !important; }
+.fee .cr-bill-search span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--ac-muted); pointer-events: none; font-size: 13px; }
+.ac.fee .cr-bill-search input { width: 100% !important; padding: 5px 9px 5px 26px !important; }
+.fee .cr-bill-toolbar-actions { display: flex; gap: 6px; }
+.fee .cr-bill-btn { padding: 4px 10px; border: 1px solid var(--ac-line); border-radius: 6px; background: var(--ac-surface); color: var(--ac-ink-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.fee .cr-bill-btn:hover { border-color: var(--ac-accent); color: var(--ac-accent-strong); }
+.fee .cr-bill-btn:focus-visible { outline: 2px solid var(--ac-accent); outline-offset: 1px; }
+
+.fee .cr-bill-list { position: relative; display: flex; flex-direction: column; border: 1px solid var(--ac-line); border-radius: 8px; overflow: hidden; transition: opacity .12s ease; }
+.fee .cr-bill-list.is-loading { opacity: .5; pointer-events: none; }
+.fee .cr-bill-row { position: relative; display: grid !important; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; margin: 0 !important; padding: 7px 10px; border-bottom: 1px solid var(--ac-grid); background: var(--ac-surface); cursor: pointer; }
+.fee .cr-bill-row:last-child { border-bottom: 0; }
+.fee .cr-bill-row:hover { background: var(--ac-wash); }
+.fee .cr-bill-row.is-selected { background: var(--ac-accent-tint); box-shadow: inset 3px 0 0 var(--ac-accent); }
+.fee .cr-bill-row input[type="checkbox"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fee .cr-bill-box { display: grid; place-items: center; width: 18px; height: 18px; border: 1.5px solid var(--ac-line); border-radius: 5px; background: var(--ac-surface); color: transparent; font-size: 11px; font-weight: 800; }
+.fee .cr-bill-row input:checked + .cr-bill-box { border-color: var(--ac-accent); background: var(--ac-accent); color: var(--ac-on-brand); }
+.fee .cr-bill-row input:focus-visible + .cr-bill-box { outline: 2px solid var(--ac-accent); outline-offset: 2px; }
+.fee .cr-bill-row input:disabled + .cr-bill-box { border-color: var(--ac-grid); background: var(--ac-grid); }
+.fee .cr-bill-row-main { min-width: 0; }
+.fee .cr-bill-row-name { display: block; font-size: 13px; font-weight: 600; color: var(--ac-ink); overflow-wrap: anywhere; }
+.fee .cr-bill-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 1px; font-size: 11px; color: var(--ac-muted); }
+.fee .cr-bill-row-note { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--ac-attn); }
+.fee .cr-bill-row-note.is-paid { color: var(--ac-good); }
+.fee .cr-bill-row.is-already-assessed { background: var(--ac-wash); }
+.fee .cr-bill-row.is-already-assessed .cr-bill-row-name, .fee .cr-bill-row.is-already-assessed .cr-bill-row-amount { color: var(--ac-muted); }
+.fee .cr-bill-row-amount { font-size: 13px; font-weight: 700; color: var(--ac-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fee .cr-bill-empty { margin-top: 8px; padding: 14px; border: 1px dashed var(--ac-line); border-radius: 8px; color: var(--ac-muted); font-size: 12px; text-align: center; }
+.fee .cr-bill-empty-static { margin: 0 0 8px; }
+
+/* The summary, with the total that stays in view */
+.fee .cr-bill-aside { position: sticky; top: 16px; padding: 10px 12px; border: 1px solid var(--ac-line); border-top: 3px solid var(--ac-brand); border-radius: var(--fee-radius); background: var(--ac-surface); box-shadow: 0 6px 18px var(--ac-shadow); }
+.fee .cr-bill-aside h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--ac-ink); }
+.fee .cr-bill-sum-count { margin: 0 0 8px; font-size: 12px; color: var(--ac-muted); }
+.fee .cr-bill-sum-count strong { color: var(--ac-ink); }
+.fee .cr-bill-sum-items { max-height: 240px; margin: 0 0 8px; padding: 0; overflow-y: auto; list-style: none; }
+.fee .cr-bill-sum-items li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--ac-grid); font-size: 12px; color: var(--ac-ink); }
+.fee .cr-bill-sum-items li:last-child { border-bottom: 0; }
+.fee .cr-bill-sum-items li span:last-child { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fee .cr-bill-sum-empty { color: var(--ac-muted); font-style: italic; }
+.fee .cr-bill-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--ac-line); }
+.fee .cr-bill-total > div span { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ac-muted); }
+.fee .cr-bill-total > div small { display: block; font-size: 11px; color: var(--ac-ink-2); }
+.fee .cr-bill-total strong { font-size: 20px; font-weight: 700; color: var(--ac-brand); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fee .cr-bill-review { width: 100%; justify-content: center; }
+.fee .cr-bill-aside-note { margin: 8px 0 0; font-size: 11px; color: var(--ac-muted); text-align: center; }
+@media (max-width: 980px) {
+  .fee .cr-bill { grid-template-columns: minmax(0, 1fr); padding-bottom: 72px; }
+  .fee .cr-bill-aside { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40; padding: 8px 16px; border-radius: 10px 10px 0 0; box-shadow: 0 -8px 24px var(--ac-shadow); }
+  .fee .cr-bill-aside-detail { display: none; }
+  .fee .cr-bill-aside-foot { display: flex; align-items: center; gap: 12px; }
+  .fee .cr-bill-aside-foot .cr-bill-total { flex: 1 1 auto; padding: 0; border-top: 0; }
+  .fee .cr-bill-review { width: auto; flex: 0 0 auto; }
+  .fee .cr-bill-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fee .cr-bill-field-wide { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) { .fee .cr-bill-fields { grid-template-columns: minmax(0, 1fr); } .fee .cr-bill-toolbar-actions { width: 100%; } .fee .cr-bill-btn { flex: 1 1 0; } }
+
+/* Buttons: the Academics pair, in the school's colours */
+.fee .cr-finance-primary-btn, .fee .cr-finance-secondary-btn, .fee .cr-finance-row-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: auto; min-height: 0; padding: 6px 12px; border-radius: 6px;
+  font: inherit; font-size: 12px; font-weight: 600; line-height: 1.3; text-decoration: none; cursor: pointer; box-shadow: none; white-space: nowrap; }
+.fee .cr-finance-primary-btn { border: 1px solid var(--ac-accent); background: var(--ac-accent); color: var(--ac-on-brand); }
+.fee .cr-finance-primary-btn:hover { border-color: var(--ac-accent-strong); background: var(--ac-accent-strong); box-shadow: none; }
+.fee .cr-finance-primary-btn:disabled { opacity: .45; cursor: not-allowed; }
+.fee .cr-finance-primary-btn.is-busy::before { content: ""; width: 11px; height: 11px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ac-spin .7s linear infinite; }
+.fee .cr-finance-secondary-btn { border: 1px solid var(--ac-line); background: var(--ac-surface); color: var(--ac-ink); }
+.fee .cr-finance-secondary-btn:hover { border-color: var(--ac-accent); color: var(--ac-accent-strong); }
+.fee .cr-finance-row-action { padding: 0; border: 0; background: none; color: var(--ac-accent); }
+.fee .cr-finance-row-action:hover { text-decoration: underline; color: var(--ac-accent-strong); border: 0; }
+.fee .cr-finance-row-actions { display: inline-flex; gap: 10px; align-items: center; }
+.fee .cr-fee-lead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 10px; font-size: 12px; color: var(--ac-muted); }
+
+/* Catalogue and history: Academics tables */
+.fee .cr-finance-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 8px; padding: 0; border: 0; background: none; }
+.fee .cr-finance-section-heading h2 { margin: 0; font-size: 13px; font-weight: 700; color: var(--ac-ink); }
+.fee .cr-finance-section-heading p { margin: 2px 0 0; font-size: 12px; color: var(--ac-muted); }
+.fee .cr-finance-section-kicker { display: none; }
+.fee .cr-finance-catalogue-count { display: inline-flex; align-items: baseline; gap: 4px; font-size: 12px; color: var(--ac-muted); }
+.fee .cr-finance-catalogue-count strong { font-size: 14px; color: var(--ac-ink); }
+.fee .cr-finance-catalogue-card { padding: 0; border: 1px solid var(--ac-line); border-radius: var(--fee-radius); background: var(--ac-surface); box-shadow: none; overflow: hidden; }
+.fee .cr-finance-catalogue-table-wrap { overflow-x: auto; max-height: none; }
+:is(.admin-shell, .ac-modal) .fee table.cr-finance-catalogue-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table th { position: sticky; top: 0; z-index: 2; padding: 6px 10px; background: var(--ac-wash); text-align: left; font-size: 11px; font-weight: 600; color: var(--ac-muted); letter-spacing: 0; text-transform: none; border-bottom: 1px solid var(--ac-line); white-space: nowrap; }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table td { padding: 6px 10px; font-size: 12px; line-height: 1.35; color: var(--ac-ink); border-bottom: 1px solid var(--ac-grid); vertical-align: middle; }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table tbody tr:last-child td { border-bottom: 0; }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table tbody tr:hover td { background: var(--ac-wash); }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table td strong { font-weight: 600; color: var(--ac-ink); }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table td small { display: block; margin-top: 1px; font-size: 11px; color: var(--ac-muted); }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table .numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:is(.admin-shell, .ac-modal) .fee .cr-finance-catalogue-table .actions { text-align: right; white-space: nowrap; }
+.fee .cr-finance-table-empty { padding: 18px !important; text-align: center; color: var(--ac-muted) !important; }
+.fee .cr-finance-class-list { display: flex; flex-wrap: wrap; gap: 3px; min-width: 140px; }
+.fee .cr-finance-class-chip { display: inline-flex; padding: 1px 7px; border-radius: 999px; background: var(--ac-grid); color: var(--ac-ink-2); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.fee .cr-finance-class-chip.all { background: var(--ac-brand-tint); color: var(--ac-brand); }
+.fee .cr-finance-class-chip.warning { background: var(--ac-attn-tint); color: var(--ac-attn); }
+.fee .cr-finance-badge { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .02em; background: var(--ac-grid); color: var(--ac-ink-2); border: 0; }
+.fee .cr-finance-badge.required { background: var(--ac-brand-tint); color: var(--ac-brand); }
+.fee .cr-finance-badge.optional { background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.fee .cr-finance-inactive { color: var(--ac-attn); font-weight: 600; }
+
+/* History (loaded when its tab opens) */
+.fee .cr-finance-history-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--ac-line); background: var(--ac-wash); }
+.fee .cr-finance-search { position: relative; display: block; flex: 1 1 220px; max-width: 340px; margin: 0; }
+.fee .cr-finance-search span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--ac-muted); pointer-events: none; }
+.ac.fee .cr-finance-search input { width: 100% !important; padding: 5px 9px 5px 26px !important; }
+.fee .cr-finance-history-session { padding: 0; border: 0; border-bottom: 1px solid var(--ac-line); }
+.fee .cr-finance-history-session:last-child { border-bottom: 0; }
+.fee .cr-finance-history-session > h3 { margin: 0; padding: 6px 10px; font-size: 12px; font-weight: 700; color: var(--ac-brand); background: var(--ac-brand-tint); }
+.fee .cr-finance-history-term > h4 { margin: 0; padding: 5px 10px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ac-muted); }
+.fee .cr-finance-history-empty { padding: 18px 12px; text-align: center; color: var(--ac-muted); font-size: 12px; background: none; border: 0; }
+.fee .cr-finance-history-empty strong { display: block; font-size: 13px; color: var(--ac-ink-2); }
+.fee .cr-finance-history-empty p { margin: 2px 0 0; }
+.fee .cr-finance-empty-icon { display: none; }
+.fee .cr-finance-no-matches { margin: 8px 10px; padding: 10px; border: 1px dashed var(--ac-line); border-radius: 8px; background: none; color: var(--ac-muted); font-size: 12px; font-weight: 500; }
+.fee .fee-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 26px 12px; color: var(--ac-muted); font-size: 12px; }
+.fee .fee-loading::before { content: ""; width: 20px; height: 20px; border: 3px solid color-mix(in srgb, var(--ac-accent) 18%, var(--ac-surface)); border-top-color: var(--ac-accent); border-radius: 50%; animation: ac-spin .7s linear infinite; }
+
+/* The pop-ups: review, archive, class billing progress */
+.fee dialog.cr-modal { width: min(540px, 94vw); padding: 0; border: 1px solid var(--ac-line); border-radius: 12px; background: var(--ac-surface); color: var(--ac-ink); box-shadow: 0 24px 60px color-mix(in srgb, var(--ac-ink) 28%, transparent); }
+.fee dialog.cr-modal::backdrop { background: color-mix(in srgb, var(--ac-brand) 45%, transparent); }
+.fee .cr-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px 14px 8px; border: 0; background: none; }
+.fee .cr-modal-head .section-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--ac-accent-strong); }
+.fee .cr-modal-head h2 { margin: 1px 0 0; font-size: 16px; color: var(--ac-brand); }
+.fee .cr-modal-head p { margin: 3px 0 0; font-size: 12px; color: var(--ac-muted); }
+.fee .cr-modal-close { width: 28px; height: 28px; flex: none; border: 0; border-radius: 50%; background: var(--ac-grid); color: var(--ac-ink); font-size: 18px; line-height: 1; cursor: pointer; }
+.fee .cr-modal-close:hover { background: var(--ac-line); }
+.fee .cr-modal-body { padding: 4px 14px 14px; }
+.fee .cr-finance-review-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: var(--ac-wash); }
+@media (max-width: 600px) { .fee .cr-finance-review-summary { grid-template-columns: 1fr; } }
+.fee .cr-finance-review-summary dt { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ac-muted); }
+.fee .cr-finance-review-summary dd { margin: 1px 0 0; font-size: 13px; font-weight: 600; color: var(--ac-ink); overflow-wrap: anywhere; }
+.fee .cr-finance-review-list { max-height: 240px; margin: 0; padding: 0; overflow-y: auto; list-style: none; border: 1px solid var(--ac-line); border-radius: 8px; }
+.fee .cr-finance-review-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-bottom: 1px solid var(--ac-grid); font-size: 12px; color: var(--ac-ink); }
+.fee .cr-finance-review-list li:last-child { border-bottom: 0; }
+.fee .cr-finance-review-list li span:last-child { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fee .cr-finance-review-total { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--ac-brand-tint); color: var(--ac-ink-2); font-size: 12px; }
+.fee .cr-finance-review-total strong { font-size: 16px; color: var(--ac-brand); font-variant-numeric: tabular-nums; }
+.fee .cr-finance-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.fee .cr-finance-toggle-consequence { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ac-ink-2); }
+.fee .cr-bill-progress { height: 10px; overflow: hidden; border-radius: 5px; background: var(--ac-grid); }
+.fee .cr-bill-progress span { display: block; width: 0; height: 100%; background: var(--ac-accent); transition: width .3s ease; }
+.fee .cr-bill-progress-count { margin: 8px 0 2px; font-size: 13px; font-weight: 700; color: var(--ac-ink); }
+.fee .cr-bill-progress-status { margin: 0 0 10px; font-size: 12px; color: var(--ac-muted); }
+.fee .cr-bill-result { padding: 8px 10px; border-radius: 8px; background: var(--ac-good-tint); color: var(--ac-good); font-size: 12px; line-height: 1.5; border: 0; }
+.fee .cr-bill-issues { max-height: 240px; margin: 0 0 10px; padding: 0; overflow-y: auto; list-style: none; border: 1px solid color-mix(in srgb, var(--ac-attn) 30%, var(--ac-line)); border-radius: 8px; background: var(--ac-attn-tint); }
+.fee .cr-bill-issues li { padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ac-attn) 15%, var(--ac-line)); font-size: 12px; line-height: 1.45; color: var(--ac-ink); }
+.fee .cr-bill-issues li:last-child { border-bottom: 0; }
+.fee .cr-bill-issues strong { color: var(--ac-attn); }
+
+/* Adding or editing a fee item (templates/finance_fee_item_form.html), usually in the pop-up */
+.fee-item .fee-item__head { margin: 0 34px 10px 0; }
+.fee-item .fee-item__head h2 { margin: 0; font-size: 16px; color: var(--ac-brand); }
+.fee-item .fee-item__head p { margin: 2px 0 0; font-size: 12px; color: var(--ac-muted); }
+.fee-item .cr-finance-form-card { padding: 0; border: 0; background: none; box-shadow: none; }
+.fee-item .cr-finance-form-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px 14px; }
+@media (max-width: 640px) { .fee-item .cr-finance-form-grid { grid-template-columns: 1fr; } }
+.fee-item .cr-finance-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ac.fee-item .cr-finance-field > label { display: block !important; margin: 0 !important; font-size: 12px; font-weight: 600; color: var(--ac-ink-2); }
+.ac.fee-item .cr-finance-field input, .ac.fee-item .cr-finance-field select, .ac.fee-item .cr-finance-field textarea { width: 100% !important; padding: 6px 9px !important; font-size: 13px !important; }
+.fee-item .cr-finance-applicability-v5, .fee-item .cr-finance-fee-type-v5, .fee-item .fee-class-selector-v5 { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--ac-line); border-radius: 10px; background: var(--ac-surface); }
+.fee-item .cr-finance-applicability-heading-v5 strong, .fee-item .cr-finance-fee-type-heading-v5 strong, .fee-item .fee-class-selector-head-v5 strong { display: block; font-size: 13px; color: var(--ac-ink); }
+.fee-item .cr-finance-applicability-heading-v5 span, .fee-item .cr-finance-fee-type-heading-v5 span, .fee-item .fee-class-help-v5 { display: block; margin-top: 1px; font-size: 11px; color: var(--ac-muted); }
+.fee-item .cr-finance-applicability-options-v5 { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ac.fee-item .cr-finance-applicability-option-v5 { display: inline-flex !important; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--ac-line); border-radius: 999px; background: var(--ac-surface); font-size: 12px; font-weight: 600; color: var(--ac-ink-2); cursor: pointer; }
+.ac.fee-item .cr-finance-applicability-option-v5 input { accent-color: var(--ac-accent); margin: 0; }
+.ac.fee-item .cr-finance-applicability-option-v5.is-selected, .ac.fee-item .cr-finance-applicability-option-v5:has(input:checked) { border-color: var(--ac-accent); background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.fee-item .cr-finance-fee-type-options-v5 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+@media (max-width: 560px) { .fee-item .cr-finance-fee-type-options-v5 { grid-template-columns: 1fr; } }
+.ac.fee-item .cr-finance-fee-type-option-v5 { display: flex !important; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--ac-line); border-radius: 8px; cursor: pointer; background: var(--ac-surface); }
+.ac.fee-item .cr-finance-fee-type-option-v5 input { margin: 2px 0 0; accent-color: var(--ac-accent); }
+.fee-item .cr-finance-radio-v5 { display: none; }
+.ac.fee-item .cr-finance-fee-type-option-v5.is-selected { border-color: var(--ac-accent); background: var(--ac-accent-tint); }
+.fee-item .cr-finance-fee-type-option-v5 strong { display: block; font-size: 13px; color: var(--ac-ink); }
+.fee-item .cr-finance-fee-type-option-v5 small { display: block; font-size: 11px; color: var(--ac-muted); }
+.fee-item .fee-class-selector-head-v5 { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.fee-item .fee-class-selector-head-v5 .cr-finance-section-kicker { display: none; }
+.fee-item .fee-class-actions-v5 { display: flex; gap: 6px; }
+.fee-item .fee-class-groups-v5 { display: grid; gap: 8px; margin-top: 8px; }
+.fee-item .fee-class-group-v5 { padding: 8px 10px; border: 1px solid var(--ac-grid); border-radius: 8px; }
+.fee-item .fee-class-group-heading-v5, .fee-item .fee-class-subgroup-title-row-v6 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 6px; }
+.fee-item .fee-class-group-title-v5 { font-size: 12px; font-weight: 700; color: var(--ac-brand); }
+.fee-item .fee-class-group-description-v5 { font-size: 11px; color: var(--ac-muted); margin-right: auto; }
+.fee-item .fee-class-subgroup-title-v5 { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ac-muted); margin-right: auto; }
+.fee-item .fee-class-subgroup-v5 + .fee-class-subgroup-v5 { margin-top: 6px; }
+.fee-item .fee-class-grid-v5, .fee-item [data-college-other] { display: flex; flex-wrap: wrap; gap: 4px; }
+.ac.fee-item .fee-class-option-v5 { display: inline-flex !important; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid var(--ac-line); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--ac-ink-2); cursor: pointer; background: var(--ac-surface); }
+.ac.fee-item .fee-class-option-v5 input { margin: 0; accent-color: var(--ac-accent); }
+.ac.fee-item .fee-class-option-v5:has(input:checked) { border-color: var(--ac-brand); background: var(--ac-brand); color: var(--ac-on-brand); }
+.fee-item .cr-finance-notes-field { margin-top: 12px; }
+/* The old catalogue styles (static/admin.css) box each heading and size each control; inside .fee-item the
+   Academics look takes over. */
+.ac.fee-item .cr-finance-field > label { text-transform: none !important; letter-spacing: 0 !important; }
+.ac.fee-item .cr-finance-field input, .ac.fee-item .cr-finance-field select { height: auto !important; min-height: 0 !important; }
+.fee-item .cr-finance-applicability-heading-v5, .fee-item .cr-finance-fee-type-heading-v5, .fee-item .fee-class-selector-head-v5,
+.fee-item .fee-class-group-heading-v5 { margin: 0 0 6px !important; padding: 0 !important; border: 0 !important; background: none !important; }
+.fee-item .cr-finance-applicability-options-v5, .fee-item .cr-finance-fee-type-options-v5 { padding: 0 !important; }
+.fee-item .fee-class-group-v5 { background: none !important; }
+.fee-item .fee-class-grid-v5 { padding: 0 !important; }
+.ac.fee-item .fee-class-option-v5 { min-height: 0 !important; }

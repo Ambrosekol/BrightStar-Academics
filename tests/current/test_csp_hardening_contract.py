@@ -86,7 +86,8 @@ def test_interactions_js_is_loaded_everywhere_a_migrated_attribute_is_used():
 
     # Fragments have no <html> of their own and are {% include %}-d into a page that already
     # extends one of the bases above (checked once, here, rather than at every include site).
-    FRAGMENTS = {"_signature_editor.html", "includes/_chat_attachment_input.html", "_finance_assessment_history.html"}
+    FRAGMENTS = {"_signature_editor.html", "includes/_chat_attachment_input.html", "_finance_assessment_history.html",
+                 "includes/_attendance_frame.html"}
 
     data_attrs = re.compile(r'data-(confirm|autosubmit|modal-open|modal-close|print|reload|go-back|call|toggle-class|onchange|show-when)[=\s>]')
     for path in TEMPLATES:

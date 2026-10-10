@@ -11,7 +11,7 @@ from sqlalchemy import and_, func, select, update as sa_update
 
 from app import app, FINANCE_FEE_APPLICABILITY, FINANCE_FEE_CATEGORIES, _active_sessions, _school_current_session
 from models import (
-    AcademicSession, FinanceFeeAssessment, FinanceFeeItem, FinanceFeeItemClass,
+    Admin, AcademicSession, FinanceFeeAssessment, FinanceFeeItem, FinanceFeeItemClass,
     FinanceOnlinePayment, FinancePayment, FinancePaymentAllocation, FinanceRefund,
     SchoolClass, Student, StudentEnrolment, db,
 )
@@ -22,11 +22,12 @@ from core.notifications import _notify_parents_fee_assessed, _notify_parents_pay
 from core.security import admin_access_error, admin_required, audit_log, current_admin, csrf_protect
 from core.storage import delete_upload
 from core.uploads import _save_image_upload
+from blueprints.finance import analytics
 from blueprints.finance.helpers import (
     _active_classes, _class_group, _finance_assessment_allocated,
     _finance_can_view_all, _finance_payment_allocated,
     _finance_student_lifetime_totals, _finance_student_outstanding,
-    _finance_unallocated_payments, _finance_unallocated_summary,
+    _finance_unallocated_payments, _finance_unallocated_summary, finance_snapshot,
     _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
     _receipt_payload, _receipt_pdf, _receipt_sheet,
     # importing this module registers _send_payment_receipt_to_guardian as the
@@ -139,38 +140,78 @@ def admin_finance_payment_allocate(payment_id):
             flash(f'₦{requested_total:,.2f} allocated successfully. The payment is fully allocated.','success')
         return redirect(url_for('admin_finance_receipt',payment_id=payment_id))
 
-    # GET
-    # Only fees still owing are offered here — a fully paid item has nothing
-    # left to apply this payment to, so it must not appear as a choice at all.
+    # GET: the payment's own page (receipt, applying it, sending it, correcting it), opened on applying it.
+    return _payment_page(payment_id,focus='apply')
+
+def _payment_allocation_state(payment):
+    """What applying this payment involves: the fees still owing for its student and session (a fee paid in
+    full is never offered), what it has already been applied to, and how much of it is still free."""
     outstanding=[item for item in _finance_student_outstanding(payment['student_id'],payment['session_id'])
-                 if item['outstanding']>0.000001]
-    payment_allocated=_finance_payment_allocated(payment_id)
-    available_payment=max(0.0, float(payment['amount'] or 0)-payment_allocated)
-    existing=[_flatten(r,'FinancePaymentAllocation','category','assessed_amount')
+                 if item['outstanding']>0.000001] if payment['status']=='posted' else []
+    applied_types={i.id:i.applicability for i in db.session.scalars(select(FinanceFeeItem).where(
+        FinanceFeeItem.id.in_([o['fee_item_id'] for o in outstanding if o.get('fee_item_id')] or [0])))}
+    for o in outstanding:
+        o['fee_type']=analytics.fee_type(o.get('term'),applied_types.get(o.get('fee_item_id')))
+    payment_allocated=_finance_payment_allocated(payment['id'])
+    available_payment=round(max(0.0, float(payment['amount'] or 0)-payment_allocated),2) if payment['status']=='posted' else 0.0
+    existing=[_flatten(r,'FinancePaymentAllocation','category','assessed_amount','term')
               for r in all_rows(
         select(FinancePaymentAllocation,FinanceFeeAssessment.category,
-               FinanceFeeAssessment.amount.label('assessed_amount'))
+               FinanceFeeAssessment.amount.label('assessed_amount'),FinanceFeeAssessment.term)
         .join(FinanceFeeAssessment,FinanceFeeAssessment.id==FinancePaymentAllocation.assessment_id)
-        .where(FinancePaymentAllocation.payment_id==payment_id)
+        .where(FinancePaymentAllocation.payment_id==payment['id'])
         .order_by(FinancePaymentAllocation.id))]
+    return {'outstanding':outstanding,'existing':existing,'payment_allocated':payment_allocated,
+            'available_payment':available_payment}
 
-    return render_template(
-        'finance_payment_allocate.html',
-        payment=payment,
-        outstanding=outstanding,
-        existing=existing,
-        payment_allocated=payment_allocated,
-        available_payment=available_payment)
+def _payment_page(payment_id,focus='receipt'):
+    """One payment, everything about it on one page: the receipt as issued, applying it to the student's
+    fees, printing and sending it, and voiding or refunding it. Both the receipt address and the
+    "allocate" address show it; ``focus`` says which part opens first."""
+    me=current_admin(); row=_receipt_payload(payment_id)
+    if not row: abort(404)
+    if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
+    is_online_payment=db.session.scalars(select(FinanceOnlinePayment.id).where(
+        FinanceOnlinePayment.payment_id==payment_id,FinanceOnlinePayment.status=='success')).first() is not None
+    refund=db.session.scalars(select(FinanceRefund).where(FinanceRefund.payment_id==payment_id)
+                              .order_by(FinanceRefund.id.desc())).first()
+    return render_template('finance_payment.html',payment=row,sheet=_receipt_sheet(payment_id,row),
+                           signature_path=_receipt_signature_relpath(),is_online_payment=is_online_payment,
+                           refund=refund,focus=focus,recorded_by_name=one_scalar(select(Admin.display_name).where(Admin.id==row['recorded_by']),''),
+                           **_payment_allocation_state(row))
 
 @app.route('/admin/finance/payments/unallocated')
 @admin_required
 def admin_finance_unallocated():
     """Every posted payment nobody has yet said what it was for - the page the site-wide banner
     on every admin screen points to for as long as one of these exists."""
+    return _payments_page('unallocated')
+
+PAYMENTS_PER_PAGE=50
+
+@app.route('/admin/finance/payments')
+@admin_required
+def admin_finance_payments():
+    """Every payment in one list - all of them, those not yet applied to fees, those fully applied, or the
+    voided ones - each opening in a pop-up with its receipt and everything that can be done with it."""
+    return _payments_page(request.args.get('view','all'))
+
+def _payments_page(view):
     me=current_admin()
-    rows=_finance_unallocated_payments(None if _finance_can_view_all(me) else me['id'])
-    return render_template('admin_finance_unallocated.html',rows=rows,
-                           total=round(sum(r['unallocated'] for r in rows),2))
+    own=None if _finance_can_view_all(me) else me['id']
+    view=view if view in analytics.PAYMENT_VIEWS else 'all'
+    sessions=_active_sessions()
+    session_id=request.args.get('session_id',type=int)
+    session_id=session_id if session_id in {s.id for s in sessions} else None
+    q=request.args.get('q','').strip(); method=request.args.get('method','').strip()
+    rows,counts,totals=analytics.payments(view,own,session_id,q,method)
+    try: page=max(1,int(request.args.get('page','1')))
+    except ValueError: page=1
+    pages=max(1,(len(rows)+PAYMENTS_PER_PAGE-1)//PAYMENTS_PER_PAGE); page=min(page,pages)
+    return render_template('finance_payments.html',rows=rows[(page-1)*PAYMENTS_PER_PAGE:page*PAYMENTS_PER_PAGE],
+                           total_rows=len(rows),page=page,pages=pages,view=view,views=analytics.PAYMENT_VIEWS,
+                           counts=counts,totals=totals,sessions=sessions,session_id=session_id,q=q,method=method,
+                           methods=analytics.payment_methods(own),own=bool(own))
 
 @app.route('/admin/finance/students/<int:student_id>/account')
 @admin_required
@@ -204,16 +245,27 @@ def admin_finance_student_account(student_id):
     payments = db.session.scalars(select(FinancePayment)
         .where(FinancePayment.student_id==student_id)
         .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc())).all()
+    session_payments = analytics.account_payments(student_id, session_id) if session_row else []
+    item_types = {i.id: i.applicability for i in db.session.scalars(select(FinanceFeeItem).where(
+        FinanceFeeItem.id.in_([a['fee_item_id'] for a in account if a.get('fee_item_id')] or [0])))}
+    for item in account:
+        item['fee_type'] = analytics.fee_type(item.get('term'), item_types.get(item.get('fee_item_id')))
+    class_name = one_scalar(select(SchoolClass.name)
+        .join(StudentEnrolment,StudentEnrolment.class_id==SchoolClass.id)
+        .where(StudentEnrolment.student_id==student_id,StudentEnrolment.session_id==session_id,
+               StudentEnrolment.active==1)) if session_id else None
 
     return render_template(
         'finance_student_account.html',
         student=student,
         sessions=sessions,
-        session=session_row,
+        fin_session=session_row,
         account=account,
         total_assessed=total_assessed,
         total_paid=total_paid,
         total_outstanding=total_outstanding,
+        class_name=class_name,
+        session_payments=session_payments,
         payments=payments)
 
 @app.route('/admin/finance')
@@ -229,45 +281,81 @@ def admin_finance_dashboard():
         reconcile_pending_refunds()
     except Exception:
         app.logger.exception('Online-refund reconciliation failed while the finance dashboard loaded')
-    own=not _finance_can_view_all(me)
-    # A cashier without finance.view_all only ever sees their own takings.
-    scope=[FinancePayment.status=='posted']
-    if own: scope.append(FinancePayment.recorded_by==me['id'])
-    today=datetime.now().strftime('%Y-%m-%d'); month=datetime.now().strftime('%Y-%m')
-    day=func.substr(FinancePayment.paid_at,1,10)
-    mon=func.substr(FinancePayment.paid_at,1,7)
-
-    def total(*extra):
-        return one_scalar(select(func.coalesce(func.sum(FinancePayment.amount),0))
-                          .where(*scope,*extra), 0)
-
-    today_total=total(day==today)
-    month_total=total(mon==month)
-    count_today=one_scalar(select(func.count()).select_from(FinancePayment)
-                           .where(*scope,day==today), 0)
-    cash=total(day==today,func.lower(FinancePayment.method)=='cash')
-    bank=total(day==today,func.lower(FinancePayment.method)!='cash')
-    outstanding=None
+    snap=finance_snapshot(me)
+    own=not snap['view_all']
+    own_id=me['id'] if own else None
+    # What was collected over the chosen window (and the one before it), for everyone with finance access;
+    # where the session's fees stand, by class and by fee, only for those who may see school-wide figures.
+    col=analytics.collections(request.args.get('period',analytics.DEFAULT_PERIOD),own_id)
+    sessions=_active_sessions() if not own else []
+    session_row=None
+    breakdown=None
     if not own:
-        assessed=one_scalar(select(func.coalesce(func.sum(FinanceFeeAssessment.amount),0))
-                            .where(FinanceFeeAssessment.active==1), 0)
-        allocated=one_scalar(
-            select(func.coalesce(func.sum(FinancePaymentAllocation.amount),0))
-            .select_from(FinancePaymentAllocation)
-            .join(FinancePayment,FinancePayment.id==FinancePaymentAllocation.payment_id)
-            .join(FinanceFeeAssessment,FinanceFeeAssessment.id==FinancePaymentAllocation.assessment_id)
-            .where(FinancePayment.status=='posted',FinanceFeeAssessment.active==1,
-                   FinancePaymentAllocation.voided_at.is_(None)), 0)
-        outstanding=max(0, float(assessed)-float(allocated))
-    unallocated=_finance_unallocated_summary(None if not own else me['id'])
-    rows=[_flatten(r,'FinancePayment','first_name','middle_name','last_name','admission_no')
-          for r in all_rows(
-        select(FinancePayment,Student.first_name,Student.middle_name,
-               Student.last_name,Student.admission_no)
-        .join(Student,Student.id==FinancePayment.student_id)
-        .where(*scope)
-        .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc()).limit(20))]
-    return render_template('finance_dashboard.html',today_total=today_total,month_total=month_total,count_today=count_today,cash=cash,bank=bank,outstanding=outstanding,unallocated=unallocated,rows=rows,view_all=not own)
+        session_row=_requested_session(sessions)
+        if session_row:
+            breakdown=analytics.session_breakdown(session_row.id)
+    return render_template('finance_dashboard.html',snap=snap,col=col,view_all=not own,
+                           unallocated=snap['unallocated'],outstanding=snap['outstanding'],
+                           sessions=sessions,fin_session=session_row,breakdown=breakdown,
+                           rows=analytics.recent_payments(own_id,20))
+
+def _requested_session(sessions):
+    """The session named by ?session_id= when it is one of ``sessions``, else the current one."""
+    wanted=request.args.get('session_id',type=int)
+    by_id={s.id:s for s in sessions}
+    if wanted is not None and wanted in by_id:
+        return by_id[wanted]
+    current=_school_current_session()
+    if current and current['id'] in by_id:
+        return by_id[current['id']]
+    return sessions[0] if sessions else None
+
+# The Student accounts list: how it can be narrowed and ordered.
+ACCOUNT_STATUSES={'all':'Everyone','owing':'Owing','unpaid':'Nothing paid','part':'Part paid','paid':'Paid in full','none':'No fees yet'}
+ACCOUNT_SORTS={'balance':'Largest balance','name':'Name','class':'Class','paid':'Most paid','rate':'Lowest % paid'}
+ACCOUNTS_PER_PAGE=50
+
+@app.route('/admin/finance/accounts')
+@admin_required
+def admin_finance_accounts():
+    """Every student's fee position for a session in one list - charged, paid, balance, overdue and the
+    last payment - narrowed by class, by where they stand, or by name, largest balance first."""
+    sessions=_active_sessions()
+    session_row=_requested_session(sessions)
+    rows=analytics.accounts(session_row.id) if session_row else []
+    classes={}
+    for r in rows:
+        if r['class_id']:
+            c=classes.setdefault(r['class_id'],{'id':r['class_id'],'name':r['class_name'],'order':r['class_order'],'n':0,'owing':0})
+            c['n']+=1; c['owing']+=1 if r['balance']>0.004 else 0
+    classes=sorted(classes.values(),key=lambda c:(c['order'],c['name']))
+    class_id=request.args.get('class','').strip()
+    status=request.args.get('status','all'); status=status if status in ACCOUNT_STATUSES else 'all'
+    sort=request.args.get('sort','balance'); sort=sort if sort in ACCOUNT_SORTS else 'balance'
+    q=request.args.get('q','').strip().lower()
+    shown=rows
+    if class_id.isdigit():
+        shown=[r for r in shown if r['class_id']==int(class_id)]
+    counts={k:(len(shown) if k=='all' else sum(1 for r in shown if (r['balance']>0.004 if k=='owing' else r['status']==k))) for k in ACCOUNT_STATUSES}
+    if status=='owing': shown=[r for r in shown if r['balance']>0.004]
+    elif status!='all': shown=[r for r in shown if r['status']==status]
+    if q:
+        shown=[r for r in shown if q in (r['name']+' '+(r['admission_no'] or '')).lower()]
+    keys={'balance':lambda r:(-r['balance'],r['name']),'name':lambda r:r['name'].lower(),
+          'class':lambda r:(r['class_order'],r['class_name'],r['name'].lower()),'paid':lambda r:(-r['paid'],r['name']),
+          'rate':lambda r:(r['rate'] if r['rate'] is not None else 101,-r['balance'])}
+    shown=sorted(shown,key=keys[sort])
+    totals={'assessed':round(sum(r['assessed'] for r in shown),2),'paid':round(sum(r['paid'] for r in shown),2),
+            'balance':round(sum(r['balance'] for r in shown),2),'overdue':round(sum(r['overdue'] for r in shown),2)}
+    totals['rate']=round(100*totals['paid']/totals['assessed'],1) if totals['assessed'] else None
+    try: page=max(1,int(request.args.get('page','1')))
+    except ValueError: page=1
+    pages=max(1,(len(shown)+ACCOUNTS_PER_PAGE-1)//ACCOUNTS_PER_PAGE); page=min(page,pages)
+    return render_template('finance_accounts.html',sessions=sessions,fin_session=session_row,classes=classes,
+                           class_id=int(class_id) if class_id.isdigit() else None,status=status,sort=sort,q=request.args.get('q','').strip(),
+                           statuses=ACCOUNT_STATUSES,sorts=ACCOUNT_SORTS,counts=counts,totals=totals,
+                           rows=shown[(page-1)*ACCOUNTS_PER_PAGE:page*ACCOUNTS_PER_PAGE],total_rows=len(shown),
+                           page=page,pages=pages,everyone=len(rows))
 
 @app.route('/admin/finance/payments/new',methods=['GET','POST'])
 @admin_required
@@ -326,18 +414,8 @@ def admin_finance_record():
 @app.route('/admin/finance/receipts/<int:payment_id>')
 @admin_required
 def admin_finance_receipt(payment_id):
-    me=current_admin(); row=_receipt_payload(payment_id)
-    if not row: abort(404)
-    if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
-    # Whether this payment was made through online payments (only those can be refunded here), and
-    # the latest refund attempt against it, if any - drives the Refund button on the receipt page.
-    is_online_payment=db.session.scalars(select(FinanceOnlinePayment.id).where(
-        FinanceOnlinePayment.payment_id==payment_id,FinanceOnlinePayment.status=='success')).first() is not None
-    refund=db.session.scalars(select(FinanceRefund).where(FinanceRefund.payment_id==payment_id)
-                              .order_by(FinanceRefund.id.desc())).first()
-    return render_template('finance_receipt.html',payment=row,sheet=_receipt_sheet(payment_id,row),
-                           signature_path=_receipt_signature_relpath(),
-                           is_online_payment=is_online_payment,refund=refund)
+    # The payment's own page, opened on its receipt; a payment not yet applied to fees opens on applying it.
+    return _payment_page(payment_id,focus=request.args.get('focus','receipt'))
 
 @app.route('/admin/finance/receipts/<int:payment_id>/print')
 @admin_required

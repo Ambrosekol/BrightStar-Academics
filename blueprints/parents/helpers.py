@@ -185,6 +185,19 @@ def _parent_form_context(me):
         .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .where(Student.active==1)
         .order_by(SchoolClass.level_order,Student.first_name,Student.last_name))
+    # A student has one enrolment per session they were in; the list wants them once, in this session's class
+    # (or, with none this session, their latest one).
+    from app import _school_current_session
+    current=_school_current_session()
+    if current:
+        this_session={r['id'] for r in all_rows(select(StudentEnrolment.student_id.label('id'))
+                                                .where(StudentEnrolment.session_id==current['id'],StudentEnrolment.active==1))}
+        students=[st for st in students if st['id'] in this_session]+[st for st in students if st['id'] not in this_session]
+    seen=set(); unique=[]
+    for st in students:
+        if st['id'] in seen: continue
+        seen.add(st['id']); unique.append(st)
+    students=sorted(unique,key=lambda st:(next((i for i,c in enumerate(classes) if c.id==st['class_id']),999),st['first_name'] or '',st['last_name'] or ''))
     if not me['admin_type_system']:
         classes=[c for c in classes if _school_class_allowed(me['id'],c.id)]
         students=[st for st in students if _school_class_allowed(me['id'],st['class_id'])]

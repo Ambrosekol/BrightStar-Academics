@@ -1,7 +1,26 @@
 {% extends 'admin_base.html' %}
 {% block title %}Correct Enrollment History — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / RECORDS</div><h1>Correct enrollment history</h1><p class="hero-copy">Historical corrections require a reason and are written to the audit trail.</p></div></div>
-<div class="card modern-form">{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
-<form method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid two"><label><span>Enrollment level</span><select name="level_name" required>{% for level in levels %}<option value="{{level}}" {% if row.level_name==level %}selected{% endif %}>{{level}}</option>{% endfor %}</select></label><label><span>Academic session</span><select name="session_id"><option value="">Not specified</option>{% for s in sessions %}<option value="{{s.id}}" {% if row.session_id==s.id %}selected{% endif %}>{{s.name}}</option>{% endfor %}</select></label><label><span>Enrolled date</span><input type="date" name="enrolled_at" value="{{row.enrolled_at or ''}}"></label><label><span>Completed date</span><input type="date" name="completed_at" value="{{row.completed_at or ''}}"></label><label style="grid-column:1/-1"><span>Correction reason</span><textarea name="correction_reason" rows="4" required placeholder="Explain what was wrong and why this correction is being made."></textarea></label></div><div class="form-actions"><button class="btn btn-primary" type="submit">Save correction</button><a class="btn btn-light" href="{{url_for('admin_school_student_detail',sid=row.student_id)}}#enrolment-history">Cancel</a></div></form></div>
+{# Correcting one entry of a student's school journey. Opens in a pop-up on top of the student; a correction needs a
+   reason, which goes to the audit trail, and saving returns to the student. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac st">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}{% endif %}
+<div class="ac-modal-head"><h2>Correct a school-journey entry</h2><p>A correction to the record needs a reason; it is written to the audit trail.</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" action="{{ request.path }}">
+  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+  <div class="ac-fields">
+    <div class="ac-field"><label for="hLevel">Level</label><select id="hLevel" name="level_name" required>{% for level in levels %}<option value="{{level}}" {% if row.level_name==level %}selected{% endif %}>{{level}}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="hSess">Session</label><select id="hSess" name="session_id"><option value="">Not specified</option>{% for s in sessions %}<option value="{{s.id}}" {% if row.session_id==s.id %}selected{% endif %}>{{s.name}}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="hIn">Started</label><input id="hIn" type="date" name="enrolled_at" value="{{row.enrolled_at or ''}}"></div>
+    <div class="ac-field"><label for="hOut">Finished</label><input id="hOut" type="date" name="completed_at" value="{{row.completed_at or ''}}"></div>
+    <div class="ac-field ac-field--wide"><label for="hWhy">Why it is being corrected</label><textarea id="hWhy" name="correction_reason" rows="3" required placeholder="What was wrong, and why this correction is being made."></textarea></div>
+  </div>
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{url_for('admin_school_student_detail',sid=row.student_id)}}#enrolment-history">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Save correction</button></div>
+</form>
+</div>
 {% endblock %}

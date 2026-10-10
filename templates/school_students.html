@@ -1,87 +1,102 @@
 {% extends 'admin_base.html' %}
 {% block title %}Students — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{% include 'school_students_styles.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / STUDENTS</div><h1>Students</h1><p class="hero-copy">Pick a class to open its register. Select students to archive them, or open Archived students to review a leaver's record or bring them back.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_student_new')}}">+ Register Student</a><a class="btn btn-light" href="{{url_for('admin_school_students_import')}}">Bulk import (CSV)</a></div></div>
-{% set students_tab='current' %}{% include 'school_students_tabs.html' %}
-<div class="segmentation-intro"><div><strong>Choose a class</strong><span>Student records are deliberately separated by their current academic class.</span></div></div>
-{% set max_count = (class_cards|map(attribute='count')|max) or 1 %}
-<div class="segment-card-grid school-segment-grid">
-{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for('admin_school_students',class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} enrolled student{{'' if card.count==1 else 's'}}</p><div class="students-meter" aria-hidden="true"><span style="width:{{ (card.count * 100 // max_count) if card.count else 0 }}%"></span></div></div><div class="segment-arrow">→</div></a>{% endfor %}
-</div>
-{% if not selected_class %}<div class="info-banner segmentation-note"><strong>Student register boundary.</strong><span>Select a class above to open its student register.</span></div>{% endif %}
+{# The current register. Without a class chosen it shows every class at a glance (how many, boys and girls, how
+   many can sign in); choosing a class, or searching, lists those students in place. A student opens in a pop-up
+   with everything about them, and from there their edit form, fee account or login details open on top. #}
+{% set total = class_cards|sum(attribute='count') %}
+<div class="ac st" data-st>
+{% set students_tab = 'current' %}{% include 'includes/_students_frame.html' %}
 
-{% if selected_class %}
-<dialog class="cr-modal" id="studentsModal">
-  <div class="cr-modal-head">
-    <div>
-      <div class="section-label">SCHOOL CLASS</div>
-      <h2>{{selected_class}} Students</h2>
-      <p>Current session: {{school_session.name if school_session else 'Not configured'}} · {{students|length}} student{{'' if students|length==1 else 's'}} shown</p>
+<form method="get" class="ac-bar" action="{{ url_for('admin_school_students') }}" role="search">
+  <span class="ac-bar__label">Class</span>
+  <nav class="ac-chips" aria-label="Class">
+    <a class="ac-chip{{ ' is-active' if not selected_class }}" href="{{ url_for('admin_school_students') }}">All classes <small>{{ total }}</small></a>
+    {% for c in class_cards %}<a class="ac-chip{{ ' is-active' if selected_class == c.name }}{{ ' is-empty' if not c.count }}" href="{{ url_for('admin_school_students', **{'class': c.name}) }}">{{ c.name }} <small>{{ c.count }}</small></a>{% endfor %}
+    {% if unplaced_count %}<a class="ac-chip{{ ' is-active' if selected_class == '__none__' }}" href="{{ url_for('admin_school_students', **{'class': '__none__'}) }}" title="Active students with no class this session">Not placed <small>{{ unplaced_count }}</small></a>{% endif %}
+  </nav>
+  {% if selected_class %}<input type="hidden" name="class" value="{{ selected_class }}">{% endif %}
+  <span class="ac-search"><input type="search" name="q" value="{{ search }}" placeholder="{{ 'Find in ' ~ selected_class if selected_class and selected_class != '__none__' else 'Find any student: name, admission no. or guardian' }}" aria-label="Find a student"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+
+{% if not selected_class and not search %}
+{# ---- every class at a glance ---- #}
+{% set logins = class_cards|sum(attribute='logins') %}
+<dl class="fi-k st-k">
+  <div class="is-lead"><dt>Students</dt><dd>{{ total }}</dd><small>{{ school_session.name if school_session else 'No current session' }}</small></div>
+  <div><dt>Classes</dt><dd>{{ class_cards|selectattr('count')|list|length }}</dd><small>of {{ class_cards|length }} with students</small></div>
+  <div><dt>Boys · Girls</dt><dd>{{ class_cards|sum(attribute='boys') }} · {{ class_cards|sum(attribute='girls') }}</dd><small>as recorded</small></div>
+  <div><dt>Can sign in</dt><dd>{{ logins }}</dd><small>{{ ((100 * logins / total)|round(0)|int) if total else 0 }}% have a student-portal login</small></div>
+  {% if unplaced_count %}<div class="is-alert"><dt>Not placed</dt><dd><a href="{{ url_for('admin_school_students', **{'class': '__none__'}) }}">{{ unplaced_count }}</a></dd><small>no class this session</small></div>{% endif %}
+</dl>
+<section class="ac-panel">
+  <div class="ac-scroll"><table class="ac-t st-classes">
+    <thead><tr><th>Class</th><th class="n">Students</th><th>Boys and girls</th><th>Portal logins</th><th></th></tr></thead>
+    <tbody>{% set biggest = (class_cards|map(attribute='count')|max) or 1 %}{% for c in class_cards %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_school_students', **{'class': c.name}) }}">{{ c.name }}</a></td>
+      <td class="n"><span class="st-size"><i style="width:{{ (100 * c.count / biggest)|round(0)|int }}%"></i></span><b>{{ c.count }}</b></td>
+      <td>{% if c.count %}<span class="st-split" title="{{ c.boys }} boys, {{ c.girls }} girls{% if c.count - c.boys - c.girls %}, {{ c.count - c.boys - c.girls }} not recorded{% endif %}"><i class="st-split__b" style="flex:{{ c.boys }}"></i><i class="st-split__g" style="flex:{{ c.girls }}"></i><i class="st-split__n" style="flex:{{ c.count - c.boys - c.girls }}"></i></span><small>{{ c.boys }} · {{ c.girls }}</small>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+      <td>{% if c.count %}{% set pct = (100 * c.logins / c.count)|round(0)|int %}<span class="fi-meter{{ ' is-done' if pct == 100 }}"><span><i style="width:{{ pct }}%"></i></span>{{ c.logins }} of {{ c.count }}</span>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_school_students', **{'class': c.name}) }}">Open register</a></td>
+    </tr>{% else %}<tr><td colspan="5"><div class="ac-empty"><strong>No classes yet</strong>Add classes under Classes, then register students into them.</div></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% else %}
+{# ---- one class, or a search ---- #}
+<form method="post" action="{{ url_for('admin_school_students_archive') }}" id="archiveForm" class="st-register">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="class" value="{{ selected_class if selected_class != '__none__' else '' }}">
+  <div class="st-head">
+    <div><h2>{% if selected_class == '__none__' %}Not placed in a class{% elif selected_class %}{{ selected_class }}{% else %}Search{% endif %}{% if search %} <small>matching “{{ search }}”</small>{% endif %}</h2>
+      <p>{{ students|length }} student{{ '' if students|length == 1 else 's' }}{% if school_session %} · {{ school_session.name }}{% endif %}{% if search %} · <a class="ac-link" href="{{ url_for('admin_school_students', **({'class': selected_class} if selected_class else {})) }}">clear the search</a>{% endif %}</p></div>
+    {% if can_archive and students %}
+    <div class="st-archive" data-st-archive hidden>
+      <span data-st-count>0 selected</span>
+      <input class="ac-input" name="reason" maxlength="300" placeholder="Reason, e.g. left the school" aria-label="Reason for archiving">
+      <button class="ac-btn ac-btn--danger" type="submit" data-confirm="Archive the selected students? They leave the register and their login stops working until they are restored from Archived.">Archive selected</button>
     </div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="studentsModal">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <div class="students-toolbar">
-    <form class="register-search" method="get">
-      <input type="hidden" name="class" value="{{selected_class}}">
-      <input name="q" value="{{search}}" placeholder="Search student, admission number or guardian">
-      <button class="btn btn-light" type="submit">Search</button>
-      {% if search %}<a class="btn btn-light" href="{{url_for('admin_school_students',class=selected_class)}}">Clear search</a>{% endif %}    </form>
-    {% if can_archive %}
-    <form method="post" action="{{url_for('admin_school_students_archive')}}" id="archiveForm" class="register-search">
-      <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-      <input type="hidden" name="class" value="{{selected_class}}">
-      <span id="archiveSelectedCount" class="students-selection__count">No students selected</span>
-      <input name="reason" maxlength="300" placeholder="Reason (optional), e.g. left the school, transferred out">
-      <button class="btn btn-danger" type="submit" id="archiveSubmit" disabled data-confirm="Archive the selected students? They leave this register and their login stops working until they are restored from Archived students.">Archive selected</button>
-    </form>
     {% endif %}
-    </div>
-    <div class="students-register-scroll">
-      <table class="segmented-table students-register-table">
-        <thead><tr>{% if can_archive %}<th style="width:1%;white-space:nowrap;padding:8px 6px 8px 12px;text-align:center"><input type="checkbox" id="archiveSelectAll" style="margin:0" aria-label="Select all students"></th>{% endif %}<th>Student</th><th>Admission No.</th><th>Gender</th><th>Guardian</th><th>Academic record</th><th>Action</th></tr></thead>
-        <tbody>
-          {% for s in students %}
-          <tr>
-            {% if can_archive %}<td style="width:1%;white-space:nowrap;padding:8px 6px 8px 12px;text-align:center"><input type="checkbox" name="student_ids" style="margin:0" value="{{s.id}}" form="archiveForm" aria-label="Select {{s.first_name}} {{s.last_name}}"></td>{% endif %}
-            <td><div class="person-cell"><span class="table-avatar image-avatar">{% if s.photo_path %}<img src="{{url_for('static',filename=s.photo_path)}}" alt="">{% else %}{{s.first_name[:1]|upper}}{{s.last_name[:1]|upper}}{% endif %}</span><div><strong>{{s.first_name}} {{s.middle_name or ''}} {{s.last_name}}</strong><small>{{s.date_of_birth or 'Date of birth not set'}}</small></div></div></td>
-            <td><span class="candidate-code">{{s.admission_no}}</span></td>
-            <td>{{s.gender or '—'}}</td>
-            <td>{{s.guardian_name or '—'}}<small>{{s.guardian_phone or 'No phone recorded'}}</small></td>
-            <td>Profile, results, assignments &amp; enrolment</td>
-            <td><a class="btn btn-primary btn-small" href="{{url_for('admin_school_student_detail',sid=s.id)}}">View</a></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="7"><div class="empty-state"><strong>No students found in {{selected_class}}.</strong><p>Register a student or clear the search.</p></div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <script nonce="{{ csp_nonce() }}">
-    (function(){
-      var all=document.getElementById('archiveSelectAll');
-      var boxes=Array.prototype.slice.call(document.querySelectorAll('input[name=student_ids]'));
-      var label=document.getElementById('archiveSelectedCount');
-      var submit=document.getElementById('archiveSubmit');
-      function refresh(){
-        var selected=0;
-        boxes.forEach(function(box){
-          if(box.checked) selected++;
-          var row=box.closest('tr');
-          if(row) row.classList.toggle('is-selected',box.checked);
-        });
-        if(label) label.textContent=selected ? selected+' selected' : 'No students selected';
-        if(submit) submit.disabled=selected===0;
-        if(all){ all.checked=selected>0 && selected===boxes.length; all.indeterminate=selected>0 && selected<boxes.length; }
-      }
-      boxes.forEach(function(box){ box.addEventListener('change',refresh); });
-      if(all) all.addEventListener('change',function(){ boxes.forEach(function(box){ box.checked=all.checked; }); refresh(); });
-      refresh();
-    })();
-    </script>
   </div>
-</dialog>
-<script nonce="{{ csp_nonce() }}">document.getElementById('studentsModal')?.showModal();</script>
+  <section class="ac-panel st-list">
+    {% if students %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr>{% if can_archive %}<th class="st-pick"><input type="checkbox" data-st-all aria-label="Select every student shown"></th>{% endif %}<th>Student</th><th>Admission no.</th>{% if not selected_class or selected_class == '__none__' %}<th>Class</th>{% endif %}<th>Gender</th><th>Guardian</th><th>Portal</th><th></th></tr></thead>
+      <tbody>{% for s in students %}<tr>
+        {% if can_archive %}<td class="st-pick"><input type="checkbox" name="student_ids" value="{{ s.id }}" aria-label="Select {{ s.first_name }} {{ s.last_name }}"></td>{% endif %}
+        <td><a class="st-who" href="{{ url_for('admin_school_student_detail', sid=s.id) }}" data-modal>
+          <span class="st-ava">{% if s.photo_path %}<img src="{{ url_for('static', filename=s.photo_path) }}" alt="">{% else %}{{ s.first_name[:1]|upper }}{{ s.last_name[:1]|upper }}{% endif %}</span>
+          <span><b>{{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}</b><small>{{ s.date_of_birth or 'Date of birth not set' }}{% if s.department %} · {{ s.department }}{% endif %}</small></span></a></td>
+        <td><span class="st-code">{{ s.admission_no }}</span></td>
+        {% if not selected_class or selected_class == '__none__' %}<td>{{ s.class_name or '—' }}</td>{% endif %}
+        <td>{{ s.gender or '—' }}</td>
+        <td>{{ s.guardian_name or '—' }}<small>{{ s.guardian_phone or 'No phone' }}</small></td>
+        <td>{% if not s.login_password_hash %}<span class="ac-tag">No login</span>{% elif s.account_active %}<span class="ac-tag ac-tag--good">Active</span>{% else %}<span class="ac-tag ac-tag--attn">Disabled</span>{% endif %}</td>
+        <td class="ac-actions"><a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_student_detail', sid=s.id) }}" data-modal>View</a></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty"><strong>{% if search %}No student matches “{{ search }}”{% elif selected_class == '__none__' %}Every student has a class{% else %}No students in {{ selected_class }} yet{% endif %}</strong>
+      {% if current_admin and admin_has_permission(current_admin['id'], 'school.students.create') and not search %}<a class="ac-link" href="{{ url_for('admin_school_student_new') }}" data-modal>Register a student →</a>{% endif %}</div>
+    {% endif %}
+  </section>
+</form>
 {% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  // Choosing students to archive: the bar with the reason and the button appears once one is ticked.
+  var root=document.querySelector('[data-st]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var bar=root.querySelector('[data-st-archive]'); if(!bar) return;
+  var all=root.querySelector('[data-st-all]'), boxes=[].slice.call(root.querySelectorAll('input[name=student_ids]'));
+  var count=bar.querySelector('[data-st-count]');
+  function refresh(){
+    var n=0; boxes.forEach(function(b){ if(b.checked) n++; b.closest('tr').classList.toggle('is-selected',b.checked); });
+    bar.hidden=n===0; count.textContent=n+' selected';
+    if(all){ all.checked=n>0&&n===boxes.length; all.indeterminate=n>0&&n<boxes.length; }
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',refresh); });
+  if(all) all.addEventListener('change',function(){ boxes.forEach(function(b){ b.checked=all.checked; }); refresh(); });
+  refresh();
+})();
+</script>
 {% endblock %}

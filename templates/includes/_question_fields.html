@@ -1,0 +1,28 @@
+{# The fields of one objective question, shared by "Add a question", editing a question in the list, and the
+   question's own edit page. The correct answer is the radio button beside its option. ``key`` keeps the ids of
+   several copies on one page apart. #}
+{% macro question_fields(q, key) -%}
+{% set q = q or {} %}
+<div class="acq-fields">
+  <div class="ac-field ac-field--wide"><label for="qText{{ key }}">Question</label>
+    <textarea id="qText{{ key }}" name="question_text" rows="2" required placeholder="e.g. What is 3 × 4?">{{ q.question_text or '' }}</textarea></div>
+  <div class="ac-field ac-field--wide"><label for="qInstr{{ key }}">Instruction <span class="ac-hint">optional</span></label>
+    <input id="qInstr{{ key }}" type="text" name="instruction" value="{{ q.instruction or '' }}" placeholder="e.g. Choose the best answer"></div>
+  <fieldset class="acq-options ac-field--wide">
+    <legend>Options <span class="ac-hint">tick the correct one</span></legend>
+    {% for letter in 'ABCD' %}{% set i = loop.index0 %}
+    <label class="acq-option">
+      <input type="radio" name="correct_option" value="{{ i }}" {% if q.correct_option is not none and q.correct_option|string == i|string %}checked{% endif %} required aria-label="{{ letter }} is correct">
+      <span class="acq-letter">{{ letter }}</span>
+      <input type="text" name="option_{{ letter|lower }}" value="{{ q['option_' ~ letter|lower] or '' }}" required aria-label="Option {{ letter }}" placeholder="Option {{ letter }}">
+    </label>
+    {% endfor %}
+  </fieldset>
+  <div class="ac-field"><label for="qPoints{{ key }}">Marks</label><input id="qPoints{{ key }}" type="number" min="1" name="points" value="{{ q.points or 1 }}" required></div>
+  <div class="ac-field"><label for="qImage{{ key }}">Picture <span class="ac-hint">optional</span></label>
+    <input id="qImage{{ key }}" type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+    {{ upload_hint() }}
+    {% if q.image_path %}<span class="acq-current"><img src="{{ url_for('static', filename=q.image_path) }}" alt="Current picture"><label><input type="checkbox" name="remove_image" value="1"> Remove this picture</label></span>{% endif %}
+  </div>
+</div>
+{%- endmacro %}

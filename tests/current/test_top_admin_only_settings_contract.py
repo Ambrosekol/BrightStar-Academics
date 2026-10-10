@@ -84,7 +84,14 @@ def test_the_settings_page_only_offers_these_four_to_the_top_level_admin():
     the navigation rail must not offer any of the four to anyone else on its own."""
     settings = (ROOT / "blueprints" / "school" / "settings.py").read_text(encoding="utf-8")
     admin_base = (ROOT / "templates" / "admin_base.html").read_text(encoding="utf-8")
-    for endpoint in ("admin_school_delivery", "admin_administration",
+    # The Administration hub's own pages (Staff, Staff roles) are Settings entries of their own now: they need the
+    # School Admin first, and only then the matching permission (which narrows, never grants).
+    for endpoint in ("admin_accounts", "admin_roles"):
+        start = settings.find(f"'{endpoint}'")
+        assert start != -1, f"{endpoint} is missing from the Settings page"
+        entry = settings[start: settings.index("),\n", start)]
+        assert re.match(rf"'{endpoint}',\s*'[\w-]+',\s*admin and can\(", entry), entry
+    for endpoint in ("admin_school_delivery",
                      "admin_finance_paystack_settings", "admin_school_branding"):
         start = settings.find(f"'{endpoint}'")
         assert start != -1, f"{endpoint} is missing from the Settings page"

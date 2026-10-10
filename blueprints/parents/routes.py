@@ -30,6 +30,7 @@ from models import (
     ParentAccount, ParentFeedback, ParentFeedbackReply, ParentStudentLink,
     SchoolClass, SchoolNotification, Student, StudentEnrolment, db,
 )
+from core.school_structure import student_is_early_years
 from core.branding import school_name
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, current_admin, csrf_protect, is_school_admin
@@ -126,7 +127,8 @@ def parent_dashboard():
     child_data=[]
     total_outstanding_all=0.0
     for child in _parent_children(pid,with_session=True):
-        assignments=_student_assignments(child['id'],limit=50,session_id=child['session_id'])
+        early_years=student_is_early_years(child['id'])
+        assignments=[] if early_years else _student_assignments(child['id'],limit=50,session_id=child['session_id'])
         avg,completion,trend=_assignment_metrics(assignments)
         # Across every session, not just the current one — a balance carried
         # over from a prior session must never silently disappear here.
@@ -135,7 +137,8 @@ def parent_dashboard():
         child_data.append({'child':child,
                            'results':_released_results(child['id'],limit=50,session_id=child['session_id']),
                            'assignments':assignments,
-                           'projects':_student_projects(child['id'],limit=50,session_id=child['session_id']),
+                           'projects':[] if early_years else _student_projects(child['id'],limit=50,session_id=child['session_id']),
+                           'early_years':early_years,
                            'avg':avg,'completion':completion,'trend':trend,
                            'fee_summary':fee_summary})
     notifications=db.session.scalars(select(SchoolNotification).where(
@@ -197,8 +200,10 @@ def parent_child_detail(student_id):
     wanted=request.args.get('session_id',type=int)
     chosen=next((x for x in child_sessions if x.id==wanted),None) or next((x for x in child_sessions if x.id==default_session),None)
     chosen_id=chosen.id if chosen else None
-    assignments=_student_assignments(student_id,with_id=False,session_id=chosen_id) if chosen_id else []
-    projects=_student_projects(student_id,with_id=False,session_id=chosen_id) if chosen_id else []
+    # A Crèche or Nursery pupil works on paper: the parent sees fees, results and report cards only.
+    early_years=student_is_early_years(student_id)
+    assignments=_student_assignments(student_id,with_id=False,session_id=chosen_id) if chosen_id and not early_years else []
+    projects=_student_projects(student_id,with_id=False,session_id=chosen_id) if chosen_id and not early_years else []
     results=_released_results(student_id,session_id=chosen_id) if chosen_id else []
     feedback=db.session.scalars(select(ParentFeedback).where(
         ParentFeedback.parent_id==pid,ParentFeedback.student_id==student_id)
@@ -226,7 +231,7 @@ def parent_child_detail(student_id):
     return render_template('parent_child_detail.html',child=child,report_periods=student_periods(student_id),assignments=assignments,
         projects=projects,results=results,feedback=feedback,replies=replies,avg=avg,
         completion=completion,trend=trend,fee_summary=fee_summary,notifications=notifications,
-        siblings=_parent_children(pid),child_sessions=child_sessions,chosen_session=chosen)
+        siblings=_parent_children(pid),child_sessions=child_sessions,chosen_session=chosen,early_years=early_years)
 
 @app.route('/parent/children/<int:student_id>/finance')
 @parent_required
@@ -547,7 +552,28 @@ def admin_school_parents():
                 .where(ParentStudentLink.active==1,
                        StudentEnrolment.class_id.in_(list(allowed_classes))))}
             parents=[p for p in parents if p['id'] in visible]
+    # Each parent's children by name and class, so the list says whose parent this is at a glance.
+    children={}
+    if parents:
+        current=_school_current_session_id()
+        for r in all_rows(select(ParentStudentLink.parent_id,ParentStudentLink.relationship,Student.id,Student.first_name,
+                                 Student.last_name,SchoolClass.name.label('class_name'))
+                          .join(Student,Student.id==ParentStudentLink.student_id)
+                          .outerjoin(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,StudentEnrolment.active==1,
+                                                           StudentEnrolment.session_id==current))
+                          .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
+                          .where(ParentStudentLink.active==1,ParentStudentLink.parent_id.in_([p['id'] for p in parents]))
+                          .order_by(Student.first_name)):
+            children.setdefault(r['parent_id'],[]).append(dict(r))
+    for p in parents:
+        p['children']=children.get(p['id'],[])
+        p['relationship']=next((c['relationship'] for c in p['children'] if c['relationship']),'')
     return render_template('admin_parents.html',parents=parents)
+
+def _school_current_session_id():
+    from app import _school_current_session
+    row=_school_current_session()
+    return row['id'] if row else 0
 
 @app.route('/admin/school/parents/new',methods=['GET','POST'])
 @admin_required

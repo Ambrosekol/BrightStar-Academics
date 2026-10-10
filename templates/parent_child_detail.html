@@ -37,9 +37,14 @@
 
 <section class="pp-kpis" aria-label="At a glance">
   <div class="pp-kpi{% if owed > 0.005 %} is-owing{% endif %}"><small>Fees</small><strong>{% if owed > 0.005 %}₦{{ '{:,.0f}'.format(owed) }} owing{% else %}Paid up{% endif %}</strong></div>
+  {# Crèche and Nursery pupils work on paper: their parents see fees and report cards, not online work. #}
+  {% if not early_years %}
   <div class="pp-kpi"><small>Assignment average{% if chosen_session %} · {{ chosen_session.name }}{% endif %}</small><strong>{{ avg ~ '%' if avg is not none else '—' }}</strong></div>
   <div class="pp-kpi"><small>Completion</small><strong>{{ completion ~ '%' if completion is not none else '—' }}</strong></div>
   <div class="pp-kpi"><small>Trend</small><strong>{{ trend }}</strong></div>
+  {% else %}
+  <div class="pp-kpi"><small>Report cards</small><strong>{{ report_periods|length }}</strong></div>
+  {% endif %}
 </section>
 
 <div class="pp-split">
@@ -49,7 +54,7 @@
     <div class="pp-tablist" role="tablist" aria-label="About {{ child.first_name }}">
       <button type="button" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
       <button type="button" role="tab" id="tab-results" aria-controls="panel-results" aria-selected="false">Results <span class="pp-count">{{ results|length }}</span></button>
-      <button type="button" role="tab" id="tab-work" aria-controls="panel-work" aria-selected="false">Work <span class="pp-count">{{ assignments|length + projects|length }}</span></button>
+      {% if not early_years %}<button type="button" role="tab" id="tab-work" aria-controls="panel-work" aria-selected="false">Work <span class="pp-count">{{ assignments|length + projects|length }}</span></button>{% endif %}
       <button type="button" role="tab" id="tab-messages" aria-controls="panel-messages" aria-selected="false">Messages <span class="pp-count">{{ feedback|length }}</span></button>
     </div>
     {% if child_sessions %}
@@ -84,6 +89,7 @@
       </div>
 
       <div class="pp-tiles">
+        {% if not early_years %}
         <a class="pp-tile" id="attendance" href="{{ url_for('parent_child_attendance', student_id=child.id) }}">
           <span class="pp-tile__ico">{{ icon('calendar') }}</span>
           <span><strong>Attendance</strong><small>Days present, late, absent or excused</small></span>
@@ -92,6 +98,7 @@
           <span class="pp-tile__ico">{{ icon('list') }}</span>
           <span><strong>Exam timetable</strong><small>Released dates, times and venues</small></span>
         </a>
+        {% endif %}
         <a class="pp-tile" href="{{ url_for('parent_child_finance', student_id=child.id) }}">
           <span class="pp-tile__ico">{{ icon('wallet') }}</span>
           <span><strong>Fee account</strong><small>{% if owed > 0.005 %}₦{{ '{:,.0f}'.format(owed) }} outstanding · pay and get receipts{% else %}Nothing owing · receipts{% endif %}</small></span>
@@ -119,6 +126,7 @@
     </section>
 
     {# ---------------------------------------------------------------- work #}
+    {% if not early_years %}
     <section class="pp-panel" role="tabpanel" id="panel-work" aria-labelledby="tab-work" hidden>
       <div class="pp-block" id="assignments">
         <div class="pp-block__head"><h2>Assignments{% if chosen_session %} · {{ chosen_session.name }}{% endif %}</h2><span class="pp-count">{{ assignments|length }}</span></div>
@@ -147,6 +155,7 @@
         {% else %}<p class="pp-none">No projects recorded{% if chosen_session %} for {{ chosen_session.name }}{% endif %}.</p>{% endif %}
       </div>
     </section>
+    {% endif %}
 
     {# ---------------------------------------------------------------- messages #}
     <section class="pp-panel" role="tabpanel" id="panel-messages" aria-labelledby="tab-messages" hidden>

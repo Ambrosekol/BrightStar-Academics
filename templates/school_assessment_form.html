@@ -1,6 +1,49 @@
 {% extends 'admin_base.html' %}
-{% block title %}Create {{'Test' if assessment_type=='test' else ('Practice Test' if assessment_type=='practice' else 'Examination')}} — {{ school_brand.name }}{% endblock %}
+{% block title %}New {{ {'test':'test','practice':'practice test','examination':'examination'}[assessment_type] }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL</div><h1>Create {{'test' if assessment_type=='test' else ('practice test' if assessment_type=='practice' else 'examination')}}</h1><p class="hero-copy">Set the academic context first. Questions are loaded after the assessment is created.</p></div></div>
-<div class="card modern-form">{% for e in errors %}<div class="error">{{e}}</div>{% endfor %}<form method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid"><div class="field" style="grid-column:1/-1"><label>Title</label><input name="title" value="{{assessment.title if assessment else ''}}" required></div><div class="field"><label>Class</label><select name="class_id" required><option value="">Select class</option>{% for c in classes %}<option value="{{c.id}}" {% if assessment and assessment.get('class_id')|int==c.id %}selected{% endif %}>{{c.name}}</option>{% endfor %}</select></div><div class="field"><label>Subject</label><select name="subject_id" required><option value="">Select subject</option>{% for s in subjects %}<option value="{{s.id}}" {% if assessment and assessment.get('subject_id')|int==s.id %}selected{% endif %}>{{s.name}}</option>{% endfor %}</select></div><div class="field"><label>Academic session</label><select name="session_id" required>{% for s in sessions %}<option value="{{s.id}}" {% if (assessment and assessment.get('session_id')|int==s.id) or (not assessment and loop.first) %}selected{% endif %}>{{s.name}}{% if s.is_current %} — Current{% endif %}</option>{% endfor %}</select></div><div class="field"><label>Term{% if assessment_type!='practice' %} <span class="optional">(required)</span>{% else %} <span class="optional">(optional)</span>{% endif %}</label><select name="term" {% if assessment_type!='practice' %}required{% endif %}><option value="">Select term</option>{% for t in terms %}<option value="{{t}}" {% if assessment and assessment.term==t %}selected{% endif %}>{{t}}</option>{% endfor %}</select></div><div class="field"><label>Duration (minutes)</label><input type="number" min="1" name="duration_minutes" value="{{assessment.duration_minutes if assessment else 30}}" required></div><div class="field" style="grid-column:1/-1"><label>Instructions <span class="optional">(optional)</span></label><textarea name="instructions" rows="5">{{assessment.instructions if assessment else ''}}</textarea></div></div><div class="form-actions"><button class="btn btn-primary" type="submit">Create and load questions</button><a class="btn btn-light" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">Cancel</a></div></form></div>
+{% set noun = {'test':'test','practice':'practice test','examination':'examination'}[assessment_type] %}
+{# New test, practice test or examination: a guided form (Class and subject -> Details), then its
+   questions are added on the next page. The behaviour is includes/_work_form.html. #}
+{% set a = assessment or {} %}
+<div class="ac">
+{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment_type] %}{% set entering = true %}
+{% include 'school_work_tabs.html' %}
+<form method="post" class="ac-form" data-guided="steps">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <nav class="ac-steps" aria-label="Steps" data-guided-steps></nav>
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <section class="ac-stage" data-step-panel data-title="Class and subject">
+    <div class="ac-stage__head"><div><h2>Which class and subject is the {{ noun }} for?</h2><p>{% if assessment_type == 'practice' %}Practice tests are for self-study and never count towards a result.{% else %}And the session and term its marks count towards.{% endif %}</p></div></div>
+    <div class="ac-fields">
+      <div class="ac-field"><label for="asClass">Class</label>
+        <select name="class_id" id="asClass" required><option value="">Choose a class</option>{% for c in classes %}<option value="{{ c.id }}" {% if a.get('class_id')|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="asSubject">Subject</label>
+        <select name="subject_id" id="asSubject" required><option value="">Choose a subject</option>{% for s in subjects %}<option value="{{ s.id }}" {% if a.get('subject_id')|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="asSession">Academic session</label>
+        <select name="session_id" id="asSession" required>{% for s in sessions %}<option value="{{ s.id }}" {% if a.get('session_id')|string == s.id|string or (not a.get('session_id') and loop.first) %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="asTerm">Term{% if assessment_type == 'practice' %} <span class="ac-hint">optional</span>{% endif %}</label>
+        <select name="term" id="asTerm" {% if assessment_type != 'practice' %}required{% endif %}><option value="">{{ 'Any term' if assessment_type == 'practice' else 'Choose a term' }}</option>{% for t in terms %}<option value="{{ t }}" {% if a.get('term') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+
+  <section class="ac-stage" data-step-panel data-title="Details">
+    <div class="ac-stage__head"><div><h2>Name it and set the time</h2><p>You add the questions on the next page; students only see it once you open it to them.</p></div></div>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field ac-field--wide"><label for="asTitle">Title</label><input id="asTitle" name="title" value="{{ a.get('title', '') }}" required placeholder="e.g. Mid-term test"></div>
+      <div class="ac-field"><label for="asMinutes">Time allowed (minutes)</label><input id="asMinutes" type="number" min="1" name="duration_minutes" value="{{ a.get('duration_minutes') or 30 }}" required></div>
+      <div class="ac-field ac-field--wide"><label for="asInstructions">Instructions <span class="ac-hint">optional</span></label><textarea id="asInstructions" name="instructions" rows="4" placeholder="e.g. Answer all questions. Each carries equal marks.">{{ a.get('instructions') or '' }}</textarea></div>
+    </div>
+  </section>
+
+  <div class="ac-form-foot">
+    <button type="button" class="ac-btn" data-guided-back hidden>← Back</button>
+    <span class="ac-grow"></span>
+    <a class="ac-link" href="{% if assessment_type=='test' %}{{ url_for('admin_school_tests') }}{% elif assessment_type=='practice' %}{{ url_for('admin_school_practice_tests') }}{% else %}{{ url_for('admin_school_examinations') }}{% endif %}">Cancel</a>
+    <button type="button" class="ac-btn ac-btn--primary" data-guided-next hidden>Next →</button>
+    <button type="submit" class="ac-btn ac-btn--primary" data-guided-save>Create and add questions →</button>
+  </div>
+</form>
+</div>
+{% include 'includes/_work_form.html' %}
 {% endblock %}

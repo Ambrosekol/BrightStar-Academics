@@ -1,147 +1,85 @@
 {% extends "admin_base.html" %}
-
+{% block title %}Promotion run #{{ run.id }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="cr-promo-page">
+{# One promotion run, usually in a pop-up over Promotion: the counts, then every student with the class they would
+   move to and the decision for them. A whole class can be given one decision at once; each student can be changed
+   on their own. Draft -> Save or Approve; Approved -> Commit (the new enrolments are made). A committed or cancelled
+   run is shown as it was, read only. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set editable = run.status in ['draft', 'approved'] %}
+{% set class_names = items|map(attribute='source_class_name')|unique|list %}
+<div class="ac st pr" data-pr="{{ run.id }}" data-modal-size="wide">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_promotion') }}">← Promotion</a>{% endif %}
+<header class="fp-head">
+  <div><span class="acq-kind">Promotion run #{{ run.id }}</span><h2>{{ run.from_session_name }} → {{ run.to_session_name }}</h2>
+    <p>{% if run.status == 'draft' %}A draft: review each student, then approve.{% elif run.status == 'approved' %}Approved: commit to make the new enrolments.{% elif run.status == 'committed' %}Committed: the new enrolments were made.{% else %}Cancelled: nothing was changed.{% endif %}</p></div>
+  <ol class="pr-flow" aria-label="Where this run is">{% for st in ['draft', 'approved', 'committed'] %}<li class="{{ 'is-on' if run.status == st }}{{ ' is-past' if (st == 'draft' and run.status in ['approved', 'committed']) or (st == 'approved' and run.status == 'committed') }}">{{ st|capitalize }}</li>{% endfor %}{% if run.status == 'cancelled' %}<li class="is-on is-cancel">Cancelled</li>{% endif %}</ol>
+</header>
 
-    <div class="page-hero">
-        <div>
-            <div class="eyebrow">PROMOTION REVIEW</div>
-            <h1>{{ run.from_session_name }} → {{ run.to_session_name }}</h1>
-            <p>
-                Review the proposed destinations before approval and final
-                session rollover.
-            </p>
-        </div>
-        <div class="hero-actions">
-            <span class="cr-promo-run-status cr-promo-run-{{ run.status }}">
-                {{ run.status|upper }}
-            </span>
-        </div>
-    </div>
+<dl class="fp-facts pr-counts">
+  <div><dt>Students</dt><dd>{{ summary.total }}</dd></div>
+  <div><dt>Promote</dt><dd>{{ summary.promote }}</dd></div>
+  <div><dt>Repeat</dt><dd>{{ summary.repeat }}</dd></div>
+  <div><dt>Graduate</dt><dd>{{ summary.graduate }}</dd></div>
+  <div><dt>Transfer · withdraw · hold</dt><dd>{{ summary.transfer }} · {{ summary.withdraw }} · {{ summary.hold }}</dd></div>
+  <div class="{{ 'is-alert' if summary.review }}"><dt>Need a decision</dt><dd>{{ summary.review }}</dd></div>
+</dl>
+{% if summary.review and editable %}<p class="fi-callout" style="margin:0 0 10px"><span class="fi-callout__n">!</span><span><strong>{{ summary.review }} student{{ '' if summary.review == 1 else 's' }} cannot be promoted as they stand</strong>Their class has no next class, or the next class is switched off. Choose a class for them, or another decision.</span></p>{% endif %}
 
-    <div class="cr-promo-kpis">
-        <div><strong>{{ summary.total }}</strong><span>Total Students</span></div>
-        <div><strong>{{ summary.promote }}</strong><span>Promote</span></div>
-        <div><strong>{{ summary.repeat }}</strong><span>Repeat</span></div>
-        <div><strong>{{ summary.transfer }}</strong><span>Transfer</span></div>
-        <div><strong>{{ summary.graduate }}</strong><span>Graduate</span></div>
-        <div><strong>{{ summary.hold }}</strong><span>Hold</span></div>
-    </div>
-
-    {% if run.status in ['draft','approved'] %}
-    <form method="post">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
-        <div class="cr-promo-toolbar">
-            <div>
-                <strong>Review student decisions</strong>
-                <span>
-                    Promote is the default where a progression rule exists.
-                </span>
-            </div>
-
-            <div class="cr-promo-actions">
-                {% if run.status == 'draft' %}
-                <button name="action" value="save"
-                        class="btn btn-secondary">
-                    Save Decisions
-                </button>
-                <button name="action" value="approve"
-                        class="btn btn-primary">
-                    Approve Promotion
-                </button>
-                {% elif run.status == 'approved' %}
-                <button name="action" value="commit"
-                        class="btn btn-primary"
-                        data-confirm="Commit this promotion run? This will create the destination-session enrolments.">
-                    Commit Rollover
-                </button>
-                {% endif %}
-
-                <button name="action" value="cancel"
-                        class="btn btn-danger"
-                        data-confirm="Cancel this promotion draft?">
-                    Cancel
-                </button>
-            </div>
-        </div>
-
-        <div class="cr-promo-table-wrap">
-            <table class="cr-promo-table cr-promo-review">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Current Class</th>
-                        <th>Proposed Class</th>
-                        <th>Decision</th>
-                        <th>Final Class</th>
-                        <th>Reason / Note</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for item in items %}
-                    <tr>
-                        <td>
-                            <input type="hidden"
-                                   name="item_id"
-                                   value="{{ item.id }}">
-                            <strong>
-                                {{ item.first_name }}
-                                {% if item.middle_name %}{{ item.middle_name }}{% endif %}
-                                {{ item.last_name }}
-                            </strong>
-                            <small>{{ item.admission_no }}</small>
-                        </td>
-
-                        <td>{{ item.source_class_name or '—' }}</td>
-
-                        <td>
-                            {{ item.proposed_class_name or 'Terminal' }}
-                        </td>
-
-                        <td>
-                            <select name="action_{{ item.id }}">
-                                {% for key,label in actions.items() %}
-                                <option value="{{ key }}"
-                                    {% if item.action == key %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </td>
-
-                        <td>
-                            <select name="target_{{ item.id }}">
-                                <option value="">No target</option>
-                                {% for c in classes %}
-                                <option value="{{ c.id }}"
-                                    {% if item.final_class_id == c.id %}selected{% endif %}>
-                                    {{ c.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </td>
-
-                        <td>
-                            <input type="text"
-                                   name="reason_{{ item.id }}"
-                                   value="{{ item.reason or '' }}"
-                                   placeholder="Optional note">
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="6" class="cr-promo-empty">
-                            No students were found in the source session.
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-    </form>
+<form method="post" action="{{ url_for('admin_school_promotion_run', run_id=run.id) }}" data-pr-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="fi-tools pr-tools">
+    <nav class="ac-chips" aria-label="Class" data-pr-chips><button type="button" class="ac-chip is-active" data-pr-class="">All <small>{{ items|length }}</small></button>{% for n in class_names %}<button type="button" class="ac-chip" data-pr-class="{{ n }}">{{ n }} <small>{{ items|selectattr('source_class_name', 'equalto', n)|list|length }}</small></button>{% endfor %}</nav>
+    {% if editable %}
+    <span class="pr-bulk">Everyone shown:
+      <select class="ac-select" data-pr-bulk aria-label="Decision for everyone shown"><option value="">choose…</option>{% for key, label in actions.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+    </span>
     {% endif %}
-
+  </div>
+  <section class="ac-panel">
+    <div class="ac-scroll"><table class="ac-t pr-table">
+      <thead><tr><th>Student</th><th>Now in</th><th>Would move to</th><th>Decision</th><th>Final class</th><th>Note</th></tr></thead>
+      <tbody>{% for item in items %}{% set d = (item.decision or item.action or 'promote') %}
+      <tr data-pr-row data-class="{{ item.source_class_name }}" data-d="{{ d }}">
+        <td>{% if editable %}<input type="hidden" name="item_id" value="{{ item.id }}">{% endif %}<b>{{ item.first_name }}{% if item.middle_name %} {{ item.middle_name }}{% endif %} {{ item.last_name }}</b><small>{{ item.admission_no }}</small></td>
+        <td>{{ item.source_class_name or '—' }}</td>
+        <td>{% if item.proposed_class_name %}{{ item.proposed_class_name }}{% if not item.proposed_class_active %} <span class="ac-tag ac-tag--attn">switched off</span>{% endif %}{% else %}<span class="fi-zero">No next class</span>{% endif %}</td>
+        {% if editable %}
+        <td><select class="ac-select pr-d" name="action_{{ item.id }}" aria-label="Decision">{% for key, label in actions.items() %}<option value="{{ key }}" {% if item.action == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+        <td><select class="ac-select" name="target_{{ item.id }}" aria-label="Final class"><option value="">No class</option>{% for c in classes %}<option value="{{ c.id }}" {% if item.final_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></td>
+        <td><input class="ac-input" type="text" name="reason_{{ item.id }}" value="{{ item.reason or '' }}" placeholder="Optional note"></td>
+        {% else %}
+        <td><span class="ac-tag">{{ actions.get(d, d)|capitalize }}</span></td><td>{{ item.final_class_name or '—' }}</td><td>{{ item.reason or '' }}</td>
+        {% endif %}
+      </tr>{% else %}<tr><td colspan="6"><div class="ac-empty">No students were found in the source session.</div></td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  {% if editable %}
+  <div class="at-save pr-save">
+    <button name="action" value="cancel" class="ac-btn ac-btn--danger" data-confirm="Cancel this promotion run? Nothing about any student changes.">Cancel the run</button>
+    <span class="ac-grow"></span>
+    {% if run.status == 'draft' %}
+      <button name="action" value="save" class="ac-btn">Save decisions</button>
+      <button name="action" value="approve" class="ac-btn ac-btn--primary">Approve</button>
+    {% else %}
+      <button name="action" value="commit" class="ac-btn ac-btn--primary" data-confirm="Commit this promotion? The new session's enrolments are made for every student, as decided here.">Commit the rollover</button>
+    {% endif %}
+  </div>
+  {% endif %}
+</form>
 </div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-pr="{{ run.id }}"]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var rows=[].slice.call(root.querySelectorAll('[data-pr-row]')), chips=root.querySelector('[data-pr-chips]'), bulk=root.querySelector('[data-pr-bulk]'), current='';
+  function apply(){ rows.forEach(function(r){ r.hidden=!!current&&r.dataset.class!==current; }); }
+  chips.addEventListener('click',function(e){ var b=e.target.closest('[data-pr-class]'); if(!b) return; current=b.dataset.prClass;
+    chips.querySelectorAll('[data-pr-class]').forEach(function(x){ x.classList.toggle('is-active',x===b); }); apply(); });
+  // One decision for every student shown (a whole class repeating, say); each can still be changed on its own.
+  if(bulk) bulk.addEventListener('change',function(){ if(!bulk.value) return;
+    rows.forEach(function(r){ if(r.hidden) return; var s=r.querySelector('select.pr-d'); if(s){ s.value=bulk.value; r.dataset.d=bulk.value; } }); bulk.value=''; });
+  root.addEventListener('change',function(e){ if(e.target.classList.contains('pr-d')) e.target.closest('tr').dataset.d=e.target.value; });
+})();
+</script>
 {% endblock %}

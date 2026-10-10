@@ -1,7 +1,7 @@
 """Contract: the staff guide mentions every real page a school admin can navigate to.
 
-templates/admin_base.html's navigation rail (workspace_items for the School workspace, for the
-Entrance workspace, administration_items, help_items) is the definitive list of "every page for
+templates/admin_base.html's navigation rail (workspace_groups for the School workspace, entrance_items for the
+Entrance workspace, administration_items and the foot of the menu) is the definitive list of "every page for
 school admins" the user asked the guide to cover - it is also exactly what a person actually sees
 in the menu, so it cannot silently drift from what the guide describes. A small, explicit list of
 endpoints is exempt (sign-in/out, the guide's own pages, and pages that are themselves a step
@@ -21,7 +21,7 @@ GUIDE_DIR = ROOT / "templates" / "school_guide"
 # the guide describes what you can do once you are there, in prose, rather than naming every one
 # of these by its own url_for (many take a required id and cannot be linked without one anyway).
 EXEMPT = {
-    "admin_workspace_home",  # "Exit Workspace" - covered as a concept (switching workspaces), welcome.html
+    "admin_workspace_home",  # "Switch workspace" - covered as a concept (switching workspaces), welcome.html
     "admin_guide_home",  # the guide's own home page
 }
 

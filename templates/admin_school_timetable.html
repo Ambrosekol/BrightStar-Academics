@@ -1,131 +1,189 @@
 {% extends 'admin_base.html' %}
 {% block title %}Exam timetable — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-  .tt-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-  .tt-filter .field { min-width: 170px; }
-  .tt-new { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
-  .tt-badge { padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-  .tt-badge.draft { background: #fff3d6; color: #8a5c00; }
-  .tt-badge.released { background: #e2f6ea; color: #167a3f; }
-  .tt-edit summary { cursor: pointer; color: var(--brand, #1674b9); font-size: 13px; }
-  .tt-edit form { margin-top: 8px; }
-</style>
-
-<div class="page-hero"><div>
-  <div class="eyebrow">SCHOOL PORTAL / ACADEMICS</div>
+{# The exam timetable for one session and term. Papers are drafts until the whole term is released at once;
+   only then are students and parents told. Two views of the same papers - day by day, or a grid of days
+   against classes - with clashes (one class sitting two papers at once, or one room booked twice) flagged.
+   Adding and editing happen in one pop-up form; everything else loads in place (static/inplace.js). #}
+{% set aid = current_admin['id'] %}
+{% set can_manage = admin_has_permission(aid, 'school.timetable.manage') %}
+{% set can_release = admin_has_permission(aid, 'school.timetable.release') %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='timetable.css', v='1') }}">
+<div class="ac tt" data-tt>
+<header class="ac-top">
   <h1>Exam timetable</h1>
-  <p class="hero-copy">Build the timetable as a draft, then release it all at once. Students and parents are notified only when you release, never before.</p>
-</div></div>
+  <nav class="ac-tabs" aria-label="Term">
+    {% for t in terms %}<a href="{{ url_for('admin_school_timetable', session_id=session_row.id if session_row else none, term=t) }}" class="{{ 'is-active' if t == term }}"{% if t == term %} aria-current="page"{% endif %}>{{ t }}</a>{% endfor %}
+  </nav>
+  <div class="ac-top__act">
+    {% if rows %}<a class="ac-btn" href="{{ url_for('admin_school_timetable_pdf', session_id=session_row.id, term=term) }}" data-full target="_blank" rel="noopener">Download PDF</a>{% endif %}
+    {% if can_manage and session_row %}<button type="button" class="ac-btn ac-btn--primary" data-tt-add>+ Add paper</button>{% endif %}
+  </div>
+</header>
 
-<section class="card modern-form">
-  <form method="get" class="tt-filter">
-    <div class="field"><label for="session_id">Session</label>
-      <select id="session_id" name="session_id" data-autosubmit>
-        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="term">Term</label>
-      <select id="term" name="term" data-autosubmit>
-        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-      </select></div>
-    {% if rows %}<a class="btn btn-light" href="{{ url_for('admin_school_timetable_pdf', session_id=session_row.id, term=term) }}">Download PDF</a>{% endif %}
+<div class="ac-bar tt-bar">
+  <form method="get" action="{{ url_for('admin_school_timetable') }}" class="tt-session">
+    <span class="ac-bar__label">Session</span>
+    <select class="ac-select" name="session_id" aria-label="Academic session" data-autosubmit>
+      {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}
+    </select>
+    <input type="hidden" name="term" value="{{ term }}">
   </form>
-</section>
+  {% if rows %}
+  <span class="tt-facts"><b>{{ rows|length }}</b> paper{{ '' if rows|length == 1 else 's' }} · <b>{{ grid_classes|length }}</b> class{{ '' if grid_classes|length == 1 else 'es' }} · {{ days[0].label }}{% if days|length > 1 %} – {{ days[-1].label }}{% endif %}</span>
+  {% if clash_count %}<span class="ac-tag ac-tag--attn" title="Papers that overlap for the same class or in the same room">{{ clash_count }} clash{{ '' if clash_count == 1 else 'es' }}</span>{% endif %}
+  {% endif %}
+  <span class="ac-grow"></span>
+  {% if rows %}
+    {% if draft_count %}
+      <span class="tt-state"><span class="tt-dot tt-dot--draft"></span>{{ draft_count }} draft{{ '' if draft_count == 1 else 's' }} · students and parents cannot see {{ 'it' if draft_count == 1 else 'them' }} yet</span>
+      {% if can_release %}
+      <form method="post" action="{{ url_for('admin_school_timetable_release', session_id=session_row.id, term=term) }}"
+            data-confirm="Release the {{ term }} timetable? {{ draft_count }} draft paper{{ '' if draft_count == 1 else 's' }} will be published, and every student and parent in the classes it covers is notified at once.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="exam_type" value="examination">
+        <button class="ac-btn ac-btn--primary" type="submit">Release timetable</button>
+      </form>
+      {% endif %}
+    {% else %}
+      <span class="tt-state tt-state--live"><span class="tt-dot"></span>Released · students and parents can see it</span>
+    {% endif %}
+  {% endif %}
+</div>
 
-{% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.manage') and session_row %}
-<section class="card modern-form" style="margin-top:18px">
-  <h3 style="margin-top:0">Add a paper</h3>
-  <form method="post" class="tt-new" action="{{ url_for('admin_school_timetable_new', session_id=session_row.id, term=term) }}">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="field"><label>Class</label>
-      <select name="class_id" id="ttClass" required>
-        <option value="">Choose</option>
-        {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label>Subject</label>
-      <select name="subject_id" id="ttSubject" required>
-        <option value="">Choose</option>
-        {% for s in subjects %}<option value="{{ s.id }}" data-classes="{{ s.class_ids or '' }}">{{ s.name }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label>Type</label>
-      <select name="exam_type">{% for key, label in exam_types %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
-    <div class="field"><label>Date</label><input type="date" name="date" required></div>
-    <div class="field"><label>Start time</label><input type="time" name="start_time" required></div>
-    <div class="field"><label>End time</label><input type="time" name="end_time"></div>
-    <div class="field"><label>Venue</label><input type="text" name="venue" maxlength="120" placeholder="e.g. Main Hall"></div>
-    <div class="field"><button class="btn btn-primary" type="submit">Add</button></div>
-  </form>
-</section>
+{% if not session_row %}
+<div class="ac-panel"><div class="ac-empty"><strong>No active academic session</strong>Create or activate a session in Settings first.</div></div>
+{% elif not rows %}
+<div class="ac-panel tt-empty">
+  <div class="ac-empty"><strong>No timetable entry has been added for {{ term }} yet.</strong>
+    {% if can_manage %}Add each paper with its class, subject, date and time. Nobody outside staff sees anything until you release the timetable.
+    <div style="margin-top:10px"><button type="button" class="ac-btn ac-btn--primary" data-tt-add>+ Add the first paper</button></div>{% endif %}
+  </div>
+</div>
+{% else %}
+<div class="tt-views">
+  <div class="ac-seg" role="tablist" aria-label="View">
+    <label><input type="radio" name="tt-view" value="days" checked><span>Day by day</span></label>
+    <label><input type="radio" name="tt-view" value="grid"><span>Grid</span></label>
+  </div>
+  <span class="tt-legend"><span class="tt-dot"></span>Released <span class="tt-dot tt-dot--draft"></span>Draft{% if clash_count %} <span class="tt-dot tt-dot--clash"></span>Clash{% endif %}</span>
+</div>
+
+<div data-tt-view="days">
+  {% for d in days %}
+  <section class="tt-day" aria-labelledby="ttDay{{ loop.index }}">
+    <header class="tt-day__head"><h2 id="ttDay{{ loop.index }}">{{ d.label }}</h2><small>{{ d.rows|length }} paper{{ '' if d.rows|length == 1 else 's' }}</small></header>
+    <ol class="tt-list">
+      {% for r in d.rows %}
+      <li class="tt-row{{ ' is-draft' if not r.released }}{{ ' is-clash' if r.clashes }}">
+        <span class="tt-time">{{ r.start_time }}{% if r.end_time %}<small>to {{ r.end_time }}</small>{% endif %}</span>
+        <span class="tt-what"><b>{{ r.subject_name }}</b> <span class="ac-tag{{ ' ac-tag--blue' if r.exam_type == 'test' }}">{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</span>
+          {% for c in r.clashes %}<small class="tt-clash">⚠ {{ c }}</small>{% endfor %}</span>
+        <span class="tt-class">{{ r.class_name }}</span>
+        <span class="tt-venue">{{ r.venue or 'No venue' }}</span>
+        <span class="tt-status"><span class="tt-dot{{ ' tt-dot--draft' if not r.released }}"></span>{{ 'Released' if r.released else 'Draft' }}</span>
+        {% if can_manage %}
+        <span class="tt-acts">
+          <button type="button" class="ac-link" data-tt-edit data-url="{{ url_for('admin_school_timetable_edit', entry_id=r.id, session_id=session_row.id, term=term) }}"
+                  data-class="{{ r.class_id }}" data-subject="{{ r.subject_id }}" data-type="{{ r.exam_type }}" data-date="{{ r.date }}"
+                  data-start="{{ r.start_time }}" data-end="{{ r.end_time }}" data-venue="{{ r.venue }}" data-name="{{ r.class_name }} {{ r.subject_name }}">Edit</button>
+          <form method="post" action="{{ url_for('admin_school_timetable_delete', entry_id=r.id, session_id=session_row.id, term=term) }}" data-confirm="Delete {{ r.class_name }} {{ r.subject_name }} on {{ d.label }}?">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Delete</button>
+          </form>
+        </span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endfor %}
+</div>
+
+<div data-tt-view="grid" hidden>
+  <div class="ac-panel ac-scroll"><table class="ac-t tt-grid">
+    <thead><tr><th>Day</th>{% for cid, cname in grid_classes %}<th>{{ cname }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for d in days %}<tr>
+      <th scope="row">{{ d.label }}</th>
+      {% for cid, cname in grid_classes %}<td>{% for r in d.rows if r.class_id == cid %}<span class="tt-cell{{ ' is-draft' if not r.released }}{{ ' is-clash' if r.clashes }}"{% if r.clashes %} title="{{ r.clashes|join('; ') }}"{% endif %}><b>{{ r.subject_name }}</b><small>{{ r.start_time }}{% if r.end_time %}–{{ r.end_time }}{% endif %}{% if r.venue %} · {{ r.venue }}{% endif %}</small></span>{% endfor %}</td>{% endfor %}
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+
+{% if can_manage and session_row %}
+<dialog class="ac-modal tt-dialog" data-tt-dialog aria-labelledby="ttDialogTitle">
+  <button type="button" class="ac-modal__close" data-tt-close aria-label="Close">×</button>
+  <div class="ac-modal__body">
+    <div class="ac-modal-head"><h2 id="ttDialogTitle">Add a paper</h2><p>{{ term }} · {{ session_row.name }}</p></div>
+    <form method="post" data-new-url="{{ url_for('admin_school_timetable_new', session_id=session_row.id, term=term) }}" action="{{ url_for('admin_school_timetable_new', session_id=session_row.id, term=term) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="ac-fields ac-fields--3">
+        <div class="ac-field"><label for="ttClass">Class</label>
+          <select name="class_id" id="ttClass" required><option value="">Choose a class</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="ttSubject">Subject</label>
+          <select name="subject_id" id="ttSubject" required><option value="">Choose a subject</option>{% for s in subjects %}<option value="{{ s.id }}" data-classes="{{ s.class_ids or '' }}">{{ s.name }}</option>{% endfor %}</select>
+          <small data-tt-offer hidden>Not yet offered to this class: it is offered when you save.</small></div>
+        <div class="ac-field"><label for="ttType">Type</label>
+          <select name="exam_type" id="ttType">{% for key, label in exam_types %}<option value="{{ key }}" {% if key == 'examination' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="ttDate">Date</label><input type="date" name="date" id="ttDate" required></div>
+        <div class="ac-field"><label for="ttStart">Starts</label><input type="time" name="start_time" id="ttStart" required></div>
+        <div class="ac-field"><label for="ttEnd">Ends <span class="ac-hint">optional</span></label><input type="time" name="end_time" id="ttEnd"></div>
+        <div class="ac-field ac-field--wide"><label for="ttVenue">Venue <span class="ac-hint">optional</span></label><input type="text" name="venue" id="ttVenue" maxlength="120" placeholder="e.g. Main Hall"></div>
+      </div>
+      <div class="ac-form-foot">
+        <label class="tt-again" data-tt-again><input type="checkbox" checked> Keep this open for the next paper</label>
+        <span class="ac-grow"></span>
+        <button type="button" class="ac-btn" data-tt-close>Cancel</button>
+        <button type="submit" class="ac-btn ac-btn--primary" data-tt-save>Add paper</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+{% endif %}
+</div>
 <script nonce="{{ csp_nonce() }}">
 (function(){
-  var cls = document.getElementById('ttClass'), sub = document.getElementById('ttSubject');
-  function filter(){
-    var cid = cls.value;
-    Array.prototype.forEach.call(sub.options, function(o){
-      if (!o.value) return;
-      // Every subject stays selectable. One that is not yet offered to the chosen class is labelled, and it is
-      // offered to that class when the entry is saved.
-      if (!o.dataset.base) o.dataset.base = o.textContent;
-      var offered = !!cid && (o.dataset.classes || '').split(',').indexOf(cid) !== -1;
-      o.hidden = false;
-      o.textContent = o.dataset.base + (cid && !offered ? ' — will be offered to this class on save' : '');
-    });
-    if (sub.selectedOptions[0] && sub.selectedOptions[0].hidden) sub.value = '';
+  var root=document.querySelector('[data-tt]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var key='tt-view';
+  // The two views: the choice is remembered for this browser tab.
+  var radios=root.querySelectorAll('input[name=tt-view]');
+  function view(v){ root.querySelectorAll('[data-tt-view]').forEach(function(p){ p.hidden=p.dataset.ttView!==v; });
+    radios.forEach(function(r){ r.checked=r.value===v; }); try{ sessionStorage.setItem(key,v); }catch(e){} }
+  radios.forEach(function(r){ r.addEventListener('change',function(){ view(r.value); }); });
+  try{ var saved=sessionStorage.getItem(key); if(saved==='grid'&&radios.length) view('grid'); }catch(e){}
+
+  var dlg=root.querySelector('[data-tt-dialog]'); if(!dlg) return;
+  var form=dlg.querySelector('form'), title=dlg.querySelector('#ttDialogTitle'), save=dlg.querySelector('[data-tt-save]');
+  var again=dlg.querySelector('[data-tt-again]'), cls=form.elements.class_id, sub=form.elements.subject_id, offer=dlg.querySelector('[data-tt-offer]');
+  function offered(){ var o=sub.selectedOptions[0]; offer.hidden=!(cls.value&&o&&o.value&&(o.dataset.classes||'').split(',').indexOf(cls.value)===-1); }
+  cls.addEventListener('change',offered); sub.addEventListener('change',offered);
+  function open(btn){
+    form.reset();
+    if(btn&&btn.dataset.url){
+      form.action=btn.dataset.url; title.textContent='Edit '+btn.dataset.name; save.textContent='Save changes'; again.hidden=true;
+      cls.value=btn.dataset.class; sub.value=btn.dataset.subject; form.elements.exam_type.value=btn.dataset.type;
+      form.elements.date.value=btn.dataset.date; form.elements.start_time.value=btn.dataset.start;
+      form.elements.end_time.value=btn.dataset.end; form.elements.venue.value=btn.dataset.venue;
+    } else {
+      form.action=form.dataset.newUrl; title.textContent='Add a paper'; save.textContent='Add paper'; again.hidden=false;
+      try{ var last=JSON.parse(sessionStorage.getItem('tt-last')||'null'); if(last){ cls.value=last.c; form.elements.date.value=last.d; form.elements.venue.value=last.v; form.elements.exam_type.value=last.t; } }catch(e){}
+    }
+    offered(); dlg.showModal(); (btn&&btn.dataset.url?form.elements.date:cls).focus();
   }
-  cls.addEventListener('change', filter);
+  root.querySelectorAll('[data-tt-add]').forEach(function(b){ b.addEventListener('click',function(){ open(null); }); });
+  root.querySelectorAll('[data-tt-edit]').forEach(function(b){ b.addEventListener('click',function(){ open(b); }); });
+  dlg.querySelectorAll('[data-tt-close]').forEach(function(b){ b.addEventListener('click',function(){ dlg.close(); }); });
+  dlg.addEventListener('click',function(e){ if(e.target===dlg) dlg.close(); });
+  form.addEventListener('submit',function(){
+    // Adding several papers for one class: the next one starts with the same class, day, room and type.
+    if(!again.hidden && again.querySelector('input').checked){
+      try{ sessionStorage.setItem('tt-last',JSON.stringify({c:cls.value,d:form.elements.date.value,v:form.elements.venue.value,t:form.elements.exam_type.value})); sessionStorage.setItem('tt-reopen','1'); }catch(e){}
+    } else { try{ sessionStorage.removeItem('tt-reopen'); }catch(e){} }
+    save.classList.add('is-busy');
+  });
+  // After "Add paper" with "keep this open" ticked and a successful save, the form opens again for the next one.
+  try{ if(sessionStorage.getItem('tt-reopen')==='1'){ sessionStorage.removeItem('tt-reopen'); if(document.querySelector('.flash.success')) open(null); } }catch(e){}
 })();
 </script>
-{% endif %}
-
-{% if session_row and rows %}
-<section class="card" style="margin-top:18px">
-  {% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.release') %}
-  <form method="post" action="{{ url_for('admin_school_timetable_release', session_id=session_row.id, term=term) }}"
-        data-confirm="Release the whole {{ term }} timetable ({{ draft_count }} entr' + ('{{ draft_count }}' == '1' ? 'y' : 'ies') + ' still in draft)? Every student and parent it covers will be notified at once."
-        style="margin-bottom:14px">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="exam_type" value="examination">
-    <button class="btn btn-primary" type="submit" {% if not draft_count %}disabled{% endif %}>Release timetable ({{ draft_count }} draft entr{{ 'y' if draft_count == 1 else 'ies' }})</button>
-  </form>
-  {% endif %}
-  <div class="table-scroll"><table>
-    <tr><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th>Type</th><th>Venue</th><th>Status</th><th></th></tr>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r.date }}</td><td>{{ r.start_time }}{% if r.end_time %} – {{ r.end_time }}{% endif %}</td>
-      <td>{{ r.class_name }}</td><td>{{ r.subject_name }}</td>
-      <td>{{ 'Test' if r.exam_type == 'test' else 'Examination' }}</td><td>{{ r.venue or '—' }}</td>
-      <td><span class="tt-badge {{ 'released' if r.released else 'draft' }}">{{ 'Released' if r.released else 'Draft' }}</span></td>
-      <td>
-        {% if current_admin and admin_has_permission(current_admin['id'], 'school.timetable.manage') %}
-        <details class="tt-edit"><summary>Edit</summary>
-          <form method="post" action="{{ url_for('admin_school_timetable_edit', entry_id=r.id) }}">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <div class="field"><label>Class</label>
-              <select name="class_id">{% for c in classes %}<option value="{{ c.id }}" {% if c.id == r.class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
-            <div class="field"><label>Subject</label>
-              <select name="subject_id">{% for s in subjects %}<option value="{{ s.id }}" {% if s.id == r.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
-            <div class="field"><label>Type</label>
-              <select name="exam_type">{% for key, label in exam_types %}<option value="{{ key }}" {% if key == r.exam_type %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-            <div class="field"><label>Date</label><input type="date" name="date" value="{{ r.date }}" required></div>
-            <div class="field"><label>Start</label><input type="time" name="start_time" value="{{ r.start_time }}" required></div>
-            <div class="field"><label>End</label><input type="time" name="end_time" value="{{ r.end_time }}"></div>
-            <div class="field"><label>Venue</label><input type="text" name="venue" maxlength="120" value="{{ r.venue }}"></div>
-            <button class="btn btn-primary btn-sm" type="submit">Save</button>
-          </form>
-        </details>
-        <form method="post" action="{{ url_for('admin_school_timetable_delete', entry_id=r.id) }}"
-              data-confirm="Delete this timetable entry?" style="display:inline">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-light btn-sm" type="submit">Delete</button>
-        </form>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </table></div>
-</section>
-{% elif session_row %}
-<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">No timetable entry has been added for {{ term }} yet.</p></section>
-{% endif %}
 {% endblock %}

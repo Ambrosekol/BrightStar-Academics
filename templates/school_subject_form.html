@@ -1,23 +1,74 @@
 {% extends 'admin_base.html' %}
 {% block title %}{{'Create Subject' if mode=='new' else 'Edit Subject'}} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / SUBJECTS</div><h1>{{'Create a subject' if mode=='new' else 'Edit subject'}}</h1><p class="hero-copy">Create a subject for the class where it is taught. You can correct spelling before the School Admin final lock.</p></div></div>
-{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}
-<div class="card modern-form subject-editor-card">
-  <div class="form-intro"><div class="step">1</div><div><h2>Subject details</h2><p>Name the subject and choose the class or classes where it is offered.</p></div></div>
-  <form method="post" id="subjectForm"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-    <div class="form-grid">
-      <div class="field"><label>Subject name</label><input name="name" value="{{subject.name if subject else ''}}" required placeholder="e.g. Mathematics"></div>
-      <div class="field"><label>Subject code <span class="optional">(optional)</span></label><input name="code" value="{{subject.code if subject else ''}}" placeholder="e.g. MATH"></div>
+{# A new subject, or editing one: its name and code, the classes that take it, the SSS departments that take it, and
+   (when editing) the locks on each class link. Opens in a pop-up over Subjects; locking stays in the pop-up, and
+   saving closes it with the list up to date. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set chosen_departments = request.form.getlist('departments') if request.method=='POST' else parse_departments(subject.departments if subject and subject.departments is defined else '') %}
+<div class="ac st sj" data-modal-size="wide">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_subjects') }}">← Subjects</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">{{ 'New subject' if mode=='new' else 'Subject' }}</span>
+  <h2>{{ 'Create a subject' if mode=='new' else subject.name }}</h2>
+  <p>{{ 'Name it and choose the classes that take it. A subject that already exists is attached to the classes you choose.' if mode=='new' else 'Spelling and classes can be corrected until the School Admin’s final lock.' }}</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form method="post" action="{{ request.path }}" id="subjectForm" class="fi-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">1</span>The subject</legend>
+    <div class="ac-fields">
+      <div class="ac-field"><label for="sjName">Name</label><input id="sjName" name="name" value="{{ subject.name if subject else '' }}" required placeholder="e.g. Mathematics"></div>
+      <div class="ac-field"><label for="sjCode">Code <span class="ac-hint">optional, on report cards</span></label><input id="sjCode" name="code" value="{{ (subject.code or '') if subject else '' }}" placeholder="e.g. MTH"></div>
     </div>
-    <div class="form-section"><div class="form-section-title"><div class="step">2</div><div><h2>Classes</h2><p>Only selected classes will receive this subject.</p></div></div>
-      {% if classes %}<div class="role-choice-grid">{% for c in classes %}<label class="role-choice"><input type="checkbox" name="class_ids" value="{{c.id}}" {% if c.id in selected %}checked{% endif %} {% if final_map and final_map.get(c.id) %}disabled{% endif %}><div class="role-choice-body"><strong>{{c.name}}</strong>{% if final_map and final_map.get(c.id) %}<small>Final locked</small>{% elif locked_map and locked_map.get(c.id) %}<small>Locked — protected from ordinary removal</small>{% endif %}</div><span class="role-check">✓</span>{% if final_map and final_map.get(c.id) %}<input type="hidden" name="class_ids" value="{{c.id}}">{% endif %}</label>{% endfor %}</div>{% else %}<div class="empty-state large">No active classes are available in your current access area.</div>{% endif %}
+  </fieldset>
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">2</span>Classes that take it <small class="ac-hint" data-sj-picked></small></legend>
+    {% if classes %}
+    <div class="sj-pick-acts"><button type="button" class="ac-btn ac-btn--sm" data-sj-all>Every class</button><button type="button" class="ac-btn ac-btn--sm" data-sj-none>None</button></div>
+    <div class="td-classes sj-classes">
+      {% for c in classes %}{% set fl = final_map and final_map.get(c.id) %}{% set lk = locked_map and locked_map.get(c.id) %}
+      <label class="td-chip{{ ' is-locked' if fl or lk }}" title="{{ 'Permanently locked' if fl else ('Locked: protected from ordinary removal' if lk else '') }}">
+        <input type="checkbox" name="class_ids" value="{{ c.id }}" {% if c.id in selected %}checked{% endif %} {% if fl %}disabled{% endif %}> {{ c.name }}{% if fl or lk %} 🔒{% endif %}
+        {% if fl %}<input type="hidden" name="class_ids" value="{{ c.id }}">{% endif %}</label>
+      {% endfor %}
     </div>
-    <div class="form-actions"><button class="btn btn-primary" type="submit">{{'Create subject' if mode=='new' else 'Save changes'}}</button><a class="btn btn-light" href="{{url_for('admin_school_subjects')}}">Cancel</a></div>
-  </form>
-  {% if mode=='edit' %}
-  <div class="form-section lock-governance"><div class="form-section-title"><div class="step">3</div><div><h2>Subject protection</h2><p>Ordinary locks protect a class-subject connection. Only School Admin can apply the final permanent lock.</p></div></div>
-    <div class="lock-list">{% for c in classes if c.id in selected %}<div class="resource-row"><div><strong>{{c.name}}</strong><span>{% if final_map.get(c.id) %}Permanently locked{% elif locked_map.get(c.id) %}Locked{% else %}Editable{% endif %}</span></div><div class="row-actions">{% if final_map.get(c.id) %}<span class="role-chip">Final lock</span>{% else %}<form method="post" action="{{url_for('admin_school_subject_lock',subject_id=subject.id,class_id=c.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">{{'Unlock' if locked_map.get(c.id) else 'Lock'}}</button></form>{% if is_school_admin_ui %}<form method="post" action="{{url_for('admin_school_subject_final_lock',subject_id=subject.id,class_id=c.id)}}" data-confirm="Final lock this subject for {{c.name}}? It cannot be edited, unlocked or deleted through normal controls afterward."><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger btn-small" type="submit">Final lock</button></form>{% endif %}{% endif %}</div></div>{% else %}<div class="empty-state">Attach this subject to a class first.</div>{% endfor %}</div>
-  </div>{% endif %}
+    {% else %}<div class="ac-empty">No active classes are available in your current access area.</div>{% endif %}
+  </fieldset>
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">3</span>SSS departments <span class="ac-hint">senior secondary only</span></legend>
+    <p class="ac-hint" style="margin:0 0 6px">Tick the departments that take it (Science for Physics; Art and Commercial for Literature). Leave all unticked when every department takes it, as with English and Mathematics.</p>
+    <div class="td-classes">{% for d in SSS_DEPARTMENTS %}<label class="td-chip"><input type="checkbox" name="departments" value="{{ d }}" {% if d in chosen_departments %}checked{% endif %}> {{ d }}</label>{% endfor %}</div>
+  </fieldset>
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_school_subjects') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">{{ 'Create subject' if mode=='new' else 'Save changes' }}</button></div>
+</form>
+
+{% if mode=='edit' %}
+<section class="fi-step sj-locks" aria-labelledby="sjLocksH">
+  <h3 id="sjLocksH" class="sj-locks__h">Protection, class by class</h3>
+  <p class="ac-hint" style="margin:0 0 6px">A lock protects a class's link to this subject from ordinary changes. Only the School Admin's final lock is permanent.</p>
+  <ul class="sp-items">{% for c in classes if c.id in selected %}
+    <li><span><b>{{ c.name }}</b><small>{% if final_map.get(c.id) %}Permanently locked{% elif locked_map.get(c.id) %}Locked{% else %}Editable{% endif %}</small></span>
+      <span class="sp-items__end">{% if final_map.get(c.id) %}<span class="ac-tag ac-tag--attn">Final lock</span>{% else %}
+        <form method="post" action="{{ url_for('admin_school_subject_lock', subject_id=subject.id, class_id=c.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--sm" type="submit">{{ 'Unlock' if locked_map.get(c.id) else 'Lock' }}</button></form>
+        {% if is_school_admin_ui %}<form method="post" action="{{ url_for('admin_school_subject_final_lock', subject_id=subject.id, class_id=c.id) }}" data-confirm="Final lock {{ subject.name }} for {{ c.name }}? It can never be edited, unlocked or removed afterwards."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--sm ac-btn--danger" type="submit">Final lock</button></form>{% endif %}
+      {% endif %}</span></li>
+  {% else %}<li><span class="ac-hint">Attach this subject to a class first.</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
 </div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var form=document.querySelector('#subjectForm:not([data-ready])'); if(!form) return; form.setAttribute('data-ready','1');
+  var boxes=[].slice.call(form.querySelectorAll('input[name=class_ids][type=checkbox]:not([disabled])')), picked=form.querySelector('[data-sj-picked]');
+  function count(){ var n=form.querySelectorAll('input[name=class_ids][type=checkbox]:checked').length; if(picked) picked.textContent=n ? '· '+n+' chosen' : '· none chosen'; }
+  var all=form.querySelector('[data-sj-all]'), none=form.querySelector('[data-sj-none]');
+  if(all) all.addEventListener('click',function(){ boxes.forEach(function(b){ b.checked=true; }); count(); });
+  if(none) none.addEventListener('click',function(){ boxes.forEach(function(b){ if(!b.closest('.is-locked')) b.checked=false; }); count(); });
+  form.addEventListener('change',count); count();
+})();
+</script>
 {% endblock %}

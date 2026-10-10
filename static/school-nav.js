@@ -26,7 +26,10 @@
 
     /* ---- the current page ------------------------------------------------------------------ */
     (function markCurrent() {
-        var links = [].slice.call(rail.querySelectorAll('.rail-nav a.rail-link[href]'));
+        var links = [].slice.call(rail.querySelectorAll('a.rail-link[href]'));
+        // The menu already names the current page for every section it knows (Academics covers several
+        // addresses, for one); the address is only a fallback for a page it does not list.
+        if (rail.querySelector('a.rail-link.active')) { return; }
         var here = window.location.pathname;
         var best = null;
         var bestLength = -1;

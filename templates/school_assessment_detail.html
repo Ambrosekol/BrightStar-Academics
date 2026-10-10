@@ -1,51 +1,185 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{assessment.title}} — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_question_fields.html' import question_fields %}
+{% block title %}{{ assessment.title }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / {{assessment.assessment_type|upper}}</div><h1>{{assessment.title}}</h1><p class="hero-copy">{{assessment.class_name}} · {{assessment.subject_name}} · {{assessment.session_name or 'No session'}}</p></div><div class="hero-actions"><form method="post" action="{{url_for('admin_school_assessment_toggle',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-primary" type="submit">{{'Close assessment' if assessment.active else 'Activate assessment'}}</button></form></div></div>
-<div class="quick-grid"><div class="quick-card"><div><strong>Questions</strong><span>{{questions|length}} loaded</span></div></div><div class="quick-card"><div><strong>Duration</strong><span>{{assessment.duration_minutes}} minutes</span></div></div><div class="quick-card"><div><strong>Status</strong><span>{{'Active' if assessment.active else 'Draft / Closed'}}</span></div></div><div class="quick-card"><div><strong>Session</strong><span>{{assessment.session_name or '—'}}</span></div></div></div>
-<div class="card modern-form" style="margin-top:18px"><h2>Assessment details</h2><form method="post" action="{{url_for('admin_school_assessment_edit',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-grid"><div class="field"><label>Title</label><input name="title" value="{{assessment.title}}" required></div><div class="field"><label>Duration</label><input type="number" min="1" name="duration_minutes" value="{{assessment.duration_minutes}}" required></div><div class="field"><label>Class</label><input value="{{assessment.class_name}}" disabled><input type="hidden" name="class_id" value="{{assessment.class_id}}"></div><div class="field"><label>Subject</label><input value="{{assessment.subject_name}}" disabled><input type="hidden" name="subject_id" value="{{assessment.subject_id}}"></div><div class="field" style="grid-column:1/-1"><label>Instructions</label><textarea name="instructions" rows="4">{{assessment.instructions or ''}}</textarea></div><div class="field"><label>Academic session</label><select name="session_id">{% for s in sessions %}<option value="{{s.id}}" {% if s.id==assessment.session_id %}selected{% endif %}>{{s.name}}{% if s.is_current %} — Current{% endif %}</option>{% endfor %}</select></div><div class="field"><label>Term</label><select name="term">{% if assessment.assessment_type=='practice' %}<option value="">No term (practice test)</option>{% endif %}{% for t in terms %}<option value="{{t}}" {% if assessment.term==t %}selected{% endif %}>{{t}}</option>{% endfor %}</select></div></div><div class="form-actions"><button class="btn btn-light" type="submit">Save details</button></div></form></div>
-<div class="card modern-form" style="margin-top:18px"><div class="section-head"><div><h2>Questions</h2><p class="muted">Load objective questions directly into this {{assessment.assessment_type}}.</p></div></div><form method="post" enctype="multipart/form-data" action="{{url_for('admin_school_assessment_question_new',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="question-authoring-panel"><div class="field"><label>Question instruction <span class="optional">(optional)</span></label><textarea name="instruction" rows="3" placeholder="Tell the student exactly what to do."></textarea></div><div class="field"><label>Question image <span class="optional">(optional)</span></label><input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>{{ upload_hint() }}</div></div><div class="field"><label>Question</label><textarea name="question_text" rows="3" required></textarea></div><div class="form-grid"><div class="field"><label>Option A</label><input name="option_a" required></div><div class="field"><label>Option B</label><input name="option_b" required></div><div class="field"><label>Option C</label><input name="option_c" required></div><div class="field"><label>Option D</label><input name="option_d" required></div><div class="field"><label>Correct option</label><select name="correct_option"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div><div class="field"><label>Points</label><input type="number" min="1" name="points" value="1"></div></div><div class="form-actions"><button class="btn btn-primary" type="submit">+ Add question</button></div></form><div class="assessment-question-list" id="schoolQuestionList">
-{% for q in questions %}
-<div class="assessment-question school-assessment-question" data-question-id="{{q.id}}">
-  <div class="assessment-question-body">
-    <div><strong>Q{{loop.index}}.</strong> {{q.question_text}}</div>
-    {% if q.instruction %}<small class="question-list-instruction">Instruction: {{q.instruction}}</small>{% endif %}
-    {% if q.image_path %}<img class="question-list-image" src="{{url_for('static',filename=q.image_path)}}" alt="Question image">{% endif %}
-    <small>A. {{q.option_a}} · B. {{q.option_b}} · C. {{q.option_c}} · D. {{q.option_d}} · Correct: {{'ABCD'[q.correct_option]}} · {{q.points}} point{{'' if q.points==1 else 's'}}</small>
+{# A test, practice test or examination and its questions. Opened from the list in a pop-up (static/inplace.js,
+   which marks those requests X-Modal so a save that comes back here stays in it), or as a page of its own.
+   Three tabs: the questions (each editable where it is, reordered with the arrows), adding one (the form is
+   ready for the next as soon as one is saved), and the settings. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set noun = {'test':'test','practice':'practice test','examination':'examination'}[assessment.assessment_type] %}
+{% set marks = questions|sum(attribute='points') %}
+<div class="ac acq" data-acq="{{ assessment.id }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+{% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
+
+<header class="acq-head">
+  <div class="acq-head__text">
+    <span class="acq-kind">{{ noun|capitalize }}</span>
+    <h2>{{ assessment.title }}</h2>
+    <p>{{ assessment.class_name }} · {{ assessment.subject_name }}{% if assessment.term %} · {{ assessment.term }}{% endif %}{% if assessment.session_name %} · {{ assessment.session_name }}{% endif %}</p>
   </div>
-  <div class="assessment-question-actions">
-    <a class="btn btn-light btn-small" href="{{url_for('admin_school_assessment_question_edit',assessment_id=assessment.id,question_id=q.id)}}">Edit</a>
-    <button type="button" class="btn btn-light btn-small" data-call="moveSchoolQuestion" data-call-arg="-1" {% if loop.first %}disabled{% endif %}>↑</button>
-    <button type="button" class="btn btn-light btn-small" data-call="moveSchoolQuestion" data-call-arg="1" {% if loop.last %}disabled{% endif %}>↓</button>
-    <form method="post" action="{{url_for('admin_school_assessment_question_delete',assessment_id=assessment.id,question_id=q.id)}}" data-confirm="Delete this question?">
-      <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-      <button class="btn btn-danger btn-small" type="submit">Delete</button>
-    </form>
+  <form method="post" action="{{ url_for('admin_school_assessment_toggle', assessment_id=assessment.id) }}" class="acq-status"
+        {% if assessment.active %}data-confirm="Close this {{ noun }}? Students will no longer be able to start it."{% endif %}>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    {% if assessment.active %}
+      <span class="ac-tag ac-tag--good">Open to students</span>
+      <button class="ac-btn" type="submit">Close it</button>
+    {% else %}
+      <span class="ac-tag">Draft · students cannot see it</span>
+      <button class="ac-btn ac-btn--primary" type="submit" {% if not questions %}disabled title="Add at least one question first"{% endif %}>Open to students</button>
+    {% endif %}
+  </form>
+</header>
+
+<dl class="acq-stats">
+  <div><dt>Questions</dt><dd>{{ questions|length }}</dd></div>
+  <div><dt>Total marks</dt><dd>{{ marks }}</dd></div>
+  <div><dt>Time allowed</dt><dd>{{ assessment.duration_minutes }} min</dd></div>
+  <div><dt>Per question</dt><dd>{% if questions %}{% set per = (assessment.duration_minutes * 60 / questions|length)|round(0)|int %}{% if per >= 60 %}{{ per // 60 }} min{% if per % 60 %} {{ per % 60 }} s{% endif %}{% else %}{{ per }} s{% endif %}{% else %}—{% endif %}</dd></div>
+</dl>
+
+<div class="ac-seg acq-tabs" role="tablist" aria-label="{{ noun|capitalize }}">
+  <button type="button" role="tab" data-acq-tab="questions">Questions <small>{{ questions|length }}</small></button>
+  <button type="button" role="tab" data-acq-tab="add">+ Add a question</button>
+  <button type="button" role="tab" data-acq-tab="settings">Settings</button>
+</div>
+
+<section class="acq-panel" data-acq-panel="questions" role="tabpanel">
+  {% if questions %}
+  <ol class="acq-list" id="acqList">
+    {% for q in questions %}
+    <li class="acq-q" data-question-id="{{ q.id }}">
+      <div class="acq-q__head">
+        <span class="acq-n">{{ loop.index }}</span>
+        <div class="acq-q__text">
+          {% if q.instruction %}<small class="acq-instr">{{ q.instruction }}</small>{% endif %}
+          <p>{{ q.question_text }}</p>
+        </div>
+        <span class="ac-tag">{{ q.points }} mark{{ '' if q.points == 1 else 's' }}</span>
+        <span class="acq-actions">
+          <button type="button" class="acq-icon" data-acq-move="-1" aria-label="Move up" title="Move up">↑</button>
+          <button type="button" class="acq-icon" data-acq-move="1" aria-label="Move down" title="Move down">↓</button>
+          <button type="button" class="ac-link" data-acq-edit>Edit</button>
+          <form method="post" action="{{ url_for('admin_school_assessment_question_delete', assessment_id=assessment.id, question_id=q.id) }}" data-confirm="Delete question {{ loop.index }}?">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Delete</button>
+          </form>
+        </span>
+      </div>
+      <div class="acq-q__view">
+        {% if q.image_path %}<img class="acq-img" src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for question {{ loop.index }}">{% endif %}
+        <ul class="acq-opts">
+          {% for letter in 'ABCD' %}
+          <li class="{{ 'is-correct' if q.correct_option == loop.index0 }}"><span class="acq-letter">{{ letter }}</span>{{ q['option_' ~ letter|lower] }}{% if q.correct_option == loop.index0 %}<span class="acq-tick" aria-label="correct answer">✓</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <form class="acq-edit" method="post" enctype="multipart/form-data" hidden
+            action="{{ url_for('admin_school_assessment_question_edit', assessment_id=assessment.id, question_id=q.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        {{ question_fields(q, 'e' ~ q.id) }}
+        <div class="ac-form-foot"><span class="ac-grow"></span><button type="button" class="ac-btn" data-acq-cancel>Cancel</button><button class="ac-btn ac-btn--primary" type="submit">Save question {{ loop.index }}</button></div>
+      </form>
+    </li>
+    {% endfor %}
+  </ol>
+  <div class="acq-order" id="acqOrder" hidden>
+    <span>You changed the order.</span>
+    <button type="button" class="ac-btn ac-btn--primary" id="acqOrderSave" data-url="{{ url_for('admin_school_assessment_question_reorder', assessment_id=assessment.id) }}">Save the new order</button>
+    <button type="button" class="ac-link" id="acqOrderUndo">Undo</button>
+    <span class="acq-order__msg" id="acqOrderMsg" role="status"></span>
   </div>
+  {% else %}
+  <div class="ac-empty"><strong>No questions yet</strong>Add the first one; students can only start the {{ noun }} once it has questions and is opened to them.
+    <div style="margin-top:8px"><button type="button" class="ac-btn ac-btn--primary" data-acq-goto="add">+ Add the first question</button></div></div>
+  {% endif %}
+</section>
+
+<section class="acq-panel" data-acq-panel="add" role="tabpanel" hidden>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_school_assessment_question_new', assessment_id=assessment.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <p class="acq-lede">Question {{ questions|length + 1 }}. After you save, this form is ready for the next one.</p>
+    {{ question_fields(none, 'new') }}
+    <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Add question {{ questions|length + 1 }}</button></div>
+  </form>
+</section>
+
+<section class="acq-panel" data-acq-panel="settings" role="tabpanel" hidden>
+  <form method="post" action="{{ url_for('admin_school_assessment_edit', assessment_id=assessment.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="class_id" value="{{ assessment.class_id }}"><input type="hidden" name="subject_id" value="{{ assessment.subject_id }}">
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field ac-field--wide"><label for="acqTitle">Title</label><input id="acqTitle" name="title" value="{{ assessment.title }}" required></div>
+      <div class="ac-field"><label for="acqMinutes">Time allowed (minutes)</label><input id="acqMinutes" type="number" min="1" name="duration_minutes" value="{{ assessment.duration_minutes }}" required></div>
+      <div class="ac-field"><label for="acqSession">Academic session</label><select id="acqSession" name="session_id">{% for s in sessions %}<option value="{{ s.id }}" {% if s.id == assessment.session_id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="acqTerm">Term</label><select id="acqTerm" name="term">{% if assessment.assessment_type == 'practice' %}<option value="">No term (practice)</option>{% endif %}{% for t in terms %}<option value="{{ t }}" {% if assessment.term == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+      <div class="ac-field ac-field--wide"><label for="acqInstructions">Instructions for students</label><textarea id="acqInstructions" name="instructions" rows="3">{{ assessment.instructions or '' }}</textarea></div>
+    </div>
+    <p class="ac-hint" style="margin:8px 0 0">The class ({{ assessment.class_name }}) and subject ({{ assessment.subject_name }}) cannot be changed here.</p>
+    <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Save settings</button></div>
+  </form>
+</section>
 </div>
-{% else %}<div class="empty-state">No questions loaded yet.</div>{% endfor %}
-</div>
-{% if questions %}
-<form id="schoolQuestionOrderForm" method="post" action="{{url_for('admin_school_assessment_question_reorder',assessment_id=assessment.id)}}">
-  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-  <input type="hidden" name="order" id="schoolQuestionOrder">
-  <div class="form-actions" style="margin-top:14px"><button class="btn btn-light" type="submit">Save Question Order</button></div>
-</form>
 <script nonce="{{ csp_nonce() }}">
-function moveSchoolQuestion(button,direction){
-  const item=button.closest('.school-assessment-question');
-  const list=document.getElementById('schoolQuestionList');
-  const target=direction<0?item.previousElementSibling:item.nextElementSibling;
-  if(!target || !target.classList.contains('school-assessment-question')) return;
-  if(direction<0) list.insertBefore(item,target); else list.insertBefore(target,item);
-  [...list.querySelectorAll('.school-assessment-question')].forEach((el,i)=>{
-    const strong=el.querySelector('.assessment-question-body > div > strong');
-    if(strong) strong.textContent='Q'+(i+1)+'.';
+(function(){
+  var root=document.querySelector('[data-acq="{{ assessment.id }}"]'); if(!root || root.dataset.ready) return; root.dataset.ready='1';
+  var key='acq-tab-{{ assessment.id }}';
+  // Tabs: one panel at a time; the chosen one is remembered for this test, so after adding a question the
+  // form is still open for the next.
+  function show(name){
+    root.querySelectorAll('[data-acq-tab]').forEach(function(b){ var on=b.dataset.acqTab===name; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
+    root.querySelectorAll('[data-acq-panel]').forEach(function(p){ p.hidden=p.dataset.acqPanel!==name; });
+    try{ sessionStorage.setItem(key,name); }catch(e){}
+    if(name==='add'){ var t=root.querySelector('[data-acq-panel=add] textarea'); if(t) t.focus({preventScroll:true}); }
+  }
+  var start='{{ 'questions' if questions else 'add' }}';
+  try{ start=sessionStorage.getItem(key)||start; }catch(e){}
+  root.querySelectorAll('[data-acq-tab]').forEach(function(b){ b.addEventListener('click',function(){ show(b.dataset.acqTab); }); });
+  root.querySelectorAll('[data-acq-goto]').forEach(function(b){ b.addEventListener('click',function(){ show(b.dataset.acqGoto); }); });
+  show(start);
+
+  // Editing a question where it is.
+  root.querySelectorAll('.acq-q').forEach(function(item){
+    var view=item.querySelector('.acq-q__view'), form=item.querySelector('.acq-edit');
+    item.querySelector('[data-acq-edit]').addEventListener('click',function(){ form.hidden=false; view.hidden=true; form.querySelector('textarea').focus(); });
+    form.querySelector('[data-acq-cancel]').addEventListener('click',function(){ form.reset(); form.hidden=true; view.hidden=false; });
   });
-}
-document.getElementById('schoolQuestionOrderForm')?.addEventListener('submit',function(){
-  document.getElementById('schoolQuestionOrder').value=[...document.querySelectorAll('.school-assessment-question')].map(x=>x.dataset.questionId).join(',');
-});
+
+  // Reordering: the arrows move a question, and Save sends the new order.
+  var list=root.querySelector('#acqList'), bar=root.querySelector('#acqOrder');
+  if(list&&bar){
+    var original=[].map.call(list.children,function(li){ return li.dataset.questionId; }).join(',');
+    var msg=root.querySelector('#acqOrderMsg');
+    function renumber(){
+      [].forEach.call(list.children,function(li,i){ li.querySelector('.acq-n').textContent=i+1; });
+      var now=[].map.call(list.children,function(li){ return li.dataset.questionId; }).join(',');
+      bar.hidden=now===original; msg.textContent='';
+      [].forEach.call(list.children,function(li,i){
+        li.querySelector('[data-acq-move="-1"]').disabled=i===0; li.querySelector('[data-acq-move="1"]').disabled=i===list.children.length-1;
+      });
+    }
+    list.addEventListener('click',function(e){
+      var b=e.target.closest('[data-acq-move]'); if(!b) return;
+      var li=b.closest('.acq-q'), up=b.dataset.acqMove==='-1', other=up?li.previousElementSibling:li.nextElementSibling;
+      if(!other) return;
+      if(up) list.insertBefore(li,other); else list.insertBefore(other,li);
+      renumber(); b.focus();
+    });
+    root.querySelector('#acqOrderUndo').addEventListener('click',function(){
+      original.split(',').forEach(function(id){ list.appendChild(list.querySelector('[data-question-id="'+id+'"]')); }); renumber();
+    });
+    var save=root.querySelector('#acqOrderSave');
+    save.addEventListener('click',function(){
+      var order=[].map.call(list.children,function(li){ return li.dataset.questionId; }).join(',');
+      var data=new FormData(); data.append('_csrf_token','{{ csrf_token() }}'); data.append('order',order);
+      save.classList.add('is-busy');
+      fetch(save.dataset.url,{method:'POST',body:data,credentials:'same-origin'}).then(function(r){ return r.json(); })
+        .then(function(j){ if(j.ok){ original=order; bar.hidden=true; } else { msg.textContent=j.error||'The order could not be saved.'; } })
+        .catch(function(){ msg.textContent='The order could not be saved right now. Try again.'; })
+        .finally(function(){ save.classList.remove('is-busy'); });
+    });
+    renumber();
+  }
+})();
 </script>
-{% endif %}</div>
 {% endblock %}

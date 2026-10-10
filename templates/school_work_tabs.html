@@ -1,8 +1,25 @@
-<nav class="students-seg" aria-label="Academic work">
-  <a class="students-seg__item{{ ' is-active' if work_tab=='results' }}" href="{{ url_for('admin_school_results') }}" {% if work_tab=='results' %}aria-current="page"{% endif %}>Results &amp; records</a>
-  <a class="students-seg__item{{ ' is-active' if work_tab=='assignments' }}" href="{{ url_for('admin_school_assignments') }}" {% if work_tab=='assignments' %}aria-current="page"{% endif %}>Assignments</a>
-  <a class="students-seg__item{{ ' is-active' if work_tab=='projects' }}" href="{{ url_for('admin_school_projects') }}" {% if work_tab=='projects' %}aria-current="page"{% endif %}>Projects</a>
-  <a class="students-seg__item{{ ' is-active' if work_tab=='tests' }}" href="{{ url_for('admin_school_tests') }}" {% if work_tab=='tests' %}aria-current="page"{% endif %}>Tests</a>
-  <a class="students-seg__item{{ ' is-active' if work_tab=='practice' }}" href="{{ url_for('admin_school_practice_tests') }}" {% if work_tab=='practice' %}aria-current="page"{% endif %}>Practice tests</a>
-  <a class="students-seg__item{{ ' is-active' if work_tab=='examinations' }}" href="{{ url_for('admin_school_examinations') }}" {% if work_tab=='examinations' %}aria-current="page"{% endif %}>Examinations</a>
-</nav>
+{# The Academics frame: one page for results and every kind of class work, switched by the tabs below.
+   Set work_tab before including it. Only the sections this person may open are shown, and the one button
+   on the right is the main thing to create in the open section. Links inside load in place (static/inplace.js). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+{% set aid = current_admin['id'] %}
+{% set ac_tabs = [
+    ('results', 'Results', 'admin_school_results', 'school.results.view', 'admin_school_result_manual_new', 'school.results.enter', 'Enter offline scores'),
+    ('assignments', 'Assignments', 'admin_school_assignments', 'school.assignments.view', 'admin_school_assignment_new', 'school.assignments.create', 'New assignment'),
+    ('projects', 'Projects', 'admin_school_projects', 'school.projects.view', 'admin_school_project_new', 'school.projects.create', 'New project'),
+    ('tests', 'Tests', 'admin_school_tests', 'school.tests.view', 'admin_school_test_new', 'school.tests.create', 'New test'),
+    ('practice', 'Practice tests', 'admin_school_practice_tests', 'school.practice.view', 'admin_school_practice_new', 'school.practice.create', 'New practice test'),
+    ('examinations', 'Examinations', 'admin_school_examinations', 'school.examinations.view', 'admin_school_examination_new', 'school.examinations.create', 'New examination'),
+] %}
+<header class="ac-top">
+  <h1>Academics</h1>
+  <nav class="ac-tabs" aria-label="Academics sections">
+    {% for key, label, endpoint, perm, _n, _p, _l in ac_tabs if admin_has_permission(aid, perm) %}
+    <a href="{{ url_for(endpoint) }}{% if selected_class is defined and selected_class %}?class={{ selected_class|urlencode }}{% elif request.args.get('all') == '1' %}?all=1{% endif %}" class="{{ 'is-active' if work_tab == key }}" {% if work_tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {# The page that is itself the section's main action (Enter scores) sets entering, and shows no button. #}
+  {% for key, label, endpoint, perm, new_endpoint, new_perm, new_label in ac_tabs if key == work_tab and admin_has_permission(aid, new_perm) and not entering %}
+  <div class="ac-top__act"><a class="ac-btn ac-btn--primary" href="{{ url_for(new_endpoint) }}">+ {{ new_label }}</a></div>
+  {% endfor %}
+</header>

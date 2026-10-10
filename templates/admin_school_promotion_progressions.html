@@ -1,108 +1,32 @@
 {% extends "admin_base.html" %}
-
+{% block title %}Class progression — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="cr-promo-page">
-
-    <div class="page-hero">
-        <div>
-            <div class="eyebrow">SCHOOL STRUCTURE</div>
-            <h1>Class Progression Rules</h1>
-            <p>
-                Define the default next class for each configured school
-                class. The system never assumes a particular naming scheme.
-            </p>
-        </div>
-        <div class="hero-actions">
-            <a class="btn btn-secondary"
-               href="{{ url_for('admin_school_promotion') }}">
-                Back to Promotion
-            </a>
-        </div>
-    </div>
-
-    <section class="cr-promo-card">
-        <div class="cr-promo-card-head">
-            <div>
-                <span class="cr-promo-kicker">CONFIGURE</span>
-                <h2>Default Progression</h2>
-                <p>
-                    You can map any configured class to any other configured
-                    class.
-                </p>
-            </div>
-        </div>
-
-        <form method="post" class="cr-promo-form">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="action" value="save">
-
-            <label>
-                Current Class
-                <select name="from_class_id" required>
-                    <option value="">Select class</option>
-                    {% for c in classes %}
-                    <option value="{{ c.id }}">
-                        {{ c.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </label>
-
-            <label>
-                Default Next Class
-                <select name="to_class_id">
-                    <option value="">No default / terminal class</option>
-                    {% for c in classes %}
-                    <option value="{{ c.id }}">
-                        {{ c.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </label>
-
-            <button class="btn btn-primary" type="submit">
-                Save Progression Rule
-            </button>
-        </form>
-    </section>
-
-    <section class="cr-promo-card">
-        <div class="cr-promo-card-head">
-            <div>
-                <span class="cr-promo-kicker">ACTIVE RULES</span>
-                <h2>Configured Progressions</h2>
-            </div>
-        </div>
-
-        <div class="cr-promo-table-wrap">
-            <table class="cr-promo-table">
-                <thead>
-                    <tr>
-                        <th>From Class</th>
-                        <th>To Class</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for p in progressions %}
-                    <tr>
-                        <td><strong>{{ p.from_class_name }}</strong></td>
-                        <td>
-                            {{ p.to_class_name or 'Terminal / no default' }}
-                        </td>
-                        <td><span class="cr-promo-status">Active</span></td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="cr-promo-empty">
-                            No progression rules configured.
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
+{# Which class each class moves up to by default, one row per class; choosing saves that row at once. A class with no
+   next class (SSS 3, say) leaves the school or graduates. Usually in a pop-up over Promotion. Nothing is assumed from
+   class names: every step is set here. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set by_from = {} %}{% for p in progressions %}{% set _ = by_from.update({p.from_class_id: p}) %}{% endfor %}
+<div class="ac st pr">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_promotion') }}">← Promotion</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">Class progression</span><h2>Where each class moves up to</h2>
+  <p>Choose the next class for each one; it saves as you choose. A draft promotes students along these steps, and you can still change any student in the draft.</p></div>
+<section class="ac-panel">
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>This class</th><th></th><th>Moves up to</th><th>Now</th></tr></thead>
+    <tbody>{% for c in classes %}{% set p = by_from.get(c.id) %}<tr>
+      <td><b>{{ c.name }}</b>{% if not c.active %} <span class="ac-tag">switched off</span>{% endif %}</td>
+      <td aria-hidden="true">→</td>
+      <td><form method="post" action="{{ url_for('admin_school_promotion_progressions') }}" class="pr-rule">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="save"><input type="hidden" name="from_class_id" value="{{ c.id }}">
+        <select class="ac-select" name="to_class_id" aria-label="Next class for {{ c.name }}" data-autosubmit>
+          <option value="" {% if p and not p.to_class_id %}selected{% endif %}>{{ 'Leaves the school / last class' if p else 'Not set' }}</option>
+          {% for t in classes if t.id != c.id %}<option value="{{ t.id }}" {% if p and p.to_class_id == t.id %}selected{% endif %}>{{ t.name }}{% if not t.active %} (switched off){% endif %}</option>{% endfor %}
+        </select></form></td>
+      <td>{% if p and p.to_class_name %}<span class="ac-tag ac-tag--good">Set</span>{% elif p %}<span class="ac-tag">Last class</span>{% else %}<span class="ac-tag ac-tag--attn">Not set</span>{% endif %}</td>
+    </tr>{% else %}<tr><td colspan="4"><div class="ac-empty">No classes yet.</div></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% if modal %}<div class="ac-form-foot"><span class="ac-grow"></span><button type="button" class="ac-btn ac-btn--primary" data-modal-dismiss>Done</button></div>{% endif %}
 </div>
 {% endblock %}

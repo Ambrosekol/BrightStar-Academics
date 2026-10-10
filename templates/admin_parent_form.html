@@ -1,8 +1,75 @@
-{% extends 'admin_base.html' %}{% block title %}{{'Edit Parent Account' if editing else 'Create Parent Account'}} — {{ school_brand.name }}{% endblock %}{% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PEOPLE</div><h1>{{'Edit parent account' if editing else 'Create parent account'}}</h1><p class="hero-copy">{{'Correct the parent profile or update the children linked to this account.' if editing else "Create the parent's independent login, then find and link one or more children."}}</p></div></div>{% for e in errors %}<div class="flash error">{{e}}</div>{% endfor %}<div class="card modern-form parent-account-form"><form enctype="multipart/form-data" method="post"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><div class="form-section"><div class="form-section-title"><div class="step">1</div><div><h2>Parent details</h2><p>The parent account remains independent of each child's password.</p></div></div><div class="form-grid"><div class="field"><label>Parent / guardian full name</label><input name="display_name" value="{{form.get('display_name','') if form else ''}}" required></div>{% if not editing %}<div class="field"><label>Username <span class="optional">Optional</span></label><input name="username" value="{{form.get('username','') if form else ''}}" placeholder="Leave blank to generate from name"></div>{% else %}<div class="field"><label>Username / Login ID</label><input value="{{editing.username}}" readonly><small>Login ID remains stable after account creation.</small></div>{% endif %}<div class="field"><label>Email</label><input name="email" type="email" value="{{form.get('email','') if form else ''}}"></div><div class="field"><label>Phone</label><input name="phone" value="{{form.get('phone','') if form else ''}}"></div><div class="field"><label>Relationship</label><input name="relationship" value="{{form.get('relationship','') if form else ''}}" placeholder="Parent / Guardian"></div></div></div>
-<div class="form-section"><div class="form-section-title"><div class="step">2</div><div><h2>Linked children</h2><p>Choose the children this parent is authorised to access. A parent may be linked to multiple students.</p></div></div><div class="student-search-toolbar"><select id="parentClassFilter"><option value="">All classes</option>{% for c in classes %}<option value="{{c.id}}">{{c.name}}</option>{% endfor %}</select><input id="parentStudentSearch" type="search" placeholder="Search child by name or admission number"><span id="parentStudentCount"></span></div><div class="student-pick-grid" id="parentStudentList">{% for s in students %}<label class="student-pick parent-student-option" data-class="{{s.class_id}}" data-search="{{(s.first_name ~ ' ' ~ (s.middle_name or '') ~ ' ' ~ s.last_name ~ ' ' ~ s.admission_no)|lower}}"><input type="checkbox" name="student_ids" value="{{s.id}}" {% if (linked and s.id in linked) or (form and s.id|string in form.get('student_ids', [])) %}checked{% endif %}><span><strong>{{s.first_name}} {{s.middle_name or ''}} {{s.last_name}}</strong><small>{{s.admission_no}} · {{s.class_name}}</small></span></label>{% endfor %}</div></div><div class="form-actions"><button class="btn btn-primary" type="submit">{{'Save parent changes' if editing else 'Create parent account'}}</button>{% if editing %}<a class="btn btn-light" href="{{url_for('admin_school_parents')}}">Cancel</a>{% else %}<a class="btn btn-light" href="{{url_for('admin_school_parents')}}">Cancel</a>{% endif %}</div></form></div>
-<script nonce="{{ csp_nonce() }}">(function(){const c=document.getElementById('parentClassFilter'),q=document.getElementById('parentStudentSearch'),items=[...document.querySelectorAll('.parent-student-option')],count=document.getElementById('parentStudentCount');function f(){let n=0;const cid=c.value,needle=(q.value||'').toLowerCase();items.forEach(x=>{const show=(!cid||x.dataset.class===cid)&&(!needle||x.dataset.search.includes(needle));x.style.display=show?'flex':'none';if(show)n++;});count.textContent=n+' student'+(n===1?'':'s')+' found';}c.onchange=f;q.oninput=f;f()})();</script>{% endblock %}
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Manage Parent Account' if editing else 'Create Parent Account' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Adding a parent, or managing one: their details, and the children they may see. Opens in a pop-up over Parents
+   (static/inplace.js). Making a new password is here too, for an existing parent; the new password shows in the
+   same pop-up (data-modal-scope). #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+{% set reset_url = url_for('admin_school_parent_credentials_reset', pid=editing.id) if editing else '' %}
+<div class="ac st pe" data-pe-form data-modal-size="wide" data-modal-scope="{{ reset_url }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_parents') }}">← Parents</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">{{ 'Parent account' if editing else 'New parent' }}</span>
+  <h2>{{ editing.display_name if editing else 'Add a parent' }}</h2>
+  <p>{{ 'Their details, and the children they can see in the parent portal.' if editing else 'They get their own sign-in, separate from their children’s. Link every child they may see.' }}</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
 
+<form method="post" action="{{ request.path }}" class="fi-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">1</span>Who they are</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="peName">Full name</label><input id="peName" name="display_name" value="{{ f.get('display_name', '') }}" required placeholder="e.g. Mrs Ngozi Okafor"></div>
+      {% if not editing %}<div class="ac-field"><label for="peUser">Username <span class="ac-hint">blank = from the name</span></label><input id="peUser" name="username" value="{{ f.get('username', '') }}" placeholder="e.g. ngozi.okafor"></div>
+      {% else %}<div class="ac-field"><label>Username</label><input value="{{ editing.username }}" readonly aria-readonly="true"><small>Stays the same after the account is made.</small></div>{% endif %}
+      <div class="ac-field"><label for="peRel">Relationship</label><input id="peRel" name="relationship" value="{{ f.get('relationship', '') }}" placeholder="Mother, Father, Guardian"></div>
+      <div class="ac-field"><label for="peEmail">Email <span class="ac-hint">receipts and notices</span></label><input id="peEmail" name="email" type="email" value="{{ f.get('email', '') }}"></div>
+      <div class="ac-field"><label for="pePhone">Phone <span class="ac-hint">text messages</span></label><input id="pePhone" name="phone" value="{{ f.get('phone', '') }}"></div>
+    </div>
+  </fieldset>
 
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">2</span>Their children <small class="ac-hint" data-pe-picked></small></legend>
+    <div class="ac-pickbar">
+      <select class="ac-select" data-pe-class aria-label="Class"><option value="">Every class</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+      <input type="search" class="ac-input" placeholder="Find a child by name or admission no." aria-label="Find a child" data-pe-kid>
+      <label class="ac-hint" style="display:inline-flex !important;gap:4px;align-items:center"><input type="checkbox" data-pe-only> Only the ones ticked</label>
+      <span class="ac-hint" data-pe-shown></span>
+    </div>
+    <div class="ac-pickgrid pe-kidgrid">
+      {% for s in students %}{% set on = (linked and s.id in linked) or (f.getlist and s.id|string in f.getlist('student_ids')) %}
+      <label data-class="{{ s.class_id }}" data-search="{{ (s.first_name ~ ' ' ~ (s.middle_name or '') ~ ' ' ~ s.last_name ~ ' ' ~ s.admission_no)|lower }}"><input type="checkbox" name="student_ids" value="{{ s.id }}" {% if on %}checked{% endif %}><span>{{ s.last_name }}, {{ s.first_name }} <small>{{ s.admission_no }} · {{ s.class_name }}</small></span></label>
+      {% endfor %}
+    </div>
+  </fieldset>
 
-
+  <div class="ac-form-foot">
+    {% if editing and editing.active %}<button type="submit" class="ac-btn" form="peReset">Make a new password</button>{% endif %}
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_school_parents') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">{{ 'Save changes' if editing else 'Add the parent' }}</button>
+  </div>
+</form>
+{% if editing and editing.active %}
+<form id="peReset" method="post" action="{{ reset_url }}" data-confirm="Make a new temporary password for {{ editing.display_name }}? Their current password stops working."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"></form>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-pe-form]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var cls=root.querySelector('[data-pe-class]'), q=root.querySelector('[data-pe-kid]'), only=root.querySelector('[data-pe-only]');
+  var items=[].slice.call(root.querySelectorAll('.pe-kidgrid label')), shown=root.querySelector('[data-pe-shown]'), picked=root.querySelector('[data-pe-picked]');
+  function apply(){
+    var cid=cls.value, needle=(q.value||'').trim().toLowerCase(), n=0, p=0;
+    items.forEach(function(x){ var box=x.querySelector('input'); if(box.checked) p++;
+      var ok=(!cid||x.dataset.class===cid)&&(!needle||x.dataset.search.indexOf(needle)!==-1)&&(!only.checked||box.checked);
+      x.hidden=!ok; x.classList.toggle('is-on',box.checked); if(ok) n++; });
+    shown.textContent=n+' shown'; picked.textContent=p ? '· '+p+' linked' : '· none linked yet';
+  }
+  cls.addEventListener('change',apply); q.addEventListener('input',apply); only.addEventListener('change',apply);
+  root.addEventListener('change',function(e){ if(e.target.name==='student_ids') apply(); });
+  apply();
+})();
+</script>
+{% endblock %}

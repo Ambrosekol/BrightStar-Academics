@@ -23,7 +23,7 @@ from flask import abort, g, has_request_context, redirect, render_template, requ
 from models import (
     Admin, AdminNotification, AdminPermission, AdminRoleAssignment,
     AdminScope, AdminType, AdminTypePermission, Attempt, AuditLog, Candidate,
-    Permission, db,
+    Permission, SchoolClass, SchoolSubject, TeachingDuty, db,
 )
 from control_plane import config
 from control_plane.context import current_tenant
@@ -109,6 +109,8 @@ ADMIN_PERMISSION_DEFS = [
     ('school.results.enter','Enter student results','school','Enter approved manual or offline student results.'),
     ('school.results.verify','Verify student results','school','Verify compiled student result components.'),
     ('school.results.approve','Approve student results','school','Approve student result components for release.'),
+    ('school.results.submit','Send results to the class teacher','school','Mark the scores you recorded as ready, so the class teacher can release them.'),
+    ('school.staff.assign','Assign teaching duties','school','Choose the class teacher of each class and who teaches each subject. Only staff below you can be assigned.'),
     ('school.attendance.view','View attendance','school','View student attendance records and term summaries for the classes you may access.'),
     ('school.attendance.mark','Mark attendance','school','Take the daily register for the classes you may access.'),
     ('school.timetable.view','View exam timetables','school','View exam and test timetables for the classes you may access.'),
@@ -174,13 +176,19 @@ ADMIN_ROLE_PRESETS = {
         'description': 'Manages enrolled student records and class information within assigned school scopes.',
         'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.attendance.view','parent.feedback.view']
     },
-    'Primary Class Teacher': {
-        'description': 'Manages students, subjects and assessments for assigned primary classes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','parent.feedback.view','report_cards.view','report_cards.comment']
+    # The teaching chain: Head Teacher -> Class Teacher -> Subject Teacher (see core/school_structure.py).
+    # Which classes and subjects a teacher reaches comes from their teaching duties, not from the role.
+    'Head Teacher': {
+        'description': 'Head teacher or principal: oversees every class and subject, assigns class and subject teachers, and checks, approves and releases any result.',
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.results.submit','school.staff.assign']
     },
-    'College Subject Teacher': {
-        'description': 'Manages the assigned subject across permitted college classes.',
-        'permissions': ['school.view','school.students.view','school.classes.view','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage']
+    'Class Teacher': {
+        'description': "In charge of the classes they are class teacher of: students, the register, report card comments, every subject's scores, and releasing the class's results once subject teachers send them.",
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.results.enter','school.results.submit','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','parent.feedback.view','report_cards.view','report_cards.comment']
+    },
+    'Subject Teacher': {
+        'description': 'Teaches chosen subjects in chosen classes (and, in SSS, chosen departments): sets work and tests, records scores and sends them to the class teacher.',
+        'permissions': ['school.view','school.students.view','school.classes.view','school.subjects.view','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.results.enter','school.results.submit','school.attendance.view','school.timetable.view']
     },
     'School Academic Administrator': {
         'description': 'Full school-portal academic administration without access to entrance-examination operations.',
@@ -188,19 +196,19 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Records Officer': {
         'description': 'Records student payments, issues receipts and sees only collections recorded by the officer.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','library.view']
+        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','library.view']
     },
     'Finance Manager': {
-        'description': 'Oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['dashboard.view','school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
+        'description': 'The bursar: oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
+        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
-        'permissions': ['dashboard.view','school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage']
     },
     'Librarian': {
         'description': 'Manages books, loans, returns and library records.',
-        'permissions': ['dashboard.view','school.view','school.students.view','library.view','library.manage']
+        'permissions': ['school.view','school.students.view','library.view','library.manage']
     },
     'Report Card Officer': {
         'description': "Writes class teachers' comments and prepares report cards for the classes assigned, and sets the head's signature.",
@@ -278,11 +286,13 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_receipt_sms':'finance.receipt.send',
     'admin_finance_receipt_settings':'finance.manage',
     'admin_finance_student_account':'finance.view_own',
+    'admin_finance_accounts':'finance.view_all',
+    'admin_finance_payments':'finance.view_own',
     'admin_finance_payment_allocate':'finance.record','admin_finance_unallocated':'finance.record',
     'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
     'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
     'admin_library':'library.view',
-    'admin_library_book_new':'library.manage',
+    'admin_library_book_new':'library.manage','admin_library_book_new_form':'library.manage','admin_library_issue_form':'library.manage',
 'admin_library_book_edit':'library.manage','admin_library_book_toggle':'library.manage',
     'admin_library_issue':'library.manage',
     'admin_library_return':'library.manage',
@@ -299,8 +309,10 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_practice_tests':'school.practice.view','admin_school_practice_new':'school.practice.create','admin_school_practice_edit':'school.practice.edit','admin_school_practice_delete':'school.practice.delete',
     'admin_school_examinations':'school.examinations.view','admin_school_examination_new':'school.examinations.create','admin_school_examination_edit':'school.examinations.edit','admin_school_examination_delete':'school.examinations.delete',
     'admin_school_results':'school.results.view','admin_school_results_release':'school.results.release','admin_school_results_release_term':'school.results.release','admin_school_results_release_class':'school.results.release',
+    'admin_school_results_submit_term':'school.results.submit','admin_school_results_submit_class':'school.results.submit',
+    'admin_school_teaching':'school.view','admin_school_teaching_edit':'school.view',
     'admin_school_onboarding_dismiss':'school.view','admin_school_onboarding_show':'school.view',
-    'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_take':'parent.feedback.manage','admin_school_parent_message_new':'parent.feedback.manage','admin_school_parent_recipients':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.verify',
+    'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_take':'parent.feedback.manage','admin_school_parent_message_new':'parent.feedback.manage','admin_school_parent_recipients':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.view',
     'admin_school_assessment_detail':'school.view','admin_school_assessment_edit':'school.view','admin_school_assessment_toggle':'school.view','admin_school_assessment_question_new':'school.view','admin_school_assessment_question_delete':'school.view','admin_school_assessment_delete':'school.view',
 }
 
@@ -355,7 +367,7 @@ def _snapshot(admin):
 def clear_school_admin_caches():
     """Forget what this school's administrators were read as: their account rows, permissions and scopes.
     Called after any change a school makes, so the next request sees it."""
-    forget_here('admin-perms', 'admin-scopes')
+    forget_here('admin-perms', 'admin-scopes', 'admin-duties', 'admin-levels')
     tenant = current_tenant(required=False)
     scope = tenant.id if tenant is not None else None
     for key in [k for k in _ADMIN_CACHE if k[0] == scope]:
@@ -418,7 +430,14 @@ LEGACY_TOP_ROLE_NAMES = ('Super Admin',)
 RETIRED_PERMISSIONS = {'website.manage': 'branding.manage', 'website.view': None}
 # A preset role that was renamed, so an existing school's copy is renamed in place rather than
 # left behind next to a new one.
-RENAMED_PRESET_ROLES = {'Website & Content Manager': 'School Profile Manager'}
+RENAMED_PRESET_ROLES = {'Website & Content Manager': 'School Profile Manager',
+                        'Primary Class Teacher': 'Class Teacher',
+                        'College Subject Teacher': 'Subject Teacher'}
+
+# Where each starter role sits in the chain of authority (core/school_structure.py). Applied to a
+# school's copy only while it has no level yet, so a level the school chose itself is kept.
+PRESET_ROLE_LEVELS = {'Head Teacher': 'head_teacher', 'School Academic Administrator': 'head_teacher',
+                      'Class Teacher': 'class_teacher', 'Subject Teacher': 'subject_teacher'}
 
 
 def is_school_admin(admin=None):
@@ -493,11 +512,115 @@ def _admin_scopes(admin_id):
                                          .where(AdminScope.admin_id==admin_id))]
 
 
+def _teaching_duties(admin_id):
+    return tuple({'class_id':class_id,'class_name':class_name,'subject_id':subject_id,
+                  'subject_name':subject_name,'department':department}
+                 for class_id,class_name,subject_id,subject_name,department in tuples(
+        select(TeachingDuty.class_id,SchoolClass.name,TeachingDuty.subject_id,SchoolSubject.name,
+               TeachingDuty.department)
+        .join(SchoolClass,SchoolClass.id==TeachingDuty.class_id)
+        .outerjoin(SchoolSubject,SchoolSubject.id==TeachingDuty.subject_id)
+        .where(TeachingDuty.admin_id==admin_id)
+        .order_by(SchoolClass.level_order,SchoolClass.name,TeachingDuty.subject_id.is_not(None),SchoolSubject.name)))
+
+
+def teaching_duties(admin_id):
+    """What a member of staff teaches (models/auth.py, TeachingDuty): one dict per duty with
+    class_id/class_name, subject_id/subject_name (both None for a class teacher) and department.
+    Empty for the School Admin and for anyone who has not been given a duty."""
+    admin=_active_admin(admin_id)
+    if not admin or admin['admin_type_system']: return ()
+    return remember('admin-duties', config.admin_cache_seconds(), _teaching_duties, admin.id)
+
+
+def duty_covers(admin_id, class_id, subject_id=None, department=None):
+    """Whether a member of staff with teaching duties reaches this class (and subject, and a student
+    of this department). None when they have no duties, so the caller falls back to the older limits.
+
+    A class teacher reaches every subject and student of their class. A subject duty limited to a
+    department reaches only students of that department, plus students whose department is not set
+    yet, so nobody drops out of sight because of missing data."""
+    duties=teaching_duties(admin_id)
+    if not duties: return None
+    for d in duties:
+        if d['class_id']!=class_id: continue
+        if d['subject_id'] is None: return True
+        if subject_id is None or d['subject_id']!=subject_id: continue
+        if d['department'] and department and d['department']!=department: continue
+        return True
+    # Asked about the class alone: any duty in it will do.
+    return subject_id is None and any(d['class_id']==class_id for d in duties)
+
+
+def subject_reach(admin_id=None):
+    """For the work forms' subject pickers: {subject_id: [class ids]} - in which classes this person may set
+    work in each subject - plus the classes they are class teacher of (every subject there), as
+    (by_subject, all_subject_classes). None when they have no teaching duties, so nothing is narrowed."""
+    if admin_id is None:
+        me = current_admin()
+        admin_id = me['id'] if me else None
+    duties = teaching_duties(admin_id) if admin_id else ()
+    if not duties:
+        return None
+    by_subject = {}
+    for d in duties:
+        if d['subject_id'] is not None:
+            by_subject.setdefault(d['subject_id'], set()).add(d['class_id'])
+    every = {d['class_id'] for d in duties if d['subject_id'] is None}
+    return {sid: sorted(ids) for sid, ids in by_subject.items()}, sorted(every)
+
+
+def class_teacher_of(admin_id, class_id):
+    """Whether this member of staff is the class teacher of the class (the School Admin always is)."""
+    admin=_active_admin(admin_id)
+    if admin and admin['admin_type_system']: return True
+    return any(d['class_id']==class_id and d['subject_id'] is None for d in teaching_duties(admin_id))
+
+
+def _admin_level_codes(admin_id):
+    via_roles=(select(AdminType.level).join(AdminRoleAssignment,AdminRoleAssignment.admin_type_id==AdminType.id)
+               .where(AdminRoleAssignment.admin_id==admin_id,AdminType.active==1))
+    own=select(AdminType.level).join(Admin,Admin.admin_type_id==AdminType.id).where(Admin.id==admin_id)
+    return tuple(level for (level,) in tuples(via_roles.union(own)))
+
+
+def admin_rank(admin_id):
+    """How senior a member of staff is: 0 for the School Admin, then 1 (executive) to 4 (subject
+    teacher), from the most senior of the roles they hold (core/school_structure.py)."""
+    from core.school_structure import LEVEL_RANK, level_or_default
+    admin=_active_admin(admin_id)
+    if not admin: return 99
+    if admin['admin_type_system']: return 0
+    levels=remember('admin-levels', config.admin_cache_seconds(), _admin_level_codes, admin.id)
+    return min((LEVEL_RANK[level_or_default(level)] for level in levels), default=LEVEL_RANK['executive'])
+
+
+def admin_covers_whole_school(admin_id):
+    """True for someone whose academic reach is not narrowed to some classes: no teaching duties and no
+    class limit. Only such a person may set a school-wide date, such as the result release schedule."""
+    admin=_active_admin(admin_id)
+    if not admin: return False
+    if admin['admin_type_system']: return True
+    if teaching_duties(admin_id): return False
+    scopes=remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id)
+    return not any(t=='class' and v!='*' for t,v in scopes)
+
+
 def admin_scope_allows(admin_id, scope_type=None, scope_value=None):
     if not scope_type: return True
     admin=_active_admin(admin_id)
     if not admin: return False
     if admin['admin_type_system']: return True
+    if scope_type in ('class','subject'):
+        # Teaching duties, once given, are the whole of a teacher's class and subject boundary. A class
+        # teacher reaches every subject, so a subject check alone passes for them; the pages pair it with
+        # the class check (blueprints/school/helpers.py, _school_pair_allowed) to keep them to their class.
+        duties=teaching_duties(admin.id)
+        if duties:
+            value=str(scope_value or '')
+            if scope_type=='class':
+                return any(d['class_name']==value for d in duties)
+            return any(d['subject_id'] is None or d['subject_name']==value for d in duties)
     scopes=remember('admin-scopes', config.admin_cache_seconds(), _admin_scopes, admin.id)
     # An administrator with no explicit boundary works across the whole permitted area.
     # A boundary only narrows the dimension it names (class, subject, bank, etc.).
@@ -631,6 +754,10 @@ def audit_display_detail(log):
         'school_result_approve': 'A school result was approved.',
         'school_result_release': 'A school result was released.',
         'school_results_term_released': 'All approved results of a student for a term were released.',
+        'school_results_submitted': 'A subject teacher sent recorded results to the class teacher.',
+        'school_result_submit': 'A result was sent to the class teacher.',
+        'school_result_return': 'A result was sent back to be corrected.',
+        'teaching_duties_updated': 'Teaching duties (class teacher and subject teachers) were changed.',
         'school_subject_final_locked': 'A school class subject was permanently locked.',
         'school_assignment_question_added': 'A CBT-style assignment question was added.',
         'school_assignment_student_updated': 'A student assignment record was updated.',

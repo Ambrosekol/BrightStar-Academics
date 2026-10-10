@@ -33,6 +33,7 @@ import io
 import json
 import logging
 import os
+import html
 import re
 import shutil
 import sys
@@ -428,14 +429,13 @@ check("the operator is inside the school", op.get("/admin/home").status_code == 
 op.get("/admin/workspace/school")
 page = op.text("/admin/school")
 def step_state(html_page, label):
-    """``(found, done, optional)`` for the checklist step with this label."""
-    m = re.search(r'<li class="wd-setup__step (is-done)?">\s*<span class="wd-setup__step-num">(?:(?!</li>).)*?</span>\s*<div class="wd-setup__step-body">\s*<strong>'
-                  + re.escape(label) + r'( <span class="wd-setup__tag">Optional</span>)?</strong>', html_page, re.S)
-    return (m is not None, bool(m and m.group(1)), bool(m and m.group(2)))
+    """``(found, done, optional)`` for the checklist step with this label (its row's data-* attributes)."""
+    m = re.search(r'<tr data-step="' + re.escape(html.escape(label)) + r'" data-done="([01])" data-optional="([01])"', html_page)
+    return (m is not None, bool(m and m.group(1) == '1'), bool(m and m.group(2) == '1'))
 
 
 check("the setup checklist shows on a brand-new school with its classes already done and subjects still to do",
-      "Finish setting up your school" in page and step_state(page, "Add your subjects") == (True, False, False)
+      "Setting up the school" in page and step_state(page, "Add your subjects") == (True, False, False)
       and step_state(page, "Review your classes")[:2] == (True, True),
       f"subjects {step_state(page, 'Add your subjects')}, classes {step_state(page, 'Review your classes')}")
 check("…and 'Connect email and SMS' is NOT ticked off by the platform's shared email or SMS, and is an important step (not optional)",
@@ -443,9 +443,9 @@ check("…and 'Connect email and SMS' is NOT ticked off by the platform's shared
 op.post("/admin/school/onboarding/dismiss", {})
 page = op.text("/admin/school")
 check("dismissing the checklist hides it, but leaves a way to bring it back",
-      "Finish setting up your school" not in page and "Show setup checklist" in page)
+      "Setting up the school" not in page and "Show setup checklist" in page)
 op.post("/admin/school/onboarding/show", {})
-check("…and showing it again brings it back", "Finish setting up your school" in op.text("/admin/school"))
+check("…and showing it again brings it back", "Setting up the school" in op.text("/admin/school"))
 
 # ================================================================ 1. sessions, classes, subjects
 def cls(name):
@@ -721,7 +721,7 @@ for result_id in TUNDE_RESULTS:
     for action in ("verify", "approve"):
         op.post(f"{RESULTS}/{result_id}/workflow", {"action": action, "reason": "Checked against the script"})
 page = op.text(f"{RESULTS}?class=JSS%201")
-check("results: choosing a class opens a dialog listing its students", "Students in JSS 1" in page and "Search by name or admission number" in page)
+check("results: choosing a class lists its students beside the term view", "in JSS 1</small>" in page and "Find a student" in page)
 page = op.text(f"{RESULTS}?class=JSS%201&student={TUNDE}")
 check("results: choosing a student asks for a session and term first", "Choose the session and term" in page and "Release all results" not in page)
 page = op.text(f"{RESULTS}?class=JSS%201&student={TUNDE}&session={CURRENT}&term=First%20Term")

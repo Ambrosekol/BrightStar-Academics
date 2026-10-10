@@ -1,66 +1,80 @@
 {% extends 'admin_base.html' %}
 {% block title %}Attendance — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-  .at-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-  .at-filter .field { min-width: 170px; }
-  .at-row { display: grid; grid-template-columns: 1fr 320px; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid #e4ebf2; }
-  .at-row:first-child { border-top: 0; }
-  .at-row small { color: #6b7a89; display: block; margin-top: 2px; }
-  .at-status { display: flex; gap: 6px; flex-wrap: wrap; }
-  .at-status label { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid #c8d3df; border-radius: 20px; font-size: 12.5px; cursor: pointer; }
-  .at-status input { margin: 0; }
-  @media (max-width: 720px) { .at-row { grid-template-columns: 1fr; } }
-</style>
+{# Taking the register: one class, one day. The week strip shows which days have been taken; each student gets
+   one tap (present, late, absent, excused) and the counts follow as you go. A student left on Not marked simply has
+   no record for the day. Saving loads in place and the day's marks come back as saved. #}
+<div class="ac st at" data-at>
+{% set at_tab = 'register' %}{% set at_endpoint = 'admin_school_attendance' %}{% include 'includes/_attendance_frame.html' %}
 
-<div class="page-hero"><div>
-  <div class="eyebrow">SCHOOL PORTAL / ATTENDANCE</div>
-  <h1>Take attendance</h1>
-  <p class="hero-copy">Mark each student present, late, absent or excused for the day. A student left blank simply has no record for that day.</p>
-</div></div>
-
-<section class="card modern-form">
-  <form method="get" class="at-filter">
-    <div class="field"><label for="class_id">Class</label>
-      <select id="class_id" name="class_id" data-autosubmit>
-        <option value="">Choose a class</option>
-        {% for c in classes %}<option value="{{ c.id }}" {% if class_row and class_row.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="session_id">Session</label>
-      <select id="session_id" name="session_id" data-autosubmit>
-        {% for s in sessions %}<option value="{{ s.id }}" {% if session_row and session_row.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} (current){% endif %}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="term">Term</label>
-      <select id="term" name="term" data-autosubmit>
-        {% for t in terms %}<option value="{{ t }}" {% if t == term %}selected{% endif %}>{{ t }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="date">Date</label>
-      <input type="date" id="date" name="date" value="{{ date }}" max="{{ today }}" data-autosubmit></div>
-    <a class="btn btn-light" href="{{ url_for('admin_school_attendance_summary', class_id=class_row.id if class_row else '', session_id=session_row.id if session_row else '', term=term) }}">Term summary</a>
+{% if class_row %}
+{% set keep = {'class_id': class_row.id, 'session_id': session_row.id if session_row else none, 'term': term} %}
+<div class="at-day">
+  <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_attendance', date=prev_day, **keep) }}" aria-label="The school day before">‹</a>
+  <form method="get" action="{{ url_for('admin_school_attendance') }}" class="at-day__pick">
+    {% for k, v in keep.items() if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <h2>{{ day_label }}</h2>
+    <input type="date" class="ac-input" name="date" value="{{ date }}" max="{{ today }}" aria-label="Choose the day" data-autosubmit>
   </form>
-</section>
+  {% if next_day %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_attendance', date=next_day, **keep) }}" aria-label="The next school day">›</a>{% else %}<span class="ac-btn ac-btn--sm" aria-disabled="true" style="opacity:.4">›</span>{% endif %}
+  {% if date != today %}<a class="ac-link" href="{{ url_for('admin_school_attendance', date=today, **keep) }}">Today</a>{% endif %}
+  <nav class="at-week" aria-label="This week">
+    {% for d in week %}
+      {% if d.future %}<span class="at-week__d is-future"><small>{{ d.label }}</small>{{ d.day }}</span>
+      {% else %}<a class="at-week__d{{ ' is-on' if d.date == date }}{{ ' is-taken' if d.marked }}" href="{{ url_for('admin_school_attendance', date=d.date, **keep) }}" title="{{ d.marked }} marked"><small>{{ d.label }}</small>{{ d.day }}<i></i></a>{% endif %}
+    {% endfor %}
+  </nav>
+</div>
+{% endif %}
 
 {% if class_row and rows %}
-<form method="post" class="card modern-form" style="margin-top:18px"
-      action="{{ url_for('admin_school_attendance_save', class_id=class_row.id, session_id=session_row.id, term=term, date=date) }}">
+<form method="post" class="at-reg" data-at-form action="{{ url_for('admin_school_attendance_save', class_id=class_row.id, session_id=session_row.id, term=term, date=date) }}">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <p class="muted" style="margin-top:0">{{ marked }} of {{ rows|length }} student{{ '' if rows|length == 1 else 's' }} marked for {{ date }}.</p>
-  {% for r in rows %}
-  <div class="at-row">
-    <div><strong>{{ r.name }}</strong><small>{{ r.admission_no }}</small>{% if r.marked_by %}<small>Marked by {{ r.marked_by }}</small>{% endif %}</div>
-    <div class="at-status">
-      <label><input type="radio" name="status_{{ r.student_id }}" value="" {% if not r.status %}checked{% endif %}> Not marked</label>
-      {% for key, label in statuses %}
-      <label><input type="radio" name="status_{{ r.student_id }}" value="{{ key }}" {% if r.status == key %}checked{% endif %}> {{ label }}</label>
-      {% endfor %}
-    </div>
+  <div class="at-bar">
+    <span class="at-count at-count--present"><b data-at-n="present">0</b> present</span>
+    <span class="at-count at-count--late"><b data-at-n="late">0</b> late</span>
+    <span class="at-count at-count--absent"><b data-at-n="absent">0</b> absent</span>
+    <span class="at-count at-count--excused"><b data-at-n="excused">0</b> excused</span>
+    <span class="at-count"><b data-at-n="">0</b> not marked</span>
+    <span class="ac-grow"></span>
+    <button type="button" class="ac-btn ac-btn--sm" data-at-all="present">Everyone present</button>
+    <button type="button" class="ac-btn ac-btn--sm" data-at-rest="present" title="Mark only those not yet marked">The rest present</button>
   </div>
-  {% endfor %}
-  <div class="form-actions"><button class="btn btn-primary" type="submit">Save attendance</button></div>
+  <section class="ac-panel at-list">
+    {% for r in rows %}
+    <div class="at-row" data-at-row>
+      <a class="st-who" href="{{ url_for('admin_school_student_detail', sid=r.student_id) }}" data-modal><span class="st-ava">{{ r.name[:1]|upper }}{{ (r.name.split()[-1] if r.name.split()|length > 1 else '')[:1]|upper }}</span>
+        <span><b>{{ r.name }}</b><small>{{ r.admission_no }}{% if r.marked_by %} · marked by {{ r.marked_by }}{% endif %}</small></span></a>
+      <div class="at-status" role="radiogroup" aria-label="{{ r.name }}">
+        <label class="at-s at-s--none"><input type="radio" name="status_{{ r.student_id }}" value="" {% if not r.status %}checked{% endif %}><span>Not marked</span></label>
+        {% for key, label in statuses %}<label class="at-s at-s--{{ key }}"><input type="radio" name="status_{{ r.student_id }}" value="{{ key }}" {% if r.status == key %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  <div class="at-save"><span class="ac-hint" data-at-dirty>{{ marked }} of {{ rows|length }} marked for this day.</span><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Save the register</button></div>
 </form>
 {% elif class_row %}
-<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">No student is enrolled in {{ class_row.name }} for this session.</p></section>
+<div class="ac-panel"><div class="ac-empty"><strong>No student is enrolled in {{ class_row.name }}</strong>for this session.</div></div>
 {% else %}
-<section class="card" style="margin-top:18px"><p class="muted" style="margin:0">Choose a class to take its register.</p></section>
+<div class="ac-panel"><div class="ac-empty"><strong>Choose a class</strong>Its register for the day opens here.</div></div>
 {% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var form=document.querySelector('[data-at-form]:not([data-ready])'); if(!form) return; form.setAttribute('data-ready','1');
+  var rows=[].slice.call(form.querySelectorAll('[data-at-row]')), dirty=form.querySelector('[data-at-dirty]'), changed=false;
+  function counts(){
+    var n={'':0,present:0,late:0,absent:0,excused:0};
+    rows.forEach(function(r){ var c=r.querySelector('input:checked'); n[c?c.value:'']++; r.dataset.status=c?c.value:''; });
+    Object.keys(n).forEach(function(k){ var el=form.querySelector('[data-at-n="'+k+'"]'); if(el) el.textContent=n[k]; });
+    if(changed) dirty.textContent='Not saved yet: '+(rows.length-n[''])+' of '+rows.length+' marked.';
+  }
+  function setAll(value,onlyEmpty){ rows.forEach(function(r){ var c=r.querySelector('input:checked'); if(onlyEmpty&&c&&c.value) return; var t=r.querySelector('input[value="'+value+'"]'); if(t) t.checked=true; }); changed=true; counts(); }
+  form.addEventListener('change',function(){ changed=true; counts(); });
+  form.querySelector('[data-at-all]').addEventListener('click',function(){ setAll('present',false); });
+  form.querySelector('[data-at-rest]').addEventListener('click',function(){ setAll('present',true); });
+  counts();
+})();
+</script>
 {% endblock %}

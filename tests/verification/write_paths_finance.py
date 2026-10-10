@@ -597,7 +597,7 @@ check("…it is reported on the side as unallocated, and the balance is the full
 # allocating: what is refused, and that nothing is written when it is
 page = op_alpha.text(f"{FIN_URL}/payments/{P1}/allocate")
 check("the allocate page lists the fees still owing and how much of the payment is free",
-      all(f'data-assessment-id="{a}"' in page for a in (A_TUI, A_UNI, A_LEVY)) and "₦15000.00" in page)
+      all(f'data-assessment-id="{a}"' in page for a in (A_TUI, A_UNI, A_LEVY)) and "₦15,000.00</b> free" in page)
 JON_ASSESSMENT = alpha.one("SELECT id FROM finance_fee_assessments WHERE student_id = :s LIMIT 1", s=JON)
 refused = {
     "a body that is not JSON": (None, "not json", "invalid"),
@@ -628,9 +628,9 @@ check("the assessment history shows Part Paid for that charge, with a link to th
       (CURRENT_NAME, "First Term", "Tuition (JSS 1)", "Part Paid") in history_rows(fee_page, IVY)
       and f"/admin/finance/students/{IVY}/account?session_id={CURRENT}" in fee_page)
 account_page = op_alpha.text(f"{FIN_URL}/students/{IVY}/account?session_id={CURRENT}")
-check("the student's account page shows the outstanding balance, the status, and the payment with an Allocate link",
+check("the student's account page shows the outstanding balance, the status, and the session's payment with its receipt",
       f"₦{money(25000)}" in account_page and 'cr-finance-status partial">Part Paid' in account_page
-      and f"{SCHOOL_CODE}-{YEAR}-00001" in account_page and f"/admin/finance/payments/{P1}/allocate" in account_page)
+      and f"{SCHOOL_CODE}-{YEAR}-00001" in account_page and f"/admin/finance/receipts/{P1}" in account_page)
 receipt_page = op_alpha.text(f"{FIN_URL}/receipts/{P1}")
 check("the receipt page links to Allocate to Fees and to the student's fee account",
       f"/admin/finance/payments/{P1}/allocate" in receipt_page and f"/admin/finance/students/{IVY}/account" in receipt_page)
@@ -662,7 +662,7 @@ check("a hand-made request to allocate to a fee already paid in full is refused,
 r, said = allocate(op_alpha, P3, {A_UNI: 4000})
 check("part of a payment can be applied, and the rest is reported as unallocated",
       "₦1,000.00 remains unallocated" in said and allocations(alpha, P3) == 1, said)
-check("…and the allocate page says how much is still free", "₦1000.00" in op_alpha.text(f"{FIN_URL}/payments/{P3}/allocate"))
+check("…and the allocate page says how much is still free", "₦1,000.00</b> free" in op_alpha.text(f"{FIN_URL}/payments/{P3}/allocate"))
 allocate(op_alpha, P3, {A_UNI: 1000})
 r, said = allocate(op_alpha, P3, {A_UNI: 1})
 check("once a payment is fully applied, no more can be taken from it",
@@ -689,7 +689,7 @@ totals = alpha.run(lambda: FIN._finance_student_lifetime_totals(IVY, CURRENT))
 check("…and it is not counted as unallocated money either", totals["unallocated"] == 0, str(totals))
 r, said = allocate(op_alpha, P2, {A_TUI: 100})
 check("a voided payment cannot be allocated", "only a posted payment" in said and allocations(alpha, P2) == 1, said)
-op_alpha.post(f"{FIN_URL}/payments/{P2}/void", {"reason": "Again"}, page=f"{FIN_URL}/receipts/{P2}")
+op_alpha.post(f"{FIN_URL}/payments/{P2}/void", {"reason": "Again"}, page="/admin/password")  # a voided payment offers no Void button: post directly
 check("…nor voided twice", "only a posted payment" in op_alpha.said()
       and alpha.one("SELECT void_reason FROM finance_payments WHERE id = :p", p=P2) == "Entered against the wrong child")
 r, P4 = pay(op_alpha, IVY, CURRENT, "25000", payer="Ivy's Mum", category="Tuition")
@@ -1012,7 +1012,42 @@ dash = manager.text(FIN_URL)
 check("a finance manager's dashboard shows everyone's payments and the school-wide outstanding balance, "
       "which is the charges less the money applied to them",
       receipt_pc in dash and receipt_p1 in dash and "Outstanding Assessed Fees" in dash
-      and f"₦{max(0, assessed - allocated):.2f}" in dash, f"{assessed} - {allocated}")
+      and f"₦{max(0, assessed - allocated):,.2f}" in dash, f"{assessed} - {allocated}")
+check("the Collections chart answers for every period it offers, and an unknown one falls back to 30 days",
+      all(manager.get(f"{FIN_URL}?period={p}").status_code == 200 for p in ("7d", "30d", "90d", "12m", "bogus"))
+      and "Last 30 days" in manager.text(f"{FIN_URL}?period=bogus"))
+accounts_page = manager.text(f"{FIN_URL}/accounts?session_id={CURRENT}")
+check("Student accounts lists each student with a link to their fee account for the session",
+      f"/admin/finance/students/{IVY}/account?session_id={CURRENT}" in accounts_page)
+check("…and narrowed to those owing, Ivy (who still owes) is listed",
+      f"/admin/finance/students/{IVY}/account?session_id={CURRENT}" in manager.text(f"{FIN_URL}/accounts?session_id={CURRENT}&status=owing"))
+check("a cashier, who sees no school-wide balances, is refused Student accounts",
+      cashier.get(f"{FIN_URL}/accounts").status_code == 403)
+pay_list = manager.text(f"{FIN_URL}/payments")
+check("the Payments page lists every payment, each opening in a pop-up with its receipt",
+      f'href="/admin/finance/receipts/{P1}" data-modal' in pay_list and receipt_p1 in pay_list)
+check("…and its 'not yet applied' view is the same page the old unallocated list now shows",
+      manager.get(f"{FIN_URL}/payments?view=unallocated").status_code == 200
+      and "Not yet applied" in manager.text(f"{FIN_URL}/payments/unallocated"))
+check("a cashier's Payments page shows only the payments they recorded",
+      receipt_pc in cashier.text(f"{FIN_URL}/payments") and receipt_p1 not in cashier.text(f"{FIN_URL}/payments"))
+one_payment = manager.text(f"{FIN_URL}/receipts/{P1}")
+check("a payment's page has the receipt, applying it, sending it and voiding it, all in one place",
+      "OFFICIAL RECEIPT" in one_payment and "Apply to fees" in one_payment and "Email the receipt" in one_payment
+      and "Void payment" in one_payment and f"/admin/finance/payments/{P1}/allocate" in one_payment)
+check("recording a payment, adding a fee item and editing one open in a pop-up",
+      f'href="/admin/finance/payments/new" data-modal' in manager.text(FIN_URL)
+      and 'href="/admin/finance/fee-items/new" data-modal' in manager.text(ITEMS)
+      and "/edit\" data-modal>Edit</a>" in manager.text(ITEMS))
+popup = manager.client.get(f"{FIN_URL}/payments/new?modal=1", base_url=manager.base,
+                           headers={"X-Fragment": "1", "X-Modal": "1"}, environ_base={"REMOTE_ADDR": manager.addr}).get_data(as_text=True)
+check("…and in the pop-up the form comes without the page around it, with a Cancel that closes it",
+      "data-modal-dismiss" in popup and "<html" not in popup and 'name="student_id"' in popup)
+acct = manager.text(f"{FIN_URL}/students/{IVY}/account?session_id={CURRENT}")
+check("a student's account says how each fee is billed (a term, the full session or one-time) and what each payment paid",
+      "First Term" in acct and 'class="fi-chip"' in acct)
+check("the menu shows the finance pages in their own group, with Student accounts only for those who may see it",
+      'href="/admin/finance/accounts"' in manager.text(FIN_URL) and 'href="/admin/finance/accounts"' not in cashier.text(FIN_URL))
 check("…and can open the fee catalogue and anyone's receipt",
       manager.get(ITEMS).status_code == 200 and manager.get(f"{FIN_URL}/receipts/{P1}").status_code == 200)
 

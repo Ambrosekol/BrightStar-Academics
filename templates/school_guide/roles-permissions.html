@@ -11,21 +11,67 @@ it comes down to which permissions your roles give you.</p>
 limited to particular classes or subjects. If you can see everything described in this guide and more,
 you probably hold this role, or you are a platform operator visiting the school (see below).</p>
 
+<h2 id="hierarchy">Who is above whom</h2>
+<p>The portal follows the usual order of a Nigerian school, from the top down:</p>
+<ol>
+  <li><strong>Proprietor / School Admin</strong>: everything, everywhere.</li>
+  <li><strong>Executive &amp; office</strong>: the bursar, admissions officer, secretary, HR, librarian and other office
+  roles. Each sees their own area (fees, admissions, records, the library) across the whole school.</li>
+  <li><strong>Head teacher</strong> (or principal): every class and subject. Checks, approves and releases any result,
+  and decides who teaches what on the <a href="{{ url_for('admin_school_teaching') }}">Teachers</a> page.</li>
+  <li><strong>Class teacher</strong>: in charge of a class. Sees every subject of it, takes its register, writes its
+  report card comments and <em>releases its results</em> once the subject teachers have sent them.</li>
+  <li><strong>Subject teacher</strong>: teaches chosen subjects in chosen classes. Sets work and tests, records the
+  scores and sends them to the class teacher. Cannot release them.</li>
+</ol>
+<p>Every role has a <em>level</em> (set on the role itself under <a href="{{ url_for('admin_roles') }}">Roles</a>), which
+puts it in this order. The staff form lists roles from the most senior down.</p>
+
+<h2 id="teaching-duties">Teaching duties: which class and which subject</h2>
+<p>A teacher's role says <em>what</em> they may do; their <strong>teaching duties</strong> say <em>where</em>. When you
+register a teacher (or open their staff page), the <em>Teaching duties</em> section asks two things:</p>
+<ul>
+  <li><strong>Class teacher of</strong>: tick the class (or classes) they are in charge of.</li>
+  <li><strong>Subjects they teach</strong>: one row per subject and class, for example Mathematics in JSS 1. In SSS
+  classes a row can be limited to one department (Science, Art or Commercial), for a teacher who takes, say,
+  Mathematics for the Science students only.</li>
+</ul>
+<p>Once a teacher has duties, those duties are all they see: the class list, the students, the subjects on every form,
+the Results page and the work pages all follow them. A teacher with no duties yet can still reach every class, so add
+them when you register a teacher.</p>
+<p>A subject teacher sets their own work: tests, practice tests, examinations, assignments (written or CBT) and
+projects, and the questions in them, for each subject in each class they were given. On the new-work forms, choosing a
+class narrows the Subject list to what they teach there (and picks it when there is only one), and anything else is
+refused on saving. A class teacher can set work in every subject of their own class. Deleting work is for roles that
+carry the delete permission, such as the Head Teacher.</p>
+<p>One person can be the class teacher of one class and teach subjects in others: tick their class under <em>Class
+teacher of</em> and add a row for each subject elsewhere (give them the Class Teacher role, which includes everything a
+subject teacher does). The class teacher's own work stays with their own class: they take its register, open and comment
+on its report cards, and release its results. In the classes where they only teach a subject they record that subject's
+marks and send them to that class's class teacher; they can see its attendance summary, but cannot take its register,
+open its report cards or release its results.</p>
+<p>The <a href="{{ url_for('admin_school_teaching') }}">Teachers</a> page shows every class with its class teacher and
+subject teachers, and the subjects nobody has been given yet. The School Admin and anyone with the <em>Assign teaching
+duties</em> permission (the Head Teacher role has it) can change a teacher's duties there. A head teacher can only
+change the duties of staff below them, and only in the classes they look after. Creating an account or choosing its
+role stays with the School Admin.</p>
+
 <h2 id="presets">Ready-made roles</h2>
-<p>A new school starts with seventeen ready-made roles under
-<a href="{{ url_for('admin_roles') }}">Roles</a> — Primary Class Teacher, Finance
-Manager, Librarian, Report Card Officer, Parents' Feedback Officer and more — each already carrying a
+<p>A new school starts with nineteen ready-made roles under
+<a href="{{ url_for('admin_roles') }}">Roles</a> — Head Teacher, Class Teacher, Subject Teacher, Finance
+Manager (the bursar), Admissions Officer, Librarian, Report Card Officer and more — each already carrying a
 sensible bundle of permissions for that job. You can edit what a role carries, or build your own from
 scratch. Roles and accounts are themselves managed under
 {{ page('staff-admin', 'Administration') }}, which — like Email &amp; SMS, Online Payments and
 School Profile — is kept for the School Admin alone, so nobody can hand themselves or a colleague a
 permission they should not have.</p>
 
-<h2 id="scope">Scope: limited to some classes or subjects</h2>
-<p>A class teacher is usually limited to their own class; a subject teacher can be limited to a class
-<em>and</em> a subject together; someone managing question banks can be limited to particular banks.
-This is set per account, from that account's own page under
-<a href="{{ url_for('admin_accounts') }}">Accounts</a>. It is why two teachers looking at the same
+<h2 id="scope">Other limits: some classes, sessions or banks</h2>
+<p>For teachers, use teaching duties (above). For anyone else, an account can still be limited to chosen classes,
+sessions, subjects or question banks under <em>Limits</em>, for example a head of the nursery section limited to
+the Crèche and Nursery classes, or someone managing question banks limited to particular banks. Class and subject
+limits are ignored for an account that has teaching duties. This is set per person, in the <em>Limits</em> tab of their pop-up in
+<a href="{{ url_for('admin_accounts') }}">Staff</a> (in Settings). It is why two teachers looking at the same
 page — Students, Attendance, Results — see different rows: each sees only what their scope allows.</p>
 
 <div class="guide-tip">If a page or a button you expect to see is missing, it is almost always a

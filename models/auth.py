@@ -32,6 +32,10 @@ class AdminType(_LegacyAttachmentColumns, db.Model):
     is_system = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
     active = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
     created_at = db.Column(Text, nullable=False)
+    # Where the role sits in the school's chain of authority: 'executive', 'head_teacher',
+    # 'class_teacher' or 'subject_teacher' (core/school_structure.py, STAFF_LEVELS). Empty reads as
+    # 'executive'. The system School Admin role is always the top and never carries one.
+    level = db.Column(Text)
 
 
 class Permission(db.Model):
@@ -126,6 +130,34 @@ class AdminScope(_LegacyAttachmentColumns, db.Model):
     scope_value = db.Column(Text, nullable=False)
     created_at = db.Column(Text, nullable=False)
     granted_by = db.Column(Integer, ForeignKey('admins.id'))
+
+
+class TeachingDuty(db.Model):
+    """What one member of staff teaches: a class, and optionally one subject in it.
+
+    ``subject_id`` empty means they are that class's class teacher: every subject of the class, its
+    register, its report cards and the release of its results. With a subject they are a subject
+    teacher of that class only. ``department`` (Science, Art or Commercial; senior classes only)
+    narrows a subject duty further to the students of that department.
+
+    Once a person has any duty, their duties alone decide which classes and subjects they reach
+    (core/security.py, ``admin_scope_allows``); a person with none keeps the older class/subject
+    limits, or the whole school.
+    """
+
+    __tablename__ = 'teaching_duties'
+    __table_args__ = (
+        Index('idx_teaching_duties_admin', 'admin_id'),
+        Index('idx_teaching_duties_class', 'class_id', 'subject_id'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    admin_id = db.Column(Integer, ForeignKey('admins.id', ondelete='CASCADE'), nullable=False)
+    class_id = db.Column(Integer, ForeignKey('school_classes.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(Integer, ForeignKey('school_subjects.id', ondelete='CASCADE'))
+    department = db.Column(Text)
+    created_at = db.Column(Text, nullable=False)
+    created_by = db.Column(Integer, ForeignKey('admins.id'))
 
 
 class AuditLog(db.Model):

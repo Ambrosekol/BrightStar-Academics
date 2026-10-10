@@ -1,85 +1,88 @@
-﻿{% extends 'admin_base.html' %}
+{% extends 'admin_base.html' %}
 {% block title %}Library — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL LIBRARY</div><h1>Library Management</h1><p class="hero-copy">Manage the catalogue, copies, borrowing and returns. Catalogue details are editable; loan history is retained.</p></div></div>
-<div class="metric-grid"><div class="metric-card"><span>Books in catalogue</span><strong>{{ books|length }}</strong></div><div class="metric-card"><span>Currently borrowed</span><strong>{{ borrowed }}</strong></div><div class="metric-card"><span>Overdue</span><strong>{{ overdue }}</strong></div></div>
+{# The school library: the catalogue and every copy out on loan, overdue ones first. Adding a book, editing one and
+   lending one all open in a pop-up (static/inplace.js); returning a copy is one click. Searching the catalogue loads
+   in place, and the filters work on the list at once. #}
+{% set can_manage = admin_has_permission(current_admin['id'], 'library.manage') %}
+{% set available = books|sum(attribute='available_copies') %}
+{% set overdue_loans = loans|selectattr('days_over')|list %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<div class="ac st lb" data-lb>
+<header class="ac-top">
+  <h1>Library</h1>
+  <span class="ac-hint">The catalogue, who has what, and what is overdue.</span>
+  {% if can_manage %}<div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('admin_library_book_new_form') }}" data-modal>+ Add a book</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_library_issue_form') }}" data-modal>Lend a book</a>
+  </div>{% endif %}
+</header>
 
-<div class="card form-card"><div class="section-head"><div><h3>Add a book</h3><p class="muted">Catalogue information can be corrected later without rewriting borrowing history.</p></div></div>
-<form method="post" action="{{ url_for('admin_library_book_new') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-<div class="form-grid two">
-  <div class="field"><label>Title</label><input name="title" required></div>
-  <div class="field"><label>Author</label><input name="author"></div>
-  <div class="field"><label>ISBN</label><input name="isbn"></div>
-  <div class="field"><label>Publisher</label><input name="publisher"></div>
-  <div class="field"><label>Category</label><input name="category"></div>
-  <div class="field"><label>Shelf</label><input name="shelf"></div>
-  <div class="field"><label>Publication year</label><input type="number" name="publication_year" min="0"></div>
-  <div class="field"><label>Number of copies</label><input type="number" name="copies" min="1" value="1"></div>
-</div>
-<div style="margin-top: 1.25rem;"><button class="btn btn-primary" type="submit">Add Book</button></div>
-</form></div>
+<dl class="fi-k">
+  <div class="is-lead"><dt>Titles</dt><dd>{{ books|length }}</dd><small>{{ copies }} copies in the catalogue{% if q %} matching{% endif %}</small></div>
+  <div><dt>On the shelf</dt><dd>{{ available }}</dd><small>ready to lend</small></div>
+  <div><dt>On loan</dt><dd>{{ borrowed }}</dd><small>copies out now</small></div>
+  <div class="{{ 'is-alert' if overdue }}"><dt>Overdue</dt><dd>{{ overdue }}</dd><small>{{ 'past their due date' if overdue else 'nothing overdue' }}</small></div>
+</dl>
 
-<div class="card form-card"><div class="section-head"><div><h3>Issue a book</h3><p class="muted">A copy is deducted from availability and restored when returned.</p></div></div>
-<form method="post" action="{{ url_for('admin_library_issue') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-<div class="form-grid two">
-  <div class="field"><label>Book</label><select name="book_id" required><option value="">Select available book</option>{% for b in books if b.available_copies>0 %}<option value="{{ b.id }}">{{ b.title }} — {{ b.available_copies }}/{{ b.total_copies }} available</option>{% endfor %}</select></div>
-  <div class="field"><label>Member type</label><select name="member_type" id="libraryMemberType"><option value="student">Student</option><option value="staff">Staff</option></select></div>
-  <div class="field" id="libraryStudentWrap"><label>Student</label><select name="member_id" id="libraryStudent"><option value="">Select student</option>{% for s in students %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} — {{ s.admission_no }}</option>{% endfor %}</select></div>
-  <div class="field" id="libraryStaffWrap" style="display:none !important;"><label>Staff</label><select id="libraryStaff"><option value="">Select staff</option>{% for a in staff %}<option value="{{ a.id }}">{{ a.display_name }} — {{ a.username }}</option>{% endfor %}</select></div>
-  <div class="field"><label>Loan days</label><input type="number" name="days" min="1" value="14"></div>
-</div>
-<div style="margin-top: 1.25rem;"><button class="btn btn-primary" type="submit">Issue Book</button></div>
-</form></div>
-
-<div class="card table-card">
-  <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding-bottom:1rem; border-bottom:1px solid #f1f5f9; margin-bottom:1rem;">
-    <div><strong>Catalogue</strong><br><span class="muted" style="font-size:0.85rem;">Search the active catalogue.</span></div>
-    <form method="get" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:nowrap;">
-      <input name="q" placeholder="Title, author, ISBN or category" value="{{ q }}" style="padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.9rem; min-width:240px;">
-      <select name="status" style="padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.9rem;">
-        <option value="all" {% if status=='all' %}selected{% endif %}>All</option>
-        <option value="available" {% if status=='available' %}selected{% endif %}>Available</option>
-      </select>
-      <button class="btn btn-light" type="submit" style="padding:8px 16px;">Search</button>
-    </form>
+<div class="fi-tools">
+  <div class="ac-seg" role="tablist" aria-label="View">
+    <label><input type="radio" name="lb-view" value="books" checked><span>Catalogue <small>{{ books|length }}</small></span></label>
+    <label><input type="radio" name="lb-view" value="loans"><span>On loan <small>{{ loans|length }}</small></span></label>
   </div>
-  <div class="table-scroll"><table><thead><tr><th>Book</th><th>Author</th><th>Category</th><th>Shelf</th><th>Copies</th><th>Actions</th></tr></thead><tbody>
-  {% for b in books %}<tr><td><strong>{{ b.title }}</strong>{% if b.isbn %}<small>ISBN {{b.isbn}}</small>{% endif %}</td><td>{{b.author or '—'}}</td><td>{{b.category or '—'}}</td><td>{{b.shelf or '—'}}</td><td>{{b.available_copies}} / {{b.total_copies}} available</td><td class="row-actions"><a class="btn btn-light btn-small" href="{{url_for('admin_library_book_edit',book_id=b.id)}}">Edit</a><form method="post" action="{{url_for('admin_library_book_toggle',book_id=b.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">{{'Archive' if b.active else 'Activate'}}</button></form></td></tr>
-  {% else %}<tr><td colspan="6" class="empty-state">No books match your search.</td></tr>{% endfor %}</tbody></table></div>
+  <form method="get" action="{{ url_for('admin_library') }}" class="ac-search lb-search" role="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Title, author, ISBN or category" aria-label="Search the catalogue">
+    <select class="ac-select" name="status" aria-label="Which books" data-autosubmit><option value="all" {% if status=='all' %}selected{% endif %}>Every book</option><option value="available" {% if status=='available' %}selected{% endif %}>On the shelf</option></select>
+    <button class="ac-btn" type="submit">Search</button>
+    {% if q or status != 'all' %}<a class="ac-link" href="{{ url_for('admin_library') }}">Clear</a>{% endif %}
+  </form>
 </div>
 
-<div class="card table-card"><div class="table-toolbar"><div><strong>Active loans</strong><span class="muted">Returned loans remain in the database as history.</span></div></div>
-<div class="table-scroll"><table><thead><tr><th>Book</th><th>Borrower</th><th>Borrowed</th><th>Due</th><th></th></tr></thead><tbody>
-{% for l in loans %}<tr><td>{{l.title}}</td><td>{% if l.member_type=='student' %}{{l.first_name}} {{l.last_name}} <small>{{l.admission_no}}</small>{% else %}{{l.staff_name}}{% endif %}</td><td>{{l.borrowed_at[:10]}}</td><td>{{l.due_at or '—'}}</td><td><form method="post" action="{{url_for('admin_library_return',loan_id=l.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">Return</button></form></td></tr>
-{% else %}<tr><td colspan="5" class="empty-state">No active loans.</td></tr>{% endfor %}</tbody></table></div></div>
+<section class="ac-panel" data-lb-view="books">
+  {% if books %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Book</th><th>Category</th><th>Shelf</th><th>Copies</th><th></th></tr></thead>
+    <tbody>{% for b in books %}{% set out = b.total_copies - b.available_copies %}<tr>
+      <td>{% if can_manage %}<a class="ac-title" href="{{ url_for('admin_library_book_edit', book_id=b.id) }}" data-modal>{{ b.title }}</a>{% else %}<b>{{ b.title }}</b>{% endif %}<small>{{ b.author or 'Author not recorded' }}{% if b.isbn %} · ISBN {{ b.isbn }}{% endif %}{% if b.publication_year %} · {{ b.publication_year }}{% endif %}</small></td>
+      <td>{{ b.category or '—' }}</td>
+      <td>{% if b.shelf %}<span class="st-code">{{ b.shelf }}</span>{% else %}—{% endif %}</td>
+      <td>{% set pct = (100 * b.available_copies / b.total_copies)|round(0)|int if b.total_copies else 0 %}<span class="fi-meter{{ ' is-done' if b.available_copies }}" title="{{ b.available_copies }} on the shelf, {{ out }} on loan"><span><i style="width:{{ pct }}%"></i></span>{{ b.available_copies }} of {{ b.total_copies }} in</span></td>
+      <td class="ac-actions">{% if can_manage %}
+        {% if b.available_copies %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('admin_library_issue_form', book_id=b.id) }}" data-modal>Lend</a>{% else %}<span class="ac-tag">All out</span>{% endif %}
+        <a class="ac-link" href="{{ url_for('admin_library_book_edit', book_id=b.id) }}" data-modal>Edit</a>
+        {% if not out %}<form method="post" action="{{ url_for('admin_library_book_toggle', book_id=b.id) }}" data-confirm="Archive {{ b.title }}? It leaves the catalogue; its loan history is kept."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Archive</button></form>{% endif %}
+      {% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>{{ 'No books match your search' if q or status != 'all' else 'No books in the catalogue yet' }}</strong>{% if can_manage and not q %}<a class="ac-link" href="{{ url_for('admin_library_book_new_form') }}" data-modal>Add the first book →</a>{% endif %}</div>
+  {% endif %}
+</section>
 
+<section class="ac-panel" data-lb-view="loans" hidden>
+  {% if loans %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Borrower</th><th>Book</th><th>Borrowed</th><th>Due</th><th></th></tr></thead>
+    <tbody>{% for l in loans|sort(attribute='days_over', reverse=true) %}<tr class="{{ 'is-late' if l.days_over }}">
+      <td>{% if l.member_type == 'student' %}<b>{{ l.first_name }} {{ l.last_name }}</b><small>{{ l.admission_no }} · student</small>{% else %}<b>{{ l.staff_name }}</b><small>staff</small>{% endif %}</td>
+      <td>{{ l.title }}</td>
+      <td>{{ l.borrowed_at[:10] }}</td>
+      <td>{{ l.due_at or '—' }}{% if l.days_over %} <span class="ac-tag ac-tag--attn">{{ l.days_over }} day{{ '' if l.days_over == 1 else 's' }} late</span>{% endif %}</td>
+      <td class="ac-actions">{% if can_manage %}<form method="post" action="{{ url_for('admin_library_return', loan_id=l.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--sm" type="submit">Returned</button></form>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>Nothing out on loan</strong>Every copy is on the shelf.</div>{% endif %}
+</section>
+</div>
 <script nonce="{{ csp_nonce() }}">
 (function(){
-  const mt = document.getElementById('libraryMemberType');
-  const sw = document.getElementById('libraryStudentWrap');
-  const aw = document.getElementById('libraryStaffWrap');
-  const ss = document.getElementById('libraryStudent');
-  const sa = document.getElementById('libraryStaff');
-
-  function sync(){
-    const isStaff = mt.value === 'staff';
-    if(isStaff) {
-      sw.style.setProperty('display', 'none', 'important');
-      aw.style.setProperty('display', 'flex', 'important');
-    } else {
-      sw.style.setProperty('display', 'flex', 'important');
-      aw.style.setProperty('display', 'none', 'important');
-    }
-    ss.disabled = isStaff;
-    sa.disabled = !isStaff;
-    ss.name = isStaff ? '_student_member_id' : 'member_id';
-    sa.name = isStaff ? 'member_id' : '_staff_member_id';
-  }
-
-  if(mt) {
-    mt.addEventListener('change', sync);
-    sync();
-  }
+  var root=document.querySelector('[data-lb]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var radios=root.querySelectorAll('input[name=lb-view]');
+  function show(v){ root.querySelectorAll('[data-lb-view]').forEach(function(p){ p.hidden=p.dataset.lbView!==v; }); radios.forEach(function(r){ r.checked=r.value===v; }); try{ sessionStorage.setItem('lb-view',v); }catch(e){} }
+  radios.forEach(function(r){ r.addEventListener('change',function(){ show(r.value); }); });
+  try{ if(sessionStorage.getItem('lb-view')==='loans') show('loans'); }catch(e){}
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'admin_base.html' %}
+{% block title %}Duties of {{ target.display_name }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# One teacher's duties: the classes they are class teacher of, and the subjects they teach in which classes (and,
+   in SSS, which departments). Opens in a pop-up over Teachers; saving closes it and the page shows the change. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac st tc" data-modal-size="wide">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_teaching') }}">← Teachers</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">Teaching duties</span><h2>{{ target.display_name }}</h2>
+  <p>They see only these classes and subjects in the portal. A class teacher sees every subject of their class, takes its register and releases its results.</p></div>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+{% if outside %}<p class="fi-callout fi-callout--quiet" style="margin:0 0 10px"><span><strong>Also kept:</strong> {{ outside|join(' · ') }} — outside the classes you look after, so only someone over those classes can change them.</span></p>{% endif %}
+<form method="post" action="{{ request.path }}" class="tc-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% include 'includes/_teaching_duties.html' %}
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_school_teaching') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Save duties</button></div>
+</form>
+</div>
+{% endblock %}

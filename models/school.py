@@ -105,6 +105,10 @@ class Student(db.Model):
     archived_by_admin_id = db.Column(Integer, ForeignKey('admins.id'))
     archive_reason = db.Column(Text)
 
+    # Senior secondary (SSS 1-3) only: 'Science', 'Art' or 'Commercial'. It decides which
+    # department-specific subjects the student takes and which subject teachers reach them.
+    department = db.Column(Text)
+
 
 class StudentEnrolment(db.Model):
     __tablename__ = 'student_enrolments'
@@ -130,6 +134,10 @@ class SchoolSubject(db.Model):
     code = db.Column(Text)
     created_at = db.Column(Text, nullable=False)
     active = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    # In senior secondary classes only: the departments that take this subject, comma-separated
+    # (for example 'Science' for Physics, 'Art,Commercial' for Literature). Empty means every
+    # department takes it, as with English and Mathematics. Junior classes ignore it.
+    departments = db.Column(Text)
 
 
 class ClassSubject(db.Model):

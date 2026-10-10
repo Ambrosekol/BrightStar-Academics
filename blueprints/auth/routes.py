@@ -17,6 +17,7 @@ from app import app, csrf_check_request
 from control_plane.context import current_tenant
 from models import Admin, ParentAccount, PasswordResetToken, Student, db
 from core.accounts import _authenticate_unified, _clear_identity_sessions, _rate_limit
+from core.school_structure import student_is_early_years
 from core.branding import school_name
 from core.db_helpers import one
 from core.delivery import email_settings, send_email
@@ -145,6 +146,8 @@ def login():
         kind, account=_authenticate_unified(identifier,password)
         if not account:
             return render_template('login.html',error='We could not verify those login details. Please check your ID/username and password.',identifier=identifier)
+        if kind=='student' and student_is_early_years(account['id']):
+            return render_template('login.html',error='Crèche and Nursery pupils do not sign in. A parent can sign in to the parent portal to pay fees and see report cards.',identifier=identifier)
         _clear_identity_sessions()
         stamp_sign_in(kind,account)   # this launch of the server, and this password (core/session_guard.py)
         if kind=='admin':

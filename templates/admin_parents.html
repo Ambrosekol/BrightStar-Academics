@@ -1,1 +1,79 @@
-{% extends 'admin_base.html' %}{% block title %}Parents — {{ school_brand.name }}{% endblock %}{% block content %}<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PEOPLE</div><h1>Parent accounts</h1><p class="hero-copy">Manage parent access separately from student credentials and link one parent account to multiple students.</p></div><div class="hero-actions">{% if current_admin and admin_has_permission(current_admin['id'],'parent.manage') %}<a class="btn btn-primary" href="{{url_for('admin_school_parent_new')}}">+ Create parent account</a>{% endif %}</div></div><div class="card table-card"><div class="table-scroll"><table><thead><tr><th>Parent</th><th>Username</th><th>Email</th><th>Phone number</th><th>Linked students</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for p in parents %}<tr><td><strong>{{p.display_name}}</strong></td><td>{{p.username}}</td><td>{{p.email or '—'}}</td><td>{{p.phone or '—'}}</td><td>{{p.child_count}}</td><td><span class="status {% if p.active %}submitted{% endif %}">{{'Active' if p.active else 'Inactive'}}</span></td><td class="row-actions"><a class="btn btn-light btn-small" href="{{url_for('admin_school_parent_edit',pid=p.id)}}">Edit</a>{% if p.active %}<form enctype="multipart/form-data" method="post" action="{{url_for('admin_school_parent_credentials_reset',pid=p.id)}}" data-confirm="Generate a new temporary password for this parent? The current password will stop working."><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-light btn-small" type="submit">Regenerate password</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="7" class="muted">No parent accounts have been created.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+{% extends 'admin_base.html' %}
+{% block title %}Parents — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Parent accounts: who can sign in to the parent portal and whose parent they are. The figures say how many can be
+   reached (an email or a phone on file); the filters and search narrow the list as you type. Adding a parent,
+   managing one and making them a new password all happen in a pop-up (static/inplace.js). #}
+{% set can_manage = admin_has_permission(current_admin['id'], 'parent.manage') %}
+{% set no_email = parents|rejectattr('email')|list|length %}
+{% set no_phone = parents|rejectattr('phone')|list|length %}
+{% set active = parents|selectattr('active')|list|length %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<div class="ac st pe" data-pe>
+<header class="ac-top">
+  <h1>Parents</h1>
+  <span class="ac-hint">The parent portal: fees, report cards, messages and their children's work.</span>
+  {% if can_manage %}<div class="ac-top__act"><a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_parent_new') }}" data-modal>+ Add a parent</a></div>{% endif %}
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Parent accounts</dt><dd>{{ parents|length }}</dd><small>{{ active }} can sign in</small></div>
+  <div><dt>Children linked</dt><dd>{{ parents|sum(attribute='child_count') }}</dd><small>across every account</small></div>
+  <div class="{{ 'is-alert' if no_email }}"><dt>No email</dt><dd>{{ no_email }}</dd><small>receipts and notices cannot be emailed</small></div>
+  <div class="{{ 'is-alert' if no_phone }}"><dt>No phone</dt><dd>{{ no_phone }}</dd><small>no text messages reach them</small></div>
+</dl>
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Which parents" data-pe-filters>
+    <a href="#" class="is-active" data-pe-filter="all">Everyone <small>{{ parents|length }}</small></a>
+    <a href="#" data-pe-filter="noemail">No email <small>{{ no_email }}</small></a>
+    <a href="#" data-pe-filter="nophone">No phone <small>{{ no_phone }}</small></a>
+    <a href="#" data-pe-filter="inactive">Cannot sign in <small>{{ parents|length - active }}</small></a>
+  </nav>
+  <span class="ac-search"><input type="search" placeholder="Find a parent, child, username, email or phone" aria-label="Find a parent" data-pe-find></span>
+  <span class="ac-count" data-pe-count>{{ parents|length }} shown</span>
+</div>
+
+<section class="ac-panel">
+  {% if parents %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Parent</th><th>Children</th><th>Email</th><th>Phone</th><th>Portal</th><th></th></tr></thead>
+    <tbody>{% for p in parents %}
+    <tr data-pe-row data-flags="{{ 'noemail ' if not p.email }}{{ 'nophone ' if not p.phone }}{{ 'inactive' if not p.active }}"
+        data-search="{{ (p.display_name ~ ' ' ~ p.username ~ ' ' ~ (p.email or '') ~ ' ' ~ (p.phone or '') ~ ' ' ~ (p.children|map(attribute='first_name')|join(' ')) ~ ' ' ~ (p.children|map(attribute='last_name')|join(' ')))|lower }}">
+      <td>{% if can_manage %}<a class="st-who" href="{{ url_for('admin_school_parent_edit', pid=p.id) }}" data-modal>{% else %}<span class="st-who">{% endif %}
+          <span class="st-ava">{{ (p.display_name or '?')[:1]|upper }}{{ (p.display_name.split()[-1] if p.display_name and p.display_name.split()|length > 1 else '')[:1]|upper }}</span>
+          <span><b>{{ p.display_name }}</b><small>{{ p.username }}{% if p.relationship %} · {{ p.relationship }}{% endif %}</small></span>
+        {% if can_manage %}</a>{% else %}</span>{% endif %}</td>
+      <td><span class="pe-kids">{% for c in p.children %}<span class="fi-chip fi-chip--type">{{ c.first_name }} {{ c.last_name }}{% if c.class_name %} <small>{{ c.class_name }}</small>{% endif %}</span>{% else %}<span class="fi-zero">None linked</span>{% endfor %}</span></td>
+      <td>{% if p.email %}<a class="ac-link" href="mailto:{{ p.email }}" data-full>{{ p.email }}</a>{% else %}<span class="ac-tag ac-tag--attn">None</span>{% endif %}</td>
+      <td>{% if p.phone %}{{ p.phone }}{% else %}<span class="ac-tag ac-tag--attn">None</span>{% endif %}</td>
+      <td>{% if p.active %}<span class="ac-tag ac-tag--good">Can sign in</span>{% else %}<span class="ac-tag">Off</span>{% endif %}</td>
+      <td class="ac-actions">{% if can_manage %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_parent_edit', pid=p.id) }}" data-modal>Manage</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="ac-empty" data-pe-none hidden><strong>No parent matches</strong>Try another name, or choose Everyone.</div>
+  {% else %}
+  <div class="ac-empty"><strong>No parent accounts yet</strong>{% if can_manage %}<a class="ac-link" href="{{ url_for('admin_school_parent_new') }}" data-modal>Add the first parent →</a>{% endif %}</div>
+  {% endif %}
+</section>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  // Filters and search work on the list as it is, at once: no page load needed.
+  var root=document.querySelector('[data-pe]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var rows=[].slice.call(root.querySelectorAll('[data-pe-row]')), find=root.querySelector('[data-pe-find]');
+  var count=root.querySelector('[data-pe-count]'), none=root.querySelector('[data-pe-none]'), flag='all';
+  function apply(){
+    var q=(find.value||'').trim().toLowerCase(), n=0;
+    rows.forEach(function(r){ var ok=(flag==='all'||(' '+r.dataset.flags+' ').indexOf(' '+flag+' ')!==-1)&&(!q||r.dataset.search.indexOf(q)!==-1); r.hidden=!ok; if(ok) n++; });
+    count.textContent=n+' shown'; if(none) none.hidden=n!==0;
+  }
+  root.querySelectorAll('[data-pe-filter]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); flag=a.dataset.peFilter;
+    root.querySelectorAll('[data-pe-filter]').forEach(function(x){ x.classList.toggle('is-active',x===a); }); apply(); }); });
+  if(find) find.addEventListener('input',apply);
+})();
+</script>
+{% endblock %}

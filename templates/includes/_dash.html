@@ -1,0 +1,104 @@
+{# Compact report pieces for the staff Overview (blueprints/school/dashboard.py builds their data).
+   Plain HTML and inline SVG - no chart library - so they follow the page's CSP and print cleanly.
+   Every mark carries data-tip (the Overview's one tooltip script reads it) and every chart has a
+   table twin behind "Table", so no value is only reachable by hovering.
+   Colours are the validated dataviz defaults: one blue for a single measure, a neutral tick for the
+   comparison, the blue ordinal ramp for the results pipeline, categorical slots 1-3 for identity. #}
+
+{% macro fmt(v, unit='') -%}
+{%- if unit == '%' %}{{ '%.1f'|format(v) }}%{% elif unit == '₦' %}{% if v >= 1000000 %}₦{{ '%.2f'|format(v / 1000000) }}M{% elif v >= 10000 %}₦{{ '{:,.0f}'.format(v / 1000) }}K{% else %}₦{{ '{:,.0f}'.format(v) }}{% endif %}{% else %}{{ '{:,.0f}'.format(v) }}{% endif -%}
+{%- endmacro %}
+
+{% macro kpis(items) -%}
+<dl class="dk">
+  {%- for k in items %}
+  <div class="dk-i{{ ' is-alert' if k.alert }}">
+    <dt>{{ k.label }}</dt>
+    <dd>
+      {%- if k.href %}<a href="{{ k.href }}">{{ k.value }}</a>{% else %}{{ k.value }}{% endif -%}
+      {%- if k.delta %}<span class="dk-d dk-d--{{ k.delta.tone }}" title="Compared with {{ k.delta.label }}">{{ '▲' if k.delta.direction == 'up' else ('▼' if k.delta.direction == 'down' else '■') }} {{ k.delta.text }}</span>{% endif -%}
+    </dd>
+    {%- if k.delta and k.delta.label %}<small>vs {{ k.delta.label }}</small>{% elif k.note %}<small>{{ k.note }}</small>{% endif %}
+  </div>
+  {%- endfor %}
+</dl>
+{%- endmacro %}
+
+{# Horizontal bars, one hue, largest first. A neutral tick marks the comparison value when there is one. #}
+{% macro hbars(rows, unit='%', max_value=None, compare_label='', now_label='This term', empty='Nothing recorded yet.', scroll=False) -%}
+{%- if rows %}
+{%- set top = max_value or ([rows|map(attribute='value')|max, (rows|selectattr('compare')|map(attribute='compare')|list + [0])|max]|max) or 1 %}
+<div class="dh{{ ' dh--scroll' if scroll }}" role="list">
+  {%- for r in rows %}
+  <div class="dh-r" role="listitem" data-tip="{{ r.tip }}">
+    <span class="dh-l">{% if r.href %}<a href="{{ r.href }}">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}</span>
+    <span class="dh-t"><span class="dh-b" style="width:{{ (100 * r.value / top)|round(1) }}%"></span>{% if r.compare is not none %}<span class="dh-c" style="left:{{ (100 * r.compare / top)|round(1) }}%"></span>{% endif %}</span>
+    <span class="dh-v">{{ fmt(r.value, unit) }}</span>
+  </div>
+  {%- endfor %}
+</div>
+{%- if compare_label and rows|selectattr('compare')|list %}<p class="dz-key"><i class="dz-k dz-k--bar"></i>{{ now_label }} <i class="dz-k dz-k--tick"></i>{{ compare_label }}</p>{% endif %}
+{%- else %}<p class="dz-empty">{{ empty }}</p>{% endif %}
+{%- endmacro %}
+
+{# Columns over time, one hue; the latest column is direct-labelled, the axis shows first, middle and last. #}
+{% macro columns(cols, max_value, unit='', empty='Nothing recorded yet.') -%}
+{%- if cols and max_value %}
+<div class="dc" role="img" aria-label="{{ cols|length }} periods, highest {{ unit }}{{ '{:,.0f}'.format(max_value) }}">
+  <span class="dc-max">{{ unit }}{{ '{:,.0f}'.format(max_value) }}</span>
+  <div class="dc-plot">
+    {%- for c in cols %}<span class="dc-c" data-tip="{{ c.tip }}"><i style="height:{{ (100 * c.value / max_value)|round(1) if c.value else 0 }}%"></i></span>{% endfor -%}
+  </div>
+  <div class="dc-x"><span>{{ cols[0].label }}</span><span>{{ cols[(cols|length) // 2].label }}</span><span>{{ cols[-1].label }}</span></div>
+</div>
+{%- else %}<p class="dz-empty">{{ empty }}</p>{% endif %}
+{%- endmacro %}
+
+{# A line of rates (0-100) over the last days recorded, with the latest value labelled at its end. #}
+{% macro rate_line(points, empty='No register has been taken yet.') -%}
+{%- set vals = points|map(attribute='value')|reject('none')|list %}
+{%- if vals|length > 1 %}
+{%- set lo = [([vals|min, 100]|min - 5)|round(0, 'floor'), 0]|max %}
+{%- set span = (100 - lo) or 1 %}
+{%- set n = points|length %}
+<div class="dl">
+  <svg viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" x2="300" y1="1" y2="1" class="dl-g"/><line x1="0" x2="300" y1="63" y2="63" class="dl-g"/>
+    <polyline class="dl-a" points="0,64 {% for p in points %}{{ (300 * loop.index0 / (n - 1))|round(1) }},{{ (63 - 62 * ((p.value or lo) - lo) / span)|round(1) }} {% endfor %}300,64"/>
+    <polyline class="dl-l" vector-effect="non-scaling-stroke" points="{% for p in points %}{{ (300 * loop.index0 / (n - 1))|round(1) }},{{ (63 - 62 * ((p.value or lo) - lo) / span)|round(1) }} {% endfor %}"/>
+    {%- for p in points %}<rect class="dl-h" x="{{ (300 * loop.index0 / (n - 1) - 150 / (n - 1))|round(1) }}" y="0" width="{{ (300 / (n - 1))|round(1) }}" height="64" data-tip="{{ p.tip }}"/>{% endfor %}
+  </svg>
+  <span class="dl-y"><b>100%</b><b>{{ lo|int }}%</b></span>
+  <span class="dl-end">{{ points[-1].value }}%</span>
+  <div class="dc-x"><span>{{ points[0].label }}</span><span>{{ points[-1].label }}</span></div>
+</div>
+{%- else %}<p class="dz-empty">{{ empty }}</p>{% endif %}
+{%- endmacro %}
+
+{# One stacked bar: the results pipeline (ordinal) or a split such as payment methods (categorical). #}
+{% macro stack(segments, kind='pipeline', legend=True, unit='') -%}
+{%- set total = segments|sum(attribute='value') %}
+{%- if total %}
+<div class="ds" role="img" aria-label="{% for s in segments %}{{ s.label }} {{ s.value }}{{ ', ' if not loop.last }}{% endfor %}">
+  {%- for s in segments if s.value %}<span class="ds-s ds-{{ s.key or s.cls }}" style="flex:{{ s.value }}" data-tip="{{ s.label }}: {{ unit }}{{ '{:,.0f}'.format(s.value) }} ({{ (100 * s.value / total)|round(0)|int }}%)"></span>{% endfor -%}
+</div>
+{%- if legend %}<p class="dz-key">{% for s in segments %}<i class="dz-k ds-{{ s.key or s.cls }}"></i>{{ s.label }} <b>{{ unit }}{{ '{:,.0f}'.format(s.value) }}</b>{% endfor %}</p>{% endif %}
+{%- else %}<span class="dz-empty">—</span>{% endif %}
+{%- endmacro %}
+
+{# Low-to-high spread of student averages with the class average as a dot, on a 0-100 track. #}
+{% macro spread(low, avg, high) -%}
+{%- if avg is not none %}<span class="dr" data-tip="Lowest {{ low }}% · average {{ avg }}% · highest {{ high }}%"><span class="dr-r" style="left:{{ low }}%;width:{{ (high - low)|round(1) }}%"></span><span class="dr-d" style="left:{{ avg }}%"></span></span>{% else %}<span class="dz-empty">—</span>{% endif %}
+{%- endmacro %}
+
+{% macro delta_text(d) -%}
+{%- if d %}<span class="dk-d dk-d--{{ d.tone }}" title="Compared with the term before">{{ '▲' if d.direction == 'up' else ('▼' if d.direction == 'down' else '■') }} {{ d.text }}</span>{% endif %}
+{%- endmacro %}
+
+{# The table twin of a bar or column chart, folded away until asked for. #}
+{% macro table_of(rows, value_label='Value', unit='', compare_label='') -%}
+<details class="dz-t"><summary>Table</summary>
+<table><thead><tr><th></th><th>{{ value_label }}</th>{% if compare_label %}<th>{{ compare_label }}</th>{% endif %}</tr></thead><tbody>
+{%- for r in rows %}<tr><td>{{ r.label }}</td><td>{{ fmt(r.value, unit) }}</td>{% if compare_label %}<td>{{ fmt(r.compare, unit) if r.compare is not none else '—' }}</td>{% endif %}</tr>{% endfor -%}
+</tbody></table></details>
+{%- endmacro %}

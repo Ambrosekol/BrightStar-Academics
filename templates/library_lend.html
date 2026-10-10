@@ -1,0 +1,59 @@
+{% extends 'admin_base.html' %}
+{% block title %}Lend a Book — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Lending a copy: which book (only those with a copy on the shelf), who borrows it (a student or a member of staff,
+   found as you type) and for how many days. Usually in a pop-up over the library; lending closes it and the loan
+   shows under On loan. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+<div class="ac st lb" data-lb-lend>
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if not modal %}<a class="fi-back" href="{{ url_for('admin_library') }}">← Library</a>{% endif %}
+<div class="ac-modal-head"><span class="acq-kind">Lend a book</span><h2>Who is borrowing what?</h2><p>A copy leaves the shelf now and comes back when you mark it returned.</p></div>
+{% if not books %}
+<div class="ac-empty"><strong>No copy is on the shelf</strong>Every book is out on loan, or the catalogue is empty.</div>
+{% else %}
+<form method="post" action="{{ url_for('admin_library_issue') }}" class="fi-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset class="fi-step"><legend><span class="fi-step__n">1</span>The book</legend>
+    <div class="ac-field ac-field--wide"><label for="lbBook">Book</label>
+      <select id="lbBook" name="book_id" required><option value="">Choose a book</option>{% for b in books %}<option value="{{ b.id }}" {% if b.id == book_id %}selected{% endif %}>{{ b.title }}{% if b.author %} — {{ b.author }}{% endif %} ({{ b.available_copies }} of {{ b.total_copies }} in)</option>{% endfor %}</select></div>
+  </fieldset>
+  <fieldset class="fi-step"><legend><span class="fi-step__n">2</span>The borrower</legend>
+    <div class="fi-methods" role="radiogroup" aria-label="Borrower is">
+      <label><input type="radio" name="member_type" value="student" checked><span>A student</span></label>
+      <label><input type="radio" name="member_type" value="staff"><span>A member of staff</span></label>
+    </div>
+    <div class="ac-fields" style="margin-top:8px">
+      <div class="ac-field ac-field--wide" data-lb-who="student"><label for="lbStudent">Student</label>
+        <input type="search" class="ac-input" placeholder="Type to narrow: name or admission no." data-lb-find aria-label="Find a student">
+        <select id="lbStudent" name="member_id" required><option value="">Choose the student</option>{% for s in students %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} · {{ s.admission_no }}</option>{% endfor %}</select></div>
+      <div class="ac-field ac-field--wide" data-lb-who="staff" hidden><label for="lbStaff">Member of staff</label>
+        <select id="lbStaff" name="member_id" disabled required><option value="">Choose who</option>{% for a in staff %}<option value="{{ a.id }}">{{ a.display_name }} · {{ a.username }}</option>{% endfor %}</select></div>
+    </div>
+  </fieldset>
+  <fieldset class="fi-step"><legend><span class="fi-step__n">3</span>For how long</legend>
+    <div class="fi-methods" role="radiogroup" aria-label="Loan length">
+      {% for d in [7, 14, 21, 30] %}<label><input type="radio" name="days" value="{{ d }}" {% if d == 14 %}checked{% endif %}><span>{{ d }} days</span></label>{% endfor %}
+    </div>
+  </fieldset>
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_library') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Lend the book</button></div>
+</form>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-lb-lend]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('form'); if(!form) return;
+  // Student or staff: only the chosen list is sent as the borrower.
+  function who(){ var t=form.querySelector('input[name=member_type]:checked').value;
+    root.querySelectorAll('[data-lb-who]').forEach(function(box){ var on=box.dataset.lbWho===t; box.hidden=!on; box.querySelector('select').disabled=!on; }); }
+  form.querySelectorAll('input[name=member_type]').forEach(function(r){ r.addEventListener('change',who); }); who();
+  var find=root.querySelector('[data-lb-find]'), sel=root.querySelector('#lbStudent');
+  find.addEventListener('input',function(){ var q=find.value.trim().toLowerCase(), first=null;
+    [].forEach.call(sel.options,function(o){ if(!o.value) return; var hit=!q||o.textContent.toLowerCase().indexOf(q)!==-1; o.hidden=!hit; if(hit&&!first) first=o; });
+    if(q&&first&&(!sel.value||sel.selectedOptions[0].hidden)) sel.value=first.value; });
+})();
+</script>
+{% endblock %}

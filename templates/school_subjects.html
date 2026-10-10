@@ -1,6 +1,93 @@
 {% extends 'admin_base.html' %}
 {% block title %}Subjects — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL</div><h1>Subjects</h1><p class="hero-copy">Create subjects for the classes where they are offered. Authorized class staff can lock a class-subject connection. School Admin can apply the final permanent lock. A subject remains editable for legitimate corrections until final lock.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_subject_new')}}">+ Create subject</a></div></div>
-<div class="card table-card"><div class="table-toolbar"><div><strong>Class subjects</strong><span class="muted">Subjects are attached to one or more classes.</span></div></div><div class="table-scroll"><table><thead><tr><th>Subject</th><th>Classes</th><th>Lock state</th><th>Actions</th></tr></thead><tbody>{% for s in subjects %}<tr><td><strong>{{s.name}}</strong>{% if s.code %}<small>{{s.code}}</small>{% endif %}</td><td>{{s.classes or '—'}}</td><td>{% if s.final_locked_count %}<span class="role-chip">{{s.final_locked_count}} permanently locked</span>{% elif s.locked_count %}<span class="role-chip">{{s.locked_count}} locked</span>{% else %}<span class="muted">Editable</span>{% endif %}</td><td><div class="row-actions"><a class="btn btn-light" href="{{url_for('admin_school_subject_edit',subject_id=s.id)}}">Edit</a><form method="post" action="{{url_for('admin_school_subject_delete',subject_id=s.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" data-confirm="Deactivate this subject?">Delete</button></form>{% if is_school_admin_ui %}<a class="btn btn-light" href="{{url_for('admin_school_subject_edit',subject_id=s.id)}}">Manage locks</a>{% endif %}</div></td></tr>{% else %}<tr><td colspan="4"><div class="empty-state">No subjects exist yet. Create the first subject and attach it to its classes.</div></td></tr>{% endfor %}</tbody></table></div></div>
+{# Every subject and the classes that take it: as a list, or as a grid of subjects against classes so a gap shows at
+   once. A new subject, editing one and its locks all open in a pop-up (static/inplace.js). A lock protects a
+   class-subject link from ordinary changes; the School Admin's final lock makes it permanent. #}
+{% set aid = current_admin['id'] %}
+{% set can_create = admin_has_permission(aid, 'school.subjects.create') %}
+{% set can_edit = admin_has_permission(aid, 'school.subjects.edit') %}
+{% set can_delete = admin_has_permission(aid, 'school.subjects.delete') %}
+{% set locked = subjects|selectattr('locked_count')|list|length %}
+{% set unattached = subjects|rejectattr('classes')|list|length %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<div class="ac st sj" data-sj>
+<header class="ac-top">
+  <h1>Subjects</h1>
+  <span class="ac-hint">What each class is taught. A subject can serve several classes, and in SSS only some departments.</span>
+  {% if can_create %}<div class="ac-top__act"><a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_subject_new') }}" data-modal>+ New subject</a></div>{% endif %}
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Subjects</dt><dd>{{ subjects|length }}</dd><small>active</small></div>
+  <div><dt>Classes</dt><dd>{{ classes|length }}</dd><small>in your reach</small></div>
+  <div><dt>Locked</dt><dd>{{ locked }}</dd><small>protected from ordinary changes</small></div>
+  {% if unattached %}<div class="is-alert"><dt>Not in any class</dt><dd>{{ unattached }}</dd><small>nobody is taught these</small></div>{% endif %}
+</dl>
+
+<div class="fi-tools">
+  <div class="ac-seg" role="tablist" aria-label="View">
+    <label><input type="radio" name="sj-view" value="list" checked><span>List</span></label>
+    <label><input type="radio" name="sj-view" value="grid"><span>Subjects × classes</span></label>
+  </div>
+  <span class="ac-search" style="margin-left:auto"><input type="search" placeholder="Find a subject, code or class" aria-label="Find a subject" data-sj-find></span>
+  <span class="ac-count" data-sj-count>{{ subjects|length }} shown</span>
+</div>
+
+<section class="ac-panel" data-sj-view="list">
+  {% if subjects %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Subject</th><th>Classes</th><th>SSS departments</th><th>Protection</th><th></th></tr></thead>
+    <tbody>{% for s in subjects %}
+    <tr data-sj-row data-search="{{ (s.name ~ ' ' ~ (s.code or '') ~ ' ' ~ (s.classes or ''))|lower }}">
+      <td>{% if can_edit %}<a class="ac-title" href="{{ url_for('admin_school_subject_edit', subject_id=s.id) }}" data-modal>{{ s.name }}</a>{% else %}<b>{{ s.name }}</b>{% endif %}{% if s.code %} <span class="st-code">{{ s.code }}</span>{% endif %}</td>
+      <td><span class="pe-kids">{% for c in (s.classes or '').split(', ') if c %}<span class="fi-chip fi-chip--type">{{ c }}</span>{% else %}<span class="ac-tag ac-tag--attn">No class</span>{% endfor %}</span></td>
+      <td>{% if s.departments %}<small class="sj-dept">SSS: {{ parse_departments(s.departments)|join(', ') }} only</small>{% else %}<span class="fi-zero">Every department</span>{% endif %}</td>
+      <td>{% if s.final_locked_count %}<span class="ac-tag ac-tag--attn">{{ s.final_locked_count }} permanently locked</span>{% elif s.locked_count %}<span class="ac-tag ac-tag--blue">{{ s.locked_count }} locked</span>{% else %}<span class="fi-zero">Editable</span>{% endif %}</td>
+      <td class="ac-actions">
+        {% if can_edit %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_subject_edit', subject_id=s.id) }}" data-modal>{{ 'Edit and locks' if is_school_admin_ui else 'Edit' }}</a>{% endif %}
+        {% if can_delete and not s.final_locked_count %}<form method="post" action="{{ url_for('admin_school_subject_delete', subject_id=s.id) }}" data-confirm="Take {{ s.name }} off every class? Marks already recorded stay on file."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Remove</button></form>{% endif %}
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No subjects yet</strong>{% if can_create %}<a class="ac-link" href="{{ url_for('admin_school_subject_new') }}" data-modal>Create the first subject →</a>{% endif %}</div>
+  {% endif %}
+</section>
+
+<section class="ac-panel" data-sj-view="grid" hidden>
+  {% if subjects and classes %}
+  <div class="ac-scroll"><table class="ac-t sj-grid">
+    <thead><tr><th>Subject</th>{% for c in classes %}<th class="sj-c" title="{{ c.name }}">{{ c.name }}</th>{% endfor %}<th class="n">Classes</th></tr></thead>
+    <tbody>{% for s in subjects %}{% set mine = (s.classes or '').split(', ') %}
+    <tr data-sj-row data-search="{{ (s.name ~ ' ' ~ (s.code or '') ~ ' ' ~ (s.classes or ''))|lower }}">
+      <th scope="row">{% if can_edit %}<a class="ac-title" href="{{ url_for('admin_school_subject_edit', subject_id=s.id) }}" data-modal>{{ s.name }}</a>{% else %}{{ s.name }}{% endif %}</th>
+      {% for c in classes %}<td class="sj-c">{% if c.name in mine %}<span class="sj-dot" title="{{ s.name }} in {{ c.name }}">●</span>{% else %}<span class="sj-none">·</span>{% endif %}</td>{% endfor %}
+      <td class="n">{{ mine|select|list|length }}</td>
+    </tr>{% endfor %}</tbody>
+    <tfoot><tr><th>Subjects per class</th>{% for c in classes %}{% set per = namespace(n=0) %}{% for s in subjects if c.name in (s.classes or '').split(', ') %}{% set per.n = per.n + 1 %}{% endfor %}<td class="sj-c"><b>{{ per.n }}</b></td>{% endfor %}<td></td></tr></tfoot>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>Nothing to show yet</strong>Create subjects and attach them to classes.</div>{% endif %}
+</section>
+<div class="ac-empty" data-sj-none hidden><strong>No subject matches</strong></div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-sj]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var find=root.querySelector('[data-sj-find]'), count=root.querySelector('[data-sj-count]'), none=root.querySelector('[data-sj-none]');
+  var radios=root.querySelectorAll('input[name=sj-view]'), view='list';
+  function apply(){
+    root.querySelectorAll('[data-sj-view]').forEach(function(p){ p.hidden=p.dataset.sjView!==view; });
+    var q=(find.value||'').trim().toLowerCase(), n=0;
+    root.querySelectorAll('[data-sj-view="'+view+'"] [data-sj-row]').forEach(function(r){ var ok=!q||r.dataset.search.indexOf(q)!==-1; r.hidden=!ok; if(ok) n++; });
+    count.textContent=n+' shown'; none.hidden=n!==0;
+    try{ sessionStorage.setItem('sj-view',view); }catch(e){}
+  }
+  radios.forEach(function(r){ r.addEventListener('change',function(){ view=r.value; apply(); }); });
+  try{ if(sessionStorage.getItem('sj-view')==='grid'){ view='grid'; radios.forEach(function(r){ r.checked=r.value==='grid'; }); } }catch(e){}
+  find.addEventListener('input',apply); apply();
+})();
+</script>
 {% endblock %}

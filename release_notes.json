@@ -18,6 +18,231 @@
   ],
   "releases": [
     {
+      "_comment": "Changes since 2.20.26.8: the head teacher / class teacher / subject teacher chain, teaching duties, SSS departments, and Crèche and Nursery classes.",
+      "version": "2.20.26.9",
+      "date": "2026-10-09",
+      "title": "Head, class and subject teachers, SSS departments, and Crèche and Nursery",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The menu has new icons, each drawn for what it opens: a mortarboard for Students, a register for Attendance, an A+ for Academics, a rosette for Report cards, stairs for Promotion, coins for Collections, a price tag for Fee structure and more.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Settings has been redesigned. It opens on what needs attention, then every setting by group with its state; the list of settings stays on the left and each setting opens beside it without leaving Settings, with a search to find one.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Staff (formerly Administrators): adding and managing a member of staff opens in a pop-up with four tabs, and a new password shows in the same pop-up. A role can be opened on top of it to check or change what it allows, without losing what you typed. The Messages tab for writing to colleagues is called Staff too.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Staff roles shows how much each role allows and who holds it. A role opens in a pop-up with its permissions grouped by area and a search, and each holder opens on top of it.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Controls & alerts, the Activity log (searchable, grouped by day, with a Refused-only view) and Online now have been redesigned to match.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "When someone without the Entrance examination workspace tries to open one of its pages, they are taken to the school portal and the attempt is recorded in the Activity log as refused.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Teachers and other school staff no longer have the Entrance examination workspace unless the School Admin gives it to them. Without it, signing in goes straight to the school portal; only someone with both workspaces sees Workspace Home and Switch workspace.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Parents has been redesigned: who can be reached by email and text at a glance, each parent's children by name, instant filters and search, and adding or managing a parent (and making them a new password) in a pop-up.",
+          "help": "families"
+        },
+        {
+          "audience": "staff",
+          "text": "Teachers shows the gaps first: classes with no class teacher and subjects nobody teaches. View it by class or by teacher, and change a teacher's duties in a pop-up.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Subjects can be seen as a list or as a grid of subjects against classes. A new subject, editing one and its locks open in a pop-up.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "Attendance has been redesigned: class chips, the school week with the days already taken, one tap per student, Everyone present, live counts, and a term summary that flags anyone under 75%.",
+          "help": "attendance"
+        },
+        {
+          "audience": "staff",
+          "text": "Report cards now uses class chips and the new look; the card itself opens in a new tab, ready to print.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "Promotion shows its four steps, opens each run in a pop-up where a whole class can be given one decision, and sets class progression in a pop-up that saves as you choose. A committed run can now be read back.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "Library has been redesigned: the catalogue and the loans (overdue first, with days late), with adding, editing and lending a book in a pop-up and one-click returns.",
+          "help": "library"
+        },
+        {
+          "audience": "staff",
+          "text": "Students has been redesigned. It opens on every class at a glance (how many, boys and girls, how many can sign in), and choosing a class or searching loads its register in place. Tick students to archive several at once.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "A student now opens in a pop-up with tabs for their profile and portal login, term results, every mark, assignments, projects and school journey. Editing them, their fee account, a new password and corrections open in a second pop-up on top, and saving brings you back to the student.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Registering a student opens in a pop-up, and the login details made for them show there once, ready to print.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Every page that loads in place now shows a spinner while the next view is on its way, inside pop-ups too, and the button you pressed spins until the answer arrives.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "New Payments tab in Finance: every payment in one list (all, not yet applied to a fee, fully applied, or voided), by session or method, or found by student, receipt number or payer. It replaces the separate unallocated-payments and allocate pages.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "A payment now opens in a pop-up with everything about it in one place: the receipt as issued (print it or open the PDF), Apply to fees with Fill and Fill oldest first, emailing or texting it to the family again, and voiding or refunding it.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Recording a payment, adding a fee item and editing a fee item now open in a pop-up over the page you are on. Record payment finds the student as you type and shows where the receipt will be sent.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "A student's account opens in a pop-up from Student accounts. It shows the chosen session's fees with how each is billed (One-time, Full Session, First, Second or Third Term), and that session's payments with the fees each one paid and its receipt.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "The menu's groups are now separated by a line, and Finance lists Collections, Payments (with how many are still to apply), Student accounts and Fee structure.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The menu is now grouped the way a school day runs: Overview and Messages at the top, then People (students, parents, teachers), Teaching (classes, subjects, attendance, academics, the exam timetable, report cards, promotion), Finance and Resources. Settings and Switch workspace sit at the foot, beside your name.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Finance is one page with three tabs: Collections, Student accounts and Fee structure, in your school's colours. Collections shows today's and this month's takings, a chart of money in over 7 days, 30 days, 90 days or 12 months against the period before, how it was paid and who took it, and for the session: the share of fees collected, what is overdue, the largest balances, and the same figures by class and by fee.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "New Student accounts page: every student's charges, payments, balance, overdue amount and last payment for a session, narrowed by class, by who owes, has part paid, has paid nothing or has paid in full, or by name. Each choice loads in place without reloading the page.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "The Fee structure page keeps all its billing steps, pop-ups and the total that stays in view, now in the same look as Academics, with a spinner while a class list, a student's fees or the history loads.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "The exam timetable has been redesigned: choose the term with the tabs at the top, see the papers day by day or as a grid of days against classes, and add or edit a paper in a pop-up that can stay open for the next one. Papers that clash, for the same class or in the same room at the same time, are marked and say what they overlap.",
+          "help": "timetable"
+        },
+        {
+          "audience": "staff",
+          "text": "Enter offline scores now offers only First Term, Second Term and Third Term; Full Session is no longer a choice.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "New assignments, projects, tests, practice tests and examinations are now guided forms that ask one thing at a time, with a step bar showing where you are, and editing an assignment or a project opens in a pop-up over the list. Enter scores is now called Enter offline scores.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "Questions for a test, practice test or examination now open in a pop-up over the list. Each question is shown the way students see it, with the right answer marked. You can edit a question where it is, move it up or down and save the new order, add one question after another from the Add a question tab, and change the test's settings, all without leaving the list.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "When the setup checklist is hidden, a small bar at the top of the Overview shows how far setup has got, with a Show setup checklist button.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "Enter offline scores is redesigned for working down a class: session, term and subject on one line, the class's students on the left with the score each already has, and the Test and Exam side by side with the percentage as you type. Save and next moves straight to the next student without a score, keeping the same maxima. It loads in place and uses your school's own colours.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "Results, Assignments, Projects, Tests, Practice tests and Examinations are now one menu item: Academics. Switch between them with the tabs at the top and pick a class from the row of classes below. The lists are compact tables, Results shows a class's students beside the chosen student's term, and everything you open loads in place with a small spinner instead of reloading the whole page.",
+          "help": "work"
+        },
+        {
+          "audience": "staff",
+          "text": "Report cards for SSS students now show the student's department (Science, Art or Commercial).",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "The Overview page is now made for you. It shows only what your role needs: the bursar sees today's collections and fees owed, a class teacher sees their class's register, marks to release and report card comments, a subject teacher sees the marks still to send for each subject, the librarian sees loans and overdue books, and the proprietor and head teacher see the whole school. Rankings of students only appear to the teaching staff who need them. It is a compact report: every number is compared with last term, last session, yesterday or last month, and charts show attendance, class and subject averages, the results waiting to be released, collections over time and more.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "Staff now follow the school's order: School Admin, then office staff (bursar, admissions, secretary, HR, librarian), then Head Teacher, Class Teacher and Subject Teacher. There are new Head Teacher, Class Teacher and Subject Teacher roles, and the staff form lists roles from the most senior down.",
+          "help": "roles-permissions"
+        },
+        {
+          "audience": "staff",
+          "text": "When you register a teacher, a new Teaching duties section sets the class they are class teacher of and the subjects they teach in each class (in SSS, optionally for one department). A teacher then only sees those classes, subjects and students. A teacher can be the class teacher of one class and teach subjects in others; the register, report cards and releasing results stay with each class's own class teacher. Subject teachers set their own tests, practice tests, examinations, assignments, projects and questions for the subjects and classes they teach, and the forms only offer those. The new Teachers page shows every class with its class teacher and subject teachers, and lets a head teacher change who teaches what.",
+          "help": "roles-permissions"
+        },
+        {
+          "audience": "staff",
+          "text": "Results now go from the subject teacher to the class teacher. A subject teacher records scores and presses Send to class teacher (for one mark, a student's term, or the whole class). The class teacher releases them to students and parents, or sends a mark back to be corrected. Only the class teacher of a class, a head teacher or the School Admin can release its results.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "SSS students now belong to a department (Science, Art or Commercial), set on the student's record, and each subject says which departments take it. Students only see tests for their own subjects, and work issued to a whole class only goes to the students who take the subject.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "Crèche and Nursery 1 to 3 classes are now available under Classes (switched off until you activate them). Their pupils work on paper: they do not sign in and get no online tests or assignments. Their teachers record scores under Results, and parents see fees and report cards.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "family",
+          "text": "If your child is in Crèche or Nursery, their page in the parent portal now shows just what you need: fees (which you can pay online), released scores and report cards."
+        },
+        {
+          "audience": "family",
+          "text": "If your child is in SSS 1 to 3, their report card now shows their department: Science, Art or Commercial."
+        },
+        {
+          "audience": "student",
+          "text": "SSS students: the tests and examinations you see are now only those for the subjects your department takes, and your report card shows your department."
+        }
+      ]
+    },
+    {
       "_comment": "Changes since 2.20.26.7: one Messages page for colleagues and parents, a Settings page, in-page report cards, and a stricter email setup step.",
       "version": "2.20.26.8",
       "date": "2026-10-09",

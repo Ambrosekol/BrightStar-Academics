@@ -1,242 +1,255 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Create staff' if mode == 'new' else 'Manage staff' }} — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_nav_icons.html' import icon %}
+{% from 'includes/_initials.html' import initials %}
+{% block title %}{{ 'Add staff' if mode == 'new' else 'Manage staff' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-/* Staff administrator page: a profile header, a section list beside the form, and a save bar that stays in view.
-   Each section is one job: who they are, what roles they hold, and where those roles apply. */
-.sa-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
-.sa-profile{display:flex;flex-wrap:wrap;gap:16px;align-items:center;padding:18px;margin-bottom:18px;border:1px solid var(--line,#dfe6ef);border-radius:14px;background:#fff}
-.sa-profile__avatar{display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--blue,#1674b9);color:#fff;font-size:24px;font-weight:700}
-.sa-profile__avatar img{width:100%;height:100%;object-fit:cover}
-.sa-profile__body{flex:1 1 260px;min-width:0}
-.sa-profile__name{margin:0;font-size:20px}
-.sa-profile__user{color:#64748b;font-size:14px}
-.sa-profile__meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:13px;color:#475569}
-.sa-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
-.sa-pill--on{background:#e7f6ec;color:#166534}
-.sa-pill--off{background:#fde8e8;color:#991b1b}
-.sa-pill--system{background:#eef2ff;color:#3730a3}
-.sa-profile__actions{display:flex;flex-wrap:wrap;gap:8px}
-.sa-layout{display:grid;grid-template-columns:200px minmax(0,1fr);gap:22px;align-items:start}
-.sa-nav{position:sticky;top:90px;display:flex;flex-direction:column;gap:2px;padding:8px;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#fff}
-.sa-nav a{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:8px;color:#334155;font-size:14px;font-weight:600;text-decoration:none}
-.sa-nav a:hover{background:#f1f5f9}
-.sa-nav small{font-weight:500;color:#94a3b8}
-.sa-card{margin-bottom:16px;padding:20px;border:1px solid var(--line,#dfe6ef);border-radius:14px;background:#fff;scroll-margin-top:90px}
-.sa-card h2{margin:0 0 4px;font-size:18px}
-.sa-card__lede{margin:0 0 16px;color:#64748b;font-size:14px;line-height:1.55}
-.sa-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
-.sa-field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.sa-field--wide{grid-column:1/-1}
-.sa-field label,.sa-field__label{font-size:13px;font-weight:600;color:#334155}
-.sa-field small,.sa-hint{font-size:12px;color:#64748b}
-.sa-field input{width:100%}
-.sa-optional{font-weight:400;color:#94a3b8}
-.sa-photo{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-.sa-photo__btn{display:inline-block;padding:8px 14px;border:1px solid var(--line,#dfe6ef);border-radius:8px;background:#fff;color:#334155;font-size:14px;font-weight:600;cursor:pointer}
-.sa-photo__btn:hover{border-color:var(--blue,#1674b9)}
-.sa-roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.sa-role{position:relative;display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line,#dfe6ef);border-radius:10px;background:#fff;cursor:pointer}
-.sa-role:hover{border-color:var(--blue,#1674b9)}
-.sa-role input{margin-top:3px;flex:none}
-.sa-role strong{display:block;font-size:14px;color:#0f172a}
-.sa-role small{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:#64748b}
-.sa-role:has(input:checked){border-color:var(--blue,#1674b9);background:color-mix(in srgb,var(--blue,#1674b9) 7%,#fff)}
-.sa-summary{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#f8fafc;color:#334155;font-size:14px}
-.sa-scope{margin-bottom:10px;padding:14px;border:1px solid var(--line,#dfe6ef);border-radius:10px}
-.sa-scope__toggle{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
-.sa-scope__toggle strong{display:block;font-size:14px;color:#0f172a}
-.sa-scope__toggle small{display:block;margin-top:2px;font-size:12px;color:#64748b}
-.sa-scope__values{margin-top:12px}
-.sa-scope__values select{width:100%}
-.sa-advanced{margin-bottom:16px;padding:16px 20px;border:1px solid var(--line,#dfe6ef);border-radius:14px;background:#fff}
-.sa-advanced summary{cursor:pointer;font-weight:700;color:#0f172a}
-.sa-perm-search{display:flex;flex-direction:column;gap:6px;margin:12px 0 14px}
-.sa-perm-search input{width:100%;max-width:480px}
-/* A global rule makes every label inside a form display:block !important, so the filter hides rows with its own
-   !important rule on a more specific selector. */
-.sa-roles .sa-perm.is-filtered-out{display:none !important}
-.sa-bar{position:sticky;bottom:0;z-index:10;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:8px;padding:12px 16px;border:1px solid var(--line,#dfe6ef);border-radius:12px;background:#fff;box-shadow:0 -6px 18px rgba(15,23,42,.06)}
-.sa-bar__actions{display:flex;flex-wrap:wrap;gap:8px}
-@media (max-width:860px){.sa-layout{grid-template-columns:1fr}.sa-nav{position:static;flex-direction:row;flex-wrap:wrap}.sa-nav a{flex:1 1 auto}}
-@media (max-width:640px){.sa-fields{grid-template-columns:1fr}}
-</style>
+{# Adding a member of staff, or managing one. Opens as a pop-up over Staff (static/inplace.js) and works as a page
+   on its own too. Four tabs, one form: who they are, the roles they hold, their teaching duties, and any other
+   limits (plus individual overrides for the School Admin). A role's own pop-up can open on top of this one; this
+   pop-up is not reloaded when that one closes (data-modal-stay), so nothing typed here is lost. Resetting the
+   password shows the new one in this same pop-up (data-modal-scope). #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set reset_url = url_for('admin_account_credentials_reset', aid=editing.id) if (mode == 'edit' and editing) else '' %}
+{% set can_peek_roles = is_school_admin_ui and admin_has_permission(current_admin.id, 'roles.edit') %}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='2') }}">
+<div class="sa" data-sa data-modal-size="wide" data-modal-stay data-modal-scope="{{ reset_url }}">
 
-<div class="sa-top">
-  <div>
-    <div class="eyebrow">PEOPLE &amp; ACCESS</div>
-    <h1 style="margin:0">{{ 'Create staff' if mode == 'new' else 'Manage staff' }}</h1>
-  </div>
-  <a class="btn btn-light btn-small" href="{{ url_for('admin_accounts') }}">← All staff</a>
-</div>
+{% if not modal %}<p style="margin:0 0 10px"><a class="btn btn-light btn-small" href="{{ url_for('admin_accounts') }}">← All staff</a></p>{% endif %}
 
-{% if mode == 'edit' and editing %}
-<section class="sa-profile" aria-label="Administrator summary">
-  <span class="sa-profile__avatar" aria-hidden="true">{% if editing.photo_path %}<img src="{{ url_for('static', filename=editing.photo_path) }}" alt="">{% else %}{{ editing.display_name[:1]|upper }}{% endif %}</span>
-  <div class="sa-profile__body">
-    <h2 class="sa-profile__name">{{ editing.display_name }}</h2>
-    <div class="sa-profile__user">{{ editing.username }}</div>
-    <div class="sa-profile__meta">
-      {% if editing.active %}<span class="sa-pill sa-pill--on">Active</span>{% else %}<span class="sa-pill sa-pill--off">Suspended</span>{% endif %}
-      {% if protected_school_admin %}<span class="sa-pill sa-pill--system">School Admin · full access</span>{% endif %}
-      <span>Last sign-in: {{ (editing.last_login_at or 'never').replace('T',' ')[:16] }}</span>
+<header class="sa-head">
+  {% if mode == 'edit' and editing %}
+  <span class="sa-head__ava" aria-hidden="true">{% if editing.photo_path %}<img src="{{ url_for('static', filename=editing.photo_path) }}" alt="">{% else %}{{ initials(editing.display_name) }}{% endif %}</span>
+  <div class="sa-head__copy">
+    <span class="sa-kicker">Staff member</span>
+    <h2>{{ editing.display_name }}</h2>
+    <div class="sa-head__meta">
+      <span>{{ editing.username }}</span>
+      {% if editing.active %}<span class="adm-pill adm-pill--on">Active</span>{% else %}<span class="adm-pill adm-pill--off">Suspended</span>{% endif %}
+      {% if protected_school_admin %}<span class="adm-pill adm-pill--you">School Admin · full access</span>{% endif %}
+      <span>Last signed in {{ (editing.last_login_at or 'never').replace('T',' ')[:16] }}</span>
     </div>
   </div>
-  <div class="sa-profile__actions">
-    <a class="btn btn-light btn-small" href="{{ url_for('admin_messages', **{'with': editing.id}) }}">Send a message</a>
+  <div class="sa-head__act">
+    <a class="btn btn-light btn-small" href="{{ url_for('admin_messages', **{'with': editing.id}) }}" data-full>Message</a>
   </div>
-</section>
-{% endif %}
+  {% else %}
+  <span class="sa-head__ava" aria-hidden="true">{{ icon('set-staff') }}</span>
+  <div class="sa-head__copy">
+    <span class="sa-kicker">New staff</span>
+    <h2>Add a member of staff</h2>
+    <div class="sa-head__meta"><span>A teacher, a bursar, a secretary: anyone who signs in to the school's side of the portal. They get a one-time password to sign in with.</span></div>
+  </div>
+  {% endif %}
+</header>
 
-{% for e in errors %}<div class="error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}
+{% if errors %}<div class="ac-errors error" role="alert" style="margin-bottom:12px">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
 
-<form method="post" enctype="multipart/form-data" id="staffForm">
+<form method="post" enctype="multipart/form-data" id="staffForm" action="{{ request.path }}">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="scope_type" value="global">
   <input type="hidden" name="scope_value" value="*">
+  {% if modal %}<input type="hidden" name="modal" value="1">{% if request.values.get('return_to') %}<input type="hidden" name="return_to" value="{{ request.values.get('return_to') }}">{% endif %}{% endif %}
 
-  <div class="sa-layout">
-    <nav class="sa-nav" aria-label="Sections">
-      <a href="#profile">Profile <small>1</small></a>
-      <a href="#roles">Job roles <small>2</small></a>
-      <a href="#access">Where they work <small>3</small></a>
-      {% if show_advanced and permissions %}<a href="#advanced">Overrides <small>4</small></a>{% endif %}
-    </nav>
+  <div class="sa-tabs" role="tablist" aria-label="Sections" data-sa-tabs hidden>
+    <button type="button" role="tab" data-tab="profile" aria-selected="true">Profile</button>
+    <button type="button" role="tab" data-tab="roles" aria-selected="false">Roles <b data-sa-count="roles">0</b></button>
+    {% if not protected_school_admin %}<button type="button" role="tab" data-tab="teaching" aria-selected="false">Teaching duties</button>{% endif %}
+    <button type="button" role="tab" data-tab="access" aria-selected="false">Limits</button>
+    {% if show_advanced and permissions %}<button type="button" role="tab" data-tab="advanced" aria-selected="false">Overrides <b data-sa-count="advanced">0</b></button>{% endif %}
+  </div>
 
-    <div>
-      <section class="sa-card" id="profile">
-        <h2>Profile</h2>
-        <p class="sa-card__lede">{% if mode == 'new' %}The username is their permanent login ID. A one-time password is generated when the account is created.{% else %}The login ID cannot be changed after the account is created.{% endif %}</p>
-        <div class="sa-fields">
-          <div class="sa-field">
-            <label for="f-username">Username / login ID</label>
-            <input id="f-username" name="username" value="{{ form.get('username','') }}" {% if mode=='edit' %}readonly{% endif %} autocomplete="username" required>
-            <small>{% if mode=='new' %}A simple, permanent login ID.{% else %}Fixed once created.{% endif %}</small>
-          </div>
-          <div class="sa-field">
-            <label for="f-name">Full name</label>
-            <input id="f-name" name="display_name" value="{{ form.get('display_name','') }}" autocomplete="name" required>
-          </div>
-          <div class="sa-field">
-            <label for="f-email">Email <span class="sa-optional">optional</span></label>
-            <input id="f-email" type="email" name="email" value="{{ form.get('email','') }}" autocomplete="email">
-          </div>
-          <div class="sa-field">
-            <label for="f-phone">Phone <span class="sa-optional">optional</span></label>
-            <input id="f-phone" type="tel" name="phone" value="{{ form.get('phone','') }}" autocomplete="tel">
-          </div>
-          <div class="sa-field">
-            <label for="f-whatsapp">WhatsApp <span class="sa-optional">optional</span></label>
-            <input id="f-whatsapp" type="tel" name="whatsapp" value="{{ form.get('whatsapp','') }}">
-            <small>Can differ from the phone number.</small>
-          </div>
-          <div class="sa-field">
-            <span class="sa-field__label">Profile photo <span class="sa-optional">optional</span></span>
-            <div class="sa-photo">
-              <label class="sa-photo__btn" for="adminPhotoInput">Choose photo</label>
-              <input id="adminPhotoInput" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }} hidden>
-              <span class="sa-hint" id="adminPhotoName">{% if editing and editing.photo_path %}Current photo kept unless you choose another{% else %}No photo chosen{% endif %}</span>
-            </div>
-            {{ upload_hint() }}
-          </div>
+  <section class="sa-card sa-panel" id="profile" data-panel="profile" role="tabpanel">
+    <h3>Who they are</h3>
+    <p class="sa-card__lede">{% if mode == 'new' %}The username is how they sign in, for good. A one-time password is made when you add them.{% else %}The username cannot be changed after the account is made.{% endif %}</p>
+    <div class="sa-fields">
+      <div class="sa-field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" name="display_name" value="{{ form.get('display_name','') }}" autocomplete="name" required placeholder="e.g. Mrs Ngozi Okafor">
+      </div>
+      <div class="sa-field">
+        <label for="f-username">Username</label>
+        <input id="f-username" name="username" value="{{ form.get('username','') }}" {% if mode=='edit' %}readonly{% endif %} autocomplete="username" required placeholder="e.g. ngozi.okafor">
+        <small>{% if mode=='new' %}Simple and permanent: they sign in with it.{% else %}Fixed once made.{% endif %}</small>
+      </div>
+      <div class="sa-field">
+        <label for="f-email">Email <span class="sa-optional">optional</span></label>
+        <input id="f-email" type="email" name="email" value="{{ form.get('email','') }}" autocomplete="email">
+      </div>
+      <div class="sa-field">
+        <label for="f-phone">Phone <span class="sa-optional">optional</span></label>
+        <input id="f-phone" type="tel" name="phone" value="{{ form.get('phone','') }}" autocomplete="tel">
+      </div>
+      <div class="sa-field">
+        <label for="f-whatsapp">WhatsApp <span class="sa-optional">optional</span></label>
+        <input id="f-whatsapp" type="tel" name="whatsapp" value="{{ form.get('whatsapp','') }}">
+        <small>Can differ from the phone number.</small>
+      </div>
+      <div class="sa-field">
+        <span class="sa-field__label">Photo <span class="sa-optional">optional</span></span>
+        <div class="sa-photo">
+          <label class="sa-photo__btn" for="adminPhotoInput">Choose a photo</label>
+          <input id="adminPhotoInput" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }} hidden>
+          <span class="sa-hint" id="adminPhotoName">{% if editing and editing.photo_path %}Current photo kept unless you choose another{% else %}No photo chosen{% endif %}</span>
         </div>
-      </section>
+        {{ upload_hint() }}
+      </div>
+    </div>
+  </section>
 
-      <section class="sa-card" id="roles">
-        <h2>Job roles</h2>
-        {% if protected_school_admin %}
-          <p class="sa-card__lede">This is the school's System Administrator. Its role is fixed and cannot be changed here.</p>
-        {% else %}
-          <p class="sa-card__lede">Choose every role this person does. Their permissions are the combined permissions of the roles they hold, plus any individual overrides.</p>
-          <div class="sa-summary" id="roleSummary" aria-live="polite"></div>
-          <div class="sa-roles">
-            {% for r in roles %}
-            <label class="sa-role">
-              <input type="checkbox" name="admin_type_ids" value="{{ r.id }}" data-role {% if r.id in selected_role_ids %}checked{% endif %}>
-              <span><strong>{{ r.name }}</strong><small>{{ r.description }}</small></span>
-            </label>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </section>
-
-      <section class="sa-card" id="access">
-        <h2>Where they work</h2>
-        {% if protected_school_admin %}
-          <p class="sa-card__lede">A School Administrator works across the whole school. Limits do not apply to this account.</p>
-        {% else %}
-          <p class="sa-card__lede">Leave everything unticked for access to the whole school. Tick a limit to restrict them to chosen values. Several limits together narrow access to where they all apply, for example Mathematics in SSS 1 to SSS 3.</p>
-          <div class="sa-summary" id="accessSummary" aria-live="polite"></div>
-          {% set groups = form.get('scope_groups', {}) %}
-          {% set type_labels = {'academic_session':'Academic session','class':'Class or level','subject':'Subject','bank':'Question bank'} %}
-          {% set options = {'academic_session':sessions,'class':classes,'subject':subjects} %}
-          {% for st in ['academic_session','class','subject','bank'] %}
-          <div class="sa-scope">
-            <label class="sa-scope__toggle">
-              <input type="checkbox" name="scope_types" value="{{ st }}" class="scope-type" data-scope-label="{{ type_labels[st] }}" data-target="scope_{{ st }}" {% if st in groups %}checked{% endif %}>
-              <span><strong>{{ type_labels[st] }}</strong><small>Limit access to chosen {{ type_labels[st]|lower }} values.</small></span>
-            </label>
-            <div id="scope_{{ st }}" class="sa-scope__values">
-              <select name="scope_values_{{ st }}" multiple size="5" aria-label="{{ type_labels[st] }} values">
-                {% if st == 'bank' %}{% for b in banks %}<option value="{{ b.id }}" {% if b.id|string in groups.get(st,[])|map('string')|list %}selected{% endif %}>{{ entrance_bank_display_name(b.id,b.name) }}</option>{% endfor %}
-                {% else %}{% for item in options[st] %}<option value="{{ item.name }}" {% if item.name in groups.get(st,[]) %}selected{% endif %}>{{ item.name }}</option>{% endfor %}{% endif %}
-              </select>
-              <small class="sa-hint">Hold Ctrl (Command on a Mac) to choose more than one.</small>
-            </div>
-          </div>
-          {% endfor %}
-        {% endif %}
-      </section>
-
-      {% if show_advanced and permissions %}
-      <details class="sa-advanced" id="advanced">
-        <summary>Overrides: individual permissions</summary>
-        <p class="sa-card__lede" style="margin-top:10px">For exceptional cases only. Normal access should come from job roles.</p>
-        <div class="sa-perm-search">
-          <input type="search" id="permSearch" placeholder="Search permissions, e.g. “delete student” or “finence”" aria-label="Search permissions" autocomplete="off">
-          <p class="sa-hint" id="permCount" aria-live="polite"></p>
-        </div>
-        <div class="sa-roles" id="permGrid">
-          {% for p in permissions %}
-          <label class="sa-role sa-perm" data-perm-text="{{ p.name }} {{ p.description or '' }} {{ p.module }} {{ p.code }}">
-            <input type="checkbox" name="permissions" value="{{ p.id }}" {% if direct_permissions is defined and p.id in direct_permissions %}checked{% endif %}>
-            <span><strong>{{ p.name }}</strong><small>{{ p.description }}</small></span>
-          </label>
-          {% endfor %}
-        </div>
-        <p class="sa-hint" id="permEmpty" hidden style="margin-top:12px">No permission matches that search. Try a shorter word, or check the spelling.</p>
-      </details>
+  <section class="sa-card sa-panel" id="roles" data-panel="roles" role="tabpanel">
+    <h3>Roles</h3>
+    {% if protected_school_admin %}
+      <p class="sa-card__lede">This is the school's own School Admin account. Its role is fixed and cannot be changed here.</p>
+    {% else %}
+      <p class="sa-card__lede">Tick every job they do. Roles run from the most senior down ({{ TOP_STAFF_LEVEL_LABEL }}, then {% for code,label,help in STAFF_LEVELS %}{{ label }}{{ ', ' if not loop.last }}{% endfor %}), and they can do everything any role they hold allows.{% if can_peek_roles %} <strong>See</strong> opens a role on top of this, to check or change what it allows.{% endif %}</p>
+      <div class="sa-summary" id="roleSummary" aria-live="polite"></div>
+      {% for code,label,help in STAFF_LEVELS %}
+      {% set group = roles|selectattr('level','in',[code] if code!='executive' else ['executive',None,''])|list %}
+      {% if group %}
+      <h4 class="sa-level"><span>{{ label }}</span><small>{{ help }}</small></h4>
+      <div class="sa-roles">
+        {% for r in group %}
+        <label class="sa-role">
+          <input type="checkbox" name="admin_type_ids" value="{{ r.id }}" data-role data-level="{{ code }}" {% if r.id in selected_role_ids %}checked{% endif %}>
+          <span><strong>{{ r.name }}</strong><small>{{ r.description }}</small></span>
+          {% if can_peek_roles and not r.is_system and r.name != 'Ordinary Admin' %}<a class="sa-role__peek" href="{{ url_for('admin_role_edit', rid=r.id) }}" data-modal title="What {{ r.name }} can do">See</a>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
       {% endif %}
+      {% endfor %}
+    {% endif %}
+  </section>
 
-      <div class="sa-bar">
-        <span class="sa-hint">{% if mode == 'new' %}The account is created suspended until saved.{% else %}Changes take effect on their next page load.{% endif %}</span>
-        <div class="sa-bar__actions">
-          <a class="btn btn-light" href="{{ url_for('admin_accounts') }}">Cancel</a>
-          {% if mode=='edit' and editing and editing.active %}<button class="btn btn-light" type="submit" formaction="{{ url_for('admin_account_credentials_reset', aid=editing.id) }}" formmethod="post" data-confirm="Generate a new temporary password for {{ editing.display_name }}? Their current password will stop working.">Reset login</button>{% endif %}
-          <button class="btn btn-primary" type="submit">{{ 'Create staff' if mode=='new' else 'Save changes' }}</button>
+  {% if not protected_school_admin %}
+  <section class="sa-card sa-panel" id="teaching" data-panel="teaching" role="tabpanel">
+    <h3>Teaching duties</h3>
+    <p class="sa-card__lede">For class teachers and subject teachers. Once someone has teaching duties they only see the classes, subjects and (in SSS) departments given here, everywhere in the portal. Leave this empty for office staff, and for a head teacher who oversees the whole school.</p>
+    <div class="sa-summary" id="teachingNudge" hidden>You chose a teaching role. Add the class they are class teacher of, or the subjects they teach; without any, they can reach every class.</div>
+    {% include 'includes/_teaching_duties.html' %}
+  </section>
+  {% endif %}
+
+  <section class="sa-card sa-panel" id="access" data-panel="access" role="tabpanel">
+    <h3>Other limits</h3>
+    {% if protected_school_admin %}
+      <p class="sa-card__lede">The School Admin works across the whole school. Limits do not apply to this account.</p>
+    {% else %}
+      <p class="sa-card__lede">Rarely needed. Leave everything unticked for the whole school (or, for a teacher, their teaching duties). Tick a limit to keep them to chosen values: a head of the nursery section to Crèche and Nursery classes, say. Class and subject limits are ignored for anyone with teaching duties.</p>
+      <div class="sa-summary" id="accessSummary" aria-live="polite"></div>
+      {% set groups = form.get('scope_groups', {}) %}
+      {% set type_labels = {'academic_session':'Academic session','class':'Class or level','subject':'Subject','bank':'Question bank'} %}
+      {% set options = {'academic_session':sessions,'class':classes,'subject':subjects} %}
+      {% for st in ['academic_session','class','subject','bank'] %}
+      <div class="sa-scope">
+        <label class="sa-scope__toggle">
+          <input type="checkbox" name="scope_types" value="{{ st }}" class="scope-type" data-scope-label="{{ type_labels[st] }}" data-target="scope_{{ st }}" {% if st in groups %}checked{% endif %}>
+          <span><strong>{{ type_labels[st] }}</strong><small>Keep them to chosen {{ type_labels[st]|lower }} values.</small></span>
+        </label>
+        <div id="scope_{{ st }}" class="sa-scope__values">
+          <select name="scope_values_{{ st }}" multiple size="5" aria-label="{{ type_labels[st] }} values">
+            {% if st == 'bank' %}{% for b in banks %}<option value="{{ b.id }}" {% if b.id|string in groups.get(st,[])|map('string')|list %}selected{% endif %}>{{ entrance_bank_display_name(b.id,b.name) }}</option>{% endfor %}
+            {% else %}{% for item in options[st] %}<option value="{{ item.name }}" {% if item.name in groups.get(st,[]) %}selected{% endif %}>{{ item.name }}</option>{% endfor %}{% endif %}
+          </select>
+          <small class="sa-hint">Hold Ctrl (Command on a Mac) to choose more than one.</small>
         </div>
       </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+
+  {% if show_advanced and permissions %}
+  <section class="sa-card sa-panel" id="advanced" data-panel="advanced" role="tabpanel">
+    <h3>Overrides: single permissions</h3>
+    <p class="sa-card__lede">For the exceptional case only. Normal access comes from roles; anything ticked here is added on top of them.</p>
+    <div class="sa-perm-search">
+      <input type="search" id="permSearch" placeholder="Search permissions, e.g. “delete student” or “finence”" aria-label="Search permissions" autocomplete="off">
+      <p class="sa-hint" id="permCount" aria-live="polite"></p>
+    </div>
+    <div class="sa-roles" id="permGrid">
+      {% for p in permissions %}
+      <label class="sa-role sa-perm" data-perm-text="{{ p.name }} {{ p.description or '' }} {{ p.module }} {{ p.code }}">
+        <input type="checkbox" name="permissions" value="{{ p.id }}" {% if direct_permissions is defined and p.id in direct_permissions %}checked{% endif %}>
+        <span><strong>{{ staffwords(p.name) }}</strong><small>{{ staffwords(p.description) }}</small></span>
+      </label>
+      {% endfor %}
+    </div>
+    <p class="sa-hint" id="permEmpty" hidden style="margin-top:12px">No permission matches that search. Try a shorter word, or check the spelling.</p>
+  </section>
+  {% endif %}
+
+  <div class="sa-bar">
+    <span class="sa-hint">{% if mode == 'new' %}Their one-time password shows once they are added.{% else %}Changes apply from their next page.{% endif %}</span>
+    <div class="sa-bar__actions">
+      {% if modal %}<button class="btn btn-light" type="button" data-modal-dismiss>Cancel</button>{% else %}<a class="btn btn-light" href="{{ url_for('admin_accounts') }}">Cancel</a>{% endif %}
+      {% if mode=='edit' and editing and editing.id != current_admin.id %}
+        {% if editing.active %}<button class="btn btn-light" type="submit" formaction="{{ reset_url }}" formmethod="post" formnovalidate data-confirm="Make a new temporary password for {{ editing.display_name }}? Their current password will stop working.">Reset password</button>{% endif %}
+        <button class="btn btn-light" type="submit" formaction="{{ url_for('admin_account_toggle', aid=editing.id) }}" formmethod="post" formnovalidate data-confirm="{{ 'Suspend ' ~ editing.display_name ~ '? They are signed out and cannot sign in until reactivated.' if editing.active else 'Reactivate ' ~ editing.display_name ~ '?' }}">{{ 'Suspend' if editing.active else 'Reactivate' }}</button>
+      {% endif %}
+      <button class="btn btn-primary" type="submit">{{ 'Add staff' if mode=='new' else 'Save changes' }}</button>
     </div>
   </div>
 </form>
+</div>
 
 <script nonce="{{ csp_nonce() }}">
 (function(){
-  var roleBoxes=Array.prototype.slice.call(document.querySelectorAll('[data-role]'));
-  var roleSummary=document.getElementById('roleSummary');
+  var roots=document.querySelectorAll('[data-sa]:not([data-ready])');
+  var root=roots[roots.length-1];
+  if(!root) return;
+  root.setAttribute('data-ready','');
+  function $(sel){ return root.querySelector(sel); }
+  function $$(sel){ return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+
+  // Tabs: one section at a time. Without JavaScript every section simply shows, one under another.
+  var tabs=$('[data-sa-tabs]'), panels=$$('[data-panel]');
+  function open(name){
+    $$('[data-tab]').forEach(function(t){ t.setAttribute('aria-selected', t.getAttribute('data-tab')===name ? 'true' : 'false'); });
+    panels.forEach(function(p){ p.hidden = p.getAttribute('data-panel')!==name; });
+  }
+  if(tabs){
+    tabs.hidden=false;
+    $$('[data-tab]').forEach(function(t){ t.addEventListener('click',function(){ open(t.getAttribute('data-tab')); }); });
+    open('profile');
+    // A required field left empty in a hidden tab: show that tab, so the browser can point at it.
+    // (Before the browser checks the form, so it can point at the field.)
+    $('#staffForm').addEventListener('click',function(e){
+      var button=e.target.closest('button[type=submit]');
+      if(!button || button.formNoValidate) return;
+      var bad=root.querySelector('#staffForm input:invalid, #staffForm select:invalid');
+      var p=bad && bad.closest('[data-panel]');
+      if(p && p.hidden) open(p.getAttribute('data-panel'));
+    },true);
+  }
+  function count(name, n){ var b=$('[data-sa-count="'+name+'"]'); if(b) b.textContent=n; }
+
+  var roleBoxes=$$('[data-role]');
+  var roleSummary=$('#roleSummary');
   function roles(){
-    if(!roleSummary) return;
     var names=roleBoxes.filter(function(b){ return b.checked; }).map(function(b){ return b.closest('label').querySelector('strong').textContent; });
-    roleSummary.textContent = names.length ? names.length+' role'+(names.length===1?'':'s')+' selected: '+names.join(', ') : 'No role selected yet. Choose at least one.';
+    count('roles', names.length);
+    if(!roleSummary) return;
+    roleSummary.textContent = names.length ? names.length+' role'+(names.length===1?'':'s')+': '+names.join(', ') : 'No role chosen yet. Choose at least one.';
   }
   roleBoxes.forEach(function(b){ b.addEventListener('change',roles); });
   roles();
 
-  var scopeBoxes=Array.prototype.slice.call(document.querySelectorAll('.scope-type'));
-  var accessSummary=document.getElementById('accessSummary');
+  // A teaching role with no duties reaches every class: say so, so nobody is left with more than intended.
+  var nudge=$('#teachingNudge');
+  function teachingNudge(){
+    if(!nudge) return;
+    var teaching=roleBoxes.some(function(b){ return b.checked && /class_teacher|subject_teacher/.test(b.getAttribute('data-level')); });
+    var any=$('[name=duty_class_teacher]:checked') || $$('[name=duty_subject]').some(function(s){ return s.value; });
+    nudge.hidden=!(teaching && !any);
+  }
+  $('#staffForm').addEventListener('change',teachingNudge);
+  teachingNudge();
+
+  var scopeBoxes=$$('.scope-type');
+  var accessSummary=$('#accessSummary');
   function scopes(){
     scopeBoxes.forEach(function(box){
-      var target=document.getElementById(box.getAttribute('data-target'));
+      var target=root.querySelector('#'+box.getAttribute('data-target'));
       var select=target ? target.querySelector('select') : null;
       if(target) target.style.display=box.checked?'block':'none';
       if(select) select.disabled=!box.checked;
@@ -245,14 +258,14 @@
     var parts=[];
     scopeBoxes.forEach(function(box){
       if(!box.checked) return;
-      var select=document.getElementById(box.getAttribute('data-target')).querySelector('select');
-      var picked=Array.prototype.slice.call(select.options).filter(function(o){ return o.selected; }).length;
+      var select=root.querySelector('#'+box.getAttribute('data-target')+' select');
+      var picked=Array.prototype.filter.call(select.options,function(o){ return o.selected; }).length;
       parts.push(box.getAttribute('data-scope-label')+(picked ? ' ('+picked+')' : ' (none chosen yet)'));
     });
-    accessSummary.textContent = parts.length ? 'Limited to: '+parts.join(' · ') : 'Full access to the whole school.';
+    accessSummary.textContent = parts.length ? 'Kept to: '+parts.join(' · ') : 'The whole school.';
   }
   scopeBoxes.forEach(function(box){ box.addEventListener('change',scopes); });
-  document.querySelectorAll('.sa-scope__values select').forEach(function(s){ s.addEventListener('change',scopes); });
+  $$('.sa-scope__values select').forEach(function(s){ s.addEventListener('change',scopes); });
   scopes();
 
   // Loose permission search: case, accents and word order do not matter, every typed word must match
@@ -275,17 +288,19 @@
   function wordMatches(term, text){
     if(text.indexOf(term)!==-1) return true;
     var allowed = term.length>=7 ? 2 : (term.length>=4 ? 1 : 0);
-    var words=text.split(' ');
-    return words.some(function(word){
+    return text.split(' ').some(function(word){
       if(allowed && edits(word.slice(0,term.length+allowed), term) <= allowed) return true;
       // Same beginning, different ending: "finance" for "finances", "delet" for "deleting".
       return term.length>=4 && word.slice(0,4)===term.slice(0,4);
     });
   }
-  var permSearch=document.getElementById('permSearch');
-  var permItems=Array.prototype.slice.call(document.querySelectorAll('.sa-perm'));
-  var permCount=document.getElementById('permCount');
-  var permEmpty=document.getElementById('permEmpty');
+  var permSearch=$('#permSearch');
+  var permItems=$$('.sa-perm');
+  var permCount=$('#permCount');
+  var permEmpty=$('#permEmpty');
+  function overrides(){ count('advanced', permItems.filter(function(i){ return i.querySelector('input').checked; }).length); }
+  permItems.forEach(function(i){ i.querySelector('input').addEventListener('change',overrides); });
+  overrides();
   function filterPermissions(){
     if(!permSearch) return;
     var terms=clean(permSearch.value).split(' ').filter(Boolean);
@@ -306,8 +321,8 @@
     filterPermissions();
   }
 
-  var photo=document.getElementById('adminPhotoInput');
-  var photoName=document.getElementById('adminPhotoName');
+  var photo=$('#adminPhotoInput');
+  var photoName=$('#adminPhotoName');
   if(photo && photoName){
     photo.addEventListener('change',function(){
       var file=photo.files && photo.files[0];

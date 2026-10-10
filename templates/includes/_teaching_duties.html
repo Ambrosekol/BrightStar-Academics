@@ -1,0 +1,83 @@
+{# The teaching duties editor, shared by the staff form and the Teachers page.
+   Needs: duties ({'class_teacher':[class ids], 'subjects':[{class_id, subject_id, department}]}),
+   duty_classes ([{id, name, senior}]), duty_subjects ([{id, name}]) and duty_departments.
+   Posts duty_class_teacher (repeated), and duty_class / duty_subject / duty_department (one of each per row). #}
+<style>
+.td-block{margin-top:4px}
+.td-block h3{margin:18px 0 6px;font-size:15px;color:#0f172a}
+.td-block h3:first-child{margin-top:0}
+.td-hint{margin:0 0 10px;font-size:13px;color:#64748b;line-height:1.5}
+.td-classes{display:flex;flex-wrap:wrap;gap:8px}
+.td-chip{display:inline-flex !important;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line,#dfe6ef);border-radius:999px;background:#fff;font-size:14px;cursor:pointer}
+.td-chip:has(input:checked){border-color:var(--blue,#1674b9);background:color-mix(in srgb,var(--blue,#1674b9) 9%,#fff);font-weight:600}
+.td-rows{display:flex;flex-direction:column;gap:8px}
+.td-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.td-row select{width:100%}
+.td-row .td-dept[hidden]{display:none}
+.td-remove{border:1px solid var(--line,#dfe6ef);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;color:#64748b}
+.td-remove:hover{border-color:#dc2626;color:#dc2626}
+.td-add{margin-top:10px}
+.td-dept-placeholder{font-size:12px;color:#94a3b8}
+@media (max-width:640px){.td-row{grid-template-columns:1fr 1fr}.td-row .td-remove{grid-column:2;justify-self:end}}
+</style>
+{% set dc = duties.class_teacher if duties else [] %}
+{% set ds = duties.subjects if duties else [] %}
+<div class="td-block" data-duties>
+  <h3>Class teacher of</h3>
+  <p class="td-hint">A class teacher sees every subject of the class, takes its register, writes its report card comments and releases its results. Tick none for a subject-only teacher.</p>
+  <div class="td-classes">
+    {% for c in duty_classes %}
+    <label class="td-chip"><input type="checkbox" name="duty_class_teacher" value="{{ c.id }}" {% if c.id in dc %}checked{% endif %}> {{ c.name }}</label>
+    {% else %}
+    <span class="td-hint">No active classes yet. Switch classes on under Classes first.</span>
+    {% endfor %}
+  </div>
+
+  <h3>Subjects they teach</h3>
+  <p class="td-hint">One row per subject and class, for example Mathematics in JSS 1. In SSS classes you can limit a row to one department (Science, Art or Commercial); leave it on <em>All departments</em> if they teach every student taking the subject.</p>
+  <div class="td-rows" data-duty-rows>
+    {% for row in ds + [{'class_id':None,'subject_id':None,'department':''}] %}
+    <div class="td-row" data-duty-row>
+      <select name="duty_class" aria-label="Class" data-duty-class>
+        <option value="">Class…</option>
+        {% for c in duty_classes %}<option value="{{ c.id }}" data-senior="{{ 1 if c.senior else 0 }}" {% if c.id == row.class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+      <select name="duty_subject" aria-label="Subject">
+        <option value="">Subject…</option>
+        {% for s in duty_subjects %}<option value="{{ s.id }}" {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+      <select name="duty_department" aria-label="Department (SSS only)" class="td-dept">
+        <option value="">All departments</option>
+        {% for d in duty_departments %}<option value="{{ d }}" {% if d == row.department %}selected{% endif %}>{{ d }} only</option>{% endfor %}
+      </select>
+      <button type="button" class="td-remove" data-duty-remove aria-label="Remove this row">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="btn btn-light btn-small td-add" data-duty-add>+ Add another subject</button>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var box=document.querySelector('[data-duties]:not([data-ready])'); if(!box) return; box.setAttribute('data-ready','1');
+  var rows=box.querySelector('[data-duty-rows]');
+  function sync(row){
+    var cls=row.querySelector('[data-duty-class]'), dept=row.querySelector('.td-dept');
+    var opt=cls.options[cls.selectedIndex], senior=opt && opt.getAttribute('data-senior')==='1';
+    dept.hidden=!senior; if(!senior) dept.value='';
+  }
+  function wire(row){
+    row.querySelector('[data-duty-class]').addEventListener('change',function(){ sync(row); });
+    row.querySelector('[data-duty-remove]').addEventListener('click',function(){
+      if(rows.children.length>1){ row.remove(); }
+      else { row.querySelectorAll('select').forEach(function(s){ s.value=''; }); sync(row); }
+    });
+    sync(row);
+  }
+  Array.prototype.forEach.call(rows.children,wire);
+  box.querySelector('[data-duty-add]').addEventListener('click',function(){
+    var copy=rows.lastElementChild.cloneNode(true);
+    copy.querySelectorAll('select').forEach(function(s){ s.value=''; });
+    rows.appendChild(copy); wire(copy); copy.querySelector('select').focus();
+  });
+})();
+</script>

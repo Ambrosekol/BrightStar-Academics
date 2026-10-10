@@ -1,0 +1,5 @@
+{#- Two letters for a person's avatar, from their name without a title: "Mrs Ada Obi" is "AO", not "M". -#}
+{% macro initials(name) -%}
+{%- set words = (name or '?').replace('.', '').split()|reject('in', ['Mr', 'Mrs', 'Miss', 'Ms', 'Dr', 'Prof', 'Rev', 'Sir', 'Madam', 'Engr', 'Chief', 'Alhaji', 'Alhaja', 'Pastor'])|list or [name or '?'] -%}
+{{ (words[0][:1] ~ (words[-1][:1] if words|length > 1 else ''))|upper }}
+{%- endmacro %}

@@ -1,49 +1,52 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{title}} — {{ school_brand.name }}{% endblock %}
+{% from 'includes/_academics.html' import class_chips %}
+{% block title %}{{ title }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{% include 'school_students_styles.html' %}
-{% set work_tab = {'admin_school_tests':'tests','admin_school_practice_tests':'practice','admin_school_examinations':'examinations'}.get(request.endpoint, '') %}
+<div class="ac">
+{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment_type] %}
+{% set noun = {'test':'test','practice':'practice test','examination':'examination'}[assessment_type] %}
 {% include 'school_work_tabs.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / {{title|upper}}</div><h1>{{title}}</h1><p class="hero-copy">{{description}} Choose a class first so assessments stay inside the correct academic boundary.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{% if assessment_type=='test' %}{{url_for('admin_school_test_new')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_new')}}{% else %}{{url_for('admin_school_examination_new')}}{% endif %}">+ Create {{'test' if assessment_type=='test' else ('practice test' if assessment_type=='practice' else 'examination')}}</a></div></div>
-<div class="segmentation-intro"><div><strong>Choose a class</strong><span>{{title}} are separated by the class they belong to.</span></div>{% if selected_class %}<a class="btn btn-light btn-small" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">← All classes</a>{% endif %}</div>
-<div class="segment-card-grid school-segment-grid">{% for card in class_cards %}<a class="segment-card {% if selected_class==card.name %}selected{% endif %}" href="{{url_for(request.endpoint,class=card.name)}}"><div class="segment-icon">{{card.name.split(' ')[0][:1]}}{{card.name.split(' ')[1][:1] if card.name.split(' ')|length>1 else ''}}</div><div class="segment-copy"><div class="segment-kicker">SCHOOL CLASS</div><h2>{{card.name}}</h2><p>{{card.count}} {{title|lower|replace('practice tests','practice test')}}{{'' if card.count==1 else 's'}}</p></div><div class="segment-arrow">→</div></a>{% endfor %}</div>
-{% if not selected_class %}<div class="info-banner segmentation-note"><strong>{{title}} boundary.</strong><span>Select a class above to open the {{title|lower}} register.</span></div>{% endif %}
+{{ class_chips(class_cards, selected_class, request.endpoint, noun, 'All classes') }}
 
-{% if selected_class %}
-<dialog class="cr-modal" id="assessmentListModal">
-  <div class="cr-modal-head">
-    <div><div class="section-label">SCHOOL CLASS</div><h2>{{selected_class}} {{title}}</h2><p>{{assessments|length}} shown.</p></div>
-    <button type="button" class="cr-modal-close" aria-label="Close" data-modal-close="assessmentListModal">×</button>
-  </div>
-  <div class="cr-modal-body">
-    <form class="register-search" method="get" style="margin-bottom:16px">
-      <input type="hidden" name="class" value="{{selected_class}}">
-      <input name="q" value="{{search}}" placeholder="Search title or subject">
-      <button class="btn btn-light" type="submit">Search</button>
-      {% if search %}<a class="btn btn-light" href="{{url_for(request.endpoint,class=selected_class)}}">Clear search</a>{% endif %}
-      <a class="btn btn-light" href="{% if assessment_type=='test' %}{{url_for('admin_school_tests')}}{% elif assessment_type=='practice' %}{{url_for('admin_school_practice_tests')}}{% else %}{{url_for('admin_school_examinations')}}{% endif %}">← All classes</a>
-    </form>
-    <div class="students-register-scroll">
-      <table class="students-register-table">
-        <thead><tr><th>Title</th><th>Subject</th><th>Questions</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>
-          {% for a in assessments %}
-          <tr>
-            <td><strong>{{a.title}}</strong><small>{{a.session_name or 'Session not set'}}</small></td>
-            <td>{{a.subject_name}}</td>
-            <td>{{a.question_count}}</td>
-            <td>{{a.duration_minutes}} min</td>
-            <td><span class="role-chip">{{'Active' if a.active else 'Draft / Closed'}}</span></td>
-            <td><div class="row-actions"><a class="btn btn-light" href="{{url_for('admin_school_assessment_detail',assessment_id=a.id)}}">Open</a><form method="post" action="{{url_for('admin_school_assessment_delete',assessment_id=a.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="btn btn-danger" type="submit" data-confirm="Delete this assessment?">Delete</button></form></div></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="6"><div class="empty-state">No {{title|lower}} found in {{selected_class}}.</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</dialog>
-<script nonce="{{ csp_nonce() }}">document.getElementById('assessmentListModal')?.showModal();</script>
+<div class="ac-tools">
+  <form class="ac-search" method="get" role="search">
+    {% if selected_class %}<input type="hidden" name="class" value="{{ selected_class }}">{% endif %}
+    <input name="q" value="{{ search }}" placeholder="Search title, subject or class" aria-label="Search {{ title|lower }}">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if search %}<a class="ac-btn" href="{{ url_for(request.endpoint, **({'class': selected_class} if selected_class else {})) }}">Clear</a>{% endif %}
+  </form>
+  <span class="ac-count">{{ assessments|length }} {{ noun }}{{ '' if assessments|length == 1 else 's' }}{% if selected_class %} in {{ selected_class }}{% endif %} · {{ assessments|selectattr('active')|list|length }} open to students</span>
+</div>
+
+<section class="ac-panel">
+{% if assessments %}
+<div class="ac-scroll">
+<table class="ac-t">
+  <thead><tr><th>{{ noun|capitalize }}</th>{% if not selected_class %}<th>Class</th>{% endif %}<th>Subject</th><th>Term</th><th class="n">Questions</th><th class="n">Minutes</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for a in assessments %}
+  <tr class="ac-row">
+    <td><a class="ac-title" href="{{ url_for('admin_school_assessment_detail', assessment_id=a.id) }}" data-modal>{{ a.title }}</a></td>
+    {% if not selected_class %}<td>{{ a.class_name }}</td>{% endif %}
+    <td>{{ a.subject_name }}</td>
+    <td>{{ a.term or '—' }}</td>
+    <td class="n">{% if a.question_count %}{{ a.question_count }}{% else %}<span class="ac-tag ac-tag--attn">none yet</span>{% endif %}</td>
+    <td class="n">{{ a.duration_minutes }}</td>
+    <td>{% if a.active %}<span class="ac-tag ac-tag--good">Open</span>{% else %}<span class="ac-tag">Draft / closed</span>{% endif %}</td>
+    <td class="ac-actions">
+      <a class="ac-link" href="{{ url_for('admin_school_assessment_detail', assessment_id=a.id) }}" data-modal>Questions</a>
+      <form method="post" action="{{ url_for('admin_school_assessment_delete', assessment_id=a.id) }}" data-confirm="Delete this {{ noun }} and its questions?">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="ac-empty"><strong>No {{ noun }}s yet{% if selected_class %} in {{ selected_class }}{% endif %}</strong>{{ description }}</div>
 {% endif %}
+</section>
+</div>
 {% endblock %}

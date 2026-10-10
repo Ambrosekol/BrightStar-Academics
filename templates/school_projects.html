@@ -1,74 +1,62 @@
 {% extends 'admin_base.html' %}
+{% from 'includes/_academics.html' import class_chips %}
 {% block title %}Projects — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{% include 'school_students_styles.html' %}
-{% include 'school_work_styles.html' %}
+<div class="ac">
 {% set work_tab = 'projects' %}
 {% include 'school_work_tabs.html' %}
-<div class="page-hero"><div><div class="eyebrow">SCHOOL PORTAL / PROJECTS</div><h1>Projects</h1><p class="hero-copy">Practical classroom work with a date it is given and a date it is due. Issue a project to the whole class in one step, or to chosen students.</p></div><div class="hero-actions"><a class="btn btn-primary" href="{{url_for('admin_school_project_new')}}">+ Create project</a></div></div>
+{{ class_chips(class_cards, selected_class, 'admin_school_projects', 'project', 'All classes') }}
 
-<div class="wk-class-section">
-  <p class="wk-class-section__label">Choose a class <span>· {{ class_cards|length }} classes</span></p>
-  <nav class="wk-class-grid" aria-label="Choose a class">
-    {% for card in class_cards %}
-    <a class="wk-class-tile{{ ' is-active' if selected_class == card.name }}" href="{{ url_for(request.endpoint, **{'class': card.name}) }}" {% if selected_class == card.name %}aria-current="true"{% endif %}>
-      <span class="wk-class-tile__name">{{ card.name }}</span>
-      <span class="wk-class-tile__count">{{ card.count }} project{{ '' if card.count == 1 else 's' }}</span>
-    </a>
-    {% endfor %}
-  </nav>
+<div class="ac-tools">
+  <form class="ac-search" method="get" role="search">
+    {% if selected_class %}<input type="hidden" name="class" value="{{ selected_class }}">{% endif %}
+    {% if show_deleted %}<input type="hidden" name="deleted" value="1">{% endif %}
+    <input name="q" value="{{ search }}" placeholder="Search title, subject or class" aria-label="Search projects">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if search %}<a class="ac-btn" href="{{ url_for('admin_school_projects', **({'class': selected_class} if selected_class else {})) }}">Clear</a>{% endif %}
+  </form>
+  {% set base = {'class': selected_class} if selected_class else {} %}
+  {% if show_deleted %}<a class="ac-link" href="{{ url_for('admin_school_projects', **base) }}">← Current projects</a>
+  {% else %}<a class="ac-link" href="{{ url_for('admin_school_projects', deleted=1, **base) }}">Deleted</a>{% endif %}
+  <span class="ac-count">{{ projects|length }} {{ 'deleted ' if show_deleted }}project{{ '' if projects|length == 1 else 's' }}{% if selected_class %} in {{ selected_class }}{% endif %}</span>
 </div>
 
-{% if not selected_class %}
-  <div class="wk-empty"><strong>Choose a class</strong>Projects are organised by the class where the subject is taught. Pick one above to see its projects.</div>
+<section class="ac-panel">
+{% if projects %}
+<div class="ac-scroll">
+<table class="ac-t">
+  <thead><tr><th>Project</th>{% if not selected_class %}<th>Class</th>{% endif %}<th>Subject</th><th>Given</th><th>Due</th><th class="n">Out of</th><th class="n">Students</th><th></th></tr></thead>
+  <tbody>
+  {% for p in projects %}
+  <tr class="ac-row">
+    <td>{% if show_deleted %}<strong>{{ p.title }}</strong>{% else %}<a class="ac-title" href="{{ url_for('admin_school_project_detail', project_id=p.id) }}">{{ p.title }}</a>{% endif %}
+      {% if p.instructions %}<small class="ac-clip" title="{{ p.instructions }}">{{ p.instructions }}</small>{% endif %}</td>
+    {% if not selected_class %}<td>{{ p.class_name }}</td>{% endif %}
+    <td>{{ p.subject_name }}</td>
+    <td>{{ p.date_given or '—' }}</td>
+    <td>{{ p.due_date or '—' }}</td>
+    <td class="n">{% if p.max_score %}{{ p.max_score|int if p.max_score == p.max_score|int else p.max_score }}{% else %}—{% endif %}</td>
+    <td class="n">{{ p.student_count }}</td>
+    <td class="ac-actions">
+      {% if show_deleted %}
+      <form method="post" action="{{ url_for('admin_school_project_restore', project_id=p.id) }}" data-confirm="Restore this project to the list?">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link" type="submit">Restore</button>
+      </form>
+      {% else %}
+      <a class="ac-link" href="{{ url_for('admin_school_project_edit', project_id=p.id) }}" data-modal>Edit</a>
+      <form method="post" action="{{ url_for('admin_school_project_delete', project_id=p.id) }}" data-confirm="Delete this project? Students will no longer see it. You can restore it from the deleted list.">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
 {% else %}
-  <div class="wk-toolbar">
-    <form class="wk-search" method="get" role="search">
-      <input type="hidden" name="class" value="{{ selected_class }}">
-      <input name="q" value="{{ search }}" placeholder="Search title, subject or class" aria-label="Search projects">
-      <button class="btn btn-light" type="submit">Search</button>
-      {% if search %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class}) }}">Clear</a>{% endif %}
-    </form>
-    {% if show_deleted %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class}) }}">Show current</a>{% else %}<a class="btn btn-light" href="{{ url_for('admin_school_projects', **{'class': selected_class, 'deleted': 1}) }}">Show deleted</a>{% endif %}
-    <span class="muted">{{ projects|length }} project{{ '' if projects|length == 1 else 's' }} in {{ selected_class }}</span>
-  </div>
-
-  {% if projects %}
-  <div class="wk-grid">
-    {% for p in projects %}
-    <article class="wk-card">
-      <div class="wk-card__pills">
-        <span class="wk-pill">{{ p.subject_name }}</span>
-        {% if p.max_score %}<span class="wk-pill wk-pill--muted">Out of {{ p.max_score|int if p.max_score == p.max_score|int else p.max_score }}</span>{% endif %}
-      </div>
-      {% if show_deleted %}<span class="wk-pill wk-pill--due">Deleted</span>{% endif %}
-      <h3 class="wk-card__title">{{ p.title }}</h3>
-      {% if p.instructions %}<p class="wk-card__text">{{ p.instructions }}</p>{% endif %}
-      <dl class="wk-card__facts">
-        <div><dt>Given</dt><dd>{{ p.date_given or '—' }}</dd></div>
-        <div><dt>Due</dt><dd>{{ p.due_date or 'No due date' }}</dd></div>
-        <div><dt>Issued to</dt><dd>{{ p.student_count }} student{{ '' if p.student_count == 1 else 's' }}</dd></div>
-      </dl>
-      <div class="wk-card__actions">
-        {% if show_deleted %}
-        <form method="post" action="{{ url_for('admin_school_project_restore', project_id=p.id) }}" data-confirm="Restore this project to the list?">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-primary btn-small" type="submit">Restore</button>
-        </form>
-        {% else %}
-        <a class="btn btn-primary btn-small" href="{{ url_for('admin_school_project_detail', project_id=p.id) }}">Open</a>
-        <a class="btn btn-light btn-small" href="{{ url_for('admin_school_project_edit', project_id=p.id) }}">Edit</a>
-        <form method="post" action="{{ url_for('admin_school_project_delete', project_id=p.id) }}" data-confirm="Delete this project? Students will no longer see it. You can restore it from the deleted list.">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-light btn-small" type="submit">Delete</button>
-        </form>
-        {% endif %}
-      </div>
-    </article>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="wk-empty"><strong>No projects in {{ selected_class }} yet</strong>Create one and issue it to the whole class, or to chosen students.</div>
-  {% endif %}
+<div class="ac-empty"><strong>{{ 'Nothing deleted' if show_deleted else 'No projects yet' }}{% if selected_class %} in {{ selected_class }}{% endif %}</strong>{% if not show_deleted %}Create one with a date it is given and a date it is due.{% endif %}</div>
 {% endif %}
+</section>
+</div>
 {% endblock %}

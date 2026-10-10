@@ -31,8 +31,9 @@ from models import (
     StudentNumberAllocation, ResultWorkflowEvent, PresenceSession, db,
 )
 from core.db_helpers import all_rows, group_concat, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert
+from core.school_structure import class_is_senior, clean_department, format_departments
 from core.security import (
-    admin_access_error, admin_has_permission, admin_required, admin_scope_allows,
+    admin_access_error, admin_covers_whole_school, admin_has_permission, admin_required, admin_scope_allows,
     audit_log, current_admin, csrf_protect, is_school_admin,
 )
 from core.uploads import _save_image_upload
@@ -56,6 +57,8 @@ from blueprints.school.helpers import (
     _school_subject_allowed, _set_ca_weights, _student_term_periods,
     _student_term_subjects, _sync_enrolment_for_history, _term_subject_report,
     _work_with_class_subject, archive_students, offer_subject, whole_class_ids,
+    _work_student_ids, _online_work_class_error, _students_for_subject, _student_subject_allowed,
+    _may_release_class,
     assignment_has_marks, project_has_marks,
 )
 
@@ -63,55 +66,14 @@ from blueprints.school.helpers import (
 @app.route('/admin/school')
 @admin_required
 def admin_school_home():
+    """The staff Overview, built for whoever is looking (blueprints/school/dashboard.py): a bursar sees
+    money, a subject teacher their own subjects' marks, the proprietor the whole school."""
+    from blueprints.school.dashboard import build_dashboard
     from blueprints.school.onboarding import onboarding_status  # deferred: it is imported after this module
-    def count(model, *where):
-        return one_scalar(select(func.count()).select_from(model).where(*where), 0)
-    stats={
-        'students':count(Student, Student.active==1),
-        'classes':count(SchoolClass, SchoolClass.active==1),
-        'subjects':count(SchoolSubject, SchoolSubject.active==1),
-        'assignments':count(SchoolAssignment, SchoolAssignment.active==1),
-        'projects':count(SchoolProject, SchoolProject.active==1),
-        'tests':count(SchoolAssessment, SchoolAssessment.assessment_type=='test'),
-        'examinations':count(SchoolAssessment, SchoolAssessment.assessment_type=='examination'),
-    }
-    # Top of the Class: the highest-scoring student per class this term, scoped the same way
-    # every other class-facing page in this portal is (School Admin sees every class; a
-    # class-scoped teacher only sees their own). Skipped entirely when there is nothing to show,
-    # so a teacher with no classes (or a school with no current session) never pays for it.
-    admin=current_admin()
-    session_row=_school_current_session()
-    term=request.args.get('term','').strip()
-    term=term if term in ACADEMIC_TERMS else ACADEMIC_TERMS[0]
-    top_of_class=[]
-    pending_classes=[]
-    if admin and session_row:
-        visible_classes=[c for c in db.session.scalars(
-            select(SchoolClass).where(SchoolClass.active==1).order_by(SchoolClass.level_order)).all()
-            if _school_class_allowed(admin['id'],c.id)]
-        for cls in visible_classes:
-            class_stats=class_term_stats(cls.id,session_row.id,term)
-            best_id,best_pct=None,None
-            for sid,entry in class_stats['students'].items():
-                pct=entry.get('percentage')
-                if pct is None:
-                    continue
-                if best_pct is None or pct>best_pct:
-                    best_id,best_pct=sid,pct
-            if best_id is None:
-                pending_classes.append(cls.name)
-                continue
-            student=db.session.get(Student,best_id)
-            student_name=' '.join(p for p in (student.first_name,student.middle_name,student.last_name)
-                                  if p and str(p).strip()) if student else ''
-            letter,_remark=grade_for(best_pct)
-            top_of_class.append({'class_id':cls.id,'class_name':cls.name,'student_name':student_name,
-                                 'percentage':best_pct,'grade':letter})
-        top_of_class.sort(key=lambda r:r['percentage'],reverse=True)
-    return render_template('admin_school_home.html',stats=stats,onboarding=onboarding_status(),
-                           top_of_class=top_of_class,top_of_class_pending=pending_classes,
-                           top_of_class_term=term,
-                           top_of_class_session=session_row.name if session_row else '')
+    me=current_admin()
+    # The setup checklist is the proprietor's job; nobody else is asked to set the school up.
+    onboarding=onboarding_status() if is_school_admin(me) else {'show':False,'dismissed':False,'complete':True}
+    return render_template('admin_school_home.html',onboarding=onboarding,**build_dashboard(me))
 
 @app.route('/admin/school/students')
 @admin_required
@@ -131,16 +93,30 @@ def admin_school_students():
     if admin and not admin['admin_type_system']:
         classes=[r for r in classes if admin_scope_allows(admin['id'],'class',r['name'])]
         rows=[r for r in rows if r['class_name'] and admin_scope_allows(admin['id'],'class',r['class_name'])]
+    # Each class with what a school asks of its register at a glance: how many, boys and girls, and how many
+    # can sign in to the student portal.
+    def gender(r): return (r.get('gender') or '').strip().lower()[:1]
     class_cards=[]
     for cls in classes:
         class_rows=[r for r in rows if r['class_name']==cls['name']]
-        class_cards.append({'name':cls['name'],'count':len(class_rows),'id':cls['id']})
-    if selected_class:
+        class_cards.append({'name':cls['name'],'count':len(class_rows),'id':cls['id'],
+                            'boys':sum(1 for r in class_rows if gender(r)=='m'),
+                            'girls':sum(1 for r in class_rows if gender(r)=='f'),
+                            'logins':sum(1 for r in class_rows if r.get('login_password_hash') and r.get('account_active'))})
+    unplaced=[r for r in rows if not r['class_name']] if admin and admin['admin_type_system'] else []
+    def matches(r):
+        return needle in f"{r['first_name']} {r['middle_name'] or ''} {r['last_name']} {r['admission_no']} {r['guardian_name'] or ''} {r['guardian_email'] or ''} {r['guardian_phone'] or ''}".casefold()
+    needle=search.casefold()
+    if selected_class=='__none__':
+        rows=unplaced
+    elif selected_class:
         rows=[r for r in rows if r['class_name']==selected_class]
-        if search:
-            needle=search.casefold(); rows=[r for r in rows if needle in f"{r['first_name']} {r['middle_name'] or ''} {r['last_name']} {r['admission_no']} {r['guardian_name'] or ''} {r['guardian_email'] or ''}".casefold()]
+    if search:
+        rows=[r for r in rows if matches(r)]
+    elif not selected_class:
+        rows=[]   # no class and nothing searched: the overview of classes, not every student at once
     archived_count=one_scalar(select(func.count()).select_from(Student).where(Student.archived_at.isnot(None)),0)
-    return render_template('school_students.html',students=rows,school_session=school_session,class_cards=class_cards,selected_class=selected_class,search=search,archived_count=archived_count,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
+    return render_template('school_students.html',students=rows,school_session=school_session,class_cards=class_cards,selected_class=selected_class,search=search,archived_count=archived_count,unplaced_count=len(unplaced),is_school_admin=is_school_admin(),can_archive=_can_archive_students())
 
 def _student_enrolment_rows(sid):
     """Every class placement this student has, newest first, with the class and session names."""
@@ -228,6 +204,17 @@ def admin_school_student_detail(sid):
     archived_by=_archived_by_name(student)
     return render_template('admin_school_student_detail.html',student=student,enrolments=enrol,enrollment_history=history,sessions=sessions,classes_for_history=classes_for_history,current_enrol=current_enrol,results=results,assignments=assignments,projects=projects,total_score=total_score,total_max=total_max,pct=pct,completed=len(completed),assignment_avg=assignment_avg,term_reports=term_reports,archived_by=archived_by,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
 
+def _department_from_form(class_id):
+    """The SSS department posted with a student, or None outside senior secondary. Returns
+    (department, error). Leaving it unset is allowed, so a school can fill it in later."""
+    if not class_is_senior(class_id):
+        return None,None
+    raw=request.form.get('department','').strip()
+    department=clean_department(raw)
+    if raw and not department:
+        return None,'Choose the student\'s department: Science, Art or Commercial.'
+    return department,None
+
 @app.route('/admin/school/students/new',methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -287,6 +274,9 @@ def admin_school_student_new():
         if not class_id or not _school_class_allowed(current_admin()['id'],class_id):
             errors.append('Select a class within your authorised school scope.')
 
+        department,dept_error=_department_from_form(class_id)
+        if dept_error: errors.append(dept_error)
+
         if errors:
             return back_with(errors)
 
@@ -336,6 +326,7 @@ def admin_school_student_new():
                 guardian_phone=phone,
                 guardian_email=email,
                 photo_path=photo_path,
+                department=department,
                 created_at=datetime.now(timezone.utc).isoformat(),
                 active=1,
                 school_id=school_id,
@@ -602,6 +593,8 @@ def admin_school_student_edit(sid):
             errors.append(str(exc))
         if not admission or not first or not last: errors.append('Admission number, first name and surname are required.')
         if not class_id or not _school_class_allowed(current_admin()['id'],class_id): errors.append('Select a class within your authorised school scope.')
+        department,dept_error=_department_from_form(class_id)
+        if dept_error: errors.append(dept_error)
         if errors: return render_template('school_student_form.html',mode='edit',student={**student_dict,**request.form},classes=classes,errors=errors,school_session=session_dict)
         try:
             student.admission_no=admission; student.first_name=first; student.middle_name=middle
@@ -609,6 +602,7 @@ def admin_school_student_edit(sid):
             student.blood_group=blood_group; student.genotype=genotype
             student.guardian_name=guardian; student.guardian_phone=phone
             student.guardian_email=email; student.photo_path=photo_path
+            student.department=department
             now=datetime.now(timezone.utc).isoformat()
             if enrol:
                 enrol.class_id=class_id
@@ -619,7 +613,7 @@ def admin_school_student_edit(sid):
         except sa.exc.IntegrityError:
             db.session.rollback()
             return render_template('school_student_form.html',mode='edit',student={**student_dict,**request.form},classes=classes,errors=['Admission number already exists.'],school_session=session_dict)
-        audit_log('school_student_updated','school','student',sid,{'class_id':class_id}); flash('Student record updated.','success'); return redirect(url_for('admin_school_students'))
+        audit_log('school_student_updated','school','student',sid,{'class_id':class_id}); flash('Student record updated.','success'); return redirect(url_for('admin_school_student_detail',sid=sid))
     data=dict(student_dict); data['class_id']=enrol.class_id if enrol else ''
     return render_template('school_student_form.html',mode='edit',student=data,classes=classes,errors=[],school_session=session_dict)
 
@@ -846,7 +840,7 @@ def admin_school_class_toggle(class_id):
 @admin_required
 def admin_school_subjects():
     rows=all_rows(
-        select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,SchoolSubject.active,
+        select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,SchoolSubject.active,SchoolSubject.departments,
                group_concat(SchoolClass.name,', ').label('classes'),
                func.sum(sa.case((ClassSubject.locked==1,1),else_=0)).label('locked_count'),
                func.sum(sa.case((ClassSubject.final_locked==1,1),else_=0)).label('final_locked_count'))
@@ -924,6 +918,7 @@ def admin_school_subject_new():
                 sid=existing.id
                 existing.active=1
                 if code: existing.code=code
+                existing.departments=format_departments(request.form.getlist('departments')) or None
                 for cid in selected:
                     link=one(select(ClassSubject.locked,ClassSubject.final_locked)
                              .where(ClassSubject.class_id==cid,ClassSubject.subject_id==sid))
@@ -932,7 +927,8 @@ def admin_school_subject_new():
                     db.session.add(ClassSubject(class_id=cid,subject_id=sid,locked=0,final_locked=0,
                                                 created_by=current_admin()['id'],created_at=now))
             else:
-                created=SchoolSubject(name=name,code=code,created_at=now,active=1)
+                created=SchoolSubject(name=name,code=code,created_at=now,active=1,
+                                      departments=format_departments(request.form.getlist('departments')) or None)
                 db.session.add(created); db.session.flush(); sid=created.id
                 for cid in selected:
                     db.session.add(ClassSubject(class_id=cid,subject_id=sid,locked=0,final_locked=0,
@@ -982,6 +978,7 @@ def admin_school_subject_edit(subject_id):
                 SchoolSubject.id!=subject_id).limit(1))
             if duplicate: raise ValueError('Another subject with that name already exists. Use that subject and attach it to the required class instead.')
             subject.name=name; subject.code=code
+            subject.departments=format_departments(request.form.getlist('departments')) or None
             now=datetime.now(timezone.utc).isoformat()
             for cid in new_selected:
                 if cid not in existing:
@@ -1079,6 +1076,16 @@ def admin_school_assignments():
         needle=search.casefold(); rows=[r for r in rows if needle in f"{r['title']} {r['class_name']} {r['subject_name']}".casefold()]
     return render_template('school_assignments.html',assignments=rows,class_cards=cards,selected_class=selected_class,search=search,show_deleted=show_deleted)
 
+def _work_return_url(default):
+    """Where to go after saving work that was edited in a pop-up over a list: back to that list (or another
+    Academics page), never anywhere a form could aim elsewhere."""
+    target=request.values.get('return_to','')
+    if (target.startswith(('/admin/school/assignments','/admin/school/projects','/admin/school/tests',
+                           '/admin/school/practice-tests','/admin/school/examinations','/admin/school/results'))
+            and not target.startswith('//') and '\\' not in target):
+        return target
+    return default
+
 @app.route('/admin/school/assignments/new',methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -1102,6 +1109,9 @@ def admin_school_assignment_new():
         if timing_mode not in ('untimed','overall','per_question'): errors.append('Choose a valid timing mode.')
         allowed={r['id'] for r in students if r['class_id']==cid}
         if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
+        student_ids,work_error=_work_student_ids(student_ids,cid,sid,current_admin()['id'],request.form.get('issue_to')=='class')
+        if work_error: errors.append(work_error)
+        if _online_work_class_error(cid): errors.append(_online_work_class_error(cid))
         if not student_ids: errors.append('Select at least one student.')
         if any(x not in allowed for x in student_ids): errors.append('One or more selected students are outside the selected class.')
         if max_score<0: errors.append('Maximum score cannot be negative.')
@@ -1218,6 +1228,9 @@ def admin_school_assignment_edit(assignment_id):
         if assignment_type=='quiz' and timing_mode=='overall' and time_limit<=0: errors.append('Enter an overall time limit.')
         if assignment_type=='quiz' and timing_mode=='per_question' and per_q<=0: errors.append('Enter a per-question time limit.')
         if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
+        student_ids,work_error=_work_student_ids(student_ids,cid,sid,current_admin()['id'],request.form.get('issue_to')=='class')
+        if work_error: errors.append(work_error)
+        if _online_work_class_error(cid): errors.append(_online_work_class_error(cid))
         if not student_ids: errors.append('Select at least one student.')
         if errors:
             form={c.key:getattr(a,c.key) for c in a.__mapper__.column_attrs}
@@ -1242,8 +1255,8 @@ def admin_school_assignment_edit(assignment_id):
                 AssignmentStudent.student_id.not_in(started)))
         offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
-        audit_log('school_assignment_updated','school','assignment',assignment_id,{'class_id':cid,'subject_id':sid}); flash('Assignment updated.','success'); return redirect(url_for('admin_school_assignment_detail',assignment_id=assignment_id))
-    return render_template('school_assignment_form.html',mode='edit',assignment=a,classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
+        audit_log('school_assignment_updated','school','assignment',assignment_id,{'class_id':cid,'subject_id':sid}); flash('Assignment updated.','success'); return redirect(_work_return_url(url_for('admin_school_assignment_detail',assignment_id=assignment_id)))
+    return render_template('school_assignment_form.html',mode='edit',assignment={c.key:getattr(a,c.key) for c in a.__mapper__.column_attrs},classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
 
 @app.post('/admin/school/assignments/<int:assignment_id>/delete')
 @admin_required
@@ -1315,6 +1328,9 @@ def admin_school_project_new():
         if not session_id or not one_scalar(select(AcademicSession.id).where(AcademicSession.id==session_id)): errors.append('Select a valid academic session.')
         if term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
         if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
+        student_ids,work_error=_work_student_ids(student_ids,cid,sid,current_admin()['id'],request.form.get('issue_to')=='class')
+        if work_error: errors.append(work_error)
+        if _online_work_class_error(cid): errors.append(_online_work_class_error(cid))
         if not student_ids: errors.append('Select at least one student.')
         allowed={r['id'] for r in students if r['class_id']==cid}
         if any(x not in allowed for x in student_ids): errors.append('One or more selected students are outside the selected class.')
@@ -1393,6 +1409,9 @@ def admin_school_project_edit(project_id):
         if not session_id or not one_scalar(select(AcademicSession.id).where(AcademicSession.id==session_id)): errors.append('Select a valid academic session.')
         if term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
         if request.form.get('issue_to')=='class': student_ids=whole_class_ids(students,cid)
+        student_ids,work_error=_work_student_ids(student_ids,cid,sid,current_admin()['id'],request.form.get('issue_to')=='class')
+        if work_error: errors.append(work_error)
+        if _online_work_class_error(cid): errors.append(_online_work_class_error(cid))
         if not student_ids: errors.append('Select at least one student.')
         if errors:
             form={c.key:getattr(p,c.key) for c in p.__mapper__.column_attrs}
@@ -1409,8 +1428,8 @@ def admin_school_project_edit(project_id):
                 ProjectStudent.project_id==project_id,ProjectStudent.student_id==stid))
         offer_subject(cid,sid,current_admin()['id'])
         db.session.commit()
-        audit_log('school_project_updated','school','project',project_id,{'class_id':cid,'subject_id':sid}); flash('Project updated.','success'); return redirect(url_for('admin_school_project_detail',project_id=project_id))
-    return render_template('school_project_form.html',mode='edit',project=p,classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
+        audit_log('school_project_updated','school','project',project_id,{'class_id':cid,'subject_id':sid}); flash('Project updated.','success'); return redirect(_work_return_url(url_for('admin_school_project_detail',project_id=project_id)))
+    return render_template('school_project_form.html',mode='edit',project={c.key:getattr(p,c.key) for c in p.__mapper__.column_attrs},classes=classes,subjects=subjects,students=students,selected_students=selected,sessions=sessions,terms=ACADEMIC_TERMS,errors=[])
 
 @app.post('/admin/school/projects/<int:project_id>/delete')
 @admin_required
@@ -1499,6 +1518,7 @@ def admin_school_assessment_edit(assessment_id):
     try: cid=int(request.form.get('class_id','')); sid=int(request.form.get('subject_id','')); duration=max(1,int(request.form.get('duration_minutes','30') or 30)); session_id=int(request.form.get('session_id'))
     except: cid=sid=session_id=0; duration=30
     if not title or not _school_pair_allowed(current_admin()['id'],cid,sid): flash('Enter a valid title, class and subject within your scope.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+    if _online_work_class_error(cid): flash(_online_work_class_error(cid),'error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     if a['assessment_type']!='practice' and term not in ACADEMIC_TERMS:
         flash('Select a valid term.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     if term and term not in ACADEMIC_TERMS:
@@ -1676,7 +1696,7 @@ def admin_school_result_manual_new():
     classes=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     if not me['admin_type_system']: classes=[c for c in classes if _school_class_allowed(me['id'],c.id)]
-    current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=_result_term(request.values.get('term','')) or 'Full Session'; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
+    current=_school_current_session(); session_id=request.values.get('session_id',type=int) or (current['id'] if current else 0); term=_result_term(request.values.get('term','')); term=term if term in ACADEMIC_TERMS else ACADEMIC_TERMS[0]; class_id=request.values.get('class_id',type=int) or 0; student_id=request.values.get('student_id',type=int) or 0; subject_id=request.values.get('subject_id',type=int) or 0
     subjects=all_rows(select(SchoolSubject.id,SchoolSubject.name,SchoolSubject.code,
                              group_concat(ClassSubject.class_id).label('class_ids'))
         .outerjoin(ClassSubject,ClassSubject.subject_id==SchoolSubject.id)
@@ -1698,7 +1718,12 @@ def admin_school_result_manual_new():
     if student_id:
         selected_student=next((x for x in students if x['id']==student_id),None)
         if selected_student: class_id=selected_student['class_id']
-    if class_id: subjects=sorted(subjects,key=lambda x: str(class_id) not in (x['class_ids'] or '').split(','))
+    if class_id:
+        # A subject teacher sees only the subjects they teach in this class, and (in SSS) only the
+        # students of the departments that take the chosen subject and that they teach it to.
+        subjects=[x for x in subjects if _school_pair_allowed(me['id'],class_id,x['id'])]
+        subjects=sorted(subjects,key=lambda x: str(class_id) not in (x['class_ids'] or '').split(','))
+        if subject_id and request.method=='GET': students=_students_for_subject(students,class_id,subject_id,me['id'])
 
     def existing_rows():
         if not (student_id and subject_id and session_id):
@@ -1712,7 +1737,32 @@ def admin_school_result_manual_new():
                    func.coalesce(SchoolStudentResult.term,'Full Session')==term)
             .order_by(SchoolStudentResult.id.desc()))]
 
-    existing=existing_rows()
+    def page(errors, form):
+        """The score entry page: the class's students (each with what is already recorded in the chosen
+        subject and term), the chosen student's records, and the form, all for one set of choices."""
+        class_row=next((c for c in classes if c.id==class_id),None)
+        listed=[x for x in students if x['class_id']==class_id] if class_row else []
+        marks={}
+        if class_row and subject_id and session_id:
+            for sid,component,score,max_score,status in tuples(
+                    select(SchoolStudentResult.student_id,SchoolStudentResult.component_name,SchoolStudentResult.score,
+                           SchoolStudentResult.max_score,SchoolStudentResult.status)
+                    .where(SchoolStudentResult.subject_id==subject_id,SchoolStudentResult.session_id==session_id,
+                           func.coalesce(SchoolStudentResult.term,'Full Session')==term,
+                           SchoolStudentResult.student_id.in_([x['id'] for x in listed] or [0]))
+                    .order_by(SchoolStudentResult.id)):
+                marks.setdefault(sid,{})[component]={'score':score,'max':max_score,'status':status}
+        student_row=next((x for x in listed if x['id']==student_id),None)
+        ids=[x['id'] for x in listed]
+        after=ids[ids.index(student_id)+1:] if student_id in ids else ids
+        next_id=next((i for i in after if i not in marks),None)
+        return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,
+            students=listed,existing=existing_rows(),errors=errors,form=form,class_row=class_row,student_row=student_row,
+            subject_row=next((x for x in subjects if x['id']==subject_id),None),session_id=session_id,term=term,
+            marks=marks,done=sum(1 for i in ids if i in marks),next_id=next_id,
+            test_max=request.values.get('tmax') or (form.get('test_max') if form else '') or CA_MAX_SCORE,
+            exam_max=request.values.get('emax') or (form.get('exam_max') if form else '') or EXAM_MAX_SCORE)
+
     errors=[]
     if request.method=='POST':
         try: class_id=int(request.form.get('class_id')); session_id=int(request.form.get('session_id')); student_id=int(request.form.get('student_id')); subject_id=int(request.form.get('subject_id'))
@@ -1723,11 +1773,11 @@ def admin_school_result_manual_new():
         try: test_score=num('test_score'); test_max=num('test_max'); exam_score=num('exam_score'); exam_max=num('exam_max')
         except (TypeError,ValueError): test_score=test_max=exam_score=exam_max=None
         student=next((x for x in students if x['id']==student_id),None); subject=next((x for x in subjects if x['id']==subject_id),None)
-        if term is None: errors.append('Select a valid term.')
+        if term not in ACADEMIC_TERMS: errors.append('Select First Term, Second Term or Third Term.')
         if not student: errors.append('Select a student from the selected class.')
         if not subject: errors.append('Select a subject that has been created for the selected class.')
         if not _school_class_allowed(me['id'],class_id): errors.append('The selected class is outside your authorised scope.')
-        if not _school_subject_allowed(me['id'],subject_id): errors.append('The selected subject is outside your authorised scope.')
+        elif student and subject and not _student_subject_allowed(me['id'],student_id,class_id,subject_id): errors.append('You do not teach this subject to the selected student (check the class, subject and, in SSS, the department).')
         if not took:
             if not absence: errors.append('State why the student did not take the test.')
         else:
@@ -1736,7 +1786,7 @@ def admin_school_result_manual_new():
         exam_reason=request.form.get('exam_override_reason','').strip()
         if exam_score is not None and exam_max is not None and exam_score>exam_max and not exam_reason: errors.append('An Exam score above its selected maximum requires an approved exception reason.')
         if errors:
-            return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,students=students,existing=existing_rows(),errors=errors,form=request.form)
+            return page(errors,request.form)
         now=datetime.now(timezone.utc).isoformat(); actor=me['id']
         components=[('Test',test_score,test_max,None)] if took else [('Test — Absent',None,None,absence)]
         components.append(('Exam',exam_score,exam_max,exam_reason or None))
@@ -1768,11 +1818,29 @@ def admin_school_result_manual_new():
                                                actor_admin_id=actor,reason=reason,created_at=now))
         if errors:
             db.session.rollback()
-            return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,students=students,existing=existing,errors=errors,form=request.form)
+            return page(errors,request.form)
         offer_subject(class_id,subject_id,me['id'])
         db.session.commit()
-        audit_log('school_manual_result_entered','school','result',student_id,{'subject_id':subject_id,'session_id':session_id,'term':term,'took_test':took}); flash('The offline Test/Exam record has been entered and is awaiting verification.','success'); return redirect(url_for('admin_school_results',**{'class':student['class_name']}))
-    return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,students=students,existing=existing,errors=errors,form=request.args)
+        audit_log('school_manual_result_entered','school','result',student_id,{'subject_id':subject_id,'session_id':session_id,'term':term,'took_test':took})
+        # Straight on to the next student in the class who has no score in this subject and term yet,
+        # keeping the same maxima, so a teacher can work down a class without starting over each time.
+        names=' '.join(p for p in (student['first_name'],student['last_name']) if p)
+        listed=[x['id'] for x in _students_for_subject([x for x in students if x['class_id']==class_id],class_id,subject_id,me['id'])]
+        recorded={sid for (sid,) in tuples(select(SchoolStudentResult.student_id).where(
+            SchoolStudentResult.subject_id==subject_id,SchoolStudentResult.session_id==session_id,
+            func.coalesce(SchoolStudentResult.term,'Full Session')==term,
+            SchoolStudentResult.student_id.in_(listed or [0])).distinct())}
+        after=listed[listed.index(student_id)+1:]+listed[:listed.index(student_id)] if student_id in listed else listed
+        next_id=next((i for i in after if i not in recorded),None)
+        if next_id:
+            flash(f"Saved {names}'s scores.",'success')
+        else:
+            flash(f"Saved {names}'s scores. Every student in the class now has a score in this subject; when you are ready, "
+                  'send them to the class teacher from Results.','success')
+        return redirect(url_for('admin_school_result_manual_new',class_id=class_id,session_id=session_id,term=term,
+                                subject_id=subject_id,student_id=next_id or student_id,
+                                tmax=('%g' % test_max) if took and test_max else None,emax=('%g' % exam_max) if exam_max else None))
+    return page(errors,request.args)
 
 @app.route('/admin/school/results/<int:result_id>/edit',methods=['GET','POST'])
 @admin_required
@@ -1783,7 +1851,7 @@ def admin_school_result_edit(result_id):
         return admin_access_error('school.results.enter')
     row=_result_with_context(result_id)
     if not row: abort(404)
-    if not _school_class_allowed(me['id'],row['class_id']): return admin_access_error('school.results.enter')
+    if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error('school.results.enter')
     if row['status'] in ('approved','released'):
         flash('Approved or released results cannot be edited here. Use the authorised correction process.','error'); return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
     if request.method=='POST':
@@ -1821,31 +1889,39 @@ def admin_school_result_edit(result_id):
 def admin_school_result_workflow(result_id):
     me=current_admin()
     action=request.form.get('action','').strip().lower()
-    required={'verify':'school.results.verify','approve':'school.results.approve','release':'school.results.release'}.get(action)
+    # 'submit' is the subject teacher's one step (recorded or checked -> ready to release); 'return' is the
+    # class teacher sending a mark back to be corrected. The rest is the strict entered -> verified ->
+    # approved -> released order.
+    required={'verify':'school.results.verify','approve':'school.results.approve','release':'school.results.release',
+              'submit':'school.results.submit','return':'school.results.release'}.get(action)
     if not required or not admin_has_permission(me['id'],required):
         return admin_access_error(required or 'school.results.verify')
     row=_result_with_context(result_id,with_subject=False)
     if not row: abort(404)
-    if not _school_class_allowed(me['id'],row['class_id']): return admin_access_error(required)
+    if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error(required)
+    if action in ('release','return') and not _may_release_class(me['id'],row['class_id']):
+        return admin_access_error('Releasing results is for the class teacher of '+(row['class_name'] or 'this class'))
     transitions={'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}
-    frm,to=transitions[action]
+    teacher_steps={'submit':(('entered','verified'),'approved'),'return':(('verified','approved'),'entered')}
+    allowed_from,to=teacher_steps[action] if action in teacher_steps else ((transitions[action][0],),transitions[action][1])
     back=results_return_url(url_for('admin_school_results',**{'class':row['class_name']}))
-    # The workflow is strictly ordered: entered -> verified -> approved -> released.
-    if row['status']!=frm:
-        flash(f'This result must be {frm} before it can be {to}.','error'); return redirect(back)
+    if row['status'] not in allowed_from:
+        flash(f'This result must be {" or ".join(allowed_from)} before it can be {to}.','error'); return redirect(back)
+    frm=row['status']
     reason=request.form.get('reason','').strip()
     now=datetime.now(timezone.utc).isoformat()
     record=obj(SchoolStudentResult,result_id)
     record.status=to
     if action=='verify': record.verified_by=me['id']
-    elif action=='approve': record.approved_by=me['id']
+    elif action in ('approve','submit'): record.approved_by=me['id']
+    elif action=='return': record.verified_by=None; record.approved_by=None
     else: record.released_at=now
     record.updated_at=now; record.updated_by=me['id']
     db.session.add(ResultWorkflowEvent(result_id=result_id,from_status=frm,to_status=to,
         actor_admin_id=me['id'],reason=reason or None,created_at=now))
     db.session.commit()
     audit_log(f'school_result_{action}','school','result',result_id,{'from':frm,'to':to})
-    flash(f'Result {to}.','success')
+    flash({'submit':'Sent to the class teacher, ready to release.','return':'Sent back to be corrected. It must be sent to the class teacher again.'}.get(action,f'Result {to}.'),'success')
     if action=='release':
         announce_ready_report_cards([(row['student_id'],row['session_id'],row['term'])],me['id'])
     return redirect(back)
@@ -1856,6 +1932,8 @@ def admin_school_result_workflow(result_id):
 def admin_school_results_release():
     me=current_admin()
     if not admin_has_permission(me['id'],'school.results.release'): return admin_access_error('school.results.release')
+    # A date for the whole school is set by someone who covers the whole school, never by one class's teacher.
+    if not admin_covers_whole_school(me['id']): return admin_access_error('Setting the whole school\'s release date')
     raw=request.form.get('result_release_at','').strip()
     current=_school_current_session()
     if not current:
