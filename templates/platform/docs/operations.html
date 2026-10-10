@@ -72,6 +72,16 @@
   <code>BRIGHTSTARS_GZIP=0</code> where a proxy already compresses.</li>
 </ul>
 
+<h2 id="pwa">The portal as an installable app</h2>
+<p>{{ file('blueprints/pwa.py') }} makes each school's portal a Progressive Web App in its own name. {{ route('pwa_manifest') }}
+gives the school's name, colour and icons; {{ route('pwa_icon') }} and {{ route('pwa_maskable_icon') }} draw the school's
+own logo onto a square at each size (a monogram in its colour when it has no logo), cached per worker and linked with a
+version taken from the logo, so a new logo shows at once; {{ route('favicon') }} serves the same for browsers that ask for
+<code>/favicon.ico</code>. Every page's head includes {{ tpl('includes/_pwa_head.html') }}; the portals' frames also register
+the service worker, {{ route('pwa_service_worker') }}, which keeps only the portal's own static files (never an upload,
+never a page) and shows {{ route('pwa_offline') }} when there is no connection. Raise <code>SW_VERSION</code> in that file
+to make every installed copy drop its cached files.</p>
+
 <h2 id="uploads">Uploaded files</h2>
 <p>Files under <code>/static/uploads/...</code> are <em>not</em> open to every signed-in account. Each folder has its own rule ({{ file('core/upload_access.py') }}); ownership is read from the database row that holds the file, and a refusal is a plain 404 so a file's existence is not confirmed. A school's logo and photographs are public; message attachments are never served there. Store item pictures
 (<code>uploads/store/</code>) are open to the school's staff and parents.</p>

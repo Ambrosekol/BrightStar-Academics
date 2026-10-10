@@ -21,9 +21,11 @@
 // history happens to hold (which is the workspace chooser after a fresh sign-in, or a form page
 // after a save redirect). Every admin page load is recorded in a per-tab trail; opening a page
 // already in the trail cuts the trail back to it, so list -> form -> list leaves just "list".
-// The workspace chooser (/admin/home) is never part of the trail, so Back never lands on it.
+// The workspace chooser (/admin/home) is never part of the trail, so Back never lands on it. A dashboard (either
+// workspace's Overview) is the baseline: arriving on one starts the trail again from it, so Back from any page leads,
+// step by step, at most as far as the dashboard and never past it.
 (function () {
-    var KEY = 'bs-nav-trail', HOME = '/admin/home';
+    var KEY = 'bs-nav-trail', HOME = '/admin/home', DASHBOARDS = ['/admin/school', '/admin/examination'];
     function read() {
         try { var t = JSON.parse(window.sessionStorage.getItem(KEY) || '[]'); return Array.isArray(t) ? t : []; }
         catch (e) { return []; }
@@ -33,6 +35,7 @@
     }
     var here = window.location.pathname + window.location.search;
     if (window.location.pathname === HOME) { write([]); return; }
+    if (DASHBOARDS.indexOf(window.location.pathname) !== -1) { write([here]); return; }
     var trail = read();
     var at = trail.indexOf(here);
     if (at >= 0) trail = trail.slice(0, at + 1);

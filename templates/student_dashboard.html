@@ -7,7 +7,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Student Dashboard — {{ school_brand.name }}</title>
 <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>

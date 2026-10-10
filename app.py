@@ -1205,6 +1205,7 @@ import blueprints.finance.paystack  # noqa: F401,E402
 # Moved to blueprints/library/routes.py.
 import blueprints.library.routes  # noqa: F401,E402
 import blueprints.store.routes  # noqa: F401,E402
+import blueprints.pwa  # noqa: F401,E402
 
 # ---------------- the Brightstars Academics platform console ----------------
 # Served only on the platform hostnames. Imported here, at the end, because its

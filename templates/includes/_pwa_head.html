@@ -1,0 +1,19 @@
+{#- Every page's tab icon, home-screen icon and app manifest: the school's own logo (blueprints/pwa.py). On the
+    platform's own host they are the platform's. Pages that are portals (staff, parents, students, candidates and
+    sign-in) also set pwa_register before including this, to register the service worker that makes the portal an
+    installable app, with the "Install <school>" bar (static/pwa-install.js). -#}
+{%- if pwa_icon_url is defined and pwa_icon_url(32) -%}
+<link rel="icon" type="image/png" sizes="32x32" href="{{ pwa_icon_url(32) }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ pwa_icon_url(192) }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ pwa_icon_url(180) }}">
+<link rel="manifest" href="{{ url_for('pwa_manifest') }}">
+<meta name="theme-color" content="{{ (school_brand.primary if school_brand is defined and school_brand.primary else '#0d2b52') }}">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}">
+{%- if pwa_register and csp_nonce is defined %}
+<link rel="stylesheet" href="{{ url_for('static', filename='pwa.css') }}">
+<script src="{{ url_for('static', filename='pwa-install.js') }}" data-name="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}" data-icon="{{ pwa_icon_url(192) }}" defer></script>
+<script nonce="{{ csp_nonce() }}">if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});});}</script>
+{%- endif -%}
+{%- endif -%}

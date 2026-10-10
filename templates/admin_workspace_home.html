@@ -12,7 +12,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8">{% set pwa_register = true %}{% include 'includes/_pwa_head.html' %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Workspace Home — {{ school_brand.name }} Admin</title>
   <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>

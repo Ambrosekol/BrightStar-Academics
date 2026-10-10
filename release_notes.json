@@ -18,6 +18,41 @@
   ],
   "releases": [
     {
+      "version": "2.21.1",
+      "date": "2026-10-10",
+      "title": "The portal as an app, the store on the Overview, and Back from the dashboard",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The portal can now be installed as an app on a phone, tablet or computer, in the school's own name with its logo as the app icon: a bar at the bottom of the screen offers Install (on an iPhone or iPad it says how: Share, then Add to Home Screen), and its x closes it for two weeks. The school's logo is also the icon on every browser tab.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The Overview has a Store panel for the School Admin and anyone with store access: items for sale and in stock, what is running low or sold out, what waits to be collected, this month's sales against last month's, sales per week and the best sellers.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "The setup checklist has a new optional step, Open the school store, done once the store has its first item.",
+          "help": "store"
+        },
+        {
+          "audience": "staff",
+          "text": "Back is never shown on a dashboard, and a dashboard is now where Back starts from: from any page, Back leads at most as far as the Overview.",
+          "help": "welcome"
+        },
+        {
+          "audience": "family",
+          "text": "You can now install the school's portal as an app on your phone: tap Install on the bar at the bottom of the screen (on an iPhone, tap Share, then Add to Home Screen). It carries the school's logo."
+        },
+        {
+          "audience": "student",
+          "text": "You can now install the school's portal as an app on your phone or computer: tap Install on the bar at the bottom of the screen."
+        }
+      ]
+    },
+    {
       "version": "2.21.0",
       "date": "2026-10-10",
       "title": "The school store, faster pages, and a guide with pictures",

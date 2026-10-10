@@ -731,6 +731,60 @@ def _library(me):
                          'days': (today - date.fromisoformat(str(d)[:10])).days} for t, kind, m, d in overdue]}
 
 
+def _store(me):
+    """The school store (blueprints/store/routes.py), for the School Admin and anyone who may see the store: what is
+    for sale and in stock, this month's sales against last month's, what waits to be collected, sales by week, the
+    best sellers and what is running low. Six small grouped queries."""
+    if not _can(me, 'store.view'):
+        return None
+    from models import StoreItem, StorePurchase
+    today = datetime.now(timezone.utc).date()
+    month = today.strftime('%Y-%m')
+    last_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+    sold = StorePurchase.status != 'cancelled'
+    items = tuples(select(func.count(StoreItem.id), func.coalesce(func.sum(StoreItem.stock), 0),
+                          func.count().filter(StoreItem.stock <= 0),
+                          func.count().filter(StoreItem.stock > 0, StoreItem.stock <= 5))
+                   .where(StoreItem.active == 1))[0]
+    n_items, units, out, low = (int(v or 0) for v in items)
+    in_month = func.substr(StorePurchase.created_at, 1, 7)
+    sales = tuples(select(func.coalesce(func.sum(case((in_month == month, StorePurchase.amount), else_=0)), 0),
+                          func.coalesce(func.sum(case((in_month == last_month, StorePurchase.amount), else_=0)), 0),
+                          func.count().filter(in_month == month))
+                   .where(sold))[0]
+    this_month, before, n_month = float(sales[0] or 0), float(sales[1] or 0), int(sales[2] or 0)
+    waiting = tuples(select(func.count(), func.count().filter(StorePurchase.short == 1))
+                     .where(StorePurchase.status == 'paid'))[0]
+    if not n_items and not this_month and not waiting[0] and not one_scalar(select(func.count()).select_from(StorePurchase), 0):
+        return None   # a school that has not opened its store yet: nothing to show
+    kpis = [
+        {'label': 'For sale', 'value': f'{n_items:,}', 'note': f'{units:,} in stock'},
+        {'label': 'Running low', 'value': f'{low:,}', 'note': '5 or fewer left', 'alert': bool(low)},
+        {'label': 'Sold out', 'value': f'{out:,}', 'alert': bool(out)},
+        {'label': 'To be collected', 'value': f'{int(waiting[0] or 0):,}',
+         'note': f'{int(waiting[1] or 0)} paid but out of stock' if waiting[1] else 'paid, not handed over', 'alert': bool(waiting[1])},
+        {'label': 'Sales this month', 'value': f'₦{this_month:,.0f}', 'note': f'{n_month} purchase{"" if n_month == 1 else "s"}',
+         'delta': delta(this_month, before, unit='₦', label='last month', digits=0)},
+    ]
+    start = today - timedelta(weeks=7, days=today.weekday())
+    weekly = Counter()
+    for day, amount in tuples(select(func.substr(StorePurchase.created_at, 1, 10), StorePurchase.amount)
+                              .where(sold, StorePurchase.created_at >= start.isoformat())):
+        try:
+            weekly[(date.fromisoformat(day) - start).days // 7] += float(amount or 0)
+        except ValueError:
+            pass
+    columns = [{'label': (start + timedelta(weeks=i)).strftime('%d %b'), 'value': round(weekly.get(i, 0)),
+                'tip': f"Week of {(start + timedelta(weeks=i)).strftime('%d %b')}: ₦{weekly.get(i, 0):,.0f}"} for i in range(8)]
+    best = tuples(select(StorePurchase.item_name, func.sum(StorePurchase.quantity)).where(sold)
+                  .group_by(StorePurchase.item_name).order_by(func.sum(StorePurchase.quantity).desc()).limit(5))
+    running_low = tuples(select(StoreItem.name, StoreItem.stock).where(StoreItem.active == 1, StoreItem.stock <= 5)
+                         .order_by(StoreItem.stock, StoreItem.name).limit(5))
+    return {'kpis': kpis, 'columns': columns, 'column_max': max([c['value'] for c in columns] + [1]),
+            'best': _bars([(name, float(n or 0), name) for name, n in best], unit=''),
+            'low': [{'name': name, 'stock': stock} for name, stock in running_low]}
+
+
 def _admissions(me):
     if not _can(me, 'candidates.admit'):
         return None
@@ -848,6 +902,7 @@ def build_dashboard(me):
         'my_teaching': _my_teaching(me, session, term, prev, duties),
         'finance': _finance(me, session),
         'library': _library(me),
+        'store': _store(me),
         'admissions': _admissions(me),
         'parents': _parents(me),
         'records': _records(me, session),

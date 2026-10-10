@@ -174,7 +174,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8">{% set pwa_register = true %}{% include 'includes/_pwa_head.html' %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}{{ school_brand.name }} Administration{% endblock %}</title>
@@ -282,7 +282,8 @@
         </header>
 
         <div class="ui-page">
-        {% if request.endpoint != 'admin_workspace_home' %}
+        {#- A dashboard is where Back leads, never where it starts: no Back on the workspace chooser or either Overview. -#}
+        {% if request.endpoint not in ('admin_workspace_home', 'admin_school_home', 'admin_dashboard') %}
         <div class="ui-backbar">
             <button class="ui-back" type="button" data-go-back="{{ url_for('admin_school_home') if active_workspace == 'school' else url_for('admin_dashboard') }}" title="Go back one step">
                 {{ icon('arrow-left', 'ico-sm') }}

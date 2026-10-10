@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {% set school_title = (public_settings.get('school_name') if public_settings else None) or school_brand.name %}
 <title>{{code}} {{ 'File Too Large' if code==413 else name }} — {{school_title}}</title>

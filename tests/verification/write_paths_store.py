@@ -484,6 +484,59 @@ r = op.client.get(css_url.replace("&amp;", "&"), base_url=ALPHA, headers={"Accep
 check("…and so is a stylesheet", r.headers.get("Content-Encoding") == "gzip" and b"--brand" in _gzip.decompress(r.get_data()))
 check("…but never to a client that did not ask", op.get("/admin/school").headers.get("Content-Encoding") is None)
 
+# ================================================================ an installable app, in the school's own logo
+import json as _json  # noqa: E402
+from PIL import Image as _Image  # noqa: E402
+r = anon.get("/manifest.webmanifest")
+m = _json.loads(r.get_data(as_text=True))
+check("the school's app manifest is open to anyone, in the school's own name", r.status_code == 200
+      and r.mimetype == "application/manifest+json" and m["name"] == "Alpha School" and m["display"] == "standalone" and m["start_url"].startswith("/"))
+check("…with its icons at 192 and 512, and a maskable one", {i["sizes"] for i in m["icons"]} == {"192x192", "512x512"}
+      and any(i.get("purpose") == "maskable" for i in m["icons"]))
+icon = anon.get(m["icons"][0]["src"])
+check("the app icon is a 192 by 192 picture", icon.status_code == 200 and icon.mimetype == "image/png"
+      and _Image.open(io.BytesIO(icon.get_data())).size == (192, 192))
+check("…and the browser's own /favicon.ico is the school's icon too", anon.get("/favicon.ico").mimetype == "image/png")
+check("an icon size nobody uses is not made", anon.get("/pwa/icon-999.png").status_code == 404)
+sw = anon.get("/sw.js")
+body = sw.get_data(as_text=True)
+check("the service worker is served for the whole site", sw.status_code == 200 and sw.headers.get("Service-Worker-Allowed") == "/"
+      and "javascript" in sw.mimetype)
+check("…and keeps only the portal's own files: never an upload, and pages always from the network",
+      "/static/uploads/" in body and "request.mode === 'navigate'" in body and "fetch(request).catch" in body)
+off = anon.get("/offline")
+check("the offline page needs no sign-in and carries the school's name", off.status_code == 200 and "Alpha School" in off.get_data(as_text=True))
+for who, url in ((op, "/admin/school"), (mum, "/parent/store"), (anon, "/login")):
+    page = who.text(url)
+    check(f"{url} names the manifest, the school's tab icon and its home-screen icon, and registers the app",
+          'rel="manifest"' in page and 'rel="icon"' in page and 'rel="apple-touch-icon"' in page and "serviceWorker" in page
+          and "pwa-install.js" in page and 'data-name="Alpha School"' in page)
+before = re.search(r'rel="icon" type="image/png" sizes="32x32" href="([^"]+)"', op.text("/admin/school")).group(1)
+tok = csrf_from(op.text("/admin/school/branding"))
+logo = io.BytesIO(); _Image.new("RGB", (300, 120), (200, 30, 30)).save(logo, "PNG"); logo.seek(0)
+op.client.post("/admin/school/branding/save", data={"_csrf_token": tok, "logo": (logo, "logo.png")}, base_url=ALPHA,
+               environ_base={"REMOTE_ADDR": op.addr}, content_type="multipart/form-data")
+after = re.search(r'rel="icon" type="image/png" sizes="32x32" href="([^"]+)"', op.text("/admin/school")).group(1)
+check("a new logo gives the icons a new address, so browsers show it at once", before != after)
+red = _Image.open(io.BytesIO(anon.get(after).get_data())).convert("RGB").getpixel((16, 16))
+check("…and the icon is the school's own logo", red[0] > 150 and red[1] < 90, str(red))
+
+# ================================================================ the store on the Overview
+home = op.text("/admin/school")
+check("the School Admin's Overview has a Store panel with this month's sales and what waits to be collected",
+      'id="ovStore"' in home and "Sales this month" in home and "To be collected" in home and "Best sellers" in home)
+check("…and so does a Store Keeper's", 'id="ovStore"' in keeper_s.text("/admin/school"))
+check("…but not the Overview of someone without store access", 'id="ovStore"' not in nobody.text("/admin/school"))
+op.post("/admin/school/onboarding/show", {}, page="/admin/school")   # an earlier check left it hidden
+check("the setup checklist has the store step, done now that the store has items",
+      re.search(r'data-step="Open the school store" data-done="1"', op.text("/admin/school")) is not None)
+
+# ================================================================ dashboards are where Back leads, never where it starts
+check("the Overview has no Back button", 'class="ui-back"' not in op.text("/admin/school"))
+check("…but another page has one", 'class="ui-back"' in op.text("/admin/store"))
+check("…and the workspace chooser has none either", 'class="ui-back"' not in op.text("/admin/home"))
+op.get("/admin/workspace/school")
+
 # ================================================================ no traceback, no server error
 check("no page in this run was a server error, and none showed a traceback", not PROBLEMS, "; ".join(PROBLEMS[:4]))
 check("no server error was logged by any request in this run", not errors.seen, "; ".join(str(e).splitlines()[0][:100] for e in errors.seen[:3]))

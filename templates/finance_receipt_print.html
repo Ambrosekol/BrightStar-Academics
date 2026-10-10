@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
 <title>Official Receipt {{ payment.receipt_no }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='receipt.css', v='2') }}">

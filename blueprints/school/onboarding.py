@@ -74,7 +74,8 @@ def _flags():
     COUNT(*) read every attendance mark and payment the school ever had, and one query for all of them replaces a
     dozen and a half round trips."""
     from models import (AcademicSession, Admin, AttendanceRecord, ClassSubject, ExamTimetableEntry,
-                        FinanceFeeAssessment, FinancePayment, LibraryBook, ParentStudentLink, ReportCardTrait)
+                        FinanceFeeAssessment, FinancePayment, LibraryBook, ParentStudentLink, ReportCardTrait,
+                        StoreItem)
 
     def any_of(model, *where):
         return select(literal(1)).select_from(model).where(*where).exists()
@@ -97,6 +98,7 @@ def _flags():
         'attendance': any_of(AttendanceRecord),
         'timetable': any_of(ExamTimetableEntry),
         'library': any_of(LibraryBook),
+        'store': any_of(StoreItem),
     }
     row = db.session.execute(select(*(c.label(k) for k, c in checks.items()))).mappings().first()
     return {k: bool(row[k]) for k in checks} if row else {}
@@ -230,6 +232,10 @@ def _step_definitions():
           'Add your books so students can be lent them and returns are tracked.',
           'admin_library', 'library.view',
           lambda: has('library'), major=False),
+        S(EXTRAS, 'store', 'Open the school store',
+          'Add what the school sells (uniforms, books, sportswear) with prices, pictures and stock. Parents see it in their portal and, with online payments, can buy it there.',
+          'admin_store', 'store.view',
+          lambda: has('store'), major=False),
     ]
 
 

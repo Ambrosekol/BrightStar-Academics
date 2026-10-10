@@ -196,7 +196,7 @@
 {% endif %}
 
 {# ---------------------------------------------------------------- the rest of the office #}
-{% if p.records or p.library or p.admissions or p.parents %}
+{% if p.records or p.library or p.store or p.admissions or p.parents %}
 <div class="ov-g">
   {% if p.records %}{% set r = p.records %}
   <section class="ov-p ov-p--6" aria-labelledby="ovRecords">
@@ -217,6 +217,19 @@
     </div>
     {% if l.overdue %}<h3 class="ov-sec">Overdue</h3>
     <table class="ov-t"><tbody>{% for o in l.overdue %}<tr><td>{{ o.title }}</td><td>{{ o.who }}</td><td class="n"><span class="ov-flag">{{ o.days }} day{{ '' if o.days == 1 else 's' }}</span></td></tr>{% endfor %}</tbody></table>{% endif %}
+  </section>
+  {% endif %}
+  {% if p.store %}{% set st = p.store %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovStore">
+    <div class="ov-h"><h2 id="ovStore">Store</h2><a href="{{ url_for('admin_store_claims') }}">Purchase claims →</a></div>
+    {{ d.kpis(st.kpis) }}
+    <div class="ov-g" style="margin:0">
+      <div class="ov-in ov-in--6"><h3 class="ov-sec" style="margin-top:0">Sales per week</h3>{{ d.columns(st.columns, st.column_max, unit='₦', empty='No sales yet.') }}</div>
+      <div class="ov-in ov-in--6"><h3 class="ov-sec" style="margin-top:0">Best sellers</h3>{{ d.hbars(st.best, unit='', empty='No sales yet.') }}</div>
+    </div>
+    {% if st.low %}<h3 class="ov-sec">Running low</h3>
+    <table class="ov-t"><tbody>{% for i in st.low %}<tr><td>{{ i.name }}</td><td class="n"><span class="ov-flag">{{ 'Sold out' if i.stock <= 0 else i.stock ~ ' left' }}</span></td></tr>{% endfor %}</tbody></table>
+    <p style="margin:6px 0 0"><a href="{{ url_for('admin_store', show='low') }}">Add stock on Inventory →</a></p>{% endif %}
   </section>
   {% endif %}
   {% if p.admissions %}

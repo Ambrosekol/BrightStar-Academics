@@ -26,6 +26,16 @@ account may open.</p>
 reverse — the portal stops you and sends you back to Workspace Home to choose. This is deliberate:
 the two are kept apart so nobody wanders from one into the other by mistake.</div>
 
+<h2 id="app">The portal as an app</h2>
+<p>The portal can be installed like an app on a phone, a tablet or a computer. A bar at the bottom of the screen offers
+<strong>Install {{ school_brand.name if school_brand is defined else 'the portal' }}</strong>; on an iPhone or iPad it says how
+instead (Share, then <strong>Add to Home Screen</strong>). Its <strong>×</strong> closes it for two weeks; the browser's own
+Install (in Chrome's and Edge's address bar) works at any time. It opens in its own window, in the school's name, with the school's logo as its icon; the logo is also the
+icon on every browser tab. Parents and students can install it the same way. It still needs a connection: without one it
+shows a short "You are offline" page, and nothing anyone has seen while signed in is kept on the device.</p>
+<p>The <strong>Back</strong> button at the top of a page takes you to the page you were on before. A dashboard (the
+Overview) never has one: it is where Back leads, so from any page, Back goes at most as far as the Overview.</p>
+
 <h2 id="start-here">Where to start</h2>
 <p>Whichever workspace you choose, the very first page you land on is called
 <strong>Overview</strong> — <a href="{{ url_for('admin_school_home') }}">Overview</a> in the School

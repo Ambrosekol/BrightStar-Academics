@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Candidate Dashboard — {{ school_brand.name }}</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head>
+<html lang="en"><head><meta charset="utf-8">{% set pwa_register = true %}{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Candidate Dashboard — {{ school_brand.name }}</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head>
 <body>{{ connectivity_banner() }}
 <header class="top"><a class="portal-brand" href="{{url_for('candidate_dashboard')}}"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Candidate Examination Portal</span></div></a><div class="candidate-top"><span>{{candidate.candidate_name}}</span><a href="{{url_for('candidate_logout')}}">Sign out</a></div></header>
 <main class="candidate-dashboard">
