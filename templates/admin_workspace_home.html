@@ -1,90 +1,96 @@
 {% from 'includes/_nav_icons.html' import icon %}
 {% from 'includes/_school_mark.html' import school_mark %}
 {#-
-  Where an administrator chooses a workspace: the front door of the school's system.
+  Where an administrator chooses a workspace: the front door of the school's system, in the staff pages' own look
+  (the school's header bar, a title line, panels with their figures, static/academics.css and static/finance.css).
 
-  It wears the school's own identity (logo or monogram, name, motto, address, colours) and offers the two
-  workspaces. Both choices are always open, exactly as before: the workspace pages themselves decide what a
-  person may do, and a person whose role has nothing in a workspace is told so here rather than locked out
-  (someone who only handles fees has no "school.*" permission, yet Finance lives in the School workspace).
-  `facts` (from the route) is a few plain numbers; any of them may be missing and is then simply left out.
+  Both choices are always open, exactly as before: the workspace pages themselves decide what a person may do, and a
+  person whose role has nothing in a workspace is told so here rather than locked out (someone who only handles fees
+  has no "school.*" permission, yet Finance lives in the School workspace). `facts` (from the route) is a few plain
+  numbers; any of them may be missing and is then shown as a dash.
+
+  Choosing one dims the page and spins its Enter button until the workspace has loaded (static/page-loading.js), and
+  while the person reads, the browser quietly fetches the workspace's own styles and scripts (rel=prefetch), so the
+  workspace is drawn the moment it arrives instead of after a second wait.
 -#}
+{% set initials = ((admin.display_name or '?').split()[0][:1] ~ ((admin.display_name or '').split()[-1][:1] if (admin.display_name or '').split()|length > 1 else ''))|upper %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">{% set pwa_register = true %}{% include 'includes/_pwa_head.html' %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Workspace Home — {{ school_brand.name }} Admin</title>
+  <title>Choose a workspace — {{ school_brand.name }}</title>
   <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="{{ url_for('static', filename='fonts/newsreader-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='1') }}">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-600-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='academics.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='finance.css') }}">
+  {#- What the workspace pages load (templates/admin_base.html, the Overview), fetched while this page is read. -#}
+  {% for f in ('admin.css', 'overview.css', 'admin.js', 'interactions.js', 'school-nav.js', 'account-menu.js', 'inplace.js') %}
+  <link rel="prefetch" href="{{ url_for('static', filename=f) }}">
+  {% endfor %}
 </head>
-<body class="school-ui">{{ connectivity_banner() }}
+<body class="school-ui ws">{{ connectivity_banner() }}
 <a class="skip-link" href="#main">Skip to main content</a>
-<div class="door">
+<header class="ws-bar">
+  <span class="ws-bar__school">{{ school_mark(school_brand) }}<span><b>{{ school_brand.name }}</b><small>School Administration</small></span></span>
+  <span class="ws-bar__me">
+    <span class="ws-bar__ava" aria-hidden="true">{{ initials }}</span>
+    <span class="ws-bar__name">{{ admin.display_name }}</span>
+    <a class="ws-bar__out" href="{{ url_for('admin_logout') }}">Sign out</a>
+  </span>
+</header>
 
-  <header class="door-bar">
-    <span class="door-bar__label">School Administration</span>
-    <div class="door-bar__user"><a href="{{ url_for('admin_logout') }}">Sign out</a></div>
+<main class="ws-main ac" id="main" data-page-body>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="{{ 'ac-errors' if category == 'error' else 'ac-note' }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <header class="ac-top ws-top">
+    <div>
+      <h1>Choose a workspace</h1>
+      <p>Welcome, {{ admin.display_name }}. Each workspace has its own menu and records; you can switch at any time from the foot of the menu.</p>
+    </div>
   </header>
 
-  <main class="door-main" id="main" data-page-body>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="flash {{ category }}" role="status">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
-
-    <div class="door-identity">
-      {{ school_mark(school_brand) }}
-      <div class="door-identity__text">
-        <p class="door-welcome">Welcome, {{ admin.display_name }}</p>
-        <h1 class="door-school">{{ school_brand.name }}</h1>
-        {% if school_brand.motto %}<p class="door-motto">{{ school_brand.motto }}</p>{% endif %}
-        {% if school_brand.address %}<p class="door-address">{{ school_brand.address }}</p>{% endif %}
-      </div>
-    </div>
-
-    <h2 class="door-heading">Choose your workspace</h2>
-    <p class="door-intro">Select where you want to work. Once you enter a workspace, only that workspace's tools and records are shown.</p>
-
-    <ul class="door-choices">
-
-      <li>
-        <a href="{{ url_for('select_entrance_workspace') }}" class="door-choice">
-          <span class="door-choice__ico">{{ icon('door') }}</span>
-          <h3 class="door-choice__title">Entrance Examination</h3>
-          <p class="door-choice__text">Manage entrance-examination <strong>candidates</strong>, question banks, examination activity, results and rankings.</p>
-          {% if facts and facts.candidates is not none %}
-            <p class="door-choice__fact">{{ facts.candidates }} candidate{{ '' if facts.candidates == 1 else 's' }} registered</p>
-          {% endif %}
-          {% if not can_entrance %}<p class="door-choice__note">Your role has no entrance-examination permissions yet, so only the pages it does allow will appear.</p>{% endif %}
-          <span class="door-choice__go">Enter Entrance Examination {{ icon('arrow-right', 'ico-sm') }}</span>
-        </a>
-      </li>
-
-      <li>
-        <a href="{{ url_for('select_school_workspace') }}" class="door-choice">
-          <span class="door-choice__ico">{{ icon('school') }}</span>
-          <h3 class="door-choice__title">School Portal</h3>
-          <p class="door-choice__text">Manage enrolled <strong>students</strong>, classes, subjects, assignments, tests, practice tests, examinations and school records.</p>
-          {% if facts and (facts.session or facts.students is not none) %}
-            <p class="door-choice__fact">{% if facts.session %}Session {{ facts.session }}{% endif %}{% if facts.session and facts.students is not none %} · {% endif %}{% if facts.students is not none %}{{ facts.students }} student{{ '' if facts.students == 1 else 's' }} enrolled{% endif %}</p>
-          {% endif %}
-          {% if not can_school %}<p class="door-choice__note">Your role has no school-portal permissions of its own yet, so only the pages it does allow will appear.</p>{% endif %}
-          <span class="door-choice__go">Enter School Portal {{ icon('arrow-right', 'ico-sm') }}</span>
-        </a>
-      </li>
-
-    </ul>
-
-    <p class="door-foot"><strong>Workspace boundary:</strong> you must deliberately choose a workspace before its menu appears.</p>
-
-  </main>
-</div>
-{#- Opening a workspace dims this page under a spinner until it arrives (static/page-loading.js). -#}
+  <ul class="ws-choices">
+    <li>
+      <a href="{{ url_for('select_school_workspace') }}" class="ws-choice ac-panel" data-busy>
+        <span class="ws-choice__head">
+          <span class="ws-choice__ico">{{ icon('school') }}</span>
+          <span class="ws-choice__title"><b>School Portal</b><small>Enrolled students and the school year</small></span>
+          {% if not can_school %}<span class="ac-tag ac-tag--attn">Limited access</span>{% endif %}
+        </span>
+        <span class="ws-choice__text">Students, classes and subjects; assignments, tests and examinations; results and report cards; attendance, fees and the store.</span>
+        <dl class="fi-k ws-choice__facts">
+          <div><dt>Session</dt><dd>{{ facts.session if facts and facts.session else '—' }}</dd></div>
+          <div><dt>Students enrolled</dt><dd>{{ facts.students if facts and facts.students is not none else '—' }}</dd></div>
+        </dl>
+        {% if not can_school %}<span class="ws-choice__note">Your role has no school-portal permissions of its own yet, so only the pages it does allow will appear.</span>{% endif %}
+        <span class="ac-btn ac-btn--primary ac-btn--lg ws-choice__go">Enter School Portal {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('select_entrance_workspace') }}" class="ws-choice ac-panel" data-busy>
+        <span class="ws-choice__head">
+          <span class="ws-choice__ico">{{ icon('door') }}</span>
+          <span class="ws-choice__title"><b>Entrance Examination</b><small>Candidates applying to the school</small></span>
+          {% if not can_entrance %}<span class="ac-tag ac-tag--attn">Limited access</span>{% endif %}
+        </span>
+        <span class="ws-choice__text">Candidates and their registration; question banks; the examination itself; results, rankings and admissions.</span>
+        <dl class="fi-k ws-choice__facts">
+          <div><dt>Candidates registered</dt><dd>{{ facts.candidates if facts and facts.candidates is not none else '—' }}</dd></div>
+        </dl>
+        {% if not can_entrance %}<span class="ws-choice__note">Your role has no entrance-examination permissions yet, so only the pages it does allow will appear.</span>{% endif %}
+        <span class="ac-btn ac-btn--lg ws-choice__go">Enter Entrance Examination {{ icon('arrow-right', 'ico-sm') }}</span>
+      </a>
+    </li>
+  </ul>
+</main>
+{#- Opening a workspace dims this page and spins its Enter button until the workspace arrives (static/page-loading.js). -#}
 <script src="{{ url_for('static', filename='page-loading.js') }}"></script>
 </body>
 </html>

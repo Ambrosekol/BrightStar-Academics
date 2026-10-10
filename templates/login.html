@@ -48,4 +48,11 @@
           <p class="auth-legal"><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
         </div>
 {% endblock %}
-{% block legal %}{% endblock %}
+{#- On a phone the school's side is only a strip with its logo and name, so the version and the privacy link go to the
+    foot of the page instead, centred (static/school-ui.css, .auth-foot); on a wider screen they stay on the school's side. -#}
+{% block legal %}
+      <footer class="auth-foot">
+        <p class="auth-foot__version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
+        <p><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
+      </footer>
+{% endblock %}

@@ -1,5 +1,10 @@
-/* Loading feedback for a whole-page load, on the staff pages (templates/admin_base.html), the student and parent
-   portals (templates/portal_base.html) and the pages a paper is taken on; and the portals' avatars.
+/* Loading feedback for a whole-page load, on the staff pages (templates/admin_base.html and the workspace chooser),
+   the sign-in and password pages (templates/auth_base.html), the student and parent portals
+   (templates/portal_base.html) and the pages a paper is taken on; and the portals' avatars.
+
+   It does not end when this page goes: it leaves a note (sessionStorage 'bs-nav'), and the next page, reading it first
+   thing in its <head> (templates/includes/_pwa_head.html), is drawn under the same dim and spinner until it has loaded.
+   So the spinner is on screen from the press to the moment the next page is ready, with no blank screen between.
 
    A view that loads in place (static/inplace.js) already shows its own loading. Everything else - a link to another
    section, the side menu, a form that is sent as a whole page - used to show nothing until the next page arrived,
@@ -39,9 +44,15 @@
     if (!el || el.classList.contains('is-loading')) return;
     el.classList.add('is-loading'); el.setAttribute('aria-busy', 'true'); dimmed.push(el);
   }
+  // The next page reads this note first thing (templates/includes/_pwa_head.html) and is drawn under the same spinner
+  // until it has loaded, so the spinner stays on screen while one page gives way to the next.
+  function note(on) {
+    try { if (on) sessionStorage.setItem('bs-nav', String(Date.now())); else sessionStorage.removeItem('bs-nav'); } catch (e) {}
+  }
   function start(from) {
     clearTimeout(giveUp);
     giveUp = setTimeout(stop, 15000);
+    note(true);
     if (page) {
       dim(page);
       dim(from && from.closest && from.closest('.ac-modal__body'));
@@ -55,6 +66,7 @@
   }
   function stop() {
     clearTimeout(giveUp);
+    note(false);
     dimmed.forEach(function (el) { el.classList.remove('is-loading'); el.setAttribute('aria-busy', 'false'); });
     dimmed = [];
     document.documentElement.classList.remove('is-loading');
@@ -75,6 +87,8 @@
     if (url.origin !== window.location.origin || isFile(url)) return;
     if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;
     if (a.classList.contains('ac-btn') || a.classList.contains('ui-btn') || a.classList.contains('btn')) busy(a);
+    // A whole card that is a link (data-busy, the workspace chooser): its button is the one that spins.
+    else if (a.hasAttribute('data-busy')) busy(a.querySelector('.ac-btn, .ui-btn') || a);
     start(a);
   });
 

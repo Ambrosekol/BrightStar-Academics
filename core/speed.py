@@ -6,6 +6,13 @@ compressed.
   time>``. An address that names its version can be kept for a year (``immutable``): the browser stops asking again
   on every page, and the moment a file changes its address changes, so nobody sees an old copy. A file asked for
   without ``m`` (an old bookmark, a hand-written link) is kept for five minutes only.
+* **One address per file.** A hand-written ``v=`` (``v='4'``, ``v='11'``) is dropped in favour of ``m``: the same file
+  named with two different ``v`` values on two pages was two cache entries, so going from one page to the next fetched
+  a stylesheet the browser already had, and the next page could not paint until it arrived.
+* **Fonts.** ``static/fonts/fonts.css`` names its font files without ``m`` (a stylesheet cannot call url_for), so a
+  font's ``url_for`` (the ``<link rel="preload">`` in each page's head) is left without ``m`` too: the preload then
+  fetches the very file the stylesheet asks for, instead of a second copy under another address. Font files never
+  change under the same name, so they are kept for thirty days.
 * **Compression.** Pages, fragments loaded in place, JSON and the static text files are gzipped for a browser that
   accepts it (every current one does): a page of a few hundred kilobytes travels as a few dozen. A static file is
   compressed once per version and kept. Set ``BRIGHTSTARS_GZIP=0`` where a proxy in front already compresses.
@@ -50,6 +57,10 @@ def _timestamped(value):
     return str(value or '').isdigit() and len(str(value)) >= 9
 
 
+def _is_font(filename):
+    return filename.startswith('fonts/') and filename.endswith(('.woff2', '.woff'))
+
+
 def init_app(app):
     @app.url_defaults
     def _version_static(endpoint, values):
@@ -57,6 +68,9 @@ def init_app(app):
             return
         filename = values.get('filename') or ''
         if not filename or filename.startswith('uploads/') or 'm' in values or _timestamped(values.get('v')):
+            return
+        values.pop('v', None)
+        if _is_font(filename):
             return
         version = _mtime(app.static_folder, filename)
         if version:
@@ -66,7 +80,12 @@ def init_app(app):
     def _cache_and_compress(response):
         if request.endpoint == 'static' and response.status_code == 200 and not (request.view_args or {}).get('filename', '').startswith('uploads/'):
             versioned = request.args.get('m') or _timestamped(request.args.get('v'))
-            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable' if versioned else 'public, max-age=300'
+            if versioned:
+                response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            elif _is_font((request.view_args or {}).get('filename', '')):
+                response.headers['Cache-Control'] = 'public, max-age=2592000'
+            else:
+                response.headers['Cache-Control'] = 'public, max-age=300'
         if not _enabled() or response.status_code != 200 or 'Content-Encoding' in response.headers:
             return response
         if 'gzip' not in (request.headers.get('Accept-Encoding') or '').lower():

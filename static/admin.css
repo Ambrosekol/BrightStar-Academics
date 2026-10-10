@@ -1,5 +1,6 @@
-/* The interface fonts are self-hosted: see static/fonts/fonts.css. The tokens are in school-ui.css. */
-@import url("fonts/fonts.css");
+/* The interface fonts are self-hosted (static/fonts/fonts.css). Each page links that file itself, beside this one:
+   an @import here made every staff page wait for this file before it could even ask for the fonts' stylesheet, a
+   round trip more before anything was drawn. The tokens are in school-ui.css. */
 :root {
     --navy: #0b1f3a;
     --blue: #1769aa;

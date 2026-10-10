@@ -15,5 +15,20 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='pwa.css') }}">
 <script src="{{ url_for('static', filename='pwa-install.js') }}" data-name="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}" data-icon="{{ pwa_icon_url(192) }}" defer></script>
 <script nonce="{{ csp_nonce() }}">if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});});}</script>
+{#- Arriving from another page (static/page-loading.js left a note as it was left): this page is drawn dimmed under
+    the same spinner, from its very first paint until it has finished loading, so the spinner never leaves the screen
+    in between - the moment the old page is gone and this one is not drawn yet is otherwise a blank screen in the
+    installed app. Inline, and first in <head>, so it needs no other file; it clears itself on load (or after 6s). -#}
+<style>
+html.bs-arriving [data-page-body] > * { opacity: .55; transition: opacity .12s ease; }
+html.bs-arriving body { cursor: progress; }
+html.bs-arriving body:not(.auth)::after, html.bs-arriving .auth-main::after { content: ""; position: fixed; top: 50%; left: 50%; z-index: 2147483000; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+  border: 3px solid color-mix(in srgb, var(--brand-accent, #1674b9) 18%, transparent); border-top-color: var(--brand-accent, #1674b9); border-radius: 50%;
+  animation: bs-arrive .7s linear infinite; pointer-events: none; }
+html.bs-arriving .auth-main::after { position: absolute; }   /* a sign-in page: in the middle of the form, not on the seam */
+@keyframes bs-arrive { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { html.bs-arriving body::after, html.bs-arriving .auth-main::after { animation-duration: 2s; } }
+</style>
+<script nonce="{{ csp_nonce() }}">(function(d){try{var t=+sessionStorage.getItem('bs-nav');sessionStorage.removeItem('bs-nav');if(!t||Date.now()-t>20000)return;}catch(e){return;}d.classList.add('bs-arriving');function done(){d.classList.remove('bs-arriving');}if(document.readyState==='complete')done();else window.addEventListener('load',function(){requestAnimationFrame(done);});setTimeout(done,6000);window.addEventListener('pageshow',function(e){if(e.persisted)done();});})(document.documentElement);</script>
 {%- endif -%}
 {%- endif -%}

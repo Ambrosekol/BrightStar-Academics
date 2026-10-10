@@ -18,6 +18,36 @@
   ],
   "releases": [
     {
+      "version": "2.22.2",
+      "date": "2026-10-10",
+      "title": "A steadier spinner, a new workspace page and a tidier sign-in on phones",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The spinner now stays on screen until the next page is ready. Before, it could disappear while the next page was still on its way, leaving a blank or frozen screen for a second or two, especially in the installed app. Pages also appear sooner, because the browser reuses the files it already has from one page to the next.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "The page where you choose a workspace has been redesigned to match the rest of the portal: the school's header bar, then School Portal and Entrance Examination side by side, each with its figures (the session and students enrolled, or candidates registered) and its own Enter button. While the workspace opens, the page dims and its Enter button spins.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Signing in now shows a spinner on the Sign In button while your account is checked. On a phone, the school's logo and name are centred at the top of the sign-in page, and the version and the privacy link sit at the bottom.",
+          "help": "welcome"
+        },
+        {
+          "audience": "family",
+          "text": "Signing in now shows a spinner on the Sign In button while your account is checked, and on a phone the school's logo and name are centred at the top of the sign-in page, with the version and the privacy link at the bottom. Moving between pages keeps the spinner on screen until the next page is ready, so you are never left looking at a blank screen."
+        },
+        {
+          "audience": "student",
+          "text": "Signing in now shows a spinner on the Sign In button while your account is checked, and on a phone the school's logo and name are centred at the top of the sign-in page, with the version and the privacy link at the bottom. Moving between pages keeps the spinner on screen until the next page is ready, so you are never left looking at a blank screen."
+        }
+      ]
+    },
+    {
       "version": "2.22.1",
       "date": "2026-10-10",
       "title": "Clearer portal pages for parents and students",
