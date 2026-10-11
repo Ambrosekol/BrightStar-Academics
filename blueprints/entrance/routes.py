@@ -41,6 +41,8 @@ from core.entrance import (
     premium_result_metrics, required_papers_for_target, sync_examinations,
 )
 from core.marks import tidy as tidy_mark
+from core.entrance_departments import department_fits, recommend
+from core.school_structure import clean_department
 from core.numbering import NumberingRuleError
 from models import (
     AcademicSession, AdminResourceLock, Answer, Attempt, Candidate,
@@ -348,6 +350,7 @@ def admin_new_candidate():
         primary_mobile=request.form.get('primary_mobile','').strip()
         alternative_mobile=request.form.get('alternative_mobile','').strip()
         parent_guardian_email=request.form.get('parent_guardian_email','').strip()
+        department_choice=clean_department(request.form.get('department_choice'))
         photo_path=None
         errors=[]
         if not name: errors.append('Candidate name is required.')
@@ -362,6 +365,12 @@ def admin_new_candidate():
             errors.append(str(exc))
         group=normalize_entry_group(target)
         if not group: errors.append('Select a valid entrance level: JSS 1 or SS 1.')
+        # Entering SSS 1, a candidate says which department they want; the admissions officer later sees it beside
+        # the department their results point to (core/entrance_departments.py). Junior candidates have none.
+        if group=='year10':
+            if not department_choice: errors.append('Choose the department the candidate wants: Science, Art or Commercial.')
+        else:
+            department_choice=None
         papers,missing=required_papers_for_target(target) if group else ([],[])
         current_session=_school_current_session()
         paper_configs=[]
@@ -388,7 +397,8 @@ def admin_new_candidate():
                 school_attended=school_attended,parent_guardian_name=parent_guardian_name,
                 parent_guardian_relationship=parent_guardian_relationship,
                 primary_mobile=primary_mobile,alternative_mobile=alternative_mobile,
-                parent_guardian_email=parent_guardian_email,photo_path=photo_path)
+                parent_guardian_email=parent_guardian_email,photo_path=photo_path,
+                department_choice=department_choice)
             db.session.add(candidate); db.session.flush()
             cid=candidate.id
             for slot,b in enumerate(papers,1):
@@ -401,7 +411,7 @@ def admin_new_candidate():
         except Exception:
             db.session.rollback(); raise
         _notify_school_admins('New student registered',f'{name} was registered for the {target} entrance examination.','info',url_for('admin_controls'))
-        return render_template('candidate_registered.html',candidate={'id':cid,'candidate_code':code,'candidate_name':name,'target_class':target},password=password,papers=papers)
+        return render_template('candidate_registered.html',candidate={'id':cid,'candidate_code':code,'candidate_name':name,'target_class':target,'department_choice':department_choice},password=password,papers=papers)
     return render_template('candidate_form.html',errors=[],form={},available_papers=[],missing=[])
 
 @app.route('/admin/candidates/<int:cid>')
@@ -424,8 +434,18 @@ def admin_candidate_detail(cid):
         item=dict(row)
         subject=bank_subject(banks.get(row['bank_id'],{}))
         item['subject_label']={'mathematics':'Mathematics','english':'English','general_knowledge':'General Knowledge'}.get(subject,'Paper '+str(row['slot']))
+        item['subject']=subject
         papers.append(item)
-    return render_template('admin_candidate_detail.html',candidate=c,papers=papers,total_score=total_score,total_max=total_max,pct=pct,completed=completed,grade=_grade_label(pct) if completed else '—',latest_attempts=latest_attempts)
+    # Entering SSS 1: their department choice, how they did in each department and the one their results point to.
+    department=None
+    if normalize_entry_group(c['target_class'])=='year10':
+        summary={'id':cid}
+        for item in papers:
+            if item['subject'] in ('mathematics','english'):
+                summary[item['subject']]={'percentage':item['percentage'] if item['status'] in ('submitted','expired') else None}
+        fit=department_fits([summary]).get(cid)
+        department={'choice':c.get('department_choice'),'fit':fit,'recommended':recommend(c.get('department_choice'),fit)}
+    return render_template('admin_candidate_detail.html',candidate=c,papers=papers,total_score=total_score,total_max=total_max,pct=pct,completed=completed,grade=_grade_label(pct) if completed else '—',latest_attempts=latest_attempts,department=department)
 
 @app.route('/admin/candidates/<int:cid>/performance')
 @admin_required
@@ -751,6 +771,7 @@ def admin_new_question(bid):
     if request.method=='POST' and _resource_locked('bank',bid): flash('This question bank is locked by School Admin. Unlock it before adding questions.','error'); return redirect(url_for('admin_bank',bid=bid))
     if request.method=='POST':
         text=request.form.get('text','').strip(); instruction=request.form.get('instruction','').strip(); opts=[request.form.get(f'option{i}','').strip() for i in range(4)]
+        department=clean_department(request.form.get('department'))  # a senior department, or None for a general question
         try: ans=int(request.form.get('answer','-1')); points=int(request.form.get('points','1'))
         except: ans=-1; points=1
         errors=[]
@@ -763,9 +784,10 @@ def admin_new_question(bid):
         if any(not o for o in opts): errors.append('All four options are required.')
         if ans not in range(4): errors.append('Select the correct option.')
         if points<1: errors.append('Points must be at least 1.')
-        if errors: return render_template('question_form.html',bank=b,question={'text':text,'instruction':instruction,'image_path':image_path,'options':opts,'answer':ans,'points':points},errors=errors)
+        if errors: return render_template('question_form.html',bank=b,question={'text':text,'instruction':instruction,'image_path':image_path,'options':opts,'answer':ans,'points':points,'department':department},errors=errors)
         item={'id':next_qid(b),'text':text,'options':opts,'answer':ans,'points':points,'instruction':instruction}
         if image_path: item['image_path']=image_path
+        if department: item['department']=department
         b['questions'].append(item); save_bank(b); audit_log('question_added','assessment','bank',bid,{'question_id':b['questions'][-1]['id']}); _notify_school_admins('Question added to bank',f'A question was added to {b.get("name",bid)}.','info',url_for('admin_controls')); flash('Question added. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
     return render_template('question_form.html',bank=b,question=None,errors=[])
 
@@ -780,6 +802,7 @@ def admin_edit_question(bid,qid):
     if not q: abort(404)
     if request.method=='POST':
         text=request.form.get('text','').strip(); instruction=request.form.get('instruction','').strip(); opts=[request.form.get(f'option{i}','').strip() for i in range(4)]
+        department=clean_department(request.form.get('department'))  # a senior department, or None for a general question
         try: ans=int(request.form.get('answer','-1')); points=int(request.form.get('points','1'))
         except: ans=-1; points=1
         errors=[]
@@ -793,10 +816,12 @@ def admin_edit_question(bid,qid):
         if any(not o for o in opts): errors.append('All four options are required.')
         if ans not in range(4): errors.append('Select the correct option.')
         if points<1: errors.append('Points must be at least 1.')
-        if errors: return render_template('question_form.html',bank=b,question={'id':qid,'text':text,'instruction':instruction,'image_path':image_path,'options':opts,'answer':ans,'points':points},errors=errors)
+        if errors: return render_template('question_form.html',bank=b,question={'id':qid,'text':text,'instruction':instruction,'image_path':image_path,'options':opts,'answer':ans,'points':points,'department':department},errors=errors)
         q.update(text=text,options=opts,answer=ans,points=points,instruction=instruction)
         if image_path: q['image_path']=image_path
         else: q.pop('image_path',None)
+        if department: q['department']=department
+        else: q.pop('department',None)
         save_bank(b); audit_log('question_updated','assessment','bank',bid,{'question_id':qid}); _notify_school_admins('Question updated',f'Question {qid} in {b.get("name",bid)} was updated.','info',url_for('admin_controls')); flash(f'Question {qid} updated. School Admin has been notified.','success'); return redirect(url_for('admin_bank',bid=bid))
     return render_template('question_form.html',bank=b,question=q,errors=[])
 

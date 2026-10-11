@@ -1,4 +1,36 @@
-{% extends 'admin_base.html' %}{% block title %}Candidate Registered — {{ school_brand.name }}{% endblock %}{% block content %}
-<div class="topbar"><div><h1>Candidate Registered Successfully</h1><p class="muted">These login credentials are generated for this candidate session.</p></div></div>
-<div class="credential-card"><div class="credential-warning"><strong>Important:</strong> Give these credentials to the candidate. The password is shown here only because it was just generated.</div><div class="credential-grid"><div><span>Candidate</span><strong>{{candidate.candidate_name}}</strong></div><div><span>Target class</span><strong>{{candidate.target_class}}</strong></div><div><span>Candidate ID</span><strong class="credential-code">{{candidate.candidate_code}}</strong></div><div><span>Password</span><strong class="credential-code">{{password}}</strong></div></div><div class="actions"><button class="btn btn-primary" type="button" data-print>Print Credential Slip</button><a class="btn btn-light" href="{{ url_for('admin_candidate_detail', cid=candidate.id) }}">Open Candidate</a><a class="btn btn-light" href="{{url_for('admin_new_candidate')}}">Register Another</a></div></div>
-<div class="section"><div class="section-head"><h2>Assigned Papers</h2></div><div class="card"><table><thead><tr><th>Paper</th><th>Subject</th><th>Duration</th><th>Status</th></tr></thead><tbody>{% for b in papers %}<tr><td><strong>{{ entrance_paper_label(loop.index, b.id, b.name) }}</strong></td><td>{{ entrance_subject_label(b.id, b.name) }}</td><td>{{b.duration_seconds//60}} min</td><td>Assigned</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}<style>@media print{.sidebar,.topbar,.actions,.section{display:none!important}.credential-card{box-shadow:none!important;border:0!important;max-width:760px;margin:20mm auto!important}}</style>
+{% extends 'admin_base.html' %}
+{% block title %}Candidate Registered — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- After registering: the sign-in slip (shown only now, because the password was just generated), and the three papers
+    the candidate will sit. The slip prints on its own. -#}
+{% include 'includes/_entrance_frame.html' %}
+<div class="ac" style="max-width:920px">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_candidates') }}">Candidates</a> / Registered</span>
+    <h1>Candidate Registered Successfully</h1>
+    <p>Give these sign-in details to the candidate. The password is shown only here, because it was just generated.</p>
+  </div></div>
+  <div class="ac-top__act">
+    <button class="ac-btn" type="button" data-print>Print sign-in slip</button>
+    <a class="ac-btn" href="{{ url_for('admin_new_candidate') }}">Register another</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_candidate_detail', cid=candidate.id) }}">Open candidate</a>
+  </div>
+</header>
+
+<div class="en-cred">
+  <div><span>Candidate</span><strong>{{ candidate.candidate_name }}</strong></div>
+  <div><span>Entering</span><strong>{{ candidate.target_class }}{% if candidate.department_choice %} · {{ candidate.department_choice }}{% endif %}</strong></div>
+  <div><span>Candidate ID</span><strong class="credential-code">{{ candidate.candidate_code }}</strong></div>
+  <div class="is-secret"><span>Password</span><strong class="credential-code">{{ password }}</strong></div>
+</div>
+
+<section class="ac-panel en-noprint">
+  <div class="en-ph"><h2>Papers assigned<small>{{ papers|length }}</small></h2></div>
+  <table class="ac-t">
+    <thead><tr><th>Paper</th><th>Subject</th><th class="n">Minutes</th><th>Status</th></tr></thead>
+    <tbody>{% for b in papers %}<tr><td><b>{{ entrance_paper_label(loop.index, b.id, b.name) }}</b></td><td>{{ entrance_subject_label(b.id, b.name) }}</td><td class="n">{{ b.duration_seconds // 60 }}</td><td><span class="ac-tag ac-tag--blue">Assigned</span></td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+</div>
+{% endblock %}

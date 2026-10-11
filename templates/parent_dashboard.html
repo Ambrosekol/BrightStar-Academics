@@ -44,13 +44,13 @@
       <tr>
         <td class="pf-rt__lead"><a class="ac-title" href="{{ url_for('parent_child_detail', student_id=child.id) }}">{{ full_name(child.first_name, child.last_name) }}</a>
           <small>{{ child.class_name or 'Class not assigned' }}{% if child.relationship %} · {{ child.relationship }}{% endif %}</small></td>
-        <td class="n" data-label="Fees owing">{% if owed > 0.005 %}<span class="pf-owe">₦{{ '{:,.2f}'.format(owed) }}</span>{% else %}<span class="pf-ok">Paid</span>{% endif %}</td>
+        <td class="n" data-label="Fees owing">{% if owed > 0.005 %}<b class="pf-owe">₦{{ '{:,.0f}'.format(owed) }}</b>{% else %}<span class="pf-ok">Paid</span>{% endif %}</td>
         {% if any_online %}
         <td class="n" data-label="Average">{% if item.early_years %}<span title="Crèche and Nursery work is on paper">—</span>{% else %}{{ item.avg ~ '%' if item.avg is not none else '—' }}{% endif %}</td>
         <td class="n" data-label="Completion">{% if item.early_years %}—{% else %}{{ item.completion ~ '%' if item.completion is not none else '—' }}{% endif %}</td>
         {% endif %}
         <td class="ac-actions">
-          <a class="ac-link" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Profile</a>
+          <a class="ac-link" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile</a>
           <a class="ac-link" href="{{ url_for('parent_feedback', student=child.id) }}" data-full>Message</a>
           {% if owed > 0.005 %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Pay fees</a>
           {% else %}<a class="ac-link" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Fee account</a>{% endif %}
@@ -69,7 +69,7 @@
     {% if notifications %}
     <ul class="pf-log pf-scroll" tabindex="0" aria-label="School notifications">
       {% for n in notifications %}
-      <li><a href="{{ url_for('parent_notification_open', nid=n.id) }}" class="{{ 'is-new' if not n.read_at }}"><time>{{ n.created_at[:10] }}</time><div><b>{{ n.title }}</b><span>{{ n.message }}</span></div></a></li>
+      <li><a href="{{ url_for('parent_notification_open', nid=n.id) }}"><time>{{ n.created_at[:10] }}</time><div><b>{% if not n.read_at %}<i class="pp-dot" title="Not opened yet"></i>{% endif %}{{ n.title }}</b><span>{{ n.message }}</span></div></a></li>
       {% endfor %}
     </ul>
     {% else %}

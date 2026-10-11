@@ -181,7 +181,7 @@
     {% if notifications %}
     <ul class="pf-log pf-scroll" tabindex="0" aria-label="Notifications about {{ child.first_name }}">
       {% for n in notifications %}
-      <li><a href="{{ n.action_url or url_for('parent_child_detail', student_id=child.id) }}" class="{{ 'is-new' if n.is_new }}"><time>{{ n.created_at[:10] }}</time><div><b>{{ n.title }}</b><span>{{ n.message }}</span></div></a></li>
+      <li><a href="{{ n.action_url or url_for('parent_child_detail', student_id=child.id) }}"><time>{{ n.created_at[:10] }}</time><div><b>{% if n.is_new %}<i class="pp-dot" title="New"></i>{% endif %}{{ n.title }}</b><span>{{ n.message }}</span></div></a></li>
       {% endfor %}
     </ul>
     {% else %}

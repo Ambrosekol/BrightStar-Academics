@@ -18,6 +18,46 @@
   ],
   "releases": [
     {
+      "version": "2.22.3",
+      "date": "2026-10-11",
+      "title": "The entrance examination workspace redesigned, SSS departments, and smoother page loading",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Every page of the Entrance examination workspace now has the same compact look as the School portal: a title line with its buttons, a strip of figures, and dense tables. Candidates and question banks pick their entry level from a row of chips, a question bank lists its questions the way a test does in Academics, and the pages load in place.",
+          "help": "entrance"
+        },
+        {
+          "audience": "staff",
+          "text": "Results now has four tabs: By subject, Summary, Rankings and Examination activity, each filtered by entry level and searchable. By subject shows the real figures for every candidate in Mathematics, English and General Knowledge side by side, and its Export CSV and Export JSON buttons now download the results.",
+          "help": "entrance"
+        },
+        {
+          "audience": "staff",
+          "text": "Departments for SSS candidates. A candidate entering SSS 1 now chooses a department when registered (Science, Art or Commercial), and their papers include questions from all three departments. On the admissions waitlist each SSS candidate shows their choice beside the department their results fit best, with how they did in each and why. The Department on the admit form starts at that suggestion, and you can change it before admitting. Questions can be tagged with a department on the question form, and the standard SSS 1 General Knowledge bank now comes with Science, Art and Commercial questions.",
+          "help": "admissions"
+        },
+        {
+          "audience": "staff",
+          "text": "Moving between pages now shows the outline of a page, softly pulsing under the spinner, from the moment you press until the next page has loaded and been drawn in full; only then does it appear. There is no blank or half-drawn screen in between, also in the installed app.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Fixed: opening the entrance workspace's Overview could quietly drop you out of the workspace, so the next page you opened sent you back to Workspace Home. The school's setup checklist is now shown in the School workspace only.",
+          "help": "entrance"
+        },
+        {
+          "audience": "family",
+          "text": "Moving between pages now shows the outline of a page, softly pulsing under the spinner, until the next page has loaded and been drawn in full, so you never see a blank or half-drawn screen, also in the installed app."
+        },
+        {
+          "audience": "student",
+          "text": "Moving between pages now shows the outline of a page, softly pulsing under the spinner, until the next page has loaded and been drawn in full, so you never see a blank or half-drawn screen, also in the installed app."
+        }
+      ]
+    },
+    {
       "version": "2.22.2",
       "date": "2026-10-10",
       "title": "A steadier spinner, a new workspace page and a tidier sign-in on phones",

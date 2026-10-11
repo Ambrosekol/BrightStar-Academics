@@ -24,6 +24,7 @@ from models import (
     SchoolClass, SchoolQuestion, SchoolSubject, Student, db,
 )
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, _flatten
+from core.entrance_departments import pick_questions, question_department
 from core.security import csrf_protect
 
 
@@ -277,7 +278,9 @@ def candidate_start_paper(paper_id):
                     expires_at=exp.isoformat(),status='active',candidate_id=c['id'])
     db.session.add(attempt); db.session.flush()
     # Freeze the served questions so later bank edits cannot alter this attempt.
-    chosen=random.sample(list(b['questions']),serve_count)
+    # A bank with department-tagged questions gives every candidate an equal share from each senior department
+    # (core/entrance_departments.py); any other bank is drawn from as a whole, as before.
+    chosen=pick_questions(b['questions'],serve_count)
     for order,q in enumerate(chosen,1):
         db.session.add(AttemptQuestion(
             attempt_id=attempt.id,question_id=int(q['id']),question_order=order,
@@ -285,7 +288,7 @@ def candidate_start_paper(paper_id):
             options_json=json.dumps(q.get('options',[]),ensure_ascii=False),
             instruction=q.get('instruction'),image_path=q.get('image_path'),
             correct_option=int(q.get('answer')) if q.get('answer') is not None else -1,
-            points=float(marks)))
+            points=float(marks),department=question_department(q)))
     db.session.commit(); session['attempt_id']=attempt.id
     return redirect(url_for('exam',q=1))
 

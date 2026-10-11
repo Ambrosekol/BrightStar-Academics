@@ -535,6 +535,474 @@
    ],
    "answer": 0,
    "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Which part of a plant cell makes food by photosynthesis?",
+   "options": [
+    "Nucleus",
+    "Chloroplast",
+    "Cell wall",
+    "Vacuole"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 46,
+   "text": "What is the chemical symbol for sodium?",
+   "options": [
+    "S",
+    "So",
+    "Na",
+    "Sd"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 47,
+   "text": "Water boils at sea level at what temperature?",
+   "options": [
+    "50 °C",
+    "90 °C",
+    "100 °C",
+    "120 °C"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 48,
+   "text": "Which organ pumps blood round the human body?",
+   "options": [
+    "The lungs",
+    "The liver",
+    "The kidney",
+    "The heart"
+   ],
+   "answer": 3,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 49,
+   "text": "What is the SI unit of force?",
+   "options": [
+    "Joule",
+    "Newton",
+    "Watt",
+    "Pascal"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 50,
+   "text": "Which gas do plants take in from the air for photosynthesis?",
+   "options": [
+    "Oxygen",
+    "Nitrogen",
+    "Carbon dioxide",
+    "Hydrogen"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 51,
+   "text": "A substance with a pH of 2 is best described as",
+   "options": [
+    "strongly acidic",
+    "neutral",
+    "weakly alkaline",
+    "strongly alkaline"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 52,
+   "text": "Which of these is a non-metal?",
+   "options": [
+    "Iron",
+    "Copper",
+    "Sulphur",
+    "Aluminium"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 53,
+   "text": "Malaria is passed to people by the bite of the female",
+   "options": [
+    "tsetse fly",
+    "Anopheles mosquito",
+    "housefly",
+    "Aedes mosquito"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 54,
+   "text": "A car travels 120 km in 2 hours. What is its average speed?",
+   "options": [
+    "40 km/h",
+    "60 km/h",
+    "100 km/h",
+    "240 km/h"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 55,
+   "text": "Which simple machine is a ramp?",
+   "options": [
+    "A lever",
+    "A pulley",
+    "An inclined plane",
+    "A wheel and axle"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 56,
+   "text": "What is the main function of the red blood cells?",
+   "options": [
+    "Fighting germs",
+    "Clotting blood",
+    "Carrying oxygen",
+    "Digesting food"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Science"
+  },
+  {
+   "id": 57,
+   "text": "A business owned and run by one person is called a",
+   "options": [
+    "partnership",
+    "sole proprietorship",
+    "public company",
+    "co-operative"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 58,
+   "text": "In book-keeping, the record of all cash received and paid out is the",
+   "options": [
+    "cash book",
+    "journal proper",
+    "sales day book",
+    "ledger of assets"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 59,
+   "text": "A shop buys an item for ₦800 and sells it for ₦1,000. What is the profit?",
+   "options": [
+    "₦100",
+    "₦200",
+    "₦800",
+    "₦1,800"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 60,
+   "text": "Which of these is a means of payment that a bank issues to its customer to draw money from an account?",
+   "options": [
+    "A receipt",
+    "An invoice",
+    "A cheque",
+    "A delivery note"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 61,
+   "text": "The money a person earns from work is called",
+   "options": [
+    "capital",
+    "income",
+    "tax",
+    "interest"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 62,
+   "text": "A document sent by a seller to a buyer, listing goods and asking for payment, is an",
+   "options": [
+    "invoice",
+    "advertisement",
+    "enquiry",
+    "order form"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 63,
+   "text": "When demand for a good rises and supply stays the same, its price will usually",
+   "options": [
+    "fall",
+    "stay the same",
+    "rise",
+    "become zero"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 64,
+   "text": "Which of these is a factor of production?",
+   "options": [
+    "Profit",
+    "Land",
+    "Price",
+    "Market"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 65,
+   "text": "Money kept in a bank that earns interest for the owner is in a",
+   "options": [
+    "current account",
+    "savings account",
+    "loan account",
+    "suspense account"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 66,
+   "text": "Which is a form of advertising?",
+   "options": [
+    "Warehousing",
+    "Insurance",
+    "A radio jingle",
+    "Book-keeping"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 67,
+   "text": "A trader buys 5 pens at ₦50 each. How much does he spend?",
+   "options": [
+    "₦55",
+    "₦100",
+    "₦250",
+    "₦500"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 68,
+   "text": "The person who takes the risk of starting a business is called the",
+   "options": [
+    "consumer",
+    "entrepreneur",
+    "auditor",
+    "wholesaler"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Commercial"
+  },
+  {
+   "id": 69,
+   "text": "A story that teaches a moral lesson, often using animals as characters, is a",
+   "options": [
+    "fable",
+    "biography",
+    "sonnet",
+    "drama"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 70,
+   "text": "In a play, the words spoken by the characters to each other are called",
+   "options": [
+    "the plot",
+    "the dialogue",
+    "the setting",
+    "the theme"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 71,
+   "text": "Who wrote the novel \"Things Fall Apart\"?",
+   "options": [
+    "Wole Soyinka",
+    "Chinua Achebe",
+    "Cyprian Ekwensi",
+    "Buchi Emecheta"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 72,
+   "text": "In what year did Nigeria become independent?",
+   "options": [
+    "1914",
+    "1957",
+    "1960",
+    "1963"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 73,
+   "text": "The arm of government that makes laws is the",
+   "options": [
+    "executive",
+    "judiciary",
+    "legislature",
+    "police"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 74,
+   "text": "The amalgamation of Northern and Southern Nigeria took place in",
+   "options": [
+    "1900",
+    "1914",
+    "1922",
+    "1946"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 75,
+   "text": "A poem of fourteen lines is called a",
+   "options": [
+    "ballad",
+    "limerick",
+    "sonnet",
+    "haiku"
+   ],
+   "answer": 2,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 76,
+   "text": "Who was the first President of Nigeria?",
+   "options": [
+    "Nnamdi Azikiwe",
+    "Obafemi Awolowo",
+    "Tafawa Balewa",
+    "Ahmadu Bello"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 77,
+   "text": "The comparison of two things using \"like\" or \"as\" is a",
+   "options": [
+    "metaphor",
+    "simile",
+    "hyperbole",
+    "pun"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 78,
+   "text": "The right of citizens to choose their leaders in an election is called",
+   "options": [
+    "franchise",
+    "sovereignty",
+    "censorship",
+    "federalism"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 79,
+   "text": "The ancient city famous for its bronze works in Nigeria is",
+   "options": [
+    "Kano",
+    "Benin",
+    "Calabar",
+    "Lokoja"
+   ],
+   "answer": 1,
+   "points": 1,
+   "department": "Art"
+  },
+  {
+   "id": 80,
+   "text": "The main idea or message that a writer explores in a work is its",
+   "options": [
+    "theme",
+    "rhyme",
+    "chapter",
+    "title"
+   ],
+   "answer": 0,
+   "points": 1,
+   "department": "Art"
   }
  ]
 }

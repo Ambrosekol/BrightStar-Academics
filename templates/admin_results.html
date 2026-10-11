@@ -1,155 +1,48 @@
-﻿{% extends "admin_base.html" %}
-
+{% extends "admin_base.html" %}
+{% block title %}Results by Subject — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-  /* The metric cards: three across, with a clear gap before the section below. The row's old
-     utility margin was never defined in this stylesheet, so the spacing is set here. */
-  .results-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
-  .results-metrics > * { min-width: 0; }
-  @media (max-width: 768px) { .results-metrics { grid-template-columns: 1fr; } }
-  .results-container { padding: 1.5rem; }
-  
-  /* Metric Cards */
-  .metric-card { 
-    background: #ffffff; 
-    border-radius: 12px; 
-    border: 1px solid #e2e8f0; 
-    padding: 1.25rem;
-    height: 100%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-  
-  /* Top Action Buttons */
-  .btn-action-dark {
-    background-color: #0d1b3e !important;
-    color: #ffffff !important;
-    font-weight: 600;
-    border: none;
-  }
-  .btn-action-dark:hover {
-    background-color: #0284c7 !important;
-    color: #ffffff !important;
-  }
+{#- Results by subject, in the School portal's look: the four results views as tabs, the entry levels as chips with a
+    search, the figures that matter, then one table per subject with every candidate in it ranked by percentage.
+    Data from blueprints/entrance/routes.py (admin_results): subject_sections, total_candidates, overall_average. -#}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set en_tab = 'subjects' %}
+{% set en_actions %}{% if admin_has_permission(aid, 'results.export') %}<a class="ac-btn" href="{{ url_for('export_results_csv') }}">Export CSV</a><a class="ac-btn" href="{{ url_for('export_results_json') }}">Export JSON</a>{% endif %}{% endset %}
+<div class="ac">
+{% include 'includes/_entrance_frame.html' %}
+{% include 'includes/_entrance_filter.html' %}
 
-  /* Subject Overview Cards Grid */
-  .subject-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-top: 4px solid #0284c7;
-    border-radius: 10px;
-    padding: 1.25rem;
-    height: 100%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .subject-card:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08); 
-  }
-  .subject-card.math { border-top-color: #eab308; }
-  .subject-card.english { border-top-color: #22c55e; }
-  .subject-card.gk { border-top-color: #ef4444; }
+<dl class="fi-k">
+  <div class="is-lead"><dt>Candidates in scope</dt><dd>{{ total_candidates }}</dd><small>{{ selected_target or 'every entry level' }}</small></div>
+  <div><dt>Average, all subjects</dt><dd>{% if subject_sections|sum(attribute='attempted') %}{{ '%.1f'|format(overall_average) }}%{% else %}—{% endif %}</dd><small>completed papers</small></div>
+  {% for s in subject_sections %}
+  <div class="{{ 'is-alert' if s.attempted and s.average < 50 }}"><dt>{{ s.label }}</dt><dd>{% if s.attempted %}{{ '%.1f'|format(s.average) }}%{% else %}—{% endif %}</dd><small>{{ s.attempted }} attempted · {{ '%.0f'|format(s.pass_rate) }}% passed</small></div>
+  {% endfor %}
+</dl>
 
-  .stat-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 4px;
-    background-color: #f1f5f9;
-    color: #475569;
-  }
-</style>
-
-<div class="results-container">
-  <!-- Navigation & Action Header -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-    <div>
-      <a href="{{ url_for('admin_examination') if 'admin_examination' in endpoints else '/admin/examination' }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-2">← Back</a>
-      <span class="text-uppercase text-primary font-weight-bold d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Entrance Examination / Academic Insight</span>
-      <h2 class="h3 font-weight-bold text-navy mb-1">Results & Analytics</h2>
-      <p class="text-muted small mb-0">A clear subject-by-subject view of candidate performance, completion, and pass rates.</p>
-    </div>
-    
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <a href="#" class="btn btn-sm btn-light border font-weight-bold px-3">Export CSV</a>
-      <a href="#" class="btn btn-sm btn-light border font-weight-bold px-3">Export JSON</a>
-      <a href="/admin/rankings" class="btn btn-sm btn-outline-primary font-weight-bold px-3">Rankings</a>
-      <a href="#" class="btn btn-sm btn-action-dark px-3 rounded">Results Summary</a>
-    </div>
-  </div>
-
-  <!-- Key Metrics 3-Column Grid -->
-  <div class="results-metrics">
-    <div class="col-12 col-md-4">
-      <div class="metric-card">
-        <span class="stat-badge mb-2">Candidates in scope</span>
-        <h3 class="h2 font-weight-bold mb-1">2</h3>
-        <p class="text-muted small mb-0">Registered candidates matching current filter</p>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="metric-card">
-        <span class="stat-badge mb-2">Overall subject average</span>
-        <h3 class="h2 font-weight-bold mb-1">34.7%</h3>
-        <p class="text-muted small mb-0">Average across completed subject attempts</p>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="metric-card">
-        <span class="stat-badge mb-2">Subjects analysed</span>
-        <h3 class="h2 font-weight-bold mb-1">3</h3>
-        <p class="text-muted small mb-0">Mathematics, English, and General Knowledge</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Subject Performance 3-Column Grid -->
-  <div class="mb-4">
-    <span class="text-uppercase text-muted font-weight-bold small">Subject Performance</span>
-    <h4 class="h5 font-weight-bold text-navy mb-1">Performance by Subject</h4>
-    <p class="text-muted small mb-4">Each registered candidate appears once in each subject, with completed attempts ranked by percentage.</p>
-
-    <div class="row g-3">
-      <!-- Mathematics -->
-      <div class="col-12 col-md-4">
-        <div class="subject-card math">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="font-weight-bold mb-0">Mathematics</h5>
-            <span class="h5 font-weight-bold text-dark mb-0">34.0%</span>
-          </div>
-          <div class="text-muted small">
-            <span>1 attempted</span> · <span>0 passed</span> · <span class="text-danger font-weight-bold">0.0% pass rate</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- English -->
-      <div class="col-12 col-md-4">
-        <div class="subject-card english">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="font-weight-bold mb-0">English</h5>
-            <span class="h5 font-weight-bold text-dark mb-0">22.0%</span>
-          </div>
-          <div class="text-muted small">
-            <span>1 attempted</span> · <span>0 passed</span> · <span class="text-danger font-weight-bold">0.0% pass rate</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- General Knowledge -->
-      <div class="col-12 col-md-4">
-        <div class="subject-card gk">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="font-weight-bold mb-0">General Knowledge</h5>
-            <span class="h5 font-weight-bold text-dark mb-0">48.0%</span>
-          </div>
-          <div class="text-muted small">
-            <span>1 attempted</span> · <span>0 passed</span> · <span class="text-danger font-weight-bold">0.0% pass rate</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="en-subjects">
+  {% for s in subject_sections %}
+  <section class="ac-panel" aria-labelledby="enSub{{ loop.index }}">
+    <div class="en-ph"><h2 id="enSub{{ loop.index }}">{{ s.label }}<small>{{ s.attempted }} of {{ s.entries|length }} attempted · {{ s.passed }} passed</small></h2></div>
+    {% if s.entries %}
+    <div class="ac-scroll en-subjects__list"><table class="ac-t">
+      <thead><tr><th class="n">#</th><th>Candidate</th><th class="n">Score</th><th class="n">%</th></tr></thead>
+      <tbody>
+      {% for e in s.entries %}
+      <tr>
+        <td class="n">{% if e.percentage is not none %}{{ loop.index }}{% else %}<small>—</small>{% endif %}</td>
+        <td>{{ e.candidate_name }}<small><span class="en-code">{{ e.candidate_code }}</span> · {{ e.target_class }}</small></td>
+        <td class="n">{% if e.score is not none %}<span class="en-score">{{ e.score }} / {{ e.max_score }}</span>{% else %}—{% endif %}</td>
+        <td class="n">{% if e.percentage is not none %}<b class="{{ 'en-good' if e.percentage >= 50 else 'en-attn' }}">{{ '%.1f'|format(e.percentage) }}%</b>{% else %}<small>{{ 'in progress' if e.status == 'active' else 'not sat' }}</small>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty">No candidates match.</div>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+<p class="en-foot" style="border:0">A paper is passed at 50% or more. Each candidate appears once in each subject, by their latest attempt at that paper.</p>
 </div>
 {% endblock %}

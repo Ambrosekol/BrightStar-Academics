@@ -42,7 +42,8 @@
   </span>
 </header>
 
-<main class="ws-main ac" id="main" data-page-body>
+<main class="ws-main ac" id="main">
+<div class="bs-stage">{% include 'includes/_skeleton.html' %}<div data-page-body>
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
       <div class="{{ 'ac-errors' if category == 'error' else 'ac-note' }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</div>
@@ -89,6 +90,7 @@
       </a>
     </li>
   </ul>
+</div></div>
 </main>
 {#- Opening a workspace dims this page and spins its Enter button until the workspace arrives (static/page-loading.js). -#}
 <script src="{{ url_for('static', filename='page-loading.js') }}"></script>

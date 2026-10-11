@@ -1,274 +1,43 @@
 {% extends "admin_base.html" %}
-
+{% block title %}Rankings — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="rankings-page">
+{#- The leaderboard, in the School portal's look: one row per candidate who has finished all three papers, ranked by
+    overall percentage (raw score breaks a tie; equal results share a rank). -#}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set en_tab = 'rankings' %}
+{% set en_actions %}{% if admin_has_permission(aid, 'results.export') %}<a class="ac-btn" href="{{ url_for('export_rankings_csv') }}">Export rankings (CSV)</a>{% endif %}{% endset %}
+<div class="ac">
+{% include 'includes/_entrance_frame.html' %}
+{% include 'includes/_entrance_filter.html' %}
 
-  <section class="rankings-hero">
-    <div class="rankings-hero-copy">
-      <a href="/admin" class="rankings-back">← Back to Administration</a>
-      <div class="rankings-eyebrow">ENTRANCE EXAMINATION / COMPETITION</div>
+<dl class="fi-k">
+  <div><dt>Candidates in scope</dt><dd>{{ total_candidates }}</dd><small>{{ selected_target or 'every entry level' }}</small></div>
+  <div class="is-lead"><dt>Ranked</dt><dd>{{ completed_candidates }}</dd><small>all three papers done</small></div>
+  <div class="{{ 'is-alert' if total_candidates - completed_candidates }}"><dt>Awaiting completion</dt><dd>{{ total_candidates - completed_candidates }}</dd><small>not yet on the leaderboard</small></div>
+  <div><dt>Ranked by</dt><dd>Overall %</dd><small>raw score breaks ties</small></div>
+</dl>
 
-      <div class="rankings-title-row">
-        <div>
-          <h1>Candidate Rankings</h1>
-          <p>
-            A single leaderboard for completed candidates, ranked by cumulative
-            percentage across the examination subjects. Cumulative raw score
-            is used as the tie-breaker.
-          </p>
-        </div>
-        <div class="rankings-hero-mark" aria-hidden="true">#</div>
-      </div>
-    </div>
-  </section>
-
-  <section class="ranking-summary-grid">
-    <div class="ranking-summary-card">
-      <span class="ranking-summary-label">Candidates in scope</span>
-      <strong>{{ total_candidates }}</strong>
-      <small>Based on the selected examination set</small>
-    </div>
-
-    <div class="ranking-summary-card ranking-summary-card-primary">
-      <span class="ranking-summary-label">Ranked candidates</span>
-      <strong>{{ completed_candidates }}</strong>
-      <small>Completed examinations</small>
-    </div>
-
-    <div class="ranking-summary-card">
-      <span class="ranking-summary-label">Awaiting completion</span>
-      <strong>{{ total_candidates - completed_candidates }}</strong>
-      <small>Not yet included in the leaderboard</small>
-    </div>
-
-    <div class="ranking-summary-card">
-      <span class="ranking-summary-label">Ranking method</span>
-      <strong>Overall %</strong>
-      <small>Raw score breaks ties</small>
-    </div>
-  </section>
-
-  <section class="ranking-workspace">
-
-    <div class="ranking-toolbar">
-      <div>
-        <span class="ranking-toolbar-label">Ranking scope</span>
-        <strong>
-          {% if selected_target %}
-            {{ selected_target }}
-          {% else %}
-            All Entry Levels
-          {% endif %}
-        </strong>
-      </div>
-
-      <a href="/admin/export/rankings.csv" class="ranking-export-btn">
-        Export Rankings <span aria-hidden="true">↓</span>
-      </a>
-
-      <a href="/admin/export/results.csv" class="ranking-export-btn">
-        Export Raw Attempts (CSV) <span aria-hidden="true">↓</span>
-      </a>
-
-      <a href="/admin/export/results.json" class="ranking-export-btn">
-        Export Results (JSON) <span aria-hidden="true">↓</span>
-      </a>
-    </div>
-
-    <div class="ranking-filters">
-
-      <div class="ranking-filter-group">
-        <span class="ranking-filter-label">Entry level</span>
-
-        <div class="ranking-pills">
-          <a href="?{% if search %}q={{ search|urlencode }}{% endif %}"
-             class="filter-pill{% if not selected_target %} active{% endif %}">
-            All Entry Levels
-          </a>
-
-          {% for target in target_classes %}
-          <a href="?target_class={{ target|urlencode }}{% if search %}&q={{ search|urlencode }}{% endif %}"
-             class="filter-pill{% if selected_target|lower == target|lower %} active{% endif %}">
-            {{ target }}
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-
-      <form method="get" class="ranking-search">
-        {% if selected_target %}
-        <input type="hidden" name="target_class" value="{{ selected_target }}">
-        {% endif %}
-
-        <label for="ranking-search-input">Find candidate</label>
-
-        <div class="ranking-search-control">
-          <input
-            id="ranking-search-input"
-            type="search"
-            name="q"
-            value="{{ search }}"
-            placeholder="Name or candidate code"
-            autocomplete="off"
-          >
-
-          <button type="submit">Search</button>
-
-          {% if search %}
-          <a
-            href="?{% if selected_target %}target_class={{ selected_target|urlencode }}{% endif %}"
-            aria-label="Clear candidate search"
-          >Clear</a>
-          {% endif %}
-        </div>
-      </form>
-
-    </div>
-
-    <div class="ranking-table-card">
-
-      <div class="ranking-table-head">
-        <div>
-          <span>Leaderboard</span>
-          <strong>
-            {% if ranked %}
-              {{ ranked|length }} ranked candidate{% if ranked|length != 1 %}s{% endif %}
-            {% else %}
-              No ranked candidates
-            {% endif %}
-          </strong>
-        </div>
-
-        {% if selected_target or search %}
-        <div class="ranking-filter-state">
-          {% if selected_target %}
-          <span>{{ selected_target }}</span>
-          {% endif %}
-
-          {% if search %}
-          <span>Search: {{ search }}</span>
-          {% endif %}
-        </div>
-        {% endif %}
-      </div>
-
-      {% if ranked %}
-
-      <div class="table-responsive">
-        <table class="table ranking-table align-middle mb-0">
-          <thead>
-            <tr>
-              <th class="ranking-rank-column">Rank</th>
-              <th>Candidate</th>
-              <th>Entry Level</th>
-              <th class="text-center">Overall Score</th>
-              <th class="text-center">Percentage</th>
-              <th class="text-center">Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for candidate in ranked %}
-            <tr>
-
-              <td class="ranking-rank-cell">
-                <span class="rank-number{% if candidate.rank <= 3 %} rank-top{% endif %}">
-                  {{ candidate.rank }}
-                </span>
-              </td>
-
-              <td>
-                <div class="ranking-candidate">
-                  <div class="ranking-avatar">
-                    {{ candidate.candidate_name[:1]|upper }}
-                  </div>
-
-                  <div>
-                    <strong>{{ candidate.candidate_name }}</strong>
-                    <small>{{ candidate.candidate_code }}</small>
-                  </div>
-                </div>
-              </td>
-
-              <td>
-                <span class="ranking-level">
-                  {{ candidate.target_class or '—' }}
-                </span>
-              </td>
-
-              <td class="text-center">
-                <strong class="ranking-score">
-                  {{ candidate.total_score }}
-                </strong>
-              </td>
-
-              <td class="text-center">
-                <div class="ranking-percentage">
-                  <strong>
-                    {{ "%.1f"|format(candidate.overall_percentage) }}%
-                  </strong>
-
-                  <div class="ranking-progress">
-                    <span style="width: {{ [candidate.overall_percentage, 100]|min }}%;"></span>
-                  </div>
-                </div>
-              </td>
-
-              <td class="text-center">
-                <span class="ranking-status ranking-status-complete">
-                  Completed
-                </span>
-              </td>
-
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      {% else %}
-
-      <div class="ranking-empty">
-        <div class="ranking-empty-icon">#</div>
-
-        <h2>No ranked candidates found</h2>
-
-        {% if search %}
-
-        <p>
-          No completed candidate matches
-          <strong>{{ search }}</strong>.
-          Try another name or candidate code.
-        </p>
-
-        <a
-          href="?{% if selected_target %}target_class={{ selected_target|urlencode }}{% endif %}"
-          class="ranking-empty-action"
-        >Clear Search</a>
-
-        {% elif selected_target %}
-
-        <p>
-          There are currently no completed candidates in the
-          <strong>{{ selected_target }}</strong> examination set.
-        </p>
-
-        <a href="?" class="ranking-empty-action">
-          View All Entry Levels
-        </a>
-
-        {% else %}
-
-        <p>
-          No completed candidates are currently available for ranking.
-        </p>
-
-        {% endif %}
-      </div>
-
-      {% endif %}
-
-    </div>
-  </section>
+<section class="ac-panel">
+  {% if ranked %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="n">Rank</th><th>Candidate</th><th>Entry level</th><th class="n">English</th><th class="n">Mathematics</th><th class="n">General Knowledge</th><th class="n">Total</th><th class="n">Overall</th><th>Grade</th></tr></thead>
+    <tbody>
+    {% for c in ranked %}
+    <tr>
+      <td class="n"><span class="en-rank{{ ' en-rank--top' if c.rank <= 3 }}">{{ c.rank }}</span></td>
+      <td><span class="en-who"><span class="en-ava">{% if c.photo_path %}<img src="{{ url_for('static', filename=c.photo_path) }}" alt="">{% else %}{{ c.candidate_name[:1]|upper }}{% endif %}</span><span><a class="ac-title" href="{{ url_for('admin_candidate_detail', cid=c.id) }}">{{ c.candidate_name }}</a><small class="en-code">{{ c.candidate_code }}</small></span></span></td>
+      <td>{{ c.target_class or '—' }}</td>
+      {% for key in ('english', 'mathematics', 'general_knowledge') %}<td class="n">{{ '%.1f'|format(c[key].percentage) ~ '%' if c[key].percentage is not none else '—' }}</td>{% endfor %}
+      <td class="n">{{ c.total_score }} / {{ c.total_max }}</td>
+      <td class="n"><b>{{ '%.1f'|format(c.overall_percentage) }}%</b><span class="en-bar"><i style="width:{{ [c.overall_percentage, 100]|min }}%"></i></span></td>
+      <td>{{ c.grade }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No ranked candidates{% if selected_target %} in {{ selected_target }}{% endif %}</strong>{% if search %}No candidate who has finished matches “{{ search }}”.{% else %}A candidate is ranked once all three of their papers are completed.{% endif %}</div>
+  {% endif %}
+</section>
 </div>
 {% endblock %}

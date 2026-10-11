@@ -1,79 +1,45 @@
 {% extends 'admin_base.html' %}
 {% block title %}Results Summary — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="topbar">
-  <div>
-    <h1>Results Summary</h1>
-    <p class="muted">Administrative cumulative results — scores only, without examination questions and answers.</p>
-  </div>
-  <div class="actions">
-    <a class="btn btn-light" href="{{ url_for('admin_results') }}">Detailed Results</a>
-    <a class="btn btn-primary" href="{{ url_for('admin_results_summary_print', target_class=selected_target, q=search) }}" target="_blank">Print Results Summary</a>
-  </div>
-</div>
+{#- The cumulative results, one row per candidate (scores only, never the questions), in the School portal's look:
+    the results views as tabs, the filter, the figures, then the dense table. It prints on its own page. -#}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set en_tab = 'summary' %}
+{% set en_actions %}{% if admin_has_permission(aid, 'results.print') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_results_summary_print', target_class=selected_target, q=search) }}" target="_blank">Print summary</a>{% endif %}{% endset %}
+{% set complete_n = summaries|selectattr('complete')|list|length %}
+<div class="ac">
+{% include 'includes/_entrance_frame.html' %}
+{% include 'includes/_entrance_filter.html' %}
 
-<form class="card filters" method="get">
-  <select name="target_class">
-    <option value="">All Classes</option>
-    {% for cls in target_classes %}
-      <option value="{{ cls }}" {% if selected_target == cls %}selected{% endif %}>{{ cls }}</option>
-    {% endfor %}
-  </select>
-  <input name="q" value="{{ search }}" placeholder="Search candidate or ID">
-  <button class="btn btn-primary">Apply</button>
-  {% if selected_target or search %}<a class="btn btn-light" href="{{ url_for('admin_results_summary') }}">Clear</a>{% endif %}
-</form>
+<dl class="fi-k">
+  <div class="is-lead"><dt>Candidates</dt><dd>{{ summaries|length }}</dd><small>{{ selected_target or 'every entry level' }}</small></div>
+  <div><dt>All three papers done</dt><dd>{{ complete_n }}</dd><small>graded and ranked</small></div>
+  <div class="{{ 'is-alert' if summaries|length - complete_n }}"><dt>Still to finish</dt><dd>{{ summaries|length - complete_n }}</dd></div>
+</dl>
 
-<div class="grid">
-  <div class="card"><div class="muted">Candidates</div><div class="metric">{{ summaries|length }}</div></div>
-  <div class="card"><div class="muted">Completed 3 / 3</div><div class="metric">{{ summaries|selectattr('complete')|list|length }}</div></div>
-  <div class="card"><div class="muted">Class / Filter</div><div class="metric" style="font-size:20px">{{ selected_target or 'All Classes' }}</div></div>
-  <div class="card"><div class="muted">Report Type</div><div class="metric" style="font-size:20px">Cumulative</div></div>
-</div>
-
-<div class="section">
-  <div class="card" style="overflow-x:auto">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Candidate</th>
-          <th>Class</th>
-          <th>English</th>
-          <th>Mathematics</th>
-          <th>General Knowledge</th>
-          <th>Total Score</th>
-          <th>Overall %</th>
-          <th>Grade</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for r in summaries %}
-        <tr>
-          <td>{{ loop.index }}</td>
-          <td><strong>{{ r.candidate_name }}</strong><br><span class="muted">{{ r.candidate_code }}</span></td>
-          <td>{{ r.target_class }}</td>
-          <td>{% if r.english.score is not none %}{{ r.english.score }} / {{ r.english.max_score }}<br><span class="muted">{{ '%.1f'|format(r.english.percentage) }}%</span>{% else %}—{% endif %}</td>
-          <td>{% if r.mathematics.score is not none %}{{ r.mathematics.score }} / {{ r.mathematics.max_score }}<br><span class="muted">{{ '%.1f'|format(r.mathematics.percentage) }}%</span>{% else %}—{% endif %}</td>
-          <td>{% if r.general_knowledge.score is not none %}{{ r.general_knowledge.score }} / {{ r.general_knowledge.max_score }}<br><span class="muted">{{ '%.1f'|format(r.general_knowledge.percentage) }}%</span>{% else %}—{% endif %}</td>
-          <td><strong>{{ r.total_score }} / {{ r.total_max or '—' }}</strong></td>
-          <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong></td>
-          <td>{{ r.grade }}</td>
-          <td><span class="status {% if r.complete %}submitted{% else %}active{% endif %}">{{ r.completed }} / 3</span></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="10">No candidates match the current filters.</td></tr>
+<section class="ac-panel">
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="n">#</th><th>Candidate</th><th>Class</th><th class="n">English</th><th class="n">Mathematics</th><th class="n">General Knowledge</th><th class="n">Total</th><th class="n">Overall</th><th>Grade</th><th>Papers</th></tr></thead>
+    <tbody>
+    {% for r in summaries %}
+    <tr>
+      <td class="n">{{ loop.index }}</td>
+      <td>{{ r.candidate_name }}<small class="en-code">{{ r.candidate_code }}</small></td>
+      <td>{{ r.target_class }}</td>
+      {% for key in ('english', 'mathematics', 'general_knowledge') %}{% set s = r[key] %}
+      <td class="n">{% if s.score is not none %}{{ s.score }} / {{ s.max_score }}<small>{{ '%.1f'|format(s.percentage) }}%</small>{% else %}—{% endif %}</td>
       {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="section">
-  <div class="card">
-    <strong>Scoring note:</strong>
-    Overall percentage is calculated from the combined score across all three papers (total score ÷ total possible score × 100), matching the candidate cumulative result already used by the system.
-  </div>
+      <td class="n"><b>{{ r.total_score }} / {{ r.total_max or '—' }}</b></td>
+      <td class="n"><b>{{ '%.1f'|format(r.overall_percentage) }}%</b></td>
+      <td>{{ r.grade }}</td>
+      <td>{% if r.complete %}<span class="ac-tag ac-tag--good">3 / 3</span>{% else %}<span class="ac-tag ac-tag--blue">{{ r.completed }} / 3</span>{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="10"><div class="ac-empty">No candidates match the current filters.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="en-foot">Overall percentage is the combined score of all three papers ÷ the total possible × 100, the same as the candidate's cumulative result.</p>
+</section>
 </div>
 {% endblock %}

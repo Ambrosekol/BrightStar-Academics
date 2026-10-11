@@ -29,7 +29,7 @@
 {% if summary and summary.total %}
 {% set rate = summary.percentage %}
 <dl class="fi-k rv-k" aria-label="Summary for {{ term }}">
-  <div class="{{ 'is-lead' if rate >= 90 else 'is-alert' if rate < 75 }}"><dt>Attended</dt><dd>{{ '%.0f'|format(rate) }}%</dd><small>{{ summary.present + summary.late }} of {{ summary.total }} days · {{ term }}</small></div>
+  <div class="{{ 'is-lead' if rate >= 90 else 'is-alert' if rate < 75 }}"><dt>Attended</dt><dd><span role="img" aria-label="{{ '%.1f'|format(rate) }} percent attendance">{{ '%.1f'|format(rate) }}%</span></dd><small>{{ summary.present + summary.late }} of {{ summary.total }} days · {{ term }}</small></div>
   <div class="is-present"><dt>Present</dt><dd>{{ summary.present }}</dd></div>
   <div class="is-late"><dt>Late</dt><dd>{{ summary.late }}</dd></div>
   <div class="is-absent"><dt>Absent</dt><dd>{{ summary.absent }}</dd></div>

@@ -1,202 +1,84 @@
 {% extends 'admin_base.html' %}
-
-{% block title %}Register Student — {{ school_brand.name }}{% endblock %}
-
+{% block title %}Register Candidate — {{ school_brand.name }}{% endblock %}
 {% block content %}
+{#- Registering a candidate, in the School portal's form look (static/academics.css .ac-field): the candidate, their
+    school, their parent or guardian, then the three papers they will sit, set from the entry level. -#}
+{% include 'includes/_entrance_frame.html' %}
+<div class="ac" style="max-width:920px">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_candidates') }}">Candidates</a> / Register</span>
+    <h1>Register a candidate</h1>
+    <p>Enter the candidate, their school and their parent or guardian once. Their sign-in details are generated on saving.</p>
+  </div></div>
+</header>
 
-<div class="topbar">
-    <div>
-        <h1>Register Student</h1>
-        <p class="muted">
-            Register the student once. Enter the candidate's personal, school and parent/guardian information.
-        </p>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form class="ac-form" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+  <section class="ac-stage">
+    <div class="ac-stage__head"><div><h2>Candidate</h2><p>Who is sitting the examination, and which class they are applying into.</p></div></div>
+    <div class="ac-fields">
+      <div class="ac-field"><label for="candidate_name">Full name</label>
+        <input id="candidate_name" name="candidate_name" value="{{ form.get('candidate_name', '') }}" required autofocus></div>
+      <div class="ac-field"><label for="target_class">Entrance examination into</label>
+        <select id="target_class" name="target_class" required data-show-when="SS 1" data-show-target="department-choice">
+          <option value="">Select entry level</option>
+          <option value="JSS 1" {% if form.get('target_class') == 'JSS 1' %}selected{% endif %}>Primary 6 → Year 7 / JSS 1</option>
+          <option value="SS 1" {% if form.get('target_class') == 'SS 1' %}selected{% endif %}>JSS 3 → Year 10 / SSS 1</option>
+        </select></div>
+      {#- Entering SSS 1 only: the department the candidate wants. Their papers include questions from all three, and
+          the waitlist shows the department their results point to beside this choice (core/entrance_departments.py). -#}
+      <div class="ac-field" id="department-choice"{% if form.get('target_class') != 'SS 1' %} hidden{% endif %}>
+        <label for="department_choice">Department choice</label>
+        <select id="department_choice" name="department_choice">
+          <option value="">Choose a department</option>
+          {% for d in SSS_DEPARTMENTS %}<option value="{{ d }}" {% if form.get('department_choice') == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select>
+        <small>Their papers include questions from Science, Art and Commercial, and before admission the school sees which department their results fit best.</small>
+      </div>
+      <div class="ac-field"><label for="school_attended">School attended</label>
+        <input id="school_attended" name="school_attended" value="{{ form.get('school_attended', '') }}" required></div>
+      <div class="ac-field"><label for="photo">Photograph <small>optional</small></label>
+        <input id="photo" type="file" name="photo" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+        {{ upload_hint() }}</div>
     </div>
+  </section>
 
-    <div class="actions">
-        <a class="btn btn-light" href="{{ url_for('admin_candidates') }}">
-            Student Register
-        </a>
+  <section class="ac-stage" style="margin-top:10px">
+    <div class="ac-stage__head"><div><h2>Parent / guardian</h2><p>Who the school contacts about the result.</p></div></div>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="parent_guardian_name">Name</label>
+        <input id="parent_guardian_name" name="parent_guardian_name" value="{{ form.get('parent_guardian_name', '') }}" required></div>
+      <div class="ac-field"><label for="parent_guardian_relationship">Relationship</label>
+        <input id="parent_guardian_relationship" name="parent_guardian_relationship" value="{{ form.get('parent_guardian_relationship', '') }}" placeholder="e.g. Father, Mother, Uncle, Guardian" required></div>
+      <div class="ac-field"><label for="primary_mobile">Primary mobile / WhatsApp</label>
+        <input id="primary_mobile" type="tel" name="primary_mobile" value="{{ form.get('primary_mobile', '') }}" required></div>
+      <div class="ac-field"><label for="alternative_mobile">Alternative mobile <small>optional</small></label>
+        <input id="alternative_mobile" type="tel" name="alternative_mobile" value="{{ form.get('alternative_mobile', '') }}"></div>
+      <div class="ac-field"><label for="parent_guardian_email">Email <small>optional</small></label>
+        <input id="parent_guardian_email" type="email" name="parent_guardian_email" value="{{ form.get('parent_guardian_email', '') }}" placeholder="parent@example.com"></div>
     </div>
-</div>
+  </section>
 
-{% if errors %}
-<div class="error">
-    {% for e in errors %}
-        <div>{{ e }}</div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<div class="card">
-
-<form method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
-    <h2>Student Information</h2>
-
-    <div class="form-grid">
-
-        <div class="field">
-            <label>Candidate photo <span class="optional">(optional)</span></label>
-            <input type="file" name="photo" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
-            {{ upload_hint() }}
-        </div>
-
-        <div class="field">
-            <label>Student full name</label>
-            <input
-                name="candidate_name"
-                value="{{ form.get('candidate_name','') }}"
-                required
-                autofocus
-            >
-        </div>
-
-        <div class="field">
-            <label>Entrance examination into</label>
-
-            <select name="target_class" required>
-                <option value="">Select entry level</option>
-
-                <option value="JSS 1"
-                    {% if form.get('target_class') == 'JSS 1' %}selected{% endif %}>
-                    Primary 6 → Year 7 / JSS 1
-                </option>
-
-                <option value="SS 1"
-                    {% if form.get('target_class') == 'SS 1' %}selected{% endif %}>
-                    JSS 3 → Year 10 / SSS 1
-                </option>
-            </select>
-        </div>
-
-    </div>
-
-
-    <h2>School Information</h2>
-
-    <div class="form-grid">
-
-        <div class="field">
-            <label>School attended</label>
-            <input
-                name="school_attended"
-                value="{{ form.get('school_attended','') }}"
-                required
-            >
-        </div>
-
-    </div>
-
-
-    <h2>Parent / Guardian Information</h2>
-
-    <div class="form-grid">
-
-        <div class="field">
-            <label>Parent / Guardian name</label>
-            <input
-                name="parent_guardian_name"
-                value="{{ form.get('parent_guardian_name','') }}"
-                required
-            >
-        </div>
-
-        <div class="field">
-            <label>Relationship</label>
-            <input
-                name="parent_guardian_relationship"
-                value="{{ form.get('parent_guardian_relationship','') }}"
-                placeholder="e.g. Father, Mother, Uncle, Guardian"
-                required
-            >
-        </div>
-
-        <div class="field">
-            <label>Primary Mobile / WhatsApp</label>
-            <input
-                type="tel"
-                name="primary_mobile"
-                value="{{ form.get('primary_mobile','') }}"
-                required
-            >
-        </div>
-
-        <div class="field">
-            <label>Parent / Guardian Email <span class="optional">(optional)</span></label>
-            <input type="email" name="parent_guardian_email" value="{{ form.get('parent_guardian_email','') }}" placeholder="parent@example.com">
-        </div>
-
-        <div class="field">
-            <label>Alternative Mobile</label>
-            <input
-                type="tel"
-                name="alternative_mobile"
-                value="{{ form.get('alternative_mobile','') }}"
-            >
-        </div>
-
-    </div>
-
-
-    <h2>Automatic Three-Paper Assignment</h2>
-
-    <p class="muted">
-        The candidate cannot choose papers. Based on the entry level,
-        the system assigns Mathematics, English and the shared General
-        Knowledge paper. No unrelated or test bank is substituted.
-    </p>
-
+  <section class="ac-stage" style="margin-top:10px">
+    <div class="ac-stage__head"><div><h2>Papers</h2><p>Set automatically from the entry level: Mathematics, English and the shared General Knowledge paper. The candidate cannot choose.</p></div></div>
     {% if available_papers %}
-
-    <div class="paper-assignment-preview">
-
-        {% for b in available_papers %}
-
-        <div class="info-card">
-
-            <strong>
-                {{ entrance_paper_label(loop.index, b.id, b.name) }}
-            </strong>
-
-            <p>{{ b.questions|length }} questions · {{ b.duration_seconds//60 }} min</p>
-
-            <span class="muted">Ready for the candidate</span>
-
-        </div>
-
-        {% endfor %}
-
-    </div>
-
+    <table class="ac-t">
+      <thead><tr><th>Paper</th><th class="n">Questions</th><th class="n">Minutes</th><th>Status</th></tr></thead>
+      <tbody>{% for b in available_papers %}<tr><td><b>{{ entrance_paper_label(loop.index, b.id, b.name) }}</b></td><td class="n">{{ b.questions|length }}</td><td class="n">{{ b.duration_seconds // 60 }}</td><td><span class="ac-tag ac-tag--good">Ready</span></td></tr>{% endfor %}</tbody>
+    </table>
     {% endif %}
-
-
     {% if missing %}
-
-    <div class="warning">
-
-        <strong>
-            Registration is blocked until the complete paper set exists.
-        </strong>
-
-        <br>
-
-        Missing: {{ missing|join(', ') }}
-
-    </div>
-
+    <div class="ac-errors" style="margin-top:8px"><strong>Registration is blocked until the complete paper set exists.</strong> Missing: {{ missing|join(', ') }}</div>
     {% endif %}
-
-
-    <button
-        class="btn btn-primary"
-        type="submit"
-    >
-        Register Student & Generate Login
-    </button>
-
+    <div class="ac-stage__foot">
+      <button class="ac-btn ac-btn--primary ac-btn--lg" type="submit">Register and generate sign-in</button>
+      <a class="ac-link" href="{{ url_for('admin_candidates') }}">Cancel</a>
+    </div>
+  </section>
 </form>
-
 </div>
-
 {% endblock %}

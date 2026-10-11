@@ -1,9 +1,73 @@
 {% extends 'admin_base.html' %}
-{% block title %}Performance — {{candidate.candidate_name}}{% endblock %}
+{% block title %}Performance — {{ candidate.candidate_name }}{% endblock %}
 {% block content %}
-<div class="profile-hero"><div><a class="text-back" href="{{url_for('admin_candidate_detail',cid=candidate.id)}}">← Candidate Profile</a><div class="eyebrow">ACADEMIC / EXAMINATION PERFORMANCE</div><h1>{{candidate.candidate_name}}</h1><div class="profile-subline"><span class="level-badge">{{candidate.target_class}}</span><span class="candidate-code">{{candidate.candidate_code}}</span></div></div><div class="hero-actions"><a class="btn btn-light" href="{{url_for('admin_candidate_result_print',cid=candidate.id)}}" target="_blank">Print Cumulative Result</a><a class="btn btn-share-whatsapp" href="{{url_for('admin_candidate_result_whatsapp',cid=candidate.id)}}">WhatsApp Result</a><a class="btn btn-share-email" href="{{url_for('admin_candidate_result_email',cid=candidate.id)}}">Email Result</a></div></div>
-<div class="mini-metric-grid performance-metrics"><div><span>Papers completed</span><strong>{{completed}} / 3</strong></div><div><span>Cumulative score</span><strong>{% if completed %}{{total_score}} / {{total_max}}{% else %}—{% endif %}</strong></div><div><span>Cumulative percentage</span><strong>{% if completed %}{{'%.1f'|format(pct)}}%{% else %}—{% endif %}</strong></div><div><span>Overall grade</span><strong>{{grade}}</strong></div></div>
-<div class="performance-layout"><section class="card profile-card"><div class="profile-section-head"><div><div class="section-label">THREE-PAPER RECORD</div><h2>Paper-by-paper results</h2><p class="muted">Every assigned paper is shown by subject, with its score, percentage and current status.</p></div></div><div class="paper-result-list">{% for p in papers %}<article class="paper-result-card"><div class="paper-result-number">0{{p.slot}}</div><div class="paper-result-main"><div class="section-label">PAPER {{p.slot}}</div><h3>Paper {{p.slot}} · {{p.subject_label}}</h3><p>{% if p.status=='active' %}In progress{% elif p.status in ('submitted','expired') %}Completed{% else %}Not started{% endif %}</p></div><div class="paper-result-score">{% if p.status in ('submitted','expired') %}<strong>{{p.score}} / {{p.max_score}}</strong><span>{{'%.1f'|format(p.percentage)}}%</span>{% elif p.status=='active' %}<strong>In progress</strong><span>Live</span>{% else %}<strong>—</strong><span>Not started</span>{% endif %}</div><div>{% if p.attempt_id and p.status in ('submitted','expired') %}<a class="btn btn-light" href="{{url_for('admin_result_detail',aid=p.attempt_id)}}">View Result</a>{% endif %}</div></article>{% endfor %}</div></section>
-<section class="card profile-card"><div class="section-label">CANDIDATE INFORMATION</div><h2>{{candidate.candidate_name}}</h2><dl class="detail-list compact"><div><dt>Candidate ID</dt><dd>{{candidate.candidate_code}}</dd></div><div><dt>Target class</dt><dd>{{candidate.target_class}}</dd></div><div><dt>School attended</dt><dd>{{candidate.school_attended or '—'}}</dd></div><div><dt>Parent / Guardian</dt><dd>{{candidate.parent_guardian_name or '—'}}</dd></div><div><dt>Primary mobile</dt><dd>{{candidate.primary_mobile or '—'}}</dd></div><div><dt>Email</dt><dd>{{candidate.parent_guardian_email or '—'}}</dd></div></dl><a class="btn btn-light full-width" href="{{url_for('admin_candidate_detail',cid=candidate.id)}}">View Complete Profile</a></section></div>
-<section class="card profile-card"><div class="section-label">ATTEMPT HISTORY</div><h2>Examination activity</h2><div class="activity-list">{% for a in attempts %}<div class="activity-row"><div><strong>{{a.paper_label}}</strong><small>Started {{a.started_at}}{% if a.submitted_at %} · Submitted {{a.submitted_at}}{% endif %}</small></div><div>{% if a.status in ('submitted','expired') %}<strong>{{a.score}} / {{a.max_score}}</strong><small>{{'%.1f'|format(a.percentage)}}%</small>{% else %}<span class="status active">In progress</span>{% endif %}</div></div>{% else %}<div class="empty-state">No examination activity recorded.</div>{% endfor %}</div></section>
+{#- One candidate's examination record, in the School portal's look: the four figures, each paper with its result
+    (and a link to the marked paper), and every attempt they have made. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% set aid = current_admin['id'] if current_admin else None %}
+<div class="ac">
+<header class="ac-top">
+  <div class="en-title">
+    <span class="en-ava en-ava--lg">{% if candidate.photo_path %}<img src="{{ url_for('static', filename=candidate.photo_path) }}" alt="">{% else %}{{ candidate.candidate_name[:1]|upper }}{% endif %}</span>
+    <div>
+      <span class="acq-kind"><a href="{{ url_for('admin_candidate_detail', cid=candidate.id) }}">{{ candidate.candidate_name }}</a> / Performance</span>
+      <h1>{{ candidate.candidate_name }}</h1>
+      <p>{{ candidate.target_class }} · <span class="en-code">{{ candidate.candidate_code }}</span>{% if candidate.school_attended %} · {{ candidate.school_attended }}{% endif %}</p>
+    </div>
+  </div>
+  <div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('admin_candidate_result_print', cid=candidate.id) }}" target="_blank">Print cumulative result</a>
+    <a class="ac-btn" href="{{ url_for('admin_candidate_result_whatsapp', cid=candidate.id) }}" data-full data-no-loader>WhatsApp</a>
+    <a class="ac-btn" href="{{ url_for('admin_candidate_result_email', cid=candidate.id) }}" data-full>Email</a>
+  </div>
+</header>
+
+<dl class="fi-k">
+  <div class="{{ 'is-lead' if completed == 3 }}"><dt>Papers completed</dt><dd>{{ completed }} / 3</dd></div>
+  <div><dt>Cumulative score</dt><dd>{% if completed %}{{ total_score }} / {{ total_max }}{% else %}—{% endif %}</dd></div>
+  <div><dt>Cumulative percentage</dt><dd>{% if completed %}{{ '%.1f'|format(pct) }}%{% else %}—{% endif %}</dd></div>
+  <div><dt>Overall grade</dt><dd>{{ grade }}</dd></div>
+</dl>
+
+<section class="ac-panel">
+  <div class="en-ph"><h2>Paper by paper</h2></div>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Paper</th><th>Subject</th><th>Status</th><th class="n">Score</th><th class="n">Percentage</th><th></th></tr></thead>
+    <tbody>
+    {% for p in papers %}
+    {% set done = p.status in ('submitted', 'expired') %}
+    <tr>
+      <td><b>Paper {{ p.slot }}</b></td>
+      <td>{{ p.subject_label }}</td>
+      <td>{% if p.status == 'active' %}<span class="ac-tag ac-tag--blue"><i class="en-live"></i>In progress</span>{% elif done %}<span class="ac-tag ac-tag--good">Completed</span>{% else %}<span class="ac-tag">Not started</span>{% endif %}</td>
+      <td class="n">{% if done %}<span class="en-score">{{ p.score }} / {{ p.max_score }}</span>{% else %}—{% endif %}</td>
+      <td class="n">{% if done %}{{ '%.1f'|format(p.percentage) }}%<span class="en-bar"><i style="width:{{ [p.percentage, 100]|min }}%"></i></span>{% else %}—{% endif %}</td>
+      <td class="ac-actions">{% if p.attempt_id and done %}<a class="ac-link" href="{{ url_for('admin_result_detail', aid=p.attempt_id) }}">Marked paper</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+
+<section class="ac-panel">
+  <div class="en-ph"><h2>Every attempt<small>{{ attempts|length }}</small></h2></div>
+  {% if attempts %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Paper</th><th>Started</th><th>Submitted</th><th class="n">Result</th></tr></thead>
+    <tbody>
+    {% for a in attempts %}
+    <tr>
+      <td>{{ a.paper_label }}</td>
+      <td>{{ (a.started_at or '—')|replace('T', ' ') }}</td>
+      <td>{{ (a.submitted_at or '—')|replace('T', ' ') }}</td>
+      <td class="n">{% if a.status in ('submitted', 'expired') %}<span class="en-score">{{ a.score }} / {{ a.max_score }}</span> <small>{{ '%.1f'|format(a.percentage) }}%</small>{% else %}<span class="ac-tag ac-tag--blue"><i class="en-live"></i>In progress</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty">No examination activity recorded.</div>
+  {% endif %}
+</section>
+</div>
 {% endblock %}

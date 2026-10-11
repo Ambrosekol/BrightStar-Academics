@@ -655,7 +655,7 @@ codes = re.findall(r'class="credential-code">([^<]+)<', body)
 check("the school can now register an entrance candidate using only the standard banks",
       r.status_code == 200 and "Registered Successfully" in body and len(codes) == 2 and candidate_count("alpha") == 1,
       body[:200] if len(codes) != 2 else "")
-r2 = register(c_a, u_a, candidate_name="Chidi Eze", target_class="SSS 1")
+r2 = register(c_a, u_a, candidate_name="Chidi Eze", target_class="SSS 1", department_choice="Art")
 check("…for SSS 1 as well", "Registered Successfully" in text_of(r2) and candidate_count("alpha") == 2)
 
 code, password = codes

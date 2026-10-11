@@ -321,7 +321,7 @@ check("with candidates.view only, the viewer is refused (403) the whole waitlist
       and viewer.post(f"{CANDS}/{LOW_SCORE}/decline", {}, page="/admin/password").status_code == 403)
 check("…nor do they see 'Admissions' in the menu, while an officer does",
       'href="/admin/candidates/admissions"' not in viewer.text("/admin/examination") and 'href="/admin/candidates/admissions"' in officer.text("/admin/examination"))
-SSS_CAND = register(op, "Sss Candidate", target_class="SSS 1")
+SSS_CAND = register(op, "Sss Candidate", target_class="SSS 1", department_choice="Science")
 submit_attempt(SSS_CAND, 65)
 check("an officer scoped to JSS 1 candidates only can act on one of them",
       jss1_officer.post(f"{CANDS}/{LOW_SCORE}/decline", {"note": "scoped test"}, page=ADMISSIONS).status_code == 302)

@@ -1,206 +1,113 @@
 {% extends 'admin_base.html' %}
-{% from 'includes/_nav_icons.html' import icon %}
-{% block title %}Dashboard — {{ school_brand.name }}{% endblock %}
+{% import 'includes/_dash.html' as d %}
+{% block title %}Overview — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-/* The actions a person comes here for, as cards, under the summary. */
-.ent-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); margin: 0 0 var(--sp-5); }
-.ent-quick .wd-module-card__ico { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
-@media (max-width: 760px) {
-  .ent-quick { grid-template-columns: 1fr; }
-}
-</style>
-{% set completion_rate = (stats.completed / stats.attempts * 100) if stats.attempts else none %}
+{#- The entrance examination's Overview, in the School Overview's own look (static/overview.css, includes/_dash.html):
+    the figures that matter, how each subject and entry level is doing, the leading candidates and the banks behind
+    the papers. Data from blueprints/entrance/routes.py (admin_dashboard). -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='overview.css') }}">
+{% include 'includes/_entrance_frame.html' %}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set completion_rate = (100 * stats.completed / stats.attempts) if stats.attempts else none %}
 {% set ns = namespace(inactive=0) %}
 {% for b in banks %}{% if not exam_states.get(b.id, 1) %}{% set ns.inactive = ns.inactive + 1 %}{% endif %}{% endfor %}
+{% set subject_rows = [] %}
+{% for s in subject_analytics if s.attempted %}{% set _ = subject_rows.append({'label': s.label, 'value': s.average, 'compare': none, 'href': none,
+   'tip': s.label ~ ': ' ~ '%.1f'|format(s.average) ~ '% average, ' ~ s.attempted ~ ' attempted, ' ~ s.passed ~ ' passed'}) %}{% endfor %}
+{% set class_rows = [] %}
+{% for c in class_analytics if c.completed and c.average is not none %}{% set _ = class_rows.append({'label': c.label, 'value': c.average, 'compare': none, 'href': none,
+   'tip': c.label ~ ': ' ~ '%.1f'|format(c.average) ~ '% average, ' ~ c.completed ~ ' of ' ~ c.candidates ~ ' completed'}) %}{% endfor %}
+<div class="ov ac">
 
-<div class="wd-head">
+<header class="ov-top">
   <div>
-    <h1 class="wd-head__title">Entrance examination</h1>
-    <p class="wd-head__lead">A management view of examination activity, subject strength, class performance and the leading candidates.</p>
+    <h1>Overview<span>Entrance examination</span></h1>
+    <p>{{ current_admin.display_name }} · {{ stats.candidates }} candidate{{ '' if stats.candidates == 1 else 's' }} registered{% if completion_rate is not none %} · {{ '%.0f'|format(completion_rate) }}% of attempts completed{% endif %}</p>
   </div>
-  <div class="wd-head__actions">
-    <a class="ui-btn ui-btn--light" href="{{ url_for('admin_results') }}">Results &amp; Analytics</a>
-    <a class="ui-btn ui-btn--primary" href="{{ url_for('admin_new_candidate') }}">Register candidate</a>
+  <div class="ac-top__act">
+    {% if admin_has_permission(aid, 'results.view') %}<a class="ac-btn" href="{{ url_for('admin_results') }}">Results</a>{% endif %}
+    {% if admin_has_permission(aid, 'candidates.create') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_new_candidate') }}">+ Register candidate</a>{% endif %}
   </div>
-</div>
+</header>
 
 {% if ns.inactive > 0 %}
-<div class="ui-alert ui-alert--warning ui-alert--action">
-  <span>{{ ns.inactive }} question bank{{ '' if ns.inactive == 1 else 's' }} {{ 'is' if ns.inactive == 1 else 'are' }} turned off and won't appear in an exam.</span>
-  <a class="ui-link" href="{{ url_for('admin_question_banks') }}">Review question banks {{ icon('arrow-right', 'ico-sm') }}</a>
-</div>
+<p class="ac-note">{{ ns.inactive }} question bank{{ '' if ns.inactive == 1 else 's' }} {{ 'is' if ns.inactive == 1 else 'are' }} turned off and won't appear in an exam. <a class="ac-link" href="{{ url_for('admin_question_banks') }}">Review question banks →</a></p>
 {% endif %}
 
-<div class="wd-stat-hero">
-  <div class="wd-stat-hero__primary">
-    <span class="wd-stat-hero__icon">{{ icon('candidate') }}</span>
-    <span class="wd-stat-hero__value">{{ stats.candidates }}</span>
-    <span class="wd-stat-hero__label">Registered candidates</span>
-    {% if completion_rate is not none %}
-    <span class="wd-stat-hero__note">{{ '%.0f'|format(completion_rate) }}% of attempts completed</span>
-    {% else %}
-    <span class="wd-stat-hero__note">No attempts recorded yet</span>
+{{ d.kpis([
+  {'label': 'Candidates registered', 'value': stats.candidates, 'href': url_for('admin_candidates'), 'note': 'active registrations'},
+  {'label': 'Papers attempted', 'value': stats.attempts, 'note': 'every attempt, all papers'},
+  {'label': 'Papers completed', 'value': stats.completed, 'note': ('%.0f'|format(completion_rate) ~ '% of attempts') if completion_rate is not none else 'none yet'},
+  {'label': 'Question banks', 'value': stats.banks, 'href': url_for('admin_question_banks'), 'alert': ns.inactive > 0, 'note': (ns.inactive ~ ' turned off') if ns.inactive else 'all available'},
+  {'label': 'Questions', 'value': stats.questions, 'note': 'across every bank'},
+]) }}
+
+{% if admin_has_permission(aid, 'presence.view') %}
+<p class="ov-links" style="margin:0 0 10px;font-size:12px;color:var(--ac-muted)"><a href="{{ url_for('admin_presence') }}">Online now:</a> {{ online_counts.admins }} administrator{{ '' if online_counts.admins == 1 else 's' }} · {{ online_counts.students }} student{{ '' if online_counts.students == 1 else 's' }} · {{ online_counts.parents }} parent{{ '' if online_counts.parents == 1 else 's' }}</p>
+{% endif %}
+
+<div class="ov-g">
+  <section class="ov-p ov-p--6" aria-labelledby="enSubj">
+    <div class="ov-h"><h2 id="enSubj">Subjects <small>average of completed papers</small></h2>{% if admin_has_permission(aid, 'results.view') %}<a href="{{ url_for('admin_results') }}">By subject →</a>{% endif %}</div>
+    {{ d.hbars(subject_rows, max_value=100, empty='No paper has been completed yet.') }}
+    {% if subject_analytics %}
+    <table class="ov-t" style="margin-top:6px">
+      <thead><tr><th>Subject</th><th class="n">Attempted</th><th class="n">Passed</th><th class="n">Pass rate</th></tr></thead>
+      <tbody>{% for s in subject_analytics %}<tr><td>{{ s.label }}</td><td class="n">{{ s.attempted }}</td><td class="n">{{ s.passed }}</td><td class="n">{% if s.attempted %}{{ '%.0f'|format(100 * s.passed / s.attempted) }}%{% else %}<small>—</small>{% endif %}</td></tr>{% endfor %}</tbody>
+    </table>
     {% endif %}
-  </div>
-  <div class="wd-stat-hero__secondary">
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('bank') }}</span><span class="wd-stat-chip__value">{{ stats.banks }}</span><span class="wd-stat-chip__label">Question banks</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('list') }}</span><span class="wd-stat-chip__value">{{ stats.questions }}</span><span class="wd-stat-chip__label">Questions</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('pulse') }}</span><span class="wd-stat-chip__value">{{ stats.attempts }}</span><span class="wd-stat-chip__label">Attempts</span></div>
-    <div class="wd-stat-chip"><span class="wd-stat-chip__icon">{{ icon('check-circle') }}</span><span class="wd-stat-chip__value">{{ stats.completed }}</span><span class="wd-stat-chip__label">Completed</span></div>
-  </div>
-</div>
+  </section>
+  <section class="ov-p ov-p--6" aria-labelledby="enLevel">
+    <div class="ov-h"><h2 id="enLevel">Entry levels <small>average of candidates who finished all three papers</small></h2></div>
+    {{ d.hbars(class_rows, max_value=100, empty='No candidate has finished all three papers yet.') }}
+    {% if class_analytics %}
+    <table class="ov-t" style="margin-top:6px">
+      <thead><tr><th>Entry level</th><th class="n">Candidates</th><th class="n">Completed</th><th class="n">Average</th></tr></thead>
+      <tbody>{% for c in class_analytics %}<tr><td>{{ c.label }}</td><td class="n">{{ c.candidates }}</td><td class="n">{{ c.completed }}</td><td class="n">{% if c.average is not none %}{{ '%.1f'|format(c.average) }}%{% else %}<small>—</small>{% endif %}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+  </section>
 
-<div class="ent-quick">
-  <a class="wd-module-card" href="{{ url_for('admin_new_candidate') }}">
-    <span class="wd-module-card__ico">{{ icon('candidate') }}</span>
-    <h3 class="wd-module-card__title">Register a candidate</h3>
-    <p class="wd-module-card__text">Add a candidate, choose their entry level and issue their sign-in details.</p>
-    <span class="wd-module-card__go">Open Candidates {{ icon('arrow-right', 'ico-sm') }}</span>
-  </a>
-  <a class="wd-module-card" href="{{ url_for('admin_question_banks') }}">
-    <span class="wd-module-card__ico">{{ icon('bank') }}</span>
-    <h3 class="wd-module-card__title">Question banks</h3>
-    <p class="wd-module-card__text">Turn banks on or off, import questions and check what each exam draws from.</p>
-    <span class="wd-module-card__go">Open Question banks {{ icon('arrow-right', 'ico-sm') }}</span>
-  </a>
-  <a class="wd-module-card" href="{{ url_for('admin_results') }}">
-    <span class="wd-module-card__ico">{{ icon('trend') }}</span>
-    <h3 class="wd-module-card__title">Results &amp; analytics</h3>
-    <p class="wd-module-card__text">Scores, subject analysis and the full candidate ranking.</p>
-    <span class="wd-module-card__go">Open Results {{ icon('arrow-right', 'ico-sm') }}</span>
-  </a>
-</div>
-
-{% if current_admin and admin_has_permission(current_admin['id'], 'presence.view') %}
-<a class="wd-online" href="{{ url_for('admin_presence') }}">
-  <span class="wd-online__label">{{ icon('presence', 'ico-sm') }} Online now</span>
-  <span class="wd-online__items">
-    <span class="wd-online__item"><strong>{{ online_counts.admins }}</strong><span>Administrators</span></span>
-    <span class="wd-online__item"><strong>{{ online_counts.students }}</strong><span>Students</span></span>
-    <span class="wd-online__item"><strong>{{ online_counts.parents }}</strong><span>Parents</span></span>
-  </span>
-</a>
-{% endif %}
-
-<section class="wd-section">
-  <div class="wd-section__head">
-    <div>
-      <h2 class="wd-section__title">Performance</h2>
-      <p class="wd-section__desc">How each subject and each entry level is doing, from completed attempts.</p>
-    </div>
-    <a class="ui-link wd-section__action" href="{{ url_for('admin_rankings') }}">View rankings {{ icon('arrow-right', 'ico-sm') }}</a>
-  </div>
-  <div class="wd-perf-grid">
-    <article class="ui-panel">
-      <div class="ui-panel__head">
-        <div>
-          <h3 class="ui-panel__title">Subject performance</h3>
-          <p class="ui-panel__desc">Average percentage across completed subject attempts.</p>
-        </div>
-        <span class="wd-perf-legend"><span><i class="wd-perf-legend__dot wd-perf-legend__dot--good"></i>70%+</span><span><i class="wd-perf-legend__dot wd-perf-legend__dot--fair"></i>50–69%</span><span><i class="wd-perf-legend__dot wd-perf-legend__dot--poor"></i>Below 50%</span></span>
-      </div>
-      <div class="ui-panel__body wd-perf-rows">
-        {% for s in subject_analytics %}
-        {% set cls = 'empty' if s.attempted == 0 else ('good' if s.average >= 70 else ('fair' if s.average >= 50 else 'poor')) %}
-        <div class="wd-perf-row{% if cls == 'empty' %} wd-perf-row--empty{% endif %}">
-          <div class="wd-perf-row__top">
-            <span class="wd-perf-row__name">{{ s.label }}</span>
-            <span class="wd-perf-row__value">{% if cls == 'empty' %}—{% else %}{{ '%.1f'|format(s.average) }}%{% endif %}</span>
-          </div>
-          <div class="wd-perf-track"><div class="wd-perf-fill wd-perf-fill--{{ cls }}" style="width:{{ 0 if cls == 'empty' else [s.average, 100]|min }}%"></div></div>
-          <p class="wd-perf-row__meta">{% if cls == 'empty' %}No attempts recorded yet{% else %}{{ s.attempted }} attempted · {{ s.passed }} passed{% endif %}</p>
-        </div>
-        {% endfor %}
-      </div>
-    </article>
-    <article class="ui-panel">
-      <div class="ui-panel__head">
-        <div>
-          <h3 class="ui-panel__title">Class / entry performance</h3>
-          <p class="ui-panel__desc">Average cumulative percentage for fully completed candidates.</p>
-        </div>
-      </div>
-      <div class="ui-panel__body wd-perf-rows">
-        {% for c in class_analytics %}
-        {% set cls = 'empty' if c.completed == 0 else ('good' if c.average >= 70 else ('fair' if c.average >= 50 else 'poor')) %}
-        <div class="wd-perf-row{% if cls == 'empty' %} wd-perf-row--empty{% endif %}">
-          <div class="wd-perf-row__top">
-            <span class="wd-perf-row__name">{{ c.label }}</span>
-            <span class="wd-perf-row__value">{% if c.average is not none %}{{ '%.1f'|format(c.average) }}%{% else %}—{% endif %}</span>
-          </div>
-          <div class="wd-perf-track"><div class="wd-perf-fill wd-perf-fill--{{ cls }}" style="width:{{ 0 if cls == 'empty' else [c.average, 100]|min }}%"></div></div>
-          <p class="wd-perf-row__meta">{{ c.candidates }} candidate{{ '' if c.candidates == 1 else 's' }} · {{ c.completed }} completed</p>
-        </div>
-        {% endfor %}
-      </div>
-    </article>
-  </div>
-</section>
-
-<section class="wd-section">
-  <div class="wd-section__head">
-    <div>
-      <h2 class="wd-section__title">Leading candidates</h2>
-      <p class="wd-section__desc">Top completed three-paper candidates, using the same ranking rule as the Rankings page.</p>
-    </div>
-    <a class="ui-link wd-section__action" href="{{ url_for('admin_rankings') }}">Open full ranking {{ icon('arrow-right', 'ico-sm') }}</a>
-  </div>
-  <div class="ui-panel">
+  <section class="ov-p ov-p--7" aria-labelledby="enTop">
+    <div class="ov-h"><h2 id="enTop">Leading candidates <small>all three papers completed</small></h2>{% if admin_has_permission(aid, 'results.rankings') %}<a href="{{ url_for('admin_rankings') }}">Full ranking →</a>{% endif %}</div>
     {% if top_candidates %}
-    <ol class="wd-rank-list">
+    <div class="ov-scroll"><table class="ov-t">
+      <thead><tr><th class="n">Rank</th><th>Candidate</th><th>Entry level</th><th class="n">Score</th><th class="n">Overall</th></tr></thead>
+      <tbody>
       {% for c in top_candidates %}
-      {% set cls = 'good' if c.overall_percentage >= 70 else ('fair' if c.overall_percentage >= 50 else 'poor') %}
-      <li class="wd-rank-row{% if c.rank == 1 %} wd-rank-row--1{% endif %}">
-        <span class="wd-rank-pos">{{ c.rank }}</span>
-        <span class="wd-rank-avatar">{% if c.photo_path %}<img src="{{ url_for('static', filename=c.photo_path) }}" alt="">{% else %}{{ c.candidate_name[:1]|upper }}{% endif %}</span>
-        <span class="wd-rank-main">
-          <span class="wd-rank-name">{{ c.candidate_name }}</span>
-          <span class="wd-rank-meta">{{ c.target_class }} · {{ c.candidate_code }}</span>
-        </span>
-        <span class="wd-rank-score">
-          <strong class="tone-{{ cls }}">{{ '%.1f'|format(c.overall_percentage) }}%</strong>
-          <small>{{ c.total_score }} / {{ c.total_max }}</small>
-        </span>
-      </li>
+      <tr>
+        <td class="n"><span class="en-rank{{ ' en-rank--top' if c.rank == 1 }}">{{ c.rank }}</span></td>
+        <td><span class="en-who"><span class="en-ava">{% if c.photo_path %}<img src="{{ url_for('static', filename=c.photo_path) }}" alt="">{% else %}{{ c.candidate_name[:1]|upper }}{% endif %}</span><span>{{ c.candidate_name }} <small class="en-code">{{ c.candidate_code }}</small></span></span></td>
+        <td>{{ c.target_class }}</td>
+        <td class="n">{{ c.total_score }} / {{ c.total_max }}</td>
+        <td class="n"><b>{{ '%.1f'|format(c.overall_percentage) }}%</b></td>
+      </tr>
       {% endfor %}
-    </ol>
+      </tbody>
+    </table></div>
     {% else %}
-    <div class="ui-empty">{{ icon('podium') }}<p>No candidate has completed all three papers yet.</p></div>
+    <p class="dz-empty">No candidate has completed all three papers yet.</p>
     {% endif %}
-  </div>
-</section>
+  </section>
 
-<section class="wd-section">
-  <div class="wd-section__head">
-    <div>
-      <h2 class="wd-section__title">Question banks</h2>
-      <p class="wd-section__desc">The operational content behind the entrance examination.</p>
-    </div>
-    <a class="ui-link wd-section__action" href="{{ url_for('admin_question_banks') }}">Manage question banks {{ icon('arrow-right', 'ico-sm') }}</a>
-  </div>
-  <div class="ui-panel">
+  <section class="ov-p ov-p--5" aria-labelledby="enBanks">
+    <div class="ov-h"><h2 id="enBanks">Question banks</h2>{% if admin_has_permission(aid, 'question_banks.view') %}<a href="{{ url_for('admin_question_banks') }}">Manage →</a>{% endif %}</div>
     {% if banks %}
-    <div class="ui-table-wrap">
-      <table class="ui-table">
-        <thead><tr><th>Subject</th><th>Level</th><th class="num">Questions</th><th class="num">Duration</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-        {% for b in banks %}
-        <tr>
-          <td><strong>{{ entrance_bank_display_name(b.id, b.name) }}</strong></td>
-          <td>{{ b.level }}</td>
-          <td class="num">{{ b.questions|length }}</td>
-          <td class="num">{{ (b.duration_seconds // 60) }} min</td>
-          <td>{% if exam_states.get(b.id, 1) %}<span class="ui-status ui-status--on">Active</span>{% else %}<span class="ui-status ui-status--off">Inactive</span>{% endif %}</td>
-          <td><a class="ui-link" href="{{ url_for('admin_bank', bid=b.id) }}">Manage</a></td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <div class="ov-scroll"><table class="ov-t">
+      <thead><tr><th>Bank</th><th class="n">Questions</th></tr></thead>
+      <tbody>
+      {% for b in banks %}
+      <tr>
+        <td><a href="{{ url_for('admin_bank', bid=b.id) }}">{{ entrance_subject_label(b.id, b.name) }}</a>{% if not exam_states.get(b.id, 1) %} <span class="ac-tag ac-tag--attn">Off</span>{% endif %}<small style="display:block">{{ b.level or '—' }} · {{ b.duration_seconds // 60 }} min</small></td>
+        <td class="n">{{ b.questions|length }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
     {% else %}
-    <div class="ui-empty">{{ icon('bank') }}<p>No question banks found. Import one, or ask the platform team to add the standard set.</p></div>
+    <p class="dz-empty">No question banks yet. Import one, or ask the platform team to add the standard set.</p>
     {% endif %}
-  </div>
-</section>
+  </section>
+</div>
+</div>
 {% endblock %}

@@ -185,7 +185,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='4') }}">
 </head>
-<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable">
+<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
 {{ connectivity_banner() }}
 {% if finance_unallocated and finance_unallocated.count %}
 <div class="finance-unallocated-banner" role="status">
@@ -291,7 +291,7 @@
             </button>
         </div>
         {% endif %}
-        <div id="page-body" data-page-body>
+        <div class="bs-stage">{% include 'includes/_skeleton.html' %}<div id="page-body" data-page-body>
 {% endif %}
         {% if fragment %}<span hidden data-fragment-title>{{ self.title() }}</span>{% endif %}
         {#- Settings: every page that belongs to it is shown beside the list of settings (blueprints/school/settings.py),
@@ -322,7 +322,7 @@
         {% block content %}{% endblock %}
         {% if sx %}</section></div><script src="{{ url_for('static', filename='settings.js', v='2') }}"></script>{% endif %}
 {% if not fragment %}
-        </div>
+        </div></div>
         </div>
     </main>
 </div>

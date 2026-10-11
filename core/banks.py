@@ -33,6 +33,14 @@ MAX_DURATION_SECONDS = 6 * 60 * 60
 # Every screen that shows or edits a question (the exam, the results, the question form) is
 # built for options A to D, so a bank is held to exactly four.
 OPTIONS_PER_QUESTION = 4
+# The senior secondary departments a question may be tagged with (the same names as core/school_structure.DEPARTMENTS,
+# repeated here so this module stays free of the models), and the other spellings a file may use for them.
+QUESTION_DEPARTMENTS = ('Science', 'Art', 'Commercial')
+DEPARTMENT_ALIASES = {'arts': 'Art', 'commerce': 'Commercial', 'sciences': 'Science'}
+
+
+def clean_department(value):
+    return next((d for d in QUESTION_DEPARTMENTS if d.casefold() == str(value or '').strip().casefold()), None)
 ENTRY_GROUPS = ('year7', 'year10')
 
 # A bank's id becomes its file name (<id>.json), so it is limited to characters that can
@@ -211,9 +219,19 @@ def check_bank(data):
             if not _is_int(points) or not 1 <= points <= 100:
                 problems.add(f'{label} "points" must be a whole number from 1 to 100.')
 
+            # A senior secondary department the question tests (core/entrance_departments.py); optional.
+            department = None
+            raw_department = raw.get('department')
+            if raw_department not in (None, ''):
+                department = clean_department(DEPARTMENT_ALIASES.get(str(raw_department).strip().casefold(), raw_department))
+                if not department:
+                    problems.add(f'{label} "department" must be Science, Art or Commercial (or left out for a general question).')
+
             item = {'id': qid, 'text': text, 'options': clean_options, 'answer': answer, 'points': points}
             if instruction:
                 item['instruction'] = instruction
+            if department:
+                item['department'] = department
             questions.append(item)
 
     problems.raise_if_any()

@@ -1,6 +1,36 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ 'Create Question Bank' if mode=='new' else 'Edit Question Bank' }} — {{ school_brand.name }}{% endblock %}
+{% block title %}{{ 'Create Question Bank' if mode == 'new' else 'Edit Question Bank' }} — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">ENTRANCE EXAMINATION</div><h1>{{ 'Create question bank' if mode=='new' else 'Edit question bank' }}</h1><p class="hero-copy">{{ 'Set the basic details for a new examination paper. Technical identifiers are generated automatically.' if mode=='new' else 'Update the paper details used by the examination engine.' }}</p></div></div>
-<div class="card modern-form">{% for e in errors %}<div class="error">{{ e }}</div>{% endfor %}<form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="form-grid"><div class="field"><label>Question bank name</label><input name="name" value="{{bank.name if bank else ''}}" placeholder="e.g. Year 7 Mathematics" required></div><div class="field"><label>Entry level</label><input name="level" value="{{bank.level if bank else ''}}" placeholder="e.g. Year 7 / JSS 1"></div><div class="field"><label>Examination duration</label><input type="number" min="1" name="duration_minutes" value="{{((bank.duration_seconds//60) if bank.duration_seconds else (bank.duration_minutes or 60)) if bank else 60}}" required><small>Minutes</small></div><div class="field"><label>Version</label><input name="version" value="{{bank.version if bank else '1.0'}}" required><small>Use a simple version such as 1.0 or 1.1.</small></div></div><div class="form-actions"><button class="btn btn-primary" type="submit">{{ 'Create bank' if mode=='new' else 'Save changes' }}</button><a class="btn btn-light" href="{{url_for('admin_dashboard')}}">Cancel</a></div></form></div>
+{#- A question bank's details, in the School portal's form look. Technical identifiers are generated on creation. -#}
+{% include 'includes/_entrance_frame.html' %}
+<div class="ac" style="max-width:820px">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_question_banks') }}">Question banks</a>{% if bank and bank.id %} / <a href="{{ url_for('admin_bank', bid=bank.id) }}">{{ entrance_bank_display_name(bank.id, bank.name) }}</a>{% endif %}</span>
+    <h1>{{ 'Create question bank' if mode == 'new' else 'Edit question bank' }}</h1>
+    <p>{{ 'The basic details of a new examination paper. Its identifier is generated for you.' if mode == 'new' else 'The paper details the examination uses.' }}</p>
+  </div></div>
+</header>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form class="ac-form" method="post">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <section class="ac-stage">
+    <div class="ac-fields">
+      <div class="ac-field ac-field--wide"><label for="name">Question bank name</label>
+        <input id="name" name="name" value="{{ bank.name if bank else '' }}" placeholder="e.g. Year 7 Mathematics" required></div>
+      <div class="ac-field"><label for="level">Entry level</label>
+        <input id="level" name="level" value="{{ bank.level if bank else '' }}" placeholder="e.g. Year 7 / JSS 1"></div>
+      <div class="ac-field"><label for="duration_minutes">Time allowed <small>minutes</small></label>
+        <input id="duration_minutes" type="number" min="1" name="duration_minutes" value="{{ ((bank.duration_seconds // 60) if bank.duration_seconds else (bank.duration_minutes or 60)) if bank else 60 }}" required></div>
+      <div class="ac-field"><label for="version">Version</label>
+        <input id="version" name="version" value="{{ bank.version if bank else '1.0' }}" required>
+        <small>A simple version such as 1.0 or 1.1.</small></div>
+    </div>
+    <div class="ac-stage__foot">
+      <button class="ac-btn ac-btn--primary ac-btn--lg" type="submit">{{ 'Create bank' if mode == 'new' else 'Save changes' }}</button>
+      <a class="ac-link" href="{{ url_for('admin_bank', bid=bank.id) if bank and bank.id else url_for('admin_question_banks') }}">Cancel</a>
+    </div>
+  </section>
+</form>
+</div>
 {% endblock %}

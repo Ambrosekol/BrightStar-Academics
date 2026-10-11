@@ -1,7 +1,83 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{entrance_bank_display_name(bank.id, bank.name)}} — Question Bank{% endblock %}
+{% block title %}{{ entrance_bank_display_name(bank.id, bank.name) }} — Question Bank{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">ENTRANCE EXAMINATION / QUESTION BANKS</div><h1>{{entrance_bank_display_name(bank.id, bank.name)}}</h1><div class="bank-meta"><span>{{bank.level or 'Entry level not set'}}</span><span>{{bank.questions|length}} questions</span><span>{{bank.duration_seconds//60}} minutes</span><span>Version {{bank.version}}</span></div></div><div class="hero-actions">{% if current_admin and admin_has_permission(current_admin['id'],'question_banks.view') %}<a class="btn btn-light" target="_blank" href="{{url_for('admin_export_bank',bid=bank.id)}}">Export JSON</a>{% endif %}{% if current_admin and admin_has_permission(current_admin['id'],'question_banks.edit') %}<a class="btn btn-light" href="{{url_for('admin_edit_bank',bid=bank.id)}}">Edit bank</a>{% endif %}{% if current_admin and admin_has_permission(current_admin['id'],'questions.create') %}<a class="btn btn-primary" href="{{url_for('admin_new_question',bid=bank.id)}}">+ Add question</a>{% endif %}</div></div>
-<div class="card"><div class="warning"><strong>Answer key protected.</strong> Correct answers are visible only to authorised administrators and are never sent through the candidate examination routes.</div></div>
-<div class="section"><div class="section-head"><h2>Questions</h2><span class="muted">Correct answers are marked for authorised staff.{% if current_admin and admin_has_permission(current_admin['id'],'questions.reorder') and bank.questions|length > 1 %} Use the arrows to change the order candidates see them in.{% endif %}</span></div>{% set qids = bank.questions|map(attribute='id')|list %}{% for q in bank.questions %}<div class="question"><div class="qhead"><div><span class="qnum">Q{{q.id}}.</span> {{q.text}}</div><div class="actions">{% if current_admin and admin_has_permission(current_admin['id'],'questions.reorder') and bank.questions|length > 1 %}{% set up_order=((qids[:loop.index0-1]+[qids[loop.index0],qids[loop.index0-1]]+qids[loop.index0+1:])|join(',')) if not loop.first else '' %}{% set down_order=((qids[:loop.index0]+[qids[loop.index0+1],qids[loop.index0]]+qids[loop.index0+2:])|join(',')) if not loop.last else '' %}<button type="button" class="btn btn-light" data-call="reorderBankQuestion" data-call-arg="{{up_order}}" data-reorder-url="{{url_for('admin_reorder',bid=bank.id)}}" title="Move up" aria-label="Move question {{q.id}} up"{% if loop.first %} disabled{% endif %}>&uarr;</button><button type="button" class="btn btn-light" data-call="reorderBankQuestion" data-call-arg="{{down_order}}" data-reorder-url="{{url_for('admin_reorder',bid=bank.id)}}" title="Move down" aria-label="Move question {{q.id}} down"{% if loop.last %} disabled{% endif %}>&darr;</button>{% endif %}{% if current_admin and admin_has_permission(current_admin['id'],'question_banks.view') %}<span class="answer-key">{% if q.answer is not none and q.answer >= 0 and q.answer < q.options|length %}Correct: {{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[q.answer]}}{% else %}Answer key not set{% endif %}</span>{% endif %}{% if current_admin and admin_has_permission(current_admin['id'],'questions.edit') %}<a class="btn btn-light" href="{{url_for('admin_edit_question',bid=bank.id,qid=q.id)}}">Edit</a>{% endif %}{% if current_admin and admin_has_permission(current_admin['id'],'questions.delete') %}<form method="post" action="{{url_for('admin_delete_question',bid=bank.id,qid=q.id)}}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger" type="submit" data-confirm="Delete question {{q.id}}? This cannot be undone.">Delete</button></form>{% endif %}</div></div><ol class="options" type="A">{% for option in q.options %}<li class="{% if loop.index0==q.answer %}correct{% endif %}">{{option}} {% if loop.index0==q.answer %}✓{% endif %}</li>{% endfor %}</ol><div class="muted" style="font-size:12px">{{q.points|default(1)}} point{{ '' if q.points|default(1)|int == 1 else 's' }}</div></div>{% else %}<div class="card">This question bank has no questions yet.</div>{% endfor %}</div>
+{#- One question bank, in the School portal's look: the title line and its actions, its figures, then every question
+    the way a test's questions read in Academics (static/academics.css .acq-*): the text, the four options with the
+    right one marked, the points, and the edit, move and delete actions. The answer key is shown to staff only. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set can_reorder = admin_has_permission(aid, 'questions.reorder') and bank.questions|length > 1 %}
+{% set can_key = admin_has_permission(aid, 'question_banks.view') %}
+<div class="ac">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_question_banks') }}">Question banks</a> / {{ bank.level or 'Entry level not set' }}</span>
+    <h1>{{ entrance_bank_display_name(bank.id, bank.name) }}</h1>
+    <p><span class="en-code">{{ bank.id }}</span> · version {{ bank.version }}</p>
+  </div></div>
+  <div class="ac-top__act">
+    {% if admin_has_permission(aid, 'question_banks.view') %}<a class="ac-btn" target="_blank" href="{{ url_for('admin_export_bank', bid=bank.id) }}">Export JSON</a>{% endif %}
+    {% if admin_has_permission(aid, 'question_banks.edit') %}<a class="ac-btn" href="{{ url_for('admin_edit_bank', bid=bank.id) }}">Edit bank</a>{% endif %}
+    {% if admin_has_permission(aid, 'questions.create') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_new_question', bid=bank.id) }}">+ Add question</a>{% endif %}
+  </div>
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Questions</dt><dd>{{ bank.questions|length }}</dd></div>
+  <div><dt>Time allowed</dt><dd>{{ bank.duration_seconds // 60 }} min</dd></div>
+  <div><dt>Entry level</dt><dd>{{ bank.level or '—' }}</dd></div>
+  <div><dt>Version</dt><dd>{{ bank.version }}</dd></div>
+</dl>
+
+<p class="ac-note"><strong>Answer key protected.</strong> Correct answers are shown only to authorised staff, and are never sent through the candidates' examination pages.{% if can_reorder %} Use the arrows to change the order candidates see the questions in.{% endif %}</p>
+
+<section class="ac-panel">
+  <div class="en-ph"><h2>Questions<small>{{ bank.questions|length }}</small></h2></div>
+  {% set qids = bank.questions|map(attribute='id')|list %}
+  {% if bank.questions %}
+  <ol class="acq-list">
+    {% for q in bank.questions %}
+    <li class="acq-q">
+      <div class="acq-q__head">
+        <span class="acq-n">{{ loop.index }}</span>
+        <div class="acq-q__text">
+          {% if q.instruction %}<span class="acq-instr">{{ q.instruction }}</span>{% endif %}
+          <p>{{ q.text }}</p>
+        </div>
+        {% if q.department %}<span class="ac-tag ac-tag--blue" title="Tests the {{ q.department }} department">{{ q.department }}</span>{% endif %}
+        <span class="ac-tag" title="Question {{ q.id }}">{{ q.points|default(1) }} pt{{ '' if q.points|default(1)|int == 1 else 's' }}</span>
+        {% if can_key and not (q.answer is not none and q.answer >= 0 and q.answer < q.options|length) %}<span class="ac-tag ac-tag--attn">No answer key</span>{% endif %}
+        <div class="acq-actions">
+          {% if can_reorder %}
+          {% set up_order = ((qids[:loop.index0-1] + [qids[loop.index0], qids[loop.index0-1]] + qids[loop.index0+1:])|join(',')) if not loop.first else '' %}
+          {% set down_order = ((qids[:loop.index0] + [qids[loop.index0+1], qids[loop.index0]] + qids[loop.index0+2:])|join(',')) if not loop.last else '' %}
+          <button type="button" class="acq-icon" data-call="reorderBankQuestion" data-call-arg="{{ up_order }}" data-reorder-url="{{ url_for('admin_reorder', bid=bank.id) }}" title="Move up" aria-label="Move question {{ q.id }} up"{% if loop.first %} disabled{% endif %}>&uarr;</button>
+          <button type="button" class="acq-icon" data-call="reorderBankQuestion" data-call-arg="{{ down_order }}" data-reorder-url="{{ url_for('admin_reorder', bid=bank.id) }}" title="Move down" aria-label="Move question {{ q.id }} down"{% if loop.last %} disabled{% endif %}>&darr;</button>
+          {% endif %}
+          {% if admin_has_permission(aid, 'questions.edit') %}<a class="ac-link" href="{{ url_for('admin_edit_question', bid=bank.id, qid=q.id) }}">Edit</a>{% endif %}
+          {% if admin_has_permission(aid, 'questions.delete') %}
+          <form method="post" action="{{ url_for('admin_delete_question', bid=bank.id, qid=q.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="ac-link ac-link--danger" type="submit" data-confirm="Delete question {{ q.id }}? This cannot be undone.">Delete</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      <div class="acq-q__view">
+        {% if q.image_path %}<img class="acq-img" src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for question {{ loop.index }}">{% endif %}
+        <ul class="acq-opts">
+          {% for option in q.options %}
+          {% set right = can_key and loop.index0 == q.answer %}
+          <li class="{{ 'is-correct' if right }}"><span class="acq-letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[loop.index0] }}</span>{{ option }}{% if right %}<span class="acq-tick" aria-label="Correct answer">✓</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="ac-empty"><strong>This question bank has no questions yet</strong>{% if admin_has_permission(aid, 'questions.create') %}<a class="ac-link" href="{{ url_for('admin_new_question', bid=bank.id) }}">Add the first question</a>{% endif %}</div>
+  {% endif %}
+</section>
+</div>
 {% endblock %}

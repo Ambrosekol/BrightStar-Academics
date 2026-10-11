@@ -5,21 +5,21 @@
 <div class="ac pf pf-narrow">
 <header class="ac-top">
   <div class="pf-title"><div>
-    <span class="acq-kind">{{ 'Assessment complete' if visible_to_student else 'Assessment submitted' }}</span>
+    <span class="acq-kind">{{ 'ASSESSMENT COMPLETE' if visible_to_student else 'ASSESSMENT SUBMITTED' }}</span>
     <h1>{{ assessment.title }}</h1>
     <p>{{ assessment.subject_name }}{% if assessment.class_name %} · {{ assessment.class_name }}{% endif %}</p>
   </div></div>
 </header>
 {% if visible_to_student %}
 <dl class="fi-k">
-  <div class="is-lead"><dt>Score</dt><dd>{{ result.score }} / {{ result.max_score }}</dd></div>
+  <div class="is-lead"><dt>Score</dt><dd><strong>{{ result.score }}</strong> / {{ result.max_score }}</dd></div>
   <div><dt>Percentage</dt><dd>{{ '%.1f'|format(percentage) }}%</dd><span class="ac-progress"><i style="width:{{ [percentage, 100]|min }}%"></i></span></div>
   <div><dt>Status</dt><dd><span class="ac-tag ac-tag--good">Released</span></dd></div>
 </dl>
 <p class="ac-note">Your result has been released and is now part of your academic records.</p>
 {% else %}
 <dl class="fi-k">
-  <div class="is-lead"><dt>Submission</dt><dd>Received</dd></div>
+  <div class="is-lead"><dt>Submission</dt><dd>Submission received</dd></div>
   <div><dt>Score</dt><dd>Withheld</dd><small>until the school releases results</small></div>
 </dl>
 <p class="ac-note">Your submission has been recorded. The score is withheld for now and will appear with your results when the school releases them.</p>

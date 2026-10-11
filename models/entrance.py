@@ -80,6 +80,9 @@ class AttemptQuestion(db.Model):
     image_path = db.Column(Text)
     correct_option = db.Column(Integer, nullable=False)
     points = db.Column(Float, nullable=False, default=1, server_default=text('1'))
+    # The senior secondary department the question tests (Science, Art or Commercial), frozen with it; None for a
+    # general question. See core/entrance_departments.py.
+    department = db.Column(Text)
 
 
 class RetakeGrant(db.Model):
@@ -115,6 +118,9 @@ class Candidate(db.Model):
     alternative_mobile = db.Column(Text)
     parent_guardian_email = db.Column(Text)
     photo_path = db.Column(Text)
+    # For a candidate entering SSS 1 only: the department they want (Science, Art or Commercial). The admissions
+    # officer sees it beside the department their results point to, and decides (core/entrance_departments.py).
+    department_choice = db.Column(Text)
 
     # The admissions funnel: entrance exam -> waitlist -> a real student. 'pending' (the default,
     # the waitlist itself), 'admitted' (terminal: admitted_student_id is set and never cleared) or

@@ -151,10 +151,15 @@ addresses that answer with a file alone (<code>.../pdf</code>, <code>/export/...
 uploads), and clears itself after fifteen seconds if the page has not gone, so a "leave this page?" answered Stay never
 leaves it dimmed. The installed app has no browser bar of its own, so without this it sat still until the next page
 appeared.</p>
-<p>The spinner also bridges the moment one page gives way to the next. As a page is left, the loader notes the time in
-<code>sessionStorage</code>; the next page reads it first thing in its <code>&lt;head&gt;</code>
-({{ file('templates/includes/_pwa_head.html') }}, inline, needing no other file) and is drawn dimmed under the same
-spinner from its first paint until its <code>load</code> event, so there is no blank or frozen screen in between.
+<p>A whole-page load also bridges the moment one page gives way to the next. As a page is left, its content gives way
+to the outline of a page ({{ file('templates/includes/_skeleton.html') }}: a title line, a figure strip and two panels
+of rows, softly pulsing) under the spinner, and the loader notes the time in <code>sessionStorage</code>. The next page
+reads it first thing in its <code>&lt;head&gt;</code> ({{ file('templates/includes/_pwa_head.html') }}, inline, needing
+no other file) and is drawn as the same outline from its first paint; its content is shown only once it has loaded
+(the <code>load</code> event, then <code>document.fonts.ready</code>, then two frames, so it has been painted in
+full), and fades in. So the outline is on screen from the press until the next page is complete, with no blank,
+frozen or half-drawn screen between. The outline sits beside the page body in a <code>.bs-stage</code>, so a view
+loaded in place (which keeps its own dim-and-spinner) never removes it.
 That moment is kept short too: every <code>url_for('static', ...)</code> names a file by its modification time alone
 (a hand-written <code>v=</code> is dropped, {{ file('core/speed.py') }}), so two pages share one cached copy of a
 stylesheet instead of each fetching its own; fonts are no longer fetched twice (the preload and

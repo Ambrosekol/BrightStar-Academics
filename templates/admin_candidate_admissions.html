@@ -1,108 +1,124 @@
 {% extends 'admin_base.html' %}
 {% block title %}Admissions — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<style>
-  .adm-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-  .adm-filter .field { min-width: 170px; }
-  .adm-badge { padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-  .adm-badge.pending { background: #fff3d6; color: #8a5c00; }
-  .adm-badge.admitted { background: #e2f6ea; color: #167a3f; }
-  .adm-badge.declined { background: #fde3e3; color: #9c1f1f; }
-  .adm-edit summary { cursor: pointer; color: var(--brand, #1674b9); font-size: 13px; }
-  .adm-edit form { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
-  .adm-edit .full { grid-column: 1 / -1; }
-</style>
-
-<div class="page-hero">
-  <div><div class="eyebrow">ENTRANCE EXAMINATION / ADMISSIONS</div><h1>Admissions waitlist</h1>
-  <p class="hero-copy">Every candidate who has sat at least one paper, ranked by score, waiting for a decision. Admitting creates a real, enrolled student with a login of their own; declining simply takes them off this list, and can be undone. A candidate only sees their outcome and score once it is released below — deciding and releasing are separate steps.</p>
-  {% if current_admin and admin_has_permission(current_admin['id'], 'candidates.release_results') %}
-  <form method="post" action="{{ url_for('admin_candidate_release_results_bulk') }}">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <button class="btn btn-primary" type="submit" data-confirm="Release every decided result that has not been released yet? Candidates will see their outcome and score, and admitted candidates will see a new login password, the next time they sign in.">Release all decided results</button>
-  </form>
+{#- The admissions waitlist, in the School portal's look: every candidate who has sat at least one paper, ranked by
+    score, with the decision on their row. Admitting creates an enrolled student with a sign-in; declining takes them
+    off the list and can be undone. Deciding and releasing the outcome to the candidate are separate steps. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% from 'includes/_department_fit.html' import fit_table, fit_line %}
+{% set aid = current_admin['id'] if current_admin else None %}
+{% set can_admit = admin_has_permission(aid, 'candidates.admit') %}
+{% set can_release = admin_has_permission(aid, 'candidates.release_results') %}
+{% set admitted_n = rows|selectattr('status', 'equalto', 'admitted')|list|length %}
+{% set declined_n = rows|selectattr('status', 'equalto', 'declined')|list|length %}
+{% set unreleased_n = rows|rejectattr('status', 'equalto', 'pending')|rejectattr('released_at')|list|length %}
+<div class="ac">
+<header class="ac-top">
+  <h1>Admissions</h1>
+  {% if can_release %}
+  <div class="ac-top__act">
+    <form method="post" action="{{ url_for('admin_candidate_release_results_bulk') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="ac-btn ac-btn--primary" type="submit" data-confirm="Release every decided result that has not been released yet? Candidates will see their outcome and score, and admitted candidates will see a new login password, the next time they sign in.">Release all decided results{% if unreleased_n %} ({{ unreleased_n }}){% endif %}</button>
+    </form>
+  </div>
   {% endif %}
-  </div>
-</div>
+</header>
 
-<section class="card">
-  <form method="get" class="adm-filter" style="padding:16px 16px 0">
-    <div class="field"><label for="entry_group">Entry level</label>
-      <select id="entry_group" name="entry_group" data-autosubmit>
-        <option value="">All entry levels</option>
-        {% for key, label in entry_groups.items() %}<option value="{{ key }}" {% if key == selected_group %}selected{% endif %}>{{ label }}</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="status">Status</label>
-      <select id="status" name="status" data-autosubmit>
-        <option value="">All</option>
-        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
-        <option value="admitted" {% if selected_status == 'admitted' %}selected{% endif %}>Admitted</option>
-        <option value="declined" {% if selected_status == 'declined' %}selected{% endif %}>Declined</option>
-      </select></div>
-  </form>
-  <p class="muted" style="padding:12px 16px 0">{{ rows|length }} candidate{{ '' if rows|length == 1 else 's' }} shown, {{ pending }} still pending a decision.</p>
+<p class="ac-note">Candidates who have sat at least one paper, ranked by score. <strong>Admit</strong> creates an enrolled student with a sign-in of their own; <strong>Decline</strong> takes them off the list and can be undone. A candidate sees their outcome only once it is released.</p>
 
-  <div class="table-scroll">
-    <table class="segmented-table">
-      <thead><tr><th>Candidate</th><th>Entry level</th><th>Overall</th><th>Status</th><th>Decision</th></tr></thead>
-      <tbody>
-      {% for r in rows %}
-      <tr>
-        <td><div class="person-cell"><span class="table-avatar image-avatar">{% if r.photo_path %}<img src="{{ url_for('static', filename=r.photo_path) }}" alt="">{% else %}{{ r.candidate_name[:1]|upper }}{% endif %}</span><div><strong>{{ r.candidate_name }}</strong><small>{{ r.candidate_code }}</small></div></div></td>
-        <td>{{ r.entry_group_label }}</td>
-        <td><strong>{{ '%.1f'|format(r.overall_percentage) }}%</strong><small>{{ r.grade }}</small></td>
-        <td><span class="adm-badge {{ r.status }}">{{ r.status|capitalize }}</span>
-          {% if r.status != 'pending' and r.decided_by_name %}<br><small class="muted">by {{ r.decided_by_name }}</small>{% endif %}
-          {% if r.note %}<br><small class="muted">{{ r.note }}</small>{% endif %}
-          {% if r.status != 'pending' %}<br><small class="muted">{% if r.released_at %}Released to candidate{% else %}Not yet released{% endif %}</small>{% endif %}</td>
-        <td>
-          {% if current_admin and admin_has_permission(current_admin['id'], 'candidates.admit') %}
-            {% if r.status == 'pending' %}
-            <details class="adm-edit"><summary>Admit…</summary>
-              {% set name_parts = r.candidate_name.split() %}
-              <form method="post" action="{{ url_for('admin_candidate_admit', cid=r.id) }}">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <div class="field"><label>First name</label><input name="first_name" value="{{ name_parts[0] if name_parts else '' }}" required></div>
-                <div class="field"><label>Middle name</label><input name="middle_name" value="{{ name_parts[1:-1]|join(' ') if name_parts|length > 2 else '' }}"></div>
-                <div class="field"><label>Surname</label><input name="last_name" value="{{ name_parts[-1] if name_parts|length > 1 else '' }}" required></div>
-                <div class="field"><label>Gender</label><select name="gender"><option value="">Not set</option><option value="Female">Female</option><option value="Male">Male</option></select></div>
-                <div class="field"><label>Date of birth</label><input type="date" name="date_of_birth"></div>
-                <div class="field"><label>Class</label>
-                  <select name="class_id" required><option value="">Choose</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
-                <label class="full" style="display:flex;gap:8px;align-items:center;font-size:13px">
-                  <input type="checkbox" name="create_parent_account" value="1" checked>
-                  Also create a parent portal account from the guardian details on file (only if one was given at registration)
-                </label>
-                <div class="full"><button class="btn btn-primary" type="submit">Confirm admission</button></div>
-              </form>
-            </details>
-            <form method="post" action="{{ url_for('admin_candidate_decline', cid=r.id) }}" style="display:inline;margin-top:6px">
+<form class="ac-context" method="get">
+  <label for="entry_group">Entry level
+    <select class="ac-select" id="entry_group" name="entry_group" data-autosubmit>
+      <option value="">All entry levels</option>
+      {% for key, label in entry_groups.items() %}<option value="{{ key }}" {% if key == selected_group %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+  <label for="status">Status
+    <select class="ac-select" id="status" name="status" data-autosubmit>
+      <option value="">All</option>
+      <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="admitted" {% if selected_status == 'admitted' %}selected{% endif %}>Admitted</option>
+      <option value="declined" {% if selected_status == 'declined' %}selected{% endif %}>Declined</option>
+    </select></label>
+  <noscript><button class="ac-btn ac-btn--sm" type="submit">Show</button></noscript>
+</form>
+
+<dl class="fi-k">
+  <div class="{{ 'is-alert' if pending else 'is-lead' }}"><dt>Pending a decision</dt><dd>{{ pending }}</dd></div>
+  <div><dt>Admitted</dt><dd>{{ admitted_n }}</dd><small>in this list</small></div>
+  <div><dt>Declined</dt><dd>{{ declined_n }}</dd><small>in this list</small></div>
+  <div class="{{ 'is-alert' if unreleased_n }}"><dt>Decided, not released</dt><dd>{{ unreleased_n }}</dd><small>candidates cannot see these yet</small></div>
+</dl>
+
+<div class="ac-tools"><span class="ac-count" style="margin-left:0">{{ rows|length }} candidate{{ '' if rows|length == 1 else 's' }} shown, {{ pending }} still pending a decision.</span></div>
+
+<section class="ac-panel">
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="n">#</th><th>Candidate</th><th>Entry level</th><th class="n">Overall</th><th>Status</th><th class="n">Decision</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="n">{{ loop.index }}</td>
+      <td><span class="en-who"><span class="en-ava">{% if r.photo_path %}<img src="{{ url_for('static', filename=r.photo_path) }}" alt="">{% else %}{{ r.candidate_name[:1]|upper }}{% endif %}</span><span><a class="ac-title" href="{{ url_for('admin_candidate_detail', cid=r.id) }}">{{ r.candidate_name }}</a><small class="en-code">{{ r.candidate_code }}</small></span></span></td>
+      <td>{{ r.entry_group_label }}{% if r.entry_group == 'year10' %}<small>{{ fit_line(r.department_choice, r.department_recommended) }}</small>{% endif %}</td>
+      <td class="n"><span class="en-score">{{ '%.1f'|format(r.overall_percentage) }}%</span><small>{{ r.grade }}</small></td>
+      <td>
+        {% if r.status == 'admitted' %}<span class="ac-tag ac-tag--good">Admitted</span>{% elif r.status == 'declined' %}<span class="ac-tag ac-tag--attn">Declined</span>{% else %}<span class="ac-tag ac-tag--alert">Pending</span>{% endif %}
+        {% if r.status != 'pending' %}<small>{% if r.decided_by_name %}by {{ r.decided_by_name }} · {% endif %}{% if r.released_at %}released to the candidate{% else %}not yet released{% endif %}</small>{% endif %}
+        {% if r.note %}<small>{{ r.note }}</small>{% endif %}
+      </td>
+      <td class="n">
+        <div class="en-row-forms">
+        {% if can_admit %}
+          {% if r.status == 'pending' %}
+          <details class="en-decide"><summary>Admit…</summary>
+            {% set name_parts = r.candidate_name.split() %}
+            <form method="post" action="{{ url_for('admin_candidate_admit', cid=r.id) }}">
               <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-              <input type="text" name="note" placeholder="Reason (optional)" style="width:120px;font-size:12px">
-              <button class="btn btn-light btn-small" type="submit">Decline</button>
+              <div class="ac-field"><label>First name</label><input name="first_name" value="{{ name_parts[0] if name_parts else '' }}" required></div>
+              <div class="ac-field"><label>Middle name</label><input name="middle_name" value="{{ name_parts[1:-1]|join(' ') if name_parts|length > 2 else '' }}"></div>
+              <div class="ac-field"><label>Surname</label><input name="last_name" value="{{ name_parts[-1] if name_parts|length > 1 else '' }}" required></div>
+              <div class="ac-field"><label>Gender</label><select name="gender"><option value="">Not set</option><option value="Female">Female</option><option value="Male">Male</option></select></div>
+              <div class="ac-field"><label>Date of birth</label><input type="date" name="date_of_birth"></div>
+              <div class="ac-field"><label>Class</label><select name="class_id" required><option value="">Choose</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+              {% if r.entry_group == 'year10' %}
+              {% set rec = r.department_recommended %}
+              <div class="en-wide">{{ fit_table(r.department_fit, r.department_choice, rec) }}<p class="en-reason">{{ rec.reason }}</p></div>
+              <div class="ac-field"><label>Department <small>starts at the recommendation; change it if you decide otherwise</small></label>
+                <select name="department"><option value="">Not set</option>{% for d in departments %}<option value="{{ d }}" {% if d == rec.department %}selected{% endif %}>{{ d }}{% if d == rec.department %} (recommended){% elif d == r.department_choice %} (their choice){% endif %}</option>{% endfor %}</select></div>
+              {% endif %}
+              <label class="en-check en-wide"><input type="checkbox" name="create_parent_account" value="1" checked> Also create a parent portal account from the guardian details on file (only if one was given at registration)</label>
+              <div class="en-wide"><button class="ac-btn ac-btn--primary" type="submit">Confirm admission</button></div>
             </form>
-            {% elif r.status == 'declined' %}
-            <form method="post" action="{{ url_for('admin_candidate_admission_reset', cid=r.id) }}">
-              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-light btn-small" type="submit">Put back on waitlist</button>
-            </form>
-            {% else %}
-            <a class="btn btn-light btn-small" href="{{ url_for('admin_candidate_detail', cid=r.id) }}">View student</a>
-            {% endif %}
-          {% endif %}
-          {% if r.status != 'pending' and not r.released_at and current_admin and admin_has_permission(current_admin['id'], 'candidates.release_results') %}
-          <form method="post" action="{{ url_for('admin_candidate_release_result', cid=r.id) }}" style="display:inline;margin-top:6px">
+          </details>
+          <form method="post" action="{{ url_for('admin_candidate_decline', cid=r.id) }}">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-light btn-small" type="submit">Release result</button>
+            <input type="text" name="note" placeholder="Reason (optional)" aria-label="Reason for declining">
+            <button class="ac-btn ac-btn--sm" type="submit">Decline</button>
           </form>
+          {% elif r.status == 'declined' %}
+          <form method="post" action="{{ url_for('admin_candidate_admission_reset', cid=r.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="ac-btn ac-btn--sm" type="submit">Put back on waitlist</button>
+          </form>
+          {% else %}
+          <a class="ac-link" href="{{ url_for('admin_candidate_detail', cid=r.id) }}">View student</a>
           {% endif %}
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="5"><div class="empty-state"><strong>No candidate matches this filter.</strong><p>Only candidates who have sat at least one paper appear here.</p></div></td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+        {% endif %}
+        {% if r.status != 'pending' and not r.released_at and can_release %}
+          <form method="post" action="{{ url_for('admin_candidate_release_result', cid=r.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="ac-btn ac-btn--sm" type="submit">Release result</button>
+          </form>
+        {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6"><div class="ac-empty"><strong>No candidate matches this filter</strong>Only candidates who have sat at least one paper appear here.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
 </section>
+</div>
 {% endblock %}

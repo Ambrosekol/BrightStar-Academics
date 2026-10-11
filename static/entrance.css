@@ -1,0 +1,127 @@
+/* The entrance examination workspace (templates/admin_dashboard.html, admin_candidates*.html, admin_question_banks.html,
+   admin_bank*.html, admin_entrance_config.html, admin_results*.html, admin_rankings.html, admin_attempts.html,
+   admin_entrance_practice.html and their forms), in the School portal's dense look.
+
+   The pages are built from the staff components themselves - the title line and tabs (.ac-top, .ac-tabs), chips
+   (.ac-bar), panels and dense tables (.ac-panel, .ac-t), tags, notes, fields and the guided form pieces of
+   static/academics.css; the figure strip of static/finance.css (.fi-k); the question list of a test (.acq-*). What is
+   here is only what the entrance pages need besides: a candidate with their photograph, a candidate's code, a score
+   with its bar, the credential slip, the admission form inside a row, and the bank import's example.
+   No colour is fixed: every one is the school's theme or mixed from it, through the .ac tokens. */
+
+/* The compact staff inputs (static/academics.css) name text, number, search and date-time fields; the entrance forms
+   also have untyped, phone, email and date ones, which take the same look here instead of the site's large default. */
+.ac input:not([type]), .ac input[type="tel"], .ac input[type="email"], .ac input[type="date"] {
+  width: auto !important; padding: 4px 8px !important; font-size: 12px !important; line-height: 1.4 !important;
+  color: var(--ac-ink) !important; background-color: var(--ac-surface) !important;
+  border: 1px solid var(--ac-line) !important; border-radius: 6px !important; box-shadow: none !important;
+}
+.ac input:not([type]):focus, .ac input[type="tel"]:focus, .ac input[type="email"]:focus, .ac input[type="date"]:focus {
+  border-color: var(--ac-accent) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ac-accent) 22%, transparent) !important;
+}
+.ac .ac-field input:not([type]), .ac .ac-field input[type="tel"], .ac .ac-field input[type="email"], .ac .ac-field input[type="date"] { width: 100% !important; padding: 6px 9px !important; font-size: 13px !important; }
+
+/* A candidate in a table: photograph or initial, name, and code beneath */
+.en-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.en-ava { flex: none; display: grid; place-items: center; width: 26px; height: 26px; overflow: hidden; border-radius: 50%;
+  background: var(--ac-brand-tint); color: var(--ac-brand); font-size: 11px; font-weight: 700; }
+.en-ava img { width: 100%; height: 100%; object-fit: cover; }
+.en-ava--lg { width: 40px; height: 40px; font-size: 15px; }
+.en-who > span:last-child { min-width: 0; }
+:is(.admin-shell, .ac-modal) .ac .ac-t .en-who small { margin: 0; }
+.en-code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; letter-spacing: .02em; color: var(--ac-ink-2); white-space: nowrap; }
+
+/* A score: the marks, the share beneath as a thin bar */
+.en-score { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.en-score small { display: inline !important; margin: 0 !important; font-weight: 500; color: var(--ac-muted); }
+.en-bar { display: block; width: 80px; height: 4px; margin: 3px 0 0 auto; border-radius: 2px; background: var(--ac-grid); overflow: hidden; }
+.en-bar i { display: block; height: 100%; background: var(--ac-accent); }
+.en-bar--left { margin-left: 0; }
+.en-good { color: var(--ac-good); }
+.en-attn { color: var(--ac-attn); }
+.en-rank { display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 5px; border-radius: 6px;
+  background: var(--ac-grid); color: var(--ac-ink-2); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.en-rank--top { background: var(--ac-brand); color: var(--ac-on-brand); }
+.en-live { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: var(--ac-good);
+  box-shadow: 0 0 0 3px var(--ac-good-tint); vertical-align: 1px; }
+
+/* The title line of one candidate or one bank: the person (or the paper) beside the heading */
+.en-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.en-title > div { min-width: 0; }
+.en-title h1 { overflow-wrap: anywhere; }
+.en-title p { margin: 2px 0 0; font-size: 12px; color: var(--ac-muted); }
+.en-title .acq-kind a { color: inherit; text-decoration: none; }
+.en-title .acq-kind a:hover { text-decoration: underline; }
+
+/* Page layout: a main column and a narrower one */
+.en-cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 10px; align-items: start; }
+.en-cols > * { min-width: 0; }
+.en-cols > .ac-panel + .ac-panel, .en-col > .ac-panel + .ac-panel { margin-top: 0; }
+.en-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+@media (max-width: 1000px) { .en-cols { grid-template-columns: minmax(0, 1fr); } }
+.en-ph { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 0 0 6px; }
+.ac-panel .en-ph h2 { margin: 0; }
+.en-ph__act { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12px; }
+.en-sub { margin: -2px 0 8px; font-size: 12px; color: var(--ac-muted); }
+.en-foot { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--ac-grid); font-size: 11.5px; color: var(--ac-muted); }
+.ac .fi-k + .ac-panel, .ac .fi-k + .en-cols, .ac .ac-note + .ac-panel { margin-top: 0; }
+
+/* Facts about one person or paper: label above value, in a tight grid */
+.en-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 14px; margin: 0; }
+.en-facts > div { min-width: 0; }
+.en-facts dt { font-size: 11px; color: var(--ac-muted); }
+.en-facts dd { margin: 1px 0 0; font-size: 12.5px; font-weight: 600; color: var(--ac-ink); overflow-wrap: anywhere; }
+.en-facts--1 { grid-template-columns: minmax(0, 1fr); }
+
+/* A sign-in slip (registered, new password, admitted): the values large enough to read out; printable */
+.en-cred { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0; margin: 0 0 10px; border: 1px solid var(--ac-line);
+  border-radius: 8px; overflow: hidden; background: var(--ac-surface); }
+.en-cred > div { padding: 8px 12px; border-right: 1px solid var(--ac-grid); border-bottom: 1px solid var(--ac-grid); }
+.en-cred > div > span { display: block; font-size: 11px; color: var(--ac-muted); }
+.en-cred > div > strong, .en-cred > div > code { display: block; margin: 2px 0 0; font-size: 15px; font-weight: 700; color: var(--ac-ink); overflow-wrap: anywhere; background: none; padding: 0; }
+.en-cred .credential-code, .en-cred .credential-password { font-family: var(--font-mono, ui-monospace, monospace); letter-spacing: .03em; }
+.en-cred .is-secret > strong, .en-cred .is-secret > code { color: var(--ac-brand); }
+@media print {
+  .rail, .ui-header, .ui-back, .ac-top__act, .en-noprint, .admin-dock, #adminDock { display: none !important; }
+  .en-cred { break-inside: avoid; }
+}
+
+/* Admission: the decision form, opened inside its row */
+.en-decide { margin: 0; }
+.en-decide > summary { display: inline-block; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ac-accent); list-style: none; }
+.en-decide > summary::-webkit-details-marker { display: none; }
+.en-decide[open] > summary { margin-bottom: 6px; }
+.ac .en-decide form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; min-width: 420px; padding: 8px 10px;
+  border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-wash); text-align: left; }
+.ac .en-decide .ac-field input, .ac .en-decide .ac-field select { padding: 4px 7px !important; font-size: 12px !important; }
+.en-decide .en-wide { grid-column: 1 / -1; }
+.ac .en-decide label.en-check { display: flex !important; gap: 6px; align-items: flex-start; font-size: 12px; color: var(--ac-ink-2); }
+.en-check input { margin-top: 2px; accent-color: var(--ac-accent); }
+.en-row-forms { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 10px; }
+.en-row-forms form { display: inline-flex; gap: 4px; align-items: center; margin: 0; }
+.en-row-forms[hidden] { display: none; }
+.ac .en-row-forms input[type="text"] { width: 130px !important; }
+@media (max-width: 760px) { .ac .en-decide form { grid-template-columns: minmax(0, 1fr); min-width: 0; } .en-row-forms { justify-content: flex-start; } }
+
+/* SSS departments (templates/includes/_department_fit.html): the fit table, with the recommended row marked, and the
+   choice-and-suggestion line of a waitlist row */
+.en-fit tr.is-rec td { background: var(--ac-good-tint); }
+.en-fit tr.is-rec td:first-child { box-shadow: inset 3px 0 0 var(--ac-good); }
+.en-dept { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 11.5px; color: var(--ac-muted); }
+.en-dept b { color: var(--ac-ink); }
+.en-reason { margin: 6px 0 0; font-size: 12px; color: var(--ac-ink-2); }
+
+/* Results by subject: one table per subject, side by side */
+.en-subjects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.en-subjects > .ac-panel + .ac-panel { margin-top: 0; }
+.en-subjects__list { max-height: 60vh; overflow-y: auto; }
+@media (max-width: 1100px) { .en-subjects { grid-template-columns: minmax(0, 1fr); } }
+
+/* Question bank import: the example file and its rules */
+.en-example { margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-wash);
+  font: 11.5px/1.55 var(--font-mono, ui-monospace, monospace); color: var(--ac-ink); overflow-x: auto; white-space: pre; }
+.en-rules { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.65; color: var(--ac-ink-2); }
+.en-rules code, .en-sub code { font-size: 11.5px; }
+
+/* A question in a bank: its points beside the text, in the heading row */
+.acq-q__head > .ac-tag { flex: none; margin-top: 3px; }

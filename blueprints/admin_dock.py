@@ -13,7 +13,7 @@ It holds up to two cards, each one minimisable and closable:
 Minimising a card is remembered in that browser only.
 """
 
-from flask import has_request_context, render_template
+from flask import has_request_context, render_template, session
 
 from app import app
 from core.release_notes import APP_VERSION, releases_for
@@ -34,7 +34,10 @@ def admin_dock_context():
         'account': me['id'],
         'app_version': APP_VERSION,
         'releases': releases_for('staff'),
-        'show_setup': bool(admin_has_permission(me['id'], 'school.view')),
+        # The school's setup checklist, in the School workspace only. In the entrance workspace its progress address
+        # (/admin/school/...) is outside the workspace, so the boundary answered the background fetch by sending it to
+        # Workspace Home - which forgets the chosen workspace, so the next click left the entrance workspace.
+        'show_setup': bool(admin_has_permission(me['id'], 'school.view')) and session.get('admin_workspace') == 'school',
     }}
 
 

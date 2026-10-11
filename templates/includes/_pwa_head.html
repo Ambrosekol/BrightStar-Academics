@@ -15,20 +15,59 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='pwa.css') }}">
 <script src="{{ url_for('static', filename='pwa-install.js') }}" data-name="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}" data-icon="{{ pwa_icon_url(192) }}" defer></script>
 <script nonce="{{ csp_nonce() }}">if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});});}</script>
-{#- Arriving from another page (static/page-loading.js left a note as it was left): this page is drawn dimmed under
-    the same spinner, from its very first paint until it has finished loading, so the spinner never leaves the screen
-    in between - the moment the old page is gone and this one is not drawn yet is otherwise a blank screen in the
-    installed app. Inline, and first in <head>, so it needs no other file; it clears itself on load (or after 6s). -#}
+{#- Loading between pages. As a page is left (static/page-loading.js) its content gives way to the outline of a page
+    (templates/includes/_skeleton.html) under a spinner; it leaves a note, and the next page, reading it first thing
+    here, is drawn as the same outline from its very first paint and shows its content only once it has loaded and been
+    drawn in full (stylesheets, pictures and fonts) - so there is never a blank, frozen or half-drawn screen between two
+    pages, also in the installed app. Inline, and first in <head>, so it needs no other file; it gives up after 8s.
+    A page without the outline (taking a paper, an error page) just shows the spinner meanwhile. -#}
 <style>
-html.bs-arriving [data-page-body] > * { opacity: .55; transition: opacity .12s ease; }
-html.bs-arriving body { cursor: progress; }
-html.bs-arriving body:not(.auth)::after, html.bs-arriving .auth-main::after { content: ""; position: fixed; top: 50%; left: 50%; z-index: 2147483000; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+.bs-stage { position: relative; }
+.bs-sk { display: none; }
+html.bs-arriving .bs-stage > .bs-sk, .bs-stage.is-skeleton > .bs-sk {
+  display: block; position: absolute; inset: 0 0 auto 0; z-index: 5; min-height: 60vh; pointer-events: none; }
+html.bs-arriving .bs-stage > [data-page-body], .bs-stage.is-skeleton > [data-page-body] { visibility: hidden; }
+.bs-stage > [data-page-body] { transition: opacity .18s ease; }
+html.bs-revealing .bs-stage > [data-page-body] { opacity: 0; }
+.bs-sk i, .bs-sk b { display: block; height: 10px; border-radius: 4px; background: color-mix(in srgb, var(--line, #dfe3ea) 75%, transparent);
+  animation: bs-pulse 1.2s ease-in-out infinite; }
+.bs-sk__top { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; }
+.bs-sk__top > i:first-child { height: 18px; margin-right: auto; }
+.bs-sk__btn { width: 84px; height: 26px !important; border-radius: 6px !important; }
+.bs-sk__line { height: 9px; margin: 0 0 14px; }
+.bs-sk__kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 0 10px; border: 1px solid var(--line, #dfe3ea); border-radius: 10px;
+  background: var(--surface-0, #fff); overflow: hidden; }
+.bs-sk__kpis span { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
+.bs-sk__kpis span + span { border-left: 1px solid color-mix(in srgb, var(--line, #dfe3ea) 55%, transparent); }
+.bs-sk__kpis i { width: 60%; height: 8px; }
+.bs-sk__kpis b { width: 40%; height: 16px; }
+.bs-sk__cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; }
+.bs-sk__panel { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--line, #dfe3ea); border-radius: 10px; background: var(--surface-0, #fff); }
+.bs-sk__panel i:first-child { height: 12px; margin-bottom: 4px; }
+.bs-sk__panel i:nth-child(n+2):nth-child(odd) { width: 92%; }
+.bs-sk__panel i:nth-child(n+2):nth-child(even) { width: 78%; }
+@keyframes bs-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (max-width: 760px) {
+  .bs-sk__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bs-sk__kpis span:nth-child(n+3) { display: none; }
+  .bs-sk__cols { grid-template-columns: minmax(0, 1fr); }
+  .bs-sk__btn { display: none !important; }
+}
+/* the spinner: over the outline, or over the page itself where there is no outline */
+html.bs-arriving .bs-stage > .bs-sk::after, .bs-stage.is-skeleton > .bs-sk::after,
+html.bs-arriving body:not(.auth):not(:has(.bs-stage))::after, html.bs-arriving .auth-main::after {
+  content: ""; position: fixed; top: 50%; left: 50%; z-index: 2147483000; width: 28px; height: 28px; margin: -14px 0 0 -14px;
   border: 3px solid color-mix(in srgb, var(--brand-accent, #1674b9) 18%, transparent); border-top-color: var(--brand-accent, #1674b9); border-radius: 50%;
   animation: bs-arrive .7s linear infinite; pointer-events: none; }
 html.bs-arriving .auth-main::after { position: absolute; }   /* a sign-in page: in the middle of the form, not on the seam */
+html.bs-arriving .auth-main > * { opacity: .55; }
+html.bs-arriving body { cursor: progress; }
 @keyframes bs-arrive { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { html.bs-arriving body::after, html.bs-arriving .auth-main::after { animation-duration: 2s; } }
+@media (prefers-reduced-motion: reduce) {
+  .bs-sk i, .bs-sk b { animation: none; }
+  .bs-sk::after, html.bs-arriving body::after, html.bs-arriving .auth-main::after { animation-duration: 2s !important; }
+}
 </style>
-<script nonce="{{ csp_nonce() }}">(function(d){try{var t=+sessionStorage.getItem('bs-nav');sessionStorage.removeItem('bs-nav');if(!t||Date.now()-t>20000)return;}catch(e){return;}d.classList.add('bs-arriving');function done(){d.classList.remove('bs-arriving');}if(document.readyState==='complete')done();else window.addEventListener('load',function(){requestAnimationFrame(done);});setTimeout(done,6000);window.addEventListener('pageshow',function(e){if(e.persisted)done();});})(document.documentElement);</script>
+<script nonce="{{ csp_nonce() }}">(function(d){try{var t=+sessionStorage.getItem('bs-nav');sessionStorage.removeItem('bs-nav');if(!t||Date.now()-t>20000)return;}catch(e){return;}d.classList.add('bs-arriving');var shown=false;function show(){if(shown)return;shown=true;d.classList.add('bs-revealing');d.classList.remove('bs-arriving');requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.remove('bs-revealing');});});}function painted(){var f=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();f.then(function(){requestAnimationFrame(function(){requestAnimationFrame(show);});});}if(document.readyState==='complete')painted();else window.addEventListener('load',painted);setTimeout(show,8000);window.addEventListener('pageshow',function(e){if(e.persisted)show();});})(document.documentElement);</script>
 {%- endif -%}
 {%- endif -%}

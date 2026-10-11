@@ -55,6 +55,24 @@ of the school portal and everything else (tests, examinations) was modelled on i
 <p><strong>A dropped connection is not the paper being over.</strong> The exam page's own script retries a save that fails over the network or gets an unexpected server error, a bounded number of times, before telling the candidate in plain words rather than losing the answer silently; only a definite refusal from the server (403 the session has ended, 410 time ran out) sends them to their result. {{ route('answer') }} is itself an upsert keyed on (attempt, question), so a retried save of the same answer is never a duplicate.</p>
 <p><strong>Staff controls</strong>: rankings, results, per-subject analytics, CSV/JSON export, a result image (drawn by headless Chrome, <code>BRIGHTSTARS_CHROME</code>), <em>grant retake</em> ({{ route('admin_grant_retake') }}, a one-use permission stored in {{ table('retake_grants') }}) and <em>regrade</em> ({{ route('admin_regrade') }}).</p>
 
+<h2 id="departments">SSS departments</h2>
+<p>A candidate entering SSS 1 is registered with a department choice ({{ table('candidates') }}.<code>department_choice</code>:
+Science, Art or Commercial, required for that entry level only). A bank question may carry <code>department</code>
+({{ file('core/banks.py') }} accepts it in an import, reading <code>Arts</code> and <code>commerce</code> as Art and
+Commercial; the question form sets it). When a paper's bank has tagged questions, starting the paper draws a quarter of
+it (rounded down) from each department and the rest from the general questions ({{ file('core/entrance_departments.py') }},
+<code>pick_questions</code>), and the tag is frozen in {{ table('attempt_questions') }}.<code>department</code> with the
+question, so a later bank edit cannot change a finished result. A bank with no tags is drawn from as before. The
+standard SSS 1 General Knowledge bank ships with twelve questions tagged for each department.</p>
+<p>Before admission, <code>department_fits</code> scores each department for a candidate from their latest finished attempt
+at each paper: the share of the marks earned on that department's questions (60%) with the related paper (40%:
+Mathematics for Science and Commercial, English for Art), or whichever of the two exists. <code>recommend</code> keeps the
+candidate's choice when it is within 5 points of their best department and at least 50%, and otherwise suggests the best,
+with a sentence saying why. The waitlist and the candidate's page show the scores, the choice and the suggestion; the
+admit form's Department field starts at the suggestion and the officer's choice is what is saved
+({{ table('students') }}.<code>department</code>, only for a senior secondary class). Covered end to end by
+{{ file('tests/verification/write_paths_departments.py') }}.</p>
+
 <h2 id="practice">Entrance practice, for anyone</h2>
 <p>Anyone with a school's practice address (<code>/entrance-practice</code> on the school's own address) can practise <strong>without registering or signing in</strong>. They choose the class they are aiming for, then a subject; each attempt draws its questions at random, in a new order, is marked immediately with the answers shown, and is <strong>never saved</strong> ({{ route('entrance_practice') }}, {{ route('entrance_practice_take') }}).</p>
 <p>For each class and subject, an administrator with {{ perm('entrance.practice.manage') }} chooses where the questions come from, on <em>Practice Tests</em> in the entrance workspace ({{ route('admin_practice_tests') }}, {{ route('admin_practice_tests_save') }}). The choice is stored in {{ table('entrance_practice_settings') }}:</p>

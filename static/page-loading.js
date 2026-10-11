@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   var page = document.querySelector('[data-page-body]');
-  var bar = null, giveUp = null, dimmed = [];
+  var bar = null, giveUp = null, dimmed = [], staged = null;
 
   // Addresses that answer with a file, not a page: these never leave the page, so it is not dimmed for them.
   // (Every download route in the app ends in one of these: .../pdf, /export/..., .../template.csv, .../attachment,
@@ -54,8 +54,12 @@
     giveUp = setTimeout(stop, 15000);
     note(true);
     if (page) {
-      dim(page);
-      dim(from && from.closest && from.closest('.ac-modal__body'));
+      // The page's content gives way to the outline of a page under the spinner (templates/includes/_skeleton.html),
+      // which the next page keeps showing until it has been drawn in full; a page without one is dimmed instead.
+      var stage = page.closest('.bs-stage');
+      var modal = from && from.closest && from.closest('.ac-modal__body');
+      if (stage && !modal) { stage.classList.add('is-skeleton'); staged = stage; }
+      else { dim(page); dim(modal); }
       return;
     }
     if (!bar) {
@@ -67,6 +71,7 @@
   function stop() {
     clearTimeout(giveUp);
     note(false);
+    if (staged) { staged.classList.remove('is-skeleton'); staged = null; }
     dimmed.forEach(function (el) { el.classList.remove('is-loading'); el.setAttribute('aria-busy', 'false'); });
     dimmed = [];
     document.documentElement.classList.remove('is-loading');

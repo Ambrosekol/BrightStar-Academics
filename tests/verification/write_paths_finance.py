@@ -818,7 +818,7 @@ check("a hand-made request for the paid uniform is refused, and writes nothing",
       "already been fully paid" in said and allocations(alpha, PA3) == 0, said)
 
 dash = mum_obi.text("/parent/dashboard")
-check("the parent's dashboard shows each child's fees at a glance", "<small>Fees</small>" in dash)
+check("the parent's dashboard shows each child's fees at a glance", "Fees owing" in dash)
 check("…showing the lifetime balance, 33,000, not zero, though this session's debt is only 8,000",
       'class="pp-owing__amount">₦33,000.00<' in dash and "₦33,000</b>" in dash and "pp-owing is-owing" in dash,
       re.findall(r'pp-owing__amount">([^<]*)<', dash)[0] if "pp-owing__amount" in dash else "no banner")

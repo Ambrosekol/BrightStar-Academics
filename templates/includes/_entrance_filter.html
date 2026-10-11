@@ -1,0 +1,16 @@
+{#- The results views' filter: the entry levels as chips (All, then each target class), and a search by name or code.
+    Reads target_classes, selected_target and search, and keeps each on the other's links. -#}
+<div class="ac-tools">
+  <span class="ac-chips" role="navigation" aria-label="Entry level">
+    <a class="ac-chip{{ ' is-active' if not selected_target }}" href="?{% if search %}q={{ search|urlencode }}{% endif %}">All entry levels</a>
+    {% for t in target_classes %}
+    <a class="ac-chip{{ ' is-active' if (selected_target or '')|lower == t|lower }}" href="?target_class={{ t|urlencode }}{% if search %}&amp;q={{ search|urlencode }}{% endif %}">{{ t }}</a>
+    {% endfor %}
+  </span>
+  <form class="ac-search" method="get" role="search">
+    {% if selected_target %}<input type="hidden" name="target_class" value="{{ selected_target }}">{% endif %}
+    <input type="search" name="q" value="{{ search }}" placeholder="Name or candidate code" aria-label="Find a candidate">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if search %}<a class="ac-btn" href="?{% if selected_target %}target_class={{ selected_target|urlencode }}{% endif %}">Clear</a>{% endif %}
+  </form>
+</div>

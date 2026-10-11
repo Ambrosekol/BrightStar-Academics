@@ -773,7 +773,7 @@ expected = f"ALPHA-JSS1-{YY}{MON}-0001"
 check("registering a candidate through the real admin form gives the school's own code (with the class typed on the form)",
       r.status_code == 200 and expected in body, f"{r.status_code}")
 check("…and that code is what was saved", sql(info_alpha, "SELECT candidate_name FROM candidates WHERE candidate_code = :c", c=expected) == [("Ada Obi",)])
-r = register(c_alpha, u_alpha, target_class="SS 1", candidate_name="Bola Eze")
+r = register(c_alpha, u_alpha, target_class="SS 1", candidate_name="Bola Eze", department_choice="Science")
 check("…the next candidate of another class starts that class's own count", f"ALPHA-SS1-{YY}{MON}-0001" in r.get_data(as_text=True))
 r = register(c_alpha, u_alpha)
 check("…and the same class goes on", f"ALPHA-JSS1-{YY}{MON}-0002" in r.get_data(as_text=True))

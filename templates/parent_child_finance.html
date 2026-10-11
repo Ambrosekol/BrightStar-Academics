@@ -29,7 +29,7 @@
 <div class="ac-note is-warn">
   <strong>Balance also outstanding in</strong>
   <span class="ac-chips">
-    {% for s in other_sessions_with_balance %}<a class="ac-chip" href="{{ url_for('parent_child_finance', student_id=student.id, session_id=s.id) }}" data-modal title="Opens over this one; close it to come back">{{ s.name }} <small>₦{{ '{:,.0f}'.format(s.outstanding) }}</small></a>{% endfor %}
+    {% for s in other_sessions_with_balance %}<a class="ac-chip" href="{{ url_for('parent_child_finance', student_id=student.id, session_id=s.id) }}" data-modal title="Opens over this one; close it to come back">{{ s.name }} · ₦{{ '{:,.0f}'.format(s.outstanding) }}</a>{% endfor %}
   </span>
 </div>
 {% endif %}
@@ -80,7 +80,7 @@
           <td class="n" data-label="Assessed">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
           <td class="n" data-label="Paid">₦{{ '{:,.2f}'.format(item.paid) }}</td>
           <td class="n" data-label="Outstanding"><b{% if item.outstanding > 0.005 %} class="pf-owe"{% endif %}>₦{{ '{:,.2f}'.format(item.outstanding) }}</b></td>
-          <td data-label="Status">{% if item.status == 'Paid' %}<span class="ac-tag ac-tag--good">Paid</span>{% elif item.status == 'Part Paid' %}<span class="ac-tag ac-tag--blue">Part paid</span>{% else %}<span class="ac-tag ac-tag--attn">Unpaid</span>{% endif %}</td>
+          <td data-label="Status">{% if item.status == 'Paid' %}<span class="ac-tag pp-badge is-paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="ac-tag pp-badge is-part">Part paid</span>{% else %}<span class="ac-tag pp-badge is-unpaid">Unpaid</span>{% endif %}</td>
           {% if can_pay %}<td class="ac-actions">{% if item.outstanding > 0.005 %}<button type="button" class="ac-btn ac-btn--sm" data-pay-one="{{ item.id }}">Pay this</button>{% endif %}</td>{% endif %}
         </tr>
         {% endfor %}
@@ -116,7 +116,7 @@
       <td data-label="For">{{ p.category }}</td>
       <td class="n" data-label="Amount"><b>₦{{ '{:,.2f}'.format(p.amount or 0) }}</b></td>
       <td data-label="Status">{% if p.status == 'voided' %}<span class="ac-tag ac-tag--attn">Voided</span>{% else %}<span class="ac-tag ac-tag--good">Posted</span>{% endif %}</td>
-      <td class="ac-actions"><a class="ac-link" href="{{ url_for('parent_receipt_pdf', student_id=student.id, payment_id=p.id) }}" target="_blank" rel="noopener">Receipt</a></td>
+      <td class="ac-actions"><a class="ui-btn ui-btn--light ui-btn--sm" href="{{ url_for('parent_receipt_pdf', student_id=student.id, payment_id=p.id) }}" target="_blank" rel="noopener">Receipt</a></td>
     </tr>
     {% endfor %}
     </tbody>

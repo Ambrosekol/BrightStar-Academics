@@ -1,11 +1,57 @@
 {% extends 'admin_base.html' %}
-{% block title %}{% if question and question.id %}Edit Question {{question.id}}{% else %}Add Question{% endif %} — {{bank.name}}{% endblock %}
+{% block title %}{% if question and question.id %}Edit Question {{ question.id }}{% else %}Add Question{% endif %} — {{ bank.name }}{% endblock %}
 {% block content %}
-<div class="page-hero"><div><div class="eyebrow">ENTRANCE EXAMINATION / QUESTION BANK</div><h1>{% if question and question.id %}Edit Question {{question.id}}{% else %}Add Question{% endif %}</h1><p class="hero-copy">Write the question text and its four options, and mark the correct answer and points. Add an instruction or image only if the question needs extra visual or task guidance.</p></div></div>
-<div class="card modern-form">{% for e in errors %}<div class="error">{{e}}</div>{% endfor %}
-<form method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-<div class="question-authoring-panel"><div class="field"><label>Question instruction <span class="optional">(optional)</span></label><textarea name="instruction" rows="3" placeholder="Example: Choose the correct answer. / Study the picture before answering.">{{question.instruction if question else ''}}</textarea><small class="field-help">This instruction appears to candidates directly above the question.</small></div><div class="field"><label>Question image <span class="optional">(optional)</span></label><input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>{{ upload_hint() }}<small class="field-help">Use images only when they help the candidate answer the question.</small>{% if question and question.image_path %}<div class="current-image-preview"><img src="{{url_for('static',filename=question.image_path)}}" alt="Question image"><span>Current image will remain unless replaced.</span></div>{% endif %}</div></div>
-<div class="field"><label>Question text</label><textarea name="text" required>{{question.text if question else ''}}</textarea></div>
-<div class="form-grid">{% for i in range(4) %}<div class="field"><label>Option {{'ABCD'[i]}}</label><input name="option{{i}}" value="{{question.options[i] if question and question.options|length>i else ''}}" required></div>{% endfor %}<div class="field"><label>Correct option</label><select name="answer" required>{% for i in range(4) %}<option value="{{i}}" {% if question and question.answer|int==i %}selected{% endif %}>{{'ABCD'[i]}}</option>{% endfor %}</select></div><div class="field"><label>Points</label><input type="number" min="1" name="points" value="{{question.points if question else 1}}" required></div></div>
-<div class="actions"><button class="btn btn-primary" type="submit">Save Question</button><a class="btn btn-light" href="{{url_for('admin_bank',bid=bank.id)}}">Cancel</a></div></form></div>
+{#- One question, in the School portal's form look: the text and its four options in the order a candidate reads them,
+    the right answer and the points, then an instruction or a picture only if the question needs one. -#}
+{% include 'includes/_entrance_frame.html' %}
+<div class="ac" style="max-width:820px">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_question_banks') }}">Question banks</a> / <a href="{{ url_for('admin_bank', bid=bank.id) }}">{{ entrance_bank_display_name(bank.id, bank.name) }}</a></span>
+    <h1>{% if question and question.id %}Edit question {{ question.id }}{% else %}Add a question{% endif %}</h1>
+    <p>Write the question and its four options, then mark the right answer and its points.</p>
+  </div></div>
+</header>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form class="ac-form" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <section class="ac-stage">
+    <div class="ac-fields">
+      <div class="ac-field ac-field--wide"><label for="text">Question</label>
+        <textarea id="text" name="text" rows="3" required>{{ question.text if question else '' }}</textarea></div>
+      {% for i in range(4) %}
+      <div class="ac-field"><label for="option{{ i }}">Option {{ 'ABCD'[i] }}</label>
+        <input id="option{{ i }}" name="option{{ i }}" value="{{ question.options[i] if question and question.options|length > i else '' }}" required></div>
+      {% endfor %}
+      <div class="ac-field"><label for="answer">Right answer</label>
+        <select id="answer" name="answer" required>{% for i in range(4) %}<option value="{{ i }}" {% if question and question.answer|int == i %}selected{% endif %}>{{ 'ABCD'[i] }}</option>{% endfor %}</select></div>
+      <div class="ac-field"><label for="points">Points</label>
+        <input id="points" type="number" min="1" name="points" value="{{ question.points if question else 1 }}" required></div>
+      {#- A senior department the question tests: an SSS paper gives every candidate an equal share from each
+          department, and their results there suggest the department to admit them into (core/entrance_departments.py). -#}
+      <div class="ac-field ac-field--wide"><label for="department">Department <small>for SSS entrance papers</small></label>
+        <select id="department" name="department">
+          <option value="">General (no department)</option>
+          {% for d in SSS_DEPARTMENTS %}<option value="{{ d }}" {% if question and question.department == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select>
+        <small>Tag a question Science, Art or Commercial when it tests that department. Each SSS candidate then gets an equal share from all three, and the admissions waitlist shows which department their results fit.</small></div>
+    </div>
+  </section>
+  <section class="ac-stage" style="margin-top:10px">
+    <div class="ac-stage__head"><div><h2>Instruction and picture</h2><p>Optional: only when the question needs extra guidance or something to look at.</p></div></div>
+    <div class="ac-fields">
+      <div class="ac-field ac-field--wide"><label for="instruction">Instruction <small>shown directly above the question</small></label>
+        <textarea id="instruction" name="instruction" rows="2" placeholder="Example: Choose the correct answer. / Study the picture before answering.">{{ question.instruction if question else '' }}</textarea></div>
+      <div class="ac-field ac-field--wide"><label for="image">Picture</label>
+        <input id="image" type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
+        {{ upload_hint() }}
+        {% if question and question.image_path %}<div class="acq-current"><img src="{{ url_for('static', filename=question.image_path) }}" alt="Current picture"><span>The current picture stays unless you choose another.</span></div>{% endif %}</div>
+    </div>
+    <div class="ac-stage__foot">
+      <button class="ac-btn ac-btn--primary ac-btn--lg" type="submit">Save question</button>
+      <a class="ac-link" href="{{ url_for('admin_bank', bid=bank.id) }}">Cancel</a>
+    </div>
+  </section>
+</form>
+</div>
 {% endblock %}

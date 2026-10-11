@@ -1,0 +1,28 @@
+{#- How an SSS candidate did in each department, for the candidate's page and the admissions waitlist
+    (core/entrance_departments.py works it out). fit is department_fits()[id], choice the candidate's own choice,
+    rec recommend()'s answer. -#}
+
+{#- The three departments as a dense table: their own questions, the related paper, and the two together. -#}
+{% macro fit_table(fit, choice, rec) -%}
+<table class="ac-t en-fit">
+  <thead><tr><th>Department</th><th class="n">Own questions</th><th class="n">Related paper</th><th class="n">Fit</th></tr></thead>
+  <tbody>
+  {% for name, d in (fit.departments.items() if fit else []) %}
+  <tr class="{{ 'is-rec' if rec and rec.department == name }}">
+    <td><b>{{ name }}</b>{% if name == choice %} <span class="ac-tag ac-tag--blue">Their choice</span>{% endif %}{% if rec and rec.department == name %} <span class="ac-tag ac-tag--good">Recommended</span>{% endif %}</td>
+    <td class="n">{% if d.own is not none %}{{ '%.0f'|format(d.own) }}%<small>{{ d.own_questions }} question{{ '' if d.own_questions == 1 else 's' }}</small>{% else %}—{% endif %}</td>
+    <td class="n">{% if d.paper is not none %}{{ '%.0f'|format(d.paper) }}%<small>{{ d.paper_label }}</small>{% else %}—<small>{{ d.paper_label }}</small>{% endif %}</td>
+    <td class="n"><b>{{ '%.0f'|format(d.score) ~ '%' if d.score is not none else '—' }}</b>{% if d.score is not none %}<span class="en-bar"><i style="width:{{ [d.score, 100]|min }}%"></i></span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}
+
+{#- One line for a row of the waitlist: the choice, then the recommendation (marked when it differs). -#}
+{% macro fit_line(choice, rec) -%}
+<span class="en-dept">
+  <span>Chose <b>{{ choice or 'none' }}</b></span>
+  {% if rec and rec.department %}<span class="ac-tag {{ 'ac-tag--good' if rec.matches_choice else 'ac-tag--alert' }}" title="{{ rec.reason }}">{{ 'Fits ' ~ rec.department if rec.matches_choice else 'Suggest ' ~ rec.department }}</span>{% endif %}
+</span>
+{%- endmacro %}

@@ -1,5 +1,51 @@
-{% extends 'admin_base.html' %}{% block title %}Result — {{attempt.candidate}}{% endblock %}{% block content %}
-<div class="topbar"><div><h1>{{attempt.candidate}}</h1><p class="muted">{{paper_label}} · Attempt #{{attempt.id}}</p></div><div class="actions"><a class="btn btn-light" target="_blank" href="{{url_for('admin_result_print',aid=attempt.id)}}">Print Result</a><form method="post" action="{{url_for('admin_grant_retake',aid=attempt.id)}}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-light" data-confirm="Grant this candidate one additional attempt for this examination?">Grant Retake</button></form><form method="post" action="{{url_for('admin_regrade',aid=attempt.id)}}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-primary">Regrade</button></form></div></div>
-<div class="grid"><div class="card"><div class="muted">Score</div><div class="metric">{{attempt.score}} / {{attempt.max_score}}</div></div><div class="card"><div class="muted">Percentage</div><div class="metric">{{ '%.1f'|format(attempt.percentage) ~ '%' if attempt.percentage is not none else '—' }}</div></div><div class="card"><div class="muted">Grade</div><div class="metric">{{grade}}</div></div><div class="card"><div class="muted">Status</div><div class="metric">{{attempt.status}}</div></div></div>
-<div class="card"><table><thead><tr><th>#</th><th>Question</th><th>Candidate Answer</th><th>Correct Answer</th><th>Result</th></tr></thead><tbody>{% for q in exam.questions %}{% set chosen=answers.get(q.id) %}<tr><td>{{loop.index}}</td><td>{{q.text}}</td><td>{{q.options[chosen] if chosen is not none and chosen < q.options|length else 'Not answered'}}</td><td>{{q.options[q.answer] if q.answer is not none and q.answer >= 0 and q.answer < q.options|length else 'Answer key not set'}}</td><td>{% if chosen == q.answer %}<strong>Correct</strong>{% else %}Wrong{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% extends 'admin_base.html' %}
+{% block title %}Result — {{ attempt.candidate }}{% endblock %}
+{% block content %}
+{#- One marked paper, in the School portal's look: the four figures, then each question with the answer given and
+    the right one. Print, grant a retake or regrade from the title line. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% set aid = current_admin['id'] if current_admin else None %}
+<div class="ac">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <span class="acq-kind"><a href="{{ url_for('admin_attempts') }}">Examination activity</a> / Attempt #{{ attempt.id }}</span>
+    <h1>{{ attempt.candidate }}</h1>
+    <p>{{ paper_label }}{% if attempt.submitted_at %} · submitted {{ attempt.submitted_at|replace('T', ' ')|truncate(16, true, '') }}{% endif %}</p>
+  </div></div>
+  <div class="ac-top__act">
+    {% if admin_has_permission(aid, 'results.print') %}<a class="ac-btn" target="_blank" href="{{ url_for('admin_result_print', aid=attempt.id) }}">Print result</a>{% endif %}
+    {% if admin_has_permission(aid, 'results.retake') %}
+    <form method="post" action="{{ url_for('admin_grant_retake', aid=attempt.id) }}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn" type="submit" data-confirm="Grant this candidate one additional attempt for this examination?">Grant retake</button></form>
+    {% endif %}
+    {% if admin_has_permission(aid, 'results.regrade') %}
+    <form method="post" action="{{ url_for('admin_regrade', aid=attempt.id) }}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--primary" type="submit">Regrade</button></form>
+    {% endif %}
+  </div>
+</header>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Score</dt><dd>{{ attempt.score }} / {{ attempt.max_score }}</dd></div>
+  <div><dt>Percentage</dt><dd>{{ '%.1f'|format(attempt.percentage) ~ '%' if attempt.percentage is not none else '—' }}</dd></div>
+  <div><dt>Grade</dt><dd>{{ grade }}</dd></div>
+  <div><dt>Status</dt><dd>{{ 'Time ran out' if attempt.status == 'expired' else attempt.status|replace('_', ' ')|title }}</dd></div>
+</dl>
+
+<section class="ac-panel">
+  <div class="en-ph"><h2>Answers<small>{{ exam.questions|length }} questions</small></h2></div>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="n">#</th><th>Question</th><th>Candidate's answer</th><th>Right answer</th><th></th></tr></thead>
+    <tbody>
+    {% for q in exam.questions %}{% set chosen = answers.get(q.id) %}
+    <tr>
+      <td class="n">{{ loop.index }}</td>
+      <td><span class="ac-clip" title="{{ q.text }}" style="max-width:520px">{{ q.text }}</span></td>
+      <td>{{ q.options[chosen] if chosen is not none and chosen < q.options|length else 'Not answered' }}</td>
+      <td>{{ q.options[q.answer] if q.answer is not none and q.answer >= 0 and q.answer < q.options|length else 'Answer key not set' }}</td>
+      <td>{% if chosen == q.answer %}<span class="ac-tag ac-tag--good">Correct</span>{% elif chosen is none %}<span class="ac-tag">Blank</span>{% else %}<span class="ac-tag ac-tag--attn">Wrong</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+</div>
 {% endblock %}

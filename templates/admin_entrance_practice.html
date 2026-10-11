@@ -1,100 +1,64 @@
 {% extends 'admin_base.html' %}
-
-{% block title %}Entrance Practice &mdash; {{ school_brand.name }} Administration{% endblock %}
-
+{% block title %}Practice Tests — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="practice-admin-page">
+{#- The public entrance practice, in the School portal's look: the link to share, then for each entry class and
+    subject where its questions come from (last session's paper, or a bank set up for practice), changed on the row.
+    The current session's paper is never offered, so its questions cannot leak. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% set can_manage = admin_has_permission(session.get('admin_id'), 'entrance.practice.manage') %}
+{% set live_n = rows|selectattr('live')|list|length %}
+<div class="ac">
+<header class="ac-top">
+  <div class="en-title"><div>
+    <h1>Practice tests</h1>
+    <p>Anyone with the link picks a class and a subject and practises, with no registration. Each attempt draws its questions at random, in a new order, and is never saved.</p>
+  </div></div>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ practice_url }}" target="_blank" rel="noopener">Open the practice page</a></div>
+</header>
 
-  <section class="practice-admin-hero">
-    <div class="practice-admin-hero-copy">
-      <a href="/admin" class="practice-admin-back">&larr; Back to Administration</a>
-      <div class="practice-admin-eyebrow">ENTRANCE PRACTICE</div>
-      <div class="practice-admin-title-row">
-        <div>
-          <h1>Entrance practice questions</h1>
-          <p>
-            Anyone with the practice link can pick a target class and a subject and practise, with no
-            registration. Every attempt draws its questions at random, in a new order, and is never saved.
-            For each class and subject, choose where the questions come from.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
+<dl class="fi-k">
+  <div class="is-lead" style="grid-column:span 2"><dt>Practice link · share this address</dt><dd style="font-size:14px"><a href="{{ practice_url }}" target="_blank" rel="noopener">{{ practice_url }}</a></dd></div>
+  <div class="{{ 'is-alert' if live_n < rows|length }}"><dt>Subjects ready</dt><dd>{{ live_n }} / {{ rows|length }}</dd><small>{{ 'every subject has questions' if live_n == rows|length else 'some have nothing to serve yet' }}</small></div>
+</dl>
 
-  <section class="practice-admin-workspace">
-    <div class="practice-admin-workspace-head">
-      <div>
-        <span class="practice-admin-section-eyebrow">PRACTICE LINK</span>
-        <h2>Share this address</h2>
-        <p><a href="{{ practice_url }}" target="_blank" rel="noopener"><strong>{{ practice_url }}</strong></a></p>
-      </div>
-    </div>
-  </section>
-
-  <section class="practice-admin-workspace">
-    <div class="practice-admin-workspace-head">
-      <div>
-        <span class="practice-admin-section-eyebrow">QUESTION SOURCES</span>
-        <h2>Where each subject&rsquo;s questions come from</h2>
-        <p>
-          <strong>Last session&rsquo;s examination</strong> serves the entrance paper of the most recent earlier
-          session. <strong>Custom questions</strong> serves a question bank you set up for practice. The
-          current session&rsquo;s examination is never offered, so its questions cannot leak.
-        </p>
-      </div>
-    </div>
-
-    <div class="practice-admin-table-wrap">
-      <table class="practice-admin-table">
-        <thead>
-          <tr><th>Entry class</th><th>Subject</th><th>Serving now</th><th>Question source</th></tr>
-        </thead>
-        <tbody>
-          {% for r in rows %}
-          <tr>
-            <td><span class="practice-entry-class">{{ r.group_label }}</span></td>
-            <td><strong class="practice-subject">{{ r.subject_label }}</strong></td>
-            <td>
-              {% if r.live %}
-              <span class="practice-status practice-status-ready"><i aria-hidden="true"></i>{{ r.count }} questions per attempt</span>
-              {% else %}
-              <span class="practice-status practice-status-protected">Nothing to serve yet</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if admin_has_permission(session.get('admin_id'), 'entrance.practice.manage') %}
-              <form method="post" action="{{ url_for('admin_practice_tests_save') }}" class="practice-source-form">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="entry_group" value="{{ r.group }}">
-                <input type="hidden" name="subject" value="{{ r.subject }}">
-                <select name="source" data-show-when="custom" data-show-target="admin-practice-custom-fields-{{ loop.index }}">
-                  <option value="last_session" {% if r.setting.source == 'last_session' %}selected{% endif %}>
-                    Last session&rsquo;s examination{% if r.last_session %} ({{ r.last_session }}){% else %} (none yet){% endif %}
-                  </option>
-                  <option value="custom" {% if r.setting.source == 'custom' %}selected{% endif %}>Custom questions</option>
-                </select>
-                <span class="custom-fields" id="admin-practice-custom-fields-{{ loop.index }}" {% if r.setting.source != 'custom' %}hidden{% endif %}>
-                  <select name="bank_id">
-                    <option value="">Choose a question bank</option>
-                    {% for b in r.banks %}
-                    <option value="{{ b.id }}" {% if r.setting.bank_id == b.id %}selected{% endif %}>{{ b.name or b.id }} ({{ b.questions|length }})</option>
-                    {% endfor %}
-                  </select>
-                  <input type="number" name="questions_to_serve" min="1" placeholder="Questions per attempt" value="{{ r.setting.questions_to_serve or '' }}">
-                </span>
-                <button type="submit" class="practice-open-btn">Save</button>
-              </form>
-              {% else %}
-              {{ 'Custom questions' if r.setting.source == 'custom' else 'Last session\'s examination' }}
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
+<section class="ac-panel">
+  <div class="en-ph"><h2>Where each subject's questions come from</h2></div>
+  <p class="en-sub"><strong>Last session's examination</strong> serves the entrance paper of the most recent earlier session. <strong>Custom questions</strong> serves a bank you set up for practice.</p>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Entry class</th><th>Subject</th><th>Serving now</th><th>Question source</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.group_label }}</td>
+      <td><b>{{ r.subject_label }}</b></td>
+      <td>{% if r.live %}<span class="ac-tag ac-tag--good">{{ r.count }} questions an attempt</span>{% else %}<span class="ac-tag ac-tag--attn">Nothing to serve yet</span>{% endif %}</td>
+      <td>
+        {% if can_manage %}
+        <form method="post" action="{{ url_for('admin_practice_tests_save') }}" class="en-row-forms" style="justify-content:flex-start">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="entry_group" value="{{ r.group }}">
+          <input type="hidden" name="subject" value="{{ r.subject }}">
+          <select name="source" class="ac-select" aria-label="Question source for {{ r.group_label }} {{ r.subject_label }}" data-show-when="custom" data-show-target="admin-practice-custom-fields-{{ loop.index }}">
+            <option value="last_session" {% if r.setting.source == 'last_session' %}selected{% endif %}>Last session&rsquo;s examination{% if r.last_session %} ({{ r.last_session }}){% else %} (none yet){% endif %}</option>
+            <option value="custom" {% if r.setting.source == 'custom' %}selected{% endif %}>Custom questions</option>
+          </select>
+          <span class="en-row-forms" id="admin-practice-custom-fields-{{ loop.index }}" {% if r.setting.source != 'custom' %}hidden{% endif %}>
+            <select name="bank_id" class="ac-select" aria-label="Question bank">
+              <option value="">Choose a question bank</option>
+              {% for b in r.banks %}<option value="{{ b.id }}" {% if r.setting.bank_id == b.id %}selected{% endif %}>{{ b.name or b.id }} ({{ b.questions|length }})</option>{% endfor %}
+            </select>
+            <input type="number" name="questions_to_serve" min="1" placeholder="Questions an attempt" aria-label="Questions an attempt" value="{{ r.setting.questions_to_serve or '' }}" style="width:150px">
+          </span>
+          <button type="submit" class="ac-btn ac-btn--sm">Save</button>
+        </form>
+        {% else %}
+        {{ 'Custom questions' if r.setting.source == 'custom' else 'Last session\'s examination' }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 /* Load the next view of a section in place instead of reloading the whole page.
 
    Active only inside the sections the body names in data-inplace-scope (Academics, Students, Finance, the exam
-   timetable). A link or form there that leads to another address in scope is fetched with X-Fragment: 1, which
+   timetable, and the entrance examination workspace). A link or form there that leads to another address in scope is fetched with X-Fragment: 1, which
    templates/admin_base.html answers with just the page's messages and content; that replaces #page-body while
    the previous view stays on screen, dimmed under a spinner. The address bar follows (history.pushState), so
    Back, Forward, reload and bookmarks all still work, and every address still opens as a full page on its own.

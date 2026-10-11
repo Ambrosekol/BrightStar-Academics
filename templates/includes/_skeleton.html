@@ -1,0 +1,14 @@
+{#- The outline of a page, shown while the next page is on its way and until it has been drawn in full: a title line,
+    a strip of figures and two panels of rows, in the shape every staff and portal page shares. It sits beside the
+    page body (not inside it, so a view loaded in place does not remove it), in a .bs-stage that holds both.
+    Shown by the "arriving" note (templates/includes/_pwa_head.html, which also holds its styles, so it needs no other
+    file) and by static/page-loading.js as a page is left. Hidden from assistive technology: the spinner says "loading". -#}
+<div class="bs-sk" aria-hidden="true">
+  <div class="bs-sk__top"><i style="width:22%"></i><i class="bs-sk__btn"></i><i class="bs-sk__btn"></i></div>
+  <i class="bs-sk__line" style="width:38%"></i>
+  <div class="bs-sk__kpis"><span><i></i><b></b></span><span><i></i><b></b></span><span><i></i><b></b></span><span><i></i><b></b></span><span><i></i><b></b></span></div>
+  <div class="bs-sk__cols">
+    <div class="bs-sk__panel"><i style="width:30%"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="bs-sk__panel"><i style="width:45%"></i><i></i><i></i><i></i></div>
+  </div>
+</div>

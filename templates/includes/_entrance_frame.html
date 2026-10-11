@@ -1,0 +1,31 @@
+{#- The entrance examination workspace's pages, in the School portal's look: the Academics components
+    (static/academics.css), the figure strip (static/finance.css) and the few entrance pieces (static/entrance.css).
+    Include it at the top of each page's content.
+
+    A results page sets en_tab ('subjects', 'summary', 'rankings' or 'activity') before including it: it then also
+    draws the title line with the four results views as tabs (only those this person may open), the way Academics and
+    Finance put their sections side by side. en_actions, if set, is HTML for the right of the title line. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='entrance.css') }}">
+{% if en_tab is defined and en_tab %}
+{% set en_aid = current_admin['id'] if current_admin else None %}
+{% set en_tabs = [
+    ('subjects', 'By subject', 'admin_results', admin_has_permission(en_aid, 'results.view')),
+    ('summary', 'Summary', 'admin_results_summary', admin_has_permission(en_aid, 'results.view')),
+    ('rankings', 'Rankings', 'admin_rankings', admin_has_permission(en_aid, 'results.rankings')),
+    ('activity', 'Examination activity', 'admin_attempts', admin_has_permission(en_aid, 'attempts.view')),
+] %}
+{% set en_keep = {} %}
+{% if selected_target is defined and selected_target %}{% set _ = en_keep.update({'target_class': selected_target}) %}{% endif %}
+{% if search is defined and search %}{% set _ = en_keep.update({'q': search}) %}{% endif %}
+<header class="ac-top">
+  <h1>Results</h1>
+  <nav class="ac-tabs" aria-label="Results views">
+    {% for key, label, endpoint, shown in en_tabs if shown %}
+    <a href="{{ url_for(endpoint, **(en_keep if key != 'activity' else {})) }}" class="{{ 'is-active' if en_tab == key }}"{% if en_tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {% if en_actions is defined and en_actions %}<div class="ac-top__act">{{ en_actions }}</div>{% endif %}
+</header>
+{% endif %}

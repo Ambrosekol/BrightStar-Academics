@@ -107,7 +107,7 @@
       </div>
     </header>
     <div class="ui-page">
-      <div id="page-body" data-page-body>
+      <div class="bs-stage">{% include 'includes/_skeleton.html' %}<div id="page-body" data-page-body>
 {% endif %}
         {% if fragment %}<span hidden data-fragment-title>{{ self.title() }} — {{ school_brand.name }}</span>{% endif %}
         {% with flashes = get_flashed_messages(with_categories=true) %}
@@ -117,7 +117,7 @@
         {#- A page's own script comes with it when it is loaded in place (static/inplace.js runs it again). -#}
         {% if fragment %}{{ self.scripts() }}{% endif %}
 {% if not fragment %}
-      </div>
+      </div></div>
     </div>
     {% if pf %}
     <nav class="pf-tabbar" aria-label="{{ pf.label }}">

@@ -1,54 +1,71 @@
 {% extends 'admin_base.html' %}
-{% block title %}Candidate Register — {{ school_brand.name }}{% endblock %}
+{% block title %}Candidates — {{ school_brand.name }}{% endblock %}
 {% block content %}
-<div class="page-hero">
-  <div><div class="eyebrow">ENTRANCE EXAMINATION / CANDIDATES</div><h1>Candidate Register</h1><p class="hero-copy">Start with the entry level, then select a candidate to view their complete registration record, examination activity and results.</p></div>
-  <div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('admin_new_candidate') }}">+ Register Candidate</a></div>
-</div>
+{#- The candidate register, in the School portal's look: the entry levels as chips with their counts (a register is
+    shown one entry level at a time, as before), then that level's candidates in one dense table. -#}
+{% include 'includes/_entrance_frame.html' %}
+{% set aid = current_admin['id'] if current_admin else None %}
+<div class="ac">
+<header class="ac-top">
+  <h1>Candidates</h1>
+  {% if admin_has_permission(aid, 'candidates.create') %}<div class="ac-top__act"><a class="ac-btn ac-btn--primary" href="{{ url_for('admin_new_candidate') }}">+ Register candidate</a></div>{% endif %}
+</header>
 
-<div class="segmentation-intro">
-  <div><strong>Choose an entry level</strong><span>Candidate records are deliberately separated before the individual register opens.</span></div>
-  {% if selected_group %}<a class="btn btn-light btn-small" href="{{ url_for('admin_candidates') }}">← All entry levels</a>{% endif %}
-</div>
-<div class="segment-card-grid">
-  {% for card in class_cards %}
-  <a class="segment-card {% if selected_group==card.key %}selected{% endif %}" href="{{ url_for('admin_candidates',level=card.key) }}">
-    <div class="segment-icon">{{ 'J' if card.key=='year7' else 'S' }}</div>
-    <div class="segment-copy"><div class="segment-kicker">ENTRANCE LEVEL</div><h2>{{card.label}}</h2><p>{{card.count}} registered candidate{{'' if card.count==1 else 's'}}</p></div>
-    <div class="segment-arrow">→</div>
-    <div class="segment-stats"><span><b>{{card.completed}}</b> with completed papers</span><span><b>{{card.in_progress}}</b> in progress</span></div>
-  </a>
-  {% endfor %}
-</div>
+<nav class="ac-bar" aria-label="Entry levels">
+  <span class="ac-bar__label">Entry level</span>
+  <span class="ac-chips">
+    {% for card in class_cards %}
+    <a class="ac-chip{{ ' is-active' if selected_group == card.key }}{{ ' is-empty' if not card.count }}" href="{{ url_for('admin_candidates', level=card.key) }}"{% if selected_group == card.key %} aria-current="page"{% endif %}>{{ card.label }} <small>{{ card.count }}</small></a>
+    {% endfor %}
+  </span>
+</nav>
 
 {% if selected_group %}
-<div class="card table-card segmented-register-panel">
-  <div class="table-toolbar register-toolbar">
-    <div><strong>{{ entry_group_label(selected_group) }} Candidates</strong><span class="muted">Only candidates registered for this entry level are shown.</span></div>
-    <form class="register-search" method="get"><input type="hidden" name="level" value="{{selected_group}}"><input name="q" value="{{search}}" placeholder="Search name, candidate ID, school or parent"><button class="btn btn-light" type="submit">Search</button>{% if search %}<a class="btn btn-light" href="{{url_for('admin_candidates',level=selected_group)}}">Clear</a>{% endif %}</form>
-  </div>
-  <div class="register-table-note"><span>{{candidates|length}} candidate{{'' if candidates|length==1 else 's'}} shown</span><span>Open <strong>View</strong> for the complete person record.</span></div>
-  <div class="table-scroll">
-    <table class="segmented-table"><thead><tr><th>Candidate</th><th>Candidate ID</th><th>School Attended</th><th>Parent / Guardian</th><th>Progress</th><th>Action</th></tr></thead>
-    <tbody>
-    {% for c,papers in candidates %}
-      {% set completed = papers|selectattr('attempt_status','in',['submitted','expired'])|list|length %}
-      {% set active = papers|selectattr('attempt_status','equalto','active')|list|length %}
-      <tr>
-        <td><div class="person-cell"><span class="table-avatar image-avatar">{% if c.photo_path %}<img src="{{url_for('static',filename=c.photo_path)}}" alt="">{% else %}{{c.candidate_name[:1]|upper}}{% endif %}</span><div><strong>{{c.candidate_name}}</strong><small>Registered {{c.created_at.replace('T',' ')[:16]}}</small></div></div></td>
-        <td><span class="candidate-code">{{c.candidate_code}}</span></td>
-        <td>{{c.school_attended or '—'}}</td>
-        <td>{{c.parent_guardian_name or '—'}}<small>{{c.primary_mobile or c.alternative_mobile or 'No mobile recorded'}}</small></td>
-        <td><strong>{{completed}} / 3</strong><small>{% if active %}{{active}} paper in progress{% elif completed==3 %}All papers completed{% else %}Not started / incomplete{% endif %}</small></td>
-        <td><a class="btn btn-primary btn-small" href="{{url_for('admin_candidate_detail',cid=c.id)}}">View</a></td>
-      </tr>
-    {% else %}
-      <tr><td colspan="6"><div class="empty-state"><strong>No candidates found in this entry level.</strong><p>Register a candidate or clear the search to view the available records.</p><a class="btn btn-primary" href="{{url_for('admin_new_candidate')}}">+ Register Candidate</a></div></td></tr>
-    {% endfor %}
-    </tbody></table>
-  </div>
-</div>
-{% else %}
-<div class="info-banner segmentation-note"><strong>Candidate register boundary.</strong><span>Select Year 7/JSS 1 or Year 10/SSS 1 above before the individual candidate register is displayed.</span></div>
+{% set shown = class_cards|selectattr('key', 'equalto', selected_group)|first %}
+{% if shown %}
+<dl class="fi-k">
+  <div class="is-lead"><dt>Registered</dt><dd>{{ shown.count }}</dd><small>{{ shown.label }}</small></div>
+  <div><dt>All papers completed</dt><dd>{{ shown.completed }}</dd><small>ready to rank</small></div>
+  <div><dt>In progress</dt><dd>{{ shown.in_progress }}</dd><small>a paper under way</small></div>
+</dl>
 {% endif %}
+
+<div class="ac-tools">
+  <form class="ac-search" method="get" role="search">
+    <input type="hidden" name="level" value="{{ selected_group }}">
+    <input name="q" value="{{ search }}" placeholder="Search name, candidate ID, school or parent" aria-label="Search candidates">
+    <button class="ac-btn" type="submit">Search</button>
+    {% if search %}<a class="ac-btn" href="{{ url_for('admin_candidates', level=selected_group) }}">Clear</a>{% endif %}
+  </form>
+  <span class="ac-count">{{ candidates|length }} candidate{{ '' if candidates|length == 1 else 's' }} shown</span>
+</div>
+
+<section class="ac-panel">
+  {% if candidates %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Candidate</th><th>Candidate ID</th><th>School attended</th><th>Parent / guardian</th><th>Papers</th><th>Registered</th><th></th></tr></thead>
+    <tbody>
+    {% for c, papers in candidates %}
+      {% set completed = papers|selectattr('attempt_status', 'in', ['submitted', 'expired'])|list|length %}
+      {% set active = papers|selectattr('attempt_status', 'equalto', 'active')|list|length %}
+      <tr>
+        <td><span class="en-who"><span class="en-ava">{% if c.photo_path %}<img src="{{ url_for('static', filename=c.photo_path) }}" alt="">{% else %}{{ c.candidate_name[:1]|upper }}{% endif %}</span><a class="ac-title" href="{{ url_for('admin_candidate_detail', cid=c.id) }}">{{ c.candidate_name }}</a></span></td>
+        <td><span class="en-code">{{ c.candidate_code }}</span></td>
+        <td>{{ c.school_attended or '—' }}</td>
+        <td>{{ c.parent_guardian_name or '—' }}<small>{{ c.primary_mobile or c.alternative_mobile or 'No mobile recorded' }}</small></td>
+        <td>{% if completed == 3 %}<span class="ac-tag ac-tag--good">3 / 3 done</span>{% elif active %}<span class="ac-tag ac-tag--blue"><i class="en-live"></i>{{ completed }} / 3 · in progress</span>{% elif completed %}<span class="ac-tag ac-tag--alert">{{ completed }} / 3</span>{% else %}<span class="ac-tag">Not started</span>{% endif %}</td>
+        <td>{{ c.created_at.replace('T', ' ')[:16] }}</td>
+        <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_candidate_detail', cid=c.id) }}">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No candidates found in this entry level</strong>{% if search %}Nothing matches “{{ search }}”. Clear the search to see everyone.{% else %}Register a candidate to add them here.{% endif %}</div>
+  {% endif %}
+</section>
+{% else %}
+<section class="ac-panel"><div class="ac-empty"><strong>Choose an entry level above</strong>Candidates are kept apart by the class they are applying into; pick one to open its register.</div></section>
+{% endif %}
+</div>
 {% endblock %}

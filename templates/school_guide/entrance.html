@@ -13,25 +13,32 @@ exam can be locked to stop it changing mid-way. Opening a bank has an <em>Export
 its exact questions and answer key can be kept outside the portal, or copied into another school. Each
 question also has an up and down arrow, so the order candidates see them in can be changed any time
 after it is written, not only fixed at the moment it was added.</p>
+<p>A question can be tagged with a senior <strong>Department</strong> (Science, Art or Commercial) on its form, or with
+<code>"department"</code> in an imported bank file. When an SSS paper's bank has tagged questions, every candidate gets
+an equal share from each of the three departments, and their answers there suggest the department to admit them into
+(see {{ page('admissions', 'admissions') }}). The standard SSS 1 General Knowledge bank comes with Science, Art and
+Commercial questions already tagged; a school whose banks were installed before this can tag its own.</p>
 
 <h2 id="candidates">Candidates</h2>
 <p><a href="{{ url_for('admin_candidates') }}">Candidates</a> registers who is sitting the exam and
 prints or resets their sign-in credentials. A candidate signs in with those credentials, sits the
 paper once, and their attempt is recorded automatically as they go.</p>
-<div class="guide-warn">A candidate's own record has a <em>Delete Candidate</em> button, for School
-Admin only. It permanently removes the person and every attempt and answer they ever made — there is
+<div class="guide-warn">A candidate's own record has a <em>Delete candidate</em> button (under <em>Print and
+share</em>), for School Admin only. It permanently removes the person and every attempt and answer they ever made — there is
 no undo, and it is meant for a genuine mistake (a duplicate registration, say), not for someone who
 simply did not get in; declining them from the admissions waitlist keeps their record intact
 instead.</div>
 
 <h2 id="results">Results and rankings</h2>
-<p><a href="{{ url_for('admin_results') }}">Results &amp; Analytics</a> shows every candidate's
-outcome, one subject at a time, so you can compare how everyone did in Mathematics, or in English,
-without the other subjects in the way. <a href="{{ url_for('admin_rankings') }}">Rankings</a> instead
+<p><a href="{{ url_for('admin_results') }}">Results</a> has four tabs, each filtered by entry level and searchable
+by name or candidate code. <strong>By subject</strong> shows every candidate's outcome one subject at a time,
+side by side, so you can compare how everyone did in Mathematics, or in English, without the other subjects in
+the way; <strong>Summary</strong> is one row per candidate with all three papers and the total, and prints;
+<strong>Examination activity</strong> is described below. <a href="{{ url_for('admin_rankings') }}">Rankings</a> instead
 orders every candidate by their overall score, highest first — the list a school actually uses to
-decide who is offered admission; it can export what it shows as a CSV spreadsheet, and export the
-underlying raw attempts as CSV or JSON, for further work outside the portal. A candidate's own record
-has a <em>Share Result Image</em> button once they have completed all three papers: a single branded
+decide who is offered admission; it can export what it shows as a CSV spreadsheet, and <strong>By
+subject</strong> exports the underlying raw attempts as CSV or JSON, for further work outside the portal. A
+candidate's own record has a <em>Result image</em> button once they have completed all three papers: a single branded
 picture of their cumulative result, carrying the school's own logo and colours and nothing of another
 school's, ready to send however is easiest.</p>
 

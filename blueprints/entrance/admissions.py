@@ -24,6 +24,8 @@ from blueprints.entrance.helpers import _candidate_results_summary
 from blueprints.parents.helpers import _new_parent_password
 from blueprints.school.helpers import _school_class_allowed
 from core.entrance import ENTRY_GROUP_LABELS, entry_group_label, normalize_entry_group
+from core.entrance_departments import department_fits, recommend
+from core.school_structure import DEPARTMENTS, clean_department, is_senior
 from core.security import admin_required, audit_log, csrf_protect, current_admin
 from models import (
     Admin, Candidate, ParentAccount, ParentStudentLink, School, SchoolClass, Student,
@@ -74,6 +76,14 @@ def _waitlist_rows(entry_group=None, status=None):
                     'status': c.admission_status, 'admitted_student_id': c.admitted_student_id,
                     'decided_at': c.admission_decided_at, 'decided_by_name': deciders.get(c.admission_decided_by, ''),
                     'note': c.admission_note or '', 'released_at': c.results_released_at})
+    # Entering SSS 1: the department they chose, how they did in each, and the department their results point to.
+    senior = [r for r in rows if r['entry_group'] == 'year10']
+    fits = department_fits(senior) if senior else {}
+    for r in senior:
+        c = candidates[r['id']]
+        r['department_choice'] = c.department_choice
+        r['department_fit'] = fits.get(r['id'])
+        r['department_recommended'] = recommend(c.department_choice, r['department_fit'])
     rows.sort(key=lambda r: (r['status'] != 'pending', -r['overall_percentage']))
     return rows
 
@@ -84,7 +94,7 @@ def admin_candidate_admissions():
     entry_group = request.args.get('entry_group', '').strip() or None
     status = request.args.get('status', '').strip() or None
     rows = _waitlist_rows(entry_group, status)
-    return render_template('admin_candidate_admissions.html', rows=rows, classes=_classes(),
+    return render_template('admin_candidate_admissions.html', rows=rows, classes=_classes(), departments=DEPARTMENTS,
                            entry_groups=ENTRY_GROUP_LABELS, selected_group=entry_group, selected_status=status,
                            pending=sum(1 for r in rows if r['status'] == 'pending'))
 
@@ -108,6 +118,9 @@ def admin_candidate_admit(cid):
     date_of_birth = request.form.get('date_of_birth', '').strip()
     class_id = request.form.get('class_id', type=int)
     make_parent = request.form.get('create_parent_account') == '1'
+    # The department the officer chose (the form starts at the recommended one, but any may be chosen).
+    raw_department = request.form.get('department', '').strip()
+    department = clean_department(raw_department)
 
     errors = []
     if not first or not last:
@@ -122,6 +135,10 @@ def admin_candidate_admit(cid):
         errors.append('Choose a class to admit this candidate into.')
     elif not _school_class_allowed(me['id'], class_row.id):
         errors.append('Choose a class within your authorised scope.')
+    if raw_department and not department:
+        errors.append('Choose Science, Art or Commercial as the department.')
+    if class_row and not is_senior(class_row.stage, class_row.name):
+        department = None   # a department is only kept for a senior secondary class
     if errors:
         for message in errors:
             flash(message, 'error')
@@ -137,7 +154,7 @@ def admin_candidate_admit(cid):
                           guardian_name=candidate.parent_guardian_name, guardian_phone=candidate.primary_mobile,
                           guardian_email=candidate.parent_guardian_email, photo_path=candidate.photo_path,
                           created_at=now, active=1, school_id=school_id, student_number=number,
-                          student_number_source='generated')
+                          student_number_source='generated', department=department)
         db.session.add(student)
         db.session.flush()
         linked = db.session.execute(StudentNumberAllocation.__table__.update().where(
@@ -181,8 +198,10 @@ def admin_candidate_admit(cid):
         return redirect(url_for(ADMISSIONS))
 
     audit_log('candidate_admitted', 'assessment', 'candidate', cid,
-              {'student_id': student.id, 'class_id': class_row.id, 'parent_created': bool(parent_username)})
+              {'student_id': student.id, 'class_id': class_row.id, 'parent_created': bool(parent_username),
+               'department': department, 'department_choice': candidate.department_choice})
     return render_template('admin_candidate_admitted.html', candidate=candidate, student=student, class_name=class_row.name,
+                           department=department,
                            username=username, password=temp_password,
                            parent_username=parent_username, parent_password=parent_password)
 
