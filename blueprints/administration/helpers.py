@@ -58,6 +58,11 @@ def _duty_form_options(admin=None):
         offered.setdefault(subject_id,[]).append(class_id)
     subjects=[{'id':s.id,'name':s.name,'class_ids':sorted(offered.get(s.id,[]))} for s in db.session.scalars(
         select(SchoolSubject).where(SchoolSubject.active==1).order_by(SchoolSubject.name)).all()]
+    # A subdivided JSS/SSS class offers each subdivision as a class-teacher duty of its own (core/subdivisions.py).
+    from core.subdivisions import all_subdivisions, label as subdivision_label
+    subdivided=all_subdivisions()
+    for c in classes:
+        c['subdivisions']=[{'id':s.id,'name':subdivision_label(s)} for s in subdivided.get(c['id'],[])]
     return {'duty_classes':classes,'duty_subjects':subjects,'duty_departments':DEPARTMENTS}
 
 def _duties_of(admin_id):
@@ -66,7 +71,8 @@ def _duties_of(admin_id):
     from models import TeachingDuty
     rows=db.session.scalars(select(TeachingDuty).where(TeachingDuty.admin_id==admin_id)
                             .order_by(TeachingDuty.id)).all()
-    return {'class_teacher':[r.class_id for r in rows if r.subject_id is None],
+    return {'class_teacher':[r.class_id for r in rows if r.subject_id is None and not r.subdivision_id],
+            'class_teacher_subdivisions':[r.subdivision_id for r in rows if r.subject_id is None and r.subdivision_id],
             'subjects':[{'class_id':r.class_id,'subject_id':r.subject_id,'department':r.department or ''}
                         for r in rows if r.subject_id is not None]}
 
@@ -87,6 +93,12 @@ def _parse_duties(form, options):
     for cid in ints('duty_class_teacher'):
         if cid in class_ids and cid not in class_teacher: class_teacher.append(cid)
         elif cid is not None and cid not in class_ids: errors.append('Choose class teacher classes from the list.')
+    # A class teacher of one subdivision: its id, checked only if it belongs to an offered class.
+    subdivision_class={s['id']:c['id'] for c in options['duty_classes'] for s in c.get('subdivisions',[])}
+    class_teacher_subdivisions=[]
+    for sid in ints('duty_class_teacher_subdivision'):
+        if sid in subdivision_class and sid not in class_teacher_subdivisions: class_teacher_subdivisions.append(sid)
+        elif sid is not None and sid not in subdivision_class: errors.append('Choose class teacher subdivisions from the list.')
     subjects=[]
     seen=set()
     rows=zip(ints('duty_class'),ints('duty_subject'),form.getlist('duty_department'))
@@ -99,10 +111,10 @@ def _parse_duties(form, options):
         if key in seen: continue
         seen.add(key)
         subjects.append({'class_id':cid,'subject_id':sid,'department':department or ''})
-    return {'class_teacher':class_teacher,'subjects':subjects},sorted(set(errors))
+    return {'class_teacher':class_teacher,'class_teacher_subdivisions':class_teacher_subdivisions,'subjects':subjects},sorted(set(errors))
 
 def _has_duties(duties):
-    return bool(duties['class_teacher'] or duties['subjects'])
+    return bool(duties['class_teacher'] or duties.get('class_teacher_subdivisions') or duties['subjects'])
 
 def _save_duties(admin_id, duties, actor_id, now, only_class_ids=None):
     """Replace an account's duties with ``duties``. ``only_class_ids``, when given, replaces only the duties
@@ -116,6 +128,12 @@ def _save_duties(admin_id, duties, actor_id, now, only_class_ids=None):
     for cid in duties['class_teacher']:
         db.session.add(TeachingDuty(admin_id=admin_id,class_id=cid,subject_id=None,department=None,
                                     created_at=now,created_by=actor_id))
+    if duties.get('class_teacher_subdivisions'):
+        from models import ClassSubdivision
+        for sub in db.session.scalars(select(ClassSubdivision).where(ClassSubdivision.id.in_(duties['class_teacher_subdivisions']))).all():
+            if only_class_ids is not None and sub.class_id not in only_class_ids: continue
+            db.session.add(TeachingDuty(admin_id=admin_id,class_id=sub.class_id,subject_id=None,department=None,
+                                        subdivision_id=sub.id,created_at=now,created_by=actor_id))
     for row in duties['subjects']:
         db.session.add(TeachingDuty(admin_id=admin_id,class_id=row['class_id'],subject_id=row['subject_id'],
                                     department=row['department'] or None,created_at=now,created_by=actor_id))
@@ -125,6 +143,8 @@ def _duty_labels(duties, options):
     cname={c['id']:c['name'] for c in options['duty_classes']}
     sname={s['id']:s['name'] for s in options['duty_subjects']}
     out=[f"Class teacher: {cname.get(cid,cid)}" for cid in duties['class_teacher']]
+    sname_sub={s['id']:s['name'] for c in options['duty_classes'] for s in c.get('subdivisions',[])}
+    out+=[f"Class teacher: {sname_sub.get(sid,sid)}" for sid in duties.get('class_teacher_subdivisions',[])]
     out+=[f"{sname.get(r['subject_id'],r['subject_id'])} — {cname.get(r['class_id'],r['class_id'])}"
           +(f" ({r['department']})" if r['department'] else '') for r in duties['subjects']]
     return out

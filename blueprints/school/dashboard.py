@@ -23,6 +23,7 @@ from flask import request, url_for
 from sqlalchemy import and_, case, func, or_, select
 
 from app import ACADEMIC_TERMS, _school_current_session
+from core import subdivisions as subdivision_reach
 from core.db_helpers import one_scalar, tuples
 from core.school_structure import LEVEL_LABELS, LEVEL_RANK, TOP_LEVEL_LABEL, is_early_years, is_senior
 from core.security import (
@@ -430,9 +431,28 @@ def _my_classes(me, session, term, prev, duties):
                                           ReportCardComment.session_id == sid, ReportCardComment.term == term))
             .where(StudentEnrolment.class_id.in_(class_ids), StudentEnrolment.session_id == sid, StudentEnrolment.active == 1)
             .group_by(StudentEnrolment.class_id)))
+    # The class teacher of a subdivision (JSS 1A): its students, register and comments are theirs; the results
+    # figures stay the whole class's, since a class is one class for its results.
+    mine = {}
+    for cid in class_ids:
+        limit = subdivision_reach.teacher_subdivisions(me['id'], cid)
+        if limit is not None:
+            mine[cid] = {stid for (stid,) in tuples(select(StudentEnrolment.student_id).join(
+                Student, Student.id == StudentEnrolment.student_id).where(
+                StudentEnrolment.class_id == cid, StudentEnrolment.session_id == sid, StudentEnrolment.active == 1,
+                Student.active == 1, StudentEnrolment.subdivision_id.in_(limit)))}
+            names[cid] = ', '.join(s.name for s in subdivision_reach.subdivisions_of(cid) if s.id in limit) or names[cid]
+            marked[cid] = db.session.scalar(select(func.count()).select_from(AttendanceRecord).where(
+                AttendanceRecord.class_id == cid, AttendanceRecord.date == today,
+                AttendanceRecord.student_id.in_(mine[cid] or {0}))) or 0
+            commented[cid] = db.session.scalar(select(func.count()).select_from(ReportCardComment).where(
+                ReportCardComment.student_id.in_(mine[cid] or {0}), ReportCardComment.session_id == sid,
+                ReportCardComment.term == term)) or 0 if sid else 0
+            for key in [k for k in absences if k[0] == cid and k[1] not in mine[cid]]:
+                del absences[key]
     out = []
     for cid in class_ids:
-        n = enrolled.get(cid, 0)
+        n = len(mine[cid]) if cid in mine else enrolled.get(cid, 0)
         ready, waiting = _count(counts, ('approved',), cid), _count(counts, WAITING, cid)
         out.append({
             'id': cid, 'name': names[cid],

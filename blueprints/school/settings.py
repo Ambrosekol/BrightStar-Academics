@@ -54,6 +54,15 @@ def _session_status():
     return (current['name'], NEUTRAL) if current else ('No current session', WARN)
 
 
+def _subdivisions_status():
+    from core.subdivisions import all_subdivisions, lock_state
+    split = len(all_subdivisions())
+    if not split:
+        return ('Not used', NEUTRAL)
+    text = f'{split} class{"" if split == 1 else "es"} split'
+    return (text + ', locked', GOOD) if lock_state()['locked'] else (text + ', not locked', WARN)
+
+
 def _report_status():
     from blueprints.school.report_card_data import report_settings
     settings = report_settings()
@@ -98,6 +107,8 @@ def _groups(me, workspace, statuses=True):
             E('Entrance examination', 'Set up the entrance examination: its papers, timing and scoring.',
               'admin_entrance_config', 'nav-examconfig', can('entrance.config.view'), keywords='exam admission candidates',
               inplace=False),
+            E('Class subdivisions', 'Split a JSS or SSS class into subdivisions (JSS 1A, JSS 2 Gold, SS 1A Science), each with its own class teacher, then lock them.',
+              'admin_school_subdivisions', 'set-subdivisions', admin, _subdivisions_status, 'subdivision arm stream jss sss split class teacher lock'),
         ]),
         ('people', 'Staff & access', 'Who can sign in and what they can do.', [
             E('Staff', 'Add teachers and office staff, give them roles and teaching duties, suspend access and reset passwords.',

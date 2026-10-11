@@ -53,6 +53,10 @@
                 {'label':'Teachers','endpoint':'admin_school_teaching','icon':'nav-teachers',
                  'show': signed and (is_school_admin_ui or admin_has_permission(aid,'school.staff.assign')),
                  'active': path.startswith('/admin/school/teaching')},
+                {'label':'Class transfers','endpoint':'admin_school_transfers','icon':'nav-transfers',
+                 'show': signed and class_transfers_access().show,
+                 'badge': class_transfers_access().waiting if signed else 0,
+                 'active': path.startswith('/admin/school/transfers')},
             ]},
             {'label':'Teaching', 'items':[
                 {'label':'Classes','endpoint':'admin_school_classes','icon':'nav-classes',
@@ -185,7 +189,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='4') }}">
 </head>
-<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
+<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
 {{ connectivity_banner() }}
 {% if finance_unallocated and finance_unallocated.count %}
 <div class="finance-unallocated-banner" role="status">

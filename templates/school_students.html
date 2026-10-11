@@ -65,7 +65,7 @@
         {% if can_archive %}<td class="st-pick"><input type="checkbox" name="student_ids" value="{{ s.id }}" aria-label="Select {{ s.first_name }} {{ s.last_name }}"></td>{% endif %}
         <td><a class="st-who" href="{{ url_for('admin_school_student_detail', sid=s.id) }}" data-modal>
           <span class="st-ava">{% if s.photo_path %}<img src="{{ url_for('static', filename=s.photo_path) }}" alt="">{% else %}{{ s.first_name[:1]|upper }}{{ s.last_name[:1]|upper }}{% endif %}</span>
-          <span><b>{{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}</b><small>{{ s.date_of_birth or 'Date of birth not set' }}{% if s.department %} · {{ s.department }}{% endif %}</small></span></a></td>
+          <span><b>{{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}</b><small>{{ s.date_of_birth or 'Date of birth not set' }}{% if s.subdivision_name %} · {{ s.subdivision_name }}{% endif %}{% if s.department %} · {{ s.department }}{% endif %}</small></span></a></td>
         <td><span class="st-code">{{ s.admission_no }}</span></td>
         {% if not selected_class or selected_class == '__none__' %}<td>{{ s.class_name or '—' }}</td>{% endif %}
         <td>{{ s.gender or '—' }}</td>

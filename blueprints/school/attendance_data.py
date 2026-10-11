@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import case, func, select
 
+from core.subdivisions import current_limit as subdivision_limit
 from models import AcademicSession, Admin, AttendanceRecord, SchoolClass, Student, StudentEnrolment, db
 
 STATUSES = (('present', 'Present'), ('late', 'Late'), ('absent', 'Absent'), ('excused', 'Excused'))
@@ -22,13 +23,17 @@ def status_label(status):
 
 
 def class_roster(class_id, session_id):
-    """Every actively enrolled student of one class in one session, ordered by name."""
-    rows = db.session.execute(
-        select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
-               Student.student_number)
-        .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
-        .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
-               StudentEnrolment.active == 1, Student.active == 1)).all()
+    """Every actively enrolled student of one class in one session, ordered by name. The class teacher of a
+    subdivision (JSS 1A) gets the students of their subdivision only (core/subdivisions.py)."""
+    stmt = (select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
+                   Student.student_number)
+            .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
+            .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
+                   StudentEnrolment.active == 1, Student.active == 1))
+    limit = subdivision_limit(class_id)
+    if limit is not None:
+        stmt = stmt.where(StudentEnrolment.subdivision_id.in_(limit))
+    rows = db.session.execute(stmt).all()
     out = [{'student_id': r.id,
            'name': ' '.join(p for p in (r.first_name, r.middle_name, r.last_name) if p and str(p).strip()),
            'admission_no': r.student_number or r.admission_no or ''} for r in rows]

@@ -124,6 +124,9 @@ class StudentEnrolment(db.Model):
     enrolled_at = db.Column(Text, nullable=False)
     active = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
     school_id = db.Column(Integer, ForeignKey('schools.id'))
+    # The subdivision of the class the student is in this session (JSS 1A, SS 1B Science), or None when the class is
+    # not subdivided. Placed automatically, and changed only by an approved class transfer (core/subdivisions.py).
+    subdivision_id = db.Column(Integer, ForeignKey('class_subdivisions.id', ondelete='SET NULL'))
 
 
 class SchoolSubject(db.Model):

@@ -28,6 +28,7 @@ from sqlalchemy import case, func, or_, select
 from app import ACADEMIC_TERMS
 from blueprints.school.helpers import _primary_school_id, _term_reports_bulk
 from core.school_structure import class_is_senior
+from core.subdivisions import current_limit as subdivision_limit
 from core.branding import school_brand
 from core.db_helpers import tuples
 from core.storage import upload_exists
@@ -247,6 +248,20 @@ def _file(stored_path):
 
 
 # ---------------------------------------------------------------------------------------------
+def _class_students(class_id, session_id):
+    """The students of a class whose cards the person signed in works on: the whole class, or for the class teacher
+    of a subdivision (JSS 1A) the students of that subdivision (core/subdivisions.py)."""
+    stmt = (select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
+                   Student.student_number)
+            .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
+            .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
+                   StudentEnrolment.active == 1, Student.active == 1))
+    limit = subdivision_limit(class_id)
+    if limit is not None:
+        stmt = stmt.where(StudentEnrolment.subdivision_id.in_(limit))
+    return stmt
+
+
 # The class: everyone's term, so a card can say how the class did.
 def class_term_stats(class_id, session_id, term):
     """How each student with a ready card in one class did, and the class averages.
@@ -430,12 +445,7 @@ def class_overview(class_id, session_id, term):
     ``[{'student_id', 'name', 'admission_no', 'state': 'ready' | 'waiting' | 'none', 'pending',
     'comment': text or '', 'comment_by': name or ''}]`` ordered by name.
     """
-    rows = db.session.execute(
-        select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
-               Student.student_number)
-        .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
-        .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
-               StudentEnrolment.active == 1, Student.active == 1)).all()
+    rows = db.session.execute(_class_students(class_id, session_id)).all()
     ids = [r.id for r in rows]
     counts = _official_result_counts(ids, session_id, term)
     comments = {c.student_id: c for c in db.session.scalars(select(ReportCardComment).where(
@@ -464,12 +474,7 @@ def traits_overview(class_id, session_id, term):
     ``[{'student_id', 'name', 'admission_no', 'ratings': {key: 1..5}, 'rated_by': name or ''}]``
     ordered by name. A student with no ``ReportCardTrait`` row yet simply has an empty ``ratings``.
     """
-    rows = db.session.execute(
-        select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
-               Student.student_number)
-        .join(StudentEnrolment, StudentEnrolment.student_id == Student.id)
-        .where(StudentEnrolment.class_id == class_id, StudentEnrolment.session_id == session_id,
-               StudentEnrolment.active == 1, Student.active == 1)).all()
+    rows = db.session.execute(_class_students(class_id, session_id)).all()
     ids = [r.id for r in rows]
     traits = {t.student_id: t for t in db.session.scalars(select(ReportCardTrait).where(
         ReportCardTrait.student_id.in_(ids), ReportCardTrait.session_id == session_id,

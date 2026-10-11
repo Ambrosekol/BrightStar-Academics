@@ -38,6 +38,7 @@ from core.security import (
 )
 from core.uploads import _save_image_upload
 from core.names import clean_part
+from core import subdivisions as subdivision_reach
 from core.notifications import _notify_guardians_of_school_work
 from blueprints.school.report_card_data import class_term_stats, grade_for
 from blueprints.school.result_notices import announce_ready_report_cards
@@ -94,6 +95,8 @@ def admin_school_students():
     if admin and not admin['admin_type_system']:
         classes=[r for r in classes if admin_scope_allows(admin['id'],'class',r['name'])]
         rows=[r for r in rows if r['class_name'] and admin_scope_allows(admin['id'],'class',r['class_name'])]
+        # The class teacher of a subdivision (JSS 1A) sees the students of that subdivision only.
+        rows=subdivision_reach.filter_rows(admin['id'],rows,'enrolled_class_id')
     # Each class with what a school asks of its register at a glance: how many, boys and girls, and how many
     # can sign in to the student portal.
     def gender(r): return (r.get('gender') or '').strip().lower()[:1]
@@ -121,11 +124,13 @@ def admin_school_students():
 
 def _student_enrolment_rows(sid):
     """Every class placement this student has, newest first, with the class and session names."""
-    return [_flatten(r,'StudentEnrolment','class_name','session_name') for r in all_rows(
+    from models import ClassSubdivision
+    return [_flatten(r,'StudentEnrolment','class_name','session_name','subdivision_name') for r in all_rows(
         select(StudentEnrolment,SchoolClass.name.label('class_name'),
-               AcademicSession.name.label('session_name'))
+               AcademicSession.name.label('session_name'),ClassSubdivision.name.label('subdivision_name'))
         .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .join(AcademicSession,AcademicSession.id==StudentEnrolment.session_id)
+        .outerjoin(ClassSubdivision,ClassSubdivision.id==StudentEnrolment.subdivision_id)
         .where(StudentEnrolment.student_id==sid)
         .order_by(StudentEnrolment.id.desc()))]
 
@@ -154,6 +159,8 @@ def admin_school_student_detail(sid):
     classes_for_history=db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
         .order_by(SchoolClass.level_order)).all()
     if current_enrol and not _school_class_allowed(current_admin()['id'],current_enrol['class_id']): return admin_access_error('school.students.view')
+    if current_enrol and not subdivision_reach.reaches(current_admin()['id'],current_enrol['class_id'],current_enrol.get('subdivision_id')):
+        return admin_access_error('school.students.view')
     results=[_flatten(r,'SchoolStudentResult','subject_name','assessment_title','class_name')
              for r in all_rows(
         select(SchoolStudentResult,SchoolSubject.name.label('subject_name'),

@@ -16,6 +16,14 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 # Rules the script cannot submit, each with the reason. Empty is the goal. A rule here is
 # reported in the coverage summary on every run.
 EXEMPT = {
+    # Class subdivisions (Settings) and class transfers: set-up, lock, placing students in turn, and every step of a
+    # transfer (asking, approving, declining, cancelling), valid and hostile, in write_paths_subdivisions.py.
+    "/admin/school/subdivisions/<int:class_id>": "see write_paths_subdivisions.py",
+    "/admin/school/subdivisions/lock": "see write_paths_subdivisions.py",
+    "/admin/school/transfers/request": "see write_paths_subdivisions.py",
+    "/admin/school/transfers/<int:tid>/approve": "see write_paths_subdivisions.py",
+    "/admin/school/transfers/<int:tid>/decline": "see write_paths_subdivisions.py",
+    "/admin/school/transfers/<int:tid>/cancel": "see write_paths_subdivisions.py",
     # The school store: every write (items with pictures in a multipart form, restocking, hiding, a sale at the office,
     # handing over with the parent's text, cancelling, and the parent's online purchase with a faked Paystack behind it)
     # is exercised for real, valid and hostile, in tests/verification/write_paths_store.py.

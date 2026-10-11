@@ -239,7 +239,7 @@
   function teachingNudge(){
     if(!nudge) return;
     var teaching=roleBoxes.some(function(b){ return b.checked && /class_teacher|subject_teacher/.test(b.getAttribute('data-level')); });
-    var any=$('[name=duty_class_teacher]:checked') || $$('[name=duty_subject]').some(function(s){ return s.value; });
+    var any=$('[name=duty_class_teacher]:checked') || $('[name=duty_class_teacher_subdivision]:checked') || $$('[name=duty_subject]').some(function(s){ return s.value; });
     nudge.hidden=!(teaching && !any);
   }
   $('#staffForm').addEventListener('change',teachingNudge);

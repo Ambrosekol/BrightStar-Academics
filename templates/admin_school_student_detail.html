@@ -22,7 +22,7 @@
     <span class="acq-kind">Student</span>
     <h2>{{ student_name }}</h2>
     <p><span class="st-code">{{ student.admission_no }}</span>
-      <span class="ac-tag ac-tag--blue">{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</span>
+      <span class="ac-tag ac-tag--blue">{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</span>{% if current_enrol and current_enrol.subdivision_name %} <span class="ac-tag">{{ current_enrol.subdivision_name }}</span>{% endif %}
       {% if student.department %}<span class="ac-tag">{{ student.department }}</span>{% endif %}
       {% if student.archived_at %}<span class="ac-tag ac-tag--attn">Archived</span>{% endif %}
       {% if current_enrol %}<span>{{ current_enrol.session_name }}</span>{% endif %}</p>
@@ -73,7 +73,7 @@
         <dt>Name</dt><dd>{{ student.guardian_name or '—' }}</dd>
         <dt>Phone</dt><dd>{% if student.guardian_phone %}<a class="ac-link" href="tel:{{ student.guardian_phone }}" data-full>{{ student.guardian_phone }}</a>{% else %}—{% endif %}</dd>
         <dt>Email</dt><dd>{% if student.guardian_email %}<a class="ac-link" href="mailto:{{ student.guardian_email }}" data-full>{{ student.guardian_email }}</a>{% else %}—{% endif %}</dd>
-        <dt>Class</dt><dd>{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}</dd>
+        <dt>Class</dt><dd>{{ current_enrol.class_name if current_enrol else 'Not enrolled' }}{% if current_enrol and current_enrol.subdivision_name %} · {{ current_enrol.subdivision_name }}{% endif %}</dd>
         {% if student.department or (current_enrol and is_senior_class(None, current_enrol.class_name)) %}<dt>Department</dt><dd>{{ student.department or 'Not chosen yet (edit the record to set it)' }}</dd>{% endif %}
         <dt>Session</dt><dd>{{ current_enrol.session_name if current_enrol else '—' }}</dd>
       </dl></div>

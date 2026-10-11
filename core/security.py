@@ -321,6 +321,9 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_school_results':'school.results.view','admin_school_results_release':'school.results.release','admin_school_results_release_term':'school.results.release','admin_school_results_release_class':'school.results.release',
     'admin_school_results_submit_term':'school.results.submit','admin_school_results_submit_class':'school.results.submit',
     'admin_school_teaching':'school.view','admin_school_teaching_edit':'school.view',
+    'admin_school_subdivisions':'school.view','admin_school_subdivisions_save':'school.view','admin_school_subdivisions_lock':'school.view',
+    'admin_school_transfers':'school.view','admin_school_transfers_request':'school.view','admin_school_transfers_approve':'school.view',
+    'admin_school_transfers_decline':'school.view','admin_school_transfers_cancel':'school.view',
     'admin_school_onboarding_dismiss':'school.view','admin_school_onboarding_show':'school.view',
     'admin_school_parents':'parent.view','admin_school_parent_new':'parent.manage','admin_school_parent_feedback':'parent.feedback.view','admin_school_parent_feedback_reply':'parent.feedback.manage','admin_school_parent_feedback_take':'parent.feedback.manage','admin_school_parent_message_new':'parent.feedback.manage','admin_school_parent_recipients':'parent.feedback.manage','admin_school_parent_feedback_status':'parent.feedback.manage','admin_school_result_manual_new':'school.results.enter','admin_school_result_edit':'school.results.enter','admin_school_result_workflow':'school.results.view',
     'admin_school_assessment_detail':'school.view','admin_school_assessment_edit':'school.view','admin_school_assessment_toggle':'school.view','admin_school_assessment_question_new':'school.view','admin_school_assessment_question_delete':'school.view','admin_school_assessment_delete':'school.view',
@@ -539,10 +542,10 @@ def _admin_scopes(admin_id):
 
 def _teaching_duties(admin_id):
     return tuple({'class_id':class_id,'class_name':class_name,'subject_id':subject_id,
-                  'subject_name':subject_name,'department':department}
-                 for class_id,class_name,subject_id,subject_name,department in tuples(
+                  'subject_name':subject_name,'department':department,'subdivision_id':subdivision_id}
+                 for class_id,class_name,subject_id,subject_name,department,subdivision_id in tuples(
         select(TeachingDuty.class_id,SchoolClass.name,TeachingDuty.subject_id,SchoolSubject.name,
-               TeachingDuty.department)
+               TeachingDuty.department,TeachingDuty.subdivision_id)
         .join(SchoolClass,SchoolClass.id==TeachingDuty.class_id)
         .outerjoin(SchoolSubject,SchoolSubject.id==TeachingDuty.subject_id)
         .where(TeachingDuty.admin_id==admin_id)
@@ -551,7 +554,8 @@ def _teaching_duties(admin_id):
 
 def teaching_duties(admin_id):
     """What a member of staff teaches (models/auth.py, TeachingDuty): one dict per duty with
-    class_id/class_name, subject_id/subject_name (both None for a class teacher) and department.
+    class_id/class_name, subject_id/subject_name (both None for a class teacher), department, and subdivision_id
+    (a class teacher of one subdivision of the class: core/subdivisions.py; None for the whole class).
     Empty for the School Admin and for anyone who has not been given a duty."""
     admin=_active_admin(admin_id)
     if not admin or admin['admin_type_system']: return ()

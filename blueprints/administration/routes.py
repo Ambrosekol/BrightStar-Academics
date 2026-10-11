@@ -310,7 +310,7 @@ def admin_account_new():
         .order_by(SchoolSubject.name))
     sessions=all_rows(select(AcademicSession.name).where(AcademicSession.active==1)
         .order_by(AcademicSession.name.desc()))
-    duty_options=_duty_form_options(); duties={'class_teacher':[],'subjects':[]}
+    duty_options=_duty_form_options(); duties={'class_teacher':[],'class_teacher_subdivisions':[],'subjects':[]}
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
         duties,duty_errors=_parse_duties(request.form,duty_options)
@@ -434,7 +434,7 @@ def admin_account_edit(aid):
     if request.method=='POST':
         if not csrf_check_request(): abort(403,description='Invalid or missing CSRF token.')
         display=request.form.get('display_name','').strip(); role_ids=[int(x) for x in request.form.getlist('admin_type_ids') if x.isdigit()]; contact=_admin_contact_fields(request.form); scope_type=request.form.get('scope_type','global').strip() or 'global'; scope_values=request.form.getlist('scope_value') or [request.form.get('scope_value','*').strip() or '*']; errors=[]
-        if protected_school_admin: duties={'class_teacher':[],'subjects':[]}   # the School Admin reaches everything
+        if protected_school_admin: duties={'class_teacher':[],'class_teacher_subdivisions':[],'subjects':[]}   # the School Admin reaches everything
         else:
             duties,duty_errors=_parse_duties(request.form,duty_options); errors+=duty_errors
         selected_scope_types=[x.strip() for x in request.form.getlist('scope_types') if x.strip()]

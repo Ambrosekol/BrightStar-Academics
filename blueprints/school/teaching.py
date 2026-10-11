@@ -65,8 +65,9 @@ def admin_school_teaching():
     class_ids = [c['id'] for c in options['duty_classes']]
     names = {aid: name for aid, name in tuples(select(Admin.id, Admin.display_name).where(Admin.active == 1))}
     duties = tuples(select(TeachingDuty.admin_id, TeachingDuty.class_id, TeachingDuty.subject_id,
-                           TeachingDuty.department)
+                           TeachingDuty.department, TeachingDuty.subdivision_id)
                     .where(TeachingDuty.class_id.in_(class_ids or [0])))
+    subdivision_names = {s['id']: s['name'] for c in options['duty_classes'] for s in c.get('subdivisions', [])}
     offered = {}
     for cid, sid, sname in tuples(select(ClassSubject.class_id, ClassSubject.subject_id, SchoolSubject.name)
                                   .join(SchoolSubject, SchoolSubject.id == ClassSubject.subject_id)
@@ -78,9 +79,11 @@ def admin_school_teaching():
     board = []
     for c in options['duty_classes']:
         mine = [d for d in duties if d[1] == c['id'] and d[0] in names]
-        class_teachers = [names[aid] for aid, _cid, sid, _dept in mine if sid is None]
+        # A class teacher of one subdivision is named with it: 'Mrs Bello (JSS 1A)'.
+        class_teachers = [names[aid] + (f' ({subdivision_names.get(sub, "?")})' if sub else '')
+                          for aid, _cid, sid, _dept, sub in mine if sid is None]
         taught = {}
-        for aid, _cid, sid, dept in mine:
+        for aid, _cid, sid, dept, _sub in mine:
             if sid is None:
                 continue
             taught.setdefault(sid, []).append(names[aid] + (f' ({dept})' if dept else ''))
@@ -98,7 +101,8 @@ def admin_school_teaching():
         if not is_teacher or not _may_edit(me, aid):
             continue
         rank = min((LEVEL_RANK[level] for _n, level in roles), default=LEVEL_RANK['executive'])
-        mine = {'class_teacher': [d[1] for d in duties if d[0] == aid and d[2] is None],
+        mine = {'class_teacher': [d[1] for d in duties if d[0] == aid and d[2] is None and not d[4]],
+                'class_teacher_subdivisions': [d[4] for d in duties if d[0] == aid and d[2] is None and d[4]],
                 'subjects': [{'class_id': d[1], 'subject_id': d[2], 'department': d[3] or ''}
                              for d in duties if d[0] == aid and d[2] is not None]}
         teachers.append({'id': aid, 'name': name, 'roles': [n for n, _l in roles],
@@ -121,9 +125,12 @@ def admin_school_teaching_edit(aid):
     reach = {c['id'] for c in options['duty_classes']}
     current = _duties_of(aid)
     # Duties in classes outside this editor's reach are kept as they are, and listed so nobody is surprised.
+    sub_in_reach = {s['id'] for c in options['duty_classes'] for s in c.get('subdivisions', [])}
     outside = {'class_teacher': [c for c in current['class_teacher'] if c not in reach],
+               'class_teacher_subdivisions': [x for x in current['class_teacher_subdivisions'] if x not in sub_in_reach],
                'subjects': [r for r in current['subjects'] if r['class_id'] not in reach]}
     duties = {'class_teacher': [c for c in current['class_teacher'] if c in reach],
+              'class_teacher_subdivisions': [x for x in current['class_teacher_subdivisions'] if x in sub_in_reach],
               'subjects': [r for r in current['subjects'] if r['class_id'] in reach]}
     all_options = _duty_form_options()
     errors = []

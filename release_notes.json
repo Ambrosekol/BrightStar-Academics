@@ -18,6 +18,28 @@
   ],
   "releases": [
     {
+      "version": "2.23.0",
+      "date": "2026-10-11",
+      "title": "Class subdivisions and class transfers",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "JSS and SSS classes can now be split into subdivisions, such as JSS 1A and JSS 1B, JSS 2 Gold, or SS 1A (Science). The School Admin sets them up under Settings, Class subdivisions (with examples on the page) and then locks them. Each subdivision can have its own class teacher, who sees only its students for the register, report card comments and releasing results. Subjects, timetables, fees and results stay whole-class.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "Students are placed in subdivisions automatically, in turn, into the one with the fewest students: when a class is split, when a student is added, and when a candidate is admitted from the entrance examination. In SSS, a subdivision with a department only takes students of that department.",
+          "help": "classes-subjects"
+        },
+        {
+          "audience": "staff",
+          "text": "New menu item, Class transfers: a JSS or SSS class teacher can ask to move a student to another subdivision, or in SSS to another department. Nothing changes until the class teacher the student would join approves it; the School Admin and head teachers can approve, decline or cancel any transfer.",
+          "help": "classes-subjects"
+        }
+      ]
+    },
+    {
       "version": "2.22.3",
       "date": "2026-10-11",
       "title": "The entrance examination workspace redesigned, SSS departments, and smoother page loading",

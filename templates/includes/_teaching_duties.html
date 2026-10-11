@@ -12,6 +12,9 @@
 .td-classes{display:flex;flex-wrap:wrap;gap:8px}
 .td-chip{display:inline-flex !important;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line,#dfe6ef);border-radius:999px;background:#fff;font-size:14px;cursor:pointer}
 .td-chip:has(input:checked){border-color:var(--blue,#1674b9);background:color-mix(in srgb,var(--blue,#1674b9) 9%,#fff);font-weight:600}
+.td-group{display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border:1px dashed var(--line,#dfe6ef);border-radius:999px}
+.td-chip small{font-size:11px;color:#64748b;font-weight:500}
+.td-chip--sub{font-size:13px;padding:5px 10px}
 .td-rows{display:flex;flex-direction:column;gap:8px}
 .td-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center}
 .td-row select{width:100%}
@@ -23,13 +26,21 @@
 @media (max-width:640px){.td-row{grid-template-columns:1fr 1fr}.td-row .td-remove{grid-column:2;justify-self:end}}
 </style>
 {% set dc = duties.class_teacher if duties else [] %}
+{% set dsub = (duties.class_teacher_subdivisions or []) if duties else [] %}
 {% set ds = duties.subjects if duties else [] %}
 <div class="td-block" data-duties>
   <h3>Class teacher of</h3>
-  <p class="td-hint">A class teacher sees every subject of the class, takes its register, writes its report card comments and releases its results. Tick none for a subject-only teacher.</p>
+  <p class="td-hint">A class teacher sees every subject of the class, takes its register, writes its report card comments and releases its results. Tick none for a subject-only teacher. In a class split into subdivisions (Settings, Class subdivisions), tick a subdivision to make them class teacher of its students only.</p>
   <div class="td-classes">
     {% for c in duty_classes %}
+    {% if c.subdivisions %}
+    <span class="td-group">
+      <label class="td-chip"><input type="checkbox" name="duty_class_teacher" value="{{ c.id }}" {% if c.id in dc %}checked{% endif %}> {{ c.name }} <small>whole class</small></label>
+      {% for sub in c.subdivisions %}<label class="td-chip td-chip--sub"><input type="checkbox" name="duty_class_teacher_subdivision" value="{{ sub.id }}" {% if sub.id in dsub %}checked{% endif %}> {{ sub.name }}</label>{% endfor %}
+    </span>
+    {% else %}
     <label class="td-chip"><input type="checkbox" name="duty_class_teacher" value="{{ c.id }}" {% if c.id in dc %}checked{% endif %}> {{ c.name }}</label>
+    {% endif %}
     {% else %}
     <span class="td-hint">No active classes yet. Switch classes on under Classes first.</span>
     {% endfor %}

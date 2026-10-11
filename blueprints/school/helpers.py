@@ -25,6 +25,7 @@ from core.db_helpers import all_rows, group_concat, obj, one, one_scalar, tuples
 from core.security import admin_access_error, admin_has_permission, admin_scope_allows, audit_log, class_teacher_of, current_admin, duty_covers, is_school_admin
 from core.school_structure import class_is_early_years, class_is_senior, early_years_class_ids, takes_subject
 from core.storage import uploads_dir
+from core import subdivisions as subdivision_reach
 from blueprints.finance.helpers import _primary_school_id
 
 # _school_current_session/_students_with_class still live in app.py.
@@ -150,17 +151,19 @@ def _school_form_context():
         classes=[x for x in classes if admin_scope_allows(admin['id'],'class',x['name'])]
         subjects=[x for x in subjects if admin_scope_allows(admin['id'],'subject',x['name'])]
         students=[x for x in students if x['class_name'] and admin_scope_allows(admin['id'],'class',x['class_name'])]
+        students=subdivision_reach.filter_rows(admin['id'],students,'enrolled_class_id')
     return classes,subjects,students,session_row
 
 def _school_student_visible(sid):
     admin=current_admin()
     if admin and admin['admin_type_system']: return True
-    class_name=one_scalar(select(SchoolClass.name)
+    row=one(select(SchoolClass.name,StudentEnrolment.class_id,StudentEnrolment.subdivision_id)
         .select_from(StudentEnrolment)
         .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .where(StudentEnrolment.student_id==sid,StudentEnrolment.active==1)
         .order_by(StudentEnrolment.id.desc()).limit(1))
-    return bool(class_name and admin_scope_allows(admin['id'],'class',class_name))
+    if not row or not admin_scope_allows(admin['id'],'class',row[0]): return False
+    return subdivision_reach.reaches(admin['id'],row[1],row[2])
 
 def _assignment_students(assignment_id):
     return [_flatten(r,'AssignmentStudent','first_name','middle_name','last_name','admission_no')

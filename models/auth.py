@@ -156,6 +156,9 @@ class TeachingDuty(db.Model):
     class_id = db.Column(Integer, ForeignKey('school_classes.id', ondelete='CASCADE'), nullable=False)
     subject_id = db.Column(Integer, ForeignKey('school_subjects.id', ondelete='CASCADE'))
     department = db.Column(Text)
+    # A class teacher of one subdivision of the class (JSS 1A) rather than of the whole class: their register, report
+    # cards and results reach that subdivision's students only (core/subdivisions.py). Empty for the whole class.
+    subdivision_id = db.Column(Integer, ForeignKey('class_subdivisions.id', ondelete='CASCADE'))
     created_at = db.Column(Text, nullable=False)
     created_by = db.Column(Integer, ForeignKey('admins.id'))
 

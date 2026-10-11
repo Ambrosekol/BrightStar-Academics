@@ -294,7 +294,9 @@ def _students_with_class(session_id, include_session_id=False):
     views repeated. Rows are dicts so callers can mutate and use .get() on them
     exactly as they did with the previous dict(row) conversions.
     """
-    cols=[Student,SchoolClass.name.label('class_name')]
+    from models import ClassSubdivision
+    cols=[Student,SchoolClass.name.label('class_name'),StudentEnrolment.class_id.label('enrolled_class_id'),
+          StudentEnrolment.subdivision_id,ClassSubdivision.name.label('subdivision_name')]
     if include_session_id:
         cols.append(StudentEnrolment.session_id)
     rows=all_rows(select(*cols)
@@ -303,9 +305,10 @@ def _students_with_class(session_id, include_session_id=False):
                                          StudentEnrolment.active==1,
                                          StudentEnrolment.session_id==session_id))
         .outerjoin(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
+        .outerjoin(ClassSubdivision,ClassSubdivision.id==StudentEnrolment.subdivision_id)
         .where(Student.active==1)
         .order_by(Student.last_name,Student.first_name))
-    extras=('class_name','session_id') if include_session_id else ('class_name',)
+    extras=('class_name','enrolled_class_id','subdivision_id','subdivision_name')+(('session_id',) if include_session_id else ())
     return [_flatten(r,'Student',*extras) for r in rows]
 
 def _resync_question_count(assessment_id):
@@ -1185,6 +1188,8 @@ import blueprints.school.settings  # noqa: F401,E402
 import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.teaching  # noqa: F401,E402
+import blueprints.school.subdivisions  # noqa: F401,E402
+import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402
 import blueprints.school.student_history_import  # noqa: F401,E402
 import blueprints.school.results_import  # noqa: F401,E402

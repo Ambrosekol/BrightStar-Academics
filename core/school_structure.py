@@ -60,6 +60,19 @@ def is_senior(stage=None, name=None):
             or name_text.startswith('SS2') or name_text.startswith('SS3'))
 
 
+def is_junior_secondary(stage=None, name=None):
+    """A junior secondary class (JSS 1-3, or JS 1-3)."""
+    stage_text = (stage or '').strip().casefold()
+    name_text = (name or '').strip().upper()
+    return (stage_text in ('jss', 'js', 'junior secondary', 'junior')
+            or name_text.startswith('JSS') or name_text.startswith('JS ') or name_text[:3] in ('JS1', 'JS2', 'JS3'))
+
+
+def is_secondary(stage=None, name=None):
+    """A JSS or SSS class: the classes a school may split into subdivisions (core/subdivisions.py)."""
+    return is_junior_secondary(stage, name) or is_senior(stage, name)
+
+
 def _class_kinds():
     """{class_id: (early_years, senior)} for every class, read once per request."""
     def load():

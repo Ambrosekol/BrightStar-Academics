@@ -109,6 +109,7 @@ from .finance import (
     FinanceRefund,
 )
 
+from .subdivisions import ClassSubdivision, ClassTransfer
 from .library import LibraryBook, LibraryLoan
 from .store import StoreItem, StorePurchase
 
@@ -154,6 +155,7 @@ __all__ = [
     'SchoolAssignmentAttemptQuestion', 'SchoolClass',
     'SchoolClassProgression', 'SchoolProject', 'SchoolQuestion',
     'SchoolStudentResult', 'SchoolSubject', 'Student', 'StudentEnrolment',
+    'ClassSubdivision', 'ClassTransfer',
     # admissions
     'StudentAdmissionContact', 'StudentAdmissionProfile',
     'StudentEnrollmentHistory',

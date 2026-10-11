@@ -1,0 +1,146 @@
+{% extends 'admin_base.html' %}
+{% block title %}Class subdivisions — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Settings > Class subdivisions: split a JSS or SSS class into subdivisions (JSS 1A, JSS 2 Gold, SS 1A Science), each
+   with its own class teacher. Saving a class places its students in subdivisions in turn; locking stops every change
+   until the School Admin unlocks it (blueprints/school/subdivisions.py). #}
+{% set split = classes|selectattr('subdivisions')|list %}
+{% set unplaced = classes|sum(attribute='unplaced') %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<style nonce="{{ csp_nonce() }}">
+.sd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 10px; }
+.sd-grid .sd-senior { grid-column: 1 / -1; }
+.sd-class header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.sd-class header h2 { margin: 0; }
+.sd-class header .ac-hint { margin-left: auto; }
+.sd-class .ac-t input[type=text], .sd-class .ac-t select { width: 100%; min-width: 0; }
+.sd-class .ac-t td { vertical-align: middle; }
+.sd-class .sd-num { text-align: right; white-space: nowrap; }
+.sd-class .sd-who { font-size: 11px; color: var(--ac-muted); }
+.sd-class .sd-rm { white-space: nowrap; font-size: 11px; color: var(--ac-attn); }
+.sd-foot { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.sd-foot .ac-hint { margin-right: auto; }
+.sd-examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 6px 0 0; }
+.sd-examples div { border: 1px dashed var(--ac-line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+.sd-examples b { display: block; margin-bottom: 2px; }
+.sd-examples .ac-chips { margin-top: 4px; }
+.sd-lock { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sd-lock form { margin-left: auto; }
+.sd-locked .sd-class input, .sd-locked .sd-class select { background: var(--ac-wash); }
+@media (max-width: 520px) { .sd-grid { grid-template-columns: 1fr; } }
+</style>
+<div class="ac sd{{ ' sd-locked' if lock.locked }}" data-sd>
+<p class="ac-hint" style="margin:0 0 10px">Optional: a class without subdivisions works as before.</p>
+
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>JSS &amp; SSS classes</dt><dd>{{ classes|length }}</dd><small>{{ split|length }} split into subdivisions</small></div>
+  <div><dt>Subdivisions</dt><dd>{{ classes|sum(attribute='subdivisions', start=[])|length }}</dd><small>across every class</small></div>
+  <div class="{{ 'is-alert' if unplaced }}"><dt>Not in a subdivision</dt><dd>{{ unplaced }}</dd><small>{{ 'save the class to place them' if unplaced else 'everyone is placed' }}</small></div>
+  <div class="{{ 'is-lead' if lock.locked }}"><dt>Set-up</dt><dd>{{ 'Locked' if lock.locked else 'Open' }}</dd><small>{{ ('by ' ~ locked_by) if lock.locked and locked_by else ('lock it once it is right' if not lock.locked else '') }}</small></div>
+</dl>
+
+<section class="ac-panel">
+  <div class="sd-lock">
+    {% if lock.locked %}
+    <span class="ac-tag ac-tag--good">Locked</span>
+    <span class="ac-hint">Nobody can add, rename or remove a subdivision until you unlock it. Students still move between subdivisions through Class transfers.</span>
+    {% else %}
+    <span class="ac-tag ac-tag--attn">Open</span>
+    <span class="ac-hint">Set up each class below, then lock it so it is not changed by accident while class teachers rely on it.</span>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin_school_subdivisions_lock') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="lock" value="{{ '0' if lock.locked else '1' }}">
+      <button class="ac-btn{{ '' if lock.locked else ' ac-btn--primary' }}" type="submit">{{ 'Unlock to make changes' if lock.locked else 'Lock subdivisions' }}</button>
+    </form>
+  </div>
+</section>
+
+<section class="ac-panel">
+  <h2>How subdivisions work <small>examples</small></h2>
+  <div class="sd-examples">
+    <div><b>Letters</b>JSS 1 with 90 students, in three subdivisions:<span class="ac-chips"><span class="ac-chip">JSS 1A</span><span class="ac-chip">JSS 1B</span><span class="ac-chip">JSS 1C</span></span></div>
+    <div><b>Names</b>Any name the school uses, such as gems or houses:<span class="ac-chips"><span class="ac-chip">JSS 2 Gold</span><span class="ac-chip">JSS 2 Diamond</span></span></div>
+    <div><b>By department (SSS)</b>A subdivision can be kept to one department:<span class="ac-chips"><span class="ac-chip">SS 1A (Science)</span><span class="ac-chip">SS 1B (Science)</span><span class="ac-chip">SS 1C (Art)</span></span></div>
+  </div>
+  <p class="ac-hint" style="margin:8px 0 0">The class stays one class for subjects, subject teachers, timetable, fees and results. A subdivision's class teacher takes its register, writes its report card comments and releases its results. Students are placed in turn, into the subdivision with the fewest students (in SSS, one of their department's or one with no department). Give each subdivision its class teacher under Teachers.</p>
+</section>
+
+{% if not session_row %}<p class="ac-note">There is no current session yet, so students are placed once one is set under Sessions &amp; terms.</p>{% endif %}
+
+<div class="sd-grid" style="margin-top:10px">
+  {% for c in classes %}
+  <section class="ac-panel sd-class{{ ' sd-senior' if c.senior }}" id="class-{{ c.id }}">
+    <form method="post" action="{{ url_for('admin_school_subdivisions_save', class_id=c.id) }}" data-sd-form>
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <header>
+        <h2>{{ c.name }}</h2>
+        {% if c.senior %}<span class="ac-tag ac-tag--blue">SSS</span>{% else %}<span class="ac-tag">JSS</span>{% endif %}
+        <span class="ac-hint">{{ c.students }} student{{ '' if c.students == 1 else 's' }}{% if c.subdivisions %} · {{ c.subdivisions|length }} subdivisions{% endif %}{% if c.unplaced %} · <b style="color:var(--ac-attn)">{{ c.unplaced }} not placed</b>{% endif %}</span>
+      </header>
+      <div class="ac-scroll"><table class="ac-t">
+        <thead><tr><th>Name</th>{% if c.senior %}<th>Department</th>{% endif %}<th class="sd-num">Students</th><th>Class teacher</th>{% if not lock.locked %}<th></th>{% endif %}</tr></thead>
+        <tbody data-sd-rows>
+        {% for s in c.subdivisions %}
+        <tr>
+          <td><input type="hidden" name="sub_id" value="{{ s.id }}"><input class="ac-input" type="text" name="sub_name" value="{{ s.name }}" maxlength="40" required aria-label="Name"{{ ' disabled' if lock.locked }}></td>
+          {% if c.senior %}<td><select class="ac-select" name="sub_department" aria-label="Department"{{ ' disabled' if lock.locked }}><option value="">Any department</option>{% for d in departments %}<option{{ ' selected' if d == s.department }}>{{ d }}</option>{% endfor %}</select></td>{% endif %}
+          <td class="sd-num">{{ s.students }}</td>
+          <td class="sd-who">{{ s.teachers|join(', ') if s.teachers else '' }}{% if not s.teachers %}<span class="ac-tag ac-tag--attn">None yet</span>{% endif %}</td>
+          {% if not lock.locked %}<td><label class="sd-rm"><input type="checkbox" name="sub_remove" value="{{ s.id }}"> Remove</label></td>{% endif %}
+        </tr>
+        {% endfor %}
+        {% if not lock.locked %}
+        {% for _ in range(2 if not c.subdivisions else 1) %}
+        <tr data-sd-new>
+          <td><input class="ac-input" type="text" name="new_name" maxlength="40" placeholder="e.g. {{ c.name }}{{ 'ABCDEFGHIJKLM'[c.subdivisions|length + loop.index0] }}" aria-label="New subdivision name"></td>
+          {% if c.senior %}<td><select class="ac-select" name="new_department" aria-label="Department"><option value="">Any department</option>{% for d in departments %}<option>{{ d }}</option>{% endfor %}</select></td>{% endif %}
+          <td class="sd-num ac-hint">new</td><td></td><td></td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+      </table></div>
+      {% if not lock.locked %}
+      <div class="sd-foot">
+        <span class="ac-hint">{% if c.subdivisions %}Removing one moves its students into the others and ends its class teacher's duty.{% else %}Not split. Name at least two subdivisions to split it.{% endif %}</span>
+        <button class="ac-btn ac-btn--sm" type="button" data-sd-add>Add another</button>
+        <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Save {{ c.name }}</button>
+      </div>
+      {% endif %}
+    </form>
+  </section>
+  {% else %}
+  <div class="ac-empty"><strong>No JSS or SSS classes</strong>Only junior and senior secondary classes can be split. Switch them on under Classes first.</div>
+  {% endfor %}
+</div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-sd]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var max={{ max_per_class }};
+  root.querySelectorAll('[data-sd-add]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var form=btn.closest('form'), rows=form.querySelector('[data-sd-rows]'), blank=rows.querySelector('[data-sd-new]');
+      if(!blank || rows.querySelectorAll('tr').length >= max) return;
+      var row=blank.cloneNode(true);
+      row.querySelectorAll('input').forEach(function(i){ i.value=''; i.placeholder=''; });
+      row.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; });
+      rows.appendChild(row); row.querySelector('input').focus();
+    });
+  });
+  root.querySelectorAll('[name=sub_remove]').forEach(function(box){
+    box.addEventListener('change', function(){ box.closest('tr').style.opacity = box.checked ? '.5' : ''; });
+  });
+  root.querySelectorAll('[data-sd-form]').forEach(function(form){
+    form.addEventListener('submit', function(e){
+      var removing=form.querySelectorAll('[name=sub_remove]:checked').length;
+      if(removing && !confirm('Remove ' + removing + ' subdivision' + (removing>1?'s':'') + '? Their students move into the others and their class teachers lose that duty.')) e.preventDefault();
+    });
+  });
+})();
+</script>
+{% endblock %}

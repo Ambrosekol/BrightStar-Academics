@@ -20,6 +20,30 @@ chosen on the student's record. A subject can be taken by one, several or all de
 portal keeps to that: a student only sees the tests of subjects their department takes, work issued to the whole class
 only goes to the students who take the subject, and a subject teacher can be limited to one department.</p>
 
+<h2 id="subdivisions">Class subdivisions (JSS and SSS)</h2>
+<p>A large JSS or SSS class can be split into <strong>subdivisions</strong>, such as JSS 1A and JSS 1B,
+JSS 2 Gold and JSS 2 Diamond, or SS 1A (Science) and SS 1C (Art). The School Admin sets them up under
+Settings &rsaquo; <a href="{{ url_for('admin_school_subdivisions') }}">Class subdivisions</a>, where the page
+shows examples, and then <strong>locks</strong> them so they are not changed by accident. Subdivisions are
+optional: a class without them works as before.</p>
+<ul>
+  <li>The class stays one class for its subjects, subject teachers, timetable, fees and results. A subdivision
+  only groups students for their <strong>class teacher</strong>, who takes its register, writes its report card
+  comments and releases its results.</li>
+  <li>Give each subdivision its class teacher under Teachers (or on the staff form): tick the subdivision instead of
+  the whole class.</li>
+  <li>Students are placed automatically, in turn, into the subdivision with the fewest students: when a class is
+  first split, when a student is added from the staff portal, and when a candidate is admitted from the entrance
+  examination. An SSS subdivision given a department only takes students of that department.</li>
+  <li>Removing a subdivision moves its students into the others and ends its class teacher's duty.</li>
+</ul>
+<p><strong>Class transfers.</strong> To move a student to another subdivision (or, in SSS, another department),
+their class teacher opens <a href="{{ url_for('admin_school_transfers') }}">Class transfers</a> and asks for it.
+Nothing changes until the class teacher of the subdivision the student would join approves it; then the student
+leaves the first teacher's lists and appears in theirs. The School Admin and head teachers can approve, decline or
+cancel any transfer, and approve the ones nobody else can (a subdivision without a class teacher, or a department
+change in a class without subdivisions).</p>
+
 <h2 id="sessions">Sessions and terms</h2>
 <p>An <strong>academic session</strong> is a school year, e.g. "2025/2026" — set up and switched under
 <a href="{{ url_for('admin_school_sessions') }}">Academic Sessions</a>. One session is always the

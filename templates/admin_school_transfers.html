@@ -1,0 +1,186 @@
+{% extends 'admin_base.html' %}
+{% block title %}Class transfers — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Class transfers: a class teacher asks to move a student to another subdivision of the class (or, in SSS, another
+   department); the class teacher of the subdivision the student would join approves or declines it. Nothing moves
+   until it is approved (blueprints/school/transfers.py). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<style nonce="{{ csp_nonce() }}">
+.ct-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 10px; align-items: start; }
+.ct-grid > * { min-width: 0; }
+.ct-form .ac-field { display: grid; width: 100%; gap: 3px; margin-bottom: 8px; font-size: 12px; }
+.ct-form .ac-field[hidden] { display: none; }
+.ct-form .ac-field > span { font-weight: 600; }
+.ct-form select, .ct-form textarea { width: 100%; }
+.ct-form textarea { min-height: 56px; resize: vertical; font: inherit; font-size: 12px; padding: 4px 8px; border: 1px solid var(--ac-line); border-radius: 6px; background: var(--ac-surface); color: var(--ac-ink); }
+.ct-now { font-size: 11px; color: var(--ac-muted); margin: -4px 0 8px; min-height: 14px; }
+.ct-move { white-space: nowrap; }
+.ct-move b { font-weight: 600; }
+.ct-arrow { color: var(--ac-muted); margin: 0 4px; }
+.ct-why { display: block; font-size: 11px; color: var(--ac-muted); max-width: 320px; }
+.ct-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.ct-actions form { display: inline-flex; gap: 4px; align-items: center; }
+.ct-actions input[type=text] { width: 130px; }
+@media (max-width: 900px) { .ct-grid { grid-template-columns: 1fr; } .ct-form { order: -1; } }
+@media (max-width: 600px) { .ct-actions { justify-content: flex-start; } .ct-actions input[type=text] { width: 100%; } .ct-move { white-space: normal; } }
+</style>
+<div class="ac ct" data-ct>
+<header class="ac-top">
+  <h1>Class transfers</h1>
+  <span class="ac-hint">Move a student to another subdivision{% if classes|selectattr('senior')|list %} or department{% endif %}. Nothing changes until the class teacher they would join approves it.</span>
+</header>
+
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<dl class="fi-k">
+  <div class="{{ 'is-alert' if incoming else 'is-lead' }}"><dt>Waiting for you</dt><dd>{{ incoming|length }}</dd><small>{{ 'approve or decline below' if incoming else 'nothing to decide' }}</small></div>
+  <div><dt>Waiting on others</dt><dd>{{ outgoing|length }}</dd><small>{{ 'asked, not decided yet' }}</small></div>
+  <div><dt>Approved</dt><dd>{{ history|selectattr('status', 'equalto', 'approved')|list|length }}</dd><small>recent transfers made</small></div>
+  <div><dt>Your students</dt><dd>{{ students|length }}</dd><small>you can ask to move</small></div>
+</dl>
+
+<div class="ct-grid">
+<div>
+  <section class="ac-panel">
+    <h2>Waiting for your approval <small>{{ incoming|length }}</small></h2>
+    {% if incoming %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Student</th><th>Move</th><th>Asked by</th><th></th></tr></thead>
+      <tbody>{% for t in incoming %}
+      <tr>
+        <td><b>{{ t.student }}</b><span class="ct-why">{{ t.number }}{% if t.reason %} · “{{ t.reason }}”{% endif %}</span></td>
+        <td class="ct-move">{{ t.from }}<span class="ct-arrow">→</span><b>{{ t.to }}</b>{% if t.department_change %}<span class="ct-why">{{ t.from_department or 'No department' }} → <b>{{ t.to_department }}</b></span>{% endif %}</td>
+        <td>{{ t.requested_by }}<span class="ct-why">{{ t.requested_at }}</span></td>
+        <td><div class="ct-actions">
+          <form method="post" action="{{ url_for('admin_school_transfers_approve', tid=t.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_school_transfers_decline', tid=t.id) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input class="ac-input" type="text" name="note" maxlength="{{ max_reason }}" placeholder="Why (optional)" aria-label="Why it is declined">
+            <button class="ac-btn ac-btn--sm ac-btn--danger" type="submit">Decline</button>
+          </form>
+        </div></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty"><strong>Nothing waiting for you</strong>When a class teacher asks to move a student into your subdivision, it appears here.</div>
+    {% endif %}
+  </section>
+
+  <section class="ac-panel">
+    <h2>Waiting on others <small>{{ outgoing|length }}</small></h2>
+    {% if outgoing %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Student</th><th>Move</th><th>Waiting for</th><th></th></tr></thead>
+      <tbody>{% for t in outgoing %}
+      <tr>
+        <td><b>{{ t.student }}</b><span class="ct-why">{{ t.number }}{% if t.reason %} · “{{ t.reason }}”{% endif %}</span></td>
+        <td class="ct-move">{{ t.from }}<span class="ct-arrow">→</span><b>{{ t.to }}</b>{% if t.department_change %}<span class="ct-why">{{ t.from_department or 'No department' }} → <b>{{ t.to_department }}</b></span>{% endif %}</td>
+        <td>{{ t.approvers }}<span class="ct-why">asked by {{ 'you' if t.mine else t.requested_by }}, {{ t.requested_at }}</span></td>
+        <td>{% if t.can_cancel %}<div class="ct-actions"><form method="post" action="{{ url_for('admin_school_transfers_cancel', tid=t.id) }}" data-ct-cancel>
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="ac-btn ac-btn--sm" type="submit">Cancel</button>
+        </form></div>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty"><strong>Nothing waiting</strong>A transfer you ask for stays here until it is approved or declined. The student stays with you until then.</div>
+    {% endif %}
+  </section>
+
+  <section class="ac-panel">
+    <h2>History <small>most recent first</small></h2>
+    {% if history %}
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Student</th><th>Move</th><th>Outcome</th><th>Asked by</th></tr></thead>
+      <tbody>{% for t in history %}
+      <tr>
+        <td><b>{{ t.student }}</b><span class="ct-why">{{ t.number }}</span></td>
+        <td class="ct-move">{{ t.from }}<span class="ct-arrow">→</span>{{ t.to }}{% if t.department_change %}<span class="ct-why">{{ t.from_department or 'No department' }} → {{ t.to_department }}</span>{% endif %}</td>
+        <td><span class="ac-tag {{ 'ac-tag--good' if t.status == 'approved' else ('ac-tag--alert' if t.status == 'declined' else '') }}">{{ t.status|capitalize }}</span><span class="ct-why">{{ t.decided_by }}{% if t.decided_at %}, {{ t.decided_at }}{% endif %}{% if t.note and t.status != 'cancelled' %} · “{{ t.note }}”{% endif %}</span></td>
+        <td>{{ t.requested_by }}<span class="ct-why">{{ t.requested_at }}</span></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="ac-empty"><strong>No transfers yet</strong>Approved, declined and cancelled transfers are kept here.</div>
+    {% endif %}
+  </section>
+</div>
+
+<aside class="ac-panel ct-form">
+  <h2>Ask for a transfer</h2>
+  {% if not session_row %}
+  <p class="ac-note">There is no current session yet, so nobody can be transferred.</p>
+  {% elif not students %}
+  <div class="ac-empty"><strong>No students to move</strong>{% if classes %}Your classes have no students this session yet.{% else %}Transfers are for classes split into subdivisions under Settings, or SSS classes.{% endif %}</div>
+  {% else %}
+  <form method="post" action="{{ url_for('admin_school_transfers_request') }}" data-ct-form>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="ac-field"><span>Student</span>
+      <select class="ac-select" name="student_id" required data-ct-student>
+        <option value="">Choose a student</option>
+        {% for c in classes %}{% set mine = students|selectattr('class_id', 'equalto', c.id)|list %}{% if mine %}
+        <optgroup label="{{ c.name }}">{% for s in mine %}
+          <option value="{{ s.id }}" data-class="{{ s.class_id }}" data-sub="{{ s.subdivision_id or '' }}" data-dept="{{ s.department or '' }}" data-now="{{ s.subdivision or c.name }}{% if c.senior %} · {{ s.department or 'no department yet' }}{% endif %}"{{ ' disabled' if s.pending }}{{ ' selected' if form.student_id == s.id|string }}>{{ s.name }}{% if s.subdivision %} ({{ s.subdivision }}){% endif %}{% if s.pending %} · transfer waiting{% endif %}</option>
+        {% endfor %}</optgroup>
+        {% endif %}{% endfor %}
+      </select>
+    </label>
+    <p class="ct-now" data-ct-now></p>
+    <label class="ac-field" data-ct-subfield><span>Move to subdivision</span>
+      <select class="ac-select" name="to_subdivision_id" data-ct-sub>
+        <option value="">Choose a subdivision</option>
+        {% for c in classes %}{% for s in c.subdivisions %}
+        <option value="{{ s.id }}" data-class="{{ c.id }}" data-dept="{{ s.department }}"{{ ' selected' if form.to_subdivision_id == s.id|string }}>{{ s.name }}{% if s.department %} ({{ s.department }}){% endif %}</option>
+        {% endfor %}{% endfor %}
+      </select>
+    </label>
+    <label class="ac-field" data-ct-deptfield hidden><span>Department <small class="ac-hint">SSS only; leave as it is to keep it</small></span>
+      <select class="ac-select" name="to_department" data-ct-dept>
+        <option value="">Keep the current department</option>
+        {% for d in departments %}<option{{ ' selected' if form.to_department == d }}>{{ d }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="ac-field"><span>Reason <small class="ac-hint">optional, seen by whoever approves it</small></span>
+      <textarea name="reason" maxlength="{{ max_reason }}" placeholder="e.g. Better suited to Science; parents asked">{{ form.reason or '' }}</textarea>
+    </label>
+    <button class="ac-btn ac-btn--primary" type="submit">Ask for the transfer</button>
+    <p class="ac-hint" style="margin:8px 0 0">The student stays in your list until the class teacher of the subdivision they would join approves it{% if overseer %} (or you approve it yourself, as School Admin or head teacher){% else %}; the School Admin or a head teacher can approve it too{% endif %}.</p>
+  </form>
+  {% endif %}
+</aside>
+</div>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-ct]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-ct-form]');
+  root.querySelectorAll('[data-ct-cancel]').forEach(function(f){
+    f.addEventListener('submit', function(e){ if(!confirm('Cancel this transfer? The student stays where they are.')) e.preventDefault(); });
+  });
+  if(!form) return;
+  var student=form.querySelector('[data-ct-student]'), sub=form.querySelector('[data-ct-sub]'), dept=form.querySelector('[data-ct-dept]');
+  var subField=form.querySelector('[data-ct-subfield]'), deptField=form.querySelector('[data-ct-deptfield]'), now=form.querySelector('[data-ct-now]');
+  var senior={ {% for c in classes %}'{{ c.id }}': {{ 'true' if c.senior else 'false' }}{{ ',' if not loop.last }}{% endfor %} };
+  function apply(){
+    var opt=student.options[student.selectedIndex], cls=opt && opt.dataset.class;
+    var wanted=dept.value || (opt && opt.dataset.dept) || '', any=0;
+    now.textContent = cls ? 'Now in ' + opt.dataset.now : '';
+    deptField.hidden = !(cls && senior[cls]);
+    Array.prototype.forEach.call(sub.options, function(o){
+      if(!o.value) return;
+      var ok = cls && o.dataset.class===cls && (!senior[cls] || !wanted || !o.dataset.dept || o.dataset.dept===wanted);
+      o.hidden = !ok; o.disabled = !ok; if(ok) any++;
+      if(ok && o.value===opt.dataset.sub) o.textContent = o.textContent.replace(/ · now$/,'') + ' · now';
+    });
+    if(sub.selectedOptions[0] && sub.selectedOptions[0].disabled) sub.value='';
+    subField.hidden = !!cls && !any;
+    sub.required = !subField.hidden && !!cls;
+  }
+  student.addEventListener('change', apply); dept.addEventListener('change', apply); apply();
+})();
+</script>
+{% endblock %}

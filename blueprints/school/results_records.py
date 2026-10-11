@@ -24,6 +24,7 @@ from sqlalchemy import and_, case, func, or_, select
 from app import ACADEMIC_TERMS, _release_due_school_results, _school_current_session, app
 from blueprints.school.helpers import _may_release_class, _school_class_allowed, _school_pair_allowed
 from blueprints.school.result_notices import announce_ready_report_cards
+from core import subdivisions as subdivision_reach
 from core.db_helpers import all_rows, one_scalar, tuples, _flatten
 from core.security import (
     admin_access_error, admin_covers_whole_school, admin_has_permission, admin_required,
@@ -110,9 +111,18 @@ def admin_school_results():
 
 def _students_taught(admin, class_id, students):
     """A subject teacher whose duties in this class are all limited to departments sees only the students
-    of those departments (and any whose department is not set yet). Everyone else sees the whole class."""
+    of those departments (and any whose department is not set yet). The class teacher of a subdivision (JSS 1A)
+    sees the students of that subdivision. Everyone else sees the whole class."""
     if not admin or admin['admin_type_system']:
         return students
+    limit = subdivision_reach.teacher_subdivisions(admin['id'], class_id)
+    if limit is not None:
+        current = _school_current_session()
+        placed = {sid for (sid,) in tuples(select(StudentEnrolment.student_id).where(
+            StudentEnrolment.class_id == class_id, StudentEnrolment.active == 1,
+            StudentEnrolment.session_id == (current['id'] if current else 0),
+            StudentEnrolment.subdivision_id.in_(limit)))}
+        return [s for s in students if s['id'] in placed]
     duties = [d for d in teaching_duties(admin['id']) if d['class_id'] == class_id]
     if not duties or any(d['subject_id'] is None or not d['department'] for d in duties):
         return students
@@ -191,7 +201,7 @@ def admin_school_results_release_term():
         .order_by(StudentEnrolment.id.desc()).limit(1)) if student_id else None
     if not student_id or not session_id or term not in TERMS or not class_id:
         abort(404)
-    if not _may_release_class(me['id'], class_id):
+    if not _may_release_class(me['id'], class_id) or not _students_taught(me, class_id, [{'id': student_id}]):
         return admin_access_error('Releasing results is for the class teacher of this class')
     back = results_return_url(url_for('admin_school_results'))
 
@@ -255,12 +265,12 @@ def admin_school_results_release_class():
         return render_template('admin_school_results_release_class.html', class_row=class_row, mode='release',
                                sessions=sessions, terms=TERMS, session_id=None, term=None, preview=None)
 
-    students = [dict(r) for r in all_rows(
+    students = _students_taught(me, class_row.id, [dict(r) for r in all_rows(
         select(Student.id, Student.admission_no, Student.first_name, Student.last_name)
         .join(StudentEnrolment, and_(StudentEnrolment.student_id == Student.id,
                                      StudentEnrolment.active == 1, StudentEnrolment.class_id == class_row.id))
         .where(Student.active == 1).distinct()
-        .order_by(Student.last_name, Student.first_name, Student.id))]
+        .order_by(Student.last_name, Student.first_name, Student.id))])
 
     preview = []
     allowed = {}

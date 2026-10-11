@@ -20,6 +20,7 @@ from sqlalchemy import select
 
 from app import ACADEMIC_TERMS, _release_due_school_results, _school_current_session, app
 from blueprints.school.helpers import _class_teacher_allowed
+from core import subdivisions as subdivision_reach
 from blueprints.school.report_card_data import (
     HEAD_TITLES, MAX_COMMENT_LENGTH, SETTING_HEAD_NAME, SETTING_HEAD_SIGNATURE, SETTING_HEAD_TITLE,
     SETTING_NEXT_TERM, TRAIT_GROUPS, TRAIT_SCALE, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
@@ -81,7 +82,12 @@ def _may_see(student_id, session_id):
     class_id = _class_of(student_id, session_id)
     if class_id is None:
         return bool(me['admin_type_system'])
-    return _class_teacher_allowed(me['id'], class_id)
+    if not _class_teacher_allowed(me['id'], class_id):
+        return False
+    # The class teacher of a subdivision (JSS 1A) works on the cards of that subdivision only.
+    subdivision_id = db.session.scalar(select(StudentEnrolment.subdivision_id).where(
+        StudentEnrolment.student_id == student_id, StudentEnrolment.session_id == session_id, StudentEnrolment.active == 1))
+    return subdivision_reach.reaches(me['id'], class_id, subdivision_id)
 
 
 def _file_name(card):
