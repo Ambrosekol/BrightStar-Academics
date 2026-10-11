@@ -97,6 +97,29 @@
 </div></div>
 </main>
 {#- Opening a workspace dims this page and spins its Enter button until the workspace arrives (static/page-loading.js). -#}
+{#- One press only: the first door pressed locks both until this page is loaded again (a refresh). Its button shows a
+    spinner in place of its words; the other door fades. Nothing clears the lock - not the loader giving up after a
+    while, not coming Back to this page from the browser's memory - so a second press can never start a second
+    workspace on its way. Runs before static/page-loading.js, so a press it refuses is never marked as loading. -#}
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var list = document.querySelector('.ws-choices'), chosen = null;
+  if (!list) return;
+  document.addEventListener('click', function (e) {
+    var door = e.target.closest && e.target.closest('a.ws-choice');
+    if (!door) return;
+    if (chosen) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // a new tab: nothing leaves
+    chosen = door;
+    list.classList.add('is-going');
+    door.classList.add('is-chosen');
+    Array.prototype.forEach.call(list.querySelectorAll('a.ws-choice'), function (a) {
+      a.setAttribute('aria-disabled', 'true'); a.setAttribute('tabindex', '-1');
+    });
+    door.setAttribute('aria-busy', 'true');
+  }, true);
+})();
+</script>
 <script src="{{ url_for('static', filename='page-loading.js') }}"></script>
 </body>
 </html>

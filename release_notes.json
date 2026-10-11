@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.23.2",
+      "date": "2026-10-11",
+      "title": "Workspace Home answers one press",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "On Workspace Home, pressing Enter on a workspace now shows a spinner in place of the button's words, and neither button can be pressed again until the page is reloaded, so a workspace can no longer be opened twice by pressing again while it loads.",
+          "help": "welcome"
+        }
+      ]
+    },
+    {
       "version": "2.23.1",
       "date": "2026-10-11",
       "title": "Recording a store payment works again, and workspaces open sooner",

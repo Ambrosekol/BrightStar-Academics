@@ -173,7 +173,10 @@ stylesheet instead of each fetching its own; fonts are no longer fetched twice (
 stylesheet (a round trip before the first paint); and the workspace chooser prefetches the staff frame's styles and
 scripts while it is read, so the workspace is drawn the moment it arrives. While a workspace is on its way, the chooser
 takes the workspace's own frame (a stand-in for its menu rail on the left, the outline where its content goes, and no
-chooser role line or Sign out), so the wait looks like the workspace arriving rather than the chooser still waiting.</p>
+chooser role line or Sign out), so the wait looks like the workspace arriving rather than the chooser still waiting.
+The chooser answers one press only: a small script on {{ file('templates/admin_workspace_home.html') }} locks both doors
+on the first press (the chosen button shows a spinner in place of its words, the other fades) and nothing unlocks them
+- not the loader giving up, not Back from the browser's memory - until the page is loaded again.</p>
 <div class="warn"><p>Scripts that send forms read <code>form.getAttribute('method')</code>, <code>'action'</code> and
 <code>'target'</code>, never <code>form.method</code> and the like: a field named <code>method</code> (the store's Cash /
 Bank transfer / POS radio buttons) or <code>target</code> replaces the property, and {{ file('static/inplace.js') }} once

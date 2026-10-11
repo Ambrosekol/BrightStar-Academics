@@ -847,6 +847,19 @@ html.rail-locked { overflow: hidden; }
 .ws .ws-choice:hover .ws-choice__go:not(.ac-btn--primary) { border-color: var(--ac-accent); color: var(--ac-accent-strong); }
 .ws .ws-choice:hover .ws-choice__go.ac-btn--primary { background: var(--ac-accent-strong); border-color: var(--ac-accent-strong); }
 
+/* One press only (templates/admin_workspace_home.html): once a door is pressed both stop answering until the page is
+   loaded again; the chosen one's button shows a spinner in place of its words, and the other door fades. */
+.ws-choices.is-going .ws-choice { pointer-events: none; cursor: default; }
+.ws-choices.is-going .ws-choice:not(.is-chosen) { opacity: .5; }
+.ws-choice.is-chosen .ws-choice__go { position: relative; color: transparent !important; }
+.ws-choice.is-chosen .ws-choice__go::before { display: none; }   /* page-loading.js's own small spinner: one is enough */
+.ws-choice.is-chosen .ws-choice__go::after {
+    content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; box-sizing: border-box;
+    border: 2px solid var(--ws-spin, var(--ac-accent)); border-right-color: transparent; border-radius: 50%;
+    animation: ui-spin .7s linear infinite; }
+.ws-choice.is-chosen .ws-choice__go.ac-btn--primary { --ws-spin: #fff; }
+@media (prefers-reduced-motion: reduce) { .ws-choice.is-chosen .ws-choice__go::after { animation-duration: 2s; } }
+
 /* Leaving for a workspace (static/page-loading.js puts the outline on .bs-stage): the page takes the workspace's own
    frame - its menu rail down the left and its content from the left, without the chooser's role line and Sign out -
    so the wait already looks like the workspace arriving rather than the chooser still waiting. */
