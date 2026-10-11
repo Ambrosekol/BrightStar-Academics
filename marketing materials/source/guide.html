@@ -1,0 +1,1294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brightstars Academics — The School Platform Guide</title>
+<style>
+@font-face { font-family: "Newsreader"; font-weight: 500; src: url(assets/fonts/newsreader-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Newsreader"; font-weight: 600; src: url(assets/fonts/newsreader-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 400; src: url(assets/fonts/public-sans-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 500; src: url(assets/fonts/public-sans-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 600; src: url(assets/fonts/public-sans-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 700; src: url(assets/fonts/public-sans-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; src: url(assets/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); }
+
+:root {
+  --blue: #0a1a8f; --blue-deep: #070f5c; --navy: #0b1d4d; --blue-soft: #e9ecfb; --blue-tint: #f4f5fd;
+  --red: #d8261d; --red-deep: #b01a12; --red-soft: #fdeceb;
+  --teal: #0f766e; --teal-soft: #e3f1ef;
+  --ink: #12163a; --body: #3d4266; --muted: #6b6f87; --mono-muted: #8a8469;
+  --line: #ded8c8; --line-strong: #b9b2a0; --paper: #f5f1e8; --surface: #fffefb;
+  --ok: #1d7a4b; --ok-soft: #e3f0e8; --warn: #9a6400; --warn-soft: #fbf1dc;
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Public Sans", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; padding: 0; background: #888; }
+body { font: 9.6pt/1.5 var(--sans); color: var(--body); }
+.page { width: 210mm; height: 297mm; position: relative; overflow: hidden; background: var(--paper);
+  page-break-after: always; break-after: page; padding: 20mm 17mm 18mm; margin: 0 auto; }
+.page:last-child { page-break-after: auto; break-after: auto; }
+h1, h2, h3, h4 { font-family: var(--serif); color: var(--ink); font-weight: 600; margin: 0; letter-spacing: -0.01em; line-height: 1.1; }
+h2 { font-size: 27pt; margin-bottom: 4mm; }
+h3 { font-size: 13pt; margin-bottom: 1.6mm; }
+h4 { font-family: var(--sans); font-size: 9.6pt; font-weight: 700; margin-bottom: 1mm; letter-spacing: 0; }
+p { margin: 0 0 2.6mm; }
+.eyebrow { font: 400 7.6pt/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red); margin-bottom: 3.2mm; display: flex; align-items: center; gap: 2.5mm; }
+.eyebrow::before { content: ""; width: 7mm; height: 1.4px; background: var(--red); display: inline-block; }
+.lead { font-size: 11.6pt; line-height: 1.5; color: var(--body); max-width: 160mm; }
+.mono { font-family: var(--mono); }
+.small { font-size: 8.2pt; }
+.muted { color: var(--muted); }
+strong { color: var(--ink); font-weight: 600; }
+
+/* running header / footer */
+.run { position: absolute; left: 17mm; right: 17mm; top: 8.5mm; display: flex; justify-content: space-between; align-items: center;
+  font: 7pt/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--mono-muted); }
+.run img { height: 5.2mm; vertical-align: middle; margin-right: 2mm; }
+.run span.l { display: flex; align-items: center; }
+.foot { position: absolute; left: 17mm; right: 17mm; bottom: 8mm; display: flex; justify-content: space-between;
+  font: 7pt/1 var(--mono); color: var(--mono-muted); letter-spacing: .08em; border-top: 1px solid var(--line); padding-top: 2.4mm; }
+.foot .pn { color: var(--red); font-weight: 600; }
+
+/* generic blocks */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3.5mm; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 3mm; padding: 4.2mm 4.4mm; }
+.card.blue { background: var(--blue-tint); border-color: #d5daf5; }
+.card.navy { background: var(--navy); border-color: var(--navy); color: #d9def5; }
+.card.navy h3, .card.navy h4, .card.navy strong { color: #fff; }
+.ico { width: 9mm; height: 9mm; border-radius: 2.2mm; background: var(--blue-soft); display: grid; place-items: center; margin-bottom: 2.6mm; }
+.ico svg { width: 5.2mm; height: 5.2mm; stroke: var(--blue); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ico.red { background: var(--red-soft); } .ico.red svg { stroke: var(--red); }
+.ico.teal { background: var(--teal-soft); } .ico.teal svg { stroke: var(--teal); }
+ul.ticks { list-style: none; padding: 0; margin: 0; }
+ul.ticks li { position: relative; padding-left: 5.4mm; margin-bottom: 1.9mm; }
+ul.ticks li::before { content: ""; position: absolute; left: 0; top: 1.2mm; width: 3.2mm; height: 3.2mm; border-radius: 50%;
+  background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+ul.ticks.red li::before { background-color: var(--red); }
+.pill { display: inline-block; font: 600 7pt/1 var(--sans); padding: 1.2mm 2.2mm; border-radius: 10mm; background: var(--blue-soft); color: var(--blue); margin: 0 1mm 1mm 0; }
+.pill.red { background: var(--red-soft); color: var(--red-deep); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.teal { background: var(--teal-soft); color: var(--teal); }
+.rule { height: 1px; background: var(--line); margin: 5mm 0; }
+.shot { border-radius: 2.4mm; border: 1px solid var(--line-strong); overflow: hidden; background: #fff; box-shadow: 0 3mm 7mm rgba(18,22,58,.12); }
+.shot img { display: block; width: 100%; }
+.shot .bar { height: 5mm; background: #e9e5da; display: flex; align-items: center; gap: 1.2mm; padding: 0 2.4mm; border-bottom: 1px solid var(--line); }
+.shot .bar i { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: #c9c2b0; display: block; }
+.shot .bar b { margin-left: 3mm; font: 400 6.4pt/1 var(--mono); color: var(--muted); background: #fff; padding: .9mm 3mm; border-radius: 2mm; }
+.shot.crop img { object-fit: cover; object-position: top left; }
+.band-cta { background: var(--navy); color:#c9cff0; border-radius:3mm; padding:5mm 6mm; display:flex; align-items:center; gap:6mm; }
+.band-cta h3 { color:#fff; font-size:14pt; margin:0 0 1mm; }
+.band-cta .go { margin-left:auto; flex:none; background: var(--red); color:#fff; font:700 9pt/1 var(--sans); padding:3mm 5mm; border-radius:10mm; }
+.caption { font: 400 7.2pt/1.4 var(--mono); color: var(--mono-muted); margin-top: 2.2mm; }
+.quote { font-family: var(--serif); font-size: 14pt; line-height: 1.32; color: var(--ink); border-left: 1.2mm solid var(--red); padding: 1mm 0 1mm 5mm; }
+.kicker { font: 600 7.4pt/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin-bottom: 1.6mm; }
+table { border-collapse: collapse; width: 100%; }
+.num { font-family: var(--serif); font-weight: 600; color: var(--blue); line-height: 1; }
+
+/* ---------- cover ---------- */
+.cover { background: var(--navy); color: #fff; padding: 0; }
+.cover .stars { position: absolute; inset: 0; }
+.cover .plate { position: absolute; left: 17mm; top: 20mm; background: #fff; border-radius: 3mm; padding: 4mm 6mm; }
+.cover .plate img { height: 17mm; display: block; }
+.cover .title { position: absolute; left: 17mm; right: 17mm; top: 92mm; }
+.cover .title .ey { font: 400 8.4pt/1 var(--mono); letter-spacing: .22em; text-transform: uppercase; color: #ff8f88; margin-bottom: 6mm; }
+.cover h1 { color: #fff; font-size: 46pt; line-height: 1.02; letter-spacing: -0.02em; }
+.cover h1 em { font-style: italic; color: #ffb3ae; font-weight: 500; }
+.cover .sub { font-size: 13pt; line-height: 1.5; color: #c9cff0; margin-top: 7mm; max-width: 140mm; }
+.cover .band { position: absolute; left: 0; right: 0; bottom: 0; height: 52mm; background: var(--paper); color: var(--body); padding: 9mm 17mm; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5mm; }
+.cover .band::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2.2mm; background: linear-gradient(90deg, var(--red) 0 30%, var(--blue) 30% 100%); }
+.cover .band .k { font: 400 7pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--mono-muted); margin-top: 2mm; }
+.cover .band .v { font-family: var(--serif); font-size: 13pt; color: var(--ink); font-weight: 600; line-height: 1.15; }
+.cover .edition { position: absolute; right: 17mm; top: 27mm; font: 400 7.6pt/1.6 var(--mono); color: #9aa5dc; text-align: right; letter-spacing: .1em; text-transform: uppercase; }
+
+/* stats */
+.stat { border-top: 1.4mm solid var(--blue); background: var(--surface); padding: 4mm; border-radius: 0 0 2.4mm 2.4mm; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.stat.red { border-top-color: var(--red); }
+.stat.teal { border-top-color: var(--teal); }
+.stat .num { font-size: 26pt; }
+.stat .num.red { color: var(--red); } .stat .num.teal { color: var(--teal); }
+.stat .l { font-size: 8.2pt; color: var(--body); margin-top: 1.6mm; line-height: 1.35; }
+
+.toc { columns: 2; column-gap: 8mm; }
+.toc div { display: flex; gap: 3mm; border-bottom: 1px dotted var(--line-strong); padding: 1.7mm 0; break-inside: avoid; font-size: 9pt; }
+.toc div b { font: 400 8pt/1.4 var(--mono); color: var(--red); width: 7mm; }
+.toc div span { flex: 1; color: var(--ink); }
+.toc div i { font-style: normal; font-family: var(--mono); font-size: 8pt; color: var(--muted); }
+
+/* comparison */
+.cmp th { font: 600 8pt/1.2 var(--sans); text-align: left; padding: 3mm 2.6mm; color: var(--ink); border-bottom: 1.6px solid var(--ink); vertical-align: bottom; }
+.cmp th.us { background: var(--navy); color: #fff; border-radius: 2mm 2mm 0 0; border-bottom-color: var(--navy); }
+.cmp td { padding: 2.25mm 2.6mm; border-bottom: 1px solid var(--line); font-size: 8.2pt; vertical-align: top; line-height: 1.35; }
+.cmp td:first-child { font-weight: 600; color: var(--ink); width: 30mm; }
+.cmp td.us { background: var(--blue-tint); color: var(--ink); border-left: 1px solid #d5daf5; border-right: 1px solid #d5daf5; }
+.mk { display: inline-block; width: 3.6mm; height: 3.6mm; border-radius: 50%; vertical-align: -0.6mm; margin-right: 1.2mm; }
+.mk.y { background: var(--ok); } .mk.p { background: #d9a43a; } .mk.n { background: #c8c2b2; }
+
+.step { display: grid; grid-template-columns: 12mm 1fr; gap: 3mm; margin-bottom: 4mm; }
+.step .n { width: 11mm; height: 11mm; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font: 600 13pt/1 var(--serif); }
+.faq { break-inside: avoid; margin-bottom: 3.6mm; }
+.faq h4 { font-family: var(--serif); font-size: 11pt; font-weight: 600; margin-bottom: 1mm; }
+.faq p { font-size: 8.7pt; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- reusable icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-exam" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M8 10.5l3 3 5-6"/></symbol>
+  <symbol id="i-admit" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M17 9l2 2 3.5-4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 12.5l3 3 6-7"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H20"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4.5"/><path d="M11.5 11.5L20 3M16 7l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-pay" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6.5 15h4"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="M18 3l3 3-9.5 9.5-3-3z"/><path d="M8.5 12.5c-2.5 0-4 1.6-4 4 0 1.5-.8 2.6-2 3.5 3.5.5 8-.6 8-4.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14.5c2.4 0 4 1.5 4.6 4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M4 15v5h16v-5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 100 100"><path d="M50 2 L61.2 34.6 L95.6 35.2 L68.1 55.9 L78.2 88.8 L50 69 L21.8 88.8 L31.9 55.9 L4.4 35.2 L38.8 34.6 Z"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+</defs>
+</svg>
+
+<!-- =============================== 1. COVER =============================== -->
+<section class="page cover">
+  <svg class="stars" viewBox="0 0 210 297" preserveAspectRatio="none">
+    <g fill="none" stroke="#1b3277" stroke-width="0.5">
+      <use href="#i-star" x="98" y="-18" width="150" height="150"/>
+      <use href="#i-star" x="120" y="4" width="105" height="105" stroke="#223c8a"/>
+      <use href="#i-star" x="140" y="24" width="64" height="64" stroke="#2a479a"/>
+    </g>
+    <g fill="#d8261d"><use href="#i-star" x="186" y="140" width="6" height="6"/><use href="#i-star" x="150" y="12" width="4" height="4"/><use href="#i-star" x="22" y="210" width="3.6" height="3.6"/></g>
+    <g fill="#4c66d9"><use href="#i-star" x="196" y="118" width="4" height="4"/><use href="#i-star" x="112" y="70" width="3.2" height="3.2"/></g>
+  </svg>
+  <div class="plate"><img src="assets/brightstars-logo.png" alt="Brightstars"></div>
+  <div class="edition">School Platform Guide<br>Edition 2026 · v2.23</div>
+  <div class="title">
+    <div class="ey">For proprietors, heads &amp; school boards</div>
+    <h1>One platform.<br>Every school <em>its own.</em></h1>
+    <p class="sub">Entrance exams, admissions, results, report cards, attendance, fees, online payments, the school store, the library and parent updates. All of it in one place, under your school's own name, in your own colours, on your own web address.</p>
+  </div>
+  <div class="band">
+    <div><svg width="9mm" height="9mm" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.8"><use href="#i-exam"/></svg><div class="v">Admissions to graduation</div><div class="k">The whole school journey</div></div>
+    <div><svg width="9mm" height="9mm" viewBox="0 0 24 24" fill="none" stroke="#d8261d" stroke-width="1.8"><use href="#i-brush"/></svg><div class="v">Your name, your colours</div><div class="k">Fully branded portal</div></div>
+    <div><svg width="9mm" height="9mm" viewBox="0 0 24 24" fill="none" stroke="#0a1a8f" stroke-width="1.8"><use href="#i-shield"/></svg><div class="v">Records kept apart</div><div class="k">Own database per school</div></div>
+    <div><svg width="9mm" height="9mm" viewBox="0 0 24 24" fill="none" stroke="#d8261d" stroke-width="1.8"><use href="#i-phone"/></svg><div class="v">Naira fees, SMS &amp; email</div><div class="k">Built for Nigerian schools</div></div>
+  </div>
+</section>
+
+<!-- =============================== 2. AT A GLANCE =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>At a glance</span></div>
+  <div class="eyebrow">Welcome</div>
+  <h2>A calmer way to run a school.</h2>
+  <p class="lead">Brightstars Academics is a complete school management platform built for Nigerian primary, junior and senior secondary schools. It replaces the spreadsheets, receipt books, notice boards and phone calls a school runs on with <strong>one connected system</strong>. A mark a teacher enters becomes a report card a parent opens. A payment the bursar records becomes a receipt on the parent's phone within moments.</p>
+  <p class="lead" style="margin-bottom:7mm">This guide explains what the platform does, how each part works, and why schools choose it over spreadsheets, paperwork and other school software.</p>
+
+  <div class="grid4" style="margin-bottom:4mm">
+    <div class="stat"><div class="num">4</div><div class="l">Portals in one: <strong>staff, students, parents</strong> and entrance <strong>candidates</strong></div></div>
+    <div class="stat red"><div class="num red">15+</div><div class="l">Connected modules, from <strong>entrance exams</strong> to the <strong>school store</strong></div></div>
+    <div class="stat teal"><div class="num teal">100+</div><div class="l">Named permissions, so each person sees <strong>only what their job needs</strong></div></div>
+    <div class="stat"><div class="num">19</div><div class="l">Ready-made staff roles, from <strong>Head Teacher</strong> to <strong>Store Keeper</strong></div></div>
+  </div>
+  <div class="grid4" style="margin-bottom:9mm">
+    <div class="stat red"><div class="num red">255</div><div class="l">Standard entrance questions included, so <strong>exams can run on day one</strong></div></div>
+    <div class="stat teal"><div class="num teal">1</div><div class="l">Private database for <strong>each school</strong>. Never shared with another school</div></div>
+    <div class="stat"><div class="num">0</div><div class="l">Brightstars logos on your portal. <strong>Your brand only</strong></div></div>
+    <div class="stat red"><div class="num red">24/7</div><div class="l">Access on phone, tablet or computer. <strong>Installs as an app</strong></div></div>
+  </div>
+
+  <div class="eyebrow">Inside this guide</div>
+  <div class="toc">
+    <div><b>01</b><span>The problem every school knows</span><i>3</i></div>
+    <div><b>02</b><span>One platform, everything connected</span><i>4</i></div>
+    <div><b>03</b><span>A student's journey, start to finish</span><i>5</i></div>
+    <div><b>04</b><span>Your school, your name</span><i>6</i></div>
+    <div><b>05</b><span>Entrance examinations</span><i>7</i></div>
+    <div><b>06</b><span>Admissions &amp; class placement</span><i>8</i></div>
+    <div><b>07</b><span>Results &amp; report cards</span><i>9</i></div>
+    <div><b>08</b><span>The whole school at a glance</span><i>10</i></div>
+    <div><b>09</b><span>Teaching, attendance &amp; timetables</span><i>11</i></div>
+    <div><b>10</b><span>Fees, receipts &amp; collections</span><i>12</i></div>
+    <div><b>11</b><span>Online payments with Paystack</span><i>13</i></div>
+    <div><b>12</b><span>Parents &amp; students</span><i>14</i></div>
+    <div><b>13</b><span>The school store &amp; library</span><i>15</i></div>
+    <div><b>14</b><span>Staff, roles &amp; accountability</span><i>16</i></div>
+    <div><b>15</b><span>Security &amp; data protection</span><i>17</i></div>
+    <div><b>16</b><span>How we compare</span><i>18</i></div>
+    <div><b>17</b><span>Ten reasons schools choose us</span><i>19</i></div>
+    <div><b>18</b><span>Getting started</span><i>20</i></div>
+    <div><b>19</b><span>Questions schools ask</span><i>21</i></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">02</span></div>
+</section>
+
+<!-- =============================== 3. PROBLEM =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>01 · The problem</span></div>
+  <div class="eyebrow">Does this sound familiar?</div>
+  <h2>Running a school shouldn't feel like running after paper.</h2>
+  <p class="lead" style="margin-bottom:6mm">Most schools are held together by spreadsheets, notebooks and phone calls. It works until term ends, exam day arrives, or a parent asks a simple question.</p>
+
+  <div class="grid3" style="margin-bottom:7mm">
+    <div class="card"><div class="ico red"><svg><use href="#i-chart"/></svg></div><h4>Results live in spreadsheets</h4><p class="small">Marks are typed, retyped and added up by hand. One wrong cell and a child's grade is wrong. Nobody is sure which copy is the latest.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-receipt"/></svg></div><h4>Receipts written by hand</h4><p class="small">Books run out, handwriting is hard to read, and "did we ever receive this payment?" takes an afternoon to answer.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-phone"/></svg></div><h4>Parents keep phoning</h4><p class="small">"Are the results out?" "What do I still owe?" The same questions every term, and every answer costs someone's time.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-exam"/></svg></div><h4>Exam day is a scramble</h4><p class="small">Printing papers, invigilating, marking by hand, ranking on a calculator, and hoping no script gets lost.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-key"/></svg></div><h4>Everyone can see everything</h4><p class="small">When one login opens every record, a mistake or a curious visitor can reach children's information they should never see.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-brush"/></svg></div><h4>Software that isn't yours</h4><p class="small">Generic systems carry someone else's name and colours. Your parents want to see <em>your</em> school.</p></div>
+  </div>
+
+  <!-- scattered vs connected illustration -->
+  <div class="card" style="padding:5mm 5mm 3mm">
+    <svg viewBox="0 0 680 230" width="100%">
+      <text x="150" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="2" fill="#8a8469">TODAY: SCATTERED</text>
+      <text x="530" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="2" fill="#8a8469">WITH BRIGHTSTARS: CONNECTED</text>
+      <g font-family="Public Sans" font-size="10.5" fill="#12163a">
+        <g fill="#fdeceb" stroke="#e8b4b0">
+          <rect x="18" y="40" width="100" height="30" rx="6" transform="rotate(-4 68 55)"/><rect x="160" y="34" width="112" height="30" rx="6" transform="rotate(3 216 49)"/>
+          <rect x="40" y="96" width="96" height="30" rx="6" transform="rotate(2 88 111)"/><rect x="176" y="102" width="100" height="30" rx="6" transform="rotate(-3 226 117)"/>
+          <rect x="14" y="160" width="110" height="30" rx="6" transform="rotate(3 69 175)"/><rect x="164" y="168" width="116" height="30" rx="6" transform="rotate(-2 222 183)"/>
+        </g>
+        <text x="68" y="59" text-anchor="middle" transform="rotate(-4 68 55)">Mark sheets</text>
+        <text x="216" y="53" text-anchor="middle" transform="rotate(3 216 49)">Receipt books</text>
+        <text x="88" y="115" text-anchor="middle" transform="rotate(2 88 111)">Exam scripts</text>
+        <text x="226" y="121" text-anchor="middle" transform="rotate(-3 226 117)">WhatsApp lists</text>
+        <text x="69" y="179" text-anchor="middle" transform="rotate(3 69 175)">Attendance book</text>
+        <text x="222" y="187" text-anchor="middle" transform="rotate(-2 222 183)">Fee spreadsheet</text>
+        <g stroke="#d8261d" stroke-dasharray="3 4" stroke-width="1.2"><path d="M118 60 L158 52M88 126 L80 160M136 112 L176 116M226 132 L224 166"/></g>
+        <text x="148" y="222" text-anchor="middle" font-size="9.5" fill="#b01a12">Nothing talks to anything else</text>
+      </g>
+      <path d="M318 115 h40" stroke="#0a1a8f" stroke-width="2.4" marker-end="url(#arr)"/>
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#0a1a8f"/></marker></defs>
+      <g font-family="Public Sans" font-size="10" fill="#fff">
+        <circle cx="530" cy="117" r="44" fill="#0b1d4d"/>
+        <use href="#i-star" x="514" y="92" width="32" height="32" fill="#fff"/>
+        <text x="530" y="140" text-anchor="middle" font-weight="700" font-size="9.5">YOUR PORTAL</text>
+        <g fill="#e9ecfb" stroke="#0a1a8f" stroke-width="1">
+          <rect x="400" y="38" width="88" height="26" rx="13"/><rect x="572" y="38" width="88" height="26" rx="13"/>
+          <rect x="384" y="104" width="76" height="26" rx="13"/><rect x="600" y="104" width="76" height="26" rx="13"/>
+          <rect x="400" y="170" width="88" height="26" rx="13"/><rect x="572" y="170" width="88" height="26" rx="13"/>
+        </g>
+        <g fill="#0a1a8f" text-anchor="middle" font-weight="600">
+          <text x="444" y="55">Results</text><text x="616" y="55">Fees</text><text x="422" y="121">Exams</text>
+          <text x="638" y="121">Parents</text><text x="444" y="187">Attendance</text><text x="616" y="187">Receipts</text>
+        </g>
+        <g stroke="#0a1a8f" stroke-width="1.3"><path d="M480 64 L500 84M580 64 L560 84M460 117 h26M600 117 h-26M480 170 L500 150M580 170 L560 150"/></g>
+        <text x="530" y="222" text-anchor="middle" font-size="9.5" fill="#0a1a8f">Enter once, everything updates</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">03</span></div>
+</section>
+
+<!-- =============================== 4. ONE PLATFORM =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>02 · The platform</span></div>
+  <div class="eyebrow">What you get</div>
+  <h2>Everything a school runs on, in one place.</h2>
+  <p class="lead" style="margin-bottom:5mm">Not eight separate tools that don't talk to each other, but one system with two workspaces, <strong>School Portal</strong> and <strong>Entrance Examination</strong>, and a portal of its own for every person in the school community.</p>
+
+  <svg viewBox="0 0 700 335" width="100%" style="margin-bottom:5mm">
+    <defs>
+      <radialGradient id="hub" cx="50%" cy="40%"><stop offset="0" stop-color="#1a2f78"/><stop offset="1" stop-color="#0b1d4d"/></radialGradient>
+    </defs>
+    <circle cx="350" cy="165" r="150" fill="none" stroke="#ded8c8" stroke-dasharray="2 5"/>
+    <circle cx="350" cy="165" r="100" fill="none" stroke="#b9b2a0" stroke-dasharray="2 4"/>
+    <circle cx="350" cy="165" r="62" fill="url(#hub)"/>
+    <use href="#i-star" x="331" y="122" width="38" height="38" fill="#fff"/>
+    <text x="350" y="182" text-anchor="middle" font-family="Newsreader" font-weight="600" font-size="14" fill="#fff">Your School</text>
+    <text x="350" y="197" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#ffb3ae" letter-spacing="1.5">ONE PORTAL</text>
+    <g font-family="Public Sans" font-size="10" font-weight="600">
+      <!-- 12 modules around the ring r=150 -->
+      <g transform="translate(350 15)"><rect x="-62" y="-13" width="124" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Entrance exams</text></g>
+      <g transform="translate(475 48)"><rect x="-50" y="-13" width="100" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Admissions</text></g>
+      <g transform="translate(562 110)"><rect x="-56" y="-13" width="112" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Classes &amp; subjects</text></g>
+      <g transform="translate(580 190)"><rect x="-58" y="-13" width="116" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Results &amp; reports</text></g>
+      <g transform="translate(535 265)"><rect x="-48" y="-13" width="96" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Attendance</text></g>
+      <g transform="translate(440 312)"><rect x="-48" y="-13" width="96" height="26" rx="13" fill="#fff" stroke="#0a1a8f"/><text text-anchor="middle" y="4" fill="#0a1a8f">Timetables</text></g>
+      <g transform="translate(260 312)"><rect x="-56" y="-13" width="112" height="26" rx="13" fill="#d8261d" stroke="#d8261d"/><text text-anchor="middle" y="4" fill="#fff">Fees &amp; receipts</text></g>
+      <g transform="translate(165 265)"><rect x="-58" y="-13" width="116" height="26" rx="13" fill="#d8261d" stroke="#d8261d"/><text text-anchor="middle" y="4" fill="#fff">Online payments</text></g>
+      <g transform="translate(120 190)"><rect x="-48" y="-13" width="96" height="26" rx="13" fill="#d8261d" stroke="#d8261d"/><text text-anchor="middle" y="4" fill="#fff">School store</text></g>
+      <g transform="translate(138 110)"><rect x="-38" y="-13" width="76" height="26" rx="13" fill="#0f766e" stroke="#0f766e"/><text text-anchor="middle" y="4" fill="#fff">Library</text></g>
+      <g transform="translate(225 48)"><rect x="-58" y="-13" width="116" height="26" rx="13" fill="#0f766e" stroke="#0f766e"/><text text-anchor="middle" y="4" fill="#fff">Roles &amp; audit log</text></g>
+    </g>
+    <g font-family="Public Sans" font-size="9" fill="#12163a" font-weight="600">
+      <g transform="translate(350 120)"></g>
+      <text x="350" y="86" text-anchor="middle" fill="#6b6f87" font-weight="400">Messaging · SMS · Email</text>
+      <text x="350" y="252" text-anchor="middle" fill="#6b6f87" font-weight="400">Classwork · Tests · Practice</text>
+    </g>
+    <!-- legend -->
+    <g font-family="IBM Plex Mono" font-size="8.5" fill="#6b6f87" letter-spacing="1">
+      <rect x="600" y="282" width="10" height="10" rx="2" fill="#fff" stroke="#0a1a8f"/><text x="615" y="291">ACADEMICS</text>
+      <rect x="600" y="300" width="10" height="10" rx="2" fill="#d8261d"/><text x="615" y="309">MONEY</text>
+      <rect x="600" y="318" width="10" height="10" rx="2" fill="#0f766e"/><text x="615" y="327">OPERATIONS</text>
+    </g>
+  </svg>
+
+  <div class="grid4">
+    <div class="card blue"><div class="ico"><svg><use href="#i-users"/></svg></div><h4>Staff portal</h4><p class="small" style="margin:0">Proprietor, head, teachers, bursar, librarian and office, each seeing only their own menu.</p></div>
+    <div class="card blue"><div class="ico red"><svg><use href="#i-card"/></svg></div><h4>Student portal</h4><p class="small" style="margin:0">Assignments, tests, exams, practice, timetable, attendance, results and report cards.</p></div>
+    <div class="card blue"><div class="ico teal"><svg><use href="#i-phone"/></svg></div><h4>Parent portal</h4><p class="small" style="margin:0">Every child in one place: fees, results, report cards, attendance, messages and the store.</p></div>
+    <div class="card blue"><div class="ico"><svg><use href="#i-exam"/></svg></div><h4>Candidate portal</h4><p class="small" style="margin:0">Entrance candidates sign in, sit timed papers and see their result once the school releases it.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:5mm; gap:5mm">
+    <div class="card navy"><div class="kicker" style="color:#ffb3ae">Workspace 1</div><h3 style="color:#fff">School Portal</h3><p class="small" style="margin:0">The everyday running of the school: students, parents, teachers, classes, subjects, attendance, academics, timetables, report cards, promotion, finance, the store, the library and settings.</p></div>
+    <div class="card" style="border-color:var(--red)"><div class="kicker" style="color:var(--red)">Workspace 2</div><h3>Entrance Examination</h3><p class="small" style="margin:0">Everything for admissions season: candidates, question banks, exam configuration, results by subject, rankings, admissions and the public practice page.</p></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">04</span></div>
+</section>
+
+<!-- =============================== 5. JOURNEY =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>03 · How it works</span></div>
+  <div class="eyebrow">How it all fits together</div>
+  <h2>A student's journey, start to finish.</h2>
+  <p class="lead" style="margin-bottom:6mm">Follow one child through the platform. Each step feeds the next automatically, so nothing is typed twice and nothing falls through the cracks.</p>
+
+  <svg viewBox="0 0 700 560" width="100%">
+    <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#0a1a8f"/></marker></defs>
+    <g fill="none" stroke="#0a1a8f" stroke-width="2">
+      <path d="M180 60 H250" marker-end="url(#a2)"/><path d="M420 60 H490" marker-end="url(#a2)"/>
+      <path d="M590 95 V150 Q590 170 570 170 H130 Q110 170 110 190 V225" marker-end="url(#a2)"/>
+      <path d="M180 260 H250" marker-end="url(#a2)"/><path d="M420 260 H490" marker-end="url(#a2)"/>
+      <path d="M590 295 V350 Q590 370 570 370 H130 Q110 370 110 390 V425" marker-end="url(#a2)"/>
+      <path d="M180 460 H250" marker-end="url(#a2)"/><path d="M420 460 H490" marker-end="url(#a2)"/>
+    </g>
+    <g font-family="Public Sans">
+      <!-- row 1 -->
+      <g transform="translate(20 20)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#d8261d"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">1</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Registers</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Candidate gets a code</text><text x="12" y="66" font-size="9.2" fill="#3d4266">and login automatically</text></g>
+      <g transform="translate(260 20)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#d8261d"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">2</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Sits entrance exam</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Timed computer test,</text><text x="12" y="66" font-size="9.2" fill="#3d4266">marked and ranked instantly</text></g>
+      <g transform="translate(500 20)"><rect width="180" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#d8261d"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">3</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Admitted</text><text x="12" y="52" font-size="9.2" fill="#3d4266">One click: student record,</text><text x="12" y="66" font-size="9.2" fill="#3d4266">class place, logins for family</text></g>
+      <!-- row 2 -->
+      <g transform="translate(20 220)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#0a1a8f"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">4</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Placed in class</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Balanced into JSS 1A / 1B,</text><text x="12" y="66" font-size="9.2" fill="#3d4266">fees charged for the term</text></g>
+      <g transform="translate(260 220)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#0a1a8f"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">5</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Learns every day</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Register, assignments,</text><text x="12" y="66" font-size="9.2" fill="#3d4266">tests and practice online</text></g>
+      <g transform="translate(500 220)"><rect width="180" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#0a1a8f"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">6</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Parent pays fees</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Office or online; branded</text><text x="12" y="66" font-size="9.2" fill="#3d4266">receipt by email and SMS</text></g>
+      <!-- row 3 -->
+      <g transform="translate(20 420)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#0f766e"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">7</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Results checked</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Entered, verified, approved,</text><text x="12" y="66" font-size="9.2" fill="#3d4266">then released</text></g>
+      <g transform="translate(260 420)"><rect width="160" height="80" rx="10" fill="#fff" stroke="#ded8c8"/><circle cx="22" cy="22" r="13" fill="#0f766e"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">8</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#12163a">Report card ready</text><text x="12" y="52" font-size="9.2" fill="#3d4266">Signed, branded PDF;</text><text x="12" y="66" font-size="9.2" fill="#3d4266">parents alerted at once</text></g>
+      <g transform="translate(500 420)"><rect width="180" height="80" rx="10" fill="#0b1d4d"/><circle cx="22" cy="22" r="13" fill="#d8261d"/><text x="22" y="27" text-anchor="middle" fill="#fff" font-family="Newsreader" font-weight="600" font-size="13">9</text><text x="42" y="27" font-weight="700" font-size="11.5" fill="#fff">Promoted · Graduates</text><text x="12" y="52" font-size="9.2" fill="#c9cff0">Moves up a class each year;</text><text x="12" y="66" font-size="9.2" fill="#c9cff0">full history archived, not lost</text></g>
+    </g>
+    <g font-family="IBM Plex Mono" font-size="8.5" letter-spacing="1.5">
+      <text x="20" y="128" fill="#d8261d">ENTRANCE EXAMINATION WORKSPACE</text>
+      <text x="20" y="328" fill="#0a1a8f">SCHOOL PORTAL · EVERY TERM</text>
+      <text x="20" y="528" fill="#0f766e">END OF TERM · END OF YEAR</text>
+    </g>
+    <line x1="20" y1="545" x2="680" y2="545" stroke="#ded8c8"/>
+  </svg>
+  <div class="quote" style="margin-top:2mm">The admitted candidate becomes a real student with a class, a login, a fee account and a parent account in one action. No re-typing names into a second system.</div>
+  <div class="grid3" style="margin-top:6mm">
+    <div class="card"><div class="ico red"><svg><use href="#i-clock"/></svg></div><h4>Hours back every term</h4><p class="small" style="margin:0">Marking, ranking, adding up results, writing receipts and building report cards are done by the system, not by staff after hours.</p></div>
+    <div class="card"><div class="ico"><svg><use href="#i-check"/></svg></div><h4>One version of the truth</h4><p class="small" style="margin:0">Every screen, card and receipt is worked out from the same records, so the numbers can never disagree with each other.</p></div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-msg"/></svg></div><h4>Families in the loop</h4><p class="small" style="margin:0">At steps 6 and 8, and whenever work or fees are set, parents are told automatically. Nobody has to remember to send a message.</p></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">05</span></div>
+</section>
+
+<!-- =============================== 6. BRANDING =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>04 · Your brand</span></div>
+  <div class="eyebrow">Your school, your name</div>
+  <h2>It looks like your school, because it is.</h2>
+  <p class="lead" style="margin-bottom:6mm">Many platforms make every school look the same, with the vendor's logo in the corner. Brightstars works the other way round. Parents and students see <strong>your</strong> name, logo, colours and photographs on every page, every receipt and every report card. The Brightstars logo never appears on your portal.</p>
+
+  <div class="grid2" style="grid-template-columns: 1.25fr 1fr; align-items:start">
+    <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i><b>portal.yourschool.edu.ng</b></div><img src="assets/shots/signin.webp" alt=""></div>
+      <div class="caption">The school's own sign-in page, with its logo, name and up to eight school photographs fading one into the next.</div>
+    </div>
+    <div>
+      <ul class="ticks" style="font-size:9.2pt">
+        <li><strong>Your own web address,</strong> live the moment your school is created, such as <span class="mono small">yourschool.brightstars…</span>. Use your own domain (for example <span class="mono small">portal.yourschool.edu.ng</span>) whenever you're ready.</li>
+        <li><strong>Your logo, name, motto and tagline</strong> on the portal, report cards and receipts.</li>
+        <li><strong>Your two brand colours</strong> on menus, headers, buttons and the sign-in page. A colour too light to read is refused automatically, so the portal always stays legible.</li>
+        <li><strong>Up to eight photographs</strong> of your school on the sign-in page.</li>
+        <li><strong>Messages from your own accounts.</strong> Email and SMS go out under your school's name, so parents know who is writing.</li>
+        <li><strong>Your own numbering.</strong> You decide how admission numbers and candidate codes look, for example <span class="mono small">ABC/2026/0143</span>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-top:6mm; grid-template-columns: 1fr 1.25fr 1fr">
+    <!-- colour swatches -->
+    <div class="card">
+      <div class="kicker">Three schools, one platform</div>
+      <svg viewBox="0 0 200 120" width="100%">
+        <g font-family="Public Sans" font-size="8.5" font-weight="700" fill="#fff">
+          <rect x="0" y="0" width="200" height="32" rx="5" fill="#0b4d3a"/><text x="10" y="20">Greenfield College</text><rect x="150" y="9" width="40" height="14" rx="7" fill="#c9a227"/>
+          <rect x="0" y="44" width="200" height="32" rx="5" fill="#5b1a6e"/><text x="10" y="64">Royal Crest Academy</text><rect x="150" y="53" width="40" height="14" rx="7" fill="#e07a1f"/>
+          <rect x="0" y="88" width="200" height="32" rx="5" fill="#0b1d4d"/><text x="10" y="108">Your School</text><rect x="150" y="97" width="40" height="14" rx="7" fill="#d8261d"/>
+        </g>
+      </svg>
+      <p class="small muted" style="margin:2mm 0 0">Each school appears in its own colours, on its own address. Sample names.</p>
+    </div>
+    <!-- app phone -->
+    <div class="card" style="display:flex; gap:3mm; align-items:center">
+      <svg viewBox="0 0 90 170" style="width:20mm; flex:none">
+        <rect x="2" y="2" width="86" height="166" rx="14" fill="#12163a"/><rect x="7" y="12" width="76" height="146" rx="6" fill="#f5f1e8"/>
+        <g font-family="Public Sans" font-size="5.5" text-anchor="middle" fill="#12163a">
+          <rect x="14" y="24" width="18" height="18" rx="4" fill="#0b1d4d"/><text x="23" y="36" fill="#fff" font-weight="700" font-size="6">YS</text><text x="23" y="50">Your School</text>
+          <rect x="36" y="24" width="18" height="18" rx="4" fill="#25D366"/><text x="45" y="50">Chat</text>
+          <rect x="58" y="24" width="18" height="18" rx="4" fill="#3b82f6"/><text x="67" y="50">Mail</text>
+          <rect x="14" y="60" width="18" height="18" rx="4" fill="#f59e0b"/><rect x="36" y="60" width="18" height="18" rx="4" fill="#ef4444"/><rect x="58" y="60" width="18" height="18" rx="4" fill="#8b5cf6"/>
+          <rect x="11" y="132" width="68" height="18" rx="4" fill="#0b1d4d"/><text x="45" y="143.5" fill="#fff" font-size="5.6">Install Your School app</text>
+        </g>
+      </svg>
+      <div style="min-width:0"><h4>Installs as an app</h4><p class="small" style="margin:0">Parents, students and staff can install the portal on a phone, tablet or computer. The app icon is <strong>your</strong> logo and the app name is <strong>your</strong> school. No app-store listing needed.</p></div>
+    </div>
+    <!-- receipt chip -->
+    <div class="card navy">
+      <div class="kicker" style="color:#ffb3ae">Everywhere it matters</div>
+      <h3 style="color:#fff; font-size:12pt">Your identity on every document</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:1.4mm; margin-top:2mm">
+        <span class="pill" style="background:#1d3270;color:#fff">Sign-in page</span><span class="pill" style="background:#1d3270;color:#fff">Every menu</span>
+        <span class="pill" style="background:#1d3270;color:#fff">Report cards</span><span class="pill" style="background:#1d3270;color:#fff">Receipts</span>
+        <span class="pill" style="background:#1d3270;color:#fff">Exam timetable PDF</span><span class="pill" style="background:#1d3270;color:#fff">Emails &amp; SMS</span>
+        <span class="pill" style="background:#1d3270;color:#fff">Installed app</span><span class="pill" style="background:#1d3270;color:#fff">Candidate results</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">06</span></div>
+</section>
+
+<!-- =============================== 7. ENTRANCE EXAMS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>05 · Entrance examinations</span></div>
+  <div class="eyebrow">Entrance examinations</div>
+  <h2>Admissions day without the paperwork.</h2>
+  <p class="lead" style="margin-bottom:6mm">Candidates sit their papers on a computer with a countdown clock. When they finish, every paper is already marked and the ranking is already done. No scripts to collect, no marking marathon, no calculator.</p>
+
+  <div class="grid2" style="grid-template-columns: 1fr 1.05fr; gap:7mm; align-items:start">
+    <!-- CBT mock -->
+    <div>
+      <svg viewBox="0 0 320 300" width="100%">
+        <rect x="0" y="0" width="320" height="300" rx="12" fill="#fff" stroke="#ded8c8"/>
+        <rect x="0" y="0" width="320" height="42" rx="12" fill="#0b1d4d"/><rect x="0" y="30" width="320" height="12" fill="#0b1d4d"/>
+        <text x="16" y="26" font-family="IBM Plex Mono" font-size="9.5" fill="#c9cff0" letter-spacing="1">YOUR SCHOOL · MATHEMATICS</text>
+        <rect x="240" y="11" width="66" height="22" rx="11" fill="#d8261d"/><text x="273" y="26" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">⏱ 42:18</text>
+        <text x="16" y="66" font-family="IBM Plex Mono" font-size="8.5" fill="#8a8469">QUESTION 7 OF 25</text>
+        <rect x="16" y="72" width="288" height="4" rx="2" fill="#e9ecfb"/><rect x="16" y="72" width="81" height="4" rx="2" fill="#0a1a8f"/>
+        <text x="16" y="102" font-family="Newsreader" font-weight="600" font-size="15" fill="#12163a">What is three quarters of 24?</text>
+        <g font-family="Public Sans" font-size="11" fill="#12163a">
+          <rect x="16" y="116" width="288" height="28" rx="6" fill="#fff" stroke="#ded8c8"/><text x="30" y="134">A.  16</text>
+          <rect x="16" y="150" width="288" height="28" rx="6" fill="#e9ecfb" stroke="#0a1a8f" stroke-width="1.5"/><text x="30" y="168" font-weight="700" fill="#0a1a8f">B.  18</text><circle cx="288" cy="164" r="7" fill="#0a1a8f"/><path d="M284.5 164 l2.5 2.5 4.5-5" stroke="#fff" stroke-width="1.6" fill="none"/>
+          <rect x="16" y="184" width="288" height="28" rx="6" fill="#fff" stroke="#ded8c8"/><text x="30" y="202">C.  20</text>
+          <rect x="16" y="218" width="288" height="28" rx="6" fill="#fff" stroke="#ded8c8"/><text x="30" y="236">D.  22</text>
+        </g>
+        <g font-family="IBM Plex Mono" font-size="8" text-anchor="middle">
+          <g fill="#0a1a8f"><rect x="16" y="260" width="16" height="16" rx="3"/><rect x="36" y="260" width="16" height="16" rx="3"/><rect x="56" y="260" width="16" height="16" rx="3"/><rect x="76" y="260" width="16" height="16" rx="3"/><rect x="96" y="260" width="16" height="16" rx="3"/><rect x="116" y="260" width="16" height="16" rx="3"/></g>
+          <rect x="136" y="260" width="16" height="16" rx="3" fill="#d8261d"/>
+          <g fill="#fff" stroke="#ded8c8"><rect x="156" y="260" width="16" height="16" rx="3"/><rect x="176" y="260" width="16" height="16" rx="3"/></g>
+          <g fill="#fff"><text x="24" y="271">1</text><text x="44" y="271">2</text><text x="64" y="271">3</text><text x="84" y="271">4</text><text x="104" y="271">5</text><text x="124" y="271">6</text><text x="144" y="271">7</text></g>
+          <g fill="#6b6f87"><text x="164" y="271">8</text><text x="184" y="271">9</text></g>
+        </g>
+        <rect x="218" y="256" width="86" height="24" rx="6" fill="#0a1a8f"/><text x="261" y="272" text-anchor="middle" font-family="Public Sans" font-weight="700" font-size="10" fill="#fff">Save &amp; next →</text>
+      </svg>
+      <div class="caption">What a candidate sees: one question at a time, a server-kept clock, and a map of answered questions.</div>
+    </div>
+    <div>
+      <ul class="ticks" style="font-size:9.2pt">
+        <li><strong>Marked instantly.</strong> No arithmetic mistakes and no lost scripts. Rankings by subject and overall are ready the moment the last candidate finishes.</li>
+        <li><strong>Fair by design.</strong> Each candidate gets the questions in a different order. The clock is kept by the server, not by the candidate's device, so nobody can stop time.</li>
+        <li><strong>Nothing lost mid-exam.</strong> Every answer is saved the moment it is chosen. If power or the network drops, the candidate carries on exactly where they were.</li>
+        <li><strong>Start with ours, or bring yours.</strong> Every school starts with <strong>255 standard questions</strong> (Mathematics, English and General Knowledge for Year 7/JSS 1 and SSS 1), checked by an independent reviewer. Import your own banks whenever you like.</li>
+        <li><strong>SSS departments.</strong> SSS 1 candidates choose Science, Art or Commercial when they register.</li>
+        <li><strong>Exams can't be changed after they're sat.</strong> Each attempt keeps its own copy of the questions, and banks can be locked during a live exam.</li>
+        <li><strong>Retakes when needed,</strong> granted by authorised staff, and results exported to CSV.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card blue" style="margin-top:5mm; display:grid; grid-template-columns: 14mm 1fr 52mm; gap:4mm; align-items:center">
+    <div class="ico red" style="width:13mm;height:13mm;margin:0"><svg style="width:7mm;height:7mm"><use href="#i-globe"/></svg></div>
+    <div><h3 style="font-size:12pt">A free practice link that markets your school</h3><p class="small" style="margin:0">Families visit your school's own practice page with no sign-up, choose the class they're aiming for, and practise. Questions come from last year's paper or a practice bank you set. The paper about to be sat is never shown. Every family who practises meets your school's brand first.</p></div>
+    <div class="mono small" style="background:#fff;border:1px solid var(--line);border-radius:2mm;padding:3mm;color:var(--blue)">yourschool…/entrance-practice<br><span class="muted">→ Year 7 / JSS 1<br>→ Year 10 / SSS 1</span></div>
+  </div>
+  <div class="card" style="margin-top:5mm; padding:4mm 5mm">
+    <div class="kicker">Entrance exam day, before and after</div>
+    <svg viewBox="0 0 680 120" width="100%">
+      <g font-family="Public Sans" font-size="9.5" text-anchor="middle">
+        <text x="0" y="25" text-anchor="start" font-weight="700" fill="#9b968a" font-size="10">On paper</text>
+        <g fill="#ede8dc"><rect x="90" y="8" width="78" height="26" rx="5"/><rect x="174" y="8" width="78" height="26" rx="5"/><rect x="258" y="8" width="78" height="26" rx="5"/><rect x="342" y="8" width="78" height="26" rx="5"/><rect x="426" y="8" width="78" height="26" rx="5"/><rect x="510" y="8" width="78" height="26" rx="5"/><rect x="594" y="8" width="86" height="26" rx="5"/></g>
+        <g fill="#6b6f87"><text x="129" y="25">Print papers</text><text x="213" y="25">Invigilate</text><text x="297" y="25">Collect scripts</text><text x="381" y="25">Mark by hand</text><text x="465" y="25">Add up</text><text x="549" y="25">Rank</text><text x="637" y="25">Type results</text></g>
+        <text x="0" y="85" text-anchor="start" font-weight="700" fill="#0a1a8f" font-size="10">Brightstars</text>
+        <rect x="90" y="68" width="246" height="26" rx="5" fill="#0a1a8f"/><text x="213" y="85" fill="#fff" font-weight="700">Candidates sit the paper online</text>
+        <rect x="342" y="68" width="338" height="26" rx="5" fill="#d8261d"/><text x="511" y="85" fill="#fff" font-weight="700">Marked, ranked and ready the moment they finish</text>
+        <text x="385" y="114" font-family="IBM Plex Mono" font-size="8.5" fill="#8a8469" letter-spacing="1">SEVEN MANUAL STEPS BECOME ONE</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">07</span></div>
+</section>
+
+<!-- =============================== 8. ADMISSIONS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>06 · Admissions</span></div>
+  <div class="eyebrow">Admissions &amp; class placement</div>
+  <h2>From ranked waitlist to enrolled student in one decision.</h2>
+  <p class="lead" style="margin-bottom:6mm">Every candidate who sits at least one paper joins a waitlist ranked by overall percentage. Your admissions officer admits or declines from there, and one click creates everything a new student needs.</p>
+
+  <svg viewBox="0 0 700 250" width="100%" style="margin-bottom:5mm">
+    <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#0a1a8f"/></marker></defs>
+    <!-- waitlist -->
+    <rect x="0" y="0" width="250" height="250" rx="12" fill="#fff" stroke="#ded8c8"/>
+    <text x="16" y="26" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.5" fill="#8a8469">ADMISSIONS WAITLIST · JSS 1</text>
+    <g font-family="Public Sans" font-size="11">
+      <g transform="translate(16 42)"><rect width="218" height="34" rx="7" fill="#e9ecfb"/><circle cx="17" cy="17" r="10" fill="#0a1a8f"/><text x="17" y="21" text-anchor="middle" fill="#fff" font-weight="700" font-size="9.5">1</text><text x="36" y="21" fill="#12163a" font-weight="600">Candidate A</text><text x="204" y="21" text-anchor="end" fill="#0a1a8f" font-weight="700">92.4%</text></g>
+      <g transform="translate(16 82)"><rect width="218" height="34" rx="7" fill="#f5f1e8"/><circle cx="17" cy="17" r="10" fill="#0a1a8f"/><text x="17" y="21" text-anchor="middle" fill="#fff" font-weight="700" font-size="9.5">2</text><text x="36" y="21" fill="#12163a" font-weight="600">Candidate B</text><text x="204" y="21" text-anchor="end" fill="#0a1a8f" font-weight="700">88.0%</text></g>
+      <g transform="translate(16 122)"><rect width="218" height="34" rx="7" fill="#f5f1e8"/><circle cx="17" cy="17" r="10" fill="#0a1a8f"/><text x="17" y="21" text-anchor="middle" fill="#fff" font-weight="700" font-size="9.5">3</text><text x="36" y="21" fill="#12163a" font-weight="600">Candidate C</text><text x="204" y="21" text-anchor="end" fill="#0a1a8f" font-weight="700">81.5%</text></g>
+      <g transform="translate(16 162)"><rect width="218" height="34" rx="7" fill="#f5f1e8"/><circle cx="17" cy="17" r="10" fill="#0a1a8f"/><text x="17" y="21" text-anchor="middle" fill="#fff" font-weight="700" font-size="9.5">4</text><text x="36" y="21" fill="#12163a" font-weight="600">Candidate D</text><text x="204" y="21" text-anchor="end" fill="#0a1a8f" font-weight="700">77.2%</text></g>
+      <rect x="16" y="208" width="104" height="28" rx="6" fill="#1d7a4b"/><text x="68" y="226" text-anchor="middle" fill="#fff" font-weight="700" font-size="10.5">Admit</text>
+      <rect x="130" y="208" width="104" height="28" rx="6" fill="#fff" stroke="#b9b2a0"/><text x="182" y="226" text-anchor="middle" fill="#3d4266" font-weight="600" font-size="10.5">Decline</text>
+    </g>
+    <path d="M262 125 H318" stroke="#0a1a8f" stroke-width="2.4" marker-end="url(#a3)"/>
+    <text x="290" y="114" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#0a1a8f">1 click</text>
+    <!-- results -->
+    <g font-family="Public Sans">
+      <g transform="translate(330 0)"><rect width="370" height="250" rx="12" fill="#0b1d4d"/>
+        <text x="20" y="28" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.5" fill="#ffb3ae">CREATED AUTOMATICALLY</text>
+        <g font-size="11" fill="#fff">
+          <g transform="translate(20 44)"><rect width="160" height="58" rx="8" fill="#1d3270"/><text x="12" y="22" font-weight="700">Student record</text><text x="12" y="40" font-size="9.5" fill="#c9cff0">Admission no. ABC/2026/0143</text></g>
+          <g transform="translate(190 44)"><rect width="160" height="58" rx="8" fill="#1d3270"/><text x="12" y="22" font-weight="700">Class place</text><text x="12" y="40" font-size="9.5" fill="#c9cff0">JSS 1B, current session</text></g>
+          <g transform="translate(20 112)"><rect width="160" height="58" rx="8" fill="#1d3270"/><text x="12" y="22" font-weight="700">Student login</text><text x="12" y="40" font-size="9.5" fill="#c9cff0">One-time password</text></g>
+          <g transform="translate(190 112)"><rect width="160" height="58" rx="8" fill="#1d3270"/><text x="12" y="22" font-weight="700">Parent account</text><text x="12" y="40" font-size="9.5" fill="#c9cff0">From guardian details on file</text></g>
+        </g>
+        <text x="20" y="200" font-family="Newsreader" font-size="14" fill="#fff" font-weight="600">The whole family reaches the portal</text>
+        <text x="20" y="220" font-family="Newsreader" font-size="14" fill="#ffb3ae" font-weight="500" font-style="italic">in a single action.</text>
+      </g>
+    </g>
+  </svg>
+
+  <div class="grid3">
+    <div class="card"><div class="ico"><svg><use href="#i-admit"/></svg></div><h4>Decisions stay private</h4><p class="small" style="margin:0">Admitting a candidate doesn't show them a score. An admin must release the result before the candidate sees their outcome or new login.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-key"/></svg></div><h4>The right person decides</h4><p class="small" style="margin:0">Only the Admissions Officer role sees the waitlist by default, and it can be limited to one entry level. Admitting is final. Declining can be undone.</p></div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-users"/></svg></div><h4>Balanced classes, automatically</h4><p class="small" style="margin:0">Split JSS and SSS classes into arms such as JSS 1A, 1B or SS 1A (Science). New students go to the arm with the fewest students.</p></div>
+  </div>
+  <div class="card blue" style="margin-top:4mm">
+    <div class="grid2" style="gap:6mm">
+      <div><h4>Class transfers with approval</h4><p class="small" style="margin:0">A class teacher can ask to move a student to another arm, or in SSS to another department. Nothing changes until the receiving class teacher (or the head) approves it.</p></div>
+      <div><h4>Three ways in, one record</h4><p class="small" style="margin:0">Students arrive by entrance exam, by registering one at a time, or by bulk import from your existing spreadsheets. All three produce exactly the same record.</p></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:4mm; display:grid; grid-template-columns: 1.3fr 1fr; gap:6mm; align-items:center">
+    <svg viewBox="0 0 380 120" width="100%">
+      <g font-family="Public Sans" font-size="10">
+        <text x="0" y="22" fill="#12163a" font-weight="600">JSS 1A</text><rect x="60" y="10" width="300" height="16" rx="3" fill="#ede8dc"/><rect x="60" y="10" width="288" height="16" rx="3" fill="#0a1a8f"/><text x="342" y="22" fill="#fff" font-weight="700" text-anchor="end" font-size="9">24</text>
+        <text x="0" y="52" fill="#12163a" font-weight="600">JSS 1B</text><rect x="60" y="40" width="300" height="16" rx="3" fill="#ede8dc"/><rect x="60" y="40" width="276" height="16" rx="3" fill="#0a1a8f"/><rect x="336" y="40" width="12" height="16" fill="#d8261d"/><text x="330" y="52" fill="#fff" font-weight="700" text-anchor="end" font-size="9">23 + 1 new</text>
+        <text x="0" y="82" fill="#12163a" font-weight="600">JSS 1C</text><rect x="60" y="70" width="300" height="16" rx="3" fill="#ede8dc"/><rect x="60" y="70" width="288" height="16" rx="3" fill="#0a1a8f"/><text x="342" y="82" fill="#fff" font-weight="700" text-anchor="end" font-size="9">24</text>
+        <text x="60" y="110" font-family="IBM Plex Mono" font-size="8.5" fill="#d8261d">the next new student joins the arm with the fewest</text>
+      </g>
+    </svg>
+    <div><h4>Even class sizes without spreadsheets</h4><p class="small" style="margin:0">Placement happens automatically when a class is split, when a student is added and when a candidate is admitted. In SSS, an arm tied to a department only takes students from that department.</p></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">08</span></div>
+</section>
+
+<!-- =============================== 9. RESULTS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>07 · Results &amp; report cards</span></div>
+  <div class="eyebrow">Results &amp; report cards</div>
+  <h2>From marks to report card, with nobody chasing.</h2>
+  <p class="lead" style="margin-bottom:5mm">Teachers enter marks. The system adds them up, holds each result until the right person has checked it, and builds the report card the moment a child's term is complete.</p>
+
+  <!-- workflow -->
+  <svg viewBox="0 0 700 92" width="100%" style="margin-bottom:5mm">
+    <g font-family="Public Sans">
+      <g transform="translate(0 10)"><path d="M0 0 H150 L170 36 L150 72 H0 Z" fill="#e9ecfb"/><text x="16" y="30" font-weight="700" font-size="13" fill="#0a1a8f">Entered</text><text x="16" y="50" font-size="9.5" fill="#3d4266">by the subject teacher</text></g>
+      <g transform="translate(176 10)"><path d="M0 0 H150 L170 36 L150 72 H0 L20 36 Z" fill="#c9d1f3"/><text x="30" y="30" font-weight="700" font-size="13" fill="#0a1a8f">Verified</text><text x="30" y="50" font-size="9.5" fill="#3d4266">checked for errors</text></g>
+      <g transform="translate(352 10)"><path d="M0 0 H150 L170 36 L150 72 H0 L20 36 Z" fill="#0a1a8f"/><text x="30" y="30" font-weight="700" font-size="13" fill="#fff">Approved</text><text x="30" y="50" font-size="9.5" fill="#c9cff0">signed off by class teacher</text></g>
+      <g transform="translate(528 10)"><path d="M0 0 H172 V72 H0 L20 36 Z" fill="#d8261d"/><text x="30" y="30" font-weight="700" font-size="13" fill="#fff">Released</text><text x="30" y="50" font-size="9.5" fill="#ffe1df">parents can see it</text></g>
+    </g>
+  </svg>
+
+  <div class="grid2" style="grid-template-columns: 1fr 1fr; gap:6mm; align-items:start">
+    <!-- report card mock -->
+    <div>
+      <svg viewBox="0 0 320 390" width="100%">
+        <rect x="0" y="0" width="320" height="390" rx="8" fill="#fff" stroke="#b9b2a0"/>
+        <rect x="0" y="0" width="320" height="6" fill="#0b1d4d"/>
+        <rect x="16" y="20" width="38" height="38" rx="6" fill="#0b1d4d"/><text x="35" y="44" text-anchor="middle" font-family="Newsreader" font-weight="600" font-size="15" fill="#fff">YS</text>
+        <text x="64" y="36" font-family="Newsreader" font-weight="600" font-size="15" fill="#12163a">Your School's Name</text>
+        <text x="64" y="52" font-family="Public Sans" font-size="8.5" fill="#6b6f87" font-style="italic">Your motto, in your colours</text>
+        <text x="304" y="36" text-anchor="end" font-family="IBM Plex Mono" font-size="8" fill="#d8261d">SECOND TERM</text>
+        <text x="304" y="50" text-anchor="end" font-family="IBM Plex Mono" font-size="8" fill="#6b6f87">2026/2027</text>
+        <line x1="16" y1="70" x2="304" y2="70" stroke="#ded8c8"/>
+        <g font-family="Public Sans" font-size="9">
+          <text x="16" y="86" fill="#6b6f87">Student</text><text x="70" y="86" fill="#12163a" font-weight="600">Sample Student · JSS 1B</text>
+          <rect x="16" y="98" width="288" height="18" fill="#0b1d4d"/>
+          <g fill="#fff" font-weight="700" font-size="8"><text x="22" y="110">SUBJECT</text><text x="160" y="110">CA/40</text><text x="200" y="110">EXAM/60</text><text x="250" y="110">TOTAL</text><text x="288" y="110">GR</text></g>
+          <g fill="#12163a">
+            <text x="22" y="132">Mathematics</text><text x="168" y="132">34</text><text x="212" y="132">52</text><text x="256" y="132" font-weight="700">86</text><text x="290" y="132" fill="#1d7a4b" font-weight="700">A</text>
+            <text x="22" y="152">English Language</text><text x="168" y="152">31</text><text x="212" y="152">47</text><text x="256" y="152" font-weight="700">78</text><text x="290" y="152" fill="#1d7a4b" font-weight="700">A</text>
+            <text x="22" y="172">Basic Science</text><text x="168" y="172">29</text><text x="212" y="172">42</text><text x="256" y="172" font-weight="700">71</text><text x="290" y="172" fill="#1d7a4b" font-weight="700">A</text>
+            <text x="22" y="192">Civic Education</text><text x="168" y="192">27</text><text x="212" y="192">37</text><text x="256" y="192" font-weight="700">64</text><text x="290" y="192" fill="#0a1a8f" font-weight="700">B</text>
+            <text x="22" y="212">Social Studies</text><text x="168" y="212">25</text><text x="212" y="212">33</text><text x="256" y="212" font-weight="700">58</text><text x="290" y="212" fill="#0a1a8f" font-weight="700">C</text>
+          </g>
+          <g stroke="#ede8dc"><line x1="16" y1="138" x2="304" y2="138"/><line x1="16" y1="158" x2="304" y2="158"/><line x1="16" y1="178" x2="304" y2="178"/><line x1="16" y1="198" x2="304" y2="198"/><line x1="16" y1="218" x2="304" y2="218"/></g>
+          <rect x="16" y="228" width="140" height="40" rx="5" fill="#e9ecfb"/><text x="26" y="244" font-size="8" fill="#6b6f87">OVERALL</text><text x="26" y="261" font-family="Newsreader" font-weight="600" font-size="15" fill="#0a1a8f">71.4% · A</text>
+          <rect x="164" y="228" width="140" height="40" rx="5" fill="#f5f1e8"/><text x="174" y="244" font-size="8" fill="#6b6f87">CLASS AVERAGE</text><text x="174" y="261" font-family="Newsreader" font-weight="600" font-size="15" fill="#12163a">62.9%</text>
+          <text x="16" y="290" font-size="8" fill="#6b6f87">AFFECTIVE &amp; PSYCHOMOTOR</text>
+          <g fill="#0a1a8f"><circle cx="22" cy="302" r="3.5"/><circle cx="32" cy="302" r="3.5"/><circle cx="42" cy="302" r="3.5"/><circle cx="52" cy="302" r="3.5"/></g><circle cx="62" cy="302" r="3.5" fill="#ded8c8"/><text x="72" y="305" font-size="8.5" fill="#3d4266">Punctuality</text>
+          <g fill="#0a1a8f"><circle cx="160" cy="302" r="3.5"/><circle cx="170" cy="302" r="3.5"/><circle cx="180" cy="302" r="3.5"/><circle cx="190" cy="302" r="3.5"/><circle cx="200" cy="302" r="3.5"/></g><text x="210" y="305" font-size="8.5" fill="#3d4266">Neatness</text>
+          <text x="16" y="328" font-size="8" fill="#6b6f87">CLASS TEACHER'S COMMENT</text>
+          <text x="16" y="342" font-size="9" fill="#12163a" font-style="italic">A focused and diligent term. Keep it up.</text>
+          <path d="M20 372 c8 -12 14 6 22 -4 s10 -6 18 2" stroke="#0a1a8f" fill="none" stroke-width="1.2"/><line x1="16" y1="376" x2="120" y2="376" stroke="#b9b2a0"/>
+          <path d="M200 372 c6 -10 12 4 20 -6 s12 0 22 4" stroke="#0a1a8f" fill="none" stroke-width="1.2"/><line x1="196" y1="376" x2="304" y2="376" stroke="#b9b2a0"/>
+          <text x="16" y="386" font-size="7" fill="#6b6f87">Class teacher</text><text x="196" y="386" font-size="7" fill="#6b6f87">Head Teacher</text>
+        </g>
+      </svg>
+      <div class="caption">Illustration of a term report card, available as a page and as a PDF.</div>
+    </div>
+    <div>
+      <ul class="ticks" style="font-size:9pt">
+        <li><strong>Continuous assessment (40) plus exam (60),</strong> added up the same way for every child, with grade and remark.</li>
+        <li><strong>Different people check each step,</strong> so mistakes are caught before a parent ever sees them.</li>
+        <li><strong>Never incomplete.</strong> A card appears only when every result for the term is released, so it never shows a missing mark.</li>
+        <li><strong>Signed and branded:</strong> your logo and colours, the class teacher's comment and signature, the head's signature, the class average, trait ratings and next-term date.</li>
+        <li><strong>A whole class in one PDF</strong> to print, or each card alone.</li>
+        <li><strong>Parents told for you</strong> by email, SMS and in-app alert the moment the card is ready.</li>
+      </ul>
+      <div class="card" style="margin-top:3mm; padding:3.6mm">
+        <div class="kicker">How every subject is scored</div>
+        <svg viewBox="0 0 300 120" width="100%">
+          <!-- donut 40/60 -->
+          <circle cx="55" cy="58" r="40" fill="none" stroke="#0a1a8f" stroke-width="18" stroke-dasharray="150.8 251.3" transform="rotate(-90 55 58)"/>
+          <circle cx="55" cy="58" r="40" fill="none" stroke="#d8261d" stroke-width="18" stroke-dasharray="100.5 251.3" stroke-dashoffset="-150.8" transform="rotate(-90 55 58)"/>
+          <text x="55" y="56" text-anchor="middle" font-family="Newsreader" font-weight="600" font-size="17" fill="#12163a">100</text>
+          <text x="55" y="70" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#6b6f87">MARKS</text>
+          <g font-family="Public Sans" font-size="10">
+            <rect x="118" y="30" width="10" height="10" rx="2" fill="#0a1a8f"/><text x="134" y="39" fill="#12163a"><tspan font-weight="700">Exam · 60</tspan></text>
+            <text x="134" y="52" font-size="8.5" fill="#6b6f87">end-of-term examination</text>
+            <rect x="118" y="72" width="10" height="10" rx="2" fill="#d8261d"/><text x="134" y="81" fill="#12163a"><tspan font-weight="700">CA · 40</tspan></text>
+            <text x="134" y="94" font-size="8.5" fill="#6b6f87">tests, assignments, projects</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <!-- grade bands -->
+  <div class="card" style="margin-top:4mm; padding:3.6mm 4.4mm">
+    <div class="kicker">The grading key printed on every card</div>
+    <svg viewBox="0 0 680 54" width="100%">
+      <g font-family="Public Sans" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">
+        <rect x="0" y="0" width="272" height="28" fill="#9b968a" rx="4"/><text x="136" y="18">F · below 40 · Fail</text>
+        <rect x="272" y="0" width="34" height="28" fill="#c9784a"/><text x="289" y="18">E</text>
+        <rect x="306" y="0" width="34" height="28" fill="#d9a43a"/><text x="323" y="18">D</text>
+        <rect x="340" y="0" width="68" height="28" fill="#0f766e"/><text x="374" y="18">C · Good</text>
+        <rect x="408" y="0" width="68" height="28" fill="#2a479a"/><text x="442" y="18">B · V. Good</text>
+        <rect x="476" y="0" width="204" height="28" fill="#0a1a8f" rx="4"/><text x="578" y="18">A · 70–100 · Excellent</text>
+      </g>
+      <g font-family="IBM Plex Mono" font-size="8.5" fill="#6b6f87" text-anchor="middle">
+        <text x="0" y="44" text-anchor="start">0</text><text x="272" y="44">40</text><text x="306" y="44">45</text><text x="340" y="44">50</text><text x="408" y="44">60</text><text x="476" y="44">70</text><text x="680" y="44" text-anchor="end">100</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">09</span></div>
+</section>
+
+<!-- =============================== 10. DASHBOARD =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>08 · The overview</span></div>
+  <div class="eyebrow">For the proprietor and head</div>
+  <h2>The whole school at a glance.</h2>
+  <p class="lead" style="margin-bottom:5mm">Open the portal and the Overview answers the questions a school leader asks every morning. How are we doing this term compared with last? Who has no class teacher? How many results are ready to release? How full is the register?</p>
+
+  <div class="shot"><div class="bar"><i></i><i></i><i></i><b>yourschool · Overview</b></div><img src="assets/shots/overview.webp" alt=""></div>
+  <div class="caption">The Overview of a demonstration school ("Alpha School"). All names and figures are sample data.</div>
+
+  <div class="grid3" style="margin-top:5mm">
+    <div class="card"><div class="ico"><svg><use href="#i-chart"/></svg></div><h4>Term against term</h4><p class="small" style="margin:0">Average score, attendance, marks released and work set, each compared with the previous term, with ▲ or ▼ showing which way it moved.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-check"/></svg></div><h4>What needs attention</h4><p class="small" style="margin:0">Results waiting to be released, classes with no class teacher and unallocated payments are flagged, so nothing is left sitting.</p></div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-users"/></svg></div><h4>Every class in one table</h4><p class="small" style="margin:0">Students, average, attendance, a results bar and the top student for every class, plus the attendance trend and enrolment by section.</p></div>
+  </div>
+  <div class="card navy" style="margin-top:4mm; display:flex; gap:5mm; align-items:center">
+    <div class="num" style="color:#ffb3ae; font-size:22pt">✓</div>
+    <div><strong>A setup checklist guides new schools.</strong> <span style="color:#c9cff0">"Set up your school" walks you through classes, subjects, students and fee items, and ticks each step off by reading your own data. You always know what's left to do.</span></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">10</span></div>
+</section>
+
+<!-- =============================== 11. TEACHING =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>09 · Teaching &amp; learning</span></div>
+  <div class="eyebrow">Day to day</div>
+  <h2>Teaching, attendance and timetables.</h2>
+  <p class="lead" style="margin-bottom:5mm">The ordinary business of a school day, done in minutes instead of hours, and visible to the families who care about it.</p>
+
+  <div class="grid4" style="margin-bottom:5mm">
+    <div class="card"><div class="kicker">01</div><h4>Assignments</h4><p class="small" style="margin:0">Teachers set work, students answer online, and marks come back without anyone re-typing them.</p></div>
+    <div class="card"><div class="kicker">02</div><h4>Class projects</h4><p class="small" style="margin:0">Written or quiz-style, for one student or a whole class, graded with the same care.</p></div>
+    <div class="card"><div class="kicker">03</div><h4>Tests &amp; exams</h4><p class="small" style="margin:0">The same timed, auto-marked engine as the entrance exam, used for everyday classwork.</p></div>
+    <div class="card"><div class="kicker">04</div><h4>Practice</h4><p class="small" style="margin:0">Retake as often as you like, in a new order every time. Never counted towards grades.</p></div>
+  </div>
+
+  <div class="grid2" style="grid-template-columns: 1.35fr 1fr; gap:6mm; align-items:start">
+    <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i><b>yourschool · Attendance</b></div><img src="assets/shots/attendance.webp" alt=""></div>
+      <div class="caption">Taking the register: one tap per child, or "Everyone present" and adjust. Demo data.</div>
+    </div>
+    <div>
+      <h3>Attendance in moments</h3>
+      <ul class="ticks" style="font-size:9pt">
+        <li>Present, late, absent or excused for the whole class, once a day.</li>
+        <li>Term summaries per class, with percentages.</li>
+        <li>Parents and students see the day-by-day record on their own dashboard.</li>
+      </ul>
+      <h3 style="margin-top:4mm">Timetables, released together</h3>
+      <ul class="ticks" style="font-size:9pt">
+        <li>Build the exam or test timetable as a private draft and edit it freely.</li>
+        <li>Release it once and every affected student and parent is told by <strong>email, SMS and in-app alert</strong> at the same moment.</li>
+        <li>Families download it as a PDF or print it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card blue" style="margin-top:5mm">
+    <div class="grid3" style="gap:5mm">
+      <div><h4>Built for Nigerian schools</h4><p class="small" style="margin:0">Crèche, Nursery, Primary, JSS and SSS, with Science, Art and Commercial departments. Subjects can be set for each department.</p></div>
+      <div><h4>Early years done right</h4><p class="small" style="margin:0">Crèche and Nursery pupils don't need logins. Teachers record scores and parents still see fees, results and report cards.</p></div>
+      <div><h4>Nothing lost or counted twice</h4><p class="small" style="margin:0">Answers are saved when a student presses Save &amp; Next, so a dropped connection or stray tap never loses or doubles a response.</p></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:4mm; padding:4mm 5mm">
+    <div class="kicker">One release, everyone told</div>
+    <svg viewBox="0 0 680 130" width="100%">
+      <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#0a1a8f"/></marker></defs>
+      <g font-family="Public Sans" text-anchor="middle">
+        <rect x="0" y="40" width="140" height="50" rx="8" fill="#ede8dc"/><text x="70" y="61" font-weight="700" font-size="11" fill="#12163a">Draft timetable</text><text x="70" y="77" font-size="9" fill="#6b6f87">private to staff</text>
+        <path d="M144 65 H190" stroke="#0a1a8f" stroke-width="2" marker-end="url(#a5)"/>
+        <rect x="196" y="40" width="130" height="50" rx="25" fill="#d8261d"/><text x="261" y="70" font-weight="700" font-size="12" fill="#fff">Release</text>
+        <g stroke="#0a1a8f" stroke-width="1.6" fill="none"><path d="M330 65 C370 65 370 18 410 18" marker-end="url(#a5)"/><path d="M330 65 H410" marker-end="url(#a5)"/><path d="M330 65 C370 65 370 112 410 112" marker-end="url(#a5)"/></g>
+        <rect x="414" y="4" width="120" height="28" rx="6" fill="#e9ecfb"/><text x="474" y="22" font-size="10" font-weight="600" fill="#0a1a8f">In-app alert</text>
+        <rect x="414" y="51" width="120" height="28" rx="6" fill="#e9ecfb"/><text x="474" y="69" font-size="10" font-weight="600" fill="#0a1a8f">Email</text>
+        <rect x="414" y="98" width="120" height="28" rx="6" fill="#e9ecfb"/><text x="474" y="116" font-size="10" font-weight="600" fill="#0a1a8f">SMS</text>
+        <g stroke="#b9b2a0" stroke-width="1.2"><path d="M534 18 L560 50M534 65 H560M534 112 L560 80"/></g>
+        <rect x="560" y="30" width="120" height="70" rx="8" fill="#0b1d4d"/><text x="620" y="58" font-size="10.5" font-weight="700" fill="#fff">Every student</text><text x="620" y="74" font-size="10.5" font-weight="700" fill="#fff">&amp; parent</text><text x="620" y="89" font-size="8.5" fill="#c9cff0">in the classes covered</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">11</span></div>
+</section>
+
+<!-- =============================== 12. FINANCE =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>10 · Fees &amp; receipts</span></div>
+  <div class="eyebrow red">Finance</div>
+  <h2>Always know who has paid, and who hasn't.</h2>
+  <p class="lead" style="margin-bottom:5mm">Set fees once by class and term, charge students in a few clicks, and watch collections come in live. Every payment produces a receipt in your colours that reaches the parent by itself.</p>
+
+  <div class="shot"><div class="bar"><i></i><i></i><i></i><b>yourschool · Finance · Collections</b></div><img src="assets/shots/finance.webp" alt=""></div>
+  <div class="caption">Collections for a demonstration school: money in by day, payment method mix, how much of the session's fees is collected, and the largest balances. Sample figures.</div>
+
+  <div class="grid2" style="grid-template-columns: 1fr 1fr; gap:6mm; margin-top:5mm; align-items:start">
+    <div>
+      <ul class="ticks red" style="font-size:9pt">
+        <li><strong>Fees set once, by class:</strong> tuition, uniform, transport and more, per class and term.</li>
+        <li><strong>Balances always to hand:</strong> paid, part paid or unpaid, per fee and per child, including arrears from earlier sessions.</li>
+        <li><strong>Cash, transfer, POS or online,</strong> all recorded in one ledger.</li>
+        <li><strong>Mistakes are corrected, not hidden.</strong> A wrong payment is voided with a reason and stays on record.</li>
+        <li><strong>Unallocated money is flagged</strong> until it's applied to a fee.</li>
+      </ul>
+    </div>
+    <!-- receipt mock -->
+    <svg viewBox="0 0 300 200" width="100%">
+      <rect x="0" y="0" width="300" height="200" rx="8" fill="#fff" stroke="#b9b2a0"/>
+      <rect x="0" y="0" width="300" height="5" fill="#0b1d4d"/><rect x="0" y="5" width="90" height="2.5" fill="#d8261d"/>
+      <rect x="14" y="16" width="28" height="28" rx="5" fill="#0b1d4d"/><text x="28" y="34" text-anchor="middle" font-family="Newsreader" font-weight="600" font-size="11" fill="#fff">YS</text>
+      <text x="50" y="28" font-family="Newsreader" font-weight="600" font-size="12" fill="#12163a">Your School's Name</text>
+      <text x="50" y="40" font-family="Public Sans" font-size="7.5" fill="#6b6f87">12 Your Street, Your Town · 0800 000 0000</text>
+      <text x="286" y="28" text-anchor="end" font-family="IBM Plex Mono" font-size="8" fill="#d8261d">OFFICIAL RECEIPT</text>
+      <text x="286" y="40" text-anchor="end" font-family="IBM Plex Mono" font-size="7" fill="#6b6f87">No. ABC-2026-00042</text>
+      <g font-family="Public Sans" font-size="8">
+        <text x="14" y="64" fill="#6b6f87">RECEIVED FROM</text><text x="100" y="64" fill="#12163a" font-weight="600">Mrs A. Parent</text>
+        <text x="14" y="78" fill="#6b6f87">STUDENT</text><text x="100" y="78" fill="#12163a" font-weight="600">Sample Student · JSS 1</text>
+        <text x="14" y="92" fill="#6b6f87">FOR</text><text x="100" y="92" fill="#12163a" font-weight="600">School fees, 2026/2027</text>
+        <rect x="14" y="102" width="272" height="30" rx="4" fill="#e9ecfb"/>
+        <text x="24" y="121" fill="#0a1a8f" font-weight="700">AMOUNT RECEIVED</text><text x="276" y="122" text-anchor="end" font-family="Newsreader" font-weight="600" font-size="15" fill="#0a1a8f">₦50,000</text>
+        <text x="14" y="148" fill="#6b6f87">Charged ₦120,000 · Paid to date ₦50,000 ·</text><text x="196" y="148" fill="#d8261d" font-weight="700">Balance ₦70,000</text>
+        <path d="M200 176 c8 -12 14 6 22 -4 s10 -6 18 2" stroke="#0a1a8f" fill="none" stroke-width="1.2"/><line x1="190" y1="182" x2="286" y2="182" stroke="#b9b2a0"/>
+        <text x="190" y="192" font-size="7" fill="#6b6f87">Authorised signature</text>
+        <rect x="14" y="166" width="96" height="22" rx="11" fill="#e3f0e8"/><text x="62" y="180" text-anchor="middle" fill="#1d7a4b" font-weight="700" font-size="7.5">✓ Sent by email &amp; SMS</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">12</span></div>
+</section>
+
+<!-- =============================== 13. ONLINE PAYMENTS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>11 · Online payments</span></div>
+  <div class="eyebrow red">Pay fees online</div>
+  <h2>Parents pay from their phone, straight into your account.</h2>
+  <p class="lead" style="margin-bottom:6mm">Connect your school's own Paystack account and parents can pay any amount up to what they owe by card, bank transfer or USSD. The money goes <strong>directly to your school</strong>. Brightstars never holds it.</p>
+
+  <svg viewBox="0 0 700 200" width="100%" style="margin-bottom:6mm">
+    <defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#d8261d"/></marker></defs>
+    <g fill="none" stroke="#d8261d" stroke-width="2"><path d="M128 80 H168" marker-end="url(#a4)"/><path d="M308 80 H348" marker-end="url(#a4)"/><path d="M488 80 H528" marker-end="url(#a4)"/></g>
+    <g font-family="Public Sans" text-anchor="middle">
+      <g transform="translate(0 20)"><rect width="128" height="120" rx="12" fill="#fff" stroke="#ded8c8"/>
+        <rect x="44" y="14" width="40" height="64" rx="7" fill="#12163a"/><rect x="48" y="22" width="32" height="46" rx="3" fill="#e9ecfb"/><rect x="52" y="52" width="24" height="10" rx="2" fill="#d8261d"/>
+        <text x="64" y="96" font-weight="700" font-size="11" fill="#12163a">Parent taps</text><text x="64" y="110" font-size="9" fill="#6b6f87">"Pay fees"</text></g>
+      <g transform="translate(180 20)"><rect width="128" height="120" rx="12" fill="#fff" stroke="#ded8c8"/>
+        <g transform="translate(46 18)"><rect width="36" height="26" rx="4" fill="none" stroke="#0a1a8f" stroke-width="2"/><line x1="0" y1="9" x2="36" y2="9" stroke="#0a1a8f" stroke-width="3"/></g>
+        <text x="64" y="66" font-size="8.5" fill="#6b6f87">Card · Transfer · USSD</text>
+        <text x="64" y="96" font-weight="700" font-size="11" fill="#12163a">Pays on Paystack</text><text x="64" y="110" font-size="9" fill="#6b6f87">secure checkout</text></g>
+      <g transform="translate(360 20)"><rect width="128" height="120" rx="12" fill="#fff" stroke="#ded8c8"/>
+        <circle cx="64" cy="40" r="22" fill="#e3f0e8"/><path d="M53 40 l8 8 14-16" stroke="#1d7a4b" stroke-width="3" fill="none"/>
+        <text x="64" y="96" font-weight="700" font-size="11" fill="#12163a">Confirmed</text><text x="64" y="110" font-size="9" fill="#6b6f87">checked with Paystack</text></g>
+      <g transform="translate(540 20)"><rect width="160" height="120" rx="12" fill="#0b1d4d"/>
+        <use href="#i-receipt" x="60" y="14" width="40" height="40" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <text x="80" y="80" font-weight="700" font-size="11" fill="#fff">Receipt + balance</text><text x="80" y="96" font-size="9" fill="#c9cff0">email, SMS and in-app,</text><text x="80" y="110" font-size="9" fill="#c9cff0">ledger updated</text></g>
+    </g>
+    <text x="350" y="178" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#8a8469" letter-spacing="1.5">NO ONE IN THE OFFICE HAS TO DO ANYTHING</text>
+  </svg>
+
+  <div class="grid2" style="gap:6mm; align-items:start">
+    <div class="card">
+      <div class="kicker">Example: how a demonstration school was paid, last 30 days</div>
+      <svg viewBox="0 0 300 150" width="100%">
+        <g font-family="Public Sans" font-size="10">
+          <text x="0" y="22" fill="#12163a">Cash</text><rect x="90" y="10" width="200" height="16" rx="3" fill="#ede8dc"/><rect x="90" y="10" width="62" height="16" rx="3" fill="#0a1a8f"/><text x="160" y="22" fill="#12163a" font-weight="700">31%</text>
+          <text x="0" y="56" fill="#12163a">Bank transfer</text><rect x="90" y="44" width="200" height="16" rx="3" fill="#ede8dc"/><rect x="90" y="44" width="58" height="16" rx="3" fill="#2a479a"/><text x="156" y="56" fill="#12163a" font-weight="700">29%</text>
+          <text x="0" y="90" fill="#12163a">POS</text><rect x="90" y="78" width="200" height="16" rx="3" fill="#ede8dc"/><rect x="90" y="78" width="44" height="16" rx="3" fill="#6b82d6"/><text x="142" y="90" fill="#12163a" font-weight="700">22%</text>
+          <text x="0" y="124" fill="#12163a">Online</text><rect x="90" y="112" width="200" height="16" rx="3" fill="#ede8dc"/><rect x="90" y="112" width="34" height="16" rx="3" fill="#d8261d"/><text x="132" y="124" fill="#12163a" font-weight="700">17%</text>
+        </g>
+      </svg>
+      <p class="small muted" style="margin:0">Sample data from the demo school shown on the previous page. Every channel lands in the same ledger and produces the same receipt.</p>
+    </div>
+    <div>
+      <h3>Safe by design</h3>
+      <ul class="ticks" style="font-size:9pt">
+        <li><strong>Your own Paystack account.</strong> No shared platform account and no middleman holding your money.</li>
+        <li><strong>Never trusted from a browser.</strong> Every payment is confirmed by asking Paystack directly, even if the parent closes their phone mid-payment.</li>
+        <li><strong>A double-tap never charges twice.</strong> Repeated clicks return to the same checkout.</li>
+        <li><strong>Your keys are encrypted</strong> and never shown again once saved. Only the School Admin can connect the account.</li>
+        <li><strong>Pay one fee or several at once,</strong> and buy from the school store too.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid3" style="margin-top:6mm">
+    <div class="card blue"><h4>One fee or all at once</h4><p class="small" style="margin:0">Parents can pay a single fee, part of a balance, or several fees together in one checkout.</p></div>
+    <div class="card blue"><h4>Confirmed even if they close the app</h4><p class="small" style="margin:0">Paystack also notifies the school directly, so a payment is recorded even if the parent closes their browser first.</p></div>
+    <div class="card blue"><h4>Same receipt, same ledger</h4><p class="small" style="margin:0">An online payment looks exactly like one recorded in the office, with the same branded receipt and balance update.</p></div>
+  </div>
+  <div class="band-cta" style="margin-top:5mm"><div><h3>Less cash in the office. Faster collections.</h3><span class="small">Parents who can pay from their phone at 9pm don't need to queue at the bursar's window at 9am.</span></div></div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">13</span></div>
+</section>
+
+<!-- =============================== 14. PARENTS & STUDENTS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>12 · Parents &amp; students</span></div>
+  <div class="eyebrow">For families</div>
+  <h2>Parents stay informed without phoning the office.</h2>
+  <p class="lead" style="margin-bottom:5mm">One parent login covers every child. Fees, results, report cards, attendance, timetables, messages and the store are all on their phone, in your school's colours.</p>
+
+  <div class="grid2" style="grid-template-columns: 0.9fr 1.1fr; gap:6mm; align-items:start">
+    <!-- phone mock -->
+    <svg viewBox="0 0 260 470" width="100%">
+      <rect x="10" y="0" width="240" height="470" rx="34" fill="#12163a"/>
+      <rect x="20" y="12" width="220" height="446" rx="26" fill="#f5f1e8"/>
+      <rect x="95" y="20" width="70" height="14" rx="7" fill="#12163a"/>
+      <rect x="20" y="42" width="220" height="50" fill="#0b1d4d"/>
+      <rect x="32" y="52" width="30" height="30" rx="6" fill="#fff"/><text x="47" y="72" text-anchor="middle" font-family="Newsreader" font-weight="600" font-size="12" fill="#0b1d4d">YS</text>
+      <text x="72" y="64" font-family="Newsreader" font-weight="600" font-size="12" fill="#fff">Your School</text><text x="72" y="78" font-family="Public Sans" font-size="8" fill="#c9cff0">Parent portal</text>
+      <g font-family="Public Sans">
+        <text x="32" y="114" font-size="12" font-weight="700" fill="#12163a">Good morning, Mrs Parent</text>
+        <rect x="32" y="124" width="96" height="44" rx="7" fill="#fff" stroke="#ded8c8"/><text x="40" y="140" font-size="7.5" fill="#6b6f87">FEES OWED</text><text x="40" y="159" font-family="Newsreader" font-weight="600" font-size="14" fill="#d8261d">₦70,000</text>
+        <rect x="132" y="124" width="96" height="44" rx="7" fill="#fff" stroke="#ded8c8"/><text x="140" y="140" font-size="7.5" fill="#6b6f87">AVERAGE</text><text x="140" y="159" font-family="Newsreader" font-weight="600" font-size="14" fill="#0a1a8f">71.4%</text>
+        <text x="32" y="188" font-size="8" fill="#8a8469" font-family="IBM Plex Mono" letter-spacing="1">YOUR CHILDREN</text>
+        <rect x="32" y="194" width="196" height="40" rx="7" fill="#fff" stroke="#ded8c8"/><circle cx="50" cy="214" r="10" fill="#e9ecfb"/><text x="50" y="218" text-anchor="middle" font-size="8" font-weight="700" fill="#0a1a8f">SS</text><text x="66" y="211" font-size="9.5" font-weight="600" fill="#12163a">Sample Student</text><text x="66" y="224" font-size="8" fill="#6b6f87">JSS 1B · 96% attendance</text><rect x="178" y="205" width="42" height="18" rx="9" fill="#d8261d"/><text x="199" y="217" text-anchor="middle" font-size="7.5" fill="#fff" font-weight="700">Pay</text>
+        <rect x="32" y="240" width="196" height="40" rx="7" fill="#fff" stroke="#ded8c8"/><circle cx="50" cy="260" r="10" fill="#fdeceb"/><text x="50" y="264" text-anchor="middle" font-size="8" font-weight="700" fill="#d8261d">ST</text><text x="66" y="257" font-size="9.5" font-weight="600" fill="#12163a">Second Twin</text><text x="66" y="270" font-size="8" fill="#6b6f87">Primary 4 · fully paid</text><rect x="178" y="251" width="42" height="18" rx="9" fill="#e3f0e8"/><text x="199" y="263" text-anchor="middle" font-size="7.5" fill="#1d7a4b" font-weight="700">Paid</text>
+        <text x="32" y="300" font-size="8" fill="#8a8469" font-family="IBM Plex Mono" letter-spacing="1">LATEST</text>
+        <rect x="32" y="306" width="196" height="40" rx="7" fill="#e9ecfb"/><text x="42" y="322" font-size="9" font-weight="700" fill="#0a1a8f">Report card ready</text><text x="42" y="336" font-size="8" fill="#3d4266">Second Term · tap to download</text>
+        <rect x="32" y="352" width="196" height="40" rx="7" fill="#e3f0e8"/><text x="42" y="368" font-size="9" font-weight="700" fill="#1d7a4b">Payment received · ₦50,000</text><text x="42" y="382" font-size="8" fill="#3d4266">Receipt attached (PDF)</text>
+        <rect x="20" y="410" width="220" height="48" fill="#fff"/><line x1="20" y1="410" x2="240" y2="410" stroke="#ded8c8"/>
+        <g font-size="7.5" text-anchor="middle" fill="#6b6f87"><text x="52" y="440" fill="#0a1a8f" font-weight="700">Home</text><text x="104" y="440">Children</text><text x="158" y="440">Messages</text><text x="208" y="440">Store</text></g>
+      </g>
+    </svg>
+    <div>
+      <h3>What parents get</h3>
+      <ul class="ticks" style="font-size:9pt">
+        <li>Every child in one table, showing what each owes, their average and attendance.</li>
+        <li>Results and report cards the moment they're released, ready to download.</li>
+        <li>Fee account by session, with receipts and online payment.</li>
+        <li>Attendance history and the exam timetable.</li>
+        <li>Two-way messages with the school.</li>
+        <li>The school store, with collection texts when an item is picked up.</li>
+      </ul>
+      <h3 style="margin-top:3mm">What students get</h3>
+      <ul class="ticks red" style="font-size:9pt">
+        <li>Assignments, projects, tests and exams with due dates and scores.</li>
+        <li>Unlimited practice tests that never count against them.</li>
+        <li>Their own timetable, attendance and report cards.</li>
+      </ul>
+      <!-- notification matrix -->
+      <div class="card" style="margin-top:3mm; padding:3.4mm">
+        <div class="kicker">Sent automatically, in your school's name</div>
+        <table style="font-size:8pt">
+          <tr style="font-weight:700; color:var(--ink)"><td style="padding:1mm 0">When…</td><td style="text-align:center">In-app</td><td style="text-align:center">Email</td><td style="text-align:center">SMS</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.2mm 0">A payment is recorded</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">● + PDF</td><td style="text-align:center;color:var(--ok)">●</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.2mm 0">A report card is ready</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.2mm 0">A timetable is released</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.2mm 0">A new fee is charged</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.2mm 0">New school work is set</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--ok)">●</td><td style="text-align:center;color:var(--muted)">–</td></tr>
+        </table>
+        <p class="small muted" style="margin:1.6mm 0 0">SMS is used only where it matters, which keeps your SMS credit costs down.</p>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:5mm; gap:5mm; grid-template-columns:1.4fr 1fr; align-items:center">
+    <div class="quote">"Are the results out?" "What do I still owe?" The answers are on the parent's phone before they think to call.</div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-msg"/></svg></div><h4>Messages, not missed calls</h4><p class="small" style="margin:0">Parents and staff exchange messages inside the portal, and a conversation the school starts reaches the parent by SMS too.</p></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">14</span></div>
+</section>
+
+<!-- =============================== 15. STORE & LIBRARY =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>13 · Store &amp; library</span></div>
+  <div class="eyebrow">Beyond the classroom</div>
+  <h2>The school store and the library, included.</h2>
+  <p class="lead" style="margin-bottom:5mm">Uniforms, books, bags and stationery, sold and tracked in the same portal. The library knows every book, copy and loan.</p>
+
+  <div class="shot crop"><div class="bar"><i></i><i></i><i></i><b>yourschool · Parent portal · Store</b></div><img src="assets/shots/parent-store.webp" alt="" style="height:76mm"></div>
+  <div class="caption">The store as a parent sees it, with prices, stock and "only 3 left" or "sold out" labels. Demo data and placeholder pictures.</div>
+
+  <div class="grid2" style="margin-top:5mm; gap:6mm">
+    <div class="card">
+      <div class="ico red"><svg><use href="#i-bag"/></svg></div>
+      <h3>School store</h3>
+      <ul class="ticks red" style="font-size:8.8pt">
+        <li>Inventory with prices, stock levels and up to three pictures per item.</li>
+        <li>Parents browse and buy for any child, online where the school accepts it.</li>
+        <li>Cash, transfer and POS sales recorded at the counter, with receipt.</li>
+        <li>Stock goes down by itself. Low-stock and sold-out items are flagged.</li>
+        <li>Hand-over records who collected the item and texts the parent.</li>
+        <li>Sales this month vs last, weekly sales and best sellers on the Overview.</li>
+        <li>A ready-made <strong>Store Keeper</strong> role.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ico teal"><svg><use href="#i-book"/></svg></div>
+      <h3>Library</h3>
+      <ul class="ticks" style="font-size:8.8pt">
+        <li>A catalogue of every book and each of its copies.</li>
+        <li>Lend to a student or a member of staff in a couple of clicks.</li>
+        <li>See what's out, who has it, and what's overdue.</li>
+        <li>Record returns so nobody has to remember who has what.</li>
+        <li>A ready-made <strong>Librarian</strong> role.</li>
+      </ul>
+      <div class="rule" style="margin:3mm 0"></div>
+      <p class="small" style="margin:0"><strong>Why it matters:</strong> fewer lost books, less cash handled informally, and money from the store that is visible and accounted for.</p>
+    </div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">15</span></div>
+</section>
+
+<!-- =============================== 16. GOVERNANCE =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>14 · Governance</span></div>
+  <div class="eyebrow">Staff, roles &amp; accountability</div>
+  <h2>Everyone sees what their job needs, and nothing more.</h2>
+  <p class="lead" style="margin-bottom:5mm">No single "give them access" switch. Every sensitive action has its own named permission, access follows your school's chain of authority, and every important action is recorded.</p>
+
+  <div class="grid2" style="grid-template-columns: 1fr 1.15fr; gap:6mm; align-items:start">
+    <div>
+      <div class="kicker">Your chain of authority, built in</div>
+      <svg viewBox="0 0 300 300" width="100%">
+        <g font-family="Public Sans" text-anchor="middle">
+          <rect x="70" y="0" width="160" height="40" rx="8" fill="#0b1d4d"/><text x="150" y="18" fill="#fff" font-weight="700" font-size="11">School Admin</text><text x="150" y="31" fill="#c9cff0" font-size="8.5">Proprietor · full control</text>
+          <rect x="20" y="64" width="260" height="40" rx="8" fill="#d8261d"/><text x="150" y="82" fill="#fff" font-weight="700" font-size="11">Executive &amp; office</text><text x="150" y="95" fill="#ffe1df" font-size="8.5">Bursar · Admissions · Secretary · Librarian · Store</text>
+          <rect x="70" y="128" width="160" height="40" rx="8" fill="#0a1a8f"/><text x="150" y="146" fill="#fff" font-weight="700" font-size="11">Head Teacher</text><text x="150" y="159" fill="#c9cff0" font-size="8.5">assigns duties below</text>
+          <rect x="50" y="192" width="200" height="40" rx="8" fill="#2a479a"/><text x="150" y="210" fill="#fff" font-weight="700" font-size="11">Class Teacher</text><text x="150" y="223" fill="#d9def5" font-size="8.5">register · comments · releases results</text>
+          <rect x="30" y="256" width="240" height="40" rx="8" fill="#e9ecfb" stroke="#0a1a8f"/><text x="150" y="274" fill="#0a1a8f" font-weight="700" font-size="11">Subject Teacher</text><text x="150" y="287" fill="#3d4266" font-size="8.5">own subject, own classes · submits marks</text>
+        </g>
+        <g stroke="#b9b2a0" stroke-width="1.5"><line x1="150" y1="40" x2="150" y2="64"/><line x1="150" y1="104" x2="150" y2="128"/><line x1="150" y1="168" x2="150" y2="192"/><line x1="150" y1="232" x2="150" y2="256"/></g>
+      </svg>
+    </div>
+    <div>
+      <!-- permission toggles -->
+      <div class="card" style="padding:3.6mm">
+        <div class="kicker">Example · a subject teacher, limited to SS 2 Mathematics</div>
+        <svg viewBox="0 0 320 150" width="100%">
+          <g font-family="IBM Plex Mono" font-size="10" fill="#12163a">
+            <text x="0" y="18">Take attendance</text><rect x="270" y="6" width="40" height="18" rx="9" fill="#1d7a4b"/><circle cx="301" cy="15" r="7" fill="#fff"/>
+            <text x="0" y="48">Enter results</text><rect x="270" y="36" width="40" height="18" rx="9" fill="#1d7a4b"/><circle cx="301" cy="45" r="7" fill="#fff"/>
+            <text x="0" y="78" fill="#6b6f87">Approve results</text><rect x="270" y="66" width="40" height="18" rx="9" fill="#d6d0c0"/><circle cx="279" cy="75" r="7" fill="#fff"/>
+            <text x="0" y="108" fill="#6b6f87">Admit candidates</text><rect x="270" y="96" width="40" height="18" rx="9" fill="#d6d0c0"/><circle cx="279" cy="105" r="7" fill="#fff"/>
+            <text x="0" y="138" fill="#6b6f87">Record payments</text><rect x="270" y="126" width="40" height="18" rx="9" fill="#d6d0c0"/><circle cx="279" cy="135" r="7" fill="#fff"/>
+          </g>
+        </svg>
+      </div>
+      <!-- audit -->
+      <div class="card" style="padding:3.6mm; margin-top:3.5mm">
+        <div class="kicker">Activity log · most recent</div>
+        <table style="font-size:8pt">
+          <tr style="color:var(--muted); font-family:var(--mono); font-size:7pt"><td>WHO</td><td>ACTION</td><td style="text-align:right">WHEN</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.3mm 0">A. Teacher</td><td>Entered Mathematics results, SS 2B</td><td style="text-align:right">09:41</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.3mm 0">B. Head</td><td>Approved Second Term results, JSS 1A</td><td style="text-align:right">Yesterday</td></tr>
+          <tr style="border-top:1px solid var(--line)"><td style="padding:1.3mm 0">C. Bursar</td><td>Voided a payment (duplicate entry)</td><td style="text-align:right">Mon</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid4" style="margin-top:5mm">
+    <div class="card blue"><div class="num" style="font-size:20pt">100+</div><p class="small" style="margin:1.4mm 0 0">named permissions, from "Take attendance" to "Release results"</p></div>
+    <div class="card blue"><div class="num" style="font-size:20pt; color:var(--red)">19</div><p class="small" style="margin:1.4mm 0 0">ready-made roles, or build your own from the catalogue</p></div>
+    <div class="card blue"><div class="num" style="font-size:20pt; color:var(--teal)">Scope</div><p class="small" style="margin:1.4mm 0 0">limit a teacher to the classes and subjects they actually teach</p></div>
+    <div class="card blue"><div class="num" style="font-size:20pt">Safe</div><p class="small" style="margin:1.4mm 0 0">no one can grant a permission they don't hold themselves</p></div>
+  </div>
+  <div class="shot crop" style="margin-top:5mm"><div class="bar"><i></i><i></i><i></i><b>yourschool · Settings · Staff roles</b></div><img src="assets/shots/roles.webp" alt="" style="height:50mm; object-position: 85% 22%"></div>
+  <div class="caption">Ready-made staff roles, each describing what it can do and how many permissions it carries. Demo data.</div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">16</span></div>
+</section>
+
+<!-- =============================== 17. SECURITY =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>15 · Security</span></div>
+  <div class="eyebrow">Private by design</div>
+  <h2>Children's information deserves real protection.</h2>
+  <p class="lead" style="margin-bottom:5mm">Many school systems keep every school's records in one big shared database, separated only by a label. Brightstars is built differently. <strong>Every school gets its own private database and its own private files.</strong> One school can never see another's records.</p>
+
+  <svg viewBox="0 0 700 250" width="100%" style="margin-bottom:5mm">
+    <rect x="0" y="0" width="700" height="250" rx="14" fill="#fff" stroke="#ded8c8"/>
+    <text x="350" y="26" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" letter-spacing="2" fill="#8a8469">ONE PLATFORM · SEPARATE SCHOOLS</text>
+    <g font-family="Public Sans" text-anchor="middle">
+      <g transform="translate(40 44)">
+        <rect width="190" height="186" rx="10" fill="#f4f5fd" stroke="#0a1a8f" stroke-width="1.5"/>
+        <rect x="0" y="0" width="190" height="34" rx="10" fill="#0a1a8f"/><rect x="0" y="22" width="190" height="12" fill="#0a1a8f"/>
+        <text x="95" y="22" fill="#fff" font-weight="700" font-size="11">Your School</text>
+        <text x="95" y="58" font-family="IBM Plex Mono" font-size="8.5" fill="#0a1a8f">yourschool.edu.ng</text>
+        <use href="#i-db" x="40" y="72" width="40" height="40" fill="none" stroke="#0a1a8f" stroke-width="1.6"/>
+        <use href="#i-book" x="110" y="74" width="36" height="36" fill="none" stroke="#0a1a8f" stroke-width="1.6"/>
+        <text x="60" y="126" font-size="9" fill="#3d4266">own database</text><text x="128" y="126" font-size="9" fill="#3d4266">own files</text>
+        <rect x="30" y="146" width="130" height="24" rx="12" fill="#e3f0e8"/><text x="95" y="162" font-size="9.5" font-weight="700" fill="#1d7a4b">● active</text>
+      </g>
+      <g transform="translate(255 44)">
+        <rect width="190" height="186" rx="10" fill="#fdf6f5" stroke="#d8261d" stroke-width="1.5"/>
+        <rect x="0" y="0" width="190" height="34" rx="10" fill="#d8261d"/><rect x="0" y="22" width="190" height="12" fill="#d8261d"/>
+        <text x="95" y="22" fill="#fff" font-weight="700" font-size="11">School B</text>
+        <text x="95" y="58" font-family="IBM Plex Mono" font-size="8.5" fill="#b01a12">portal.school-b.org</text>
+        <use href="#i-db" x="40" y="72" width="40" height="40" fill="none" stroke="#d8261d" stroke-width="1.6"/>
+        <use href="#i-book" x="110" y="74" width="36" height="36" fill="none" stroke="#d8261d" stroke-width="1.6"/>
+        <text x="60" y="126" font-size="9" fill="#3d4266">own database</text><text x="128" y="126" font-size="9" fill="#3d4266">own files</text>
+        <rect x="30" y="146" width="130" height="24" rx="12" fill="#e3f0e8"/><text x="95" y="162" font-size="9.5" font-weight="700" fill="#1d7a4b">● active</text>
+      </g>
+      <g transform="translate(470 44)">
+        <rect width="190" height="186" rx="10" fill="#f2f8f7" stroke="#0f766e" stroke-width="1.5"/>
+        <rect x="0" y="0" width="190" height="34" rx="10" fill="#0f766e"/><rect x="0" y="22" width="190" height="12" fill="#0f766e"/>
+        <text x="95" y="22" fill="#fff" font-weight="700" font-size="11">School C</text>
+        <text x="95" y="58" font-family="IBM Plex Mono" font-size="8.5" fill="#0f766e">school-c.sch.ng</text>
+        <use href="#i-db" x="40" y="72" width="40" height="40" fill="none" stroke="#0f766e" stroke-width="1.6"/>
+        <use href="#i-book" x="110" y="74" width="36" height="36" fill="none" stroke="#0f766e" stroke-width="1.6"/>
+        <text x="60" y="126" font-size="9" fill="#3d4266">own database</text><text x="128" y="126" font-size="9" fill="#3d4266">own files</text>
+        <rect x="30" y="146" width="130" height="24" rx="12" fill="#e3f0e8"/><text x="95" y="162" font-size="9.5" font-weight="700" fill="#1d7a4b">● active</text>
+      </g>
+      <g stroke="#d8261d" stroke-width="2.4" stroke-linecap="round"><line x1="236" y1="128" x2="250" y2="142"/><line x1="250" y1="128" x2="236" y2="142"/><line x1="451" y1="128" x2="465" y2="142"/><line x1="465" y1="128" x2="451" y2="142"/></g>
+    </g>
+  </svg>
+
+  <div class="grid3">
+    <div class="card"><div class="ico"><svg><use href="#i-db"/></svg></div><h4>Walled off, not filtered</h4><p class="small" style="margin:0">Students, results, fees and photographs live in your school's own database, not as tagged rows in a shared table that one bug could leak.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-key"/></svg></div><h4>Careful with passwords</h4><p class="small" style="margin:0">New accounts start with a one-time password that must be changed. Repeated wrong guesses are slowed. Changing a password signs out every device.</p></div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-shield"/></svg></div><h4>Secrets encrypted</h4><p class="small" style="margin:0">Your email, SMS and Paystack credentials are encrypted at rest, never shown again once saved, and kept out of activity logs.</p></div>
+    <div class="card"><div class="ico"><svg><use href="#i-users"/></svg></div><h4>Parents see only their children</h4><p class="small" style="margin:0">A parent's login opens their own children's records and nothing else. A login from one school doesn't work at another.</p></div>
+    <div class="card"><div class="ico red"><svg><use href="#i-clock"/></svg></div><h4>Exams survive hiccups</h4><p class="small" style="margin:0">Answers are saved as they're given and time is kept by the server. A restart doesn't throw a candidate out.</p></div>
+    <div class="card"><div class="ico teal"><svg><use href="#i-log"/></svg></div><h4>NDPR-aligned</h4><p class="small" style="margin:0">A published data-protection statement aligned with Nigeria's NDPR, linked from every school's sign-in page for parents and staff.</p></div>
+  </div>
+  <div class="card navy" style="margin-top:4mm"><strong>Archived, never lost.</strong> <span style="color:#c9cff0">Students who leave are archived, not deleted. Their full history, class placements and results by term stay available to the School Admin and can be restored at any time.</span></div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">17</span></div>
+</section>
+
+<!-- =============================== 18. COMPARISON =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>16 · How we compare</span></div>
+  <div class="eyebrow">Already using something?</div>
+  <h2>Here's what changes when you move.</h2>
+  <p class="lead" style="margin-bottom:5mm">You may already have school software, or a mix of spreadsheets and habits. Here is how Brightstars compares with what schools commonly use today.</p>
+
+  <table class="cmp">
+    <tr><th></th><th style="width:40mm">Paper &amp; spreadsheets</th><th style="width:44mm">Typical shared school software</th><th class="us" style="width:52mm">Brightstars Academics</th></tr>
+    <tr><td>Look and feel</td><td><span class="mk n"></span>Whatever the office prints</td><td><span class="mk p"></span>Vendor's name and colours</td><td class="us"><span class="mk y"></span>Your name, logo, colours, address and app icon</td></tr>
+    <tr><td>Where records live</td><td><span class="mk n"></span>Files, books, laptops</td><td><span class="mk p"></span>One shared database with other schools</td><td class="us"><span class="mk y"></span>Your school's own private database</td></tr>
+    <tr><td>Entrance exams</td><td><span class="mk n"></span>Paper scripts, hand marking</td><td><span class="mk p"></span>Often a separate tool or add-on</td><td class="us"><span class="mk y"></span>Built-in CBT, instant ranking, free practice page</td></tr>
+    <tr><td>Admissions</td><td><span class="mk n"></span>A list re-sorted by hand</td><td><span class="mk p"></span>Students re-typed after the exam</td><td class="us"><span class="mk y"></span>Ranked waitlist, admit in one click, family logins created</td></tr>
+    <tr><td>Results</td><td><span class="mk n"></span>Formulas and retyping</td><td><span class="mk p"></span>Entry, often without sign-off</td><td class="us"><span class="mk y"></span>Entered, verified, approved, released</td></tr>
+    <tr><td>Report cards</td><td><span class="mk n"></span>Built one child at a time</td><td><span class="mk p"></span>Generic template</td><td class="us"><span class="mk y"></span>Branded, signed, with class averages, ready on release</td></tr>
+    <tr><td>Fees &amp; receipts</td><td><span class="mk n"></span>Receipt books and a ledger</td><td><span class="mk p"></span>Receipts printed on request</td><td class="us"><span class="mk y"></span>Branded receipts sent by email and SMS by themselves</td></tr>
+    <tr><td>Online payment</td><td><span class="mk n"></span>Bank slip brought to office</td><td><span class="mk p"></span>Often via the vendor's account</td><td class="us"><span class="mk y"></span>Straight into your own Paystack account</td></tr>
+    <tr><td>Telling parents</td><td><span class="mk n"></span>Calls and notice boards</td><td><span class="mk p"></span>Manual broadcasts</td><td class="us"><span class="mk y"></span>Automatic email, SMS and in-app, from your accounts</td></tr>
+    <tr><td>Who sees what</td><td><span class="mk n"></span>Whoever holds the file</td><td><span class="mk p"></span>A few broad admin levels</td><td class="us"><span class="mk y"></span>100+ permissions, class-scoped, fully logged</td></tr>
+    <tr><td>Store &amp; library</td><td><span class="mk n"></span>Separate notebooks</td><td><span class="mk p"></span>Rarely included</td><td class="us"><span class="mk y"></span>Both included, linked to parents and payments</td></tr>
+    <tr><td>Nigerian structure</td><td><span class="mk p"></span>Adapted by hand</td><td><span class="mk p"></span>Often foreign defaults</td><td class="us"><span class="mk y"></span>Crèche to SSS, departments, Naira, BulkSMS Nigeria</td></tr>
+    <tr><td>Getting started</td><td><span class="mk n"></span>Never really "set up"</td><td><span class="mk p"></span>Weeks of configuration</td><td class="us"><span class="mk y"></span>Live address on day one, spreadsheet import, guided checklist</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:3mm"><span class="mk y"></span>fully covered &nbsp; <span class="mk p"></span>partly or sometimes &nbsp; <span class="mk n"></span>not covered. The first two columns describe common situations, not any particular product. Your current setup may already do some of these things well.</p>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">18</span></div>
+</section>
+
+<!-- =============================== 19. TEN REASONS + PERSONAS =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>17 · Why Brightstars</span></div>
+  <div class="eyebrow">Why schools choose us</div>
+  <h2>Ten reasons your school needs Brightstars.</h2>
+
+  <div class="grid2" style="gap:3mm 7mm; margin-bottom:6mm">
+    <div class="step"><div class="n">1</div><div><h4>It's your brand, not ours</h4><p class="small" style="margin:0">Parents see your school on every screen, receipt and report card, and as the app on their phone.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Your data is truly yours</h4><p class="small" style="margin:0">A private database for your school alone, exportable in full whenever you need it.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>Admissions to graduation in one system</h4><p class="small" style="margin:0">From entrance exam to report card, nothing is typed twice.</p></div></div>
+    <div class="step"><div class="n">4</div><div><h4>Fees collected faster</h4><p class="small" style="margin:0">Live balances, automatic receipts and online payment straight to your account.</p></div></div>
+    <div class="step"><div class="n">5</div><div><h4>Fewer phone calls</h4><p class="small" style="margin:0">Parents get results, receipts and timetables automatically.</p></div></div>
+    <div class="step"><div class="n">6</div><div><h4>Results you can trust</h4><p class="small" style="margin:0">Four-step sign-off before anything reaches a parent.</p></div></div>
+    <div class="step"><div class="n">7</div><div><h4>Accountability built in</h4><p class="small" style="margin:0">Precise permissions and an activity log answer "who did this?".</p></div></div>
+    <div class="step"><div class="n">8</div><div><h4>Made for Nigerian schools</h4><p class="small" style="margin:0">Crèche to SSS, departments, Naira, Paystack and local SMS.</p></div></div>
+    <div class="step"><div class="n">9</div><div><h4>A marketing tool too</h4><p class="small" style="margin:0">A public entrance-practice page brings prospective families to your brand.</p></div></div>
+    <div class="step"><div class="n">10</div><div><h4>Always improving</h4><p class="small" style="margin:0">Regular releases, announced in-portal with a "What's new" card for each audience.</p></div></div>
+  </div>
+
+  <div class="eyebrow">A better day for each person</div>
+  <div class="grid4">
+    <div class="card navy"><h4>Proprietor &amp; head</h4><ul class="ticks small" style="margin-top:2mm; color:#d9def5"><li>Whole school at a glance</li><li>Control who does what</li><li>Know who did what, and when</li><li>Sign once, for every report card</li></ul></div>
+    <div class="card"><h4>Teachers</h4><ul class="ticks small" style="margin-top:2mm"><li>Set work and quizzes online</li><li>Marks add up on their own</li><li>Register in moments</li><li>See only their own classes</li></ul></div>
+    <div class="card"><h4>Bursar &amp; office</h4><ul class="ticks red small" style="margin-top:2mm"><li>Record a payment in a minute</li><li>Receipts sent automatically</li><li>Every balance, always current</li><li>Far fewer parent calls</li></ul></div>
+    <div class="card"><h4>Parents &amp; students</h4><ul class="ticks small" style="margin-top:2mm"><li>Everything on their phone</li><li>Pay fees from anywhere</li><li>Practise without limits</li><li>Message the school directly</li></ul></div>
+  </div>
+  <div class="band-cta" style="margin-top:7mm"><div><h3>Stand out to families at admission time.</h3><span class="small">Parents now expect results, receipts and updates on their phone. Brightstars gives your school a modern portal under its own name.</span></div><div class="go">Book a walkthrough →</div></div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">19</span></div>
+</section>
+
+<!-- =============================== 20. GETTING STARTED =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>18 · Getting started</span></div>
+  <div class="eyebrow">Getting started</div>
+  <h2>From "yes" to your first class online, in four steps.</h2>
+  <p class="lead" style="margin-bottom:6mm">No servers to buy and no software to install. Your portal works in any modern browser, and we set it up with you.</p>
+
+  <svg viewBox="0 0 700 150" width="100%" style="margin-bottom:5mm">
+    <line x1="60" y1="40" x2="640" y2="40" stroke="#ded8c8" stroke-width="3"/>
+    <line x1="60" y1="40" x2="640" y2="40" stroke="#0a1a8f" stroke-width="3" stroke-dasharray="6 6"/>
+    <g font-family="Public Sans" text-anchor="middle">
+      <g transform="translate(80 0)"><circle cx="0" cy="40" r="26" fill="#d8261d"/><text y="47" fill="#fff" font-family="Newsreader" font-weight="600" font-size="20">1</text><text y="92" font-weight="700" font-size="12" fill="#12163a">We create your school</text><text y="110" font-size="9.5" fill="#3d4266">name, motto, logo,</text><text y="124" font-size="9.5" fill="#3d4266">colours and photographs</text></g>
+      <g transform="translate(260 0)"><circle cx="0" cy="40" r="26" fill="#0a1a8f"/><text y="47" fill="#fff" font-family="Newsreader" font-weight="600" font-size="20">2</text><text y="92" font-weight="700" font-size="12" fill="#12163a">Your address goes live</text><text y="110" font-size="9.5" fill="#3d4266">immediately; add your</text><text y="124" font-size="9.5" fill="#3d4266">own domain any time</text></g>
+      <g transform="translate(440 0)"><circle cx="0" cy="40" r="26" fill="#0a1a8f"/><text y="47" fill="#fff" font-family="Newsreader" font-weight="600" font-size="20">3</text><text y="92" font-weight="700" font-size="12" fill="#12163a">You set up your school</text><text y="110" font-size="9.5" fill="#3d4266">classes, subjects, staff,</text><text y="124" font-size="9.5" fill="#3d4266">roles and fee items</text></g>
+      <g transform="translate(620 0)"><circle cx="0" cy="40" r="26" fill="#0f766e"/><text y="47" fill="#fff" font-family="Newsreader" font-weight="600" font-size="20">4</text><text y="92" font-weight="700" font-size="12" fill="#12163a">Everyone signs in</text><text y="110" font-size="9.5" fill="#3d4266">students, parents and staff</text><text y="124" font-size="9.5" fill="#3d4266">choose their own password</text></g>
+    </g>
+  </svg>
+
+  <div class="grid2" style="gap:6mm; align-items:start">
+    <div class="card">
+      <div class="ico"><svg><use href="#i-upload"/></svg></div>
+      <h3>Bring your records with you</h3>
+      <p class="small">Move from spreadsheets in three guided steps. Every import is checked line by line. Bad rows are reported by line number and the good rows still go in.</p>
+      <svg viewBox="0 0 300 96" width="100%">
+        <g font-family="Public Sans" font-size="9.5">
+          <rect x="0" y="0" width="300" height="26" rx="6" fill="#e9ecfb"/><text x="10" y="17" font-weight="700" fill="#0a1a8f">1 · Students</text><text x="290" y="17" text-anchor="end" fill="#3d4266">with logins and parent details</text>
+          <rect x="0" y="34" width="300" height="26" rx="6" fill="#e9ecfb"/><text x="10" y="51" font-weight="700" fill="#0a1a8f">2 · Enrolment history</text><text x="290" y="51" text-anchor="end" fill="#3d4266">past classes and sessions</text>
+          <rect x="0" y="68" width="300" height="26" rx="6" fill="#e9ecfb"/><text x="10" y="85" font-weight="700" fill="#0a1a8f">3 · Past results</text><text x="290" y="85" text-anchor="end" fill="#3d4266">so records stay complete</text>
+        </g>
+      </svg>
+    </div>
+    <div class="card">
+      <div class="ico red"><svg><use href="#i-check"/></svg></div>
+      <h3>A checklist that guides you</h3>
+      <p class="small">The "Set up your school" card ticks off each step as you complete it.</p>
+      <ul class="ticks small" style="margin:0">
+        <li>Review your classes (pre-seeded for you)</li>
+        <li>Add subjects</li>
+        <li>Enrol students</li>
+        <li>Set up fee items</li>
+        <li>Open the school store (optional)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-top:5mm">
+    <div class="card blue"><h4>A staff guide with pictures</h4><p class="small" style="margin:0">A plain-language guide inside the portal, with screenshots and a link to every page it describes.</p></div>
+    <div class="card blue"><h4>"What's new," for everyone</h4><p class="small" style="margin:0">Staff, parents and students each see a short note about improvements that matter to them.</p></div>
+    <div class="card blue"><h4>Exams from day one</h4><p class="small" style="margin:0">The standard entrance papers are set up in one click, so your first entrance exam can run immediately.</p></div>
+  </div>
+  <div class="card" style="margin-top:5mm; display:grid; grid-template-columns: 36mm 1fr 1fr 1fr; gap:5mm; align-items:start">
+    <div><div class="kicker">All you need</div><h3 style="font-size:12pt">No new hardware</h3></div>
+    <div><h4>A device and a browser</h4><p class="small" style="margin:0">Any phone, tablet, laptop or desktop with a modern browser.</p></div>
+    <div><h4>Your existing records</h4><p class="small" style="margin:0">Student lists and past results in a spreadsheet, if you want to bring history across.</p></div>
+    <div><h4>Your branding</h4><p class="small" style="margin:0">Logo, colours, motto and a few photographs of the school.</p></div>
+  </div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">20</span></div>
+</section>
+
+<!-- =============================== 21. FAQ =============================== -->
+<section class="page">
+  <div class="run"><span class="l"><img src="assets/brightstars-mark.png" alt="">Brightstars Academics</span><span>19 · Questions</span></div>
+  <div class="eyebrow">Questions</div>
+  <h2>Things schools ask us.</h2>
+  <div style="columns:2; column-gap:8mm; margin-top:5mm">
+    <div class="faq"><h4>Do our staff need to be technical?</h4><p>No. Staff use ordinary web pages, and each person sees only the screens that matter to their job. We set up your school with you, and you can change your colours, logo and roles yourself afterwards.</p></div>
+    <div class="faq"><h4>Can we use our own web address?</h4><p>Yes. Your school gets an address the moment it's created, and it keeps working. To use your own domain as well, you add one simple record with your domain provider and we connect it.</p></div>
+    <div class="faq"><h4>Will messages come from us or from Brightstars?</h4><p>From you. Once you connect your school's accounts, emails and texts are sent from them. The Brightstars logo is never shown on your portal.</p></div>
+    <div class="faq"><h4>What if something goes wrong on exam day?</h4><p>Every answer is saved the moment it's chosen, and the clock is kept by the server. A candidate mid-paper carries on where they were, even after a restart. Staff can also grant a retake.</p></div>
+    <div class="faq"><h4>Do practice tests count towards grades?</h4><p>Never. Students can practise as often as they like, the questions come in a new order each time, and nothing they do in practice is recorded.</p></div>
+    <div class="faq"><h4>Can parents pay online?</h4><p>Yes, once you connect your school's own Paystack account. Parents pay any amount up to what they owe, by card, transfer or USSD, straight to your account. Office payments work exactly the same either way.</p></div>
+    <div class="faq"><h4>Can different staff have different access?</h4><p>Yes. You choose what each role can do and can limit a teacher to their own classes and subjects. Nobody can give someone more access than they have themselves.</p></div>
+    <div class="faq"><h4>Can we bring our own questions and records?</h4><p>Yes. Import your own question banks, and bring students, enrolment history and past results in from spreadsheets.</p></div>
+    <div class="faq"><h4>Does it work on phones?</h4><p>Yes. Every portal works on phones, tablets and computers, and can be installed as an app with your school's logo.</p></div>
+    <div class="faq"><h4>What happens to students who leave?</h4><p>They're archived, not deleted. Their sign-in stops, but their full record stays available and can be restored. Parents keep access to their fee account.</p></div>
+    <div class="faq"><h4>Can a school be paused?</h4><p>Yes. A school can be suspended and reactivated independently. Its data is untouched and it returns exactly where it left off.</p></div>
+    <div class="faq"><h4>Who owns our data?</h4><p>You do. Your records sit in your school's own database, and a complete export of your database and files can be produced at any time.</p></div>
+    <div class="faq"><h4>What does it cost?</h4><p>Talk to us. We'll look at the size of your school and what you need, and give you a clear answer with no hidden extras.</p></div>
+  </div>
+  <div class="band-cta" style="position:absolute; left:17mm; right:17mm; bottom:22mm"><div><h3>Still have a question?</h3><span class="small">We'll answer it on a walkthrough, using your school's own name and colours.</span></div><div class="go">Talk to us →</div></div>
+  <div class="foot"><span>BRIGHTSTARS ACADEMICS · SCHOOL PLATFORM GUIDE</span><span class="pn">21</span></div>
+</section>
+
+<!-- =============================== 22. BACK COVER =============================== -->
+<section class="page cover">
+  <svg class="stars" viewBox="0 0 210 297" preserveAspectRatio="none">
+    <g fill="none" stroke="#1b3277" stroke-width="0.5">
+      <use href="#i-star" x="-40" y="150" width="170" height="170"/>
+      <use href="#i-star" x="-16" y="176" width="120" height="120" stroke="#223c8a"/>
+    </g>
+    <g fill="#d8261d"><use href="#i-star" x="180" y="40" width="6" height="6"/><use href="#i-star" x="150" y="250" width="4" height="4"/></g>
+    <g fill="#4c66d9"><use href="#i-star" x="120" y="30" width="3.4" height="3.4"/></g>
+  </svg>
+  <div style="position:absolute; left:17mm; right:17mm; top:40mm">
+    <div class="title" style="position:static">
+      <div class="ey" style="font: 400 8.4pt/1 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:#ff8f88; margin-bottom:6mm">Next step</div>
+      <h1 style="font-size:40pt">See it running<br>for <em>your</em> school.</h1>
+      <p class="sub" style="font-size:12.5pt; line-height:1.5; color:#c9cff0; margin-top:6mm; max-width:140mm">Tell us about your school and we'll show you a walkthrough of how it would look and feel, with your name, your colours and your classes. Your portal's address is live the moment your school is created.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5mm; margin-top:12mm; max-width:150mm">
+      <div style="background:#13275e; border:1px solid #2a479a; border-radius:3mm; padding:5mm">
+        <div style="font: 400 7.4pt/1 var(--mono); letter-spacing:.14em; color:#9aa5dc; margin-bottom:2.4mm">BOOK A WALKTHROUGH</div>
+        <div style="font-family:var(--serif); font-size:13pt; color:#fff">[ contact email ]</div>
+        <div style="font-size:9.5pt; color:#c9cff0; margin-top:1.4mm">[ phone / WhatsApp ]</div>
+      </div>
+      <div style="background:#13275e; border:1px solid #2a479a; border-radius:3mm; padding:5mm">
+        <div style="font: 400 7.4pt/1 var(--mono); letter-spacing:.14em; color:#9aa5dc; margin-bottom:2.4mm">VISIT</div>
+        <div style="font-family:var(--serif); font-size:13pt; color:#fff">[ website ]</div>
+        <div style="font-size:9.5pt; color:#c9cff0; margin-top:1.4mm">[ office address ]</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute; left:17mm; right:17mm; bottom:20mm; display:flex; justify-content:space-between; align-items:flex-end">
+    <div style="background:#fff; border-radius:3mm; padding:3.5mm 5mm"><img src="assets/brightstars-logo.png" style="height:13mm; display:block" alt="Brightstars"></div>
+    <div style="font: 400 7.4pt/1.7 var(--mono); color:#9aa5dc; text-align:right; letter-spacing:.08em">ONE PLATFORM. EVERY SCHOOL ITS OWN.<br>© 2026 BRIGHTSTARS ACADEMICS</div>
+  </div>
+</section>
+
+</body>
+</html>
