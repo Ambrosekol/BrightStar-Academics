@@ -242,7 +242,8 @@
     document.addEventListener("submit", function (e) {
         if (e.defaultPrevented) return;   // a data-confirm the person cancelled (static/interactions.js), or an unfinished step
         var form = e.target;
-        if (!(form instanceof HTMLFormElement) || form.target || "full" in form.dataset) return;
+        // Attributes, not form.method / form.target: a field named "method" (Cash, POS...) or "target" would hide them.
+        if (!(form instanceof HTMLFormElement) || form.getAttribute("target") || "full" in form.dataset) return;
         var layer = layerOf(form);
         if (!body.contains(form) && !layer) return;
         var url = new URL(form.getAttribute("action") || (layer ? layer.url || layer.path : window.location.href), window.location.href);
@@ -252,7 +253,7 @@
         // The button pressed shows a spinner until the answer arrives.
         var button = e.submitter || form.querySelector("button[type=submit], button:not([type])");
         if (button && button.classList) { button.classList.add("is-busy"); button.setAttribute("data-inplace-busy", ""); }
-        if ((form.method || "get").toLowerCase() === "get") {
+        if ((form.getAttribute("method") || "get").toLowerCase() === "get") {
             url.search = new URLSearchParams(data).toString();
             if (layer) url.searchParams.set("modal", "1");
             load(url.href, { method: "GET" }, !layer, layer);

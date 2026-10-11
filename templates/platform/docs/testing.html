@@ -21,6 +21,19 @@
 <tr><td>{{ file('tests/current/test_message_notification_sender.py') }}</td><td>Admin messaging notification behaviour.</td></tr>
 <tr><td>{{ file('tests/current/test_docs_contract.py') }}</td><td>These documentation pages: every file, route, table, permission and template they name still exists, and the access rules for <code>/docs</code> hold.</td></tr>
 <tr><td>{{ file('tests/current/test_release_notes_contract.py') }}</td><td>The release notes file is valid; each audience gets only its own changes; a family or student change never links to the staff guide; staff help links name real guide pages.</td></tr>
+<tr><td>{{ file('tests/current/test_guide_contract.py') }}, {{ file('tests/current/test_guide_covers_every_nav_page.py') }}</td><td>The staff guide: every link and page it names is real, every guide page is registered, and every page in the staff menu is mentioned somewhere in the guide.</td></tr>
+<tr><td>{{ file('tests/current/test_csp_hardening_contract.py') }}</td><td>No inline event-handler attribute and no inline <code>&lt;script&gt;</code> without the response's nonce anywhere, since the Content-Security-Policy would silently stop them running.</td></tr>
+<tr><td>{{ file('tests/current/test_template_safe_filter_contract.py') }}</td><td>No <code>|safe</code> on anything a person typed, unless it was escaped first in the same expression.</td></tr>
+<tr><td>{{ file('tests/current/test_login_csrf_contract.py') }}</td><td>The signed-out forms (sign-in, forgotten and reset password) carry and check a CSRF token.</td></tr>
+<tr><td>{{ file('tests/current/test_top_admin_only_settings_contract.py') }}</td><td>Email and messaging, Administration, Online payments and the school profile stay with the School Admin alone, never a grantable permission.</td></tr>
+<tr><td>{{ file('tests/current/test_csv_injection_contract.py') }}</td><td>Nothing exported to CSV can be read by a spreadsheet as a formula.</td></tr>
+<tr><td>{{ file('tests/current/test_idempotent_write_contract.py') }}</td><td>A route guarded against being run twice really carries the hidden field its guard checks.</td></tr>
+<tr><td>{{ file('tests/current/test_form_attributes_contract.py') }}</td><td>The scripts that send forms read a form's <code>method</code>, <code>action</code> and <code>target</code> from its attributes, never <code>form.method</code> and the like, which a field of the same name hides (see {{ page('school-portal', 'School portal') }}, loading pages).</td></tr>
+<tr><td>{{ file('tests/current/test_connectivity_banner_contract.py') }}</td><td>Every real page carries the banner that says when the connection drops or returns.</td></tr>
+<tr><td>{{ file('tests/current/test_exam_resilience_contract.py') }}</td><td>The entrance exam's answer autosave retries over a dropped connection and only ends the paper on a real end state.</td></tr>
+<tr><td>{{ file('tests/current/test_background_jobs_contract.py') }}</td><td>Slow work (emails, texts) goes through the durable job table, never a bare thread.</td></tr>
+<tr><td>{{ file('tests/current/test_connection_pool_contract.py') }}, {{ file('tests/current/test_scale_caching_contract.py') }}</td><td>Small per-school connection pools, and the per-request and per-process caches that keep many schools cheap.</td></tr>
+<tr><td>{{ file('tests/current/test_pg_dump_lookup_contract.py') }}</td><td>A school export finds a <code>pg_dump</code> at least as new as the server.</td></tr>
 </table></div>
 
 <h2 id="e2e">The end-to-end scripts: <code>tests/verification/</code></h2>
@@ -47,6 +60,15 @@
 <tr><td><code>write_paths_student_archive.py</code></td><td>Archiving and restoring students: off the register, out of the count, sign-in revoked, the archived list and records for the School Admin only, class scope, CSRF, isolation.</td></tr>
 <tr><td><code>write_paths_student_import.py</code>, <code>write_paths_student_history_import.py</code></td><td>Bulk student import with its required guardian columns; enrolment history with YYYY-MM-DD dates, outcomes, earlier-session creation and graduate archiving.</td></tr>
 <tr><td><code>write_paths_results_import.py</code></td><td>Past results: one row per subject, term and session; released with a migration source; existing results never overwritten; the bulk-import permission.</td></tr>
+<tr><td><code>write_paths_admissions.py</code></td><td>From the entrance exam to a real student: the waitlist, admitting (the same records as registering by hand), and what the candidate and staff see after.</td></tr>
+<tr><td><code>write_paths_departments.py</code></td><td>SSS departments in the entrance exam: the candidate's choice, an equal share of each department's questions, the recommended department and why, and the department chosen when admitting.</td></tr>
+<tr><td><code>write_paths_staff_hierarchy.py</code></td><td>The chain of authority: teaching duties, a subject teacher kept to their class, subject and SSS department, the hand-off of results to the class teacher, who releases what, the Teachers page, Crèche and Nursery pupils, and the workspace chooser's doors.</td></tr>
+<tr><td><code>write_paths_subdivisions.py</code></td><td>Class subdivisions and class transfers: the Settings page and its lock, placing students in turn (new, imported and admitted, and by SSS department), a subdivision's class teacher seeing only its students, the request-and-approve transfer, and removing subdivisions.</td></tr>
+<tr><td><code>write_paths_attendance.py</code></td><td>The register, the term summary, scope and permissions, and what a student and a parent see.</td></tr>
+<tr><td><code>write_paths_timetable.py</code></td><td>Exam and test timetables: the draft, releasing it, who is told, and what a student and a parent see.</td></tr>
+<tr><td><code>write_paths_issue_to_class.py</code>, <code>_work_delete.py</code>, <code>_subject_selectors.py</code></td><td>Assignments and projects for a whole class; deleting work with no marks and restoring it (work with marks is never deleted); subjects offered to a class.</td></tr>
+<tr><td><code>write_paths_store.py</code></td><td>The school store: items with pictures, stock that cannot be oversold, payments at the office and online, handing over, cancelling, the parents' Store; also the paged logs and static-file caching.</td></tr>
+<tr><td><code>write_paths_guide.py</code></td><td>The staff guide renders every page, for any staff member, from either workspace, and its search finds real content.</td></tr>
 <tr><td><code>write_paths_admin_dock.py</code></td><td>What's new and the setup checklist for administrators, students and parents; audience separation; a parent keeps an archived child while the child's sign-in is revoked.</td></tr>
 </table></div>
 <p>Alongside these, {{ file('tests/verification/load_test_exam_answers.py') }} is not a correctness suite: it fires the exact upsert <code>/answer</code> performs, concurrently, against a real database, and reports writes per second and per-write latency (no built-in pass/fail - hardware varies) - run it against a throwaway database by default, or a real school's own with <code>--school CODE</code>, before its first big entrance day.</p>
@@ -70,5 +92,7 @@ check("a notice was saved", count("school_notices", "title = :t", t="Sports day"
 <p>Then add the route pattern (as Flask writes it, with converters like <code>&lt;int:notice_id&gt;</code>) to <code>EXERCISED</code>. Prefer asserting on the <em>database</em> and on what a person would see, not on incidental wording.</p>
 
 <h2 id="known">Known state of the suites</h2>
-<p>All suites pass except one that needs Chrome (<code>write_paths_candidate_results.py</code>) on a machine without it. If a script fails at its very start with "three schools were created" or similar, check the database-name template in {{ file('tests/verification/_pg.py') }} first.</p>
+<p>All suites pass except one that needs Chrome (<code>write_paths_candidate_results.py</code>) on a machine without it.
+After a change that adds a column, {{ file('tests/current/test_models_match_db.py') }} fails on a development machine until the
+application has started once (it adds missing columns to each school as it starts) or <code>upgrade</code> has been run. If a script fails at its very start with "three schools were created" or similar, check the database-name template in {{ file('tests/verification/_pg.py') }} first.</p>
 {% endblock %}

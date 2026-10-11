@@ -14,7 +14,45 @@ students may see it. Most of the code is in {{ file('blueprints/school/routes.py
 <tr><td>Class</td><td>{{ table('school_classes') }}</td><td>Seeded on start: Primary 1 to 6 (Primary 5 optional), JSS 1 to 3, SSS 1 to 3. Each has a stage and a level order.</td></tr>
 <tr><td>Subject</td><td>{{ table('school_subjects') }}, {{ table('class_subjects') }}</td><td>A subject is offered by classes; a subject can be locked so its records stop changing.</td></tr>
 <tr><td>Student and enrolment</td><td>{{ table('students') }}, {{ table('student_enrolments') }}</td><td>A student is enrolled in a class for a session. One enrolment is active at a time. Enrolment history is kept ({{ table('student_enrollment_history') }}).</td></tr>
+<tr><td>Class subdivision</td><td>{{ table('class_subdivisions') }}</td><td>Optional: a JSS or SSS class split into JSS 1A, JSS 1B and so on. A student's subdivision is on their enrolment (<code>student_enrolments.subdivision_id</code>). See <a href="#subdivisions">below</a>.</td></tr>
 </table></div>
+
+<h2 id="subdivisions">Class subdivisions and class transfers</h2>
+<p>A large JSS or SSS class can be split into <strong>subdivisions</strong> (JSS 1A, JSS 2 Gold, SS 1A Science), each with its
+own class teacher. The rules live in {{ file('core/subdivisions.py') }}; the School Admin's Settings page is
+{{ route('admin_school_subdivisions') }} ({{ file('blueprints/school/subdivisions.py') }}).</p>
+<ul>
+  <li><strong>Inside the class, not a class of its own.</strong> The class stays one class for its subjects, subject teachers,
+  timetable, fees, results and class averages. A subdivision only scopes its class teacher's own work: the register, report
+  card comments and trait ratings, and releasing results. An SSS subdivision may carry a department; it then takes only
+  students of that department (a subdivision with none takes anyone).</li>
+  <li><strong>Placing students in turn.</strong> A student goes to the eligible subdivision with the fewest students this
+  session, the earlier one on a tie (<code>choose</code>). This happens in one place, a SQLAlchemy <code>before_flush</code>
+  listener (<code>_place_on_flush</code>): a new enrolment, an enrolment moved to another class, or a student whose department
+  changed to one their subdivision does not take. So registering a student by hand, a bulk import, an entrance admission
+  and promotion all place students without any of them knowing about subdivisions. An enrolment whose
+  <code>subdivision_id</code> is set explicitly in the same save is left as set. Splitting a class (or removing a subdivision)
+  spreads the class's unplaced students with <code>spread</code>; removing every subdivision clears them all.</li>
+  <li><strong>The lock.</strong> Once set up, the School Admin locks the set-up (a key in {{ table('school_settings') }},
+  <code>class_subdivisions_locked</code>); nothing can be added, renamed or removed until it is unlocked. Moving a student is
+  still possible, by transfer.</li>
+  <li><strong>Class teachers per subdivision.</strong> A class-teacher duty may name a subdivision
+  (<code>teaching_duties.subdivision_id</code>, given on the staff form and the Teachers page). <code>teacher_subdivisions</code>
+  returns the subdivisions a person is limited to in a class, or <code>None</code> when they are not limited (the School Admin,
+  a head teacher, the whole class's class teacher, any subject teacher there). Every class-teacher check
+  (<code>class_teacher_of</code>, <code>_class_teacher_allowed</code>) still passes for them; the student lists are what
+  narrow: the student list and a student's page, the register (<code>class_roster</code>), report card comments and traits,
+  releasing results (<code>_students_taught</code> in {{ file('blueprints/school/results_records.py') }}), and their class card
+  on the Overview. <code>current_limit</code> is the same question for whoever is signed in.</li>
+  <li><strong>Transfers.</strong> {{ route('admin_school_transfers') }} ({{ file('blueprints/school/transfers.py') }},
+  {{ table('class_transfers') }}): the class teacher of a student's subdivision asks to move them to another subdivision, or in
+  SSS another department (and so a subdivision that takes it). Nothing changes until it is approved by the class teacher of
+  the subdivision they would join (<code>approvers</code>), or by the School Admin or a head teacher, who may decide any
+  transfer. Nobody approves their own request, so a transfer nobody else can approve (into a subdivision with no class
+  teacher, or a department change in a class without subdivisions) waits for the School Admin or a head teacher. One
+  pending transfer per student; approving applies it with <code>apply_transfer</code>, which sets the department first and
+  the subdivision last, so the placing listener keeps the chosen subdivision.</li>
+</ul>
 
 <h2 id="import">Bulk student import</h2>
 <p>A school with existing students does not type them in one at a time: {{ route('admin_school_students_import') }} takes a CSV — <code>first_name</code>, <code>last_name</code>, <code>gender</code> and <code>class</code> required; <code>middle_name</code>, <code>guardian_name</code>, <code>guardian_email</code>, <code>guardian_phone</code> optional ({{ file('blueprints/school/student_import.py') }}) — and creates, for each valid row, exactly what "Register Student" creates by hand: the student record, an enrolment in the named class for the current session, and a login with a generated admission number and a one-time password, through the very same numbering ({{ file('services/student_number_generator.py') }}) and account machinery (<code>_provision_student_account</code> in {{ file('app.py') }}) either way. <code>class</code> is matched against the school's own class names case-insensitively, and is checked against the importing staff member's own scope like any other student action. A row that fails is skipped with a reason by line number; every other row in the file is still tried, and each valid row is committed on its own, so one bad line never holds back the rest. The generated usernames and passwords are shown once, on the results page, and never stored in plain text; downloading them as a CSV happens in the browser, from that same page, never a second trip to the server. A file with no header row, a missing required column, or one over the upload's own size limit (<code>upload_attrs('data')</code>, {{ file('core/uploads.py') }}) is refused outright, before a single row is read.</p>
@@ -99,5 +137,8 @@ role could pick up. <em>Promotion</em> appears in the navigation rail only for t
   <li>A PostgreSQL query that selects an expression and groups by it must use the <strong>same expression object</strong> in both places. Building it twice creates two different bind parameters and PostgreSQL reports a grouping error. See <code>term_of</code> in {{ file('blueprints/school/results_records.py') }}.</li>
   <li>Never grade from the live bank. Always from the frozen attempt questions.</li>
   <li>A term is a string. "Full Session" is a valid term for annual results; code that assumes only three terms is wrong.</li>
+  <li>A new list of a class's students for a class teacher's own work must ask {{ file('core/subdivisions.py') }}
+  (<code>current_limit</code> or <code>teacher_subdivisions</code>), or the class teacher of JSS 1A sees all of JSS 1.
+  Do not narrow class-wide figures (averages, positions): results are the whole class's.</li>
 </ul>
 {% endblock %}

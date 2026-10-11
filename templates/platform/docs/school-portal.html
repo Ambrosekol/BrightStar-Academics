@@ -9,6 +9,12 @@ The list of every permission and role is generated on the <a href="{{ url_for('d
 <p>A staff member signs in and lands on the <em>workspace home</em> ({{ route('admin_workspace_home') }}), where they choose <strong>Entrance Examination</strong> or <strong>School</strong>.
 The choice is remembered in the session and enforced by a request hook in {{ file('app.py') }} (<code>enforce_admin_workspace_boundary</code>): the paths of one workspace are refused from the other, so a
 person cannot wander from entrance administration into student records by editing an address. Which paths belong to which workspace is one function, <code>_admin_workspace_for_path</code>.</p>
+<p>The chooser's two doors open each workspace's home page directly, with <code>?enter=school</code> or
+<code>?enter=entrance</code>: the same hook chooses the workspace on the way in, so entering is one request rather than a
+redirect through {{ route('select_school_workspace') }} or {{ route('select_entrance_workspace') }} first (those addresses
+still work). <code>enter</code> is honoured only on a GET of that workspace's own home page, and the entrance workspace still
+needs the person to have it. Someone with only one workspace never sees the chooser: {{ route('admin_workspace_home') }}
+sends them straight in.</p>
 
 <h2 id="rbac">Roles, permissions and scope</h2>
 <div class="flow"><span class="node"><strong>Permission</strong><br><small>a single ability, e.g. <code>school.results.release</code></small></span><span class="arrow">&rarr;</span>
@@ -18,7 +24,7 @@ person cannot wander from entrance administration into student records by editin
 <ul>
   <li><strong>The catalogue.</strong> Every permission is defined once in <code>ADMIN_PERMISSION_DEFS</code> ({{ file('core/security.py') }}). At every start, <code>init_admin_security</code> in {{ file('app.py') }} seeds the catalogue into the school's {{ table('permissions') }} table without ever creating an account.</li>
   <li><strong>The School Admin role.</strong> The system role (<code>admin_types.is_system = 1</code>) has every permission and is unrestricted by scope. It is found by that flag, never by name: a custom role that happens to be called "School Admin" must not be mistaken for it and handed everything. Platform operators who enter a school hold this role.</li>
-  <li><strong>Role presets.</strong> A new school gets nineteen ready-made roles (Head Teacher, Class Teacher, Subject Teacher, Finance Manager, Librarian, Report Card Officer and so on), seeded once; edits a school makes are kept. Each role has a level (executive, head teacher, class teacher, subject teacher) below the School Admin, and a teacher's teaching duties (class teacher of a class, or a subject in a class and, in SSS, a department) decide which classes, subjects and students they reach.</li>
+  <li><strong>Role presets.</strong> A new school gets nineteen ready-made roles (Head Teacher, Class Teacher, Subject Teacher, Finance Manager, Librarian, Report Card Officer and so on), seeded once; edits a school makes are kept. Each role has a level (executive, head teacher, class teacher, subject teacher) below the School Admin, and a teacher's teaching duties ({{ table('teaching_duties') }}: class teacher of a class or of one of its subdivisions, or a subject in a class and, in SSS, a department) decide which classes, subjects and students they reach. Class subdivisions and transfers are on {{ page('academics', 'Academics') }}.</li>
   <li><strong>Administration is the School Admin role's own.</strong> Creating, editing, deactivating or resetting another administrator's account, and managing roles, permissions and scopes themselves ({{ file('blueprints/administration/routes.py') }}) all require <code>is_school_admin</code> directly - the same gate as Academic Sessions and Promotion - rather than a grantable permission, so this is never delegated to a custom role. <code>admin_can_delegate_roles</code> still exists in the account-creation form's own code as a second check, but is now unreachable in practice since nothing past the school-admin gate can be a non-system account.</li>
   <li><strong>Overrides.</strong> An individual account can carry permission overrides independent of role ({{ table('admin_permissions') }}).</li>
   <li><strong>Scope.</strong> A class teacher is limited to their own class; a college subject teacher can additionally be limited to a subject; a bank manager to particular question banks. Scopes are rows in {{ table('admin_scopes') }} and are checked by <code>admin_scope_allows</code>. Denials are audited (<code>scope_denied</code>).</li>
@@ -165,7 +171,14 @@ That moment is kept short too: every <code>url_for('static', ...)</code> names a
 stylesheet instead of each fetching its own; fonts are no longer fetched twice (the preload and
 <code>fonts.css</code> now name the same address); <code>admin.css</code> no longer <code>@import</code>s the fonts'
 stylesheet (a round trip before the first paint); and the workspace chooser prefetches the staff frame's styles and
-scripts while it is read, so the workspace is drawn the moment it arrives.</p>
+scripts while it is read, so the workspace is drawn the moment it arrives. While a workspace is on its way, the chooser
+takes the workspace's own frame (a stand-in for its menu rail on the left, the outline where its content goes, and no
+chooser role line or Sign out), so the wait looks like the workspace arriving rather than the chooser still waiting.</p>
+<div class="warn"><p>Scripts that send forms read <code>form.getAttribute('method')</code>, <code>'action'</code> and
+<code>'target'</code>, never <code>form.method</code> and the like: a field named <code>method</code> (the store's Cash /
+Bank transfer / POS radio buttons) or <code>target</code> replaces the property, and {{ file('static/inplace.js') }} once
+failed on it, leaving Record a payment spinning with nothing sent.
+{{ file('tests/current/test_form_attributes_contract.py') }} keeps it that way.</p></div>
 
 <h2 id="staff-guide">The staff guide</h2>
 <p><code>/admin/guide</code> ({{ file('blueprints/school/guide.py') }}) is a plain-language, hand-written user guide for the people who use the portal — not this documentation, which is for platform operators and generated from the code. It carries no permission of its own: an endpoint left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to <code>admin.access</code>, which nearly every staff account holds, so any signed-in admin can read the whole thing in either workspace without switching. Seventeen pages, in six groups that follow the order of a school year (getting started, setting up the school, students and families, academics, money, store and library, and the entrance workspace), with screenshots of the screens they describe ({{ file('templates/school_guide/_macros.html') }}'s <code>shot</code>, pictures in <code>static/guide/</code> taken from a demonstration school), with a search box (a plain substring match over the rendered text of every page, no code introspection) and an on-this-page outline built from its own headings. Its own contract test, {{ file('tests/current/test_guide_contract.py') }}, checks every link and slug the same way {{ file('tests/current/test_docs_contract.py') }} checks this documentation.</p>

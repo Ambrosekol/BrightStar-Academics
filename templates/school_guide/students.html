@@ -10,7 +10,9 @@ students each has, boys and girls, and how many can sign in to the student porta
 placed in a class this session. Choose a class with the chips at the top (or a row of the table) and its register
 loads in place; the search box finds a student in that class, or in any class when none is chosen.</p>
 {{ shot('students', 'Students: every class with its numbers. Choosing a class lists its students in place.') }}
-<p>Clicking a student opens them in a pop-up over the register: their class, department and admission number at
+<p>In a class split into subdivisions (JSS 1A, JSS 1B), each student's subdivision is shown under their name, and the
+class teacher of a subdivision sees only its students here.</p>
+<p>Clicking a student opens them in a pop-up over the register: their class (and subdivision), department and admission number at
 the top, four figures (term results, overall mark, assignments, projects), and one tab at a time for their
 <strong>Profile</strong> (personal details, parent or guardian, and their portal login), <strong>Term results</strong>,
 <strong>Every mark</strong>, <strong>Assignments</strong>, <strong>Projects</strong> and <strong>School journey</strong>.
@@ -26,6 +28,10 @@ nobody types one in by hand, so it can never clash with another student's.</p>
 <p>For a student in SSS 1 to 3, the form also asks for their <strong>department</strong> (Science, Art or Commercial).
 It can be left as <em>Not chosen yet</em> and filled in later; until then the student is treated as taking every
 subject of their class, so nothing is hidden from them.</p>
+<p>If the class is split into subdivisions, the student is placed in one automatically, in turn, into the one with the
+fewest students (in SSS, one of their department's or one with no department). The same happens to students imported
+in bulk and to candidates admitted from the entrance exam. To move a student later, their class teacher uses
+<a href="{{ url_for('admin_school_transfers') }}">Class transfers</a>; see {{ page('classes-subjects', 'Classes and subjects') }}.</p>
 
 <h2 id="bulk">Bringing in new students at once</h2>
 <p>Use <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> from the Students page to

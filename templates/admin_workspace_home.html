@@ -9,7 +9,9 @@
   has no "school.*" permission, yet Finance lives in the School workspace). `facts` (from the route) is a few plain
   numbers; any of them may be missing and is then shown as a dash.
 
-  Choosing one dims the page and spins its Enter button until the workspace has loaded (static/page-loading.js), and
+  A door opens the workspace's home page directly (?enter=..., app.py) - one request, not a redirect through
+  /admin/workspace/<name> first. Choosing one turns the page into the workspace's outline - its menu rail on the left
+  and the skeleton of a page, under a spinner - until the workspace has loaded (static/page-loading.js), and
   while the person reads, the browser quietly fetches the workspace's own styles and scripts (rel=prefetch), so the
   workspace is drawn the moment it arrives instead of after a second wait.
 -#}
@@ -43,6 +45,8 @@
 </header>
 
 <main class="ws-main ac" id="main">
+{#- While a workspace is on its way, the workspace's own menu rail stands in on the left (static/school-ui.css). -#}
+<div class="ws-rail-sk" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <div class="bs-stage">{% include 'includes/_skeleton.html' %}<div data-page-body>
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
@@ -59,7 +63,7 @@
 
   <ul class="ws-choices">
     <li>
-      <a href="{{ url_for('select_school_workspace') }}" class="ws-choice ac-panel" data-busy>
+      <a href="{{ url_for('admin_school_home', enter='school') }}" class="ws-choice ac-panel" data-busy>
         <span class="ws-choice__head">
           <span class="ws-choice__ico">{{ icon('school') }}</span>
           <span class="ws-choice__title"><b>School Portal</b><small>Enrolled students and the school year</small></span>
@@ -75,7 +79,7 @@
       </a>
     </li>
     <li>
-      <a href="{{ url_for('select_entrance_workspace') }}" class="ws-choice ac-panel" data-busy>
+      <a href="{{ url_for('admin_dashboard', enter='entrance') }}" class="ws-choice ac-panel" data-busy>
         <span class="ws-choice__head">
           <span class="ws-choice__ico">{{ icon('door') }}</span>
           <span class="ws-choice__title"><b>Entrance Examination</b><small>Candidates applying to the school</small></span>

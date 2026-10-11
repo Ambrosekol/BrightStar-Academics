@@ -838,6 +838,14 @@ def enforce_admin_workspace_boundary():
     required = _admin_workspace_for_path(request.path)
     selected = session.get('admin_workspace')
 
+    # The chooser's doors open the workspace's home page directly (?enter=school or ?enter=entrance) and choose the
+    # workspace on the way in, so entering takes one request, not a redirect through /admin/workspace/<name> first.
+    # The entrance workspace still needs the person to have it (checked just below, as for any entrance page).
+    entering = request.args.get('enter') if request.method == 'GET' else None
+    if entering in ('school', 'entrance') and required in (None, entering) and request.script_root + request.path == _workspace_home_url(entering):
+        if entering == 'school' or admin_has_workspace_access(session['admin_id'], 'entrance'):
+            session['admin_workspace'] = selected = entering
+
     if required == 'entrance':
         admin = current_admin()
         if admin and not admin_has_workspace_access(admin['id'], 'entrance'):

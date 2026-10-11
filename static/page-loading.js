@@ -102,7 +102,7 @@
   window.addEventListener('submit', function (e) {
     var form = e.target;
     setTimeout(function () {
-      if (e.defaultPrevented || form.target) return;
+      if (e.defaultPrevented || form.getAttribute('target')) return;
       var action = new URL(form.getAttribute('action') || window.location.href, window.location.href);
       if (isFile(action)) return;
       busy(e.submitter || form.querySelector('button[type=submit], button:not([type])'));

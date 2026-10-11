@@ -352,6 +352,18 @@ check("…and the Entrance examination workspace is refused to them (they were n
 check("…nor does their menu offer Switch workspace", "<span>Switch workspace</span>" not in st.text("/admin/school")
       and "<span>Switch workspace</span>" in op.text("/admin/school"))
 check("the School Admin, who has both, still chooses on Workspace Home", op.get("/admin/home").status_code == 200)
+chooser = op.text("/admin/home")
+check("the chooser's doors open each workspace's home directly, choosing it on the way in",
+      'href="/admin/school?enter=school"' in chooser and 'href="/admin/examination?enter=entrance"' in chooser)
+r = op.get("/admin/examination?enter=entrance")
+check("…the entrance door opens the entrance Overview in one request", r.status_code == 200)
+op.get("/admin/home")
+r = op.get("/admin/school?enter=school")
+check("…and the school door the school Overview, in one request", r.status_code == 200 and "Overview" in r.get_data(as_text=True))
+r = op.get("/admin/candidates?enter=entrance")
+check("…a door only opens a workspace's home page, not any page in it", r.status_code == 302 and "/admin/home" in r.headers["Location"])
+r = st.get("/admin/examination?enter=entrance")
+check("…and never the entrance workspace for someone who was not given it", r.status_code == 302 and st.get("/admin/candidates").status_code == 302)
 op.get("/admin/workspace/school")   # Workspace Home clears the choice; carry on in the school portal
 check("a class teacher has no Teachers page", refused(ct_j1.get("/admin/school/teaching")))
 board = head.text("/admin/school/teaching")

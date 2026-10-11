@@ -22,8 +22,8 @@ gear for Settings and two arrows for Switch workspace.</p>
 
 <h2 id="settings">Settings</h2>
 <p><a href="{{ url_for('admin_settings') }}">Settings</a>, at the foot of the menu, holds everything that sets the
-portal up, decides who can use it and records what happened: the school profile, academic sessions, staff and their
-roles, report card settings, Email &amp; SMS, online payments, receipts, controls and alerts, the activity log and who
+portal up, decides who can use it and records what happened: the school profile, academic sessions, class
+subdivisions, staff and their roles, report card settings, Email &amp; SMS, online payments, receipts, controls and alerts, the activity log and who
 is online. You see only what your role allows.</p>
 {{ shot('settings', 'Settings opens on what needs attention (Worth a look), then every setting by group with its state. The list on the left stays on every Settings page.') }}
 <ul>
@@ -74,7 +74,8 @@ or standard access from their roles.</p>
   subject teacher), with a summary that updates as you tick. <strong>See</strong> beside a role opens that role in a
   second pop-up on top, to check or change what it allows; closing it brings you back to the staff member exactly as you
   left them.</li>
-  <li><strong>Teaching duties</strong>, for teachers: the class they are class teacher of, and the subjects they teach
+  <li><strong>Teaching duties</strong>, for teachers: the class they are class teacher of (or, in a class split into
+  subdivisions, the subdivision, such as JSS 1A), and the subjects they teach
   in each class (and, in SSS, which department). Choose the class first: the subject list then shows only the
   subjects that class takes (set on {{ page('classes-subjects', 'Subjects') }}). See {{ page('roles-permissions', 'Roles, permissions and scope') }}.</li>
   <li><strong>Limits</strong>, rarely needed: keeps anyone else to chosen classes, subjects, sessions or question

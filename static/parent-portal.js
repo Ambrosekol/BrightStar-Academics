@@ -16,7 +16,7 @@
         panels[i].hidden = !on;
       });
       // Changing the session reloads the page: bring the person back to the tab they were on.
-      document.querySelectorAll('form[data-keep-tab]').forEach(function (f) { f.action = location.pathname + '#' + panels[index].id; });
+      document.querySelectorAll('form[data-keep-tab]').forEach(function (f) { f.setAttribute('action', location.pathname + '#' + panels[index].id); });
       if (focus) { tabs[index].focus(); }
     }
     function fromHash() {

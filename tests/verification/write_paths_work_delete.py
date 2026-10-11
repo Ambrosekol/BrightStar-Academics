@@ -1,6 +1,7 @@
-"""Issuing assignments and projects to a whole class, proven end to end on PostgreSQL: a whole-class assignment
-and project reach every student enrolled in the class, the form offers the choice, and choosing students with none
-ticked is still refused. Run:  python tests/verification/write_paths_work_delete.py
+"""Deleting and restoring assignments and projects, proven end to end on PostgreSQL: a piece of work that already
+has marks is never deleted (and the person is told why); one with no marks leaves the current list for the deleted
+list, from which it can be restored - not without a CSRF token, and not by someone without the delete permission.
+Run:  python tests/verification/write_paths_work_delete.py
 """
 import atexit
 import io

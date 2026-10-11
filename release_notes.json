@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "version": "2.23.1",
+      "date": "2026-10-11",
+      "title": "Recording a store payment works again, and workspaces open sooner",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Choosing a workspace on Workspace Home now opens it in one step instead of two, so it arrives sooner. While it loads, the page already shows the workspace's own menu and the outline of its page, instead of the chooser.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Fixed: in the Store, Record a payment (for an item paid for in cash, by transfer or POS) kept loading after the button was pressed and nothing was saved. It now records the payment, takes the item out of stock and opens the receipt.",
+          "help": "store"
+        }
+      ]
+    },
+    {
       "version": "2.23.0",
       "date": "2026-10-11",
       "title": "Class subdivisions and class transfers",
