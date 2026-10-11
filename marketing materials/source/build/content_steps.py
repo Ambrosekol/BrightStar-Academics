@@ -1,0 +1,20 @@
+# "How it works, step by step" rows for pages illustrated with a drawing rather than a screenshot.
+STEPS = {
+ "Report cards": ["Teachers write comments and rate traits, even before release.", "Each teacher saves their signature once.", "Results are released by hand or on the release date.", "Cards appear, parents are alerted, and you print the class PDF."],
+ "Bulk import: bring your records with you": ["Download the template for the step you're on.", "Fill it in from your old system or spreadsheet.", "Upload it. Every row is checked, and problems are listed by line.", "Download the new logins and hand them out."],
+ "Classes, departments, subdivisions and transfers": ["Switch on the classes your school runs.", "Split large JSS or SSS classes into arms and lock them.", "Give each arm its class teacher.", "Students are balanced automatically. Transfers need approval."],
+ "Subjects, sessions and terms": ["Create each subject and tick the classes that take it.", "For SSS, tick the departments that take it.", "Set the current session and its release date.", "Lock subjects once the term's results are final."],
+ "Assignments and projects": ["Choose the class and subject.", "Add the title, dates and instructions, and the questions for a quiz.", "Send it to the whole class or chosen students.", "Mark it, or let the quiz mark itself. CA updates automatically."],
+ "Tests, examinations and practice": ["Create the test or exam and its time allowed.", "Add questions in the pop-up, one after another.", "Open it to students when it's ready.", "Scores arrive marked, ready to send to the class teacher."],
+ "Results and offline scores": ["The subject teacher enters or collects scores.", "They send them to the class teacher.", "The class teacher checks, or sends a mark back.", "Release, and report cards and parent alerts follow."],
+ "Online payments and refunds": ["The School Admin pastes the Paystack keys once.", "Paste the webhook address into Paystack's dashboard.", "Parents see 'Pay online' on their child's fee account.", "Payments arrive recorded, receipted and applied."],
+ "Messages, notifications and reminders": ["Connect your school's email and SMS once.", "Work as normal: set work, bill, record payments, release.", "Families are told automatically, in your name.", "Check any family's notice log when someone asks."],
+ "Candidates and credentials": ["Register each candidate and their target class.", "Print the login slips in one batch.", "Hand out slips with the exam date.", "Reset a lost slip's password in seconds."],
+ "Question banks and entrance practice": ["Start with the standard banks, or import your own.", "Set up the live papers in one click.", "Lock the banks while the exam runs.", "Share your practice link on social media and your website."],
+ "Exam day, results and rankings": ["Candidates sign in with their slips.", "They sit three timed papers in any order.", "Every script is marked the moment it ends.", "Export the rankings for your board the same day."],
+ "Admissions and department advice": ["Open the waitlist, ranked by score.", "Check the department advice for SSS candidates.", "Admit, choosing the class and department.", "Release the result, and the family sees the new login."],
+ "The student portal": ["The school creates the student's account.", "The student signs in and chooses a password.", "They install the portal on their phone.", "Work, tests, practice and results are all in one place."],
+ "The parent portal": ["The school links the parent to their children.", "The parent signs in and chooses a password.", "They install the portal as an app.", "Fees, results, messages and the store, any time."],
+ "The candidate portal": ["Get a login slip at registration.", "Sign in on exam day.", "Sit the three papers.", "Sign in again later to see the decision and the new student login."],
+ "Help built in": ["Open Guide in the top bar.", "Search a word, or browse by area.", "Follow a link straight to the real page.", "Read What's new when the portal improves."],
+}
