@@ -195,7 +195,8 @@ def admin_candidate_admit(cid):
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
-        flash(f'{candidate.candidate_name} could not be admitted ({exc}).', 'error')
+        from core.failures import plain_failure
+        flash(f'{candidate.candidate_name} could not be admitted ({plain_failure(exc, "Admission")}).', 'error')
         return redirect(url_for(ADMISSIONS))
 
     audit_log('candidate_admitted', 'assessment', 'candidate', cid,
@@ -240,7 +241,10 @@ def _release_candidate_result(candidate, admin_id, now):
         student = db.session.get(Student, candidate.admitted_student_id)
         if student is not None:
             _, password = _provision_student_account(student.id, student.admission_no)
-            candidate.released_password = password
+            # Kept encrypted (the school's own key, core/delivery.py), never in the clear: the candidate's page
+            # decrypts it to show once, and it is deleted when the student changes it.
+            from core.delivery import encrypt
+            candidate.released_password = encrypt(password)
 
 
 @app.post('/admin/candidates/<int:cid>/release-result')

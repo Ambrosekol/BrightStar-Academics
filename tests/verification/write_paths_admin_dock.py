@@ -305,7 +305,12 @@ check("a parent can open their child's record while the child is at the school",
 op.post(ARCHIVE, {"student_ids": [str(STU)], "reason": "Graduated"})
 check("the archived child's own sign-in is revoked", "could not verify" in student_login(STU_NO)[1].get_data(as_text=True).lower()
       and student_person.get("/student/dashboard").status_code == 302)
-check("the archived child still appears on the parent's dashboard", "Ada Family" in parent_person.text("/parent/dashboard"))
+dash = parent_person.text("/parent/dashboard")
+check("the archived child still appears on the parent's dashboard", "Ada Family" in dash)
+left = dash[dash.find("data-pf-left"):]
+check("…in its own section, Children who have left the school, which a parent opens and closes",
+      'details class="pf-left"' in dash and "Children who have left the school" in left and "Ada Family" in left
+      and "Left the school" in left, dash[:0])
 child_page = parent_person.get(f"/parent/children/{STU}")
 check("the parent can still open the archived child's record", child_page.status_code == 200 and "Ada Family" in child_page.get_data(as_text=True))
 check("…and the child's fee account", parent_person.get(f"/parent/children/{STU}/finance").status_code == 200)

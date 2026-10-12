@@ -981,8 +981,9 @@ check("a cashier (finance.record) can record a payment, which is theirs",
       PC is not None and alpha.one("SELECT recorded_by FROM finance_payments WHERE id = :p", p=PC) == CASHIER_ID)
 receipt_p1 = alpha.one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=P1)
 receipt_pc = alpha.one("SELECT receipt_no FROM finance_payments WHERE id = :p", p=PC)
-check("…and can open the student's account (finance.view_own)",
-      cashier.get(f"{FIN_URL}/students/{IVY}/account?session_id={CURRENT}").status_code == 200)
+r = cashier.get(f"{FIN_URL}/students/{IVY}/account?session_id={CURRENT}")
+check("…but cannot open the student's whole account, every payment of it (finance.view_own is not enough; "
+      "security audit M1)", r.status_code in (302, 403) and receipt_p1 not in r.get_data(as_text=True), str(r.status_code))
 check("…and the allocate page of a payment they recorded", cashier.get(f"{FIN_URL}/payments/{PC}/allocate").status_code == 200)
 check("…and their own receipt, as a page and as a PDF",
       cashier.get(f"{FIN_URL}/receipts/{PC}").status_code == 200 and cashier.get(f"{FIN_URL}/receipts/{PC}/pdf").status_code == 200)

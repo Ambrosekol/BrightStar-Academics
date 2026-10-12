@@ -201,11 +201,19 @@ def candidate_dashboard():
             # The password has already been changed once; it has done its job, so stop keeping
             # a plaintext copy around.
             c.released_password=None; db.session.commit()
+    shown_password=None
+    if released_student and released_student.password_must_change and c.released_password:
+        from core.delivery import decrypt, encrypt
+        shown_password=decrypt(c.released_password)
+        if not shown_password and not c.released_password.startswith('enc:'):
+            # Kept in the clear before it was encrypted: show it this once, and encrypt it from now on.
+            shown_password=c.released_password
+            c.released_password=encrypt(shown_password); db.session.commit()
 
     response=Response(render_template('candidate_dashboard.html',candidate=c,papers=papers,completed=completed,
                                       total_score=total_score,total_max=total_max,overall_percentage=pct,
                                       grade_label=_candidate_grade_label(pct) if completed else None,
-                                      released_student=released_student))
+                                      released_student=released_student,released_password=shown_password))
     response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'; response.headers['Pragma']='no-cache'
     return response
 

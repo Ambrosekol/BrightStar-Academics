@@ -213,10 +213,24 @@ def _payments_page(view):
                            counts=counts,totals=totals,sessions=sessions,session_id=session_id,q=q,method=method,
                            methods=analytics.payment_methods(own),own=bool(own))
 
+def finance_sees_accounts():
+    """For templates: whether the signed-in person may open students' fee accounts."""
+    me = current_admin()
+    return bool(me) and _finance_can_view_all(me)
+
+
+app.jinja_env.globals.update(finance_sees_accounts=finance_sees_accounts)
+
+
 @app.route('/admin/finance/students/<int:student_id>/account')
 @admin_required
 def admin_finance_student_account(student_id):
     me = current_admin()
+    # A student's whole account (every fee and every payment, whoever recorded it) is for those who see the
+    # whole school's finance. Someone who only sees their own takings (a cashier) is refused here, as on
+    # Student accounts itself, rather than relying on the link not being shown.
+    if not _finance_can_view_all(me):
+        return admin_access_error('finance.view_all')
     student = one(select(Student.id,Student.admission_no,Student.first_name,
                          Student.middle_name,Student.last_name)
                   .where(Student.id==student_id,Student.active==1))

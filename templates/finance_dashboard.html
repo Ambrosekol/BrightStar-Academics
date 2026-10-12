@@ -173,7 +173,7 @@
       <td><span class="ac-tag">{{ p.method }}</span></td>
       <td>{{ p.paid_at[:10] if p.paid_at else '—' }}{% if p.paid_at and p.paid_at|length >= 16 %}<small>{{ p.paid_at[11:16] }}</small>{% endif %}</td>
       <td class="n"><strong>{{ naira(p.amount) }}</strong></td>
-      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>Receipt</a><a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=p.student_id, session_id=p.session_id) }}" data-modal>Account</a></td>
+      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_receipt', payment_id=p.id) }}" data-modal>Receipt</a>{% if finance_sees_accounts() %}<a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=p.student_id, session_id=p.session_id) }}" data-modal>Account</a>{% endif %}</td>
     </tr>{% endfor %}</tbody>
   </table></div>
   {% else %}

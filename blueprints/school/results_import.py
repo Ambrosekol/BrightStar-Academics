@@ -32,6 +32,8 @@ from app import ACADEMIC_TERMS, app
 from blueprints.school.helpers import _finite, _result_term, import_permission_required
 from core.security import admin_required, audit_log, csrf_protect, current_admin
 from core.uploads import data_upload_limit_bytes, format_limit
+from core.failures import plain_failure
+from core.tabular import ImportFileError, read_table
 from models import AcademicSession, ResultWorkflowEvent, SchoolStudentResult, SchoolSubject, Student, db
 
 MAX_ROWS = 5000
@@ -85,7 +87,7 @@ def admin_school_results_import_run():
     back = url_for('admin_school_students_import')
     upload = request.files.get('csv_file')
     if not upload or not upload.filename:
-        flash('Choose a CSV file to import.', 'error')
+        flash('Choose a CSV or Excel (.xlsx) file to import.', 'error')
         return redirect(back)
     limit = data_upload_limit_bytes()
     raw = upload.read(limit + 1)
@@ -93,16 +95,15 @@ def admin_school_results_import_run():
         flash(f'That file is larger than the {format_limit(limit)} limit.', 'error')
         return redirect(back)
     try:
-        text = raw.decode('utf-8-sig')
-    except UnicodeDecodeError:
-        flash('That file is not readable as plain-text CSV. Save it as CSV (UTF-8) from Excel or Google Sheets and try again.', 'error')
+        # A CSV or an Excel workbook (.xlsx), read defensively into the same rows (core/tabular.py).
+        fieldnames, reader = read_table(upload.filename, raw, MAX_ROWS)
+    except ImportFileError as exc:
+        flash(str(exc), 'error')
         return redirect(back)
-
-    reader = csv.DictReader(io.StringIO(text))
-    if not reader.fieldnames:
+    if not fieldnames:
         flash('That file has no header row. Use the template.', 'error')
         return redirect(back)
-    fields = {(name or '').strip().casefold(): name for name in reader.fieldnames}
+    fields = {(name or '').strip().casefold(): name for name in fieldnames}
     missing = [c for c in REQUIRED_COLUMNS if c not in fields]
     if missing:
         flash(f'The file is missing required column{"s" if len(missing) != 1 else ""}: {", ".join(missing)}.', 'error')
@@ -203,7 +204,7 @@ def admin_school_results_import_run():
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            outcomes.append({'line': line_no, 'ok': False, 'label': label, 'reason': f'could not be saved ({exc})'})
+            outcomes.append({'line': line_no, 'ok': False, 'label': label, 'reason': f'could not be saved ({plain_failure(exc, "Results import row")})'})
             continue
         outcomes.append({'line': line_no, 'ok': True, 'label': label})
 

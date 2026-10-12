@@ -196,6 +196,31 @@ VARIABLES = [
                         "that cached it as active for a while longer. Set to 0, every request's first "
                         'step is a fresh registry query.'),
     Variable(
+        name='BRIGHTSTARS_IDLE_MINUTES', category='Platform', risk=RISK_MEDIUM, default='120',
+        purpose='How long a sign-in may go unused before it ends (5 to 1440). The presence ping an open page '
+                'sends does not count as use. Someone sitting a test or exam is never signed out by it while '
+                'their paper is running.',
+        when_to_change='Shared computers where sign-ins should end sooner (lower it), or staff who leave a page '
+                       'open a long time before saving (raise it).',
+        affects='Every signed-in person, in every school.',
+        breaks_if_wrong='Set very low, people are signed out while still reading a page and lose what they typed '
+                        'since their last save.'),
+    Variable(
+        name='BRIGHTSTARS_SESSION_HOURS', category='Platform', risk=RISK_MEDIUM, default='12',
+        purpose='The longest a sign-in lasts however busy it is (1 to 168 hours). Someone sitting a test or exam '
+                'is kept until their paper ends, then has 30 minutes more.',
+        when_to_change='Wanting everyone to sign in again more often (lower it).',
+        affects='Every signed-in person, in every school.',
+        breaks_if_wrong='Set very low, people must sign in several times a day.'),
+    Variable(
+        name='BRIGHTSTARS_ALLOW_NON_PRODUCTION', category='Platform', risk=RISK_HIGH, default='',
+        purpose='Set to 1 only on a staging server that must run as development although it looks like a real '
+                'deployment (gunicorn, a real domain or a reverse proxy). Without it such a start is refused '
+                'unless BRIGHTSTARS_ENV=production.',
+        when_to_change='Never on a real deployment.',
+        affects='Whether a deployment that is not running as production may start at all.',
+        breaks_if_wrong='Set on a real deployment, it runs without Secure cookies, HSTS and the strong-secret check.'),
+    Variable(
         name='BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS', category='Platform', risk=RISK_MEDIUM, default='30',
         purpose='How long each worker remembers a signed-in person\'s password fingerprint before reading it '
                'from the database again. A password change ends the person\'s other sign-ins within this time.',

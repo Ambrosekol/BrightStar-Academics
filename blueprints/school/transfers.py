@@ -14,6 +14,8 @@ from flask import abort, flash, g, redirect, render_template, request, url_for
 from sqlalchemy import select
 
 from app import _school_current_session, app
+from control_plane.config import badge_cache_seconds
+from core.short_cache import remember
 from core import subdivisions as sd
 from core.school_structure import DEPARTMENTS, clean_department, is_senior
 from core.security import (
@@ -52,13 +54,17 @@ def transfers_access(admin=None):
     cached = getattr(g, '_transfers_access', None)
     if cached is not None:
         return cached
-    try:
+    def compute(admin_id):
         show = bool(_my_classes(admin))
-        waiting = len(_waiting_for(admin)) if show else 0
+        return {'show': show, 'waiting': len(_waiting_for(admin)) if show else 0}
+
+    try:
+        # Asked on every staff page (the menu), so kept for a few seconds like the other menu counts and dropped
+        # whenever anything changes (app.py, forget_counts_after_a_change).
+        g._transfers_access = remember('transfers-menu', badge_cache_seconds(), compute, admin['id'])
     except Exception:
         db.session.rollback()
-        show, waiting = False, 0
-    g._transfers_access = {'show': show, 'waiting': waiting}
+        g._transfers_access = {'show': False, 'waiting': 0}
     return g._transfers_access
 
 

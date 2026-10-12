@@ -11,6 +11,30 @@
 {% set open_threads = feedback|rejectattr('status', 'equalto', 'resolved')|list %}
 {% set unread = notifications|rejectattr('read_at')|list %}
 {% set any_online = children|rejectattr('early_years')|list %}
+{# Children who have left the school (archived) stay the parent's: their fees, results and report cards are kept,
+   under a section of their own that starts closed, so the children at school now come first. #}
+{% set at_school = children|rejectattr('child.archived_at')|list %}
+{% set left_school = children|selectattr('child.archived_at')|list %}
+{% macro child_row(item) %}
+      {% set child = item.child %}
+      {% set fees = item.fee_summary %}
+      {% set owed = fees.outstanding if fees else 0 %}
+      <tr>
+        <td class="pf-rt__lead"><a class="ac-title" href="{{ url_for('parent_child_detail', student_id=child.id) }}">{{ full_name(child.first_name, child.last_name) }}</a>
+          <small>{% if child.archived_at %}Left the school{% else %}{{ child.class_name or 'Class not assigned' }}{% endif %}{% if child.relationship %} · {{ child.relationship }}{% endif %}</small></td>
+        <td class="n" data-label="Fees owing">{% if owed > 0.005 %}<b class="pf-owe">₦{{ '{:,.0f}'.format(owed) }}</b>{% else %}<span class="pf-ok">Paid</span>{% endif %}</td>
+        {% if any_online %}
+        <td class="n" data-label="Average">{% if item.early_years %}<span title="Crèche and Nursery work is on paper">—</span>{% else %}{{ item.avg ~ '%' if item.avg is not none else '—' }}{% endif %}</td>
+        <td class="n" data-label="Completion">{% if item.early_years %}—{% else %}{{ item.completion ~ '%' if item.completion is not none else '—' }}{% endif %}</td>
+        {% endif %}
+        <td class="ac-actions">
+          <a class="ac-link" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile</a>
+          <a class="ac-link" href="{{ url_for('parent_feedback', student=child.id) }}" data-full>Message</a>
+          {% if owed > 0.005 %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Pay fees</a>
+          {% else %}<a class="ac-link" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Fee account</a>{% endif %}
+        </td>
+      </tr>
+{% endmacro %}
 <div class="ac pf">
 <header class="ac-top">
   <div class="pf-title"><div>
@@ -32,33 +56,30 @@
 
 <div class="pf-cols">
   <section class="ac-panel" aria-labelledby="pp-children-h">
-    <div class="pf-ph"><h2 id="pp-children-h">{{ 'Your child' if children|length == 1 else 'Your children' }}<small>{{ children|length }}</small></h2></div>
+    <div class="pf-ph"><h2 id="pp-children-h">{{ 'Your child' if at_school|length == 1 else 'Your children' }}<small>{{ at_school|length }}</small></h2></div>
     {% if children %}
+    {% if at_school %}
     <div class="ac-scroll"><table class="ac-t pf-rt">
       <thead><tr><th>Child</th><th class="n">Fees owing</th>{% if any_online %}<th class="n">Average</th><th class="n">Completion</th>{% endif %}<th></th></tr></thead>
       <tbody>
-      {% for item in children %}
-      {% set child = item.child %}
-      {% set fees = item.fee_summary %}
-      {% set owed = fees.outstanding if fees else 0 %}
-      <tr>
-        <td class="pf-rt__lead"><a class="ac-title" href="{{ url_for('parent_child_detail', student_id=child.id) }}">{{ full_name(child.first_name, child.last_name) }}</a>
-          <small>{{ child.class_name or 'Class not assigned' }}{% if child.relationship %} · {{ child.relationship }}{% endif %}</small></td>
-        <td class="n" data-label="Fees owing">{% if owed > 0.005 %}<b class="pf-owe">₦{{ '{:,.0f}'.format(owed) }}</b>{% else %}<span class="pf-ok">Paid</span>{% endif %}</td>
-        {% if any_online %}
-        <td class="n" data-label="Average">{% if item.early_years %}<span title="Crèche and Nursery work is on paper">—</span>{% else %}{{ item.avg ~ '%' if item.avg is not none else '—' }}{% endif %}</td>
-        <td class="n" data-label="Completion">{% if item.early_years %}—{% else %}{{ item.completion ~ '%' if item.completion is not none else '—' }}{% endif %}</td>
-        {% endif %}
-        <td class="ac-actions">
-          <a class="ac-link" href="{{ url_for('parent_child_detail', student_id=child.id) }}">Open profile</a>
-          <a class="ac-link" href="{{ url_for('parent_feedback', student=child.id) }}" data-full>Message</a>
-          {% if owed > 0.005 %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Pay fees</a>
-          {% else %}<a class="ac-link" href="{{ url_for('parent_child_finance', student_id=child.id) }}">Fee account</a>{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
+      {% for item in at_school %}{{ child_row(item) }}{% endfor %}
       </tbody>
     </table></div>
+    {% else %}
+    <p class="pf-note">None of your children is at the school now.</p>
+    {% endif %}
+    {% if left_school %}
+    <details class="pf-left" data-pf-left{% if not at_school %} open{% endif %}>
+      <summary><span>Children who have left the school</span><small>{{ left_school|length }}</small></summary>
+      <p class="pf-note">Their records stay here: fees and receipts, results and report cards.</p>
+      <div class="ac-scroll"><table class="ac-t pf-rt">
+        <thead><tr><th>Child</th><th class="n">Fees owing</th>{% if any_online %}<th class="n">Average</th><th class="n">Completion</th>{% endif %}<th></th></tr></thead>
+        <tbody>
+        {% for item in left_school %}{{ child_row(item) }}{% endfor %}
+        </tbody>
+      </table></div>
+    </details>
+    {% endif %}
     {% else %}
     <div class="ac-empty"><strong>No students are linked to this account</strong>Please contact the school office if this is unexpected.</div>
     {% endif %}

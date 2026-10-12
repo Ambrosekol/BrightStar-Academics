@@ -92,8 +92,11 @@ def platform_admin_by_id(admin_id):
 
 def set_platform_password(admin_id, current_password, new_password):
     """Change a platform admin's own password. Returns an error message or None."""
-    if len(new_password or '') < 10:
-        return 'Your new password must be at least 10 characters long.'
+    from core.passwords import OPERATOR_MINIMUM, password_problem
+
+    problem = password_problem(new_password, minimum=OPERATOR_MINIMUM)
+    if problem:
+        return problem
     with platform_session() as session:
         admin = session.scalars(sa.select(PlatformAdmin).where(
             PlatformAdmin.id == admin_id, PlatformAdmin.active == 1)).first()

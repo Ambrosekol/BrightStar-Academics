@@ -10,7 +10,7 @@
 {% set student_name = full_name(student.first_name, student.middle_name, student.last_name) %}
 {% set can_edit = admin_has_permission(aid, 'school.students.edit') %}
 {% set can_history = admin_has_permission(aid, 'student.history.manage') %}
-{% set can_fees = admin_has_permission(aid, 'finance.view_own') or admin_has_permission(aid, 'finance.view_all') %}
+{% set can_fees = finance_sees_accounts() %}
 <div class="ac st sp" data-sp="{{ student.id }}" data-modal-size="wide">
 {% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}

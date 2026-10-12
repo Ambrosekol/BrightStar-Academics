@@ -294,6 +294,79 @@ r = teacher_a.post(IMPORT, {}, files={"csv_file": ("huge.csv", huge)}, page=IMPO
 check(f"a file over the size limit ({len(huge)} bytes) is refused, with the limit named, before a single row is read",
       "limit" in teacher_a.said() and alpha.one("SELECT COUNT(*) FROM students") == before2)
 
+# ================================================================ A2. an Excel workbook, read defensively (core/tabular.py)
+import io as _io  # noqa: E402
+import zipfile as _zipfile  # noqa: E402
+
+import openpyxl  # noqa: E402
+
+HEADER = ["first_name", "middle_name", "last_name", "gender", "class", "guardian_name", "guardian_email", "guardian_phone"]
+
+
+def workbook(*rows, formula_row=None):
+    book = openpyxl.Workbook()
+    sheet = book.active
+    sheet.append(HEADER)
+    for row in rows:
+        sheet.append(list(row))
+    if formula_row:
+        sheet.append(formula_row)
+    sheet.append([])                # a trailing empty, formatted row, as Excel leaves them
+    buf = _io.BytesIO()
+    book.save(buf)
+    return buf.getvalue()
+
+
+def zipped_with(raw, extra_name, extra_bytes, compress=_zipfile.ZIP_DEFLATED):
+    """The workbook ``raw`` with one more file inside its archive."""
+    out = _io.BytesIO()
+    with _zipfile.ZipFile(_io.BytesIO(raw)) as src, _zipfile.ZipFile(out, "w", compress) as dst:
+        for item in src.infolist():
+            dst.writestr(item, src.read(item.filename))
+        dst.writestr(extra_name, extra_bytes)
+    return out.getvalue()
+
+
+def with_doctype(raw, doctype):
+    """The workbook ``raw`` with ``doctype`` put in front of its sheet's XML (where the cells' text lives)."""
+    out = _io.BytesIO()
+    with _zipfile.ZipFile(_io.BytesIO(raw)) as src, _zipfile.ZipFile(out, "w", _zipfile.ZIP_DEFLATED) as dst:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            dst.writestr(item, doctype + data if item.filename == "xl/worksheets/sheet1.xml" else data)
+    return out.getvalue()
+
+
+before = alpha.one("SELECT COUNT(*) FROM students")
+good = workbook(["Xena", "Q", "Excel", "Female", "JSS 1", "Mrs Excel", "mrs.excel@example.test", 8010000077],
+                ["Yemi", "Q", "Sheet", "Male", "JSS 1", "Mr Sheet", "mr.sheet@example.test", "08010000078"])
+r = do_import(teacher_a, good, filename="students.xlsx")
+check("an Excel workbook (.xlsx) imports exactly as a CSV does, skipping its empty trailing rows",
+      alpha.one("SELECT COUNT(*) FROM students") == before + 2
+      and alpha.one("SELECT COUNT(*) FROM students WHERE first_name IN ('Xena', 'Yemi')") == 2, r.get_data(as_text=True)[:0])
+check("…a number Excel stored for a phone is read as its digits, not 8010000077.0",
+      alpha.one("SELECT guardian_phone FROM students WHERE first_name = 'Xena'") in ("8010000077", "08010000077"))
+before = alpha.one("SELECT COUNT(*) FROM students")
+r = do_import(teacher_a, workbook(formula_row=['=CONCAT("Zed","")', "Q", "=1+1", "Male", "JSS 1", "G", "g@example.test", "0801"]),
+              filename="formula.xlsx")
+check("a formula is never run: a cell with no saved value reads as empty, and the row is refused for it",
+      alpha.one("SELECT COUNT(*) FROM students") == before and alpha.one("SELECT COUNT(*) FROM students WHERE first_name = 'Zed'") == 0)
+for label, raw, name, said in (
+        ("a macro-enabled workbook (.xlsm) is refused by its name", good, "students.xlsm", "plain excel"),
+        ("a workbook carrying macros (a vbaProject) is refused whatever its name",
+         zipped_with(good, "xl/vbaProject.bin", b"\x00" * 64), "students.xlsx", "macros"),
+        ("a file named .xlsx that is not a workbook is refused", b"first_name,last_name\r\nA,B\r\n", "fake.xlsx", "not an excel workbook"),
+        ("a zip bomb (a small file that unpacks enormously) is refused before it is opened",
+         zipped_with(good, "xl/media/padding.bin", b"\x00" * (60 * 1024 * 1024)), "bomb.xlsx", "unpacks to far more"),
+        ("an XML entity bomb inside the workbook is refused, never expanded",
+         with_doctype(good, b'<!DOCTYPE x [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]>'),
+         "laughs.xlsx", "could not be read"),
+        ("an external entity (reading a file on the server) inside the workbook is refused",
+         with_doctype(good, b'<!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]>'), "xxe.xlsx", "could not be read")):
+    before = alpha.one("SELECT COUNT(*) FROM students")
+    do_import(teacher_a, raw, filename=name)
+    check(label, alpha.one("SELECT COUNT(*) FROM students") == before and said in teacher_a.said(), name)
+
 # ================================================================ B. permissions and CSRF
 check("with no students.create permission, nobody is refused (403) the page, the template and the import",
       nobody.get(IMPORT).status_code == 403 and nobody.get(f"{IMPORT}/template.csv").status_code == 403

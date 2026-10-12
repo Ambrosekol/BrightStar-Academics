@@ -518,7 +518,8 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
             "--no-first-run",
             "--no-default-browser-check",
             "--disable-extensions",
-            "--allow-file-access-from-files",
+            # No --allow-file-access-from-files: the page carries its pictures inside it (data: addresses) and loads
+            # nothing else, so it has no need to read other files on the server, and must not be able to.
             "--run-all-compositor-stages-before-draw",
             "--virtual-time-budget=3000",
             "--window-size=1400,1100",

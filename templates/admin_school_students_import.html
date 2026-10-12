@@ -84,8 +84,8 @@
   <form class="imp-upload" method="post" action="{{ url_for('admin_school_students_import_run') }}" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <label class="imp-drop">
-      <strong>Choose your CSV file</strong>
-      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <strong>Choose your file (CSV or Excel .xlsx)</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required data-file-input {{ upload_attrs('data') }}>
       <span class="imp-file" data-file-name>No file chosen</span>
     </label>
     {{ upload_hint('data') }}
@@ -130,8 +130,8 @@
   <form class="imp-upload" method="post" action="{{ url_for('admin_school_students_import_history_run') }}" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <label class="imp-drop">
-      <strong>Choose your CSV file</strong>
-      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <strong>Choose your file (CSV or Excel .xlsx)</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required data-file-input {{ upload_attrs('data') }}>
       <span class="imp-file" data-file-name>No file chosen</span>
     </label>
     {{ upload_hint('data') }}
@@ -177,8 +177,8 @@
   <form class="imp-upload" method="post" action="{{ url_for('admin_school_results_import_run') }}" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <label class="imp-drop">
-      <strong>Choose your CSV file</strong>
-      <input type="file" name="csv_file" accept=".csv,text/csv" required data-file-input {{ upload_attrs('data') }}>
+      <strong>Choose your file (CSV or Excel .xlsx)</strong>
+      <input type="file" name="csv_file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required data-file-input {{ upload_attrs('data') }}>
       <span class="imp-file" data-file-name>No file chosen</span>
     </label>
     {{ upload_hint('data') }}

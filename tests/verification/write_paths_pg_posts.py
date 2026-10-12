@@ -1271,6 +1271,9 @@ op.post(f"{CANDS}/{THIRD_CAND}/release-result", {})
 check("releasing an admitted candidate's result stamps when/who, and issues a fresh password for the portal to show",
       one("SELECT results_released_at FROM candidates WHERE id = :c", c=THIRD_CAND) is not None
       and one("SELECT released_password FROM candidates WHERE id = :c", c=THIRD_CAND) not in (None, ""))
+stored = one("SELECT released_password FROM candidates WHERE id = :c", c=THIRD_CAND) or ""
+check("…kept encrypted, never in the clear (a student password starts STU-; the stored copy does not show it)",
+      stored.startswith("enc:v1:") and "STU-" not in stored, stored[:12])
 op.post(f"{CANDS}/new", {**CAND_FORM, "candidate_name": "Fourth Candidate"})
 FOURTH_CAND = one("SELECT id FROM candidates WHERE candidate_name = 'Fourth Candidate'")
 op.post(f"{CANDS}/{FOURTH_CAND}/decline", {})

@@ -18,11 +18,22 @@ place, before any route runs:
    so it holds however the password was changed (the person, an administrator, a reset link, a
    command). The person changing their own password is stamped again on the spot and stays in.
 
+3. **A sign-in does not last for ever.** It ends after ``BRIGHTSTARS_IDLE_MINUTES`` without use (default
+   120; the presence ping an open page sends does not count as use, so a tab left open on a shared computer
+   still ends) and after ``BRIGHTSTARS_SESSION_HOURS`` in all (default 12). Someone sitting an exam is the
+   exception again: while their paper is running neither limit signs them out, so a power cut, a dropped
+   connection or the server going down mid-exam never costs a candidate or a student their paper. When
+   the paper ends they get a short while more (``EXAM_GRACE``) to see their result.
+
+4. **Signing out ends the sign-in everywhere.** Each sign-in carries a random id; signing out records it
+   (``control_plane/ended_sessions.py``), so a copy of the cookie taken earlier stops working too.
+
 Failing safe: if the launch id or the school's database cannot be read, nobody is signed out for
 it. Nothing here runs for ``/health`` or for shared static files.
 """
 
 import hashlib
+import secrets
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -38,6 +49,14 @@ from models import (
 
 LAUNCH_KEY = 'launch'
 PASSWORD_KEY = 'pwv'
+SID_KEY = 'sid'        # this sign-in's random id (ended by signing out)
+BORN_KEY = 'born'      # when it began, seconds since 1970
+SEEN_KEY = 'seen'      # when it was last used, seconds since 1970 (written at most once a minute)
+SEEN_EVERY = 60
+# After an exam kept someone past the limits, how long more they have once the paper ends.
+EXAM_GRACE = 30 * 60
+# Requests a page makes on its own, which are not someone using the portal: they never count as use.
+BACKGROUND_PATHS = ('/presence/heartbeat', '/admin/administration/messages/unread-state')
 # Must equal control_plane.console.SESSION_KEY (a contract test checks it).
 PLATFORM_KEY = 'platform_admin_id'
 # The reserved account a platform operator uses inside a school gets a fresh random password on
@@ -54,6 +73,10 @@ SIGN_IN_ENDPOINTS = frozenset({'login', 'admin_login', 'platform_login', 'forgot
 
 RESTARTED = 'The system was restarted, please sign in again.'
 PASSWORD_CHANGED = 'Your password was changed, please sign in again.'
+IDLE = 'You were signed out after a while without using the portal, please sign in again.'
+EXPIRED = 'Your sign-in has run out, please sign in again.'
+ENDED = 'That sign-in was ended by signing out, please sign in again.'
+REASONS = {'restart': RESTARTED, 'password': PASSWORD_CHANGED, 'idle': IDLE, 'expired': EXPIRED, 'ended': ENDED}
 
 
 # ---------------------------------------------------------------- what the session says
@@ -201,6 +224,61 @@ def sitting_exam(kind, account_id):
         return True
 
 
+# ---------------------------------------------------------------- how long a sign-in lasts
+
+def _clock(kind, account_id):
+    """``'ok'``, ``'stamp'`` (write the clock), or why the sign-in is over: ``'ended'``, ``'idle'``, ``'expired'``."""
+    from control_plane import ended_sessions
+
+    if ended_sessions.is_ended(session.get(SID_KEY)):
+        return 'ended'
+    born, seen = session.get(BORN_KEY), session.get(SEEN_KEY)
+    if not isinstance(born, (int, float)) or not isinstance(seen, (int, float)):
+        return 'stamp'          # opened before sign-ins had a clock: it starts now
+    now = time.time()
+    idle = now - seen > config.idle_minutes() * 60
+    expired = now - born > config.session_hours() * 3600
+    if idle or expired:
+        if sitting_exam(kind, account_id):
+            g._kept_for_exam = True   # _wind_clock gives them EXAM_GRACE once the paper ends
+            return 'stamp'
+        return 'expired' if expired else 'idle'
+    if now - seen >= SEEN_EVERY and not request.path.startswith(BACKGROUND_PATHS):
+        return 'stamp'
+    return 'ok'
+
+
+def start_clock():
+    """A sign-in has just begun: a fresh id, and its clock starts now."""
+    now = int(time.time())
+    session[SID_KEY] = secrets.token_urlsafe(16)
+    session[BORN_KEY] = now
+    session[SEEN_KEY] = now
+
+
+def _wind_clock():
+    """Write the clock for this request: used now. A sign-in kept past its lifetime by a running exam gets
+    EXAM_GRACE more from now, once the exam is over."""
+    now = int(time.time())
+    if not session.get(SID_KEY):
+        session[SID_KEY] = secrets.token_urlsafe(16)
+    born = session.get(BORN_KEY)
+    limit = config.session_hours() * 3600
+    if not isinstance(born, (int, float)):
+        session[BORN_KEY] = now
+    elif g.get('_kept_for_exam') and now - born > limit - EXAM_GRACE:
+        session[BORN_KEY] = int(now - limit + EXAM_GRACE)
+    if not request.path.startswith(BACKGROUND_PATHS) or not isinstance(session.get(SEEN_KEY), (int, float)):
+        session[SEEN_KEY] = now
+
+
+def end_this_sign_in():
+    """Signing out: record this sign-in's id as ended, so a copy of the cookie stops working as well."""
+    from control_plane import ended_sessions
+
+    ended_sessions.end(session.get(SID_KEY), config.session_hours() * 3600 + config.idle_minutes() * 60)
+
+
 # ---------------------------------------------------------------- the verdict on a session
 
 def assess():
@@ -218,6 +296,14 @@ def assess():
     if stale and not sitting_exam(kind, account_id):
         return 'restart', launch, None
     try:
+        clock = _clock(kind, account_id)
+    except Exception:
+        if kind != 'platform':
+            db.session.rollback()
+        clock = 'ok'   # cannot tell: leave the person as they are
+    if clock in ('ended', 'idle', 'expired'):
+        return clock, launch, None
+    try:
         current = _current_fingerprint(kind, account_id)
         stamped = session.get(PASSWORD_KEY)
         if current is not None and stamped is not None and stamped != current:
@@ -232,7 +318,7 @@ def assess():
     if current is not None and stamped is not None and stamped != current:
         return 'password', launch, None
     adopt = current is not None and stamped is None
-    return ('stamp' if (stale or adopt) else 'ok'), launch, current
+    return ('stamp' if (stale or adopt or clock == 'stamp') else 'ok'), launch, current
 
 
 def usable_for_files():
@@ -250,12 +336,15 @@ def stamp_session(launch=None, fingerprint=None):
         session[LAUNCH_KEY] = launch
     if fingerprint is not None:
         session[PASSWORD_KEY] = fingerprint
+    if _identity()[0] is not None:
+        _wind_clock()
 
 
 def stamp_sign_in(kind, account):
     """Mark a session that has just been opened: this launch, and this account's password."""
     fingerprint = 'operator' if (kind == 'admin' and str(account['username'] or '').startswith(OPERATOR_PREFIX)) \
         else password_fingerprint(hash_of(kind, account))
+    start_clock()
     stamp_session(fingerprint=fingerprint)
 
 
@@ -299,7 +388,7 @@ def sign_out(reason):
     session.clear()
     session.update(keep)
     stamp_session()
-    flash(RESTARTED if reason == 'restart' else PASSWORD_CHANGED, 'error')
+    flash(REASONS.get(reason, RESTARTED), 'error')
     if request.endpoint in SIGN_IN_ENDPOINTS or request.method in ('GET', 'HEAD'):
         return None    # already meeting the sign-in page, or about to be sent there by the route itself
     return redirect(url_for('platform_login' if g.get('on_platform_host') else 'login'))
@@ -310,7 +399,7 @@ def take_sign_out_reason():
     For a sign-in page that has no place of its own for queued messages."""
     from flask import get_flashed_messages
 
-    messages = [m for _, m in get_flashed_messages(with_categories=True) if m in (RESTARTED, PASSWORD_CHANGED)]
+    messages = [m for _, m in get_flashed_messages(with_categories=True) if m in REASONS.values()]
     return messages[0] if messages else None
 
 
@@ -322,7 +411,7 @@ def guard_session():
     verdict, launch, fingerprint = assess()
     if verdict == 'stamp':
         stamp_session(launch, fingerprint)
-    elif verdict in ('restart', 'password'):
+    elif verdict in REASONS:
         return sign_out(verdict)
     return None
 

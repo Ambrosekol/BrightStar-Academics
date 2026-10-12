@@ -155,7 +155,8 @@ def _request(secret_key, method, path, payload=None, timeout=15):
         except (ValueError, UnicodeDecodeError):
             return exc.code, {}
     except Exception as exc:
-        raise PaystackError(f'Paystack could not be reached: {str(exc)[:200]}') from exc
+        from core.failures import plain_failure
+        raise PaystackError(f'Paystack could not be reached: {plain_failure(exc, "Paystack")}.') from exc
 
 
 def new_reference():

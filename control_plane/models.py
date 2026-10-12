@@ -196,6 +196,22 @@ class RateLimitCounter(PlatformBase):
     expires_at = mapped_column(Float, nullable=False)
 
 
+class EndedSession(PlatformBase):
+    """A sign-in that has been ended by signing out, so a copy of its cookie can never be used again.
+
+    A session is a signed cookie: clearing it in the browser that signs out does not stop a copy taken
+    earlier (on a shared computer, say) from still working. Each sign-in carries a random id; signing out
+    records it here until ``until`` (seconds since 1970), by when the sign-in would have run out anyway.
+    Only the SHA-256 of the id is kept. See ``control_plane/ended_sessions.py``.
+    """
+
+    __tablename__ = 'ended_sessions'
+    __table_args__ = (Index('ix_ended_sessions_until', 'until'),)
+
+    sid_hash = mapped_column(Text, primary_key=True)
+    until = mapped_column(Float, nullable=False)
+
+
 class PlatformState(PlatformBase):
     """A few named values the whole deployment shares, one row each.
 

@@ -191,6 +191,30 @@ def tenants_dir():
     return os.environ.get('BRIGHTSTARS_TENANTS_DIR', '').strip() or os.path.join(BASE, 'tenants')
 
 
+def _bounded_number(name, default, low, high):
+    """A whole number from the environment, kept between ``low`` and ``high``; ``default`` when unset or unreadable."""
+    try:
+        value = float(os.environ.get(name, '').strip() or default)
+    except ValueError:
+        value = default
+    return max(low, min(high, value))
+
+
+def idle_minutes():
+    """How long a sign-in may go unused before it ends (``BRIGHTSTARS_IDLE_MINUTES``, default 120).
+
+    "Used" means a page or a form; the presence ping an open page sends every 30 seconds does not count, so a
+    tab left open on a shared computer still ends. Someone sitting an exam is never signed out by this while
+    their paper is running (core/session_guard.py)."""
+    return _bounded_number('BRIGHTSTARS_IDLE_MINUTES', 120, 5, 24 * 60)
+
+
+def session_hours():
+    """The longest a sign-in lasts, however busy (``BRIGHTSTARS_SESSION_HOURS``, default 12): a working day.
+    Someone sitting an exam is kept until their paper ends."""
+    return _bounded_number('BRIGHTSTARS_SESSION_HOURS', 12, 1, 7 * 24)
+
+
 def password_check_cache_seconds():
     """How long a signed-in person's password fingerprint (``core/session_guard.py``) is cached
     in each process, once read from the database.

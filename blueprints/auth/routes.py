@@ -24,7 +24,14 @@ from core.delivery import email_settings, send_email
 from core.presence import _presence_identity, end_presence
 from core.public_settings import _public_settings
 from core.security import audit_log, current_admin
-from core.session_guard import stamp_sign_in
+from core.session_guard import end_this_sign_in, stamp_sign_in
+from control_plane.ratelimit import reached
+
+# Wrong passwords allowed in FAILED_WINDOW seconds: from one address (whatever the usernames), and for one username
+# (from wherever). A school computer room shares one address, so the first is generous.
+FAILED_PER_ADDRESS=40
+FAILED_PER_ACCOUNT=20
+FAILED_WINDOW=900
 
 
 def _rate_limit_scope():
@@ -107,7 +114,9 @@ def password_reset(token):
         if not csrf_check_request():
             abort(403, description='Invalid or missing CSRF token.')
         new=request.form.get('new_password',''); confirm=request.form.get('confirm_password','')
-        if len(new)<8: errors.append('Your new password must be at least 8 characters long.')
+        from core.passwords import password_problem
+        problem=password_problem(new)
+        if problem: errors.append(problem)
         if new!=confirm: errors.append('The new password and confirmation do not match.')
         if not errors:
             now=datetime.now(timezone.utc).isoformat(); pw=generate_password_hash(new)
@@ -143,8 +152,20 @@ def login():
             return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.',identifier=identifier), 429
         if not identifier or not password:
             return render_template('login.html',error='Enter your username, Student ID or Candidate ID and password.',identifier=identifier)
+        # Wrong passwords are also counted per address across every username (someone trying one common password
+        # against many accounts) and per username across every address (many machines guessing one account).
+        # Only failures count, so a computer room of students signing in from one address is never held up.
+        fail_ip=f"login-fail-ip:{_rate_limit_scope()}:{request.remote_addr or 'unknown'}"
+        fail_account=f"login-fail-account:{_rate_limit_scope()}:{identifier.lower()[:120]}"
+        if reached(fail_ip, FAILED_PER_ADDRESS, FAILED_WINDOW) or reached(fail_account, FAILED_PER_ACCOUNT, FAILED_WINDOW):
+            from core.alerting import alert
+            alert('sign_in_refusal_streak','Too many wrong passwords from one address, or for one account.',
+                  address=request.remote_addr,identifier=identifier[:120])
+            return render_template('login.html',error='Too many sign-in attempts. Please wait a few minutes and try again.',identifier=identifier), 429
         kind, account=_authenticate_unified(identifier,password)
         if not account:
+            _rate_limit(fail_ip, limit=FAILED_PER_ADDRESS, window=FAILED_WINDOW)
+            _rate_limit(fail_account, limit=FAILED_PER_ACCOUNT, window=FAILED_WINDOW)
             return render_template('login.html',error='We could not verify those login details. Please check your ID/username and password.',identifier=identifier)
         if kind=='student' and student_is_early_years(account['id']):
             return render_template('login.html',error='Crèche and Nursery pupils do not sign in. A parent can sign in to the parent portal to pay fees and see report cards.',identifier=identifier)
@@ -188,10 +209,24 @@ def admin_login():
         return redirect(url_for('login',next=request.args.get('next','')))
     return login()
 
+def _asked_from_elsewhere():
+    """Whether this request was started by another website (a link or a hidden picture there). The browser says
+    so in Sec-Fetch-Site; an older browser without it is judged by the Referer, when it sends one."""
+    fetch_site=request.headers.get('Sec-Fetch-Site','').lower()
+    if fetch_site:
+        return fetch_site not in ('same-origin','none')
+    from urllib.parse import urlsplit
+    referrer=request.headers.get('Referer','')
+    return bool(referrer) and urlsplit(referrer).netloc.lower()!=request.host.lower()
+
 @app.route('/logout',methods=['GET','POST'])
 def logout():
     if request.method=='POST' and not csrf_check_request():
         abort(403, description='Invalid or missing CSRF token.')
+    # Signing out by a plain link (GET) is kept for the portal's own pages, but another website must not be able to
+    # sign people out with a link or a hidden picture: from there, signing out needs a press on a page of ours.
+    if request.method!='POST' and _asked_from_elsewhere():
+        return render_template('logout_confirm.html')
     kind,account_id=_presence_identity()
     if kind:
         if kind=='admin':
@@ -203,6 +238,7 @@ def logout():
         elif kind=='candidate':
             audit_log('candidate_logout','authentication','candidate',account_id)
     end_presence()
+    end_this_sign_in()   # a copy of this cookie, taken earlier, stops working too (core/session_guard.py)
     _clear_identity_sessions(); return redirect(url_for('index'))
 
 @app.route('/admin/logout')

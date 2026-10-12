@@ -277,6 +277,10 @@ check("…and is kept under Done as paid in full", "Adaone" in done and "Paid in
 # ================================================================ D. by hand, and who may
 cashier = new_staff("cash.ier", ["Finance Records Officer"])
 check("a cashier (finance.record) can see the list", "Importa" in view(cashier, "unbilled"))
+r = cashier.get(f"/admin/finance/students/{ADA}/account")
+check("…but cannot open a student's whole fee account by its address (security audit M1)",
+      r.status_code in (302, 403) and "₦50,000.00" not in r.get_data(as_text=True), str(r.status_code))
+check("…while the bursar can", op.get(f"/admin/finance/students/{ADA}/account").status_code == 200)
 cashier.post(f"{PAGE}/remove", {"student_id": [IMP], "note": "Scholarship"}, page=PAGE)
 check("…but cannot take anyone off it", listed(IMP)[1] is None)
 op.post(f"{PAGE}/remove", {"student_id": [IMP], "note": ""}, page=PAGE)
@@ -291,7 +295,7 @@ check("a student who paid cannot be put back", listed(ADA)[2] == "paid")
 teacher = new_staff("class.teacher", ["Class Teacher"])
 r = teacher.get(PAGE)
 check("someone with no finance permission cannot open the list",
-      r.status_code in (302, 403) and "New students to bill" not in teacher.text("/admin/school"))
+      r.status_code in (302, 403) and 'href="/admin/finance/new-students"' not in teacher.text("/admin/school"))
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 check("nothing raised behind the scenes", not errors.seen, "; ".join(repr(e) for e in errors.seen[:3]))

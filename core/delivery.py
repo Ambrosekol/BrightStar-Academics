@@ -428,7 +428,8 @@ def check_email(settings, to_address, school):
         send_email(settings, msg)
         return True, f'A test message was sent to {to_address}.'
     except Exception as exc:
-        return False, f'The test message could not be sent: {str(exc)[:200]}'
+        from core.failures import plain_failure
+        return False, f'The test message could not be sent: {plain_failure(exc, "Test email")}.'
 
 
 def _sms_request(url, settings, payload=None):
@@ -467,7 +468,8 @@ def send_sms(settings, to, body):
         status, found = _sms_request(SMS_API_URL, settings,
                                      {'from': settings.sender, 'to': to, 'body': body, 'gateway': settings.gateway})
     except Exception as exc:
-        return False, f'SMS delivery failed: {str(exc)[:200]}'
+        from core.failures import plain_failure
+        return False, f'SMS delivery failed: {plain_failure(exc, "SMS")}.'
     failed = status >= 400 or found.get('status') == 'error' or 'error' in found
     if failed:
         return False, _sms_problem(status, found)
@@ -502,7 +504,8 @@ def sms_balance(settings):
     try:
         status, found = _sms_request(SMS_BALANCE_URL, settings)
     except Exception as exc:
-        return False, f'BulkSMS Nigeria could not be reached: {str(exc)[:200]}', []
+        from core.failures import plain_failure
+        return False, f'BulkSMS Nigeria could not be reached: {plain_failure(exc, "BulkSMS")}.', []
     if status >= 400 or found.get('status') == 'error':
         return False, _sms_problem(status, found), []
     wallets = _wallets(found)

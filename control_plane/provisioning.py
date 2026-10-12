@@ -497,6 +497,11 @@ def create_platform_admin(username, display_name, password, actor='cli', superad
     username = (username or '').strip().lower()
     if not username or len(password or '') < 10:
         raise ProvisioningError('A username and a password of at least 10 characters are required.')
+    from core.passwords import OPERATOR_MINIMUM, password_problem
+
+    problem = password_problem(password, minimum=OPERATOR_MINIMUM, usernames=(username,))
+    if problem:
+        raise ProvisioningError(problem.replace('Your new password', 'The password'))
     init_platform_db()
     with platform_session() as session:
         if session.scalars(sa.select(PlatformAdmin).where(PlatformAdmin.username == username)).first():
@@ -550,8 +555,11 @@ def create_school_role(slug, rotate=False, password=None):
         raise ProvisioningError('A separate database role only applies to a school on PostgreSQL.')
     role_name = 'school_' + re.sub(r'[^a-z0-9]+', '_', slug.lower()).strip('_')
     if password:
-        if len(password) < 10:
-            raise ProvisioningError('A password you choose yourself must be at least 10 characters.')
+        from core.passwords import OPERATOR_MINIMUM, password_problem
+
+        problem = password_problem(password, minimum=OPERATOR_MINIMUM, usernames=(role_name,))
+        if problem:
+            raise ProvisioningError(problem.replace('Your new password', 'A password you choose yourself'))
         if '\x00' in password:
             raise ProvisioningError('A password cannot contain a NUL character.')
     else:

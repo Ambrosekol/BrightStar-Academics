@@ -10,8 +10,8 @@
 <tr><td>School A sees school B's data</td><td>School chosen from the address only; a database per school; queries fail closed with no school; sessions stamped with their school and discarded elsewhere; files in per-school folders</td><td>{{ file('control_plane/resolver.py') }}, {{ file('control_plane/routing.py') }}, {{ file('core/storage.py') }}</td></tr>
 <tr><td>A cookie copied between schools</td><td>Every session carries its school's id; a mismatch clears it</td><td>{{ file('control_plane/resolver.py') }}</td></tr>
 <tr><td>Forged form posts (CSRF)</td><td><code>csrf_protect</code> on every write route; a token in every form; a test that fails if a write route is not exercised</td><td>{{ file('core/security.py') }}, <code>tests/verification/pg_posts_coverage.py</code></td></tr>
-<tr><td>Password guessing</td><td>Rate limits per address and username, counted in the registry so every worker shares them; password hashing with Werkzeug</td><td>{{ file('control_plane/ratelimit.py') }}, {{ file('core/accounts.py') }}</td></tr>
-<tr><td>A stolen or old sign-in</td><td>A restart signs everyone out; a changed password ends the account's other sign-ins</td><td>{{ file('core/session_guard.py') }}</td></tr>
+<tr><td>Password guessing</td><td>Rate limits counted in the registry so every worker shares them: per address and username; and, counting wrong passwords only, per address across every username (40 in 15 minutes: one common password tried against many accounts) and per username across every address (20), so a computer room on one address is never held up by right passwords. An unknown username still costs a password comparison, so the time taken does not tell which usernames exist. New passwords are refused if short, common, one repeated character, a straight run or built from the username ({{ file('core/passwords.py') }})</td><td>{{ file('control_plane/ratelimit.py') }}, {{ file('core/accounts.py') }}</td></tr>
+<tr><td>A stolen or old sign-in</td><td>A restart signs everyone out; a changed password ends the account's other sign-ins; a sign-in ends after <code>BRIGHTSTARS_IDLE_MINUTES</code> unused (default 120; the presence ping does not count) and <code>BRIGHTSTARS_SESSION_HOURS</code> in all (default 12); signing out records the sign-in's random id as ended ({{ file('control_plane/ended_sessions.py') }}), so a copy of the cookie stops working too. <strong>Someone sitting an exam is never signed out by a restart or by these limits</strong> while their paper runs (a power cut, a lost connection), and has 30 minutes more once it ends. Signing out from another website needs a press on a page of ours (<code>Sec-Fetch-Site</code>)</td><td>{{ file('core/session_guard.py') }}</td></tr>
 <tr><td>A staff member exceeding their role</td><td>Permission per endpoint, scope per class/subject/bank, audit of refusals, four areas (Administration, Email &amp; SMS, Online Payments, School profile) restricted to <code>is_school_admin</code> directly rather than any grantable permission</td><td>{{ file('core/security.py') }}</td></tr>
 <tr><td>An operator's power inside a school</td><td>One-time entry ticket (hash stored), reserved revocable account, entry recorded on both sides, footprint readable by the super admin</td><td>{{ file('control_plane/entry.py') }}, {{ file('control_plane/team.py') }}</td></tr>
 <tr><td>Someone finding the console</td><td>Console routes return 404 on any address that is not a platform host; <code>/docs</code> and <code>/platform/settings</code> return the same 404 to anyone without access</td><td>{{ file('control_plane/console.py') }}, {{ file('control_plane/platform_pages.py') }}</td></tr>
@@ -24,7 +24,7 @@
 <tr><td>Stored mail/SMS secrets leaking</td><td>Encrypted at rest, key derived from the app secret <em>and the school's code</em>; never shown again; absent from the audit log</td><td>{{ file('core/delivery.py') }}</td></tr>
 <tr><td>Forged client addresses</td><td>Forwarded headers ignored unless a trusted proxy count is set; never the host, only address and scheme</td><td><code>apply_trusted_proxies</code> in {{ file('app.py') }}</td></tr>
 <tr><td>Crashing on hostile input</td><td>Huge numbers and NUL bytes answered with a plain 400; the test suite sends every route hostile input and fails on any 500</td><td>{{ file('core/request_errors.py') }}</td></tr>
-<tr><td>Leaking internals in errors</td><td>Designed error pages that show no detail; per school, in its colours</td><td>{{ file('app.py') }}, {{ tpl('error_5xx.html') }}</td></tr>
+<tr><td>Leaking internals in errors</td><td>Designed error pages that show no detail; per school, in its colours. Where a page must say something failed (a test email, an SMS, Paystack, an import row, an admission), it says what kind of failure in words and logs the exception, never showing its text ({{ file('core/failures.py') }})</td><td>{{ file('app.py') }}, {{ tpl('error_5xx.html') }}</td></tr>
 <tr><td>Degraded safety going unnoticed</td><td>The registry being unreachable, a job that used up its retries, a burst of delivery failures for one school, and a sign-in rate limit being hit all log <em>and</em>, if <code>BRIGHTSTARS_ALERT_WEBHOOK</code> is set, post to it - a single honest bounce never pages anyone, only a burst does</td><td>{{ file('core/alerting.py') }}</td></tr>
 </table></div>
 
@@ -55,10 +55,20 @@ script-src 'self' 'nonce-&lt;random per request&gt;'; object-src 'none'; base-ur
   <li>Never log a password, token, or a school's stored credential. Audit entries record <em>which</em> fields changed, not their values.</li>
 </ul>
 
+<h2 id="production">Production only means production</h2>
+<p>Outside production the application drops protections a public server needs: cookies are not marked Secure, there is
+no HSTS, the strong-secret check is skipped and a school's mail server may be on a private address. So a deployment that
+forgot <code>BRIGHTSTARS_ENV=production</code> refuses to start (<code>refuse_unsafe_environment</code> in
+{{ file('app.py') }}) when it looks real: it runs under gunicorn, waitress or uwsgi, its portal domain is a real one
+(not <code>localhost</code>, <code>.test</code>, <code>.local</code>...), or a reverse proxy is set in front
+(<code>BRIGHTSTARS_TRUSTED_PROXIES</code>). S3 or a remote database alone is not a sign: a developer may point a local
+copy at them. A staging server that must run as development sets <code>BRIGHTSTARS_ALLOW_NON_PRODUCTION=1</code>.</p>
+
 <h2 id="gaps">What it does not do</h2>
 <p>Honest limits, so nobody assumes more than exists:</p>
 <ul>
-  <li><strong>No two-factor authentication</strong> for any account, including platform admins.</li>
+  <li><strong>No two-factor authentication</strong> for any account, including platform admins. It is the first item
+  under <em>Known gaps</em> in the README.</li>
   <li><strong>Databases are not encrypted per school</strong> beyond stored delivery credentials; rely on disk and PostgreSQL-level encryption and access control.</li>
   <li><strong>A shared PostgreSQL role, by default.</strong> Out of the box the same role connects to every school's database; a compromised application process can read every school. Isolation is by design and by test, not by database privileges. A separate role per school, owning its database <em>and every table already in it</em> (created before the role was, so ownership has to be handed over one object at a time - a plain <code>ALTER DATABASE ... OWNER TO</code> alone leaves the new role able to connect but not read a single row), is a command away rather than a manual DBA task (<code>python -m control_plane create-db-role CODE</code>, or {{ route('platform_settings_create_db_role') }} for a highly-trusted admin; {{ file('control_plane/provisioning.py') }}) but is opt-in, not the default, and pointing a school at it (<code>set-db-url</code>, or {{ route('platform_settings_set_db_url') }}) is a deliberate second step.</li>
 </ul>

@@ -70,6 +70,51 @@ app.jinja_env.finalize = lambda value: int(value) if isinstance(value, float) an
 sys.modules.setdefault('app', sys.modules[__name__])
 
 ENVIRONMENT=os.environ.get('BRIGHTSTARS_ENV', os.environ.get('FLASK_ENV','development')).strip().lower()
+
+# Names that only ever point at a developer's own machine (or are reserved for testing): a portal domain like these
+# is not a real deployment.
+_DEV_DOMAIN_ENDINGS=('localhost','.test','.local','.example','.invalid','.internal','lvh.me')
+
+
+def production_signs(environ=None, loaded_modules=None):
+    """What about this start looks like a real, public deployment: a production web server, a real portal
+    domain, or a reverse proxy in front. Empty on a developer's machine. Using S3 or a remote database is not a
+    sign by itself: a developer may point a local copy at them."""
+    environ=os.environ if environ is None else environ
+    loaded_modules=sys.modules if loaded_modules is None else loaded_modules
+    signs=[]
+    server=environ.get('SERVER_SOFTWARE','').lower()
+    if any(name in loaded_modules for name in ('gunicorn','waitress','uwsgi')) or any(name in server for name in ('gunicorn','waitress','uwsgi')):
+        signs.append('it is running under a production web server (gunicorn, waitress or uwsgi)')
+    domain=environ.get('BRIGHTSTARS_PORTAL_DOMAIN','').strip().lower().rstrip('.')
+    if domain and not (domain.endswith(_DEV_DOMAIN_ENDINGS) or domain.replace('.','').isdigit()):
+        signs.append(f'its portal domain is {domain}')
+    try:
+        proxies=int(environ.get('BRIGHTSTARS_TRUSTED_PROXIES','0').strip() or 0)
+    except ValueError:
+        proxies=0
+    if proxies>0:
+        signs.append('a reverse proxy is set in front of it (BRIGHTSTARS_TRUSTED_PROXIES)')
+    return signs
+
+
+def refuse_unsafe_environment(environment, environ=None, loaded_modules=None):
+    """Refuse to start a real deployment that is not running as production. Outside production the app quietly
+    drops protections a public server needs (Secure cookies, HSTS, the strong-secret check, refusing a school's mail
+    server on a private address), so a deployment that forgot BRIGHTSTARS_ENV=production must not start at all.
+    A staging server that really means it sets BRIGHTSTARS_ALLOW_NON_PRODUCTION=1."""
+    environ=os.environ if environ is None else environ
+    if environment in ('production','prod') or environ.get('BRIGHTSTARS_ALLOW_NON_PRODUCTION','').strip()=='1':
+        return
+    signs=production_signs(environ, loaded_modules)
+    if signs:
+        raise RuntimeError(
+            'This looks like a real deployment (' + '; '.join(signs) + ') but BRIGHTSTARS_ENV is '
+            f'"{environment or "not set"}", not "production". Set BRIGHTSTARS_ENV=production. (A staging server that '
+            'must run as development sets BRIGHTSTARS_ALLOW_NON_PRODUCTION=1.)')
+
+
+refuse_unsafe_environment(ENVIRONMENT)
 _config_secret=os.environ.get('BRIGHTSTARS_SECRET','').strip()
 if ENVIRONMENT in ('production','prod') and len(_config_secret) < 32:
     raise RuntimeError('BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.')
@@ -766,7 +811,9 @@ class _Lazy:
 def inject_csrf_token():
     admin=current_admin()
     unread=open_controls=0
-    unread_messages=_unread_admin_messages(admin['id']) if admin else 0
+    # Kept for a few seconds like the other badges (and dropped by any change, forget_counts_after_a_change); the
+    # messages page itself, and its live check, always read the real number.
+    unread_messages=remember('unread-messages', badge_cache_seconds(), _unread_admin_messages, admin['id']) if admin else 0
     finance_unallocated=None
     if admin:
         # Once a day (and not more often than every half hour) the school looks for birthdays coming up.
@@ -928,7 +975,7 @@ def forget_counts_after_a_change(response):
     """A change made by an administrator (a payment, a read notification) must show on the next page at
     once, so the counts saved for the badges are dropped whenever a request changes something."""
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
-        forget_here('notification-counts', 'finance-unallocated')
+        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu')
         clear_school_admin_caches()
     return response
 
@@ -1069,7 +1116,9 @@ def admin_password_change():
         new=request.form.get('new_password','')
         confirm=request.form.get('confirm_password','')
         if not check_password_hash(admin['password_hash'] or '',current): errors.append('Your temporary/current password is incorrect.')
-        if len(new)<8: errors.append('Your new password must be at least 8 characters long.')
+        from core.passwords import password_problem
+        problem=password_problem(new,usernames=(admin['username'],))
+        if problem: errors.append(problem)
         if new!=confirm: errors.append('The new password and confirmation do not match.')
         if not errors:
             db.session.execute(sa_update(Admin).where(Admin.id==aid).values(

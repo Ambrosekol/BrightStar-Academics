@@ -34,7 +34,7 @@ from .entry import (
     set_platform_password, tenant_glance, tenant_stats,
 )
 from .models import Tenant, TENANT_ACTIVE, TENANT_SUSPENDED
-from .ratelimit import allow
+from .ratelimit import allow, reached
 from .registry import SLUG_RE, get_tenant, platform_session, to_info
 
 SESSION_KEY = 'platform_admin_id'
@@ -43,8 +43,9 @@ SESSION_KEY = 'platform_admin_id'
 def stamp_platform_sign_in(admin_id):
     """Mark a console session that has just been opened: this launch of the server, and the
     password the account has now (core/session_guard.py)."""
-    from core.session_guard import _current_fingerprint
+    from core.session_guard import _current_fingerprint, start_clock
 
+    start_clock()
     stamp_session(fingerprint=_current_fingerprint('platform', admin_id))
 
 
@@ -213,9 +214,16 @@ def platform_login():
                      limit=8, window=300):
             return render_template('platform/login.html',
                                    error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
+        # Wrong passwords from one address are also counted across every username, so one address cannot try a
+        # common password against every platform account.
+        failed_key = f"platform-login-fail:{request.remote_addr or 'unknown'}"
+        if reached(failed_key, 20, 900):
+            return render_template('platform/login.html',
+                                   error='Too many sign-in attempts. Please wait a few minutes and try again.'), 429
         admin = authenticate_platform_admin(username, request.form.get('password', ''),
                                             request.remote_addr)
         if not admin:
+            allow(failed_key, 20, 900)
             return render_template('platform/login.html',
                                    error='Those platform credentials were not recognised.'), 401
         # A platform session shares nothing with a school session.
@@ -235,6 +243,9 @@ def platform_logout():
     admin = current_platform_admin()
     if admin:
         pv.record('platform_admin.logout', None, None, admin['username'], admin['id'])
+    from core.session_guard import end_this_sign_in
+
+    end_this_sign_in()   # a copy of this cookie stops working too
     session.clear()
     return redirect(url_for('platform_login'))
 
@@ -825,6 +836,9 @@ def platform_entry(token):
     session['admin_id'] = admin_id
     session['admin_logged_in'] = True
     session['platform_operator'] = platform_admin['username']
+    from core.session_guard import start_clock
+
+    start_clock()
     stamp_session(fingerprint='operator')
     audit_log('platform_admin_entered_school', 'authentication', 'admin', admin_id,
               {'platform_admin': platform_admin['username'], 'school': tenant.slug})

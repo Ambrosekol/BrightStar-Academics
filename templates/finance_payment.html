@@ -26,7 +26,7 @@
   <div>
     <span class="acq-kind">Payment · {{ payment.receipt_no }}</span>
     <h2>{{ naira(payment.amount) }} <small>from {{ payment.payer_name or '—' }}</small></h2>
-    <p>For <a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=payment.student_id, session_id=payment.session_id) }}"{% if modal %} data-modal{% endif %}>{{ student_name }}</a>
+    <p>For {% if finance_sees_accounts() %}<a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=payment.student_id, session_id=payment.session_id) }}"{% if modal %} data-modal{% endif %}>{{ student_name }}</a>{% else %}<b>{{ student_name }}</b>{% endif %}
       · {{ payment.admission_no }}{% if payment.class_name %} · {{ payment.class_name }}{% endif %}{% if payment.session_name %} · {{ payment.session_name }}{% endif %}</p>
   </div>
   <div class="fp-state">

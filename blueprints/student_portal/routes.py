@@ -51,8 +51,10 @@ def student_password_change():
         confirm_password=request.form.get('confirm_password','')
         if not check_password_hash(student['login_password_hash'] or '',current_password):
             errors.append('Your current password is incorrect.')
-        if len(new_password)<8:
-            errors.append('Your new password must be at least 8 characters long.')
+        from core.passwords import password_problem
+        problem=password_problem(new_password,usernames=(student['login_username'],student['admission_no']))
+        if problem:
+            errors.append(problem)
         if new_password!=confirm_password:
             errors.append('The new password and confirmation do not match.')
         if not errors:

@@ -133,3 +133,25 @@ def _allow_in_process(key, limit, window):
         bucket.append(now)
         _LOCAL_BUCKETS[key] = bucket
         return True
+
+
+# ---------------------------------------------------------------- looking without counting
+_HITS = sa.text("SELECT hits FROM rate_limits WHERE key_hash = :key_hash "
+                "AND expires_at > EXTRACT(EPOCH FROM statement_timestamp())")
+
+
+def reached(key, limit, window):
+    """Whether ``key`` has already used up its ``limit`` in its current window, without counting a try.
+
+    For limits that count only failures (a wrong password): the sign-in page asks this first, and counts
+    with ``allow`` only when a try fails, so people who sign in correctly never use the allowance up."""
+    if time.monotonic() >= _registry_down_until:
+        try:
+            with platform_session() as session:
+                hits = session.execute(_HITS, {'key_hash': key_hash(key)}).scalar()
+            return (hits or 0) >= limit
+        except Exception as exc:
+            _registry_failed(exc)
+    now = time.monotonic()
+    with _local_lock:
+        return len([t for t in _LOCAL_BUCKETS.get(key, []) if now - t < window]) >= limit

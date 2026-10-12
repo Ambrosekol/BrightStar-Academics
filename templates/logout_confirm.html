@@ -1,0 +1,13 @@
+{% extends 'auth_base.html' %}
+{% block title %}Sign out — {{ school_brand.name }}{% endblock %}
+{% block card %}
+{# Shown when a sign-out was asked for from another website (blueprints/auth/routes.py, logout): signing out
+   then needs a press here, so no other site can sign people out of the portal behind their backs. #}
+        <h1 class="auth-title">Sign out?</h1>
+        <p class="auth-lead">Another website asked to sign you out of {{ school_brand.name }}. Press the button to sign out, or go back to the portal.</p>
+        <form class="auth-form" method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="ui-btn ui-btn--primary ui-btn--block" type="submit">Sign out</button>
+        </form>
+        <p class="auth-note"><a href="{{ url_for('index') }}">Stay signed in</a></p>
+{% endblock %}

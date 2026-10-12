@@ -34,8 +34,8 @@ ATTACHMENT_EXTENSIONS={'.jpg','.jpeg','.png','.gif','.webp','.pdf','.doc','.docx
 IMAGE_TYPES_LABEL='PNG, JPG, GIF or WEBP'
 # A bulk-data upload (the student CSV importer, and anything like it later): plain-text data, not
 # a picture or a document, so it gets its own kind, extensions and (smaller, fixed) limit.
-DATA_EXTENSIONS={'.csv'}
-DATA_TYPES_LABEL='a CSV file'
+DATA_EXTENSIONS={'.csv','.xlsx'}
+DATA_TYPES_LABEL='a CSV or Excel (.xlsx) file'
 
 
 def attachment_kind(ext):

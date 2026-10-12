@@ -6,6 +6,10 @@ reportlab>=4.0,<5
 # card's embedded pictures (core/report_card_pdf.py). Was previously only an indirect dependency.
 Pillow>=10,<13
 python-dotenv>=1.0,<2
+# Reads an Excel workbook (.xlsx) given to a bulk import (core/tabular.py). defusedxml is required with it: openpyxl
+# uses it to refuse hostile XML in an uploaded workbook, and without it Excel files are refused.
+openpyxl>=3.1,<4
+defusedxml>=0.7,<1
 # PostgreSQL driver. Required: PostgreSQL is the only supported database.
 psycopg[binary]>=3.1,<4
 # Encrypts a school's own mail and SMS credentials at rest.

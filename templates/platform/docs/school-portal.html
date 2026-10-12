@@ -86,6 +86,12 @@ children, so the family keeps its history. Only the child's own sign-in is revok
 <p>The bulk import page ({{ route('admin_school_students_import') }}) offers three steps, shown one at a time. Each step
 posts to its own route and has its own template, and each writes an audit entry that names who ran it, the file name
 and the counts.</p>
+<p>Each step takes a CSV or an Excel workbook (.xlsx), read by {{ file('core/tabular.py') }} into the same rows, so every
+check after it is the same. A workbook is somebody else's file and is read defensively: recognised by its contents (a zip
+holding a workbook), never its name; macro-enabled (.xlsm, a vbaProject) and password-protected files refused; the
+archive checked for size and compression ratio before it is opened (no zip bombs); its XML parsed through defusedxml
+(without defusedxml installed, Excel files are refused); formulas never evaluated (<code>data_only</code>: the value
+Excel saved); the first sheet only, bounded in rows and columns.</p>
 <table>
 <tr><th>Step</th><th>Code</th><th>Permission it needs</th><th>Rules that matter</th></tr>
 <tr><td>1. Students</td><td>{{ file('blueprints/school/student_import.py') }}</td><td>{{ perm('school.students.create') }}</td><td>Every column is required, including the guardian's name, email and phone and the middle name. Admission numbers are generated.</td></tr>

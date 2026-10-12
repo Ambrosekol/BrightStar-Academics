@@ -162,7 +162,9 @@ def parent_password_change():
     if request.method=='POST':
         current=request.form.get('current_password',''); new=request.form.get('new_password',''); confirm=request.form.get('confirm_password','')
         if not check_password_hash(parent['password_hash'] or '',current): errors.append('Your current password is incorrect.')
-        if len(new)<8: errors.append('Your new password must be at least 8 characters long.')
+        from core.passwords import password_problem
+        problem=password_problem(new,usernames=(parent['username'],parent['email']))
+        if problem: errors.append(problem)
         if new!=confirm: errors.append('The new password and confirmation do not match.')
         if not errors:
             parent.password_hash=generate_password_hash(new); parent.password_must_change=0

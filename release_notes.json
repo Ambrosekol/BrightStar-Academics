@@ -18,6 +18,45 @@
   ],
   "releases": [
     {
+      "version": "2.24.1",
+      "date": "2026-10-12",
+      "title": "Safer sign-ins, Excel imports, and children who have left",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Bulk imports (students, enrolment history and past results) now take an Excel workbook (.xlsx) as well as a CSV. Only the first sheet is read and formulas are never run; a workbook with macros, or one protected by a password, is refused.",
+          "help": "students"
+        },
+        {
+          "audience": "family",
+          "text": "Children who have left the school now have their own section on your Overview, Children who have left the school. Open it to see their fees, receipts, results and report cards, which are all kept."
+        },
+        {
+          "audience": "staff",
+          "text": "Sign-ins now end after two hours without using the portal, and after twelve hours in all, so a computer left signed in does not stay open. Signing out now ends that sign-in everywhere. Students and candidates sitting a test or exam are never signed out by this while their paper is running, even after a power cut or a lost connection.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "A new password can no longer be one of the commonly guessed ones (such as password123 or school123), a run like 12345678, or contain your username. Repeated wrong passwords from one place, or for one account, now pause sign-in for a few minutes.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "A student's fee account now opens only for staff who can see the whole school's finance, the same as the Student accounts page.",
+          "help": "finance"
+        },
+        {
+          "audience": "family",
+          "text": "For your safety, you are now signed out after two hours without using the portal. A new password can no longer be a commonly guessed one such as password123, or contain your username."
+        },
+        {
+          "audience": "student",
+          "text": "For your safety, you are now signed out after two hours without using the portal, but never while you are writing a test or exam. A new password can no longer be a commonly guessed one such as password123, or contain your login ID."
+        }
+      ]
+    },
+    {
       "version": "2.24.0",
       "date": "2026-10-11",
       "title": "New students to bill",

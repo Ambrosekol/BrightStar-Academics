@@ -37,7 +37,10 @@ in bulk and to candidates admitted from the entrance exam. To move a student lat
 <p>Use <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> from the Students page to
 bring students in from a spreadsheet. The page has three steps, shown one at a time, and they are done in
 order: <strong>students</strong>, then their <strong>enrolment history</strong>, then their
-<strong>past results</strong>. Each step has its own template to download and its own rules.</p>
+<strong>past results</strong>. Each step has its own template to download and its own rules. Upload the filled-in
+sheet as a <strong>CSV</strong> or straight from Excel as an <strong>.xlsx</strong> workbook: only its first sheet is
+read, and formulas are never run (the value Excel saved is what is imported). A workbook with macros (.xlsm), or one
+protected by a password, is refused; save it as a plain .xlsx or as CSV.</p>
 <p>Step 1 creates each student exactly as registering one by hand does. <strong>Every column is required</strong>,
 and every row must fill them all in: <code>first_name</code>, <code>middle_name</code>, <code>last_name</code>,
 <code>gender</code>, <code>class</code>, <code>guardian_name</code>, <code>guardian_email</code> and

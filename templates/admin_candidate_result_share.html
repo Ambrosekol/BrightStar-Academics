@@ -717,7 +717,7 @@ async function shareActualImage(){
             await navigator.share({
 
                 title:
-                    "{{ school_brand.name }} ? Examination Result",
+                    {{ (school_brand.name ~ ' — Examination Result')|tojson }},
 
                 text:
                     "Official examination result",

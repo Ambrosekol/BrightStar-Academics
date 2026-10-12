@@ -724,6 +724,146 @@ check("the application refuses to start on a bad value, saying why",
       done.returncode != 0 and "BRIGHTSTARS_TRUSTED_PROXIES" in done.stderr)
 os.environ.pop("BRIGHTSTARS_TRUSTED_PROXIES", None)
 
+# ================================================================ how long a sign-in lasts (security audit M2)
+import time as _time  # noqa: E402
+
+
+def wind_back(person, idle_minutes=0, hours=0):
+    """Make this browser's sign-in look as if it was last used, or began, that long ago."""
+    with person.c.session_transaction(base_url=person.base) as sess:
+        now = _time.time()
+        if idle_minutes:
+            sess["seen"] = now - idle_minutes * 60
+        if hours:
+            sess["born"] = now - hours * 3600
+
+
+def add_student(name, number):
+    def go():
+        db = A.db
+        session_id = db.session.scalars(sa.select(AcademicSession.id).where(AcademicSession.is_current == 1)).first()
+        class_id = db.session.scalars(sa.select(SchoolClass.id).where(SchoolClass.name == "JSS 1")).first()
+        s = Student(admission_no=f"ADM{number}", first_name=name, last_name="Test", created_at=iso(NOW), active=1,
+                    login_username=f"STU{number}", login_password_hash=generate_password_hash(PASSWORD),
+                    account_active=1, password_must_change=0)
+        db.session.add(s)
+        db.session.flush()
+        db.session.add(StudentEnrolment(student_id=s.id, class_id=class_id, session_id=session_id,
+                                        enrolled_at=iso(NOW), active=1))
+        db.session.commit()
+        return s.id
+    return in_school(go)
+
+
+def add_people():
+    db = A.db
+    role = db.session.scalars(sa.select(AdminType).where(AdminType.is_system == 1)).first()
+    db.session.add(Admin(username="warden", display_name="Warden", admin_type_id=role.id, active=1,
+                         password_hash=generate_password_hash(PASSWORD), password_must_change=0, created_at=iso(NOW)))
+    db.session.add(ParentAccount(username="parent9", display_name="Parent Nine", password_hash=generate_password_hash(PASSWORD),
+                                 active=1, password_must_change=0, created_at=iso(NOW)))
+    db.session.commit()
+
+
+in_school(add_people)
+IKE = add_student("Ike", 61)
+JIDE = add_student("Jide", 62)
+KEMI = add_student("Kemi", 63)
+
+idle_parent = Person()
+r = idle_parent.sign_in("parent9", PASSWORD)
+check("a sign-in carries its own id and clock", all(k in idle_parent.session() for k in ("sid", "born", "seen")),
+      f"{r.status_code} {r.headers.get('Location')} {sorted(idle_parent.session())}")
+check("…and a page within the idle limit opens", idle_parent.in_("/parent/dashboard"))
+wind_back(idle_parent, idle_minutes=121)
+check("after more than two hours without use, a parent is signed out", idle_parent.sent_to_sign_in("/parent/dashboard"))
+
+clerk = Person()
+r = clerk.sign_in("warden", PASSWORD)
+check("(set-up) staff sign in", r.status_code == 302, f"{r.status_code} {r.headers.get('Location')}")
+clerk.get("/admin/home")
+wind_back(clerk, idle_minutes=100)
+before = clerk.session().get("seen")
+clerk.get("/presence/heartbeat")
+check("the presence ping an open page sends does not count as use", clerk.session().get("seen") == before)
+clerk.get("/admin/home")
+check("…a page does", clerk.session().get("seen", 0) > before)
+wind_back(clerk, hours=13)
+check("after twelve hours in all, however busy, staff are signed out", clerk.sent_to_sign_in("/admin/home"))
+
+ike = Person()
+ike.sign_in("STU61", PASSWORD)
+r = ike.form(f"/student/assessments/{ASSESSMENT}/start")
+check("(set-up) a student starts a test", r.status_code == 302, str(r.status_code))
+wind_back(ike, idle_minutes=300, hours=13)
+check("a student in the middle of a test is never signed out by the time limits (a power cut, a lost connection)",
+      ike.in_("/student/dashboard"))
+sql("UPDATE school_assessment_attempts SET status = 'submitted', submitted_at = :t WHERE student_id = :s",
+    t=iso(datetime.now(timezone.utc)), s=IKE)
+check("…once the test is over they still have a while to see their result", ike.in_("/student/dashboard"))
+wind_back(ike, hours=13)
+check("…and after that the limits apply again", ike.sent_to_sign_in("/student/dashboard"))
+
+# ================================================================ signing out ends the sign-in everywhere (M2) and from where (L1)
+leaver = Person()
+leaver.sign_in("STU62", PASSWORD)
+copy = Person()
+copy.c.set_cookie("session", leaver.c.get_cookie("session", domain="alpha.portal.test").value, domain="alpha.portal.test")
+check("(set-up) a copy of the sign-in cookie works while the sign-in lasts", copy.in_("/student/dashboard"))
+r = leaver.get("/logout", headers={"Sec-Fetch-Site": "cross-site"})
+check("a sign-out started by another website asks first, and signs nobody out",
+      r.status_code == 200 and "Sign out?" in page_text(r) and leaver.in_("/student/dashboard"))
+r = leaver.get("/logout", headers={"Sec-Fetch-Site": "same-origin"})
+check("signing out from the portal itself works", r.status_code == 302 and leaver.sent_to_sign_in("/student/dashboard"))
+check("…and the copy taken earlier stops working too", copy.sent_to_sign_in("/student/dashboard"))
+asked = Person()
+asked.sign_in("STU63", PASSWORD)
+asked.get("/logout", headers={"Sec-Fetch-Site": "cross-site"})
+r = asked.form("/logout")
+check("the button on that page signs out", r.status_code == 302 and asked.sent_to_sign_in("/student/dashboard"))
+
+# ================================================================ guessing passwords (M3)
+counted = {"n": 0}
+import core.accounts as _accounts  # noqa: E402
+_real = _accounts.check_password_hash
+
+
+def _counting(*a, **k):
+    counted["n"] += 1
+    return _real(*a, **k)
+
+
+_accounts.check_password_hash = _counting
+in_school(lambda: _accounts._authenticate_unified("nobody-at-all", "a wrong password"))
+_accounts.check_password_hash = _real
+check("a username that does not exist still costs a password comparison, so timing does not reveal real usernames",
+      counted["n"] == 1, str(counted["n"]))
+
+
+def try_sign_in(username, password, address):
+    p = Person()
+    p.get("/login")
+    return p.c.post("/login", data={"username": username, "password": password, "_csrf_token": p.token()},
+                    base_url=ALPHA, environ_base={"REMOTE_ADDR": address})
+
+
+SPRAY = "10.250.1.1"
+for n in range(39):
+    try_sign_in(f"guess{n}", "Summer2026!", SPRAY)
+r = try_sign_in("warden", PASSWORD, SPRAY)
+check("right passwords from an address never use up its allowance", r.status_code == 302, str(r.status_code))
+try_sign_in("guess-last", "Summer2026!", SPRAY)
+r = try_sign_in("STU61", PASSWORD, SPRAY)
+check("forty wrong passwords from one address, across any usernames, and that address is held off",
+      r.status_code == 429, str(r.status_code))
+for n in range(20):
+    try_sign_in("STU62", "not-the-password", f"10.251.{n}.1")
+r = try_sign_in("STU62", PASSWORD, "10.252.0.1")
+check("twenty wrong passwords for one account, from any addresses, and that account is held off for a while",
+      r.status_code == 429, str(r.status_code))
+r = try_sign_in("warden", PASSWORD, "10.252.0.2")
+check("…while everyone else signs in as usual", r.status_code == 302, str(r.status_code))
+
 # ================================================================ tidy up
 dispose_engines()
 DROP_TEST_DATABASES()

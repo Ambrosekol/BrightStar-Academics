@@ -144,7 +144,7 @@ def admin_notification_open(nid):
     # Many alerts have nowhere else to go (or point back at this very page); sending the person
     # to the page they clicked from looks like the click did nothing, so the alert is shown to
     # them in full instead. Only addresses inside this site are ever followed.
-    local=action_url.startswith('/') and not action_url.startswith('//')
+    local=action_url.startswith('/') and not action_url.startswith('//') and '\\' not in action_url
     if not local or action_url.split('?')[0].rstrip('/')==controls_path.rstrip('/'):
         flash(f'{title}: {message}','info')
         return redirect(controls_path)
