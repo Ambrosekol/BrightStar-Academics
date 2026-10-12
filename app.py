@@ -1225,6 +1225,7 @@ import blueprints.administration.routes  # noqa: F401,E402
 # ---------------- admin finance ----------------
 # Moved to blueprints/finance/routes.py.
 import blueprints.finance.routes  # noqa: F401,E402
+import blueprints.finance.new_students  # noqa: F401,E402
 
 # ---------------- online payments (Paystack) ----------------
 # Moved to blueprints/finance/paystack.py.

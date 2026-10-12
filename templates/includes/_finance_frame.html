@@ -13,12 +13,14 @@
     ('payments', 'Payments', 'admin_finance_payments', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all),
     ('accounts', 'Student accounts', 'admin_finance_accounts', fin_view_all),
     ('fees', 'Fee structure', 'admin_finance_fee_items', admin_has_permission(fin_aid, 'finance.manage')),
+    ('new', 'New students to bill', 'admin_finance_new_students', is_school_admin_ui or admin_has_permission(fin_aid, 'finance.record') or admin_has_permission(fin_aid, 'finance.manage')),
 ] %}
+{% set fin_to_bill = finance_new_students_badge() %}
 <header class="ac-top">
   <h1>Finance</h1>
   <nav class="ac-tabs" aria-label="Finance sections">
     {% for key, label, endpoint, shown in fin_tabs if shown %}
-    <a href="{{ url_for(endpoint) }}" class="{{ 'is-active' if fin_tab == key }}" {% if fin_tab == key %}aria-current="page"{% endif %}{% if key == 'fees' %} data-full{% endif %}>{{ label }}{% if key == 'payments' and fin_to_apply %} <b class="fi-count" title="{{ fin_to_apply }} payment{{ '' if fin_to_apply == 1 else 's' }} not yet applied to a fee">{{ fin_to_apply }}</b>{% endif %}</a>
+    <a href="{{ url_for(endpoint) }}" class="{{ 'is-active' if fin_tab == key }}" {% if fin_tab == key %}aria-current="page"{% endif %}{% if key == 'fees' %} data-full{% endif %}>{{ label }}{% if key == 'payments' and fin_to_apply %} <b class="fi-count" title="{{ fin_to_apply }} payment{{ '' if fin_to_apply == 1 else 's' }} not yet applied to a fee">{{ fin_to_apply }}</b>{% endif %}{% if key == 'new' and fin_to_bill %} <b class="fi-count" title="{{ fin_to_bill }} new student{{ '' if fin_to_bill == 1 else 's' }} not billed yet">{{ fin_to_bill }}</b>{% endif %}</a>
     {% endfor %}
   </nav>
   <div class="ac-top__act">

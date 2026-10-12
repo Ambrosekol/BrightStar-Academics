@@ -200,3 +200,30 @@ class FinanceRefund(db.Model):
     requested_at = db.Column(Text, nullable=False)
     resolved_at = db.Column(Text)
     failure_reason = db.Column(Text)
+
+
+class FinanceNewStudent(db.Model):
+    """A student who joined the school (admitted from the entrance exam, registered by hand or imported) and so
+    still has to be billed: the bursar's list of new students to bill (blueprints/finance/new_students.py).
+
+    Written once, when the student is created. It stays open while the student has nothing billed, or has a bill not
+    yet paid in full; once everything billed is paid it is closed with ``cleared_reason`` 'paid'. Someone with
+    finance.manage may also close it by hand ('removed', with a note), for a student the school does not bill. Rows
+    are kept once closed, so the list of who was billed and paid stays readable.
+
+    ``source``: 'admitted', 'registered' or 'imported'."""
+
+    __tablename__ = 'finance_new_students'
+    __table_args__ = (
+        UniqueConstraint('student_id'),
+        Index('idx_finance_new_students_open', 'cleared_at', 'added_at'),
+    )
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    source = db.Column(Text, nullable=False, default='registered', server_default=text("'registered'"))
+    added_at = db.Column(Text, nullable=False)
+    cleared_at = db.Column(Text)
+    cleared_by = db.Column(Integer, ForeignKey('admins.id'))
+    cleared_reason = db.Column(Text)
+    note = db.Column(Text)

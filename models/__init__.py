@@ -103,6 +103,7 @@ from .finance import (
     FinanceFeeAssessment,
     FinanceFeeItem,
     FinanceFeeItemClass,
+    FinanceNewStudent,
     FinanceOnlinePayment,
     FinancePayment,
     FinancePaymentAllocation,
@@ -160,7 +161,7 @@ __all__ = [
     'StudentAdmissionContact', 'StudentAdmissionProfile',
     'StudentEnrollmentHistory',
     # finance
-    'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem',
+    'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem', 'FinanceNewStudent',
     'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
     'FinanceRefund',
     # library

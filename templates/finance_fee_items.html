@@ -103,7 +103,7 @@
             <select id="financeStudent" name="student_id" required>
               <option value="">Select a student</option>
               {% for s in students %}
-              <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>
+              <option value="{{ s.id }}"{% if s.id == selected_student_id %} selected{% endif %}>{{ s.last_name }} {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %} — {{ s.admission_no }}</option>
               {% endfor %}
             </select>
           </div>

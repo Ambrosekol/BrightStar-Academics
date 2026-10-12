@@ -295,6 +295,8 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_accounts':'finance.view_all',
     'admin_finance_payments':'finance.view_own',
     'admin_finance_payment_allocate':'finance.record','admin_finance_unallocated':'finance.record',
+    'admin_finance_new_students':'finance.record','admin_finance_new_students_remove':'finance.manage',
+    'admin_finance_new_students_restore':'finance.manage',
     'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
     'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
     'admin_library':'library.view',

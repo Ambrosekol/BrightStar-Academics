@@ -122,6 +122,28 @@ matching administrator sees it two ways: a banner injected by <code>inject_csrf_
 disappears on its own, the request after the last one is allocated — and
 {{ route('admin_finance_unallocated') }}, a dedicated list the banner links to.</p>
 
+<h2 id="new-students">New students to bill</h2>
+<p>{{ route('admin_finance_new_students') }} ({{ file('blueprints/finance/new_students.py') }},
+{{ table('finance_new_students') }}) is the bursar's list of students who joined and have not yet been billed and paid.
+A row is written for every new student by an <code>after_flush</code> listener (<code>_note_new_students</code>), so
+registering by hand, the bulk import and the entrance admit all add to it without knowing about it; the admit and the
+import set <code>student._joined_by</code> ('admitted', 'imported') so the list can say how the student came in. Students
+created already archived, and students who existed before the table did, are not on it.</p>
+<ul>
+  <li><strong>Stages are worked out, not stored.</strong> One query sums each listed student's active, non-voided
+  assessments, the allocations applied to them, and their posted payments: nothing billed is <em>Not billed yet</em>;
+  billed and not fully applied is <em>Waiting for payment</em> (an unapplied credit is shown, but does not count as
+  paid - "paid" means allocated, as everywhere in Finance). A row whose bill is fully applied is closed
+  (<code>cleared_reason = 'paid'</code>) the next time the list is read; closed rows are kept, under Done.</li>
+  <li><strong>By hand.</strong> {{ route('admin_finance_new_students_remove') }} closes rows as 'removed' with a required
+  note; {{ route('admin_finance_new_students_restore') }} reopens one closed that way (never one closed as paid). Both need
+  {{ perm('finance.manage') }}; the list itself needs {{ perm('finance.record') }}.</li>
+  <li><strong>The count.</strong> The menu badge, the Finance tab and the Overview's <em>New, not billed</em> figure count
+  open rows with nothing billed, kept for a few seconds (<code>remember('finance-new-students')</code>) and dropped
+  whenever a student or an assessment is created. <strong>Bill</strong> opens {{ route('admin_finance_fee_items') }} with
+  <code>?student_id=</code>, which chooses the student on the billing form.</li>
+</ul>
+
 <h2 id="class-billing">Billing a whole class</h2>
 <p>The Fee Structure page can bill every student enrolled in a class for a session, not only one student at a time. The page loads the class's students from {{ route('admin_finance_class_roster') }}, which also reports, for each fee, how many of them already have it for the billing period. It then bills them in batches through {{ route('admin_finance_class_assessments_batch') }}: at most 100 students per request, 50 per batch from the page.</p>
 <ul>

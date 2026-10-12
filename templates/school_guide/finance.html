@@ -2,8 +2,8 @@
 {% from 'school_guide/_macros.html' import shot with context %}
 {% block guide %}
 <p>Finance covers what a student is charged, what has been paid, and the receipt that proves it. It is
-one page with four tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong> and
-<strong>Fee structure</strong> (each shown only to those allowed to open it), and <strong>+ Record payment</strong> always at
+one page with five tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong>,
+<strong>Fee structure</strong> and <strong>New students to bill</strong> (each shown only to those allowed to open it), and <strong>+ Record payment</strong> always at
 the top right. Recording a payment, adding or editing a fee item, a payment and a student's account all open in a
 pop-up over the page you are on; Cancel, the × or a click outside closes it.</p>
 
@@ -50,6 +50,25 @@ one, a due date; the fees offered are the ones assigned to that class.</p>
   skipped, so billing the class again after an error never charges anyone twice.</li>
   <li><strong>Archiving.</strong> Archiving or activating a fee asks first. Archiving stops it being
   offered for new charges; charges and payments already made are not changed.</li>
+</ul>
+
+<h2 id="new-students">New students to bill</h2>
+<p><a href="{{ url_for('admin_finance_new_students') }}">New students to bill</a> (in the menu under Finance) is the
+bursar's reminder: every student who joins the school appears on it on their own, whether they were admitted from the
+entrance exam, registered by hand or imported, and stays until they have been billed and the bill is paid. The number
+beside it in the menu, and <em>New, not billed</em> on the Overview, count those not billed yet. Students already in the
+school before this list arrived are not on it.</p>
+<ul>
+  <li><strong>Not billed yet</strong>: nothing has been charged. <strong>Bill</strong> opens Fee structure with the student
+  already chosen; or bill their whole class there.</li>
+  <li><strong>Waiting for payment</strong>: billed, with what has been paid and what is still owed.
+  <strong>Record payment</strong> opens the payment form for that student. Money received but not yet applied to the
+  fee is shown as <em>received, not yet applied</em>: apply it to the fee (Payments) and the student counts as paid.</li>
+  <li><strong>Done</strong>: once everything billed is paid, the student leaves the list on their own and is kept here,
+  marked <em>Paid in full</em>.</li>
+  <li><strong>Not billing someone?</strong> (a scholarship, a staff child): tick them, say why, and press <strong>Take
+  ticked students off the list</strong>. This needs the right to manage fees (the Finance Manager role has it); the note is
+  kept under Done, where <strong>Put back</strong> returns them to the list.</li>
 </ul>
 
 <h2 id="payments">Recording a payment</h2>

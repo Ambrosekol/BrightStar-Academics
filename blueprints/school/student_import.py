@@ -184,6 +184,7 @@ def admin_school_students_import_run():
                               gender=gender, guardian_name=guardian_name or None, guardian_email=guardian_email or None,
                               guardian_phone=guardian_phone or None, created_at=datetime.now(timezone.utc).isoformat(),
                               active=1, school_id=school_id, student_number=number, student_number_source='generated')
+            student._joined_by = 'imported'   # Finance > New students to bill (blueprints/finance/new_students.py)
             db.session.add(student)
             db.session.flush()
             linked = db.session.execute(StudentNumberAllocation.__table__.update().where(

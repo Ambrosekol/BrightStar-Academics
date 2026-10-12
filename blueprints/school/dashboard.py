@@ -694,6 +694,12 @@ def _finance(me, session):
     if unalloc.get('count'):
         kpis.append({'label': 'Not allocated', 'value': str(unalloc.get('count')), 'alert': True,
                      'href': url_for('admin_finance_unallocated')})
+    # New students (admitted, registered or imported) nobody has billed yet (blueprints/finance/new_students.py).
+    from blueprints.finance.new_students import new_students_badge
+    to_bill = new_students_badge()
+    if to_bill:
+        kpis.append({'label': 'New, not billed', 'value': str(to_bill), 'alert': True,
+                     'href': url_for('admin_finance_new_students')})
     return out
 
 

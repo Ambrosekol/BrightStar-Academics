@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.24.0",
+      "date": "2026-10-11",
+      "title": "New students to bill",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "New in Finance: New students to bill. Every student admitted from the entrance exam, registered or imported now appears on this list until they have been billed and the bill is paid, so no new student is forgotten. Bill opens Fee structure with the student already chosen, and a student leaves the list on their own once their bill is paid in full. The menu and the Overview show how many are not billed yet.",
+          "help": "finance"
+        }
+      ]
+    },
+    {
       "version": "2.23.2",
       "date": "2026-10-11",
       "title": "Workspace Home answers one press",

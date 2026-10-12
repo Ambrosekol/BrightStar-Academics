@@ -18,6 +18,10 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 EXEMPT = {
     # Class subdivisions (Settings) and class transfers: set-up, lock, placing students in turn, and every step of a
     # transfer (asking, approving, declining, cancelling), valid and hostile, in write_paths_subdivisions.py.
+    # Finance > New students to bill: taking students off the list and putting them back, valid and hostile, in
+    # write_paths_new_students.py.
+    "/admin/finance/new-students/remove": "see write_paths_new_students.py",
+    "/admin/finance/new-students/<int:student_id>/restore": "see write_paths_new_students.py",
     "/admin/school/subdivisions/<int:class_id>": "see write_paths_subdivisions.py",
     "/admin/school/subdivisions/lock": "see write_paths_subdivisions.py",
     "/admin/school/transfers/request": "see write_paths_subdivisions.py",

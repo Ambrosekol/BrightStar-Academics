@@ -1,0 +1,103 @@
+{% extends 'admin_base.html' %}
+{% block title %}New students to bill — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Finance > New students to bill: every student who joined (admitted from the entrance exam, registered or imported)
+   until they have been billed and the bill is paid (blueprints/finance/new_students.py). Two stages - not billed yet,
+   waiting for payment - and Done, for the record. A student leaves on their own once their bill is paid in full. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set base = {'view': view, 'q': q or none} %}
+<div class="ac fi" data-fi data-nb>
+{% set fin_tab = 'new' %}{% include 'includes/_finance_frame.html' %}
+
+{% if counts.unbilled %}
+<div class="fi-callout" role="status">
+  <span class="fi-callout__n">{{ counts.unbilled }}</span>
+  <span><strong>{{ counts.unbilled }} new student{{ '' if counts.unbilled == 1 else 's' }} not billed yet</strong>
+    They joined the school and have no fees charged. Bill each one (or their whole class on Fee structure); they move to
+    <em>Waiting for payment</em>, and leave this list on their own once the bill is paid.</span>
+  {% if view != 'unbilled' %}<a class="ac-btn" href="{{ url_for('admin_finance_new_students', view='unbilled') }}">Show them</a>{% endif %}
+</div>
+{% endif %}
+
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_new_students') }}" role="search">
+  <input type="hidden" name="view" value="{{ view }}">
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Student, admission no. or class" aria-label="Find a student"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Which students">
+    {% for key, label in views %}<a href="{{ url_for('admin_finance_new_students', view=key, q=q or none) }}" class="{{ 'is-active' if view == key }}"{% if view == key %} aria-current="true"{% endif %}>{{ label }} <small>{{ counts[key] }}</small></a>{% endfor %}
+  </nav>
+  <span class="ac-count">{% if view == 'awaiting' and owed_total %}<b class="fi-owe">{{ naira(owed_total) }}</b> still owed by new students{% elif view == 'unbilled' %}Joined the school, nothing billed{% elif view == 'cleared' %}Paid in full, or taken off the list{% endif %}</span>
+</div>
+
+<form method="post" action="{{ url_for('admin_finance_new_students_remove') }}" data-nb-form>
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="view" value="{{ view }}">
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr>
+      {% if can_bill and view != 'cleared' %}<th class="st-pick"><input type="checkbox" data-nb-all aria-label="Select every student shown"></th>{% endif %}
+      <th>Student</th><th>Class</th><th>Joined</th>
+      {% if view == 'cleared' %}<th class="n">Billed</th><th>Outcome</th>{% else %}<th class="n">Billed</th><th class="n">Paid</th><th class="n">Still owed</th>{% endif %}
+      <th></th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      {% if can_bill and view != 'cleared' %}<td class="st-pick"><input type="checkbox" name="student_id" value="{{ r.id }}" aria-label="Select {{ r.name }}"></td>{% endif %}
+      <td>{% if can_accounts %}<a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id) }}" data-modal>{{ r.name }}</a>{% else %}<b>{{ r.name }}</b>{% endif %}<small>{{ r.number }}</small></td>
+      <td>{{ r.class_name or '—' }}{% if r.sub_name %}<small>{{ r.sub_name }}</small>{% endif %}</td>
+      <td>{{ r.row.added_at[:10] }}<small>{{ sources.get(r.row.source, 'Registered') }}{% if admitted.get(r.id) %} · {{ admitted[r.id] }}{% endif %}</small></td>
+      {% if view == 'cleared' %}
+      <td class="n">{{ naira(r.billed) if r.billed else '—' }}</td>
+      <td>{% if r.row.cleared_reason == 'paid' %}<span class="ac-tag ac-tag--good">Paid in full</span><small>{{ r.row.cleared_at[:10] }}</small>
+          {% else %}<span class="ac-tag">Taken off the list</span><small>{{ names.get(r.row.cleared_by, '') }}{% if r.row.note %} · “{{ r.row.note }}”{% endif %}, {{ r.row.cleared_at[:10] }}</small>{% endif %}</td>
+      {% else %}
+      <td class="n">{{ naira(r.billed) if r.billed else '—' }}</td>
+      <td class="n">{{ naira(r.applied) if r.applied else '—' }}{% if r.unapplied %}<small class="fi-owe">{{ naira(r.unapplied) }} received, not yet applied</small>{% endif %}</td>
+      <td class="n">{% if r.stage == 'unbilled' %}<span class="ac-tag ac-tag--attn">Not billed</span>{% else %}<strong class="fi-owe">{{ naira(r.owed) }}</strong>{% endif %}</td>
+      {% endif %}
+      <td class="ac-actions">
+        {% if view == 'cleared' %}
+          {% if can_bill and r.row.cleared_reason == 'removed' %}<button class="ac-btn ac-btn--sm" type="submit" form="nb-restore-{{ r.id }}">Put back</button>{% endif %}
+        {% else %}
+          {% if r.stage == 'unbilled' and can_bill %}<a class="ac-btn ac-btn--primary ac-btn--sm" href="{{ url_for('admin_finance_fee_items', student_id=r.id) }}" data-full>Bill</a>{% endif %}
+          {% if r.stage == 'awaiting' and can_record %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_record', student_id=r.id) }}" data-modal>Record payment</a>{% endif %}
+          {% if can_accounts %}<a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=r.id) }}" data-modal>Account</a>{% endif %}
+        {% endif %}
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% if pages > 1 %}
+  <div class="fi-pager"><span>Showing {{ (page - 1) * 50 + 1 }}–{{ [page * 50, total]|min }} of {{ total }}</span>
+    <nav aria-label="Pages">{% for n in range(1, pages + 1) %}{% if n == page %}<span class="is-current">{{ n }}</span>{% else %}<a href="{{ url_for('admin_finance_new_students', page=n, **base) }}">{{ n }}</a>{% endif %}{% endfor %}</nav></div>
+  {% endif %}
+  {% if can_bill and view != 'cleared' %}
+  <div class="ac-bar" style="margin-top:8px">
+    <span class="ac-bar__label">Not billing some of them?</span>
+    <input class="ac-input" type="text" name="note" maxlength="300" placeholder="Why, e.g. scholarship, staff child" aria-label="Why they are taken off the list" style="flex:1;min-width:180px">
+    <button class="ac-btn" type="submit" data-confirm="Take the selected students off the list? They are not billed or followed up here any more (you can put them back from Done).">Take ticked students off the list</button>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="ac-empty">
+    {% if q %}<strong>No student matches</strong><a class="ac-link" href="{{ url_for('admin_finance_new_students', view=view) }}">Clear the search</a>
+    {% elif view == 'unbilled' %}<strong>Every new student has been billed</strong>When a student is admitted from the entrance exam, registered or imported, they appear here until they are billed.
+    {% elif view == 'awaiting' %}<strong>No new student owes anything</strong>A billed student waits here until their bill is paid in full (applied to their fees).
+    {% else %}<strong>Nothing done yet</strong>New students who paid in full, or were taken off the list, are kept here.{% endif %}
+  </div>
+  {% endif %}
+</section>
+</form>
+{% for r in rows if view == 'cleared' and r.row.cleared_reason == 'removed' %}
+<form id="nb-restore-{{ r.id }}" method="post" action="{{ url_for('admin_finance_new_students_restore', student_id=r.id) }}" hidden>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"></form>
+{% endfor %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-nb]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var all=root.querySelector('[data-nb-all]');
+  if(all) all.addEventListener('change', function(){ root.querySelectorAll('input[name=student_id]').forEach(function(b){ b.checked=all.checked; }); });
+})();
+</script>
+{% endblock %}

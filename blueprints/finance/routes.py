@@ -545,7 +545,9 @@ def admin_finance_fee_items():
         classes=classes,
         class_groups=class_groups,
         student_class_map=student_class_map,
-        fee_class_map=fee_class_map)
+        fee_class_map=fee_class_map,
+        # Opened from New students to bill (Bill): that student is already chosen.
+        selected_student_id=request.args.get('student_id', type=int))
 
 @app.get('/admin/finance/assessment-history')
 @admin_required

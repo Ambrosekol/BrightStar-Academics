@@ -349,7 +349,8 @@ check("no server error was logged by any request in this run", not errors.seen, 
 import pg_posts_coverage as coverage  # noqa: E402
 
 adm_writes = {rule.rule for rule in A.app.url_map.iter_rules()
-             if rule.methods & {"POST"} and rule.rule.endswith(("/admit", "/decline", "/admission-reset"))}
+             if rule.methods & {"POST"} and rule.rule.startswith("/admin/candidates/")
+             and rule.rule.endswith(("/admit", "/decline", "/admission-reset"))}
 check("the three admissions form routes are in the form suite's list of exercised routes",
       adm_writes == {f"{CANDS}/<int:cid>/admit", f"{CANDS}/<int:cid>/decline", f"{CANDS}/<int:cid>/admission-reset"}
       and adm_writes <= set(coverage.EXERCISED), str(adm_writes))

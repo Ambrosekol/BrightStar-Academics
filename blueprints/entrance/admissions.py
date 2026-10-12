@@ -155,6 +155,7 @@ def admin_candidate_admit(cid):
                           guardian_email=candidate.parent_guardian_email, photo_path=candidate.photo_path,
                           created_at=now, active=1, school_id=school_id, student_number=number,
                           student_number_source='generated', department=department)
+        student._joined_by = 'admitted'   # Finance > New students to bill (blueprints/finance/new_students.py)
         db.session.add(student)
         db.session.flush()
         linked = db.session.execute(StudentNumberAllocation.__table__.update().where(
