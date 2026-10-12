@@ -1,0 +1,144 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Parents and students are told things by email, SMS and in-app alerts: a receipt, a report card released, a new fee,
+a timetable released, a password-reset link. Three pieces are involved, and a problem is always in one of them:</p>
+<ol>
+  <li><strong>The account it is sent from.</strong> A school's own mail server and BulkSMS Nigeria account (Settings ›
+  Email &amp; SMS, {{ route('admin_school_delivery') }}), or the platform's shared account (<code>BRIGHTSTARS_SMTP_*</code>,
+  <code>BRIGHTSTARS_SMS_*</code>) as a fallback. Rules in {{ file('core/delivery.py') }}.</li>
+  <li><strong>The background job that sends it</strong> ({{ file('core/jobs.py') }}, table {{ table('background_jobs') }}).
+  Nobody waits for a mail server: the work is written down first, then sent, and retried if it fails.</li>
+  <li><strong>The address it goes to</strong>: the guardian email and phone on the student's record, or the parent account's.</li>
+</ol>
+<p>Every message tried is recorded: the school's <em>Notice log</em> (Settings › Activity &amp; notice logs,
+{{ route('admin_audit_notices') }}) shows each one, whether it went, and why not. Start there.</p>
+
+<h2 id="email">Email</h2>
+
+<h3 id="email-not-set-up">"Email is not set up yet. Save your mail server settings first."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Email is not set up yet. Save your mail server settings first.</div></div>
+  <div><b>Why</b><div><p>The school has no mail server of its own saved, and the platform has no shared one (<code>BRIGHTSTARS_SMTP_HOST</code> empty).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Either the School Admin enters the school's mail server (host, port, user, password, sender), or you set the platform's shared account in the console ({{ route('platform_settings') }}): <code>BRIGHTSTARS_SMTP_HOST</code>, <code>_PORT</code>, <code>_USER</code>, <code>_PASSWORD</code>, <code>_FROM</code>, and <code>_STARTTLS</code> or <code>_SSL</code>.</p></div></div>
+  <div><b>Check</b><div><em>Send a test</em> on the Email &amp; SMS page delivers.</div></div>
+</div>
+<div class="note"><p>A school that has started entering its own mail server never falls back to the platform's,
+even if its own is incomplete: its parents' mail is never quietly sent from the platform's address.</p></div>
+
+<h3 id="email-test-fails">"The test message could not be sent: …"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The test message could not be sent: the mail server did not accept the username or password. (or: the server could not be reached / the server did not answer in time / a secure connection could not be made / the mail server refused the message)</div></div>
+  <div><b>Why</b><div><p>The reason is said in plain words ({{ file('core/failures.py') }}); the full technical error is in the server log.</p></div></div>
+  <div class="do"><b>Fix</b><div><ul>
+    <li><em>username or password</em>: re-enter the password. Gmail and Outlook need an <strong>app password</strong>, not the account password.</li>
+    <li><em>could not be reached / refused the connection</em>: check host and port. Only ports 25, 465, 587 and 2525 are allowed; most providers use 587 with STARTTLS. Many cloud servers block port 25.</li>
+    <li><em>did not answer in time</em>: a firewall drops the traffic; try 587 or 2525.</li>
+    <li><em>a secure connection could not be made</em>: the security choice does not match the port (465 = SSL; 587 = STARTTLS) or the server's certificate is not valid for its name.</li>
+    <li><em>refused the message</em>: the sender address is not one the account may send from.</li>
+  </ul></div></div>
+  <div><b>Check</b><div>The test email arrives.</div></div>
+</div>
+
+<h3 id="email-private-address">"That mail server address is not allowed: it is not a public internet address."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>That mail server address is not allowed: it is not a public internet address.</div></div>
+  <div><b>Why</b><div><p>In production a school's mail host must resolve only to public addresses, so nobody can aim the server at your own private network. A local mail catcher works only in development.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Use the provider's public mail host name. If you run an internal relay for all schools, set it as the platform's shared account instead (the platform's own setting is trusted).</p></div></div>
+  <div><b>Check</b><div>The settings save and the test sends.</div></div>
+</div>
+
+<h3 id="email-spam">Emails go to spam, or arrive with a strange sender</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Parents find receipts in spam, or see "via" another domain.</div></div>
+  <div><b>Why</b><div><p>The sending domain does not prove the mail is allowed to come from that server (SPF, DKIM, DMARC records).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The domain's owner adds the SPF and DKIM records their mail provider gives them, and a DMARC record. Send from an address on that domain.</p></div></div>
+  <div><b>Check</b><div>A test email's headers show <code>spf=pass</code> and <code>dkim=pass</code>.</div></div>
+</div>
+
+<h2 id="sms">SMS</h2>
+
+<h3 id="sms-not-set-up">"SMS is not set up yet" / "SMS is not connected to your school's own account yet"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>SMS is not set up yet. Save your SMS settings first. — or — SMS is not connected to your school's own account yet. — or — The platform provides SMS for every school, so there is no balance for the school to check.</div></div>
+  <div><b>Why</b><div><p><code>BRIGHTSTARS_SMS_PAYER</code> decides who pays: <code>school</code> (each school connects its own BulkSMS Nigeria account), <code>platform</code> (the platform's one account texts for every school; schools enter nothing), or <code>either</code> (a school's own when it has one, else the platform's).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>With <code>school</code>: the School Admin saves the API token and sender name on Email &amp; SMS. With <code>platform</code>: set <code>BRIGHTSTARS_SMS_API_TOKEN</code> and <code>BRIGHTSTARS_SMS_SENDER_ID</code> in the console.</p></div></div>
+  <div><b>Check</b><div><em>Check balance</em> shows the wallet; a test text arrives.</div></div>
+</div>
+
+<h3 id="sms-provider-errors">"The API token was not accepted." / "… wallet has no balance." / "The sender name is not registered or approved."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One of those three, from BulkSMS Nigeria.</div></div>
+  <div><b>Why</b><div><p>The provider refused: a wrong token (401), an empty wallet (402), or a sender name the provider has not approved (403).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Copy the token again from the BulkSMS Nigeria dashboard; top up the wallet; get the sender name approved there (it can take a working day), or use one that is.</p></div></div>
+  <div><b>Check</b><div>A test text arrives.</div></div>
+</div>
+
+<h3 id="sms-not-sent-events">An event did not send a text</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A parent got an email but no SMS for something.</div></div>
+  <div><b>Why</b><div><p>SMS costs credit, so only four moments send one: a report card released, a new fee, a payment recorded, and the first message of a conversation the school starts. Everything else is email and in-app only. A guardian phone that is missing or invalid also skips the text.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Check the notice log for that student: it shows each attempt and its reason. Correct the guardian phone on the student's record.</p></div></div>
+  <div><b>Check</b><div>The next event sends a text.</div></div>
+</div>
+
+<h2 id="jobs">Background jobs</h2>
+
+<h3 id="messages-delayed">Messages are late, or never go</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Receipts or notices arrive late or not at all; the notice log shows them waiting or failed.</div></div>
+  <div><b>Why</b><div><p>Each message is a row in {{ table('background_jobs') }} (<code>pending</code> → <code>running</code> → <code>done</code>). A try that fails puts it back to <code>pending</code>,
+to be tried again after two minutes; after the fifth failed try it stays <code>failed</code>. One stuck "running" for five
+minutes (its thread died in a restart) is tried again. Retries happen when the school next sends something of the same kind, so a quiet school can sit with stuck jobs.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><code>python -m control_plane sweep-jobs</code> (all schools) or <code>sweep-jobs CODE</code>, or {{ route('platform_settings_sweep_jobs') }}: retries every stuck job now.</li>
+    <li>Put <code>sweep-jobs</code> on a timer (cron every 10 minutes, or a systemd timer).</li>
+    <li>Look at why they fail, in that school's database: <code>SELECT kind, status, attempts, left(last_error, 200) FROM background_jobs WHERE status &lt;&gt; 'done' ORDER BY id DESC LIMIT 20;</code>. The usual cause is the mail or SMS account (above).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The rows become <code>done</code> and the messages arrive.</div></div>
+</div>
+
+<h3 id="job-exhausted">A job "used up its retries"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>An alert <code>job_exhausted_retries</code>, or a <code>failed</code> job with 5 attempts.</div></div>
+  <div><b>Why</b><div><p>It failed five times; it is left so a person can look.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Fix the cause (its <code>last_error</code>), then give it more tries: <code>UPDATE background_jobs SET attempts = 0, status = 'failed' WHERE id = …;</code> and run <code>sweep-jobs</code>. For a receipt, staff can also just press <em>Send</em> on the receipt again.</p></div></div>
+  <div><b>Check</b><div>The job becomes <code>done</code>.</div></div>
+</div>
+
+<h2 id="secrets">Stored secrets and the delivery key</h2>
+
+<h3 id="secrets-unreadable">A school's saved mail password / SMS token / Paystack key "is not saved" any more</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The Email &amp; SMS or Online payments page shows a secret as not saved, though it was.</div></div>
+  <div><b>Why</b><div><p>Stored secrets are encrypted per school under <code>BRIGHTSTARS_DELIVERY_KEY</code>, or, if that is not set, a key derived from <code>BRIGHTSTARS_SECRET</code>. Changing whichever is in use without re-encrypting makes every stored secret unreadable.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>If you still have the old value: put it back, restart, and then rotate properly (next entry).</li>
+    <li>If not: each school re-enters its secrets (nothing else is lost).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The pages show the secrets as saved, and tests send.</div></div>
+</div>
+
+<h3 id="rotate-delivery-key">Rotating the delivery key safely</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You need to change <code>BRIGHTSTARS_DELIVERY_KEY</code> (a leak, a policy).</div></div>
+  <div><b>Why</b><div><p>Every school's stored secrets must be re-encrypted under the new key <em>before</em> the setting changes.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><code>python -m control_plane rotate-delivery-key OLD NEW</code> (or the console's {{ route('platform_settings_rotate_key') }}).</li>
+    <li>Then set <code>BRIGHTSTARS_DELIVERY_KEY=NEW</code> on every server and restart. Never change the variable first.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>A school's test email still sends.</div></div>
+</div>
+
+<h2 id="alerts">Alerts</h2>
+
+<h3 id="alert-webhook">Getting told when something degrades</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You want a message on your phone or in Slack when something goes wrong.</div></div>
+  <div><b>Why</b><div><p>Four things always log a warning ({{ file('core/alerting.py') }}): <code>registry_unreachable</code>, <code>job_exhausted_retries</code>, <code>delivery_failure_burst</code> (many failed sends for one school), and <code>sign_in_refusal_streak</code> (sign-in limits hit).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Set <code>BRIGHTSTARS_ALERT_WEBHOOK</code> to a URL that accepts a JSON POST (a Slack "Incoming Webhook" address works as is). Each alert is also posted there, without slowing the request.</p></div></div>
+  <div><b>Check</b><div>A test: sign in wrongly enough times from one address to trip the limit, and the alert arrives.</div></div>
+</div>
+
+{% endblock %}

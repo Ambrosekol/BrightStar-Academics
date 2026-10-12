@@ -1,0 +1,128 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Every request is matched to a school by the address it was sent to (the <code>Host</code> header) and nothing else
+({{ file('control_plane/resolver.py') }}). So most "the site is wrong" problems are really "the address is wrong", and
+they are quick to find. Three questions settle almost all of them:</p>
+<ol>
+  <li><strong>Does the address reach this server at all?</strong> <code>curl -s https://ADDRESS/health</code> answers <code>{"status":"ok"}</code> on every address that reaches the application, school or not.</li>
+  <li><strong>Is the address registered?</strong> <code>python -m control_plane list</code> shows every school with its addresses.</li>
+  <li><strong>Is the school active?</strong> The same list, or the school's page in the console, shows its status.</li>
+</ol>
+
+<h2 id="pages">The pages people see instead of a school</h2>
+
+<h3 id="address-not-found">"We couldn't find that address." (Address not found, 404)</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A page titled "We couldn't find that address." with "The address you asked for is not registered with Brightstars Academics."</div></div>
+  <div><b>Why</b><div><p>The address reached the server, but no school has it: it was typed wrongly, the school's own
+  domain was never added, it was removed, or the school was deleted. It also appears for plain
+  <code>localhost</code> in development, where the page adds the console's address and the shape of a school's.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Check the spelling against <code>python -m control_plane list</code>.</li>
+    <li>A school's own domain (<code>portal.theschool.example</code>): add it on the school's page in the console ({{ route('platform_school_domains') }}) or with <code>python -m control_plane add-domain CODE portal.theschool.example</code>.</li>
+    <li>If every school shows this at once: the application is reading the wrong (or an empty) registry. Check <code>BRIGHTSTARS_PLATFORM_DB</code> points at the real one; see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</li>
+    <li>If it shows for the issued address <code>CODE.&lt;portal domain&gt;</code>: check <code>BRIGHTSTARS_PORTAL_DOMAIN</code> is the domain you issued addresses under. Changing it later does not move existing addresses.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The school's sign-in page opens at that address.</div></div>
+</div>
+
+<h3 id="portal-paused">"This portal is temporarily unavailable." (Portal paused, 503)</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Portal paused · This portal is temporarily unavailable. · Nothing has been lost."</div></div>
+  <div><b>Why</b><div><p>The school is suspended. Its data is untouched; everyone (staff, parents, students) is kept out until it is reactivated.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>If it should be open: reactivate it on its console page ({{ route('platform_school_status') }}) or with
+  <code>python -m control_plane activate CODE</code>. It takes effect within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>
+  (10 by default) on every worker. To find out who suspended it and why, read the activity log ({{ route('platform_activity') }}).</p></div></div>
+  <div><b>Check</b><div>The sign-in page opens within a few seconds.</div></div>
+</div>
+
+<h3 id="page-not-found">"There's nothing at this address." (Page not found)</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Page not found · There's nothing at this address."</div></div>
+  <div><b>Why</b><div><p>The address belongs to the platform console (a <code>BRIGHTSTARS_PLATFORM_HOSTS</code> name) but the page
+  is a school page; or a school address was asked for <code>/school/…</code> (schools have no public website). School
+  pages never open on the console's address, and the console never opens on a school's.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Use the school's own address for school pages, and the platform host for <code>/platform</code>, <code>/docs</code> and <code>/marketing</code>.</p></div></div>
+  <div><b>Check</b><div>The page opens on the right address.</div></div>
+</div>
+
+<h3 id="docs-404">The documentation (these pages) answers 404 for an admin</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A platform admin signed in to the console gets "Page not found" at <code>/docs</code>.</div></div>
+  <div><b>Why</b><div><p><code>/docs</code> is only for platform admins given access. Everyone else gets the same 404 as an address that does not exist, so its existence is not revealed.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The super admin grants it on the Team page ({{ route('platform_team') }}), per admin.</p></div></div>
+  <div><b>Check</b><div>The admin opens <code>/docs</code>.</div></div>
+</div>
+
+<h2 id="dns">DNS, a school's own domain and TLS</h2>
+
+<h3 id="own-domain-not-working">A school's own domain does not open the portal</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The browser cannot find the site, shows a certificate warning, or shows "Address not found".</div></div>
+  <div><b>Why</b><div><p>Three separate things must all be true: the domain is registered for the school here, the school's DNS points at your server, and your proxy has a certificate for it.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><strong>Registered?</strong> It must appear under the school in <code>python -m control_plane list</code>. If not, add it (see above).</li>
+    <li><strong>DNS?</strong> <code>dig +short portal.theschool.example</code> must show a CNAME to the school's issued address (<code>CODE.&lt;portal domain&gt;</code>). The exact record is shown on the school's console page. DNS changes can take up to the record's TTL to spread.</li>
+    <li><strong>Certificate?</strong> Your proxy needs a certificate for the domain (Caddy and certbot can fetch one automatically once DNS points at you).</li>
+    <li><strong>Host passed through?</strong> The proxy must send the original <code>Host</code> header (nginx: <code>proxy_set_header Host $host;</code>). If it sends its own, every school answers "Address not found".</li>
+  </ol></div></div>
+  <div><b>Check</b><div><code>curl -sI https://portal.theschool.example/login</code> returns <code>200</code>.</div></div>
+</div>
+
+<h3 id="cert-warning">Browsers warn the certificate is not valid</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Your connection is not private" / NET::ERR_CERT_COMMON_NAME_INVALID / expired.</div></div>
+  <div><b>Why</b><div><p>TLS is done by your reverse proxy, not by the application. The certificate does not cover the name, or it expired.</p></div></div>
+  <div class="do"><b>Fix</b><div><ul>
+    <li>Issued addresses: use a <strong>wildcard</strong> certificate for <code>*.&lt;portal domain&gt;</code> (needs a DNS challenge).</li>
+    <li>Schools' own domains: one certificate each (or let Caddy's on-demand TLS fetch them).</li>
+    <li>Expired: renew (<code>sudo certbot renew</code>) and reload the proxy. Set up automatic renewal.</li>
+  </ul></div></div>
+  <div><b>Check</b><div><code>echo | openssl s_client -connect HOST:443 -servername HOST 2&gt;/dev/null | openssl x509 -noout -dates -subject</code> shows a current certificate for the name.</div></div>
+</div>
+
+<h2 id="proxy">The reverse proxy</h2>
+
+<h3 id="all-same-ip">The activity log shows the same address for everyone, or everyone hits "Too many sign-in attempts"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Every entry in the activity log has the proxy's address (often <code>127.0.0.1</code>); sign-in limits trip for a whole school at once.</div></div>
+  <div><b>Why</b><div><p>Behind a proxy, every connection comes from the proxy. Unless told how many proxies to trust, the
+  application (rightly) ignores <code>X-Forwarded-For</code>, so everyone shares one address and one sign-in allowance.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> to how many proxies of yours a request passes (1 for one nginx/Caddy; 2 with a load balancer in front). Restart.</li>
+    <li>Make sure the proxy sends <code>X-Forwarded-For</code> and <code>X-Forwarded-Proto</code> (nginx: <code>proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;</code>).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>New activity-log entries show real visitor addresses.</div></div>
+</div>
+<div class="warn"><p>Too high a number lets a visitor forge their own address (and dodge the sign-in limits). Count only proxies you run.</p></div>
+
+<h3 id="http-links">Links in emails, or "Enter school", use http:// instead of https://</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A password-reset email or the console's "Enter school" goes to <code>http://…</code>.</div></div>
+  <div><b>Why</b><div><p>The proxy terminates TLS and talks plain HTTP to the application; without trusting it, the application believes the request was http.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Same as above: <code>BRIGHTSTARS_TRUSTED_PROXIES</code> and <code>X-Forwarded-Proto</code>.</p></div></div>
+  <div><b>Check</b><div>A new reset email's link starts with <code>https://</code>.</div></div>
+</div>
+
+<h3 id="upload-413">Large uploads fail with "413 Request Entity Too Large" from nginx</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A plain nginx page "413 Request Entity Too Large", not the application's own explanation.</div></div>
+  <div><b>Why</b><div><p>nginx refuses the upload before the application sees it (its default limit is 1&nbsp;MB).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Set <code>client_max_body_size 20m;</code> (at least as large as the largest school branding upload) in the nginx server block, and reload nginx. The application then applies its own, explained limits.</p></div></div>
+  <div><b>Check</b><div>A large photo uploads, or is refused with the application's own message naming the limit.</div></div>
+</div>
+
+<h3 id="502">"502 Bad Gateway" or "504 Gateway Timeout"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The proxy's own 502/504 page.</div></div>
+  <div><b>Why</b><div><p>502: the application is not running or not listening where the proxy expects. 504: it is running but a request took longer than the proxy waits.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>502: <code>systemctl status brightstars</code>; if it is down, see {{ page('manual-startup', "It won't start, or a deploy failed") }}. Check the proxy's upstream address matches gunicorn's <code>-b</code>.</li>
+    <li>504: find the slow page in the log; usually a database that is out of connections or very slow (see {{ page('manual-database', 'Databases and connections') }}). Raise the proxy's timeout (<code>proxy_read_timeout 120s;</code>) and gunicorn's <code>--timeout</code> only for genuinely long work such as a class's report-card PDF.</li>
+  </ol></div></div>
+  <div><b>Check</b><div><code>curl -s http://127.0.0.1:8000/health</code> on the server answers, and the page loads through the proxy.</div></div>
+</div>
+
+{% endblock %}

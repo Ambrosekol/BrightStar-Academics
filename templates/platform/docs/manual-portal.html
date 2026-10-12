@@ -1,0 +1,159 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Problems reported by a school's own people. To see what they see, enter the school from its console page
+({{ route('platform_school_enter') }}): you arrive as the School Admin, through a reserved account, and everything you do
+is recorded on both sides. For "a teacher cannot see X", remember you see <em>everything</em>; check the teacher's own
+roles and duties instead (below).</p>
+<div class="note"><p>Changes to staff, roles and permissions show at once on the server that saved them and within
+<code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code> (15) elsewhere; menu counts within <code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>
+(10). If something "did not save", wait a few seconds and reload before assuming it failed.</p></div>
+
+<h2 id="access">Staff access</h2>
+
+<h3 id="not-available">"This action is not available to you"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>This action is not available to you · Your staff role does not currently include access to this area.</div></div>
+  <div><b>Why</b><div><p>Every page needs a permission (mapped in <code>ADMIN_ENDPOINT_PERMISSIONS</code>, {{ file('core/security.py') }}); the person's roles do not include it. Some areas are kept for the School Admin alone and can never be given to a role: Staff and Staff roles, Email &amp; SMS, Online payments, School profile, Academic sessions, Promotion, Class subdivisions.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Find which permission: the permissions reference ({{ page('reference-permissions', 'Permissions and roles') }}) lists what each one opens.</li>
+    <li>The School Admin gives the person a role that has it (Settings › Staff › the person › roles), or adds it to their role (Settings › Staff roles). An override on one person is for exceptions.</li>
+    <li>If the area is School Admin only, the School Admin does it themself.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>After a reload the page opens for them.</div></div>
+</div>
+
+<h3 id="menu-item-missing">A menu item is missing for someone</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A teacher has no <em>Class transfers</em>, a cashier no <em>Student accounts</em>, someone no <em>Settings</em> entries.</div></div>
+  <div><b>Why</b><div><p>Each menu item shows only to those who may open it (one list in {{ tpl('admin_base.html') }}). Examples: Class transfers is for JSS/SSS class teachers, head teachers and the School Admin; Student accounts needs <em>View all finance</em>; Teachers needs <em>Assign teaching duties</em>.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Give the role the matching permission, or the matching teaching duty (below).</p></div></div>
+  <div><b>Check</b><div>The item appears after a reload.</div></div>
+</div>
+
+<h3 id="teacher-sees-all-or-none">A teacher sees every class, or not the class they teach</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A new teacher sees every class's students; or a teacher cannot find their own class.</div></div>
+  <div><b>Why</b><div><p><strong>Teaching duties</strong> ({{ table('teaching_duties') }}) decide where a teacher works. A teacher with <em>no duties yet</em> reaches every class; once they have duties, those are all they see. A class-teacher duty can be for a whole class or for one subdivision (JSS 1A); a subject duty is for a subject in a class (and, in SSS, a department).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Set their duties on the staff form or the Teachers page ({{ route('admin_school_teaching') }}). For a class split into subdivisions, tick the subdivision they are class teacher of.</p></div></div>
+  <div><b>Check</b><div>Their student list shows exactly their students.</div></div>
+</div>
+
+<h3 id="cannot-release">"Releasing results is for the class teacher of this class"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A subject teacher, or a class teacher of another class, cannot release results.</div></div>
+  <div><b>Why</b><div><p>Results go subject teacher → class teacher. Only the class teacher of that class (or of that subdivision, for its students), a head teacher, or the School Admin releases them ({{ file('blueprints/school/results_records.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The subject teacher sends marks on (<em>Send to class teacher</em>); the class teacher releases. Make sure the class has a class teacher (Teachers page shows "Not assigned" otherwise).</p></div></div>
+  <div><b>Check</b><div>The class teacher sees the results as ready to release.</div></div>
+</div>
+
+<h2 id="classes">Classes, subdivisions and transfers</h2>
+
+<h3 id="subdivisions-locked">"Class subdivisions are locked. Unlock them first to make changes."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Class subdivisions are locked. Unlock them first to make changes.</div></div>
+  <div><b>Why</b><div><p>The School Admin locked the set-up so it is not changed by accident ({{ route('admin_school_subdivisions') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin presses <em>Unlock to make changes</em>, edits, and locks again. Moving a single student does not need unlocking: use Class transfers.</p></div></div>
+  <div><b>Check</b><div>The change saves.</div></div>
+</div>
+
+<h3 id="not-placed">Students "not placed" in a subdivision</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The Class subdivisions page shows "N not placed" for a class.</div></div>
+  <div><b>Why</b><div><p>Students are placed in turn into the subdivision with the fewest students ({{ file('core/subdivisions.py') }}). In SSS a subdivision with a department only takes students of that department; a student whose department has no subdivision (Art students in a class whose subdivisions are all Science) cannot be placed.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Add a subdivision for that department, or one with no department, and save the class: saving places everyone not yet placed. Or correct the student's department.</p></div></div>
+  <div><b>Check</b><div>The count of students not placed is 0.</div></div>
+</div>
+
+<h3 id="transfer-stuck">A class transfer is waiting and nobody can approve it</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A transfer stays in <em>Waiting on others</em>, listed as waiting for "the School Admin or a head teacher".</div></div>
+  <div><b>Why</b><div><p>The class teacher of the subdivision the student would join approves it ({{ file('blueprints/school/transfers.py') }}). Nobody approves their own request. If that subdivision has no class teacher, or it is a department change in a class without subdivisions (the same teacher would ask and approve), only the School Admin or a head teacher can.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin or a head teacher opens Class transfers ({{ route('admin_school_transfers') }}) and approves or declines it. Give the subdivision a class teacher so future transfers go to them.</p></div></div>
+  <div><b>Check</b><div>The student appears in the receiving teacher's list.</div></div>
+</div>
+
+<h3 id="transfer-cannot-be-made">"The subdivision this student would join has been removed, so the transfer cannot be made."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Approving a transfer fails with this message (or "The student is no longer in that class this session").</div></div>
+  <div><b>Why</b><div><p>Something changed since the request: the subdivision was removed, or the student changed class.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Decline it, and ask again if still needed.</p></div></div>
+  <div><b>Check</b><div>The transfer moves to History as declined.</div></div>
+</div>
+
+<h2 id="students">Students and sessions</h2>
+
+<h3 id="no-session">"There is no active academic session to enrol students into."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Registering or importing students, billing, the store or a timetable says there is no (current) session.</div></div>
+  <div><b>Why</b><div><p>Almost everything belongs to a session; one session must be current.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin creates the session and marks it current: Settings › Academic sessions ({{ route('admin_school_sessions') }}). "Set another session as current before archiving this one" and "Reactivate this session before making it current" are the same rule seen from the other side.</p></div></div>
+  <div><b>Check</b><div>The Overview shows the session's name.</div></div>
+</div>
+
+<h3 id="archived-student">"This student is archived. Restore them from Archived students instead."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>An archived student cannot be edited, enrolled or sign in.</div></div>
+  <div><b>Why</b><div><p>Archiving keeps the record and takes the student out of everything current. Their parents still see them, under <em>Children who have left the school</em>.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin restores them from Archived students ({{ route('admin_school_students_archived') }}); their sign-in works again.</p></div></div>
+  <div><b>Check</b><div>The student is back on their class register.</div></div>
+</div>
+
+<h2 id="results">Results and report cards</h2>
+
+<h3 id="card-not-ready">"That report card is not ready…" / a parent cannot see a report card</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>That report card is not ready: every one of the student's results for the term has to be released first.</div></div>
+  <div><b>Why</b><div><p>A card is worked out from released results and appears only when <strong>every</strong> result of the student for that term is released ({{ file('blueprints/school/report_card_data.py') }}). One result still waiting holds the whole card back.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>On Report cards ({{ route('admin_school_report_cards') }}) the class shows each card as ready, or waiting with how many results. Find the waiting subjects on Results ({{ route('admin_school_results') }}): recorded marks need sending to the class teacher, then releasing.</p></div></div>
+  <div><b>Check</b><div>The card shows as ready; parents are told by email, SMS and in-app.</div></div>
+</div>
+
+<h3 id="result-state-refused">"This result must be … before it can be …"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>This result must be approved before it can be released. (or similar) · There are no approved results to release for this term. · Approved or released results cannot be edited here.</div></div>
+  <div><b>Why</b><div><p>Results move in order: recorded → sent to the class teacher (approved) → released. A released result is part of the record and is not edited in place.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Take the step that comes first. Before release, a class teacher can send a wrong mark
+  back to its subject teacher to correct. After release, the result is part of the record: it is changed only through
+  the authorised correction process, not edited in place.</p></div></div>
+  <div><b>Check</b><div>The result reaches <em>released</em>.</div></div>
+</div>
+
+<h3 id="results-not-visible">Students or parents cannot see released results</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A teacher says results are done, but the student's portal shows nothing.</div></div>
+  <div><b>Why</b><div><p>Students and parents only ever see <em>released</em> results. Approved results wait for the class
+  teacher to release them, or for the school's release date (set on Results), when every approved result is released at
+  once. In SSS, a student sees only subjects their department takes.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Check the results' state on Results: release them, or wait for the release date. Check the student's department and the subject's departments.</p></div></div>
+  <div><b>Check</b><div>The results show in the student's portal.</div></div>
+</div>
+
+<h2 id="portals">The student and parent portals</h2>
+
+<h3 id="parent-no-child">A parent cannot see their child</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"No students are linked to this account", or one child missing.</div></div>
+  <div><b>Why</b><div><p>A parent sees only children linked to their account by an active link. Admitting a candidate creates the parent and the link; a parent added by hand must be linked.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>On the parent's record (Parents), link the child. A child who left is under <em>Children who have left the school</em> (closed until opened), not missing.</p></div></div>
+  <div><b>Check</b><div>The child appears on the parent's Overview.</div></div>
+</div>
+
+<h3 id="student-no-test">A student cannot see a test or assignment</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A teacher set a test, but the student's portal does not show it.</div></div>
+  <div><b>Why</b><div><p>A student sees work for their own class in the current session, and in SSS only subjects their department takes. Work for a chosen few students reaches only those.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Check the student's class this session and department, and who the work was issued to.</p></div></div>
+  <div><b>Check</b><div>The work appears.</div></div>
+</div>
+
+<h3 id="colour-refused">A brand colour is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The school profile refuses a colour as too light.</div></div>
+  <div><b>Why</b><div><p>Both brand colours sit behind white text, so each must have a contrast of at least 4.5:1 with white (WCAG AA) ({{ file('core/theme.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Choose a darker shade of the same colour; the form shows when it passes.</p></div></div>
+  <div><b>Check</b><div>The colour saves and the portal uses it.</div></div>
+</div>
+
+{% endblock %}

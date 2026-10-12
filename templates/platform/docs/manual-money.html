@@ -1,0 +1,119 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Finance has four things, and most confusion comes from mixing them up ({{ file('blueprints/finance/routes.py') }},
+{{ file('blueprints/finance/helpers.py') }}):</p>
+<div class="table-scroll"><table>
+<tr><th>Thing</th><th>Table</th><th>Meaning</th></tr>
+<tr><td>Fee item</td><td>{{ table('finance_fee_items') }}</td><td>A line in the fee list ("Tuition, JSS 1, ₦85,000"), for chosen classes.</td></tr>
+<tr><td>Bill (assessment)</td><td>{{ table('finance_fee_assessments') }}</td><td>A fee charged to one student for a session: "this child owes this".</td></tr>
+<tr><td>Payment</td><td>{{ table('finance_payments') }}</td><td>Money received, with its receipt.</td></tr>
+<tr><td>Allocation</td><td>{{ table('finance_payment_allocations') }}</td><td>How much of a payment pays which bill. <strong>A fee is only "paid" once a payment is allocated to it.</strong></td></tr>
+</table></div>
+
+<h2 id="balances">Balances and allocation</h2>
+
+<h3 id="paid-but-owing">A parent paid, but the child still shows as owing</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The payment is on record, but the fee account, the parent's portal or <em>New students to bill</em> still shows money owed.</div></div>
+  <div><b>Why</b><div><p>Recording a payment does not by itself say which fee it pays. Until it is <strong>allocated</strong>, it is "received, not yet applied". Every admin page carries a banner while any payment is unallocated: "… has been collected but not yet allocated to a fee item. Allocate now →".</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Open the payment (Finance › Payments, or the banner's link to {{ route('admin_finance_unallocated') }}) and choose <em>Apply to fees</em>. Allocate it across the student's bills.</p></div></div>
+  <div><b>Check</b><div>The fee shows <em>Paid</em>; the banner disappears once nothing is left to apply.</div></div>
+</div>
+
+<h3 id="allocation-errors">Allocation is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Allocation for … exceeds its outstanding balance." · "The total allocation exceeds the payment balance." · "… has already been fully paid and cannot receive a further allocation." · "A payment can only be allocated to assessments belonging to the same student." · "Only a posted payment can be allocated."</div></div>
+  <div><b>Why</b><div><p>An allocation may not pay more than a bill still owes, more than the payment has left, a bill of another student, or come from a voided payment.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Lower the amounts so they fit. Money left over after every bill is paid stays as unapplied credit on the student; if it was paid for the wrong child, void it (with a reason) and record it against the right one.</p></div></div>
+  <div><b>Check</b><div>The allocation saves.</div></div>
+</div>
+
+<h3 id="cannot-bill">Billing a student is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"The selected student has no active class enrolment for the selected academic session." · "Select at least one fee item…" · "One or more selected fee items are no longer available."</div></div>
+  <div><b>Why</b><div><p>A bill is for a student in a class in a session, and a fee item applies to particular classes. A student with no class this session, or a fee not set for their class, cannot be billed.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Enrol the student in a class for the current session (their record › Edit). Make sure the fee item lists that class (Fee structure › the item › classes).</p></div></div>
+  <div><b>Check</b><div>Billing saves, and the student moves from <em>Not billed yet</em> to <em>Waiting for payment</em> on {{ route('admin_finance_new_students') }}.</div></div>
+</div>
+
+<h3 id="cashier-account-refused">A cashier cannot open a student's fee account</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"This action is not available to you" when a Finance Records Officer opens a student's account.</div></div>
+  <div><b>Why</b><div><p>By design. A whole account shows every payment, whoever recorded it, so it needs {{ perm('finance.view_all') }}. A cashier ({{ perm('finance.view_own') }}) sees and works with their own payments.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>If the person needs to see every account, give them a role with <em>View all finance</em> (the Finance Manager role has it).</p></div></div>
+  <div><b>Check</b><div>They can open accounts after their role changes (within <code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>).</div></div>
+</div>
+
+<h3 id="new-students-list">A student is missing from, or stuck on, "New students to bill"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A new student is not on the list; or a student who paid is still listed.</div></div>
+  <div><b>Why</b><div><p>The list ({{ file('blueprints/finance/new_students.py') }}, {{ table('finance_new_students') }}) holds students created <em>since the list existed</em> (admitted, registered or imported), not older students or ones created already archived. A student leaves only when everything billed is <strong>allocated</strong> in full.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Still listed after paying: allocate the payment (above). Not wanted on the list (a scholarship): a Finance Manager ticks them, gives a reason, and takes them off; they can be put back from <em>Done</em>.</p></div></div>
+  <div><b>Check</b><div>The student moves to <em>Done</em>.</div></div>
+</div>
+
+<h2 id="paystack">Online payments (Paystack)</h2>
+<p>A school uses its <strong>own</strong> Paystack account (there is no shared platform account), set by the School Admin
+under Settings › Online payments ({{ route('admin_finance_paystack_settings') }}). A payment is confirmed only by asking
+Paystack what happened, never by trusting the browser ({{ file('blueprints/finance/paystack.py') }},
+{{ file('core/payments.py') }}).</p>
+
+<h3 id="paystack-not-set">Parents see no "Pay online" button</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The parent's fee page has no pay button; or "This school has not set up online payments yet."</div></div>
+  <div><b>Why</b><div><p>The school has no keys saved.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin saves the public key (<code>pk_live_…</code>) and secret key (<code>sk_live_…</code>) from the Paystack dashboard, presses <em>Test</em>, and pastes the <strong>webhook URL shown on that page</strong> into Paystack (Settings › API Keys &amp; Webhooks).</p></div></div>
+  <div><b>Check</b><div><em>Test</em> says "Connected to Paystack (live mode)."</div></div>
+</div>
+
+<h3 id="paystack-test-fails">The connection test fails</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Paystack did not accept this secret key." · "Connected, but your public key and secret key are from different modes (one test, one live). Use a matching pair." · "Paystack could not be reached: …"</div></div>
+  <div><b>Why</b><div><p>A wrong or revoked secret key; a test key paired with a live one; or the server cannot reach <code>api.paystack.co</code>.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Copy both keys again from the same mode in the Paystack dashboard. If it cannot be reached, check the server's outbound internet (<code>curl -sI https://api.paystack.co</code>).</p></div></div>
+  <div><b>Check</b><div>The test succeeds.</div></div>
+</div>
+
+<h3 id="payment-pending">"This payment is still being confirmed." / a payment stays pending</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The parent paid, but the payment is not on the child's account yet.</div></div>
+  <div><b>Why</b><div><p>Two things report a payment back: the parent's browser returning, and Paystack's webhook. A parent who paid by transfer or USSD may never return, and a webhook fails if its URL was not set or changed. Any payment still pending after two minutes is checked with Paystack directly whenever the finance overview ({{ route('admin_finance_dashboard') }}), a parent's fee page or the store opens.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Open Finance's Collections page: that checks pending payments with Paystack.</li>
+    <li>Make sure the webhook URL in the Paystack dashboard is exactly the one shown on Online payments ({{ route('paystack_webhook') }}), on the school's own address, over https.</li>
+    <li>If Paystack says it failed, the parent sees "This payment was not successful…" and pays again.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The payment appears, with its receipt sent to the guardian.</div></div>
+</div>
+<div class="note"><p>Both the browser and the webhook can arrive at once: a conditional update ensures only the
+first records the payment, so a payment is never recorded twice.</p></div>
+
+<h3 id="refund-issues">A refund is refused or stays pending</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"A reason is required to refund a payment." · "Only a posted payment can be refunded." · "A refund for this payment already exists (status: …)." · "Online payments are not set up for this school any more, so Paystack cannot be asked for a refund." · a refund shown as pending.</div></div>
+  <div><b>Why</b><div><p>A refund asks Paystack to send money back for a payment made online. Pending refunds are checked with Paystack when the finance overview opens. <em>Voiding</em> is different: it cancels a payment's record (with a reason) and moves no money.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Give a reason; refund only posted, online payments; wait for Paystack (refunds can take days with the bank). For cash paid back in person, void the payment instead.</p></div></div>
+  <div><b>Check</b><div>The refund shows <em>processed</em>.</div></div>
+</div>
+
+<h2 id="store">The store</h2>
+
+<h3 id="store-closed">"The store is not open yet" / parents cannot buy online</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"The store is not open yet: the school has no current session." — or — "The school takes payment for the store at the office. You can see what is available here."</div></div>
+  <div><b>Why</b><div><p>Purchases belong to a session, so a current session is needed. Buying online needs the school's Paystack account.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Set a current session (Settings › Academic sessions). Set up Online payments for online buying.</p></div></div>
+  <div><b>Check</b><div>The parents' Store shows items with a buy button.</div></div>
+</div>
+
+<h3 id="store-short">A purchase is marked "short"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Purchase claims shows a purchase as short.</div></div>
+  <div><b>Why</b><div><p>Stock is taken with a check that can never sell the last one twice. An online payment that completed after the last one was sold is still recorded (the money is in) and marked short for the office to settle ({{ file('blueprints/store/routes.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Restock the item and hand it over, or cancel the purchase with a reason and refund the parent.</p></div></div>
+  <div><b>Check</b><div>The purchase is collected or cancelled.</div></div>
+</div>
+
+{% endblock %}

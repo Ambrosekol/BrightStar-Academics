@@ -1,0 +1,191 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Everyone signs in on one page (<code>/login</code> on a school's address); platform admins sign in on the console
+(<code>/platform/login</code>). A sign-in is a signed cookie, checked on every request by {{ file('core/session_guard.py') }},
+which decides whether it is still good. Five things end a sign-in, each with its own message, so the message tells you
+which one happened:</p>
+<div class="table-scroll"><table>
+<tr><th>Message on the sign-in page</th><th>What ended it</th><th>Read</th></tr>
+<tr><td>The system was restarted, please sign in again.</td><td>A restart, an <code>upgrade</code> or <code>new-launch</code></td><td><a href="#restarted">below</a></td></tr>
+<tr><td>Your password was changed, please sign in again.</td><td>The account's password changed somewhere else</td><td><a href="#password-changed">below</a></td></tr>
+<tr><td>You were signed out after a while without using the portal, please sign in again.</td><td>Idle for <code>BRIGHTSTARS_IDLE_MINUTES</code> (120)</td><td><a href="#idle">below</a></td></tr>
+<tr><td>Your sign-in has run out, please sign in again.</td><td>Older than <code>BRIGHTSTARS_SESSION_HOURS</code> (12)</td><td><a href="#expired">below</a></td></tr>
+<tr><td>That sign-in was ended by signing out, please sign in again.</td><td>Someone signed out of this sign-in (perhaps in another tab, or a copy of the cookie)</td><td><a href="#ended">below</a></td></tr>
+</table></div>
+<div class="note"><p><strong>Nobody sitting an exam is ever signed out</strong> by a restart, the idle limit or the
+lifetime while their paper is running. A candidate or student mid-paper carries on through a power cut, a lost
+connection or a server restart, and has 30 minutes more once the paper ends to see the result.</p></div>
+
+<h2 id="signed-out">Signed out unexpectedly</h2>
+
+<h3 id="restarted">"The system was restarted, please sign in again."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Everyone, at once, meets the sign-in page with this message.</div></div>
+  <div><b>Why</b><div><p>The server was started again, an <code>upgrade</code> ran, or someone pressed <em>Sign everyone out</em> ({{ route('platform_settings_new_launch') }}). Each records a new launch id ({{ file('control_plane/launch.py') }}), deliberately ending older sign-ins.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Nothing is broken; people sign in again. Schedule deploys and restarts outside school hours. If it happens with no restart, check the server is not crash-looping (<code>systemctl status brightstars</code>, uptime) and see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</p></div></div>
+  <div><b>Check</b><div>Sign-ins succeed and stay.</div></div>
+</div>
+
+<h3 id="password-changed">"Your password was changed, please sign in again."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One person is signed out in one browser while still signed in where they changed it.</div></div>
+  <div><b>Why</b><div><p>The account's password changed: by the person, by an administrator resetting it, or by a reset link. Every <em>other</em> browser signed in to that account is signed out (within <code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>), on purpose.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Sign in with the new password. If the person did not change it, treat it as a possible break-in: see {{ page('manual-emergencies', 'Emergency playbooks') }}.</p></div></div>
+  <div><b>Check</b><div>The activity log shows who changed it, and when.</div></div>
+</div>
+
+<h3 id="idle">"You were signed out after a while without using the portal"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A person who left a page open returns to the sign-in page with this message.</div></div>
+  <div><b>Why</b><div><p>No page was opened or form sent for <code>BRIGHTSTARS_IDLE_MINUTES</code> (120 by default). The small check an open page makes every 30 seconds does not count, so a tab left open on a shared computer still ends.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Normal behaviour. If teachers write very long report comments without saving, either ask them to save as they go, or raise <code>BRIGHTSTARS_IDLE_MINUTES</code> (in the console, {{ route('platform_settings') }}). Lowering it suits schools with shared computers.</p></div></div>
+  <div><b>Check</b><div>The new value applies to the next request after a restart.</div></div>
+</div>
+
+<h3 id="expired">"Your sign-in has run out, please sign in again."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A person who has been busy all day is asked to sign in again.</div></div>
+  <div><b>Why</b><div><p>A sign-in lasts at most <code>BRIGHTSTARS_SESSION_HOURS</code> (12 by default), however busy, so a forgotten sign-in cannot last for days.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Normal. Raise <code>BRIGHTSTARS_SESSION_HOURS</code> if a working day is longer than 12 hours.</p></div></div>
+  <div><b>Check</b><div>Sign in again and carry on.</div></div>
+</div>
+
+<h3 id="ended">"That sign-in was ended by signing out, please sign in again."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A page in a second tab, or on a second device using a copied cookie, sends the person to sign in.</div></div>
+  <div><b>Why</b><div><p>Signing out records the sign-in as ended in the registry ({{ table('ended_sessions') }}, {{ file('control_plane/ended_sessions.py') }}), so every copy of it stops working.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Sign in again. If nobody signed out, someone else may have: change the password.</p></div></div>
+  <div><b>Check</b><div>The new sign-in works.</div></div>
+</div>
+
+<h3 id="signed-out-every-request">Signed in, then signed out again on the next page</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Sign-in "works" but the next click goes back to the sign-in page, with no message.</div></div>
+  <div><b>Why</b><div><p>The sign-in cookie is not coming back. Usual causes: <code>BRIGHTSTARS_ENV=production</code> (cookies marked Secure) while the site is served over plain http; several servers with different <code>BRIGHTSTARS_SECRET</code>s behind one load balancer; or the browser blocks cookies for the site.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Serve the site over https (and set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application knows it is https).</li>
+    <li>Give every server the <strong>same</strong> <code>BRIGHTSTARS_SECRET</code>.</li>
+    <li>Make sure the proxy passes the <code>Host</code> header unchanged (a sign-in belongs to the school of the address it was made on).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>In the browser's developer tools, the <code>session</code> cookie is set after sign-in and sent with the next request.</div></div>
+</div>
+
+<h2 id="cannot-sign-in">Cannot sign in</h2>
+
+<h3 id="cannot-verify">"We could not verify those login details."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>We could not verify those login details. Please check your ID/username and password.</div></div>
+  <div><b>Why</b><div><p>The username (or Student ID, Candidate ID, parent email) does not exist, the password is wrong, or the account is inactive. The page deliberately does not say which.</p></div></div>
+  <div class="do"><b>Fix</b><div><ul>
+    <li><strong>Staff</strong>: the School Admin resets it (Settings › Staff, the person's ⋯ menu › reset login). If the School Admin themself is locked out, a platform admin enters the school ({{ route('platform_school_enter') }}) and resets it, or creates a new administrator on the school's console page.</li>
+    <li><strong>Students</strong>: staff reset it from the student's page (a new one-time password). An archived student cannot sign in at all, by design.</li>
+    <li><strong>Parents</strong>: staff reset it from the parent's record.</li>
+    <li><strong>Candidates</strong>: the entrance workspace resets candidate credentials.</li>
+    <li>Anyone with a recovery email can use "Forgot password" on the sign-in page.</li>
+  </ul></div></div>
+  <div><b>Check</b><div>The person signs in with the new one-time password and is asked to choose their own.</div></div>
+</div>
+
+<h3 id="too-many-attempts">"Too many sign-in attempts. Please wait a few minutes and try again."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Too many sign-in attempts. Please wait a few minutes and try again. (HTTP 429)</div></div>
+  <div><b>Why</b><div><p>Sign-in is limited, counted in the registry ({{ table('rate_limits') }}) so every server shares the count:</p>
+  <ul>
+    <li>8 tries in 5 minutes for one address and one username;</li>
+    <li>40 <em>wrong passwords</em> in 15 minutes from one address, across all usernames;</li>
+    <li>20 <em>wrong passwords</em> in 15 minutes for one username, from any addresses.</li>
+  </ul>
+  <p>Right passwords never count against the last two, so a computer room signing in from one address is fine unless many people get their passwords wrong.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Usually: wait 15 minutes.</li>
+    <li>A whole school locked out at once: almost always the reverse proxy hiding real addresses. Set <code>BRIGHTSTARS_TRUSTED_PROXIES</code>; see {{ page('manual-addresses', 'Addresses, domains and proxies') }}.</li>
+    <li>To lift every limit right now (for example after fixing the proxy): in the registry database, <code>DELETE FROM rate_limits;</code>. Only hashes are stored, so you cannot pick out one person; clearing all is safe.</li>
+    <li>If one account keeps tripping it, someone may be guessing its password: check the activity log, and consider changing the password.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The person signs in.</div></div>
+</div>
+
+<h3 id="nursery">"Crèche and Nursery pupils do not sign in."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Crèche and Nursery pupils do not sign in. A parent can sign in to the parent portal …</div></div>
+  <div><b>Why</b><div><p>Early-years pupils do everything on paper; their parents see fees and report cards ({{ file('core/school_structure.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The parent signs in instead. If the child is actually older, move them to the right class: the sign-in follows their current class.</p></div></div>
+  <div><b>Check</b><div>After moving the class, the student signs in.</div></div>
+</div>
+
+<h3 id="reset-link-invalid">"This password reset link is invalid or has expired."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The reset page says the link is invalid or has expired.</div></div>
+  <div><b>Why</b><div><p>A link works once and for 30 minutes. Asking for a newer link cancels the older one.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Ask for a new link and use the newest email only.</p></div></div>
+  <div><b>Check</b><div>The newest link opens the "choose a new password" form.</div></div>
+</div>
+
+<h3 id="reset-email-missing">"Forgot password" sends nothing</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The page says instructions will be sent if the account exists, but no email arrives.</div></div>
+  <div><b>Why</b><div><p>The page always says the same thing (so it never reveals whether an account exists). No email goes out when: the account has no recovery email (students' go to the guardian email on their record), the school has no working mail server and the platform has no shared one, or the message went to spam.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Check the account has an email: staff on their staff record; parents on their parent record; students the guardian email.</li>
+    <li>Test the school's mail under Settings › Email &amp; SMS (<em>Send a test</em>). If it fails, see {{ page('manual-messaging', 'Email, SMS, background jobs and alerts') }}.</li>
+    <li>Otherwise staff reset the password directly (above), which needs no email.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The test email arrives; the reset email then arrives too.</div></div>
+</div>
+
+<h3 id="password-refused">A new password is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One of: "Your new password must be at least 8 characters long." · "That password is one of the first that people try." · "Your new password needs more than one or two different characters." · "A straight run of letters or numbers is easy to guess." · "Your new password must not contain your username or ID."</div></div>
+  <div><b>Why</b><div><p>New passwords are checked by {{ file('core/passwords.py') }}: at least 8 characters (10 for platform admins), not a common password (<code>password123</code>, <code>school123</code>, <code>nigeria</code> …, even with numbers added at the end), not one character repeated, not a run like <code>12345678</code>, and not containing the username.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Choose something longer and personal, for example three unrelated words with a number: <code>mango-river-blue-7</code>.</p></div></div>
+  <div><b>Check</b><div>The password is accepted.</div></div>
+</div>
+
+<h3 id="csrf-403">"Access Denied" / "Invalid or missing CSRF token" after pressing a button</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A 403 page after submitting a form; the log shows "Invalid or missing CSRF token".</div></div>
+  <div><b>Why</b><div><p>Every form carries a token tied to the sign-in. It no longer matches when the page was opened before the person was signed out (a restart, a timeout), when the form was opened in another account's session, or when cookies are blocked.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Reload the page (or sign in again) and submit again. If it happens to everyone on every form, the sign-in cookie is not coming back: see <a href="#signed-out-every-request">Signed in, then signed out again</a>.</p></div></div>
+  <div><b>Check</b><div>The form saves.</div></div>
+</div>
+
+<h2 id="platform">Platform admins</h2>
+
+<h3 id="platform-credentials">"Those platform credentials were not recognised."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Those platform credentials were not recognised. (on <code>/platform/login</code>)</div></div>
+  <div><b>Why</b><div><p>Wrong username or password, or the admin was removed (removal never deletes, it switches access off).</p></div></div>
+  <div class="do"><b>Fix</b><div><ul>
+    <li>The super admin resets the password on the Team page ({{ route('platform_team_reset') }}) or restores a removed admin.</li>
+    <li>If the super admin is the one locked out: on the server, <code>python -m control_plane create-platform-admin rescue --super</code> creates a second super admin; sign in as it, reset the original's password on the Team page, then remove <code>rescue</code>.</li>
+  </ul></div></div>
+  <div><b>Check</b><div>The admin signs in and is asked to set their own password.</div></div>
+</div>
+
+<h3 id="entry-link-expired">"That access link has expired or has already been used."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>That access link has expired or has already been used. Start again from the platform console.</div></div>
+  <div><b>Why</b><div><p>Entering a school uses a single-use ticket that lasts two minutes and only works for the school it was made for ({{ file('control_plane/entry.py') }}). A slow page, a second click or a copied link uses or outlives it.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Press <em>Enter school</em> again on the school's console page and let it redirect.</p></div></div>
+  <div><b>Check</b><div>The school opens, with the operator banner at the top.</div></div>
+</div>
+
+<h3 id="no-system-role">"This school has no system role; run upgrade for it first."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Entering a school or adding its first administrator fails with this message.</div></div>
+  <div><b>Why</b><div><p>The school's database was never fully initialised (the School Admin role is created at upgrade).</p></div></div>
+  <div class="do"><b>Fix</b><div><p><code>python -m control_plane upgrade CODE</code>, then try again.</p></div></div>
+  <div><b>Check</b><div>Entering the school works.</div></div>
+</div>
+
+<h3 id="workspace-refused">"Exit the current workspace and choose the other workspace from Workspace Home."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A staff member is sent to Workspace Home with this message.</div></div>
+  <div><b>Why</b><div><p>They opened a page of the other workspace (Entrance pages while in School, or the reverse). The two are kept apart on purpose.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Choose the other workspace on Workspace Home. Staff who only have one workspace go straight into it; giving someone the Entrance workspace is a matter of their role's permissions.</p></div></div>
+  <div><b>Check</b><div>The page opens in the right workspace.</div></div>
+</div>
+
+{% endblock %}

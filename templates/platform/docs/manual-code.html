@@ -1,0 +1,142 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>For whoever has to go from "this is broken" to the line of code that does it. You do not need to know the whole
+codebase: every page has one route, every route lives in one file, and the reference pages say which. The tour of the
+code ({{ page('tour', 'A tour of the code') }}) and the contributing notes ({{ page('contributing', 'Contributing') }})
+go deeper.</p>
+
+<h2 id="request">How one request travels</h2>
+<div class="flow">
+  <span class="node"><strong>Address</strong><br><small>resolver.py: which school</small></span><span class="arrow">&rarr;</span>
+  <span class="node"><strong>Sign-in</strong><br><small>session_guard.py: still good?</small></span><span class="arrow">&rarr;</span>
+  <span class="node"><strong>Workspace</strong><br><small>app.py: School or Entrance</small></span><span class="arrow">&rarr;</span>
+  <span class="node"><strong>Permission</strong><br><small>security.py: admin_required</small></span><span class="arrow">&rarr;</span>
+  <span class="node"><strong>The route</strong><br><small>blueprints/…</small></span><span class="arrow">&rarr;</span>
+  <span class="node"><strong>The page</strong><br><small>templates/…</small></span>
+</div>
+<ol>
+  <li>{{ file('control_plane/resolver.py') }} reads the address and selects the school (or answers Address not found / Portal paused). From here on every database query goes to that school's own database.</li>
+  <li>{{ file('core/session_guard.py') }} decides whether the sign-in is still good (restart, password change, idle, lifetime, signed out).</li>
+  <li><code>enforce_admin_workspace_boundary</code> in {{ file('app.py') }} keeps School and Entrance pages apart.</li>
+  <li><code>admin_required</code> in {{ file('core/security.py') }} checks the page's permission from <code>ADMIN_ENDPOINT_PERMISSIONS</code>; the route then checks finer things itself (this class? this student?).</li>
+  <li>The route (a function under <code>blueprints/</code>) does the work and renders a template under <code>templates/</code>.</li>
+  <li>After it, {{ file('app.py') }} adds the security headers and the school's colours.</li>
+</ol>
+
+<h2 id="find">Finding the code behind a page</h2>
+
+<h3 id="find-route">From an address to its file</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A page at, say, <code>/admin/finance/new-students</code> misbehaves.</div></div>
+  <div><b>Why</b><div><p>Every address has exactly one route function.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Search these docs for the address (the box at the top) or open {{ page('reference-routes', 'Routes') }}: it names the function, its file and the permission it needs.</li>
+    <li>Or in the code: <code>grep -rn "new-students" blueprints/ app.py</code>.</li>
+    <li>The function's <code>render_template('…')</code> names the page's template.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>You can point at the function and the template.</div></div>
+</div>
+
+<h3 id="find-table">From a piece of data to its table</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A number or a record is wrong, and you want to look at it in the database.</div></div>
+  <div><b>Why</b><div><p>Every table of a school and of the registry is described, column by column.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Open {{ page('reference-data', 'Data model') }}, or search for the column name. Models live in <code>models/</code> (a school) and {{ file('control_plane/models.py') }} (the registry).</p></div></div>
+  <div><b>Check</b><div>A <code>SELECT</code> on that table in the school's database shows the record.</div></div>
+</div>
+
+<h3 id="symptom-to-file">Common symptoms and the file to read first</h3>
+<div class="table-scroll"><table>
+<tr><th>Symptom</th><th>Read first</th></tr>
+<tr><td>Wrong school, Address not found, Portal paused</td><td>{{ file('control_plane/resolver.py') }}, {{ file('control_plane/registry.py') }}</td></tr>
+<tr><td>Signed out unexpectedly, timeouts</td><td>{{ file('core/session_guard.py') }}, {{ file('control_plane/ended_sessions.py') }}</td></tr>
+<tr><td>Sign-in refused, limits</td><td>{{ file('core/accounts.py') }}, {{ file('control_plane/ratelimit.py') }}</td></tr>
+<tr><td>"This action is not available to you"</td><td>{{ file('core/security.py') }} (<code>ADMIN_ENDPOINT_PERMISSIONS</code>, <code>teaching_duties</code>)</td></tr>
+<tr><td>A teacher sees the wrong students</td><td>{{ file('core/security.py') }}, {{ file('core/subdivisions.py') }}, {{ file('blueprints/school/helpers.py') }}</td></tr>
+<tr><td>Fees, balances, allocation</td><td>{{ file('blueprints/finance/helpers.py') }}, {{ file('blueprints/finance/routes.py') }}</td></tr>
+<tr><td>Online payments</td><td>{{ file('blueprints/finance/paystack.py') }}, {{ file('core/payments.py') }}</td></tr>
+<tr><td>Report card content or readiness</td><td>{{ file('blueprints/school/report_card_data.py') }}</td></tr>
+<tr><td>Emails and texts</td><td>{{ file('core/delivery.py') }}, {{ file('core/jobs.py') }}, {{ file('core/notifications.py') }}</td></tr>
+<tr><td>Uploads and pictures</td><td>{{ file('core/uploads.py') }}, {{ file('core/upload_access.py') }}, {{ file('core/storage.py') }}</td></tr>
+<tr><td>Bulk imports</td><td>{{ file('core/tabular.py') }}, {{ file('blueprints/school/student_import.py') }}</td></tr>
+<tr><td>Codes and numbers (candidate codes, admission numbers)</td><td>{{ file('core/numbering.py') }}, {{ file('core/numbering_pattern.py') }}</td></tr>
+<tr><td>Entrance exam timing and scoring</td><td>{{ file('core/entrance.py') }}</td></tr>
+<tr><td>A button spins for ever, a page does not load in place</td><td><code>static/inplace.js</code>, <code>static/page-loading.js</code>, and the browser's console</td></tr>
+</table></div>
+
+<h2 id="debug">Debugging</h2>
+
+<h3 id="read-log">A page shows the 500 error page</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Something Went Wrong" (500 Server Error) for a page.</div></div>
+  <div><b>Why</b><div><p>An unexpected error. The page never shows details (they could leak data), but the full traceback is written to the log.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Read the log at that moment: <code>journalctl -u brightstars --since "10 min ago"</code> (or wherever gunicorn's output goes).</li>
+    <li>The last lines of the traceback name the file and line; the line just above <code>Error:</code> names the cause.</li>
+    <li>A database error (<code>UndefinedColumn</code>, <code>IntegrityError</code>) usually means an upgrade is missing or bad data; anything else is a code bug: reproduce it locally (next entry).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>You can say which line failed and why.</div></div>
+</div>
+
+<h3 id="reproduce">Reproducing a problem safely on your own machine</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You need to see the bug happen without touching real schools.</div></div>
+  <div><b>Why</b><div><p>Never debug against production data: schools hold children's records.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Run the platform locally ({{ page('getting-started', 'Getting started') }}) and create a test school.</li>
+    <li>Recreate just enough data by hand to show the bug.</li>
+    <li>Better still, write it as a test: the end-to-end scripts in <code>tests/verification/</code> create throwaway databases, drive the real application and delete everything afterwards. Copy the closest one and add a check that fails because of the bug.</li>
+    <li>If a real school's data is truly needed, export it (<code>export-tenant</code>) to an encrypted machine only with the school's permission, and delete it afterwards.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The failing test fails before your fix and passes after.</div></div>
+</div>
+
+<h3 id="button-nothing">A button spins for ever, or does nothing</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Pressing a button shows a spinner that never ends, and nothing is saved.</div></div>
+  <div><b>Why</b><div><p>Pages load in place through {{ file('static/inplace.js') }}. A script error stops the form being sent. One real case: a form with a field named <code>method</code> hid the form's own <code>method</code> property and broke sending (scripts must use <code>form.getAttribute('method')</code>; a contract test guards this).</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Open the browser's developer tools (F12) › Console, press the button, and read the red error.</li>
+    <li>Network tab: was a request sent? What did it answer?</li>
+    <li>Fix the script or the template the error names.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The form saves and the next page opens.</div></div>
+</div>
+
+<h2 id="mistakes">Mistakes the tests catch (and what they mean)</h2>
+<p>Run <code>python tests/current/run_current.py</code> after every change (no database needed). Each failure names
+the rule:</p>
+<div class="table-scroll"><table>
+<tr><th>Failing check</th><th>What you did</th><th>Fix</th></tr>
+<tr><td>A POST route is not exercised (coverage guard)</td><td>Added a form route without a test</td><td>Submit it in <code>write_paths_pg_posts.py</code>, or list it with a reason in {{ file('tests/verification/pg_posts_coverage.py') }}.</td></tr>
+<tr><td>Documentation names something that does not exist</td><td>Renamed a file, route or table these pages mention</td><td>Update the page (the test says which).</td></tr>
+<tr><td>Release notes contract</td><td>A release note breaks a rule</td><td>Higher version; a staff note may link one guide page; family and student notes never do.</td></tr>
+<tr><td>CSP / inline script</td><td>An inline <code>onclick</code>, or a <code>&lt;script&gt;</code> without <code>nonce="{{ '{{' }} csp_nonce() {{ '}}' }}"</code></td><td>Move it into a nonced script.</td></tr>
+<tr><td><code>|safe</code> on typed text</td><td>Rendered someone's text as HTML</td><td>Escape it first, or remove <code>|safe</code>.</td></tr>
+<tr><td>Form attributes</td><td>Used <code>form.method</code>/<code>form.action</code> in a script</td><td>Use <code>getAttribute</code>.</td></tr>
+<tr><td>School name raw inside a script</td><td><code>{{ '{{' }} school_brand.name {{ '}}' }}</code> inside <code>&lt;script&gt;</code></td><td>Use <code>|tojson</code>.</td></tr>
+<tr><td>Staff guide misses a menu page</td><td>Added a menu item with no guide text</td><td>Mention it in the staff guide.</td></tr>
+<tr><td>model/schema drift</td><td>Added a column; your local database is behind</td><td>Run <code>python -m control_plane upgrade</code>.</td></tr>
+</table></div>
+<div class="warn"><p>Things no test can catch: an admin route left out of <code>ADMIN_ENDPOINT_PERMISSIONS</code> falls back to
+<code>admin.access</code>, which nearly everyone has; and a list of students that ignores teaching duties or
+subdivisions shows a teacher pupils who are not theirs. Check both by hand for every new page.</p></div>
+
+<h2 id="ship">Shipping a fix</h2>
+
+<h3 id="ship-steps">From a fix to production</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The fix works locally.</div></div>
+  <div><b>Why</b><div><p>A safe path from your machine to the schools.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Run the contract suite, and the end-to-end scripts for the area you changed (the Testing page lists them by area; {{ page('testing', 'Testing') }}). Before a release also <code>write_paths_pg_smoke.py</code> and <code>write_paths_pg_posts.py</code>.</li>
+    <li>On Windows, make sure files keep Unix (LF) line endings.</li>
+    <li>Add a release note in <code>release_notes.json</code> if anyone will notice the change.</li>
+    <li>Commit, push, and deploy in the safe order ({{ page('manual-startup', "It won't start, or a deploy failed") }}).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The reported problem is gone in production, and the What's new card shows the note.</div></div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Every setting the platform reads, what it does, its default, and what goes wrong when it is wrong. The main list
+below is drawn straight from the console's own register of settings ({{ file('control_plane/settings_registry.py') }}),
+so it always says exactly what the console's Settings page ({{ route('platform_settings') }}) says. The few settings
+the console does not manage are described by hand after it.</p>
+
+<h2 id="where">Where a setting comes from, and why a change "does nothing"</h2>
+<p>A value is looked for in this order, and the first one found wins:</p>
+<ol>
+  <li><strong>The console's shared settings</strong> (stored in the registry, {{ file('control_plane/shared_settings.py') }}). Settings marked <em>shared</em> below, once edited in the console, reach every server within about 10 seconds and <strong>override</strong> the same name in <code>.env</code>.</li>
+  <li><strong>The server's real environment</strong> (systemd <code>Environment=</code>, Docker <code>-e</code>, the shell).</li>
+  <li><strong><code>.env</code></strong> in the project folder (read at start; never overrides the real environment).</li>
+  <li>The default.</li>
+</ol>
+
+<h3 id="change-no-effect">I changed a setting and nothing happened</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A value was edited in <code>.env</code> (or the service file), but the application still behaves the old way.</div></div>
+  <div><b>Why</b><div><p>One of: the setting needs a restart (marked <em>restart</em> below); the same name is set in the real environment, which beats <code>.env</code>; or the console's shared settings hold a value for it, which beats both.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Open the setting in the console ({{ route('platform_settings') }}): it shows the value in use, where it comes from, and which server you are talking to.</li>
+    <li>If a shared value is set there, edit or remove it there (removing it puts back what the server started with).</li>
+    <li>Settings marked <em>restart</em>: restart the application on every server.</li>
+    <li>Check the real environment: <code>sudo systemctl show brightstars -p Environment</code>.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The console shows the new value as in use.</div></div>
+</div>
+
+<h3 id="multi-server-env">Servers disagree about a setting</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A behaviour differs depending on which server handled the request.</div></div>
+  <div><b>Why</b><div><p>Per-server settings (database URLs, the secret, the delivery key, file paths, the proxy layout, pool sizes, and anything needing a restart) live in each server's own environment and must be set the same on every one.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Keep one environment file for all servers (deployed the same way as the code), and set the per-server settings there. Shared settings are better edited in the console.</p></div></div>
+  <div><b>Check</b><div>The console's Settings page shows the same values on each server.</div></div>
+</div>
+
+<h2 id="registered">Every setting the console manages</h2>
+<p><em>Risk</em> is how much harm a wrong value can do (high and critical can only be changed by highly-trusted admins).
+<em>Takes effect</em> is <em>at once</em> or <em>after a restart</em>.</p>
+{% set categories = env_variables|map(attribute='category')|unique|list %}
+{% for category in categories %}
+<h2 id="cat-{{ category|lower|replace(' ', '-') }}">{{ category }}</h2>
+{% for v in env_variables if v.category == category %}
+<h3 id="{{ v.name|lower|replace('_', '-') }}"><code>{{ v.name }}</code></h3>
+<div class="fix">
+  <div><b>Default</b><div>{% if v.default %}<code>{{ v.default }}</code>{% else %}not set{% endif %}{% if v.secret %} · <strong>secret</strong>: never shown once saved{% endif %} · risk <strong>{{ v.risk }}</strong> · takes effect {{ 'after a restart' if v.effect == 'restart' else 'at once' }}{% if v.aliases %} · also read from {{ v.aliases|join(', ') }}{% endif %}</div></div>
+  <div><b>What it does</b><div><p>{{ v.purpose }}</p></div></div>
+  <div><b>Affects</b><div><p>{{ v.affects }}</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>{{ v.breaks_if_wrong }}</p></div></div>
+  <div class="do"><b>Change it when</b><div><p>{{ v.when_to_change }}</p></div></div>
+</div>
+{% endfor %}
+{% endfor %}
+
+<h2 id="unregistered">Settings set only in the server's environment</h2>
+<p>These are not on the console's Settings page; set them in <code>.env</code> or the service's environment, the same on
+every server, and restart.</p>
+
+<h3 id="brightstars-storage-backend"><code>BRIGHTSTARS_STORAGE_BACKEND</code></h3>
+<div class="fix">
+  <div><b>Default</b><div><code>local</code></div></div>
+  <div><b>What it does</b><div><p>Where schools' files are kept: <code>local</code> (a folder per school under <code>BRIGHTSTARS_TENANTS_DIR</code>) or <code>s3</code> (an S3-compatible bucket, {{ file('core/object_store.py') }}).</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>Any other value stops the application starting. With <code>local</code> on several servers, files saved on one are missing on the others. Switching an existing deployment does not move files: copy <code>tenants/&lt;code&gt;/uploads</code>, <code>data</code> and <code>numbering.json</code> into the bucket first.</p></div></div>
+</div>
+
+<h3 id="brightstars-s3"><code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ACCESS_KEY_ID</code>, <code>BRIGHTSTARS_S3_SECRET_ACCESS_KEY</code>, <code>BRIGHTSTARS_S3_ENDPOINT_URL</code>, <code>BRIGHTSTARS_S3_REGION</code>, <code>BRIGHTSTARS_S3_PREFIX</code></h3>
+<div class="fix">
+  <div><b>Default</b><div>bucket and keys required with <code>s3</code>; endpoint unset (real AWS); region <code>auto</code>; no prefix</div></div>
+  <div><b>What it does</b><div><p>The bucket and credentials for <code>s3</code> storage. The endpoint is needed for any provider that is not AWS (Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO). A prefix namespaces every school's files, so one bucket can be shared with other uses.</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>A missing bucket or key stops the start-up with "… is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3." Wrong keys, region or endpoint: every picture is broken and the log says "Could not read uploads/… from object storage".</p></div></div>
+</div>
+
+<h3 id="brightstars-pg-maintenance-db"><code>BRIGHTSTARS_PG_MAINTENANCE_DB</code></h3>
+<div class="fix">
+  <div><b>Default</b><div><code>postgres</code></div></div>
+  <div><b>What it does</b><div><p>The database <code>CREATE DATABASE</code> connects through when the registry or a new school's database does not exist yet.</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>Creating a school (or <code>init</code>) fails with "database "postgres" does not exist" on providers that have no such database (Aiven's is <code>defaultdb</code>).</p></div></div>
+</div>
+
+<h3 id="brightstars-max-data-upload-bytes"><code>BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES</code></h3>
+<div class="fix">
+  <div><b>Default</b><div><code>2097152</code> (2&nbsp;MB)</div></div>
+  <div><b>What it does</b><div><p>The largest file a bulk import (CSV or Excel) may be.</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>Too low refuses a school's large class list ("That file is larger than the … limit"); split it, or raise this.</p></div></div>
+</div>
+
+<h3 id="brightstars-upload-cache-bytes"><code>BRIGHTSTARS_UPLOAD_CACHE_BYTES</code></h3>
+<div class="fix">
+  <div><b>Default</b><div><code>67108864</code> (64&nbsp;MB)</div></div>
+  <div><b>What it does</b><div><p>How much uploaded-file content each worker keeps in memory, so a picture asked for again skips the bucket ({{ file('core/storage.py') }}). <code>0</code> turns it off.</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>Too high on a small server uses memory each worker needs; too low sends every picture request to the bucket.</p></div></div>
+</div>
+
+<h3 id="brightstars-server-name"><code>BRIGHTSTARS_SERVER_NAME</code></h3>
+<div class="fix">
+  <div><b>Default</b><div>the machine's host name</div></div>
+  <div><b>What it does</b><div><p>The name the console's Settings page shows for this server, so you know which one you are looking at.</p></div></div>
+  <div class="see"><b>If wrong</b><div><p>Nothing breaks; two servers with the same name are just harder to tell apart.</p></div></div>
+</div>
+
+{% endblock %}

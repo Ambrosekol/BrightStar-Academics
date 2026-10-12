@@ -1,0 +1,152 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>A school's files are its uploads (logo and sign-in photographs, staff and student photographs, signatures, question
+and assignment pictures, store pictures, message attachments), its question banks, and its numbering rules. They live
+either in a folder per school (<code>BRIGHTSTARS_STORAGE_BACKEND=local</code>, under <code>BRIGHTSTARS_TENANTS_DIR</code>,
+<code>tenants/&lt;code&gt;/</code> by default) or in an S3-compatible bucket (<code>s3</code>). All reading and
+writing goes through {{ file('core/storage.py') }}, so the rest of the code works the same either way.</p>
+
+<h2 id="pictures">Pictures and files not showing</h2>
+
+<h3 id="broken-picture">A picture shows as broken, or a file link answers "Page not found"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A broken-image icon, or a 404 when opening <code>/static/uploads/…</code>.</div></div>
+  <div><b>Why</b><div><p>Uploaded files are <strong>not</strong> open to everyone: each folder has a rule ({{ file('core/upload_access.py') }}), and a refusal is a plain 404 so it never confirms a file exists. Also, the file may really be missing.</p>
+  <div class="table-scroll"><table>
+  <tr><th>Folder</th><th>Who may open it</th></tr>
+  <tr><td><code>branding/</code></td><td>anyone (the sign-in page needs the logo and photographs)</td></tr>
+  <tr><td><code>messages/</code></td><td>never here; only the permission-checked attachment download</td></tr>
+  <tr><td><code>admins/</code>, <code>signatures/</code></td><td>staff</td></tr>
+  <tr><td><code>candidates/</code></td><td>staff, and the candidate the photograph belongs to</td></tr>
+  <tr><td><code>students/</code></td><td>staff, the student, and a parent linked to them</td></tr>
+  <tr><td><code>questions/</code></td><td>staff, students and candidates</td></tr>
+  <tr><td><code>assignments/</code></td><td>staff and students</td></tr>
+  <tr><td><code>store/</code></td><td>staff and parents</td></tr>
+  <tr><td>anything else</td><td>staff</td></tr>
+  </table></div></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>If the person should not see it (for example a parent opening another family's photograph), the 404 is correct.</li>
+    <li>If they should: are they signed in to <em>this</em> school, and still signed in? A sign-in that has ended opens nothing.</li>
+    <li>Is the file there? Local: <code>ls tenants/CODE/uploads/&lt;folder&gt;/</code>. S3: the log says "uploads/… is named by the database but is not in object storage" when it is missing.</li>
+    <li>If it is missing, upload it again (a moved server whose <code>tenants/</code> folder was not copied loses every file: copy it across).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The picture shows for the right people.</div></div>
+</div>
+
+<h3 id="s3-read-fails">Pictures fail only on S3: "Could not read uploads/… from object storage"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Broken pictures everywhere; the log says "Could not read uploads/… from object storage" with the provider's error.</div></div>
+  <div><b>Why</b><div><p>The bucket refused or failed the read: keys without read permission, the wrong region or endpoint, a renamed bucket, or a network fault ({{ file('core/object_store.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Check <code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ENDPOINT_URL</code> (needed for anything that is not AWS) and <code>BRIGHTSTARS_S3_REGION</code> (often <code>auto</code> for R2).</li>
+    <li>The key needs read, write, list and delete on the bucket (and the prefix, if <code>BRIGHTSTARS_S3_PREFIX</code> is set).</li>
+    <li>Test from the server: <code>aws s3 ls s3://BUCKET/ --endpoint-url URL</code> with the same keys.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>A school's logo shows on its sign-in page; uploading a new photograph works.</div></div>
+</div>
+
+<h3 id="multi-server-files">Files appear on one server but not the other</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A photograph uploaded a moment ago is broken for some people, fine for others.</div></div>
+  <div><b>Why</b><div><p>Two or more application servers use <code>local</code> storage, each with its own folder: a file saved on one is not on the other.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Use <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (recommended), or put <code>BRIGHTSTARS_TENANTS_DIR</code> on shared storage every server mounts. Copy the files already uploaded into the shared place.</p></div></div>
+  <div><b>Check</b><div>A new upload shows on every server.</div></div>
+</div>
+
+<h2 id="uploads">Uploads refused</h2>
+
+<h3 id="picture-too-large">"… is … The limit is … Choose a smaller picture"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"photo.jpg" is … The limit is … Choose a smaller picture, or reduce this one first.</div></div>
+  <div><b>Why</b><div><p>A single picture may be up to <code>BRIGHTSTARS_MAX_UPLOAD_BYTES</code> (5&nbsp;MB by default); a whole form up to <code>BRIGHTSTARS_MAX_REQUEST_BYTES</code> (8&nbsp;MB); a bulk-import file up to <code>BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES</code> (2&nbsp;MB). Every file box prints its limit and refuses a too-large file before anything is sent ({{ file('core/uploads.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Make the picture smaller (any phone's "share as medium size", or an online resizer). Raise the limits only if schools genuinely need it, and raise your proxy's limit to match (nginx <code>client_max_body_size</code>).</p></div></div>
+  <div><b>Check</b><div>The picture uploads.</div></div>
+</div>
+
+<h3 id="not-a-picture">"… is not a picture we can use" / "does not appear to be a valid image"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"scan.pdf" is not a picture we can use. Please choose a PNG, JPG, GIF or WEBP image. — or — … does not appear to be a valid image. It may be another kind of file that was renamed, or a damaged picture.</div></div>
+  <div><b>Why</b><div><p>Only PNG, JPG, GIF and WEBP are accepted, and the file is opened and re-drawn to be sure (a renamed PDF or a damaged file fails). HEIC photos from iPhones are not accepted.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Save or export the picture as JPG or PNG (on an iPhone: Settings › Camera › Formats › Most Compatible, or share it as JPG).</p></div></div>
+  <div><b>Check</b><div>The picture uploads.</div></div>
+</div>
+
+<h3 id="whole-form-too-large">"The file you sent is larger than the limit … for one submission"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The page you came from, with this message at the top (HTTP 413).</div></div>
+  <div><b>Why</b><div><p>The whole submission was over <code>BRIGHTSTARS_MAX_REQUEST_BYTES</code> (several large photographs at once, usually). It is refused before anything is saved ({{ file('core/request_errors.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Send fewer or smaller pictures at a time.</p></div></div>
+  <div><b>Check</b><div>The form saves.</div></div>
+</div>
+
+<h2 id="imports">Bulk imports (students, history, past results)</h2>
+<p>Each of the three steps takes a <strong>CSV</strong> or an <strong>Excel workbook (.xlsx)</strong>, read by
+{{ file('core/tabular.py') }}. A file-level problem refuses the whole file before anything is written; a row-level
+problem skips that row with its line number and reason, and every good row is still imported.</p>
+
+<h3 id="import-missing-columns">"The file is missing required columns: …" or "That file has no header row"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The file is missing required columns: guardian_email, guardian_phone. — or — That file has no header row. Use the template.</div></div>
+  <div><b>Why</b><div><p>The first row must be the column names, spelled as in the template (case and spaces around them do not matter).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Download the step's template, paste the data under its header row, and upload again. For students every column is required: <code>first_name, middle_name, last_name, gender, class, guardian_name, guardian_email, guardian_phone</code>.</p></div></div>
+  <div><b>Check</b><div>The report shows imported and skipped rows.</div></div>
+</div>
+
+<h3 id="import-not-csv">"That file is not readable as plain-text CSV"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>That file is not readable as plain-text CSV. Save it as CSV (UTF-8) or as an Excel workbook (.xlsx) and try again.</div></div>
+  <div><b>Why</b><div><p>The file is not UTF-8 text (an old "CSV (MS-DOS)" save, or a file in another encoding).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Upload the Excel workbook itself (.xlsx), or in Excel use <em>Save As › CSV UTF-8 (Comma delimited)</em>.</p></div></div>
+  <div><b>Check</b><div>The import runs.</div></div>
+</div>
+
+<h3 id="import-excel-refused">An Excel file is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One of: "Only plain Excel workbooks (.xlsx) and CSV files can be imported." · "That workbook contains macros." · "That Excel file is password-protected." · "That Excel file unpacks to far more than an import needs." · "That file is not an Excel workbook (.xlsx)." · "That Excel file could not be read." · "Excel files cannot be read (safely) on this server yet."</div></div>
+  <div><b>Why</b><div><p>Uploaded workbooks are read defensively: macro-enabled (.xlsm), old .xls, password-protected and oversized files are refused; the workbook's XML is parsed safely (any trick inside it makes it "could not be read"); formulas are never run. The last message means the server lacks <code>openpyxl</code>/<code>defusedxml</code>.</p></div></div>
+  <div class="do"><b>Fix</b><div><ul>
+    <li>Open the file in Excel or Google Sheets and save it as a plain <strong>.xlsx</strong> (or CSV), with no password.</li>
+    <li>"cannot be read on this server yet": on the server, <code>pip install -r requirements.txt</code> and restart.</li>
+  </ul></div></div>
+  <div><b>Check</b><div>The import runs.</div></div>
+</div>
+
+<h3 id="import-formula-empty">Rows from Excel come through empty, or are skipped for a missing name</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Rows built with formulas (for example <code>=CONCAT(A2," ",B2)</code>) arrive empty and are skipped.</div></div>
+  <div><b>Why</b><div><p>Formulas are never run on the server; the value Excel last <em>saved</em> is used. A workbook made by a program that never calculated it has no saved values.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Open the workbook in Excel and save it once (that stores the values), or copy the column and <em>Paste Special › Values</em> before uploading.</p></div></div>
+  <div><b>Check</b><div>The rows import.</div></div>
+</div>
+
+<h3 id="import-row-skipped">Rows are skipped with a reason</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The report lists skipped rows by line number: missing first name, a gender that is not Male/Female, an unknown class, a class outside your scope, a bad guardian email, a session that does not exist…</div></div>
+  <div><b>Why</b><div><p>Each row is checked exactly as registering one by hand would be. A teacher limited to some classes can only import into those.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Correct only the skipped rows and import a file of <strong>just those</strong>. The past-results step
+  never overwrites a result already on record, but importing the students step twice would create every student
+  twice, so never re-send rows that were already imported.</p></div></div>
+  <div><b>Check</b><div>The report shows them imported.</div></div>
+</div>
+
+<h2 id="banks-numbering">Question banks and numbering files</h2>
+
+<h3 id="bank-import-errors">A question bank file is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"The file is not valid JSON. Check it for a missing comma, quote or bracket." · "The file is too big…" · "A bank with the id … already exists here." · a list of problems with individual questions.</div></div>
+  <div><b>Why</b><div><p>Imported banks are checked strictly ({{ file('core/banks.py') }}): one JSON object, at most 2&nbsp;MB, a safe id and a name, 1 to 500 questions each with four different options and an answer, no picture paths. Every problem is listed at once.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Fix each listed problem (a JSON validator such as jsonlint.com shows where the syntax breaks). To replace an existing bank, tick <em>Replace it</em> (needs the edit permission).</p></div></div>
+  <div><b>Check</b><div>The bank appears in the school's list.</div></div>
+</div>
+
+<h3 id="numbering-corrupt">Registering a candidate shows a numbering error</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A plain message about the school's numbering rules on the candidate form; codes cannot be issued.</div></div>
+  <div><b>Why</b><div><p>The school's <code>numbering.json</code> is unreadable (edited by hand, a disk fault). It is never silently replaced, so no code is issued from a guess ({{ file('core/numbering.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Open the school's page in the console, go to <em>Numbering</em>, check the patterns (the preview shows the next codes), and save. The save replaces the file and keeps a copy of the broken one.</p></div></div>
+  <div><b>Check</b><div>The preview shows sensible next codes; registering a candidate works.</div></div>
+</div>
+
+{% endblock %}

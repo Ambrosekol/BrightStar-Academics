@@ -218,3 +218,32 @@ a.ref:hover code { background: rgba(94, 234, 212, .24); }
   .docs-top, .docs-nav, .docs-toc, .docs-pager, .copy { display: none !important; }
   .docs-shell { display: block; }
 }
+
+/* ------------------------------------------------------------------ the troubleshooting manual */
+/* One problem: what you see, why, how to fix it, and how to know it is fixed. */
+.fix { margin: .8rem 0 1.8rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+.fix > div { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0 14px; padding: 10px 14px;
+  border-top: 1px solid var(--rule); }
+.fix > div:first-child { border-top: 0; }
+.fix > div > b { font: 700 .66rem/1.7 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.fix > div > div > :first-child { margin-top: 0; }
+.fix > div > div > :last-child { margin-bottom: 0; }
+.fix .see b { color: var(--warn); }
+.fix .see > div { font-family: var(--mono); font-size: .84rem; }
+.fix .do b { color: var(--ok); }
+.fix .do ol, .fix .do ul { padding-left: 1.2rem; margin: 0; }
+.fix .do li + li { margin-top: 4px; }
+@media (max-width: 640px) { .fix > div { grid-template-columns: 1fr; } }
+
+/* The instant filter over the symptom list on the manual's first page. */
+.manual-filter { display: flex; gap: 8px; margin: 1rem 0; }
+.manual-filter input { flex: 1; padding: 9px 12px; font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule-strong); border-radius: 3px; }
+.manual-filter input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.symptoms td:first-child { width: 46%; }
+.symptoms tr[hidden] { display: none; }
+.sev { display: inline-block; padding: 1px 6px; border-radius: 3px; font: 700 .62rem/1.5 var(--mono); letter-spacing: .08em;
+  text-transform: uppercase; vertical-align: 1px; }
+.sev-urgent { background: rgba(248, 113, 113, .16); color: var(--red); }
+.sev-soon { background: rgba(245, 185, 66, .16); color: var(--warn); }
+.sev-info { background: rgba(94, 234, 212, .12); color: var(--blue); }

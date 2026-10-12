@@ -1,0 +1,109 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>The entrance examination lives in its own workspace: question banks (JSON files in the school's own storage), papers
+configured for the current session ({{ route('admin_entrance_config') }}), candidates ({{ route('admin_candidates') }})
+who sit timed papers, and the admissions waitlist ({{ route('admin_candidate_admissions') }}). Timing and scoring happen on
+the server; each attempt keeps a frozen copy of its questions, so editing a bank never changes an exam already sat
+({{ file('core/entrance.py') }}).</p>
+
+<h2 id="papers">Papers and question banks</h2>
+
+<h3 id="paper-not-ready">"This paper is not ready because its question bank is empty."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A candidate cannot start a paper; the message above, or "This paper has an invalid examination configuration" / "is not linked to a verified examination configuration. Please contact the school administrator."</div></div>
+  <div><b>Why</b><div><p>The paper's bank has no questions, or the paper was never configured (made live) for the current session.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>For the standard set: Exam Configuration › <em>Set up the standard entrance papers</em> configures every paper in one click.</li>
+    <li>For a school's own bank: import it (Question Banks › Import from file), then configure and make it live on Exam Configuration.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The candidate's dashboard shows the paper with a Start button.</div></div>
+</div>
+
+<h3 id="not-100-points">"This configuration cannot be activated because its question set is not valid for a 100-point examination."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>This configuration cannot be activated because its question set is not valid for a 100-point examination.</div></div>
+  <div><b>Why</b><div><p>A paper is always out of 100. The number of questions served must split 100 into whole hundredths (20, 25, 40, 50 …).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Choose a question count that divides 100 that way, or leave it blank for the default.</p></div></div>
+  <div><b>Check</b><div>The configuration activates.</div></div>
+</div>
+
+<h3 id="config-assigned">"This entrance configuration is already assigned to a candidate paper…"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A configuration cannot be edited because candidates already have it.</div></div>
+  <div><b>Why</b><div><p>Changing a paper under candidates who already have it would make their exams unfair or incomparable.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Create a new configuration for the changed set-up and activate it; existing candidates keep theirs.</p></div></div>
+  <div><b>Check</b><div>New candidates get the new paper.</div></div>
+</div>
+
+<h3 id="bank-locked">"This question bank is locked by School Admin…"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>This question bank is locked by School Admin. Unlock it before editing questions. (or adding, deleting, reordering)</div></div>
+  <div><b>Why</b><div><p>A bank can be locked (usually during a live exam) so nothing changes mid-paper ({{ table('admin_resource_locks') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The School Admin unlocks it from Settings › Controls &amp; alerts ({{ route('admin_controls') }}) once the exam is over.</p></div></div>
+  <div><b>Check</b><div>Edits save.</div></div>
+</div>
+
+<h2 id="candidates">Candidates sitting a paper</h2>
+
+<h3 id="already-taken">"You have already taken this paper." / "You must submit your current paper…"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You have already taken this paper. Please contact the school administrator if another attempt is required. — or — You must submit your current paper before starting another paper.</div></div>
+  <div><b>Why</b><div><p>One attempt per paper, one paper at a time.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>For a genuine second attempt (a power cut ruined the first), staff grant a retake on the candidate's page. "A retake can only be granted after the previous attempt is completed" means the first must be finished (or its time run out) first.</p></div></div>
+  <div><b>Check</b><div>The candidate can start the paper again.</div></div>
+</div>
+
+<h3 id="power-cut-mid-exam">The power went off, or the server restarted, during the exam</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Candidates' screens froze or went blank; the server or the light came back a few minutes later.</div></div>
+  <div><b>Why</b><div><p>Answers are saved on the server as they are given, and the exam page retries saving when the connection drops. Someone sitting a paper is <strong>never signed out</strong> by a restart or the sign-in time limits. The clock keeps running on the server, though: time lost to the cut is not given back automatically.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Tell candidates to reload the page (or sign in again on another computer): they continue where they were, with their answers.</li>
+    <li>A paper whose time ran out during the cut is finished from the answers already saved.</li>
+    <li>If many lost a lot of time, grant those candidates a retake (above).</li>
+    <li>Before a big entrance day, measure the server: <code>python tests/verification/load_test_exam_answers.py --school CODE</code>.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>Candidates' attempts show their saved answers; the results page shows their scores.</div></div>
+</div>
+
+<h3 id="result-image-fails">The result image cannot be made: "Google Chrome was not found…"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Sharing or downloading a candidate's result image fails; the log says "Google Chrome was not found. Install it, or set BRIGHTSTARS_CHROME to its full path." (or "Chrome failed: …").</div></div>
+  <div><b>Why</b><div><p>The result image is drawn by a headless Chrome or Chromium on the server.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Install it: <code>sudo apt install chromium</code> (or Google Chrome).</li>
+    <li>If it is somewhere unusual, set <code>BRIGHTSTARS_CHROME</code> to its full path.</li>
+    <li>"Chrome failed": run it by hand as the service user (<code>chromium --headless=new --screenshot=/tmp/x.png about:blank</code>) to see why; missing fonts or a sandbox restriction are common on minimal servers.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The candidate's result image downloads.</div></div>
+</div>
+
+<h2 id="admissions">Admissions</h2>
+
+<h3 id="candidate-not-on-waitlist">A candidate is not on the admissions waitlist</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A candidate who registered is missing from Admissions.</div></div>
+  <div><b>Why</b><div><p>Only candidates who have attempted at least one paper are listed. Seeing the waitlist needs {{ perm('candidates.admit') }}.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The candidate sits a paper first. Give the admissions officer's role the admit permission.</p></div></div>
+  <div><b>Check</b><div>The candidate appears, ranked by their overall percentage.</div></div>
+</div>
+
+<h3 id="admit-refused">Admitting is refused</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"This candidate has already been admitted." · "An admitted candidate cannot be declined." · "… could not be admitted (…)."</div></div>
+  <div><b>Why</b><div><p>Admitting is final: it creates a real student, an enrolment and a login (and a parent account) ({{ file('blueprints/entrance/admissions.py') }}). The bracketed reason in the last message says what went wrong in plain words.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>For "could not be admitted": the usual causes are no current session, a class missing for the entry level, or the school's numbering rules (see {{ page('manual-files', 'Files, uploads, storage and imports') }}). Fix it and admit again; nothing was half-created.</p></div></div>
+  <div><b>Check</b><div>The new student appears in their class, and on <em>New students to bill</em>.</div></div>
+</div>
+
+<h3 id="candidate-password-shown">The candidate's page shows the new student's login</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>After the result is released, an admitted candidate's dashboard shows a Login ID and a one-time password.</div></div>
+  <div><b>Why</b><div><p>By design: so the family can sign in as the new student. The password is stored encrypted and disappears once the student changes it.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Nothing. If it was lost, staff reset the student's password from the student's page.</p></div></div>
+  <div><b>Check</b><div>The student signs in and chooses a password.</div></div>
+</div>
+
+{% endblock %}

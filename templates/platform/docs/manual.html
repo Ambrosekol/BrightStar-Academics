@@ -1,0 +1,97 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>This manual is where to go when something is wrong: a school cannot sign in, a page errors, messages do not arrive,
+a deploy failed, a setting does not take. It is written for platform admins, in plain words, and every problem is laid
+out the same way:</p>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The exact message or behaviour, word for word, so a search finds it.</div></div>
+  <div><b>Why</b><div><p>What causes it, simply explained.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>The steps that fix it, in order.</p></div></div>
+  <div><b>Check</b><div>How to be sure it is fixed.</div></div>
+</div>
+
+<h2 id="find">Three ways to find your problem</h2>
+<ol>
+  <li><strong>Type a few words</strong> of the message into the filter below: the list narrows as you type.</li>
+  <li><strong>Search everything</strong> with the box at the top of the page: it finds the exact problem (results marked
+  <em>Fix</em>), plus pages, files, routes, tables and permissions.</li>
+  <li><strong>Read the list</strong> below, grouped by area, or go to {{ page('manual-messages', 'Every message, explained') }}
+  for every message the portal can show.</li>
+</ol>
+
+<h2 id="triage">When you do not know where to start</h2>
+<p>Five questions, in this order, find the area of almost any problem:</p>
+<ol>
+  <li><strong>Is the application running?</strong> <code>curl -s https://ANY-ADDRESS/health</code> answers <code>{"status":"ok"}</code>.
+  No answer: {{ page('manual-startup', "It won't start, or a deploy failed") }} or {{ page('manual-addresses', 'Addresses, domains and proxies') }}.</li>
+  <li><strong>Is it every school, or one?</strong> Every school: the server, the registry or a deploy. One school: its address, its database, or it is suspended.</li>
+  <li><strong>Is it everyone in the school, or one person?</strong> One person: their sign-in, their role and duties, their device.</li>
+  <li><strong>What does the screen say, exactly?</strong> Search those words here.</li>
+  <li><strong>What does the log say at that moment?</strong> <code>journalctl -u brightstars --since "15 min ago"</code> (or wherever your server writes gunicorn's output). The last <code>Error</code> line is usually the cause.</li>
+</ol>
+
+<h2 id="tools">The tools you will use</h2>
+<div class="table-scroll"><table>
+<tr><th>Tool</th><th>For</th></tr>
+<tr><td><code>python -m control_plane list</code></td><td>Every school, its addresses, its status and its database.</td></tr>
+<tr><td><code>python -m control_plane upgrade [CODE]</code></td><td>Bring databases up to date (also signs everyone out, except people mid-exam).</td></tr>
+<tr><td><code>python -m control_plane sweep-jobs [CODE]</code></td><td>Retry stuck emails and texts.</td></tr>
+<tr><td><code>python -m control_plane new-launch</code></td><td>Sign everyone out.</td></tr>
+<tr><td><code>python -m control_plane export-tenant CODE</code></td><td>A full copy of one school (do this before any risky fix).</td></tr>
+<tr><td>Console › a school's page ({{ route('platform_school') }})</td><td>Status, addresses, branding, numbering, first administrator, <em>Enter school</em>.</td></tr>
+<tr><td>Console › Settings ({{ route('platform_settings') }}) and Actions ({{ route('platform_settings_actions') }})</td><td>Every setting with its value and source; upgrade, sign everyone out, retry jobs, export, database roles, key rotation.</td></tr>
+<tr><td>Console › Activity ({{ route('platform_activity') }})</td><td>Who did what: to schools, the team, sign-ins, and inside schools.</td></tr>
+<tr><td>A school's Activity &amp; notice logs ({{ route('admin_audit_logs') }})</td><td>Everything staff did, refused access, and every email and text sent.</td></tr>
+<tr><td>The browser's developer tools (F12)</td><td>A button that does nothing, a page that will not load: the Console and Network tabs.</td></tr>
+</table></div>
+
+<h2 id="all">Every problem in this manual</h2>
+<div class="manual-filter">
+  <input type="search" placeholder="Filter: type a few words, e.g. too many attempts, paystack, not placed" aria-label="Filter the problems" data-manual-filter autocomplete="off">
+</div>
+<p class="muted" data-manual-none hidden>Nothing in the list matches. Try fewer words, or the search box at the top (it reads every page in full).</p>
+{% for p in manual_index or [] %}
+<section data-manual-page>
+<h3 id="list-{{ p.slug }}">{{ p.title }}</h3>
+<div class="table-scroll"><table class="symptoms">
+{% for g in p.groups %}{% for anchor, problem in g['items'] %}
+<tr data-manual-row><td><a href="{{ url_for('docs_page', slug=p.slug) }}#{{ anchor }}">{{ problem }}</a></td><td class="muted">{{ g.heading }}</td></tr>
+{% endfor %}{% endfor %}
+</table></div>
+</section>
+{% endfor %}
+
+<h2 id="also">Also worth knowing</h2>
+<ul>
+  <li>{{ page('manual-env', 'Every environment variable') }}: what each setting does, its default and what breaks when it is wrong.</li>
+  <li>{{ page('manual-code', 'Finding and fixing it in the code') }}: from a symptom to the file, and shipping a fix safely.</li>
+  <li>{{ page('manual-emergencies', 'Emergency playbooks') }}: the bad days, step by step.</li>
+  <li>{{ page('operations', 'Operating it') }} and {{ page('deployment', 'Deployment') }}: how the running system is meant to be set up and kept.</li>
+</ul>
+
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var box = document.querySelector('[data-manual-filter]'), none = document.querySelector('[data-manual-none]');
+  if (!box) return;
+  function apply() {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean), shown = 0;
+    document.querySelectorAll('[data-manual-page]').forEach(function (section) {
+      var visible = 0;
+      section.querySelectorAll('[data-manual-row]').forEach(function (row) {
+        var text = row.textContent.toLowerCase();
+        var hit = words.every(function (w) { return text.indexOf(w) !== -1; });
+        row.hidden = !hit;
+        if (hit) visible++;
+      });
+      section.hidden = !visible;
+      shown += visible;
+    });
+    none.hidden = shown > 0;
+  }
+  box.addEventListener('input', apply);
+})();
+</script>
+
+{% endblock %}

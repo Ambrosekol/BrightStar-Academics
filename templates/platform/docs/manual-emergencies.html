@@ -1,0 +1,125 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>Step-by-step plans for the bad days. Read the whole playbook once before acting; the order matters. Each ends with
+what to check and what to tell the schools.</p>
+
+<div class="warn"><p>Before any recovery that writes to a database: take a copy first
+(<code>python -m control_plane export-tenant CODE</code> for one school, or your database provider's snapshot for
+everything). A recovery done in a hurry without a copy can turn one problem into two.</p></div>
+
+<h2 id="outages">Outages</h2>
+
+<h3 id="site-down">Every school is down</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Nothing opens; or every page shows an error; or the proxy shows 502.</div></div>
+  <div><b>Why</b><div><p>One of: the application stopped, the registry database is down, the server is out of memory or disk, or a bad deploy.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><code>curl -s http://127.0.0.1:8000/health</code> on the server. No answer: the application is down: <code>systemctl status brightstars</code>, then {{ page('manual-startup', "It won't start, or a deploy failed") }}.</li>
+    <li>It answers but pages fail: the registry or databases. {{ page('manual-database', 'Databases and connections') }}.</li>
+    <li><code>df -h</code> and <code>free -h</code>: a full disk or no memory stops everything; clear old logs, add space.</li>
+    <li>Started right after a deploy: roll back ({{ page('manual-startup', "It won't start, or a deploy failed") }}, <em>Rolling a bad deploy back</em>).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>A school's sign-in page opens and someone can sign in.</div></div>
+</div>
+
+<h3 id="down-mid-exam">The server went down during an exam</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Entrance candidates or students were in the middle of a timed paper when the server or the power went off.</div></div>
+  <div><b>Why</b><div><p>Answers are saved on the server as they are given. People mid-paper are never signed out by a restart, and their attempt is waiting for them. The exam clock is kept by the server and keeps running while it is down.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Bring the server back first (above). Do <strong>not</strong> run <code>new-launch</code> or rotate the secret now.</li>
+    <li>Tell candidates to reload (or sign in on another computer): they continue with their answers.</li>
+    <li>Papers whose time ran out are finished from the saved answers.</li>
+    <li>For candidates who lost real time, grant a retake from their page afterwards ({{ page('manual-entrance', 'Entrance exams and admissions') }}).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>Attempts show their saved answers; nobody reports lost work.</div></div>
+</div>
+
+<h3 id="one-school-down">One school is down</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One school fails; the others work.</div></div>
+  <div><b>Why</b><div><p>Its database, its <code>db_url</code>, its files, or it is suspended.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>{{ page('manual-addresses', 'Addresses, domains and proxies') }} (Portal paused?) and {{ page('manual-database', 'Databases and connections') }} (One school shows the error page).</p></div></div>
+  <div><b>Check</b><div>The school opens.</div></div>
+</div>
+
+<h2 id="data">Data</h2>
+
+<h3 id="restore-school">Restoring one school from its export</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A school's data was damaged or lost (a bad import, a mistaken delete, a broken database).</div></div>
+  <div><b>Why</b><div><p>Each school is one database plus its files, so it can be put back on its own without touching any other school.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Suspend the school so nobody writes to it meanwhile: {{ route('platform_school_status') }} or <code>suspend CODE --reason "restoring"</code>.</li>
+    <li>Export what is there now (<code>export-tenant CODE</code>), so the current state is not lost.</li>
+    <li>Find the export or backup to restore: an <code>export-tenant</code> folder holds <code>database.sql</code>, the uploads and a README with the exact steps.</li>
+    <li>Create an empty database and load it: <code>createdb brightstars_CODE_restored</code>, then <code>psql brightstars_CODE_restored &lt; database.sql</code>.</li>
+    <li>Copy the uploads back (local folder or bucket prefix).</li>
+    <li>Point the school at the restored database: <code>set-db-url CODE postgresql+psycopg://…/brightstars_CODE_restored</code>, then <code>upgrade CODE</code>.</li>
+    <li>Check it, then reactivate: <code>activate CODE</code>.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The school's records are as expected. Tell the school what period of changes (between the backup and now) must be re-entered.</div></div>
+</div>
+
+<h3 id="deleted-school">A school was deleted by mistake</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A school is gone from the console.</div></div>
+  <div><b>Why</b><div><p><em>Delete</em> exports the school first, then removes its database, files and registry row. <em>Force delete</em> takes no export.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Find the export folder (the delete printed or showed where it went; on the console it is where exports are written).</li>
+    <li>Create the school again with the <strong>same code</strong> (the address and database name follow from it), with no starter banks.</li>
+    <li>Load the export into its database and files, following the export's own README and <a href="#restore-school">Restoring one school</a> above.</li>
+    <li>Re-add any domains of its own.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>Its people sign in with their old passwords and see their records.</div></div>
+</div>
+<div class="note"><p>Only the super admin, and admins individually granted it, can delete a school, and it is recorded in the activity log ({{ route('platform_activity') }}).</p></div>
+
+<h3 id="bad-import">A bulk import put wrong data in</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>An import created students twice, or in the wrong class.</div></div>
+  <div><b>Why</b><div><p>Every valid row is committed on its own, so a wrong file imports in full.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>For a handful: archive the duplicates (they keep a record; nothing is deleted) and correct classes on each student's page. For hundreds: restore the school from just before the import (above), then import the right file.</p></div></div>
+  <div><b>Check</b><div>Class registers show the right counts.</div></div>
+</div>
+
+<h2 id="security">Security incidents</h2>
+
+<h3 id="compromised-account">An account may have been taken over</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Someone reports changes they did not make, sign-ins they did not do, or a password they did not change.</div></div>
+  <div><b>Why</b><div><p>A stolen or guessed password, or a sign-in left open on a shared computer.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><strong>Lock the account</strong>: staff are suspended by the School Admin (Settings › Staff › ⋯ › suspend); a platform admin is removed by the super admin ({{ route('platform_team') }}). Suspending ends their sign-ins on the next click.</li>
+    <li>Reset the password (that ends every other sign-in of the account at once).</li>
+    <li>Read what the account did: the school's activity log ({{ route('admin_audit_logs') }}) and, for platform admins, {{ route('platform_activity') }}. Undo the damage.</li>
+    <li>If a platform admin's account was taken: also check every school they entered, and consider signing everyone out (<code>new-launch</code>).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>No new activity from that account; the person signs in with a new password.</div></div>
+</div>
+
+<h3 id="secret-leaked">BRIGHTSTARS_SECRET (or the whole .env) leaked</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The <code>.env</code> file, or the secret, was exposed (pasted somewhere, committed, a stolen laptop).</div></div>
+  <div><b>Why</b><div><p>With the secret, someone could forge sign-in cookies. With the database URLs, reach the data directly.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>If <code>BRIGHTSTARS_DELIVERY_KEY</code> is <em>not</em> set, set it to the <strong>old</strong> secret's value first (stored mail, SMS and Paystack secrets are encrypted under a key derived from it), then rotate it properly later ({{ page('manual-messaging', 'Email, SMS, background jobs and alerts') }}).</li>
+    <li>Set a new <code>BRIGHTSTARS_SECRET</code> on every server and restart: every sign-in in the world ends.</li>
+    <li>Change every database password in the leaked URLs (registry and schools' roles), and update the URLs.</li>
+    <li>Rotate the S3 keys, the SMTP and SMS credentials, and the alert webhook if they were in the file.</li>
+    <li>Ask schools to rotate their Paystack secret keys if the delivery key leaked too.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>Old cookies no longer work; services still connect with their new credentials.</div></div>
+</div>
+
+<h3 id="everyone-out">Sign everyone out, everywhere, now</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You need every sign-in ended immediately (a suspected break-in, a policy change).</div></div>
+  <div><b>Why</b><div><p>A new launch ends every sign-in, except people sitting an exam.</p></div></div>
+  <div class="do"><b>Fix</b><div><p><code>python -m control_plane new-launch</code>, or the button on {{ route('platform_settings_new_launch') }}. To also end sign-ins of people mid-exam, change <code>BRIGHTSTARS_SECRET</code> and restart (after setting <code>BRIGHTSTARS_DELIVERY_KEY</code> as above).</p></div></div>
+  <div><b>Check</b><div>Any open page goes to the sign-in page with "The system was restarted".</div></div>
+</div>
+
+{% endblock %}

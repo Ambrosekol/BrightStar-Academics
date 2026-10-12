@@ -35,6 +35,22 @@ DOC_GROUPS = (
         ('getting-started', 'Getting started', 'Run it on your own machine in ten minutes'),
         ('tour', 'A tour of the code', 'Where everything lives, folder by folder'),
     )),
+    ('Troubleshooting manual', (
+        ('manual', 'Start here: when something is wrong', 'How to use this manual, how to find the cause, and every symptom in one list'),
+        ('manual-messages', 'Every message, explained', 'Each error or notice a person can see, what it means, and what to do'),
+        ('manual-startup', 'It won’t start, or a deploy failed', 'Start-up errors, the production guard, upgrades and restarts'),
+        ('manual-addresses', 'Addresses, domains and proxies', "Address not found, a paused portal, a school's own domain, TLS, the proxy"),
+        ('manual-signin', 'Sign-in, sessions and passwords', 'Signed out, locked out, too many attempts, timeouts, operators entering a school'),
+        ('manual-database', 'Databases and connections', 'Unreachable, out of connections, schema behind, roles, slow pages'),
+        ('manual-files', 'Files, uploads, storage and imports', 'Pictures not showing, uploads refused, S3, local folders, bulk imports'),
+        ('manual-messaging', 'Email, SMS, background jobs and alerts', 'Messages not arriving, stuck jobs, the alert webhook'),
+        ('manual-money', 'Fees, online payments and the store', 'Balances, allocation, Paystack payments and refunds, store stock'),
+        ('manual-portal', 'Inside a school: staff, classes, results', 'Access, teaching duties, subdivisions, transfers, results, report cards, portals'),
+        ('manual-entrance', 'Entrance exams and admissions', 'Banks, papers, candidates mid-exam, result images, admitting'),
+        ('manual-env', 'Every environment variable', 'What each setting does, its default, the symptom when it is wrong, and the fix'),
+        ('manual-code', 'Finding and fixing it in the code', 'How a request flows, where each thing lives, debugging, shipping a fix safely'),
+        ('manual-emergencies', 'Emergency playbooks', 'Server down mid-exam, a school deleted, a leaked secret, a compromised account'),
+    )),
     ('How it works', (
         ('architecture', 'Architecture', 'One deployment, many schools: how a request finds its school'),
         ('platform-console', 'The platform console', 'Schools, addresses, the team, entering a school'),
@@ -98,8 +114,36 @@ def _neighbours(slug):
 def _render(slug):
     title, blurb, group = PAGES[slug]
     before, after = _neighbours(slug)
+    from control_plane import settings_registry
     return render_template(f'platform/docs/{slug}.html', slug=slug, title=title, blurb=blurb, group=group,
-                           groups=DOC_GROUPS, before=before, after=after, ref=docsgen)
+                           groups=DOC_GROUPS, before=before, after=after, ref=docsgen,
+                           env_variables=settings_registry.VARIABLES,
+                           manual_index=_manual_index() if slug == 'manual' else None)
+
+
+def _manual_index():
+    """Every problem in the troubleshooting manual, page by page: each <h3 id> of every manual page after the first,
+    read from the pages themselves, so the list on the manual's first page can never miss one or name one that is gone.
+    ``[{'slug', 'title', 'groups': [{'heading', 'items': [(anchor, problem)]}]}]``."""
+    out = []
+    for slug in ORDER:
+        if not slug.startswith('manual-'):
+            continue
+        groups, current = [], None
+        for level, anchor, heading in re.findall(r'<h([23])[^>]*\bid="([^"]+)"[^>]*>(.*?)</h\1>', _render(slug), re.S):
+            if slug == 'manual-env' and (anchor.startswith('cat-') or anchor in ('registered', 'unregistered')
+                                         or _plain(heading).startswith(('BRIGHTSTARS_', 'PORT'))):
+                continue      # one entry per variable is a reference, not a symptom: the page itself lists them
+            if level == '2':
+                current = {'heading': _plain(heading), 'items': []}
+                groups.append(current)
+            else:
+                if current is None:
+                    current = {'heading': '', 'items': []}
+                    groups.append(current)
+                current['items'].append((anchor, _plain(heading)))
+        out.append({'slug': slug, 'title': PAGES[slug][0], 'groups': [g for g in groups if g['items']]})
+    return out
 
 
 @app.route('/docs')
@@ -132,15 +176,33 @@ def _plain(markup):
     return ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', text)).split())
 
 
+_HEADING = re.compile(r'<h([23])[^>]*\bid="([^"]+)"[^>]*>(.*?)</h\1>', re.S)
+
+
+def _sections(markup):
+    """``(id, heading, text)`` for each <h2>/<h3> with an id, the text running to the next such heading. Each becomes a
+    search result of its own, so a search lands on the very problem in a long page, not just the page."""
+    marks = list(_HEADING.finditer(markup))
+    for i, mark in enumerate(marks):
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(markup)
+        yield mark.group(2), _plain(mark.group(3)), _plain(markup[mark.end():end])
+
+
 @lru_cache(maxsize=1)
 def _index_pages_text(_marker):
-    """The plain text of every hand-written page, rendered once (the key only lets a test reset it)."""
+    """The plain text of every hand-written page, and of each of its sections, rendered once (the key only lets a
+    test reset it)."""
     found = []
     for slug in ORDER:
         if slug.startswith('reference-'):
             continue
-        found.append({'kind': 'Page', 'title': PAGES[slug][0], 'where': PAGES[slug][2],
-                      'url': f'/docs/{slug}' if slug != 'welcome' else '/docs', 'text': _plain(_render(slug))})
+        url = f'/docs/{slug}' if slug != 'welcome' else '/docs'
+        markup = _render(slug)
+        found.append({'kind': 'Page', 'title': PAGES[slug][0], 'where': PAGES[slug][2], 'url': url, 'text': _plain(markup)})
+        kind = 'Fix' if slug.startswith('manual') else 'Section'
+        for anchor, heading, text in _sections(markup):
+            found.append({'kind': kind, 'title': heading, 'where': PAGES[slug][0], 'url': f'{url}#{anchor}',
+                          'text': f'{heading} {text}'})
     return found
 
 
@@ -178,7 +240,9 @@ def _search(query):
         if not all(w in title or w in text for w in words):
             continue
         score = sum(10 for w in words if w in title) + sum(min(text.count(w), 5) for w in words)
-        if entry['kind'] == 'Page':
+        if entry['kind'] == 'Fix':
+            score += 8      # a problem and its fix is what someone searching the manual wants first
+        elif entry['kind'] == 'Page':
             score += 5
         first = min((text.find(w) for w in words if w in text), default=-1)
         snippet = ''

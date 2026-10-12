@@ -1,0 +1,125 @@
+{% extends "platform/docs/_layout.html" %}
+{% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
+{% block content %}
+
+<p>There are two kinds of database, and it matters which one a problem is in:</p>
+<ul>
+  <li><strong>The registry</strong> (<code>BRIGHTSTARS_PLATFORM_DB</code>): which schools exist and their addresses, the
+  platform team, the shared sign-in limits, ended sign-ins and the launch id. If it is down, nothing can be routed and
+  the console does not open.</li>
+  <li><strong>One database per school</strong> (named <code>brightstars_&lt;code&gt;</code> by default, or wherever its
+  <code>db_url</code> points): everything inside that school. If one is down, only that school is affected.</li>
+</ul>
+<p>Handy commands, run on the database server with <code>psql</code>:</p>
+<pre><code>SELECT datname, state, count(*) FROM pg_stat_activity GROUP BY 1, 2 ORDER BY 3 DESC;   -- who holds connections
+SHOW max_connections;                                                                     -- the ceiling
+SELECT pid, now() - query_start AS running, left(query, 120) FROM pg_stat_activity
+ WHERE state = 'active' ORDER BY 2 DESC LIMIT 10;                                         -- the slowest queries right now</code></pre>
+
+<h2 id="unreachable">A database cannot be reached</h2>
+
+<h3 id="every-school-500">Every school shows the error page; the console does not open</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The 500 page everywhere; the log shows <code>OperationalError</code> / "connection refused" / "could not connect to server" for the registry.</div></div>
+  <div><b>Why</b><div><p>The registry database is down or unreachable. With no registry the application cannot tell which school an address belongs to. (The sign-in limits fall back to each worker's own count, and nobody is signed out because of it.)</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Is PostgreSQL running? <code>sudo systemctl status postgresql</code> (or your provider's status page).</li>
+    <li>Can the app server reach it? <code>psql "&lt;BRIGHTSTARS_PLATFORM_DB without +psycopg&gt;" -c "select 1"</code>.</li>
+    <li>Out of disk on the database server is a common cause: <code>df -h</code>.</li>
+    <li>If <code>BRIGHTSTARS_ALERT_WEBHOOK</code> is set, a <code>registry_unreachable</code> alert was posted when it started.</li>
+  </ol></div></div>
+  <div><b>Check</b><div><code>python -m control_plane list</code> answers; schools open.</div></div>
+</div>
+
+<h3 id="one-school-500">One school shows the error page; the others are fine</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Only one school's pages fail; the log names its database.</div></div>
+  <div><b>Why</b><div><p>That school's own database is down, renamed, dropped, its role's password changed, or its <code>db_url</code> in the registry is wrong.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><code>python -m control_plane list</code> shows the database each school uses.</li>
+    <li>If it uses <code>env:VARIABLE_NAME</code>, that variable must be set on every server (the error says "Environment variable … is not set; it holds a school database URL").</li>
+    <li>If you gave it its own role ({{ route('platform_settings_create_db_role') }}) and the password was rotated, update the URL with <code>set-db-url</code> or {{ route('platform_settings_set_db_url') }}.</li>
+    <li>If the database really is gone, restore it from its export or backup (see {{ page('manual-emergencies', 'Emergency playbooks') }}).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The school's sign-in page and Overview open.</div></div>
+</div>
+
+<h2 id="connections">Out of connections</h2>
+
+<h3 id="too-many-clients">"too many clients already" / "remaining connection slots are reserved"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Random pages fail with <code>FATAL: sorry, too many clients already</code> or <code>remaining connection slots are reserved</code>, while the database is not busy.</div></div>
+  <div><b>Why</b><div><p>Each school gets its own small connection pool in every running worker, and the registry has one more ({{ file('control_plane/routing.py') }}). The total is roughly <em>schools in use × (pool + overflow) × workers</em> + the registry's pool × workers. With many schools or workers it exceeds PostgreSQL's <code>max_connections</code> (often only 20–100 on a small managed plan).</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Right now: restart the application (closes its connections), or close idle ones: <code>SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND datname LIKE 'brightstars_%';</code> (this only rolls back unfinished work; nothing saved is lost).</li>
+    <li>Lasting: lower the pools: <code>BRIGHTSTARS_DB_POOL_SIZE=1</code>, <code>BRIGHTSTARS_DB_MAX_OVERFLOW=1</code>, and <code>BRIGHTSTARS_REGISTRY_POOL_SIZE</code>/<code>_MAX_OVERFLOW</code> to fit; fewer gunicorn workers with more threads.</li>
+    <li>Lasting, at scale: put <strong>PgBouncer</strong> in transaction mode in front of PostgreSQL (Aiven and most providers offer one). Use a database per school (the default), not a schema per school, with PgBouncer.</li>
+    <li><code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code> (600) closes a quiet school's connections after that long; lower it if many schools are rarely used.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The first query above shows connections well under <code>max_connections</code> at a busy time.</div></div>
+</div>
+
+<h2 id="schema">Schema and upgrades</h2>
+
+<h3 id="column-missing">"column … does not exist" / "relation … does not exist"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div><code>UndefinedColumn</code> or <code>UndefinedTable</code> in the log after a deploy.</div></div>
+  <div><b>Why</b><div><p>That database was not upgraded since the code changed. Tables and columns are declared in the models and added by <code>create_all()</code> plus a column-adding step; there are no migration scripts.</p></div></div>
+  <div class="do"><b>Fix</b><div><p><code>python -m control_plane upgrade</code> (every school and the registry) or <code>upgrade CODE</code>, or {{ route('platform_settings_upgrade') }}.</p></div></div>
+  <div><b>Check</b><div>The page opens.</div></div>
+</div>
+
+<h3 id="drift-test">The contract test reports "model/schema drift"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div><code>FAIL test_models_match_db.py: model/schema drift: … modelled but not in DB: […]</code></div></div>
+  <div><b>Why</b><div><p>The test compares the models with a real school database on the machine running it. On a developer machine it fails right after a change that adds a column, until that machine's databases are upgraded.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Start the app once, or run <code>python -m control_plane upgrade</code>, then run the tests again. On a server it means the deploy skipped the upgrade step.</p></div></div>
+  <div><b>Check</b><div>The contract suite passes in full.</div></div>
+</div>
+
+<h3 id="retired-tables">"retired tables" still hold rows</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A warning during upgrade that a retired table (<code>school_public_pages</code>, <code>school_public_news</code>, <code>school_public_enquiries</code>) still holds rows.</div></div>
+  <div><b>Why</b><div><p>Those belonged to the removed website editor. Upgrades drop them only when empty, so nothing is lost by accident.</p></div></div>
+  <div class="do"><b>Fix</b><div><p><code>python -m control_plane drop-retired-tables</code> shows what each school still holds; read it, and if nothing is needed, add <code>--yes</code> to drop them for good.</p></div></div>
+  <div><b>Check</b><div>The next upgrade gives no warning.</div></div>
+</div>
+
+<h2 id="slow">Slow pages</h2>
+
+<h3 id="slow-everywhere">Every page is slow</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Pages take seconds everywhere, for every school.</div></div>
+  <div><b>Why</b><div><p>Each page asks the database a handful of small questions; if the database is far away (another region) or overloaded, every one of them waits. Menu counts and permissions are already kept for a few seconds per worker ({{ file('core/short_cache.py') }}), so an ordinary staff page reads only its own content.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Put the application and the database in the same region (a round trip across continents adds 100–300&nbsp;ms per query).</li>
+    <li>Check the slowest queries (the third query at the top of this page) and the database's CPU.</li>
+    <li>Check the server is not swapping: <code>free -h</code>; give gunicorn fewer workers if memory is short.</li>
+    <li>Raise the cache lifetimes a little on a very busy deployment (<code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>, <code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>, <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>), knowing changes then take that long to show on other workers.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>A staff Overview loads in well under a second.</div></div>
+</div>
+
+<h3 id="slow-one-page">One page is slow</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>One page (a big class list, a whole-class PDF, a large import) is slow; others are fine.</div></div>
+  <div><b>Why</b><div><p>Some pages genuinely do a lot: a class's report-card PDF draws every card; an import checks every row.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Expected for those. If an ordinary page is slow, note its address and what it shows, and look in {{ page('manual-code', 'Finding and fixing it in the code') }} for how to find the query (the route reference on {{ page('reference-routes', 'Routes') }} names the file behind every address).</p></div></div>
+  <div><b>Check</b><div>The page loads in a reasonable time for its size.</div></div>
+</div>
+
+<h2 id="roles">Database roles</h2>
+
+<h3 id="own-role">Giving a school its own database role</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>You want one school's data reachable only with its own credentials.</div></div>
+  <div><b>Why</b><div><p>By default one PostgreSQL role connects to every school's database. A role per school limits what a single leaked password can reach.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li><code>python -m control_plane create-db-role CODE</code> (or {{ route('platform_settings_create_db_role') }}). It prints a new connection URL and changes nothing yet.</li>
+    <li>Store the URL as an environment variable on every server, e.g. <code>SCHOOL_ABC_DB=postgresql+psycopg://…</code>.</li>
+    <li><code>python -m control_plane set-db-url CODE env:SCHOOL_ABC_DB</code> (or {{ route('platform_settings_set_db_url') }}).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The school opens; <code>list</code> shows its new URL reference.</div></div>
+</div>
+
+{% endblock %}
