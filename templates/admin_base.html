@@ -338,11 +338,11 @@
 {% include '_admin_dock.html' %}
 <div id="live-message-toast" class="live-message-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 <script nonce="{{ csp_nonce() }}">window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
-<script src="{{ url_for('static', filename='interactions.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
 <script src="{{ url_for('static', filename='admin.js', v='6L-nav-trail') }}"></script>
 <script src="{{ url_for('static', filename='school-nav.js', v='2') }}"></script>
 <script src="{{ url_for('static', filename='account-menu.js', v='1') }}"></script>
-<script src="{{ url_for('static', filename='inplace.js', v='9') }}"></script>
+<script src="{{ url_for('static', filename='inplace.js', v='10') }}"></script>
 {#- A whole-page load (another section, the side menu, a form sent as a page) shows the same dimmed page and spinner
     as a load in place, so the installed app never sits still with no sign of progress. -#}
 <script src="{{ url_for('static', filename='page-loading.js') }}"></script>

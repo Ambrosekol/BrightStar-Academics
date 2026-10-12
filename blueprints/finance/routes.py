@@ -863,13 +863,15 @@ def admin_finance_class_roster():
     klass,session_row=_active_class_and_session(class_id,session_id)
     if not klass or not session_row:
         return jsonify(error='The class or the session could not be found.'),404
+    # Only these students of the class, when New students to bill sends just its new ones to be billed together.
+    only=_parse_ids(request.args.getlist('student_id'))[:1000]
     roster=all_rows(
         select(Student.id,Student.admission_no,Student.first_name,Student.middle_name,Student.last_name)
         .join(StudentEnrolment,and_(StudentEnrolment.student_id==Student.id,
                                     StudentEnrolment.session_id==session_id,
                                     StudentEnrolment.class_id==class_id,
                                     StudentEnrolment.active==1))
-        .where(Student.active==1)
+        .where(Student.active==1,*([Student.id.in_(only)] if only else []))
         .order_by(Student.last_name,Student.first_name,Student.id))
     ids=[int(r['id']) for r in roster]
     already={}
@@ -924,26 +926,31 @@ def admin_finance_class_assessments_batch():
     now=datetime.now(timezone.utc).isoformat()
     results=[]
     billed=[]
-    for sid in student_ids:
-        student=one(select(Student.id).where(Student.id==sid,Student.active==1))
-        if not student:
-            results.append({'student_id':sid,'status':'failed','reason':'The student is no longer active.'})
-            continue
-        enrolled=one(select(StudentEnrolment.id).where(StudentEnrolment.student_id==sid,
-                                                       StudentEnrolment.session_id==session_id,
-                                                       StudentEnrolment.class_id==class_id,
-                                                       StudentEnrolment.active==1))
-        if not enrolled:
-            results.append({'student_id':sid,'status':'failed',
-                            'reason':'Not enrolled in this class for this session.'})
-            continue
-        existing={fid for (fid,) in tuples(
-            select(FinanceFeeAssessment.fee_item_id)
-            .where(FinanceFeeAssessment.student_id==sid,
+    # Three queries for the whole batch, not three per student.
+    active={int(sid) for (sid,) in tuples(select(Student.id).where(Student.id.in_(student_ids),Student.active==1))}
+    enrolled={int(sid) for (sid,) in tuples(
+        select(StudentEnrolment.student_id).where(StudentEnrolment.student_id.in_(student_ids),
+                                                  StudentEnrolment.session_id==session_id,
+                                                  StudentEnrolment.class_id==class_id,
+                                                  StudentEnrolment.active==1))}
+    charged={}
+    for sid,fid in tuples(
+            select(FinanceFeeAssessment.student_id,FinanceFeeAssessment.fee_item_id)
+            .where(FinanceFeeAssessment.student_id.in_(student_ids),
                    FinanceFeeAssessment.session_id==session_id,
                    FinanceFeeAssessment.term==term,
                    FinanceFeeAssessment.fee_item_id.in_(item_ids),
-                   FinanceFeeAssessment.active==1))}
+                   FinanceFeeAssessment.active==1)):
+        charged.setdefault(int(sid),set()).add(int(fid))
+    for sid in student_ids:
+        if sid not in active:
+            results.append({'student_id':sid,'status':'failed','reason':'The student is no longer active.'})
+            continue
+        if sid not in enrolled:
+            results.append({'student_id':sid,'status':'failed',
+                            'reason':'Not enrolled in this class for this session.'})
+            continue
+        existing=charged.get(sid,set())
         missing=[item for item in items if item['id'] not in existing]
         if not missing:
             results.append({'student_id':sid,'status':'already','reason':'Already charged for this billing period.'})
@@ -975,11 +982,14 @@ def admin_finance_class_assessments_batch():
             'student_ids':[sid for sid,_,_ in billed],
             'fee_item_ids':[item['id'] for item in items],
             'total_assessed':sum(total for _,_,total in billed)})
-    for sid,names,total in billed:
+        # Parents are emailed and texted in the background: a mail server or SMS provider takes
+        # seconds per message, and the person billing watches each student's result as it comes in.
         try:
-            _notify_parents_fee_assessed(sid,names,total,term,session_row['name'],me['id'])
+            enqueue('notify_fees_assessed',students=[[sid,names,total] for sid,names,total in billed],
+                    term=term,session_name=session_row['name'],admin_id=me['id'])
         except Exception:
-            app.logger.exception('Fee notification failed for student %s', sid)
+            db.session.rollback()
+            app.logger.exception('Fee notifications could not be queued for class %s', class_id)
     return jsonify(results=results)
 
 @app.post('/admin/finance/assessments/new')

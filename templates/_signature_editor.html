@@ -66,7 +66,7 @@
   canvas.addEventListener('pointerdown', start); canvas.addEventListener('pointermove', move); window.addEventListener('pointerup', end);
   document.getElementById('sigClear').addEventListener('click', function () { ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; });
   document.getElementById('drawForm').addEventListener('submit', function (e) {
-    if (!hasDrawn) { e.preventDefault(); alert('Draw a signature on the pad before saving.'); return; }
+    if (!hasDrawn) { e.preventDefault(); (window.brandDialog ? window.brandDialog.alert : window.alert.bind(window))('Draw a signature on the pad before saving.'); return; }
     document.getElementById('signatureDataUrl').value = canvas.toDataURL('image/png');
   });
 })();

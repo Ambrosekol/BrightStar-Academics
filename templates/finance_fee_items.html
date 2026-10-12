@@ -268,6 +268,10 @@
           <small id="classBillRosterNote"></small>
         </div>
       </div>
+      <div id="classBillOnly" class="cr-bill-only" hidden>
+        <span id="classBillOnlyText"></span>
+        <button type="button" class="cr-bill-btn" id="classBillOnlyClear">Bill the whole class instead</button>
+      </div>
       <div id="classBillRosterError" class="cr-bill-empty" hidden></div>
     </section>
 
@@ -523,7 +527,7 @@
     const checked=form.querySelectorAll('input[name="fee_item_id"]:checked');
     if(!resolvedClass||!checked.length){
       e.preventDefault();
-      alert(!resolvedClass?'Select a student with an active class enrolment first.':'Please select at least one fee item.');
+      (window.brandDialog ? window.brandDialog.alert : window.alert.bind(window))(!resolvedClass?'Select a student with an active class enrolment first.':'Please select at least one fee item.');
     }
   });
   resolve();
@@ -663,7 +667,7 @@
     <div>
       <div class="section-label" id="billProgressKicker">BILLING IN PROGRESS</div>
       <h2 id="billProgressTitle">Billing the class</h2>
-      <p id="billProgressNote">Keep this window open. It closes only once every student has been confirmed as billed.</p>
+      <p id="billProgressNote">Keep this window open. Each student's result appears below as it comes in.</p>
     </div>
     <button type="button" class="cr-modal-close" id="billProgressX" aria-label="Close" hidden>×</button>
   </div>
@@ -674,7 +678,9 @@
     <p class="cr-bill-progress-count" id="billProgressCount">0 of 0 students confirmed</p>
     <p class="cr-bill-progress-status" id="billProgressStatus">Preparing…</p>
     <div class="cr-bill-result" id="billProgressSummary" hidden></div>
-    <ul class="cr-bill-issues" id="billProgressIssues" hidden></ul>
+    <div class="cr-bill-tally" id="billProgressTally" role="group" aria-label="Show students by where they are"></div>
+    <ol class="cr-bill-live" id="billProgressList" aria-label="Every student and where they are" tabindex="0"></ol>
+    <p class="cr-bill-live-foot">Parents are told by email and text in the background once their child is billed. Every message shows in Activity &amp; notice logs.</p>
     <div class="cr-finance-modal-actions">
       <button type="button" class="cr-finance-secondary-btn" id="billProgressRetry" hidden>Retry the students not yet billed</button>
       <button type="button" class="cr-finance-primary-btn" id="billProgressDone" hidden>Done</button>
@@ -684,12 +690,13 @@
 
 
 <script id="cr-finance-class-billing" nonce="{{ csp_nonce() }}">
-/* Bill a class: the roster is fetched once, then billed in batches. A student counts as billed only
-   when the server says so for that student, and the progress window closes only when every student on
-   the roster is confirmed. A retry sends just the students not yet confirmed, and the server skips
-   anyone already charged, so a retry can never charge twice. */
+/* Bill a class: the roster is fetched once, then billed a few students at a time, so the progress
+   window can show every student live: waiting, being billed now, billed, already charged or not billed.
+   A student counts as billed only when the server says so for that student, and the window closes only
+   when every student on the roster is confirmed. A retry sends just the students not yet confirmed, and
+   the server skips anyone already charged, so a retry can never charge twice. */
 (function () {
-  const BATCH_SIZE = 50;
+  const BATCH_SIZE = 5;
   const ROSTER_URL = '/admin/finance/class-roster.json';
   const BATCH_URL = '/admin/finance/class-assessments/batch';
 
@@ -706,6 +713,9 @@
   const rosterCount = document.getElementById('classBillRosterCount');
   const rosterNote = document.getElementById('classBillRosterNote');
   const rosterError = document.getElementById('classBillRosterError');
+  const onlyBox = document.getElementById('classBillOnly');
+  const onlyText = document.getElementById('classBillOnlyText');
+  const onlyClear = document.getElementById('classBillOnlyClear');
   const listEl = document.getElementById('classBillList');
   const emptyEl = document.getElementById('classBillEmpty');
   const selectAllBtn = document.getElementById('classBillSelectAll');
@@ -727,7 +737,8 @@
   const progressCount = document.getElementById('billProgressCount');
   const progressStatus = document.getElementById('billProgressStatus');
   const progressSummary = document.getElementById('billProgressSummary');
-  const progressIssues = document.getElementById('billProgressIssues');
+  const progressTally = document.getElementById('billProgressTally');
+  const progressList = document.getElementById('billProgressList');
   const progressX = document.getElementById('billProgressX');
   const progressRetry = document.getElementById('billProgressRetry');
   const progressDone = document.getElementById('billProgressDone');
@@ -746,6 +757,11 @@
   let failures = new Map();
   let counts = { billed: 0, already: 0, items: 0 };
   let runTotal = 0;
+  let liveRows = new Map();
+  /* Set when New students to bill sends just some of a class's students (its new ones) to be billed together. */
+  let onlyIds = null;
+  let liveFilter = 'all';
+  let lastManualScroll = 0;
 
   function money(v) {
     return '₦' + Number(v || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -852,7 +868,8 @@
     setText(selectedEl, chosen.length);
     setText(totalEl, money(total));
     setText(studentsEl, ready
-      ? plural(roster.length, 'student', 'students') + ' in this class · ' + money(total) + ' each'
+      ? (onlyIds ? plural(roster.length, 'new student', 'new students') + ' of this class · '
+                 : plural(roster.length, 'student', 'students') + ' in this class · ') + money(total) + ' each'
       : (classId ? 'No students to bill' : 'Choose a class'));
     reviewBtn.disabled = !(ready && chosen.length > 0) || running;
   }
@@ -873,8 +890,9 @@
     rosterBox.hidden = false;
     rosterBox.classList.add('is-loading');
     refresh();
-    const url = ROSTER_URL + '?session_id=' + encodeURIComponent(sessionId) +
+    let url = ROSTER_URL + '?session_id=' + encodeURIComponent(sessionId) +
       '&class_id=' + encodeURIComponent(classId) + '&term=' + encodeURIComponent(term);
+    if (onlyIds) onlyIds.forEach(function (id) { url += '&student_id=' + encodeURIComponent(id); });
     fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, data: data }; }); })
       .then(function (res) {
@@ -890,6 +908,13 @@
         roster.forEach(function (s) { rosterById[s.id] = s; });
         already = res.data.already || {};
         setText(rosterCount, plural(roster.length, 'student', 'students'));
+        if (onlyIds) {
+          const left = onlyIds.length - roster.length;
+          setText(rosterCount, plural(roster.length, 'new student', 'new students'));
+          setText(onlyText, 'Only the new students chosen on New students to bill are billed, not the rest of the class.' +
+            (left > 0 ? ' ' + plural(left, 'chosen student is', 'chosen students are') + ' no longer in this class for the session, so left out.' : ''));
+        }
+        onlyBox.hidden = !onlyIds;
         setText(rosterNote, (res.data.class_name || '') + ' · ' + (res.data.session_name || '') + ' · ' + term);
         rows.forEach(function (row) {
           const n = already[row.id];
@@ -953,27 +978,121 @@
     setText(progressCount, confirmed.size + ' of ' + runTotal + ' ' + (runTotal === 1 ? 'student' : 'students') + ' confirmed');
     if (running_) {
       setText(progressKicker, 'BILLING IN PROGRESS');
-      setText(progressNote, 'Keep this window open. It closes only once every student has been confirmed as billed.');
+      setText(progressNote, 'Keep this window open. Each student\'s result appears below as it comes in.');
     }
   }
 
-  function renderIssues() {
-    progressIssues.textContent = '';
-    failures.forEach(function (reason, id) {
-      const li = document.createElement('li');
-      const who = rosterById[id] ? rosterById[id].name + (rosterById[id].admission_no ? ' (' + rosterById[id].admission_no + ')' : '') : 'Student ' + id;
-      const name = document.createElement('strong');
-      name.textContent = who;
-      const why = document.createElement('span');
-      why.textContent = ' — ' + reason;
-      li.append(name, why);
-      progressIssues.append(li);
-    });
-    progressIssues.hidden = failures.size === 0;
+  /* ---------------------------------------------------------------- the live list of students */
+  const STATES = [
+    ['billed', 'Billed'], ['already', 'Already charged'], ['billing', 'Billing now'],
+    ['waiting', 'Waiting'], ['failed', 'Not billed']
+  ];
+  const STATE_TEXT = { waiting: 'Waiting', billing: 'Billing now…', billed: 'Billed', already: 'Already charged', failed: 'Not billed' };
+
+  function who(id) {
+    return rosterById[id] ? rosterById[id].name : 'Student ' + id;
   }
+
+  function buildLiveList(ids) {
+    progressList.textContent = '';
+    liveRows = new Map();
+    ids.forEach(function (id, index) {
+      const li = document.createElement('li');
+      li.className = 'cr-bill-live-row';
+      li.dataset.state = 'waiting';
+      const num = document.createElement('span');
+      num.className = 'cr-bill-live-num';
+      num.textContent = String(index + 1);
+      const main = document.createElement('span');
+      main.className = 'cr-bill-live-main';
+      const name = document.createElement('strong');
+      name.textContent = who(id);
+      main.append(name);
+      if (rosterById[id] && rosterById[id].admission_no) {
+        const adm = document.createElement('small');
+        adm.textContent = rosterById[id].admission_no;
+        main.append(adm);
+      }
+      const why = document.createElement('span');
+      why.className = 'cr-bill-live-why';
+      why.hidden = true;
+      main.append(why);
+      const state = document.createElement('span');
+      state.className = 'cr-bill-live-state';
+      state.textContent = STATE_TEXT.waiting;
+      li.append(num, main, state);
+      progressList.append(li);
+      liveRows.set(id, { li: li, state: state, why: why });
+    });
+    liveFilter = 'all';
+    renderTally();
+  }
+
+  function setState(id, state, detail, reason) {
+    const row = liveRows.get(id);
+    if (!row) return;
+    row.li.dataset.state = state;
+    row.li.hidden = liveFilter !== 'all' && liveFilter !== state;
+    row.state.textContent = STATE_TEXT[state] + (detail ? ' · ' + detail : '');
+    row.why.textContent = reason || '';
+    row.why.hidden = !reason;
+  }
+
+  function renderTally() {
+    const tally = { billed: 0, already: 0, billing: 0, waiting: 0, failed: 0 };
+    liveRows.forEach(function (row) { tally[row.li.dataset.state] += 1; });
+    progressTally.textContent = '';
+    const all = document.createElement('button');
+    all.type = 'button';
+    all.className = 'cr-bill-chip' + (liveFilter === 'all' ? ' is-active' : '');
+    all.setAttribute('aria-pressed', liveFilter === 'all' ? 'true' : 'false');
+    all.textContent = 'All ' + liveRows.size;
+    all.addEventListener('click', function () { setFilter('all'); });
+    progressTally.append(all);
+    STATES.forEach(function (pair) {
+      const n = tally[pair[0]];
+      if (!n && liveFilter !== pair[0]) return;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'cr-bill-chip' + (liveFilter === pair[0] ? ' is-active' : '');
+      chip.dataset.state = pair[0];
+      chip.setAttribute('aria-pressed', liveFilter === pair[0] ? 'true' : 'false');
+      chip.textContent = pair[1] + ' ' + n;
+      chip.addEventListener('click', function () { setFilter(pair[0]); });
+      progressTally.append(chip);
+    });
+  }
+
+  function setFilter(state) {
+    liveFilter = state;
+    liveRows.forEach(function (row) { row.li.hidden = state !== 'all' && row.li.dataset.state !== state; });
+    renderTally();
+  }
+
+  /* Keep the students being billed in view, unless the person has just scrolled the list themselves. */
+  function followCurrent(id) {
+    if (liveFilter !== 'all' || Date.now() - lastManualScroll < 4000) return;
+    const row = liveRows.get(id);
+    if (!row) return;
+    progressList.scrollTop = Math.max(0, row.li.offsetTop - progressList.clientHeight / 3);
+  }
+  ['wheel', 'touchmove', 'keydown', 'pointerdown'].forEach(function (type) {
+    progressList.addEventListener(type, function () { lastManualScroll = Date.now(); }, { passive: true });
+  });
+
+  /* While billing runs, Back and Forward stay on this page (static/inplace.js), and closing the tab or reloading
+     asks first (beforeunload, below). */
+  function holdPage(on) {
+    if (on) progressModal.setAttribute('data-nav-hold', window.location.href);
+    else progressModal.removeAttribute('data-nav-hold');
+  }
+  progressModal.addEventListener('nav-held', function () {
+    setText(progressNote, 'Billing is still running, so this page stays open. You can leave once every student is confirmed.');
+  });
 
   function finishRun() {
     running = false;
+    holdPage(false);
     finished = runTotal > 0 && confirmed.size === runTotal;
     progressX.hidden = !finished;
     progressDone.hidden = !finished;
@@ -988,15 +1107,14 @@
         counts.items + ' ' + (counts.items === 1 ? 'charge' : 'charges') + ' created' +
         (counts.already ? '. ' + counts.already + ' already charged for this billing period and skipped.' : '.');
       progressSummary.hidden = false;
-      progressIssues.textContent = '';
-      progressIssues.hidden = true;
+      setFilter('all');
     } else {
       setText(progressKicker, 'NOT FINISHED');
       setText(progressTitle, 'Some students were not billed');
-      setText(progressNote, 'The window stays open until every student is confirmed. Review the reasons below, then retry.');
+      setText(progressNote, 'The window stays open until every student is confirmed. The reasons are below; retry when ready.');
       setText(progressStatus, failures.size + ' ' + (failures.size === 1 ? 'student' : 'students') + ' still need billing.');
       progressSummary.hidden = true;
-      renderIssues();
+      setFilter('failed');
     }
     showProgress(false);
   }
@@ -1007,7 +1125,10 @@
     const feeIds = selectedRows().filter(function (row) { return !row.label.hidden; }).map(function (row) { return row.id; });
     for (let start = 0; start < ids.length; start += BATCH_SIZE) {
       const chunk = ids.slice(start, start + BATCH_SIZE);
-      setText(progressStatus, 'Billing students ' + (start + 1) + '–' + (start + chunk.length) + ' of ' + ids.length + '…');
+      chunk.forEach(function (sid) { setState(sid, 'billing'); });
+      renderTally();
+      followCurrent(chunk[0]);
+      setText(progressStatus, 'Now billing: ' + chunk.map(who).join(', '));
       const body = new FormData();
       body.append('_csrf_token', csrfInput ? csrfInput.value : '');
       body.append('session_id', sessionSel.value);
@@ -1030,9 +1151,11 @@
             if (r.status === 'billed') {
               confirmed.add(r.student_id); failures.delete(r.student_id);
               counts.billed += 1; counts.items += r.items || 0;
+              setState(r.student_id, 'billed', money(r.total) + ' · ' + plural(r.items || 0, 'charge', 'charges'));
             } else if (r.status === 'already') {
               confirmed.add(r.student_id); failures.delete(r.student_id);
               counts.already += 1;
+              setState(r.student_id, 'already', '', 'Already charged for this billing period, so skipped.');
             } else {
               failures.set(r.student_id, r.reason || 'This student was not billed.');
             }
@@ -1044,6 +1167,8 @@
       } catch (err) {
         chunk.forEach(function (sid) { if (!confirmed.has(sid)) failures.set(sid, 'The connection was lost. Retry to continue.'); });
       }
+      chunk.forEach(function (sid) { if (!confirmed.has(sid)) setState(sid, 'failed', '', failures.get(sid)); });
+      renderTally();
       showProgress(true);
     }
   }
@@ -1056,16 +1181,19 @@
     counts = { billed: 0, already: 0, items: 0 };
     runTotal = roster.length;
     const classRow = classSel.options[classSel.selectedIndex].textContent.trim();
-    setText(progressTitle, 'Billing ' + classRow);
+    setText(progressTitle, (onlyIds ? 'Billing the new students of ' : 'Billing ') + classRow);
     progressSummary.hidden = true;
-    progressIssues.hidden = true;
     progressRetry.hidden = true;
     progressDone.hidden = true;
     progressX.hidden = true;
-    showProgress(true);
-    progressModal.showModal();
-    reviewBtn.disabled = true;
     const ids = roster.map(function (s) { return s.id; });
+    buildLiveList(ids);
+    lastManualScroll = 0;
+    showProgress(true);
+    holdPage(true);
+    progressModal.showModal();
+    progressList.scrollTop = 0;
+    reviewBtn.disabled = true;
     runBatches(ids).then(finishRun);
   }
 
@@ -1074,9 +1202,12 @@
     const pending = roster.map(function (s) { return s.id; }).filter(function (id) { return !confirmed.has(id); });
     if (!pending.length) { finishRun(); return; }
     running = true;
+    holdPage(true);
     progressRetry.hidden = true;
     setText(progressTitle, 'Billing the students not yet confirmed');
-    progressIssues.hidden = true;
+    pending.forEach(function (id) { setState(id, 'waiting'); });
+    setFilter('all');
+    lastManualScroll = 0;
     showProgress(true);
     runBatches(pending).then(finishRun);
   });
@@ -1118,7 +1249,16 @@
   });
 
   sessionSel.addEventListener('change', loadRoster);
-  classSel.addEventListener('change', loadRoster);
+  classSel.addEventListener('change', function () {
+    onlyIds = null;
+    onlyBox.hidden = true;
+    loadRoster();
+  });
+  onlyClear.addEventListener('click', function () {
+    onlyIds = null;
+    onlyBox.hidden = true;
+    loadRoster();
+  });
   termSel.addEventListener('change', loadRoster);
   selectAllBtn.addEventListener('click', function () {
     rows.forEach(function (row) { if (!row.label.hidden && !row.cb.disabled) row.cb.checked = true; });
@@ -1131,6 +1271,21 @@
 
   buildRows();
   refresh();
+
+  /* Opened from New students to bill: ?bill=class&session_id=..&class_id=..&only=<id>&only=<id>... */
+  (function openFromLink() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('bill') !== 'class') return;
+    setMode('class');
+    const sessionId = params.get('session_id');
+    const classId = params.get('class_id');
+    if (sessionId && sessionSel.querySelector('option[value="' + CSS.escape(sessionId) + '"]')) sessionSel.value = sessionId;
+    if (!classId || !classSel.querySelector('option[value="' + CSS.escape(classId) + '"]')) return;
+    classSel.value = classId;
+    const ids = params.getAll('only').map(Number).filter(function (n) { return Number.isInteger(n) && n > 0; });
+    onlyIds = ids.length ? ids : null;
+    loadRoster();
+  })();
 })();
 </script>
 

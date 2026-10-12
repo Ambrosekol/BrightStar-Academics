@@ -54,6 +54,18 @@
   <div><b>Check</b><div>The student moves to <em>Done</em>.</div></div>
 </div>
 
+<h3 id="class-billing-interrupted">Billing a class stopped part-way (the window was closed, the page left, the power went)</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A bursar says the billing window disappeared while billing a class, or the class is only partly billed. The window may have said "Some students were not billed".</div></div>
+  <div><b>Why</b><div><p>The page bills five students per request ({{ route('admin_finance_class_assessments_batch') }}), and each student is saved in one commit: a student is billed in full or not at all. While it runs the window cannot be closed, Escape is ignored, Back stays on the page, and leaving or closing the tab asks <em>Leave site?</em>; but someone can still choose to leave, or lose power. Students billed before that stay billed, and their parents' notices are already queued (<code>notify_fees_assessed</code> jobs).</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Open Fee structure › Bill a class, choose the same class, session and billing period, the same fees, and bill again. Each fee a student already has for that period is skipped, so nobody is charged twice; only the rest are billed.</li>
+    <li>For new students, New students to bill still lists the ones not billed yet; <em>Bill all … together</em> picks up just them.</li>
+    <li>Parents not told? Check the school's Activity &amp; notice logs; a stuck job is retried by <code>python -m control_plane sweep-jobs CODE</code> ({{ page('manual-messaging', 'Email, SMS, background jobs and alerts') }}).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The second run reports every student billed or already charged, and the class's roster shows each fee charged to everyone.</div></div>
+</div>
+
 <h2 id="paystack">Online payments (Paystack)</h2>
 <p>A school uses its <strong>own</strong> Paystack account (there is no shared platform account), set by the School Admin
 under Settings › Online payments ({{ route('admin_finance_paystack_settings') }}). A payment is confirmed only by asking

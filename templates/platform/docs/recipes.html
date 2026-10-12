@@ -90,6 +90,23 @@ def platform_thing(): ...</code></pre>
 python -m control_plane list</code></pre>
 <p>Then open <code>http://demo.localhost:5000</code>. Delete nothing by hand: a school is a database and a folder, and the registry knows about it. Use throwaway schools in the verification scripts; they clean up after themselves.</p>
 
+<h2 id="ask">Ask before an action, or tell the person something</h2>
+<p>Never use the browser's own <code>confirm()</code> or <code>alert()</code>: every page has the school's dialog, in its
+colours, from {{ file('static/interactions.js') }} (a contract test refuses the browser's).</p>
+<ul>
+  <li><strong>Always ask before a button, link or form acts:</strong> put <code>data-confirm="The question?"</code> on it.
+  Optional: <code>data-confirm-title</code>, <code>data-confirm-ok</code> (the yes button's words) and
+  <code>data-confirm-danger="1"</code> or <code>"0"</code>. Without it, a question about deleting, removing, voiding,
+  refunding, archiving, cancelling, suspending or resetting is shown in red with "No, go back" focused.</li>
+  <li><strong>Ask only sometimes, from a form's own submit handler:</strong>
+  <code>if (needsAsking) window.brandDialog.confirmSubmit(e, 'The question?');</code>. It stops the submit, asks, and
+  sends the form again (with the same button) on yes.</li>
+  <li><strong>Tell the person something:</strong> <code>window.brandDialog.alert('What to fix.')</code>;
+  <code>window.brandDialog.confirm(message, options)</code> returns a Promise of true or false for anything else.</li>
+  <li>The one box no site can replace is the browser's own <em>Leave site?</em>, asked by <code>beforeunload</code>
+  (billing a class uses it): browsers do not let a page draw that one.</li>
+</ul>
+
 <h2 id="debug">Debugging tips</h2>
 <ul>
   <li><strong>A page shows "address not found" in development:</strong> you used <code>localhost</code>. Use <code>platform.localhost</code> or <code>&lt;code&gt;.localhost</code>.</li>

@@ -89,7 +89,8 @@ setInterval(function(){
 },10000);
 form.addEventListener('submit',e=>{
   const choice=form.querySelector('input[name="option_index"]:checked');
-  if(!choice && !confirm('No answer is selected. Continue without saving an answer?')) e.preventDefault();
+  if(!choice) window.brandDialog.confirmSubmit(e, 'No answer is selected. Continue without saving an answer?', {title: 'No answer chosen', ok: 'Continue without an answer', danger: false});
 });
 </script>
+<script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
 <script src="{{ url_for('static', filename='page-loading.js') }}"></script></body></html>

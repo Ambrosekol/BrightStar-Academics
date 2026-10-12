@@ -18,6 +18,7 @@ import os
 
 from core.branding import school_name
 from core.delivery import email_settings, send_email, send_sms, sms_settings
+from core.jobs import job_handler
 from models import NotificationDeliveryLog, ParentStudentLink, SchoolNotification, Student, db
 from core.db_helpers import all_rows, one, tuples
 
@@ -192,6 +193,20 @@ def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, sess
     except Exception: current_app.logger.exception('Guardian email (fee assessed) failed for student %s',student_id)
     try: _notify_parents_sms(student_id,student['guardian_phone'],text,kind='fee_assessed')
     except Exception: current_app.logger.exception('Guardian SMS (fee assessed) failed for student %s',student_id)
+
+
+@job_handler('notify_fees_assessed')
+def _notify_parents_fees_assessed_job(students, term, session_name, admin_id):
+    """Tell the parents of every student in one batch of class billing, in the background.
+
+    ``students`` is ``[[student_id, [fee names], total], ...]``. Each student is on its own: one that
+    fails is logged and the rest still go, and the job itself never fails, so a retry can never send
+    a parent the same message twice."""
+    for student_id, fee_names, total in students:
+        try:
+            _notify_parents_fee_assessed(student_id, fee_names, total, term, session_name, admin_id)
+        except Exception:
+            current_app.logger.exception('Fee notification failed for student %s', student_id)
 
 
 def payment_sms_text(child, amount, category, receipt_no):

@@ -131,6 +131,20 @@
 .fi-callout { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 10px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--ac-attn) 30%, var(--ac-line)); border-left: 3px solid var(--ac-attn); border-radius: 8px; background: var(--ac-attn-tint); font-size: 12px; color: var(--ac-ink-2); }
 .fi-callout > span:nth-child(2) { flex: 1 1 320px; }
 .fi-callout strong { display: block; color: var(--ac-ink); font-size: 13px; }
+/* New students to bill: each class's new students, billed together on Fee structure */
+.nb-classes { margin: 0 0 10px; padding: 10px 12px; }
+.nb-classes__head h2 { margin: 0; font-size: 13px; color: var(--ac-ink); }
+.nb-classes__head p { margin: 2px 0 8px; font-size: 12px; color: var(--ac-muted); }
+.nb-classes__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.nb-classes__list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 6px 10px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-surface); }
+.nb-classes__list li span { min-width: 0; }
+.nb-classes__list b { display: block; font-size: 13px; color: var(--ac-ink); }
+.nb-classes__list small { font-size: 11px; color: var(--ac-muted); }
+.nb-classes__note { margin: 8px 0 0; font-size: 11px; color: var(--ac-muted); }
+.nb-bill-ticked { margin-top: 8px; }
+.nb-bill-ticked { flex-wrap: wrap; }
+.nb-bill-ticked__msg { flex: 1 1 280px; font-size: 12px; line-height: 1.4; color: var(--ac-muted); }
+.nb-bill-ticked__msg.is-warn { color: var(--ac-attn); font-weight: 600; }
 .fi-callout__n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ac-attn); color: var(--ac-on-brand); font-weight: 700; }
 .fi-callout--quiet { border-color: var(--ac-line); border-left-color: var(--ac-accent); background: var(--ac-accent-tint); }
 :is(.admin-shell, .ac-modal) .ac .fi-paylist tr.is-voided td { color: var(--ac-muted); }

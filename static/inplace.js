@@ -263,6 +263,15 @@
     });
 
     window.addEventListener("popstate", function () {
+        // A page in the middle of work that must not be cut off (billing a class) marks an element with
+        // data-nav-hold="<its own address>". Back and Forward would otherwise swap the page out from under it
+        // without the browser's "Leave site?" check, so they stay put, and the page is told so it can say why.
+        var hold = document.querySelector("[data-nav-hold]");
+        if (hold) {
+            window.history.pushState({ inplace: true }, "", hold.getAttribute("data-nav-hold"));
+            hold.dispatchEvent(new CustomEvent("nav-held"));
+            return;
+        }
         closeAll();
         if (here()) load(window.location.href, { method: "GET" }, false, null);
     });

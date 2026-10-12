@@ -287,6 +287,18 @@ with A.app.app_context(), tenant_context(INFO):
                                      .where(AuditLog.action == 'finance_class_assessment_batch'))
 check("each batch that billed anyone leaves one audit entry", audit_rows == 3, str(audit_rows))
 
+# Parents are told in the background, one job per batch that billed anyone, so the page is not
+# kept waiting on a mail server. BACKGROUND_INLINE runs each job before the response returns.
+from models import BackgroundJob, NotificationDeliveryLog  # noqa: E402
+with A.app.app_context(), tenant_context(INFO):
+    jobs = A.db.session.execute(sa.select(BackgroundJob.status)
+                                .where(BackgroundJob.kind == 'notify_fees_assessed')).scalars().all()
+    told = A.db.session.scalar(sa.select(sa.func.count(sa.distinct(NotificationDeliveryLog.student_id)))
+                               .where(NotificationDeliveryLog.kind == 'fee_assessed'))
+check("parents' notices are queued as one background job per batch that billed anyone, and all ran",
+      sorted(jobs) == ['done'] * 3, str(jobs))
+check("every billed student's parents were notified (each delivery is logged)", told == 5, str(told))
+
 # ---------------------------------------------------------------- report
 failed = [name for name, ok, _ in results if not ok]
 print()

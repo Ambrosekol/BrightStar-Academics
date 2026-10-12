@@ -30,6 +30,8 @@
 /* Billing: the steps on the left, the summary on the right, held in view */
 .fee .cr-bill { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; align-items: start; }
 .fee .cr-bill[hidden], .fee .cr-bill [hidden] { display: none !important; }
+/* The billing pop-ups sit outside .cr-bill; their buttons and the live list rows set a display of their own, which would otherwise beat [hidden] */
+.fee .cr-finance-confirm [hidden] { display: none !important; }
 .fee .cr-bill-card { margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--ac-line); border-radius: var(--fee-radius); background: var(--ac-surface); }
 .fee .cr-bill-card:last-child { margin-bottom: 0; }
 .fee .cr-bill-card-head { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 10px; }
@@ -192,10 +194,36 @@
 .fee .cr-bill-progress-count { margin: 8px 0 2px; font-size: 13px; font-weight: 700; color: var(--ac-ink); }
 .fee .cr-bill-progress-status { margin: 0 0 10px; font-size: 12px; color: var(--ac-muted); }
 .fee .cr-bill-result { padding: 8px 10px; border-radius: 8px; background: var(--ac-good-tint); color: var(--ac-good); font-size: 12px; line-height: 1.5; border: 0; }
-.fee .cr-bill-issues { max-height: 240px; margin: 0 0 10px; padding: 0; overflow-y: auto; list-style: none; border: 1px solid color-mix(in srgb, var(--ac-attn) 30%, var(--ac-line)); border-radius: 8px; background: var(--ac-attn-tint); }
-.fee .cr-bill-issues li { padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ac-attn) 15%, var(--ac-line)); font-size: 12px; line-height: 1.45; color: var(--ac-ink); }
-.fee .cr-bill-issues li:last-child { border-bottom: 0; }
-.fee .cr-bill-issues strong { color: var(--ac-attn); }
+/* Billing only the new students of a class, sent from New students to bill */
+.fee .cr-bill-only { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 8px; padding: 7px 10px; border: 1px solid color-mix(in srgb, var(--ac-accent) 35%, var(--ac-line)); border-radius: 8px; background: var(--ac-accent-tint); font-size: 12px; color: var(--ac-accent-strong); }
+.fee .cr-bill-only span { flex: 1 1 260px; }
+/* The live list in the class-billing window: every student, where they are, updated as each batch comes back */
+.fee .cr-bill-tally { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 8px; }
+.fee .cr-bill-chip { padding: 3px 9px; border: 1px solid var(--ac-line); border-radius: 999px; background: var(--ac-surface); font-size: 11px; font-weight: 700; color: var(--ac-ink-2); cursor: pointer; }
+.fee .cr-bill-chip.is-active { border-color: var(--ac-accent); background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.fee .cr-bill-chip[data-state="billed"] { color: var(--ac-good); }
+.fee .cr-bill-chip[data-state="failed"] { color: var(--ac-attn); }
+.fee .cr-bill-live { position: relative; max-height: 280px; margin: 0 0 6px; padding: 0; overflow-y: auto; list-style: none; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-surface); }
+.fee .cr-bill-live-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--ac-line); font-size: 12px; transition: background-color .2s ease; }
+.fee .cr-bill-live-row:last-child { border-bottom: 0; }
+.fee .cr-bill-live-num { font-size: 11px; color: var(--ac-muted); font-variant-numeric: tabular-nums; }
+.fee .cr-bill-live-main { min-width: 0; }
+.fee .cr-bill-live-main strong { font-weight: 600; color: var(--ac-ink); }
+.fee .cr-bill-live-main small { margin-left: 6px; font-size: 11px; color: var(--ac-muted); }
+.fee .cr-bill-live-why { display: block; font-size: 11px; line-height: 1.4; color: var(--ac-muted); }
+.fee .cr-bill-live-state { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--ac-muted); }
+.fee .cr-bill-live-row[data-state="waiting"] .cr-bill-live-main strong { color: var(--ac-muted); font-weight: 500; }
+.fee .cr-bill-live-row[data-state="billing"] { background: var(--ac-accent-tint); }
+.fee .cr-bill-live-row[data-state="billing"] .cr-bill-live-state { color: var(--ac-accent-strong); }
+.fee .cr-bill-live-row[data-state="billing"] .cr-bill-live-state::before { content: ""; width: 10px; height: 10px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: fee-bill-spin .7s linear infinite; }
+.fee .cr-bill-live-row[data-state="billed"] .cr-bill-live-state { color: var(--ac-good); }
+.fee .cr-bill-live-row[data-state="billed"] .cr-bill-live-state::before { content: "✓"; }
+.fee .cr-bill-live-row[data-state="failed"] { background: var(--ac-attn-tint); }
+.fee .cr-bill-live-row[data-state="failed"] .cr-bill-live-state { color: var(--ac-attn); }
+.fee .cr-bill-live-row[data-state="failed"] .cr-bill-live-why { color: var(--ac-attn); }
+.fee .cr-bill-live-foot { margin: 0 0 10px; font-size: 11px; color: var(--ac-muted); }
+@keyframes fee-bill-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fee .cr-bill-live-row[data-state="billing"] .cr-bill-live-state::before { animation: none; } }
 
 /* Adding or editing a fee item (templates/finance_fee_item_form.html), usually in the pop-up */
 .fee-item .fee-item__head { margin: 0 34px 10px 0; }

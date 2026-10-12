@@ -32,8 +32,20 @@ from models import BackgroundJob, db
 MAX_ATTEMPTS = 5
 STUCK_RUNNING_AFTER_SECONDS = 300  # a thread that started this long ago and never finished died
 RETRY_FAILED_AFTER_SECONDS = 120   # do not hammer a mail server that just rejected a message
+# How many threads of one kind may run at once in this process. A school's connection pool is small
+# (BRIGHTSTARS_DB_POOL_SIZE + BRIGHTSTARS_DB_MAX_OVERFLOW), so billing a class of a thousand, which
+# enqueues a job per small batch, must not start a hundred senders at once and starve the pages.
+# Threads beyond the limit wait their turn holding nothing; their rows stay 'pending' until then.
+MAX_RUNNING_PER_KIND = 2
 
 _HANDLERS = {}
+_SLOTS = {}
+_SLOTS_LOCK = threading.Lock()
+
+
+def _slot(kind):
+    with _SLOTS_LOCK:
+        return _SLOTS.setdefault(kind, threading.BoundedSemaphore(MAX_RUNNING_PER_KIND))
 
 
 def job_handler(kind):
@@ -58,11 +70,11 @@ def enqueue(kind, **payload):
     db.session.add(job)
     db.session.commit()
     _retry_stuck(kind)
-    _spawn(job.id)
+    _spawn(job.id, kind)
     return job.id
 
 
-def _spawn(job_id):
+def _spawn(job_id, kind):
     """Run one job's handler, in a thread of its own unless BACKGROUND_INLINE is set."""
     app = current_app._get_current_object()
 
@@ -81,7 +93,7 @@ def _spawn(job_id):
 
     def run():
         try:
-            with app.test_request_context(base_url=base_url or 'http://localhost/'):
+            with _slot(kind), app.test_request_context(base_url=base_url or 'http://localhost/'):
                 if tenant is not None:
                     with tenant_context(tenant):
                         _execute(job_id)
@@ -143,7 +155,7 @@ def _retry_stuck(kind):
             "UPDATE background_jobs SET status = 'pending' WHERE id = :i AND status = 'running'"
         ), {'i': job_id})
         db.session.commit()
-        _spawn(job_id)
+        _spawn(job_id, kind)
 
 
 def sweep_all_kinds(limit=50):

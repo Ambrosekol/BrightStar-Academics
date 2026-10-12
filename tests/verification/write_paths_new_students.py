@@ -236,6 +236,21 @@ check("the menu and the Overview count them", "New students to bill" in home and
 check("Bill opens Fee structure with the student already chosen",
       f'<option value="{ADA}" selected>' in op.text(f"/admin/finance/fee-items?student_id={ADA}"))
 
+# Billing a class's new students together: one link per class, carrying just its new students not billed yet.
+import html as _html  # noqa: E402
+import json as _json  # noqa: E402
+together = _html.unescape(page)
+link = re.search(r'href="(/admin/finance/fee-items\?[^"]*bill=class[^"]*class_id=' + str(cls["JSS 1"]) + r'[^"]*)"', together)
+link_ids = sorted(int(v) for v in re.findall(r"only=(\d+)", link.group(1))) if link else []
+check("the list offers to bill a class's new students together, with exactly those students",
+      "Bill a class's new students together" in together and link_ids == sorted([ADA, IMP, ADM]) and "Bill all 3 together" in page,
+      f"link={bool(link)} ids={link_ids}")
+check("…and a button to bill the ticked students together", "Bill ticked students together" in page)
+roster = _json.loads(op.text(f"/admin/finance/class-roster.json?session_id={SESSION}&class_id={cls['JSS 1']}"
+                             f"&term=Full+Session&student_id={IMP}&student_id={ADM}"))
+check("Fee structure's class list can be limited to the chosen students, so only they are billed",
+      sorted(s["id"] for s in roster.get("students", [])) == sorted([IMP, ADM]), str(roster)[:200])
+
 # ================================================================ B. billing
 op.post("/admin/finance/assessments/new", {"student_id": ADA, "session_id": SESSION, "fee_item_id": [FEE], "term": "Full Session",
                                            "due_date": "", "notes": ""}, page="/admin/finance/fee-items")

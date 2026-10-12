@@ -37,6 +37,7 @@ PAGE = 'admin_finance_new_students'
 VIEWS = (('unbilled', 'Not billed yet'), ('awaiting', 'Waiting for payment'), ('cleared', 'Done'))
 SOURCES = {'admitted': 'Admitted from the entrance exam', 'registered': 'Registered', 'imported': 'Imported'}
 PER_PAGE = 50
+BILL_TOGETHER_LIMIT = 1000  # students in one "bill together" link; a class is never near this
 
 
 # ---------------------------------------------------------------- noting a new student
@@ -87,7 +88,8 @@ def _rows(open_only=True):
              .where(StudentEnrolment.active == 1, StudentEnrolment.session_id == (current['id'] if current else 0))
              .subquery())
     stmt = (select(FinanceNewStudent, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
-                   Student.student_number, SchoolClass.name.label('class_name'), ClassSubdivision.name.label('sub_name'),
+                   Student.student_number, enrol.c.class_id, SchoolClass.name.label('class_name'),
+                   ClassSubdivision.name.label('sub_name'),
                    func.coalesce(billed.c.v, 0), func.coalesce(applied.c.v, 0), func.coalesce(received.c.v, 0))
             .join(Student, Student.id == FinanceNewStudent.student_id)
             .outerjoin(enrol, enrol.c.student_id == Student.id)
@@ -99,15 +101,33 @@ def _rows(open_only=True):
     if open_only:
         stmt = stmt.where(FinanceNewStudent.cleared_at.is_(None), Student.active == 1, Student.archived_at.is_(None))
     out = []
-    for row, first, middle, last, adm, number, class_name, sub_name, b, a, r in db.session.execute(
+    for row, first, middle, last, adm, number, class_id, class_name, sub_name, b, a, r in db.session.execute(
             stmt.order_by(FinanceNewStudent.added_at.desc(), FinanceNewStudent.id.desc())).all():
         b, a, r = round(float(b or 0), 2), round(float(a or 0), 2), round(float(r or 0), 2)
         out.append({'row': row, 'id': row.student_id,
                     'name': ' '.join(p for p in (first, middle, last) if p and str(p).strip()),
-                    'number': number or adm or '', 'class_name': class_name or '', 'sub_name': sub_name or '',
+                    'number': number or adm or '', 'class_id': class_id, 'class_name': class_name or '',
+                    'sub_name': sub_name or '',
                     'billed': b, 'applied': a, 'owed': round(max(0.0, b - a), 2),
                     'unapplied': round(max(0.0, r - a), 2), 'stage': _stage(b, a)})
     return out
+
+
+def _class_groups(rows):
+    """The students not billed yet, by their class this session, for billing a class's new students together:
+    ([{'class_id', 'class_name', 'ids'}], how many have no class this session and so cannot be billed by class)."""
+    groups, no_class = {}, 0
+    for r in rows:
+        if r['stage'] != 'unbilled':
+            continue
+        if not r['class_id']:
+            no_class += 1
+            continue
+        group = groups.setdefault(r['class_id'], {'class_id': r['class_id'], 'class_name': r['class_name'], 'ids': []})
+        group['ids'].append(r['id'])
+    for group in groups.values():
+        group['ids'] = sorted(group['ids'])[:BILL_TOGETHER_LIMIT]
+    return sorted(groups.values(), key=lambda g: g['class_name'].casefold()), no_class
 
 
 def _close_paid(rows):
@@ -186,7 +206,10 @@ def admin_finance_new_students():
     names = {a.id: a.display_name for a in db.session.scalars(select(Admin).where(Admin.id.in_(people or {0})))}
     admitted = dict(db.session.execute(select(Candidate.admitted_student_id, Candidate.candidate_code)
                                        .where(Candidate.admitted_student_id.in_([r['id'] for r in shown_page] or [0]))).all())
+    groups, no_class = _class_groups(rows) if view == 'unbilled' else ([], 0)
+    current = _school_current_session()
     return render_template('finance_new_students.html', rows=shown_page, view=view, views=VIEWS, counts=counts, q=q,
+                           groups=groups, no_class=no_class, session_id=current['id'] if current else None,
                            page=page, pages=pages, total=len(shown), sources=SOURCES, names=names, admitted=admitted,
                            owed_total=round(sum(r['owed'] for r in rows if r['stage'] == 'awaiting'), 2),
                            can_bill=is_school_admin(me) or admin_has_permission(me['id'], 'finance.manage'),

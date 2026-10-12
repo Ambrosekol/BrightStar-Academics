@@ -135,6 +135,12 @@ created already archived, and students who existed before the table did, are not
   billed and not fully applied is <em>Waiting for payment</em> (an unapplied credit is shown, but does not count as
   paid - "paid" means allocated, as everywhere in Finance). A row whose bill is fully applied is closed
   (<code>cleared_reason = 'paid'</code>) the next time the list is read; closed rows are kept, under Done.</li>
+  <li><strong>Billing a class's new students together.</strong> The Not billed yet view groups those students by their
+  class this session (<code>_class_groups</code>) and links each class to Fee structure as
+  <code>?bill=class&amp;session_id=…&amp;class_id=…&amp;only=&lt;id&gt;…</code>; ticked students of one class go the same
+  way. The page opens on <em>Bill a class</em> and asks {{ route('admin_finance_class_roster') }} for just those
+  <code>student_id</code>s, so the ordinary class billing (and its live progress window) bills only them. Students with no
+  class this session are counted and left to be billed one by one.</li>
   <li><strong>By hand.</strong> {{ route('admin_finance_new_students_remove') }} closes rows as 'removed' with a required
   note; {{ route('admin_finance_new_students_restore') }} reopens one closed that way (never one closed as paid). Both need
   {{ perm('finance.manage') }}; the list itself needs {{ perm('finance.record') }}.</li>
@@ -145,7 +151,7 @@ created already archived, and students who existed before the table did, are not
 </ul>
 
 <h2 id="class-billing">Billing a whole class</h2>
-<p>The Fee Structure page can bill every student enrolled in a class for a session, not only one student at a time. The page loads the class's students from {{ route('admin_finance_class_roster') }}, which also reports, for each fee, how many of them already have it for the billing period. It then bills them in batches through {{ route('admin_finance_class_assessments_batch') }}: at most 100 students per request, 50 per batch from the page.</p>
+<p>The Fee Structure page can bill every student enrolled in a class for a session, not only one student at a time. The page loads the class's students from {{ route('admin_finance_class_roster') }}, which also reports, for each fee, how many of them already have it for the billing period. It then bills them in batches through {{ route('admin_finance_class_assessments_batch') }}: at most 100 students per request, 5 per batch from the page, so the progress window can show every student live (waiting, billing now, billed, already charged, not billed). The batch looks up its students' enrolments and existing charges in three queries, and parents' email, text and in-app notices go to the background job queue as one <code>notify_fees_assessed</code> job per batch, so billing never waits on a mail server or SMS provider. At most two jobs of one kind run at once per worker, so a large class cannot use up the school's database connections.</p>
 <ul>
   <li><strong>Each student is committed on their own.</strong> A batch that fails part way leaves the students before the failure billed and the rest not; nothing is half-written for one student.</li>
   <li><strong>Idempotent.</strong> Every fee item a student already has live for the billing period is skipped, so billing the class again - after an error, say - never charges anyone twice. The per-student rules are the same as the single-student route's: the student must be enrolled in that class for the session, and each fee must be assigned to that class.</li>

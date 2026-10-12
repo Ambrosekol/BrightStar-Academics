@@ -93,7 +93,7 @@
   document.getElementById('drawForm').addEventListener('submit',function(e){
     if(!hasDrawn){
       e.preventDefault();
-      alert('Draw a signature on the pad before saving.');
+      (window.brandDialog ? window.brandDialog.alert : window.alert.bind(window))('Draw a signature on the pad before saving.');
       return;
     }
     document.getElementById('signatureDataUrl').value=canvas.toDataURL('image/png');

@@ -159,7 +159,7 @@
   var root=document.querySelector('[data-ct]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
   var form=root.querySelector('[data-ct-form]');
   root.querySelectorAll('[data-ct-cancel]').forEach(function(f){
-    f.addEventListener('submit', function(e){ if(!confirm('Cancel this transfer? The student stays where they are.')) e.preventDefault(); });
+    f.setAttribute('data-confirm', 'Cancel this transfer? The student stays where they are.');
   });
   if(!form) return;
   var student=form.querySelector('[data-ct-student]'), sub=form.querySelector('[data-ct-sub]'), dept=form.querySelector('[data-ct-dept]');

@@ -43,9 +43,24 @@ one, a due date; the fees offered are the ones assigned to that class.</p>
 <ul>
   <li><strong>Review first.</strong> Review shows how many students will be billed, each fee and the
   total per student. Nothing is charged until you confirm on that screen.</li>
-  <li><strong>The progress window stays open.</strong> The class is billed in batches. The window closes
-  only once every student on the list is confirmed as billed. If a student could not be billed, the
-  window lists who and why; <em>Retry the students not yet billed</em> bills only those.</li>
+  <li><strong>Watch every student live.</strong> The progress window lists every student in the class
+  and shows, as it happens, who is <em>waiting</em>, who is <em>being billed now</em>, who is
+  <em>billed</em> (with the amount), who was <em>already charged</em> and who was <em>not billed</em>
+  (with the reason). Press a count at the top, such as <em>Waiting</em> or <em>Not billed</em>, to show
+  only those students.</li>
+  <li><strong>The progress window stays open</strong> until every student on the list is confirmed as
+  billed. If a student could not be billed, the window shows who and why; <em>Retry the students not
+  yet billed</em> bills only those.</li>
+  <li><strong>If the window is closed by mistake.</strong> While billing runs it has no close button and
+  Escape does nothing, and leaving the page, pressing Back or closing the tab first asks
+  <em>Leave site?</em>; choose to stay and billing carries on. If the page is left anyway (or the power or
+  connection goes), every student is either billed in full or not at all, never halfway, and the students
+  already billed stay billed, with their parents told. Open the class again and bill it: everyone already
+  charged is skipped, so only the rest are billed. New students not billed yet are still on
+  <a href="{{ url_for('admin_finance_new_students') }}">New students to bill</a>.</li>
+  <li><strong>Parents are told in the background.</strong> Their email and text go out after their child
+  is billed, without slowing the billing down. Every message, sent or not, is in
+  <a href="{{ url_for('admin_audit_logs') }}">Activity &amp; notice logs</a>.</li>
   <li><strong>Safe to run again.</strong> A student already charged a fee for that billing period is
   skipped, so billing the class again after an error never charges anyone twice.</li>
   <li><strong>Archiving.</strong> Archiving or activating a fee asks first. Archiving stops it being
@@ -60,7 +75,13 @@ beside it in the menu, and <em>New, not billed</em> on the Overview, count those
 school before this list arrived are not on it.</p>
 <ul>
   <li><strong>Not billed yet</strong>: nothing has been charged. <strong>Bill</strong> opens Fee structure with the student
-  already chosen; or bill their whole class there.</li>
+  already chosen.</li>
+  <li><strong>Bill a class's new students together.</strong> Above the list, each class with new students not billed yet
+  has a button, such as <em>Bill all 12 together</em>. It opens Fee structure on <em>Bill a class</em> with that class
+  chosen and only those new students on it (not the rest of the class): pick the fees once, review, and watch each
+  student being billed. To bill just some of them, tick them and press <strong>Bill ticked students together</strong>;
+  they must all be in one class, because the fees offered are the class's. A student with no class this session is billed
+  on their own.</li>
   <li><strong>Waiting for payment</strong>: billed, with what has been paid and what is still owed.
   <strong>Record payment</strong> opens the payment form for that student. Money received but not yet applied to the
   fee is shown as <em>received, not yet applied</em>: apply it to the fee (Payments) and the student counts as paid.</li>

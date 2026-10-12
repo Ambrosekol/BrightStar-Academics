@@ -138,7 +138,7 @@
   root.querySelectorAll('[data-sd-form]').forEach(function(form){
     form.addEventListener('submit', function(e){
       var removing=form.querySelectorAll('[name=sub_remove]:checked').length;
-      if(removing && !confirm('Remove ' + removing + ' subdivision' + (removing>1?'s':'') + '? Their students move into the others and their class teachers lose that duty.')) e.preventDefault();
+      if(removing) window.brandDialog.confirmSubmit(e, 'Remove ' + removing + ' subdivision' + (removing>1?'s':'') + '? Their students move into the others and their class teachers lose that duty.');
     });
   });
 })();

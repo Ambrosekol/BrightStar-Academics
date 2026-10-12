@@ -522,11 +522,11 @@ window.reorderBankQuestion = function (button, order) {
                 return;
             }
             button.disabled = false;
-            alert((result.data && result.data.error) || 'Could not reorder — the bank may be locked, or the page may need a refresh.');
+            (window.brandDialog ? window.brandDialog.alert : window.alert.bind(window))((result.data && result.data.error) || 'Could not reorder — the bank may be locked, or the page may need a refresh.');
         })
         .catch(() => {
             button.disabled = false;
-            alert('Could not reorder. Check your connection and try again.');
+            (window.brandDialog ? window.brandDialog.alert : window.alert.bind(window))('Could not reorder. Check your connection and try again.');
         });
 };
 
