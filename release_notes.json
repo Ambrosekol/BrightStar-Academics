@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "version": "2.29.0",
+      "date": "2026-10-13",
+      "title": "Staff records and leave",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Staff records, under People: a file on everyone the school employs, including staff who never sign in (drivers, cleaners, security). Keep their job, next of kin, qualifications and documents, and their career: promotions, queries, commendations. Career entries are never deleted, only struck out with a reason. The new HR Officer role keeps these records; opening one, or a document, is in the activity log.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Leave: everyone with a staff record now has My leave, to see how many days they have left and ask for leave. Staff leave shows the requests to decide, with each person's balance, and who is on leave now. Set the kinds of leave and their days, and a person's own allowance (days carried over).",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.28.0",
       "date": "2026-10-13",
       "title": "ID cards, designed by the school",

@@ -1,0 +1,90 @@
+{% extends 'admin_base.html' %}
+{% block title %}My leave — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- My leave (blueprints/school/hr.py): a member of staff's own leave balance, asking for leave, their requests, and
+    the main parts of their own staff record. HR's private notes are never shown here. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+<div class="ac">
+<header class="ac-top"><h1>My leave</h1></header>
+{% if not record %}
+<div class="ac-panel"><div class="ac-empty"><strong>You have no staff record yet</strong>Ask the school office to add one, then you can ask for leave here.</div></div>
+{% else %}
+<section class="ac-panel">
+  <h2>Your leave in {{ year }} <small>working days, Monday to Friday</small></h2>
+  <div class="hr-bal">{% for b in balances %}
+    <div class="{{ 'is-low' if b.left is not none and b.left <= 0 }}"><b>{{ b.type.name }}</b>
+      {% if b.allowance is none %}<strong>{{ b.used }}</strong><small>days taken · no set allowance</small>
+      {% else %}<strong>{{ b.left }}</strong><small>of {{ b.allowance }} left{% if b.waiting %} · {{ b.waiting }} waiting{% endif %}</small>{% endif %}</div>
+  {% endfor %}</div>
+</section>
+
+{% if record.status != 'left' %}
+<section class="ac-panel">
+  <h2>Ask for leave</h2>
+  <form method="post" action="{{ url_for('admin_my_leave_request') }}" class="hr-add" style="margin-top:0;padding-top:0;border:0" data-my-leave>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-field"><label for="lt">Kind</label><select id="lt" name="leave_type_id" required>{% for t in active_types %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+    <div class="ac-field ac-field--narrow" style="flex-basis:140px"><label for="ls">First day</label><input id="ls" type="date" name="start_date" required></div>
+    <div class="ac-field ac-field--narrow" style="flex-basis:140px"><label for="le">Last day</label><input id="le" type="date" name="end_date" required></div>
+    <div class="ac-field"><label for="lc">Who covers your work</label><input id="lc" name="cover" maxlength="200" placeholder="Optional"></div>
+    <div class="ac-field ac-field--wide"><label for="lr">Reason</label><input id="lr" name="reason" maxlength="500" placeholder="Optional"></div>
+    <span class="ac-hint" data-my-leave-days></span><span class="ac-grow" style="flex:1"></span>
+    <button class="ac-btn ac-btn--primary" type="submit">Ask for leave</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="ac-panel">
+  <h2>Your requests</h2>
+  {% if requests %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Kind</th><th>Dates</th><th>Days</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for x in requests %}{% set t = types.get(x.leave_type_id) %}
+      <tr>
+        <td>{{ t.name if t else 'Leave' }}{% if x.reason %}<small>{{ x.reason }}</small>{% endif %}</td>
+        <td class="hr-days">{{ x.start_date }} to {{ x.end_date }}</td>
+        <td class="hr-days">{{ x.days }}</td>
+        <td><span class="ac-tag{{ {'approved': ' ac-tag--good', 'pending': ' ac-tag--blue', 'declined': ' ac-tag--attn'}.get(x.status, '') }}">{{ hr.LEAVE_STATUSES.get(x.status, x.status) }}</span>
+          {% if x.decided_at %}<small>{{ x.decided_at[:10] }}{% if names.get(x.decided_by) %} · {{ names[x.decided_by] }}{% endif %}</small>{% endif %}
+          {% if x.decision_note %}<small>"{{ x.decision_note }}"</small>{% endif %}</td>
+        <td class="ac-actions">{% if x.status == 'pending' or (x.status == 'approved' and x.start_date > today) %}
+          <form method="post" action="{{ url_for('admin_hr_leave_cancel', rid=x.id) }}" data-confirm="Cancel your {{ (t.name if t else 'leave')|lower }} from {{ x.start_date }} to {{ x.end_date }}?">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Cancel</button></form>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty">You have not asked for leave yet.</div>{% endif %}
+</section>
+
+<section class="ac-panel">
+  <h2>Your staff record <small>to correct anything, tell the school office</small></h2>
+  <dl class="hr-kv">
+    <dt>Name</dt><dd>{{ hr.full_name(record) }}</dd>
+    <dt>Job</dt><dd>{{ record.job_title or '—' }}{% if record.department %}, {{ record.department }}{% endif %}</dd>
+    {% if record.staff_no %}<dt>Staff number</dt><dd>{{ record.staff_no }}</dd>{% endif %}
+    <dt>Employed on</dt><dd>{{ record.employment_date or '—' }}{% if record.confirmation_date %} · confirmed {{ record.confirmation_date }}{% endif %}</dd>
+    <dt>Phone, email</dt><dd>{{ record.phone or '—' }}, {{ record.email or '—' }}</dd>
+    <dt>Next of kin</dt><dd>{% if record.nok_name %}{{ record.nok_name }}{% if record.nok_relationship %} ({{ record.nok_relationship }}){% endif %}{% if record.nok_phone %}, {{ record.nok_phone }}{% endif %}{% else %}—{% endif %}</dd>
+    <dt>Qualifications</dt><dd>{% for q in qualifications %}{{ q.qualification }}{% if q.year %} ({{ q.year }}){% endif %}{{ '\n' if not loop.last }}{% else %}—{% endfor %}</dd>
+  </dl>
+</section>
+{% endif %}
+</div>
+{% if record and record.status != 'left' %}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  /* How many working days the chosen dates are, as the person picks them; the server counts again. */
+  var form=document.querySelector('[data-my-leave]:not([data-ready])'); if(!form) return; form.setAttribute('data-ready','1');
+  var start=form.querySelector('[name=start_date]'), end=form.querySelector('[name=end_date]'), out=form.querySelector('[data-my-leave-days]');
+  function count(){
+    var a=start.value?new Date(start.value+'T00:00:00'):null, b=end.value?new Date(end.value+'T00:00:00'):null;
+    if(a && !end.value){ end.value=start.value; b=a; }
+    if(!a||!b||b<a){ out.textContent=''; return; }
+    var n=0; for(var d=new Date(a); d<=b && n<400; d.setDate(d.getDate()+1)){ var w=d.getDay(); if(w!==0&&w!==6) n++; }
+    out.textContent=n+' working day'+(n===1?'':'s');
+  }
+  start.addEventListener('change',count); end.addEventListener('change',count);
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,59 @@
+/* Staff records and leave (blueprints/school/hr.py). Built on academics.css: the same small type, hairlines and the
+   school's own colours; only what those pages need besides. */
+.hr-ph { width: 34px; }
+.hr-ph img, .hr-ph span { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: grid; place-items: center;
+  background: var(--ac-brand-tint); color: var(--ac-brand); font-size: 12px; font-weight: 700; }
+.ac-t td small { display: block; font-size: 11px; color: var(--ac-muted); }
+
+/* One person: who they are on the left, the open tab on the right */
+.hr-head { display: flex; gap: 12px; align-items: center; margin: 0 0 10px; }
+.hr-head__ph { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: grid; place-items: center; flex: none;
+  background: var(--ac-brand-tint); color: var(--ac-brand); font-size: 18px; font-weight: 700; }
+.hr-head h1 { margin: 0; font-size: 18px; color: var(--ac-brand); }
+.hr-head p { margin: 2px 0 0; font-size: 12px; color: var(--ac-muted); }
+.hr-head p .ac-tag { margin-left: 4px; }
+.hr-head__act { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.hr-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.hr-grid > .ac-panel + .ac-panel { margin-top: 0; }
+@media (max-width: 860px) { .hr-grid { grid-template-columns: 1fr; } }
+.hr-kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 10px; margin: 0; font-size: 12px; }
+.hr-kv dt { color: var(--ac-muted); }
+.hr-kv dd { margin: 0; color: var(--ac-ink); overflow-wrap: anywhere; white-space: pre-line; }
+@media (max-width: 520px) { .hr-kv { grid-template-columns: 1fr; } .hr-kv dd { margin-bottom: 4px; } }
+.hr-private { border-color: color-mix(in srgb, var(--ac-attn) 30%, var(--ac-line)); }
+.hr-private h2 small { color: var(--ac-attn) !important; }
+
+/* Small add-forms under a list */
+.hr-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ac-grid); }
+.hr-add .ac-field { flex: 1 1 140px; }
+.hr-add .ac-field--narrow { flex: 0 1 90px; }
+.hr-add .ac-field--wide { flex: 1 1 100%; }
+
+/* Career: a timeline; a struck-out entry stays, crossed through */
+.hr-events { list-style: none; margin: 0; padding: 0; }
+.hr-events li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--ac-grid); font-size: 12px; }
+.hr-events li:last-child { border-bottom: 0; }
+.hr-events time { color: var(--ac-muted); font-variant-numeric: tabular-nums; }
+.hr-events b { color: var(--ac-ink); }
+.hr-events p { margin: 2px 0 0; color: var(--ac-ink-2); white-space: pre-line; }
+.hr-events small { display: block; color: var(--ac-muted); font-size: 11px; }
+.hr-events .is-struck b, .hr-events .is-struck p { text-decoration: line-through; color: var(--ac-muted); }
+.hr-events .is-struck small.hr-why { color: var(--ac-attn); text-decoration: none; }
+@media (max-width: 560px) { .hr-events li { grid-template-columns: 1fr; } }
+
+/* Leave balances */
+.hr-bal { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.hr-bal div { border: 1px solid var(--ac-line); border-radius: 8px; padding: 7px 9px; background: var(--ac-surface); }
+.hr-bal b { display: block; font-size: 12px; color: var(--ac-ink-2); }
+.hr-bal strong { font-size: 18px; color: var(--ac-brand); font-variant-numeric: tabular-nums; }
+.hr-bal small { display: block; font-size: 11px; color: var(--ac-muted); }
+.hr-bal .is-low strong { color: var(--ac-attn); }
+.hr-days { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hr-decide { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.hr-decide input[type=text] { min-width: 140px; }
+.hr-types td input[type=number] { width: 70px; }
+.ac .ac-field[hidden] { display: none !important; }
+.hr-strike summary { list-style: none; cursor: pointer; font-size: 12px; }
+.hr-strike summary::-webkit-details-marker { display: none; }
+.hr-strike form { display: flex; gap: 6px; margin-top: 6px; }
+.hr-strike input { min-width: 160px; }

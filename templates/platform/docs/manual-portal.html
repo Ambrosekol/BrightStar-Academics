@@ -151,6 +151,18 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="hr-leave">A member of staff cannot ask for leave, or leave cannot be approved</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"You have no staff record yet"; "only N are left"; a request nobody can approve; or "it is not one you may decide".</div></div>
+  <div><b>Why</b><div><p>My leave needs a staff record linked to the person's account ({{ table('hr_staff') }}, <code>admin_id</code>). Leave is refused when it takes more working days than are left for the year, counting requests still waiting. Nobody decides leave on their own record, so the HR Officer's own leave needs someone else with {{ perm('hr.leave.approve') }}.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>On Staff records, open (or add) their record and choose their account under Portal account; or press "Add records for them".</li>
+    <li>Days carried over: on their record's Leave tab, change their allowance for the year.</li>
+    <li>Give {{ perm('hr.leave.approve') }} to a second person (the Head Teacher preset has it), or the School Admin decides.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The person sees My leave in their menu, and the request appears on Staff leave for someone else to decide.</div></div>
+</div>
+
 <h3 id="id-cards">ID cards print the wrong size, a card shows "Not valid", or the design will not save</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>Printed cards are too small or too large; a card's QR code says "Not valid"; or "The design is locked. Unlock it to make changes."</div></div>

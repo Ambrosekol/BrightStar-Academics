@@ -137,6 +137,9 @@ ADMIN_PERMISSION_DEFS = [
     ('report_cards.comment','Write report card comments','school','Write the class teacher\'s comment on report cards, and keep your own signature for them.'),
     ('report_cards.manage','Manage report card settings','school','Set the head teacher\'s or proprietor\'s title, name and signature, and when the next term begins.'),
     ('id_cards.print','Print ID cards','school','Print student and staff ID cards from the school\'s design; issues a card (with its QR code) to anyone printed for the first time.'),
+    ('hr.view','View staff records','school','See the staff list and each staff record: profile, qualifications, documents, career and leave.'),
+    ('hr.manage','Manage staff records','school','Add and change staff records, upload documents, record career entries, set leave allowances and kinds of leave, and record leave.'),
+    ('hr.leave.approve','Approve leave','school','Approve or decline staff leave requests (never their own).'),
     ('id_cards.manage','Design and manage ID cards','school','Design the student and staff ID cards, lock and unlock the design, and cancel or replace a lost card.'),
     ('delivery.manage','Manage email and SMS delivery','school','Set up the mail server and SMS account the school sends receipts, recovery emails and alerts from.'),
     ('entrance.config.view','View entrance configurations','assessment','View entrance bank academic-period configurations.'),
@@ -184,7 +187,7 @@ ADMIN_ROLE_PRESETS = {
     # Which classes and subjects a teacher reaches comes from their teaching duties, not from the role.
     'Head Teacher': {
         'description': 'Head teacher or principal: oversees every class and subject, assigns class and subject teachers, and checks, approves and releases any result.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.results.submit','school.staff.assign','id_cards.print','id_cards.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.results.submit','school.staff.assign','id_cards.print','id_cards.manage','hr.leave.approve']
     },
     'Class Teacher': {
         'description': "In charge of the classes they are class teacher of: students, the register, report card comments, every subject's scores, and releasing the class's results once subject teachers send them.",
@@ -218,6 +221,10 @@ ADMIN_ROLE_PRESETS = {
         'description': 'Manages books, loans, returns and library records.',
         'permissions': ['school.view','school.students.view','library.view','library.manage']
     },
+    'HR Officer': {
+        'description': 'Keeps staff records (profiles, qualifications, documents and career), and runs staff leave.',
+        'permissions': ['school.view','hr.view','hr.manage','hr.leave.approve']
+    },
     'Report Card Officer': {
         'description': "Writes class teachers' comments and prepares report cards for the classes assigned, and sets the head's signature.",
         'permissions': ['school.view','school.students.view','school.classes.view','report_cards.view','report_cards.comment','report_cards.manage']
@@ -246,6 +253,12 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_id_card_designer':'id_cards.manage','admin_id_card_design_save':'id_cards.manage',
     'admin_id_card_design_lock':'id_cards.manage','admin_id_card_design_reset':'id_cards.manage',
     'admin_id_card_cancel':'id_cards.manage','admin_id_card_replace':'id_cards.manage',
+    'admin_hr_staff':'hr.view','admin_hr_person':'hr.view','admin_hr_document':'hr.view',
+    'admin_hr_from_accounts':'hr.manage','admin_hr_new':'hr.manage','admin_hr_edit':'hr.manage',
+    'admin_hr_qualification_add':'hr.manage','admin_hr_qualification_remove':'hr.manage',
+    'admin_hr_document_add':'hr.manage','admin_hr_document_remove':'hr.manage',
+    'admin_hr_career_add':'hr.manage','admin_hr_career_strike':'hr.manage','admin_hr_allowance':'hr.manage',
+    'admin_hr_leave_record':'hr.manage','admin_hr_leave_types':'hr.manage','admin_hr_leave_decide':'hr.leave.approve',
     'admin_school_report_cards':'report_cards.view','admin_school_report_card_view':'report_cards.view',
     'admin_school_report_card_pdf':'report_cards.view','admin_school_report_cards_class_pdf':'report_cards.view',
     'admin_school_report_card_students':'report_cards.view',

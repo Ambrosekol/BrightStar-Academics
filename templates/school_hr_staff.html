@@ -1,0 +1,60 @@
+{% extends 'admin_base.html' %}
+{% block title %}Staff records — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Staff records (blueprints/school/hr.py): everyone the school employs, with or without a portal account. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+<div class="ac">
+<header class="ac-top">
+  <h1>Staff records</h1>
+  <nav class="ac-tabs" aria-label="Whose records">
+    {% for key, label in (('working', 'Working'), ('left', 'Left'), ('all', 'Everyone')) %}
+    <a href="{{ url_for('admin_hr_staff', status=key, category=category or None, q=q or None) }}" class="{{ 'is-active' if status == key }}"{% if status == key %} aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <div class="ac-top__act">
+    <a class="ac-btn" href="{{ url_for('admin_hr_leave') }}">Staff leave</a>
+    {% if can_manage %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_hr_new') }}">Add a member of staff</a>{% endif %}
+  </div>
+</header>
+
+{% if can_manage and unlinked %}
+<div class="ac-note">{{ unlinked }} staff account{{ 's have' if unlinked != 1 else ' has' }} no staff record yet.
+  <form method="post" action="{{ url_for('admin_hr_from_accounts') }}" data-confirm="Add a staff record for each of the {{ unlinked }} staff account{{ 's' if unlinked != 1 }} without one? Their name, phone, email and role are copied in; you fill in the rest." data-confirm-danger="0" data-confirm-ok="Add records">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn" type="submit">Add records for them</button></form></div>
+{% endif %}
+
+<form method="get" class="ac-tools" action="{{ url_for('admin_hr_staff') }}" role="search">
+  <input type="hidden" name="status" value="{{ status }}">
+  <select name="category" aria-label="Teaching or not" data-autosubmit>
+    <option value="">Teaching and non-teaching</option>
+    {% for key, label in hr.CATEGORIES.items() %}<option value="{{ key }}" {% if key == category %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Name, staff no., job or department" aria-label="Find"><button class="ac-btn" type="submit">Find</button></span>
+  <span class="ac-count">{{ records|length }} shown · {{ counts.get('active', 0) }} working{% if counts.get('suspended') %} · {{ counts.suspended }} suspended{% endif %}{% if counts.get('left') %} · {{ counts.left }} left{% endif %}</span>
+</form>
+
+<div class="ac-panel">
+  {% if records %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th></th><th>Name</th><th>Job</th><th>Category</th><th>Employed</th><th>Status</th></tr></thead>
+    <tbody>{% for r in records %}{% set name = r.last_name ~ ' ' ~ r.first_name %}
+      <tr>
+        <td class="hr-ph">{% if photos[r.id] %}<img src="{{ url_for('static', filename=photos[r.id]) }}" alt="">{% else %}<span>{{ r.first_name[:1]|upper }}</span>{% endif %}</td>
+        <td><a class="ac-title" href="{{ url_for('admin_hr_person', sid=r.id) }}">{{ name }}</a>
+            <small>{{ r.staff_no or '' }}{% if r.staff_no and not r.admin_id %} · {% endif %}{% if not r.admin_id %}no portal account{% endif %}</small></td>
+        <td>{{ r.job_title or '—' }}{% if r.department %}<small>{{ r.department }}</small>{% endif %}</td>
+        <td>{{ hr.CATEGORIES.get(r.category, '') }}<small>{{ hr.EMPLOYMENT_TYPES.get(r.employment_type, '') }}</small></td>
+        <td>{{ r.employment_date or '—' }}</td>
+        <td>{% if r.status == 'left' %}<span class="ac-tag">Left{% if r.exit_date %} {{ r.exit_date }}{% endif %}</span>
+            {% elif r.status == 'suspended' %}<span class="ac-tag ac-tag--attn">Suspended</span>
+            {% elif on_leave.get(r.id) %}<span class="ac-tag ac-tag--blue">On leave to {{ on_leave[r.id] }}</span>
+            {% else %}<span class="ac-tag ac-tag--good">Working</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody to show</strong>{% if q or category %}No staff record matches.{% elif can_manage %}Add the school's staff, or add records for the staff accounts at once.{% else %}No staff records yet.{% endif %}</div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

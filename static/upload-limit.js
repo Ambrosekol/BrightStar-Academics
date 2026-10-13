@@ -5,7 +5,7 @@
  * through the DOM, never through markup).
  *
  * A file box opts in with the data attributes the server writes for it (core/uploads.py, upload_attrs):
- *   data-upload-kind            "image" or "attachment"
+ *   data-upload-kind            "image", "attachment" or "document"
  *   data-upload-limit           the most one file may be, in bytes
  *   data-upload-limit-label     that limit written for people ("5 MB")
  *   data-upload-request-limit   the most one whole submission may carry, in bytes
@@ -143,7 +143,7 @@
     var files = input.files ? Array.prototype.slice.call(input.files) : [];
     if (!files.length) { show(input, '', false); return; }
 
-    var isImage = input.getAttribute('data-upload-kind') !== 'attachment';
+    var isImage = ['attachment', 'document'].indexOf(input.getAttribute('data-upload-kind')) === -1;
     var limit = parseInt(input.getAttribute('data-upload-limit'), 10) || 0;
     var limitLabel = input.getAttribute('data-upload-limit-label') || formatBytes(limit, 1, 'down');
     var typesLabel = input.getAttribute('data-upload-types-label') || '';

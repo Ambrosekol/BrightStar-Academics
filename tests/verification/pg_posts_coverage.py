@@ -37,6 +37,23 @@ EXEMPT = {
     "/admin/id-cards/design/<kind>/reset": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/cancel": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/replace": "see write_paths_id_cards.py",
+    # HR: staff records, documents, career, allowances, kinds of leave, and leave asked for, recorded, decided and
+    # cancelled, valid and hostile (a fake PDF, a teacher without the permission, one's own leave), in write_paths_hr.py.
+    "/admin/hr/from-accounts": "see write_paths_hr.py",
+    "/admin/hr/new": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/edit": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/qualifications": "see write_paths_hr.py",
+    "/admin/hr/qualifications/<int:qid>/remove": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/documents": "see write_paths_hr.py",
+    "/admin/hr/documents/<int:did>/remove": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/career": "see write_paths_hr.py",
+    "/admin/hr/career/<int:eid>/strike": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/allowance": "see write_paths_hr.py",
+    "/admin/hr/<int:sid>/leave": "see write_paths_hr.py",
+    "/admin/hr/leave/<int:rid>/decide": "see write_paths_hr.py",
+    "/admin/hr/leave/<int:rid>/cancel": "see write_paths_hr.py",
+    "/admin/hr/leave/types": "see write_paths_hr.py",
+    "/admin/my-leave": "see write_paths_hr.py",
     # Printed papers' marks sheets, valid and hostile, in write_paths_printed_papers.py.
     "/admin/school/marking/<int:assessment_id>/printed": "see write_paths_printed_papers.py",
     "/admin/finance/new-students/remove": "see write_paths_new_students.py",

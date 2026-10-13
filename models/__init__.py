@@ -115,6 +115,9 @@ from .finance import (
 
 from .subdivisions import ClassSubdivision, ClassTransfer
 from .id_cards import IdCard, IdCardDesign
+from .hr import (
+    LeaveAllowance, LeaveRequest, LeaveType, StaffCareerEvent, StaffDocument, StaffQualification, StaffRecord,
+)
 from .library import LibraryBook, LibraryLoan
 from .store import StoreItem, StorePurchase
 
@@ -170,6 +173,9 @@ __all__ = [
     'FinanceRefund',
     # ID cards
     'IdCard', 'IdCardDesign',
+    # HR
+    'LeaveAllowance', 'LeaveRequest', 'LeaveType', 'StaffCareerEvent', 'StaffDocument', 'StaffQualification',
+    'StaffRecord',
     # library
     'LibraryBook', 'LibraryLoan',
     # store

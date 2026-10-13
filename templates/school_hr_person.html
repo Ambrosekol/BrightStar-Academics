@@ -1,0 +1,178 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ hr.full_name(record) }} — Staff records — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- One staff record (blueprints/school/hr.py): profile, qualifications and documents, career, leave. Opening it is
+    logged. Career entries are never edited or deleted, only struck out with a reason. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+{% set r = record %}
+<div class="ac">
+<header class="hr-head">
+  {% if photo %}<img class="hr-head__ph" src="{{ url_for('static', filename=photo) }}" alt="">{% else %}<span class="hr-head__ph">{{ r.first_name[:1]|upper }}{{ r.last_name[:1]|upper }}</span>{% endif %}
+  <div>
+    <h1>{{ hr.full_name(r) }}</h1>
+    <p>{{ r.job_title or 'No job title' }}{% if r.department %} · {{ r.department }}{% endif %}{% if r.staff_no %} · {{ r.staff_no }}{% endif %}
+      {% if r.status == 'left' %}<span class="ac-tag">Left{% if r.exit_date %} {{ r.exit_date }}{% endif %}</span>
+      {% elif r.status == 'suspended' %}<span class="ac-tag ac-tag--attn">Suspended</span>
+      {% elif on_leave %}<span class="ac-tag ac-tag--blue">On leave to {{ on_leave }}</span>
+      {% else %}<span class="ac-tag ac-tag--good">Working</span>{% endif %}</p>
+  </div>
+  {% if can_manage %}<div class="hr-head__act"><a class="ac-btn" href="{{ url_for('admin_hr_edit', sid=r.id) }}">Edit record</a></div>{% endif %}
+</header>
+<nav class="ac-tabs" aria-label="Parts of the record" style="margin-bottom:10px">
+  {% for key, label in (('profile', 'Profile'), ('files', 'Qualifications and documents'), ('career', 'Career'), ('leave', 'Leave')) %}
+  <a href="{{ url_for('admin_hr_person', sid=r.id, tab=key) }}" class="{{ 'is-active' if tab == key }}"{% if tab == key %} aria-current="true"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if tab == 'profile' %}
+<div class="hr-grid">
+  <section class="ac-panel"><h2>The person</h2>
+    <dl class="hr-kv">
+      <dt>Name</dt><dd>{{ hr.full_name(r) }}</dd>
+      <dt>Gender</dt><dd>{{ r.gender or '—' }}</dd>
+      <dt>Date of birth</dt><dd>{{ r.date_of_birth or '—' }}</dd>
+      <dt>Marital status</dt><dd>{{ r.marital_status or '—' }}</dd>
+      <dt>State of origin</dt><dd>{{ r.state_of_origin or '—' }}</dd>
+      <dt>Phone</dt><dd>{{ r.phone or '—' }}</dd>
+      <dt>Email</dt><dd>{{ r.email or '—' }}</dd>
+      <dt>Address</dt><dd>{{ r.address or '—' }}</dd>
+    </dl></section>
+  <section class="ac-panel"><h2>The job</h2>
+    <dl class="hr-kv">
+      <dt>Job title</dt><dd>{{ r.job_title or '—' }}</dd>
+      <dt>Department</dt><dd>{{ r.department or '—' }}</dd>
+      <dt>Staff number</dt><dd>{{ r.staff_no or '—' }}</dd>
+      <dt>Category</dt><dd>{{ hr.CATEGORIES.get(r.category, '—') }}, {{ hr.EMPLOYMENT_TYPES.get(r.employment_type, '')|lower }}</dd>
+      <dt>Employed on</dt><dd>{{ r.employment_date or '—' }}</dd>
+      <dt>Confirmed on</dt><dd>{{ r.confirmation_date or 'Not yet' }}</dd>
+      {% if r.status == 'left' %}<dt>Left on</dt><dd>{{ r.exit_date or '—' }} ({{ hr.EXIT_REASONS.get(r.exit_reason, '')|lower }})</dd>{% endif %}
+      <dt>Portal account</dt><dd>{% if account %}{{ account.display_name }} ({{ account.username }}){% if not account.active %} · switched off{% endif %}{% else %}None{% endif %}</dd>
+    </dl></section>
+  <section class="ac-panel"><h2>Next of kin</h2>
+    <dl class="hr-kv">
+      <dt>Name</dt><dd>{{ r.nok_name or '—' }}</dd>
+      <dt>Relationship</dt><dd>{{ r.nok_relationship or '—' }}</dd>
+      <dt>Phone</dt><dd>{{ r.nok_phone or '—' }}</dd>
+      <dt>Address</dt><dd>{{ r.nok_address or '—' }}</dd>
+    </dl></section>
+  <section class="ac-panel hr-private"><h2>HR notes <small>private: never shown to the person</small></h2>
+    <dl class="hr-kv"><dt>Notes</dt><dd>{{ r.notes or '—' }}</dd></dl>
+    <p class="ac-hint">Added {{ r.created_at[:10] }}{% if names.get(r.created_by) %} by {{ names[r.created_by] }}{% endif %}{% if r.updated_at %} · changed {{ r.updated_at[:10] }}{% if names.get(r.updated_by) %} by {{ names[r.updated_by] }}{% endif %}{% endif %}.</p></section>
+</div>
+
+{% elif tab == 'files' %}
+<div class="hr-grid">
+  <section class="ac-panel"><h2>Qualifications</h2>
+    {% if qualifications %}<table class="ac-t"><tbody>{% for q in qualifications %}
+      <tr><td><b>{{ q.qualification }}</b><small>{{ q.institution or '' }}</small></td><td>{{ q.year or '' }}</td>
+        <td class="ac-actions">{% if can_manage %}<form method="post" action="{{ url_for('admin_hr_qualification_remove', qid=q.id) }}" data-confirm="Remove {{ q.qualification }}?" data-confirm-ok="Remove">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Remove</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody></table>{% else %}<div class="ac-empty">No qualifications recorded.</div>{% endif %}
+    {% if can_manage %}
+    <form method="post" action="{{ url_for('admin_hr_qualification_add', sid=r.id) }}" class="hr-add">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="ac-field"><label for="qq">Qualification</label><input id="qq" name="qualification" maxlength="120" required placeholder="B.Ed. Mathematics, NCE, TRCN..."></div>
+      <div class="ac-field"><label for="qi">Institution</label><input id="qi" name="institution" maxlength="120"></div>
+      <div class="ac-field ac-field--narrow"><label for="qy">Year</label><input id="qy" name="year" type="number" min="1950" max="2100"></div>
+      <button class="ac-btn" type="submit">Add</button>
+    </form>{% endif %}
+  </section>
+  <section class="ac-panel"><h2>Documents <small>only people who may see staff records can open them</small></h2>
+    {% if documents %}<table class="ac-t"><tbody>{% for d in documents %}
+      <tr><td><a class="ac-title" href="{{ url_for('admin_hr_document', did=d.id) }}" target="_blank" rel="noopener">{{ d.label }}</a>
+            <small>{{ hr.DOCUMENT_CATEGORIES.get(d.category, '') }} · {{ (d.size_bytes or 0) // 1024 }} KB · {{ d.uploaded_at[:10] }}{% if names.get(d.uploaded_by) %} by {{ names[d.uploaded_by] }}{% endif %}</small></td>
+        <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_hr_document', did=d.id, download=1) }}">Download</a>
+          {% if can_manage %}<form method="post" action="{{ url_for('admin_hr_document_remove', did=d.id) }}" data-confirm="Remove the document {{ d.label }}? The file is deleted." data-confirm-ok="Remove">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link ac-link--danger" type="submit">Remove</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody></table>{% else %}<div class="ac-empty">No documents yet.</div>{% endif %}
+    {% if can_manage %}
+    <form method="post" action="{{ url_for('admin_hr_document_add', sid=r.id) }}" enctype="multipart/form-data" class="hr-add">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="ac-field"><label for="dl">Name</label><input id="dl" name="label" maxlength="120" placeholder="Appointment letter 2024"></div>
+      <div class="ac-field"><label for="dc">Kind</label><select id="dc" name="category">{% for key, label in hr.DOCUMENT_CATEGORIES.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="ac-field ac-field--wide"><label for="df">File</label>
+        <input id="df" type="file" name="document" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" {{ upload_attrs('document') }}>{{ upload_hint('document') }}</div>
+      <button class="ac-btn" type="submit">Upload</button>
+    </form>{% endif %}
+  </section>
+</div>
+
+{% elif tab == 'career' %}
+<section class="ac-panel"><h2>Career <small>entries are never changed or deleted; a mistake is struck out, with the reason</small></h2>
+  {% if events %}<ul class="hr-events">{% for e in events %}
+    <li class="{{ 'is-struck' if e.struck_at }}">
+      <time datetime="{{ e.effective_date }}">{{ e.effective_date }}</time>
+      <div><span class="ac-tag{{ ' ac-tag--attn' if e.kind in ('query', 'warning', 'suspension') else (' ac-tag--good' if e.kind in ('promotion', 'commendation', 'confirmation') else '') }}">{{ hr.CAREER_KINDS.get(e.kind, e.kind) }}</span>
+        <b>{{ e.summary }}</b>{% if e.from_value or e.to_value %}<small>{{ e.from_value or '—' }} → {{ e.to_value }}</small>{% endif %}
+        {% if e.detail %}<p>{{ e.detail }}</p>{% endif %}
+        <small>Recorded {{ e.recorded_at[:10] }}{% if names.get(e.recorded_by) %} by {{ names[e.recorded_by] }}{% endif %}</small>
+        {% if e.struck_at %}<small class="hr-why">Struck out {{ e.struck_at[:10] }}{% if names.get(e.struck_by) %} by {{ names[e.struck_by] }}{% endif %}: {{ e.struck_reason }}</small>{% endif %}</div>
+      <div>{% if can_manage and not e.struck_at %}<details class="hr-strike"><summary class="ac-link ac-link--danger">Strike out</summary>
+        <form method="post" action="{{ url_for('admin_hr_career_strike', eid=e.id) }}" data-confirm="Strike out &quot;{{ e.summary }}&quot;? It stays on the record, crossed through, with your reason." data-confirm-ok="Strike out">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input class="ac-input" name="reason" maxlength="300" required placeholder="Why" aria-label="Why it is struck out">
+          <button class="ac-btn" type="submit">Strike out</button></form></details>{% endif %}</div>
+    </li>{% endfor %}</ul>
+  {% else %}<div class="ac-empty">Nothing recorded yet.</div>{% endif %}
+  {% if can_manage %}
+  <form method="post" action="{{ url_for('admin_hr_career_add', sid=r.id) }}" class="hr-add" data-career>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-field"><label for="ck">What</label><select id="ck" name="kind" required data-career-kind>{% for key, label in hr.CAREER_KINDS.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="ac-field ac-field--narrow" style="flex-basis:140px"><label for="cd">Date</label><input id="cd" type="date" name="effective_date" required></div>
+    <div class="ac-field" data-career-new hidden><label for="cv" data-career-new-label>New job title</label><input id="cv" name="to_value" maxlength="80"></div>
+    <div class="ac-field"><label for="cs">In one line</label><input id="cs" name="summary" maxlength="160" placeholder="Queried for lateness; promoted to Head of Sciences..."></div>
+    <div class="ac-field ac-field--wide"><label for="ct">Details</label><textarea id="ct" name="detail" rows="2" maxlength="2000"></textarea></div>
+    <button class="ac-btn" type="submit">Record</button>
+  </form>
+  {% endif %}
+</section>
+
+{% elif tab == 'leave' %}
+<section class="ac-panel">
+  <h2>Leave in {{ year }} <small><a class="ac-link" href="{{ url_for('admin_hr_person', sid=r.id, tab='leave', year=year - 1) }}">← {{ year - 1 }}</a>
+    {% if year <= this_year %} · <a class="ac-link" href="{{ url_for('admin_hr_person', sid=r.id, tab='leave', year=year + 1) }}">{{ year + 1 }} →</a>{% endif %}</small></h2>
+  <div class="hr-bal">{% for b in balances %}
+    <div class="{{ 'is-low' if b.left is not none and b.left <= 0 }}"><b>{{ b.type.name }}</b>
+      {% if b.allowance is none %}<strong>{{ b.used }}</strong><small>days taken · no set allowance</small>
+      {% else %}<strong>{{ b.left }}</strong><small>of {{ b.allowance }} left{% if b.own %} (their own allowance){% endif %}{% if b.waiting %} · {{ b.waiting }} waiting{% endif %}</small>{% endif %}</div>
+  {% endfor %}</div>
+  {% if can_manage %}
+  <details style="margin-top:10px"><summary class="ac-link">Change their allowance for {{ year }}</summary>
+  <form method="post" action="{{ url_for('admin_hr_allowance', sid=r.id) }}" class="hr-add">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="year" value="{{ year }}">
+    <div class="ac-field"><label for="at">Kind of leave</label><select id="at" name="leave_type_id">{% for t in active_types %}<option value="{{ t.id }}">{{ t.name }} (usually {{ t.days_per_year }})</option>{% endfor %}</select></div>
+    <div class="ac-field ac-field--narrow"><label for="ad">Days</label><input id="ad" name="days" type="number" min="0" max="366" placeholder="usual"></div>
+    <div class="ac-field"><label for="an">Why</label><input id="an" name="note" maxlength="200" placeholder="5 days carried over from last year"></div>
+    <button class="ac-btn" type="submit">Set</button>
+  </form><p class="ac-hint">Leave the days empty to go back to the usual allowance.</p></details>
+  {% endif %}
+</section>
+{% if can_manage and r.status != 'left' %}
+<section class="ac-panel"><h2>Record leave <small>{{ 'approved at once, as you may approve leave' if can_approve else 'it waits for someone who may approve leave' }}</small></h2>
+  <form method="post" action="{{ url_for('admin_hr_leave_record', sid=r.id) }}" class="hr-add" style="margin-top:0;padding-top:0;border:0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-field"><label for="lt">Kind</label><select id="lt" name="leave_type_id">{% for t in active_types %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+    <div class="ac-field ac-field--narrow" style="flex-basis:140px"><label for="ls">First day</label><input id="ls" type="date" name="start_date" required></div>
+    <div class="ac-field ac-field--narrow" style="flex-basis:140px"><label for="le">Last day</label><input id="le" type="date" name="end_date" required></div>
+    <div class="ac-field"><label for="lr">Reason</label><input id="lr" name="reason" maxlength="500"></div>
+    <button class="ac-btn" type="submit">Record</button>
+  </form>
+</section>
+{% endif %}
+<section class="ac-panel"><h2>Requests</h2>
+  {% include 'includes/_hr_leave_rows.html' %}
+</section>
+{% endif %}
+</div>
+{% if tab == 'career' and can_manage %}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-career]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var kind=root.querySelector('[data-career-kind]'), box=root.querySelector('[data-career-new]'), label=root.querySelector('[data-career-new-label]');
+  function show(){ var k=kind.value; box.hidden=!(k==='promotion'||k==='transfer'); label.textContent=k==='transfer'?'New department':'New job title'; }
+  kind.addEventListener('change',show); show();
+})();
+</script>
+{% endif %}
+{% endblock %}

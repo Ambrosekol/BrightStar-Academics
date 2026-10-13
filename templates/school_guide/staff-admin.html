@@ -86,6 +86,46 @@ or standard access from their roles.</p>
 password, their username and one-time password show in the same pop-up, ready to print; it is shown once, and must be
 changed at their first sign-in. Nobody, not even the School Admin, can see a password, only reset it.</p>
 
+<h2 id="hr">Staff records and leave</h2>
+<p><a href="{{ url_for('admin_hr_staff') }}">Staff records</a> (in the menu under People) is the school's file on
+everyone it employs: teachers, and also the driver, the cleaners and the security men, who have no portal sign-in. It
+needs the right to view staff records; changing them needs the right to manage them. The <strong>HR Officer</strong>
+role has both, and may approve leave.</p>
+<ul>
+  <li><strong>Adding people.</strong> <em>Add a member of staff</em> opens the form: the person, the job (staff number,
+  job title, department, teaching or not, full-time or not, when they were employed and confirmed), their next of kin,
+  and private HR notes. Link a record to the person's portal account, if they have one, so they can ask for leave
+  themselves. <em>Add records for them</em> makes a record at once for every staff account without one, copying their
+  name, phone, email and role; fill in the rest afterwards.</li>
+  <li><strong>A record</strong> has four tabs: <em>Profile</em>; <em>Qualifications and documents</em> (a CV, a
+  certificate, an appointment letter: a PDF, Word document, JPG or PNG, opened only by people who may see staff
+  records); <em>Career</em> (appointments, confirmation, promotions, changes of department, commendations, queries,
+  warnings and suspensions; a promotion with a new job title changes it on the record); and <em>Leave</em>.</li>
+  <li><strong>Nothing quietly disappears.</strong> A career entry cannot be changed or deleted. One made by mistake is
+  <em>struck out</em> with the reason: it stays, crossed through. Opening a record or a document, and every change, is in
+  the activity log, which names what changed but never the personal details themselves.</li>
+  <li><strong>Leaving.</strong> Set the status to <em>Left the school</em> with the date and the reason. Their portal
+  account is a separate thing: switch it off in Staff.</li>
+</ul>
+<p><a href="{{ url_for('admin_my_leave') }}">My leave</a> is in the menu of everyone whose account is linked to a staff
+record. It shows how many days of each kind of leave they have left this year, lets them ask for leave (the first and
+last day, who covers their work, and why) and cancel a request, or approved leave that has not started, and shows the
+main parts of their own record. HR's private notes are never shown there.</p>
+<p><a href="{{ url_for('admin_hr_leave') }}">Staff leave</a> is where requests are decided, by anyone allowed to approve
+leave (the HR Officer and the head teacher); the number beside it in the menu is how many are waiting. Each request shows
+the person's balance after it. Nobody decides their own leave: a request from the HR Officer waits for the head teacher or
+the School Admin. The person is told on the bell either way. Below are who is on leave now or soon, and what was decided.</p>
+<ul>
+  <li><strong>Days</strong> are working days, Monday to Friday, in a calendar year; public holidays are not taken off.
+  Leave counts against the year its first day falls in. A request that would take more days than are left is refused,
+  and approving checks again.</li>
+  <li><strong>Kinds of leave</strong> (annual, casual, sick, maternity, paternity, study and unpaid to start with) and
+  each one's days a year are set on <em>Kinds of leave</em>. 0 days means no set allowance, so it is never refused for
+  want of days. A person's own allowance for a year (days carried over) is set on the Leave tab of their record.</li>
+  <li><strong>For someone without an account</strong>, HR records the leave on their record; it is approved at once when
+  the person recording it may approve leave.</li>
+</ul>
+
 <h2 id="roles">Staff roles</h2>
 <p><a href="{{ url_for('admin_roles') }}">Staff roles</a>, in Settings, are the named bundles of permissions described
 in {{ page('roles-permissions', 'Roles, permissions and scope') }}. Each role's card shows its level in the school,

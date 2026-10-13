@@ -198,7 +198,8 @@ def upload_attrs(kind='image', scope=''):
     """The data attributes for an ``<input type="file">``: what it may take, for the script.
 
     ``kind`` is 'image' (one of the allowed picture types, up to the picture limit), 'attachment'
-    (a message attachment, limited only by the size of the whole request) or 'data' (a bulk-data
+    (a message attachment, limited only by the size of the whole request), 'document' (a staff
+    record's document: core/hr.py, the same limit as an attachment) or 'data' (a bulk-data
     upload such as the student CSV importer, with its own fixed limit).
     ``scope`` is 'branding' where the form also carries a logo and a set of photographs.
     """
@@ -207,6 +208,11 @@ def upload_attrs(kind='image', scope=''):
         limit=attachment_limit_bytes()
         types=','.join(sorted(e.lstrip('.') for e in ATTACHMENT_EXTENSIONS))
         types_label='an image, PDF, Word, text or Excel file'
+    elif kind=='document':
+        from core.hr import DOCUMENT_EXTENSIONS, DOCUMENT_TYPES_LABEL
+        limit=attachment_limit_bytes()
+        types=','.join(sorted(e.lstrip('.') for e in DOCUMENT_EXTENSIONS))
+        types_label=DOCUMENT_TYPES_LABEL
     elif kind=='data':
         limit=data_upload_limit_bytes()
         types=','.join(sorted(e.lstrip('.') for e in DATA_EXTENSIONS))
@@ -237,6 +243,8 @@ def upload_hint(kind='image', scope='', multiple=False):
     from markupsafe import Markup, escape
     if kind=='attachment':
         text=f'An image, PDF, Word, text or Excel file, up to {format_limit(attachment_limit_bytes())}.'
+    elif kind=='document':
+        text=f'A PDF, Word document, JPG or PNG, up to {format_limit(attachment_limit_bytes())}.'
     elif kind=='data':
         text=f'{DATA_TYPES_LABEL}, up to {format_limit(data_upload_limit_bytes())}.'
     else:

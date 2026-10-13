@@ -758,6 +758,13 @@ def _init_db(school):
         {'name':name,'stage':stage,'level_order':level,'optional':optional,'active':active,'created_at':now}
         for name,stage,level,optional,active in class_seed
     ])
+    # The kinds of staff leave a school starts with (core/hr.py); it changes their days or switches them off.
+    from core.hr import DEFAULT_LEAVE_TYPES
+    from models import LeaveType
+    _ignore_insert(LeaveType, [
+        {'name':name,'days_per_year':days,'paid':paid,'active':1,'sort_order':order,'created_at':now}
+        for order,(name,days,paid) in enumerate(DEFAULT_LEAVE_TYPES)
+    ])
     if not one(select(AcademicSession.id).order_by(AcademicSession.id).limit(1)):
         db.session.add(AcademicSession(name='2026/2027',is_current=1,active=1,created_at=now))
     _seed_school_tenant(now, **school)
@@ -975,7 +982,7 @@ def forget_counts_after_a_change(response):
     """A change made by an administrator (a payment, a read notification) must show on the next page at
     once, so the counts saved for the badges are dropped whenever a request changes something."""
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
-        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu')
+        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu')
         clear_school_admin_caches()
     return response
 
@@ -1247,6 +1254,7 @@ import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.teaching  # noqa: F401,E402
 import blueprints.school.marking  # noqa: F401,E402
 import blueprints.school.id_cards  # noqa: F401,E402
+import blueprints.school.hr  # noqa: F401,E402
 import blueprints.school.subdivisions  # noqa: F401,E402
 import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402

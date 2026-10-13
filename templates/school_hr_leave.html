@@ -1,0 +1,78 @@
+{% extends 'admin_base.html' %}
+{% block title %}Staff leave — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Staff leave (blueprints/school/hr.py): requests waiting for a decision, with the person's balance; who is on leave
+    now or soon; and what was decided. Nobody decides their own leave. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+{% macro who(x) -%}{% set p = records.get(x.staff_id) %}{% if p %}{% if can_view %}<a class="ac-title" href="{{ url_for('admin_hr_person', sid=p.id, tab='leave') }}">{{ hr.full_name(p, False) }}</a>{% else %}<b>{{ hr.full_name(p, False) }}</b>{% endif %}<small>{{ p.job_title or '' }}</small>{% else %}—{% endif %}{%- endmacro %}
+<div class="ac">
+<header class="ac-top">
+  <h1>Staff leave</h1>
+  <div class="ac-top__act">
+    {% if can_view %}<a class="ac-btn" href="{{ url_for('admin_hr_staff') }}">Staff records</a>{% endif %}
+    {% if can_manage %}<a class="ac-btn" href="{{ url_for('admin_hr_leave_types') }}">Kinds of leave</a>{% endif %}
+  </div>
+</header>
+
+<section class="ac-panel">
+  <h2>Waiting for a decision <small>{{ waiting|length }}</small></h2>
+  {% if waiting %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Who</th><th>Kind</th><th>Dates</th><th>Days</th><th>Left after</th><th></th></tr></thead>
+    <tbody>{% for w in waiting %}{% set x = w.leave %}{% set t = types.get(x.leave_type_id) %}{% set b = w.balance %}
+      <tr>
+        <td>{{ who(x) }}</td>
+        <td>{{ t.name if t else '' }}{% if x.reason %}<small>{{ x.reason }}</small>{% endif %}{% if x.cover %}<small>Cover: {{ x.cover }}</small>{% endif %}
+          <small>Asked {{ x.requested_at[:10] }}{% if names.get(x.requested_by) %} by {{ names[x.requested_by] }}{% endif %}</small></td>
+        <td class="hr-days">{{ x.start_date }} to {{ x.end_date }}</td>
+        <td class="hr-days">{{ x.days }}</td>
+        <td class="hr-days">{% if b and b.left is not none %}{% set after = b.left - x.days %}<span class="{{ 'ac-tag ac-tag--attn' if after < 0 }}">{{ after }} of {{ b.allowance }}</span>{% else %}<small>no set allowance</small>{% endif %}</td>
+        <td class="ac-actions">{% if w.can_decide %}
+          <form method="post" action="{{ url_for('admin_hr_leave_decide', rid=x.id) }}" class="hr-decide">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input class="ac-input" type="text" name="note" maxlength="300" placeholder="Note (optional)" aria-label="A note for them">
+            <button class="ac-btn ac-btn--primary" type="submit" name="decision" value="approve">Approve</button>
+            <button class="ac-btn" type="submit" name="decision" value="decline">Decline</button></form>
+          {% else %}<small>{{ 'Their own: someone else decides it' if records.get(x.staff_id) and records[x.staff_id].admin_id == current_admin.id else 'For someone who may approve leave' }}</small>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>Nothing waiting</strong>New requests appear here, and on the bell.</div>{% endif %}
+</section>
+
+<section class="ac-panel">
+  <h2>On leave now, or soon <small>{{ current|length }}</small></h2>
+  {% if current %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Who</th><th>Kind</th><th>Dates</th><th>Days</th><th></th></tr></thead>
+    <tbody>{% for x in current %}{% set t = types.get(x.leave_type_id) %}
+      <tr>
+        <td>{{ who(x) }}</td>
+        <td>{{ t.name if t else '' }}{% if x.cover %}<small>Cover: {{ x.cover }}</small>{% endif %}</td>
+        <td class="hr-days">{{ x.start_date }} to {{ x.end_date }}{% if x.start_date <= today %} <span class="ac-tag ac-tag--blue">now</span>{% endif %}</td>
+        <td class="hr-days">{{ x.days }}</td>
+        <td class="ac-actions">{% if can_manage %}<form method="post" action="{{ url_for('admin_hr_leave_cancel', rid=x.id) }}" data-confirm="Cancel this leave ({{ x.start_date }} to {{ x.end_date }})? Its days are given back. To shorten it, cancel it and record the days actually taken.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="hr">
+          <button class="ac-link ac-link--danger" type="submit">Cancel</button></form>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty">Nobody is on approved leave now or soon.</div>{% endif %}
+</section>
+
+<section class="ac-panel">
+  <h2>Decided</h2>
+  {% if history %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Who</th><th>Kind</th><th>Dates</th><th>Days</th><th>What happened</th></tr></thead>
+    <tbody>{% for x in history %}{% set t = types.get(x.leave_type_id) %}
+      <tr>
+        <td>{{ who(x) }}</td><td>{{ t.name if t else '' }}</td>
+        <td class="hr-days">{{ x.start_date }} to {{ x.end_date }}</td><td class="hr-days">{{ x.days }}</td>
+        <td><span class="ac-tag{{ {'approved': ' ac-tag--good', 'declined': ' ac-tag--attn'}.get(x.status, '') }}">{{ hr.LEAVE_STATUSES.get(x.status, x.status) }}</span>
+          <small>{{ (x.decided_at or '')[:10] }}{% if names.get(x.decided_by) %} · {{ names[x.decided_by] }}{% endif %}{% if x.decision_note %} · "{{ x.decision_note }}"{% endif %}</small></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty">Nothing decided yet.</div>{% endif %}
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{#- One person's leave requests, on their staff record (school_hr_person.html): each with its dates, working days and
+    what became of it; HR approves or declines a waiting one there, or cancels one that has not ended. -#}
+{% if requests %}
+<div class="ac-scroll"><table class="ac-t">
+  <thead><tr><th>Kind</th><th>Dates</th><th>Days</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for x in requests %}{% set t = types.get(x.leave_type_id) %}
+    <tr>
+      <td>{{ t.name if t else 'Leave' }}{% if x.reason %}<small>{{ x.reason }}</small>{% endif %}{% if x.cover %}<small>Cover: {{ x.cover }}</small>{% endif %}</td>
+      <td class="hr-days">{{ x.start_date }} to {{ x.end_date }}</td>
+      <td class="hr-days">{{ x.days }}</td>
+      <td><span class="ac-tag{{ {'approved': ' ac-tag--good', 'pending': ' ac-tag--blue', 'declined': ' ac-tag--attn'}.get(x.status, '') }}">{{ hr.LEAVE_STATUSES.get(x.status, x.status) }}</span>
+        <small>{% if x.decided_at %}{{ x.decided_at[:10] }}{% if names.get(x.decided_by) %} · {{ names[x.decided_by] }}{% endif %}{% else %}asked {{ x.requested_at[:10] }}{% endif %}</small>
+        {% if x.decision_note %}<small>"{{ x.decision_note }}"</small>{% endif %}</td>
+      <td class="ac-actions">
+        {% if x.status == 'pending' and can_approve %}
+        <form method="post" action="{{ url_for('admin_hr_leave_decide', rid=x.id) }}" class="hr-decide">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="person">
+          <button class="ac-btn ac-btn--primary" type="submit" name="decision" value="approve">Approve</button>
+          <button class="ac-btn" type="submit" name="decision" value="decline">Decline</button></form>
+        {% endif %}
+        {% if can_manage and x.status in ('pending', 'approved') and x.end_date >= today %}
+        <form method="post" action="{{ url_for('admin_hr_leave_cancel', rid=x.id) }}" data-confirm="Cancel this leave ({{ x.start_date }} to {{ x.end_date }})? Its days are given back.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="person">
+          <button class="ac-link ac-link--danger" type="submit">Cancel</button></form>
+        {% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<div class="ac-empty">No leave asked for or recorded.</div>{% endif %}

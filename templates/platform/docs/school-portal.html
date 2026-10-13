@@ -123,6 +123,31 @@ student items are complete on their own and never carry one, because families ca
   It needs no database read, and it always matches What's new, because both come from the same file.</li>
 </ul>
 
+<h2 id="hr">Staff records and leave</h2>
+<p>{{ route('admin_hr_staff') }} ({{ file('blueprints/school/hr.py') }}) lists the school's staff records; the rules are
+{{ file('core/hr.py') }} and the tables {{ table('hr_staff') }} (one per person, optionally linked to an account by
+<code>admin_id</code>, unique), {{ table('hr_qualifications') }}, {{ table('hr_documents') }}, {{ table('hr_career_events') }},
+{{ table('hr_leave_types') }}, {{ table('hr_leave_allowances') }} and {{ table('hr_leave_requests') }}. Permissions:
+{{ perm('hr.view') }}, {{ perm('hr.manage') }} and {{ perm('hr.leave.approve') }}; the HR Officer preset has all three,
+and the Head Teacher preset has {{ perm('hr.leave.approve') }}.</p>
+<ul>
+  <li><strong>A record</strong> is read from a form by <code>clean_record</code>: known fields only, each cut to its
+  length, choices from lists, dates real and in range. {{ route('admin_hr_person') }} sends <code>no-store</code> and logs
+  <code>hr_record_viewed</code>; changes log the names of the fields changed (<code>hr_record_updated</code>), never their
+  values. HR notes are never shown on {{ route('admin_my_leave') }}.</li>
+  <li><strong>Documents</strong> must begin like what their extension says (PDF, Word, JPG, PNG; <code>check_document</code>)
+  and are stored under a random name in <code>uploads/hr/</code>, a folder {{ file('core/upload_access.py') }} never opens.
+  Only {{ route('admin_hr_document') }} serves them, to {{ perm('hr.view') }}, with nosniff and no-store, and logs
+  <code>hr_document_opened</code>.</li>
+  <li><strong>Career entries</strong> have no edit or delete route: {{ route('admin_hr_career_strike') }} marks one struck
+  out, with who, when and why.</li>
+  <li><strong>Leave</strong> is counted in working days (Monday to Friday) against the year of its first day. A request is
+  refused if it overlaps a waiting or approved one, or takes more than is left less what is waiting;
+  {{ route('admin_hr_leave_decide') }} locks the row, re-checks the balance and refuses anyone deciding leave on their own
+  record. Requests notify every account with {{ perm('hr.leave.approve') }}; decisions notify the person. The menu badge
+  is cached as <code>hr-menu</code> and dropped on any write.</li>
+</ul>
+
 <h2 id="id-cards">ID cards</h2>
 <p>{{ route('admin_id_cards') }} ({{ file('blueprints/school/id_cards.py') }}) prints student and staff cards from the
 school's design; {{ route('admin_id_card_designer') }} edits it. The rules are {{ file('core/id_cards.py') }}; the tables

@@ -1,0 +1,31 @@
+{% extends 'admin_base.html' %}
+{% block title %}Kinds of leave — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The kinds of staff leave and each one's usual days a year (blueprints/school/hr.py). A kind switched off can no
+    longer be asked for; what was taken stays on the record. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+<div class="ac">
+<header class="ac-top"><h1>Kinds of leave</h1></header>
+<p class="ac-note">Days are working days, Monday to Friday, for a calendar year; public holidays are not taken off. 0 days means no set
+  allowance (unpaid or study leave, say): it is never refused for want of days. A person's own allowance for a year (days carried over)
+  is set on their staff record.</p>
+<form method="post" class="ac-panel">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="ac-scroll"><table class="ac-t hr-types">
+    <thead><tr><th>Kind</th><th>Days a year</th><th>Paid</th><th>In use</th></tr></thead>
+    <tbody>{% for t in types %}
+      <tr><td><b>{{ t.name }}</b></td>
+        <td><input class="ac-input" type="number" name="days_{{ t.id }}" value="{{ t.days_per_year }}" min="0" max="366" required aria-label="{{ t.name }}: days a year"></td>
+        <td><input type="checkbox" name="paid_{{ t.id }}" value="1" {% if t.paid %}checked{% endif %} aria-label="{{ t.name }} is paid"></td>
+        <td><input type="checkbox" name="active_{{ t.id }}" value="1" {% if t.active %}checked{% endif %} aria-label="{{ t.name }} can be asked for"></td></tr>
+    {% endfor %}
+      <tr><td><input class="ac-input" name="new_name" maxlength="60" placeholder="Add a kind of leave" aria-label="New kind of leave"></td>
+        <td><input class="ac-input" type="number" name="new_days" value="0" min="0" max="366" aria-label="New kind: days a year"></td>
+        <td><input type="checkbox" name="new_paid" value="1" checked aria-label="New kind is paid"></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Save</button></div>
+</form>
+</div>
+{% endblock %}

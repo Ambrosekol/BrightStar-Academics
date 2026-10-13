@@ -1,0 +1,93 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Edit staff record' if record else 'Add a member of staff' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Adding or changing a staff record (blueprints/school/hr.py); every field is checked by core/hr.clean_record. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hr.css', v='1') }}">
+{% set v = values %}
+<div class="ac">
+<header class="ac-top">
+  <h1>{{ ('Edit ' ~ hr.full_name(record)) if record else 'Add a member of staff' }}</h1>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_hr_person', sid=record.id) if record else url_for('admin_hr_staff') }}">Cancel</a></div>
+</header>
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="ac-form" data-hr-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="hr-grid">
+    <section class="ac-panel">
+      <h2>The person</h2>
+      <div class="ac-fields ac-fields--3">
+        <div class="ac-field"><label for="title">Title</label>
+          <select id="title" name="title"><option value=""></option>{% for t in hr.TITLES %}<option {% if v.title == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="first_name">First name</label><input id="first_name" name="first_name" value="{{ v.first_name or '' }}" maxlength="60" required></div>
+        <div class="ac-field"><label for="middle_name">Middle name</label><input id="middle_name" name="middle_name" value="{{ v.middle_name or '' }}" maxlength="60"></div>
+        <div class="ac-field"><label for="last_name">Surname</label><input id="last_name" name="last_name" value="{{ v.last_name or '' }}" maxlength="60" required></div>
+        <div class="ac-field"><label for="gender">Gender</label>
+          <select id="gender" name="gender"><option value=""></option>{% for g in hr.GENDERS %}<option {% if v.gender == g %}selected{% endif %}>{{ g }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="date_of_birth">Date of birth</label><input id="date_of_birth" type="date" name="date_of_birth" value="{{ v.date_of_birth or '' }}"></div>
+        <div class="ac-field"><label for="marital_status">Marital status</label>
+          <select id="marital_status" name="marital_status"><option value=""></option>{% for m in hr.MARITAL %}<option {% if v.marital_status == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="state_of_origin">State of origin</label><input id="state_of_origin" name="state_of_origin" value="{{ v.state_of_origin or '' }}" maxlength="60"></div>
+        <div class="ac-field"><label for="phone">Phone</label><input id="phone" type="tel" name="phone" value="{{ v.phone or '' }}" maxlength="30"></div>
+        <div class="ac-field"><label for="email">Email</label><input id="email" type="email" name="email" value="{{ v.email or '' }}" maxlength="120"></div>
+        <div class="ac-field ac-field--wide"><label for="address">Home address</label><textarea id="address" name="address" rows="2" maxlength="300">{{ v.address or '' }}</textarea></div>
+        <div class="ac-field ac-field--wide"><label for="photo">Photograph</label>
+          <input id="photo" type="file" name="photo" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image') }}>
+          {{ upload_hint() }}<small>For someone without a portal account. Someone with one keeps the photograph on their account unless you add one here.</small></div>
+      </div>
+    </section>
+
+    <section class="ac-panel">
+      <h2>The job</h2>
+      <div class="ac-fields">
+        <div class="ac-field"><label for="staff_no">Staff number</label><input id="staff_no" name="staff_no" value="{{ v.staff_no or '' }}" maxlength="30"></div>
+        <div class="ac-field"><label for="job_title">Job title</label><input id="job_title" name="job_title" value="{{ v.job_title or '' }}" maxlength="80" placeholder="Mathematics teacher, driver..."></div>
+        <div class="ac-field"><label for="department">Department</label><input id="department" name="department" value="{{ v.department or '' }}" maxlength="80" placeholder="Sciences, Admin, Security..."></div>
+        <div class="ac-field"><label for="category">Teaching or not</label>
+          <select id="category" name="category">{% for key, label in hr.CATEGORIES.items() %}<option value="{{ key }}" {% if v.category == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="employment_type">Employment</label>
+          <select id="employment_type" name="employment_type">{% for key, label in hr.EMPLOYMENT_TYPES.items() %}<option value="{{ key }}" {% if v.employment_type == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ac-field"><label for="employment_date">Employed on</label><input id="employment_date" type="date" name="employment_date" value="{{ v.employment_date or '' }}"></div>
+        <div class="ac-field"><label for="confirmation_date">Confirmed on</label><input id="confirmation_date" type="date" name="confirmation_date" value="{{ v.confirmation_date or '' }}"></div>
+        <div class="ac-field"><label for="admin_id">Portal account</label>
+          <select id="admin_id" name="admin_id"><option value="">None (they do not sign in)</option>
+            {% for a in accounts %}<option value="{{ a.id }}" {% if v.admin_id == a.id %}selected{% endif %}>{{ a.display_name }}{% if a.role %} · {{ a.role }}{% endif %}</option>{% endfor %}</select>
+          <small>Linked, they see their record and ask for leave on My leave.</small></div>
+        <div class="ac-field"><label for="status">Status</label>
+          <select id="status" name="status" data-hr-status>{% for key, label in hr.STATUSES.items() %}<option value="{{ key }}" {% if v.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ac-field" data-hr-left><label for="exit_date">Left on</label><input id="exit_date" type="date" name="exit_date" value="{{ v.exit_date or '' }}"></div>
+        <div class="ac-field" data-hr-left><label for="exit_reason">Why they left</label>
+          <select id="exit_reason" name="exit_reason"><option value=""></option>{% for key, label in hr.EXIT_REASONS.items() %}<option value="{{ key }}" {% if v.exit_reason == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      </div>
+    </section>
+
+    <section class="ac-panel">
+      <h2>Next of kin</h2>
+      <div class="ac-fields">
+        <div class="ac-field"><label for="nok_name">Name</label><input id="nok_name" name="nok_name" value="{{ v.nok_name or '' }}" maxlength="120"></div>
+        <div class="ac-field"><label for="nok_relationship">Relationship</label><input id="nok_relationship" name="nok_relationship" value="{{ v.nok_relationship or '' }}" maxlength="40" placeholder="Spouse, brother..."></div>
+        <div class="ac-field"><label for="nok_phone">Phone</label><input id="nok_phone" type="tel" name="nok_phone" value="{{ v.nok_phone or '' }}" maxlength="30"></div>
+        <div class="ac-field ac-field--wide"><label for="nok_address">Address</label><textarea id="nok_address" name="nok_address" rows="2" maxlength="300">{{ v.nok_address or '' }}</textarea></div>
+      </div>
+    </section>
+
+    <section class="ac-panel hr-private">
+      <h2>HR notes <small>private: never shown to the person</small></h2>
+      <div class="ac-field"><textarea id="notes" aria-label="HR notes" name="notes" rows="5" maxlength="2000">{{ v.notes or '' }}</textarea></div>
+    </section>
+  </div>
+  <div class="ac-form-foot"><span class="ac-grow"></span>
+    <a class="ac-btn" href="{{ url_for('admin_hr_person', sid=record.id) if record else url_for('admin_hr_staff') }}">Cancel</a>
+    <button class="ac-btn ac-btn--primary" type="submit">{{ 'Save' if record else 'Add' }}</button></div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var form=document.querySelector('[data-hr-form]:not([data-ready])'); if(!form) return; form.setAttribute('data-ready','1');
+  var status=form.querySelector('[data-hr-status]');
+  function show(){ form.querySelectorAll('[data-hr-left]').forEach(function(el){ el.hidden=status.value!=='left'; }); }
+  status.addEventListener('change',show); show();
+})();
+</script>
+{% endblock %}
