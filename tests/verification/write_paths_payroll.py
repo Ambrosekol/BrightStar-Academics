@@ -220,6 +220,8 @@ op.post(f"{PAY}/staff/{HRO_REC}", {"on_payroll": "1", "basic": "100000", "bank_n
 check("the School Admin sets the Payroll Officer's pay", one("SELECT COUNT(*) FROM payroll_staff WHERE on_payroll = 1") == 4)
 
 # ================================================================ D. a month's payroll
+officer.post(f"{PAY}/runs", {"period": "2026-1' OR 1=1"}, page=PAY)
+check("a month that is not YYYY-MM is refused", not one("SELECT COUNT(*) FROM payroll_runs"))
 officer.post(f"{PAY}/runs", {"period": PERIOD}, page=PAY)
 RUN = one("SELECT id FROM payroll_runs WHERE period = :p", p=PERIOD)
 slip = sql("SELECT basic, gross, paye, pension_employee, pension_employer, deductions, net FROM payroll_payslips WHERE run_id = :r AND staff_id = :s",
@@ -310,6 +312,14 @@ with A.app.app_context():
         db.session.remove()
 check("rotating the key re-encrypts the bank numbers, PINs and tax IDs, and they still read", rotated >= 6 and not skipped and acct == "0123456789",
       f"{rotated} {skipped} {acct}")
+
+# ================================================================ H. the approver sees what changed since last month
+NEXT = (TODAY.replace(day=28) + timedelta(days=5)).strftime("%Y-%m")
+op.post(f"{PAY}/staff/{BELLO}", {"on_payroll": "1", "basic": "400000", "bank_name": "GTBank"}, page=f"{PAY}/staff/{BELLO}")
+officer.post(f"{PAY}/runs", {"period": NEXT}, page=PAY)
+RUN2 = one("SELECT id FROM payroll_runs WHERE period = :p", p=NEXT)
+page = bursar.text(f"{PAY}/runs/{RUN2}")
+check("the next month shows each net pay against the last paid month", "Change from" in page and "+₦" in page)
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 failed = [name for name, ok, _ in results if not ok]

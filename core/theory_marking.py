@@ -230,17 +230,25 @@ def refresh_paper(assessment_id, actor_id=None, reason=None):
 
 
 # ---------------------------------------------------------------- what is waiting to be marked
-def papers_with_theory():
-    """Every test and examination a teacher marks: a CBT paper with theory questions, and every printed paper with
+def papers_with_theory(session_id=None):
+    """The tests and examinations a teacher marks: a CBT paper with theory questions, and every printed paper with
     questions (all its marks are entered by hand). ``[{'id','title','assessment_type','class_id','subject_id','term',
-    'session_id','active','delivery'}]``. Practice tests are never marked."""
+    'session_id','active','delivery'}]``. Practice tests are never marked.
+
+    With ``session_id``, only that session's papers, and any older CBT paper that still has a script waiting: the
+    menu's count is worked out from this every few seconds for every teacher, and a school's whole history would make
+    it slower every term."""
     theory = select(SchoolQuestion.assessment_id).where(SchoolQuestion.question_type == THEORY).distinct()
     printed = and_(SchoolAssessment.delivery == 'printed', SchoolAssessment.question_count > 0)
-    return all_rows(select(SchoolAssessment.id, SchoolAssessment.title, SchoolAssessment.assessment_type,
-                           SchoolAssessment.class_id, SchoolAssessment.subject_id, SchoolAssessment.term,
-                           SchoolAssessment.session_id, SchoolAssessment.active, SchoolAssessment.delivery)
-                    .where(or_(SchoolAssessment.id.in_(theory), printed),
-                           SchoolAssessment.assessment_type != 'practice'))
+    stmt = (select(SchoolAssessment.id, SchoolAssessment.title, SchoolAssessment.assessment_type,
+                   SchoolAssessment.class_id, SchoolAssessment.subject_id, SchoolAssessment.term,
+                   SchoolAssessment.session_id, SchoolAssessment.active, SchoolAssessment.delivery)
+            .where(or_(SchoolAssessment.id.in_(theory), printed), SchoolAssessment.assessment_type != 'practice'))
+    if session_id is not None:
+        waiting = (select(SchoolAssessmentAttempt.assessment_id)
+                   .where(SchoolAssessmentAttempt.theory_status == 'pending', SchoolAssessmentAttempt.status.in_(FINISHED)))
+        stmt = stmt.where(or_(SchoolAssessment.session_id == session_id, SchoolAssessment.id.in_(waiting)))
+    return all_rows(stmt)
 
 
 def script_counts(assessment_ids):

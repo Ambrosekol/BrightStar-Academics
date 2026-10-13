@@ -55,13 +55,15 @@
   <h2>Payslips <small>{{ slips|length }}</small></h2>
   {% if slips %}
   <div class="ac-scroll"><table class="ac-t">
-    <thead><tr><th>Name</th><th class="pay-n">Basic</th><th class="pay-n">Gross</th><th class="pay-n">PAYE</th><th class="pay-n">Pension</th><th class="pay-n">Other deductions</th><th class="pay-n">Net</th><th>Bank</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th class="pay-n">Basic</th><th class="pay-n">Gross</th><th class="pay-n">PAYE</th><th class="pay-n">Pension</th><th class="pay-n">Other deductions</th><th class="pay-n">Net</th>{% if last_label %}<th class="pay-n">Change from {{ last_label }}</th>{% endif %}<th>Bank</th><th></th></tr></thead>
     <tbody>{% for s in slips %}{% set other = s.deductions - s.paye - s.pension_employee - s.nhf %}
       <tr class="{{ 'pay-bad' if s.net < 0 }}">
         <td><b>{{ s.name }}</b><small>{{ s.job_title or '' }}</small>{% if s.warnings %}<small class="pay-w">⚠ {{ s.warnings }}</small>{% endif %}</td>
         <td class="pay-n">{{ s.basic|naira }}</td><td class="pay-n">{{ s.gross|naira }}</td><td class="pay-n">{{ s.paye|naira }}</td>
         <td class="pay-n">{{ s.pension_employee|naira }}</td><td class="pay-n">{{ other|naira if other else '' }}</td>
         <td class="pay-n"><b>{{ s.net|naira }}</b></td>
+        {% if last_label %}{% set was = last_net.get(s.staff_id) %}<td class="pay-n">{% if was is none %}<small class="pay-w">new</small>
+          {% elif s.net != was %}<span class="{{ 'pay-w' if s.net > was and (s.net - was) * 10 > was }}">{{ '+' if s.net > was }}{{ (s.net - was)|naira }}</span>{% else %}<small>same</small>{% endif %}</td>{% endif %}
         <td>{% if s.account_last4 %}{{ s.bank_name or '' }}<small>····{{ s.account_last4 }}</small>{% else %}<small class="pay-w">none</small>{% endif %}</td>
         <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_payroll_payslip', pid=s.id) }}" target="_blank" rel="noopener">Payslip</a>
           {% if draft and can_manage and s.staff_id != own_staff_id %}<details class="pay-adj"><summary class="ac-link">Add a line</summary>
@@ -76,7 +78,7 @@
       </tr>
       {% for adj in adjustments.get(s.staff_id, []) %}
       <tr class="pay-adjrow"><td colspan="6"><small>{{ 'Paid' if adj.kind == 'earning' else 'Taken' }}: {{ adj.label }}{% if adj.kind == 'earning' and not adj.taxable %} (not taxed){% endif %}</small></td>
-        <td class="pay-n"><small>{{ ('' if adj.kind == 'earning' else '-') }}{{ adj.amount|naira }}</small></td><td></td>
+        <td class="pay-n"><small>{{ ('' if adj.kind == 'earning' else '-') }}{{ adj.amount|naira }}</small></td>{% if last_label %}<td></td>{% endif %}<td></td>
         <td class="ac-actions">{% if draft and can_manage and s.staff_id != own_staff_id %}<form method="post" action="{{ url_for('admin_payroll_run_adjust', rid=run.id) }}">
           <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="remove" value="{{ adj.id }}">
           <button class="ac-link ac-link--danger" type="submit">Remove</button></form>{% endif %}</td></tr>

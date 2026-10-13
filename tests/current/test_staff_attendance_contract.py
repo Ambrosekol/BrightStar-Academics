@@ -59,7 +59,7 @@ def test_no_position_is_kept():
 
 def test_the_screen_gives_nothing_away():
     screen = _route("_display_settings")
-    assert "hmac.compare_digest(sa.token_hash(token), settings.display_token_hash)" in screen
+    assert "hmac.compare_digest(sa.token_hash(token), facts['token_hash'])" in screen and "remember('staff-screen', 5" in screen
     for header in ("'no-store, private'", "'noindex, nofollow'", "'no-referrer'"):
         assert header in _route("_screen"), header
     assert "session['staff_display_link'] = raw" in _route("admin_staff_attendance_display")

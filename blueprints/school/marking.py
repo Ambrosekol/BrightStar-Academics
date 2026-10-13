@@ -22,8 +22,8 @@ from datetime import datetime, timezone
 from flask import abort, flash, make_response, redirect, render_template, request, url_for
 from sqlalchemy import select
 
-from app import app
-from blueprints.school.helpers import _school_pair_allowed, _student_subject_allowed
+from app import _school_current_session, app
+from blueprints.school.helpers import _school_pair_allowed, _students_for_subject
 from control_plane.config import badge_cache_seconds
 from core import printed_papers as pp
 from core import theory_marking as tm
@@ -51,13 +51,17 @@ def _may_mark_paper(admin_id, paper):
 
 
 def _students_i_mark(admin_id, paper, student_ids):
-    return [sid for sid in student_ids
-            if _student_subject_allowed(admin_id, sid, paper['class_id'], paper['subject_id'])]
+    """Of these students, those whose marks in this paper this teacher records: checked together (one or two queries),
+    not one student at a time."""
+    allowed = {s['id'] for s in _students_for_subject([{'id': sid} for sid in student_ids], paper['class_id'],
+                                                       paper['subject_id'], admin_id)}
+    return [sid for sid in student_ids if sid in allowed]
 
 
 def _my_papers(admin_id):
     """The papers with theory this teacher marks, each with how many of their students' scripts wait."""
-    papers = [dict(p) for p in tm.papers_with_theory() if _may_mark_paper(admin_id, p)]
+    current = _school_current_session()
+    papers = [dict(p) for p in tm.papers_with_theory(current['id'] if current else None) if _may_mark_paper(admin_id, p)]
     scripts = tm.script_counts([p['id'] for p in papers if p['delivery'] != pp.PRINTED])
     for p in papers:
         if p['delivery'] == pp.PRINTED:

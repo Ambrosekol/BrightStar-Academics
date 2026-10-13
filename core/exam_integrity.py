@@ -74,14 +74,16 @@ def same_device(scope, attempt_id, stored_hash):
 
 
 def record(scope, attempt_id, kind, question_number=None):
-    """Write one event. Returns False (and writes nothing) for an unknown kind or once the attempt has reached the
-    cap. The caller has already checked the attempt is the person's own and still open."""
-    if kind not in KINDS:
-        return False
-    have = db.session.scalar(select(func.count()).select_from(ExamIntegrityEvent).where(
-        ExamIntegrityEvent.scope == scope, ExamIntegrityEvent.attempt_id == attempt_id)) or 0
-    if have >= EVENT_CAP:
-        return False
+    """Write one event, and return how many times the page has now been left (``left_page``). Nothing is written for
+    an unknown kind or once the attempt has reached the cap. The caller has already checked the attempt is the
+    person's own and still open. One query reads both counts: during an exam this runs for every student at once."""
+    have, left = db.session.execute(
+        select(func.count(), func.count().filter(ExamIntegrityEvent.kind == 'left_page'))
+        .select_from(ExamIntegrityEvent)
+        .where(ExamIntegrityEvent.scope == scope, ExamIntegrityEvent.attempt_id == attempt_id)).one()
+    left = left or 0
+    if kind not in KINDS or (have or 0) >= EVENT_CAP:
+        return left
     try:
         number = int(question_number) if question_number not in (None, '') else None
     except (TypeError, ValueError):
@@ -91,7 +93,7 @@ def record(scope, attempt_id, kind, question_number=None):
     db.session.add(ExamIntegrityEvent(scope=scope, attempt_id=attempt_id, kind=kind, question_number=number,
                                       created_at=_now(), ip_address=(request.remote_addr or '')[:64]))
     db.session.commit()
-    return True
+    return left + (kind == 'left_page')
 
 
 def count_of(scope, attempt_id, kind):

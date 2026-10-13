@@ -23,9 +23,10 @@ from control_plane.config import badge_cache_seconds
 from core import hr
 from core.db_helpers import all_rows
 from core.security import (
-    admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin,
+    admin_access_error, admin_has_permission, admin_required, admins_holding, audit_log, csrf_protect, current_admin,
+    is_school_admin,
 )
-from core.short_cache import remember
+from core.short_cache import forget_here, remember
 from core.storage import delete_upload, read_upload_bytes, save_upload_bytes
 from core.uploads import _save_image_upload, attachment_limit_bytes
 from models import (
@@ -55,6 +56,21 @@ def _record_or_404(sid):
     if record is None:
         abort(404)
     return record
+
+
+def _own(staff_id, admin=None):
+    """Whether this staff record is the signed-in person's own. Nobody changes their own record (their allowance,
+    their career, their leave), except the School Admin, who has nobody above them."""
+    admin = admin or current_admin()
+    if not admin or is_school_admin(admin):
+        return False
+    return db.session.execute(select(StaffRecord.id).where(StaffRecord.id == staff_id, StaffRecord.admin_id == admin['id'])).first() is not None
+
+
+def _own_refused(staff_id):
+    audit_log('authorization_denied', 'staff_records', 'hr_staff', staff_id, {'reason': 'own_record'}, False)
+    flash('This is your own staff record: someone else in HR changes it.', 'error')
+    return redirect(url_for('admin_hr_person', sid=staff_id))
 
 
 def _names(ids):
@@ -124,8 +140,33 @@ def _balance(staff_id, leave_type, year, exclude=None):
     return out
 
 
+def _ledger(staff_ids, years):
+    """Everything the balances of many people need, in two queries: ({(staff, type, year, status): days},
+    {(staff, type, year): LeaveAllowance}). A page of balances reads this once rather than three queries a balance."""
+    staff_ids, years = list(staff_ids) or [0], sorted(set(years)) or [0]
+    year_of = func.substr(LeaveRequest.start_date, 1, 4)
+    taken = {(s, t, int(y), st): int(d or 0) for s, t, y, st, d in db.session.execute(
+        select(LeaveRequest.staff_id, LeaveRequest.leave_type_id, year_of, LeaveRequest.status, func.sum(LeaveRequest.days))
+        .where(LeaveRequest.staff_id.in_(staff_ids), LeaveRequest.status.in_(('approved', 'pending')),
+               LeaveRequest.start_date >= f'{years[0]:04d}-01-01', LeaveRequest.start_date <= f'{years[-1]:04d}-12-31')
+        .group_by(LeaveRequest.staff_id, LeaveRequest.leave_type_id, year_of, LeaveRequest.status)).all()}
+    own = {(a.staff_id, a.leave_type_id, a.year): a for a in db.session.scalars(select(LeaveAllowance).where(
+        LeaveAllowance.staff_id.in_(staff_ids), LeaveAllowance.year.in_(years))).all()}
+    return taken, own
+
+
+def _balance_from(ledger, staff_id, leave_type, year, less_pending=0):
+    taken, allowances = ledger
+    own = allowances.get((staff_id, leave_type.id, year))
+    out = hr.balance(leave_type, own.days if own else None, taken.get((staff_id, leave_type.id, year, 'approved'), 0),
+                     max(taken.get((staff_id, leave_type.id, year, 'pending'), 0) - less_pending, 0))
+    out.update({'type': leave_type, 'own': own})
+    return out
+
+
 def _balances(staff_id, year):
-    return [_balance(staff_id, t, year) for t in _types()]
+    ledger = _ledger([staff_id], [year])
+    return [_balance_from(ledger, staff_id, t, year) for t in _types()]
 
 
 def _clashes(staff_id, start, end, exclude=None):
@@ -162,8 +203,7 @@ def _new_request(record, form, me, backdate=hr.MAX_BACKDATE):
 
 def _approvers(exclude):
     """The active accounts that may approve leave, less ``exclude`` (the account of the person on leave)."""
-    ids = [a for (a,) in db.session.execute(select(Admin.id).where(Admin.active == 1, ~Admin.username.startswith('platform@'))).all()]
-    return [a for a in ids if a != exclude and admin_has_permission(a, 'hr.leave.approve')]
+    return [a for a in admins_holding('hr.leave.approve') if a != exclude]
 
 
 def _notify(admin_ids, title, message, actor, endpoint):
@@ -213,6 +253,16 @@ def hr_menu(admin=None):
 
 
 app.jinja_env.globals.update(hr_menu=hr_menu)
+
+
+@app.after_request
+def _forget_hr_menu(response):
+    """The menu's leave counts and My leave change only through these pages, so only a change made here drops the counts kept for the
+    menu (app.py's forget_counts_after_a_change drops the others on any write, which would recount these on every staff
+    page after every student's autosave)."""
+    if request.method == 'POST' and (request.endpoint or '').startswith(('admin_hr_', 'admin_my_leave')) and g.get('tenant') is not None:
+        forget_here('hr-menu')
+    return response
 
 
 # ---------------------------------------------------------------- the staff list
@@ -336,6 +386,8 @@ def admin_hr_new():
 def admin_hr_edit(sid):
     me = current_admin()
     record = _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     if request.method == 'GET':
         values = {c.name: getattr(record, c.name) for c in StaffRecord.__table__.columns}
         return _form_page(record, values, [])
@@ -397,9 +449,10 @@ def admin_hr_person(sid):
         context['can_approve'] = _may('hr.leave.approve') and record.admin_id != me['id']
         who |= {r.requested_by for r in context['requests']} | {r.decided_by for r in context['requests']}
     context['names'] = _names(who | {record.created_by, record.updated_by})
-    audit_log('hr_record_viewed', 'staff_records', 'hr_staff', sid, {'tab': tab})
+    # Drawn before it is logged: logging commits, and a commit would make every row on the page be read again.
     response = make_response(render_template('school_hr_person.html', **context))
     response.headers['Cache-Control'] = 'no-store, private'
+    audit_log('hr_record_viewed', 'staff_records', 'hr_staff', sid, {'tab': tab})
     return response
 
 
@@ -410,6 +463,8 @@ def admin_hr_person(sid):
 def admin_hr_qualification_add(sid):
     me = current_admin()
     record = _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     name = hr.one_line(request.form.get('qualification'), 120)
     year = request.form.get('year', type=int)
     if not name:
@@ -433,6 +488,8 @@ def admin_hr_qualification_remove(qid):
     if row is None:
         abort(404)
     sid = row.staff_id
+    if _own(sid):
+        return _own_refused(sid)
     db.session.delete(row)
     db.session.commit()
     audit_log('hr_qualification_removed', 'staff_records', 'hr_staff', sid, {'qualification_id': qid})
@@ -446,6 +503,8 @@ def admin_hr_qualification_remove(qid):
 def admin_hr_document_add(sid):
     me = current_admin()
     record = _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     back = redirect(url_for('admin_hr_person', sid=sid, tab='files'))
     upload = request.files.get('document')
     label = hr.one_line(request.form.get('label'), 120)
@@ -505,6 +564,8 @@ def admin_hr_document_remove(did):
     if row is None:
         abort(404)
     sid, path = row.staff_id, row.file_path
+    if _own(sid):
+        return _own_refused(sid)
     db.session.delete(row)
     db.session.commit()
     delete_upload(path)
@@ -520,6 +581,8 @@ def admin_hr_document_remove(did):
 def admin_hr_career_add(sid):
     me = current_admin()
     record = _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     back = redirect(url_for('admin_hr_person', sid=sid, tab='career'))
     kind = request.form.get('kind', '')
     when = hr.parse_date(request.form.get('effective_date'))
@@ -558,6 +621,8 @@ def admin_hr_career_strike(eid):
     event = db.session.get(StaffCareerEvent, eid)
     if event is None:
         abort(404)
+    if _own(event.staff_id):
+        return _own_refused(event.staff_id)
     reason = hr.one_line(request.form.get('reason'), 300)
     if not reason:
         flash('Say why the entry is being struck out.', 'error')
@@ -576,6 +641,8 @@ def admin_hr_career_strike(eid):
 def admin_hr_allowance(sid):
     me = current_admin()
     _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     leave_type = db.session.get(LeaveType, request.form.get('leave_type_id', type=int) or 0)
     year = request.form.get('year', type=int)
     raw = str(request.form.get('days', '')).strip()
@@ -611,6 +678,8 @@ def admin_hr_leave_record(sid):
     the person recording it may approve leave and it is not their own; otherwise it waits like any request."""
     me = current_admin()
     record = _record_or_404(sid)
+    if _own(sid):
+        return _own_refused(sid)
     back = redirect(url_for('admin_hr_person', sid=sid, tab='leave'))
     leave, error = _new_request(record, request.form, me, backdate=366)
     if error:
@@ -638,9 +707,10 @@ def admin_hr_leave():
     if not (can_approve or can_view):
         return admin_access_error('hr.leave.approve')
     today = _today().isoformat()
-    pending = db.session.scalars(select(LeaveRequest).where(LeaveRequest.status == 'pending').order_by(LeaveRequest.start_date)).all()
+    pending = db.session.scalars(select(LeaveRequest).where(LeaveRequest.status == 'pending').order_by(LeaveRequest.start_date)
+                                 .limit(LIST_LIMIT)).all()
     current = db.session.scalars(select(LeaveRequest).where(LeaveRequest.status == 'approved', LeaveRequest.end_date >= today)
-                                 .order_by(LeaveRequest.start_date)).all()
+                                 .order_by(LeaveRequest.start_date).limit(LIST_LIMIT)).all()
     history = db.session.scalars(select(LeaveRequest).where(or_(LeaveRequest.status.in_(('declined', 'cancelled')),
                                                                 and_(LeaveRequest.status == 'approved', LeaveRequest.end_date < today)))
                                  .order_by(LeaveRequest.decided_at.desc().nulls_last(), LeaveRequest.id.desc()).limit(HISTORY)).all()
@@ -648,9 +718,11 @@ def admin_hr_leave():
     records = {r.id: r for r in db.session.scalars(select(StaffRecord).where(StaffRecord.id.in_({x.staff_id for x in everyone} or {0}))).all()}
     types = {t.id: t for t in _types(active_only=False)}
     rows = []
+    ledger = _ledger({x.staff_id for x in pending}, {int(x.start_date[:4]) for x in pending})
     for x in pending:
         record = records.get(x.staff_id)
-        held = _balance(x.staff_id, types[x.leave_type_id], int(x.start_date[:4]), exclude=x.id) if record else None
+        # The balance as it would be without this request, which is still waiting.
+        held = _balance_from(ledger, x.staff_id, types[x.leave_type_id], int(x.start_date[:4]), less_pending=x.days) if record else None
         rows.append({'leave': x, 'record': record, 'balance': held, 'can_decide': _may_decide(me, x, record)})
     response = make_response(render_template(
         'school_hr_leave.html', waiting=rows, current=current, history=history, records=records, types=types, today=today,

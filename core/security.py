@@ -574,6 +574,21 @@ def admin_permission_codes(admin_id):
     return {code for (code,) in tuples(via_own_type.union(via_assigned_role,via_direct_grant))}
 
 
+def admins_holding(code):
+    """The ids of every active account that holds ``code``: the same answer as admin_has_permission(id, code) for each,
+    in one query rather than one an account (who to tell about a leave request, a correction, a payroll)."""
+    granted=(select(Permission.id).where(Permission.code==code)).scalar_subquery()
+    via_own_type=select(AdminTypePermission.admin_type_id).where(AdminTypePermission.permission_id==granted)
+    via_role=(select(AdminRoleAssignment.admin_id)
+              .join(AdminTypePermission,AdminTypePermission.admin_type_id==AdminRoleAssignment.admin_type_id)
+              .where(AdminTypePermission.permission_id==granted))
+    via_grant=select(AdminPermission.admin_id).where(AdminPermission.permission_id==granted)
+    return [aid for (aid,) in tuples(
+        select(Admin.id).join(AdminType,AdminType.id==Admin.admin_type_id)
+        .where(Admin.active==1,AdminType.active==1,~Admin.username.startswith('platform@'),
+               sa.or_(AdminType.is_system==1,Admin.admin_type_id.in_(via_own_type),Admin.id.in_(via_role),Admin.id.in_(via_grant))))]
+
+
 def _admin_scopes(admin_id):
     return [tuple(row) for row in tuples(select(AdminScope.scope_type,AdminScope.scope_value)
                                          .where(AdminScope.admin_id==admin_id))]

@@ -18,10 +18,11 @@ Everyone sees their own payslips, once their run is approved, on My payslips.
 import csv
 import io
 import json
+import re
 from datetime import date, datetime, timedelta, timezone
 
 from flask import Response, abort, flash, g, make_response, redirect, render_template, request, url_for
-from sqlalchemy import func, select
+from sqlalchemy import delete as sa_delete, func, select
 
 from app import app
 from blueprints.entrance.helpers import csv_safe
@@ -29,7 +30,7 @@ from control_plane.config import badge_cache_seconds
 from core import hr
 from core import payroll as pr
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
-from core.short_cache import remember
+from core.short_cache import forget_here, remember
 from models import (
     Admin, LeaveRequest, LeaveType, PayItem, PayrollAdjustment, PayrollRun, PayrollSettings, Payslip, StaffPay,
     StaffPayItem, StaffRecord, db,
@@ -47,6 +48,13 @@ def _may(code, admin=None):
 
 def _private(response):
     response.headers['Cache-Control'] = 'no-store, private'
+    return response
+
+
+def _logged(response, action, target_type, target_id, details=None):
+    """Log a page after it is drawn. Logging commits, and a commit before drawing would make the database read every
+    row on the page again, one at a time."""
+    audit_log(action, 'payroll', target_type, target_id, details or {})
     return response
 
 
@@ -110,6 +118,16 @@ app.jinja_env.globals.update(payroll_menu=payroll_menu)
 app.jinja_env.filters['naira'] = pr.naira
 
 
+@app.after_request
+def _forget_payroll_menu(response):
+    """The menu's payroll counts and My payslips change only through these pages, so only a change made here drops the counts kept for the
+    menu (app.py's forget_counts_after_a_change drops the others on any write, which would recount these on every staff
+    page after every student's autosave)."""
+    if request.method == 'POST' and (request.endpoint or '').startswith(('admin_payroll',)) and g.get('tenant') is not None:
+        forget_here('payroll-menu')
+    return response
+
+
 # ---------------------------------------------------------------- the runs
 @app.route('/admin/payroll')
 @admin_required
@@ -121,11 +139,10 @@ def admin_payroll():
     settings = _settings()
     db.session.commit()
     today = date.today()
-    audit_log('payroll_opened', 'payroll', 'runs', None, {})
-    return _private(make_response(render_template(
+    return _logged(_private(make_response(render_template(
         'school_payroll.html', runs=runs, people=on[0], basic_total=on[1], settings=settings, pr=pr,
         names=_names({r.prepared_by for r in runs} | {r.approved_by for r in runs}), next_period=today.strftime('%Y-%m'),
-        can_manage=_may('payroll.manage'), can_approve=_may('payroll.approve'))))
+        can_manage=_may('payroll.manage'), can_approve=_may('payroll.approve')))), 'payroll_opened', 'runs', None)
 
 
 def _period_bounds(period):
@@ -135,15 +152,15 @@ def _period_bounds(period):
     return first, last
 
 
-def _unpaid_days(staff_id, first, last):
-    unpaid = {t.id for t in db.session.scalars(select(LeaveType).where(LeaveType.paid == 0)).all()}
-    if not unpaid:
-        return 0
-    days = 0
-    for x in db.session.scalars(select(LeaveRequest).where(
-            LeaveRequest.staff_id == staff_id, LeaveRequest.status == 'approved', LeaveRequest.leave_type_id.in_(unpaid),
-            LeaveRequest.start_date <= last.isoformat(), LeaveRequest.end_date >= first.isoformat())).all():
-        days += hr.working_days(max(date.fromisoformat(x.start_date), first), min(date.fromisoformat(x.end_date), last))
+def _unpaid_days(first, last):
+    """{staff_id: working days of approved unpaid leave in the month}, for everyone at once."""
+    days = {}
+    for staff_id, start, end in db.session.execute(
+            select(LeaveRequest.staff_id, LeaveRequest.start_date, LeaveRequest.end_date)
+            .join(LeaveType, LeaveType.id == LeaveRequest.leave_type_id)
+            .where(LeaveType.paid == 0, LeaveRequest.status == 'approved',
+                   LeaveRequest.start_date <= last.isoformat(), LeaveRequest.end_date >= first.isoformat())).all():
+        days[staff_id] = days.get(staff_id, 0) + hr.working_days(max(date.fromisoformat(start), first), min(date.fromisoformat(end), last))
     return days
 
 
@@ -159,9 +176,8 @@ def _work_out(run):
     adjustments = {}
     for adj in db.session.scalars(select(PayrollAdjustment).where(PayrollAdjustment.run_id == run.id)).all():
         adjustments.setdefault(adj.staff_id, []).append(adj)
-    for slip in db.session.scalars(select(Payslip).where(Payslip.run_id == run.id)).all():
-        db.session.delete(slip)
-    db.session.flush()
+    db.session.execute(sa_delete(Payslip).where(Payslip.run_id == run.id))
+    unpaid = _unpaid_days(first, last) if settings.deduct_unpaid_leave else {}
     people = db.session.execute(select(StaffPay, StaffRecord).join(StaffRecord, StaffRecord.id == StaffPay.staff_id)
                                 .where(StaffPay.on_payroll == 1).order_by(StaffRecord.last_name, StaffRecord.first_name)).all()
     totals = {'gross': 0, 'deductions': 0, 'net': 0, 'employer_pension': 0, 'headcount': 0}
@@ -172,7 +188,7 @@ def _work_out(run):
             continue
         mine = own_items.get(person.id, {})
         given = [(item, mine.get(item.id)) for item in items if item.id in mine]
-        slip = pr.payslip(pay, given, adjustments.get(person.id, []), settings, _unpaid_days(person.id, first, last), working)
+        slip = pr.payslip(pay, given, adjustments.get(person.id, []), settings, unpaid.get(person.id, 0), working)
         warnings = list(slip['warnings'])
         if person.status == 'suspended':
             warnings.append('Suspended')
@@ -208,6 +224,9 @@ def _run_or_404(rid, lock=False):
 def admin_payroll_run_new():
     me = current_admin()
     period = str(request.form.get('period', '')).strip()
+    if not re.fullmatch(r'\d{4}-(0[1-9]|1[0-2])', period):
+        flash('Choose the month to pay.', 'error')
+        return redirect(url_for('admin_payroll'))
     try:
         first, _ = _period_bounds(period)
     except (ValueError, TypeError):
@@ -241,14 +260,20 @@ def admin_payroll_run(rid):
         by_staff.setdefault(adj.staff_id, []).append(adj)
     own = _own_record(me['id'])
     first, _ = _period_bounds(run.period)
-    audit_log('payroll_run_opened', 'payroll', 'payroll_run', rid, {})
+    # Four eyes need something to look at: each person's net pay against their last approved month, so a raise nobody
+    # agreed (a changed allowance, a new item) stands out before it is approved.
+    before = db.session.scalars(select(PayrollRun).where(PayrollRun.status.in_(('approved', 'paid')), PayrollRun.period < run.period)
+                                .order_by(PayrollRun.period.desc())).first()
+    last_net = dict(db.session.execute(select(Payslip.staff_id, Payslip.net).where(Payslip.run_id == before.id)).all()) if before else {}
     totals = {'paye': sum(s.paye for s in slips), 'pension': sum(s.pension_employee + s.pension_employer for s in slips),
               'nhf': sum(s.nhf for s in slips)}
-    return _private(make_response(render_template(
+    return _logged(_private(make_response(render_template(
         'school_payroll_run.html', run=run, slips=slips, adjustments=by_staff, label=first.strftime('%B %Y'), pr=pr, totals=totals,
+        last_net=last_net, last_label=_period_bounds(before.period)[0].strftime('%b %Y') if before else None,
         own_staff_id=own.id if own else None, names=_names({run.prepared_by, run.approved_by, run.paid_by, run.cancelled_by}),
         can_manage=_may('payroll.manage'), can_approve=_may('payroll.approve') and run.prepared_by != me['id'],
-        can_export=_may('payroll.manage') or _may('payroll.approve'), can_reopen=_may('payroll.approve'), lines={s.id: json.loads(s.lines_json) for s in slips})))
+        can_export=_may('payroll.manage') or _may('payroll.approve'), can_reopen=_may('payroll.approve'),
+        lines={s.id: json.loads(s.lines_json) for s in slips}))), 'payroll_run_opened', 'payroll_run', rid)
 
 
 def _changed(run, me):
@@ -482,12 +507,12 @@ def admin_payroll_payslip(pid):
     own = _is_own(me, slip.staff_id) and run.status in ('approved', 'paid')
     if not (own or _may('payroll.view')):
         return admin_access_error('payroll.view')
-    audit_log('payslip_opened', 'payroll', 'payslip', pid, {'own': own})
     first, _ = _period_bounds(run.period)
     lines = json.loads(slip.lines_json)
-    return _private(make_response(render_template(
+    return _logged(_private(make_response(render_template(
         'payroll_payslip.html', slip=slip, run=run, label=first.strftime('%B %Y'), pr=pr,
-        earnings=[l for l in lines if l['kind'] == 'earning'], deductions=[l for l in lines if l['kind'] == 'deduction'])))
+        earnings=[l for l in lines if l['kind'] == 'earning'], deductions=[l for l in lines if l['kind'] == 'deduction']))),
+        'payslip_opened', 'payslip', pid, {'own': own})
 
 
 @app.route('/admin/my-payslips')
@@ -513,9 +538,8 @@ def admin_payroll_staff():
     counts = {}
     for row in db.session.scalars(select(StaffPayItem)).all():
         counts[row.staff_id] = counts.get(row.staff_id, 0) + 1
-    audit_log('payroll_staff_opened', 'payroll', 'payroll_staff', None, {})
-    return _private(make_response(render_template('school_payroll_staff.html', records=records, pays=pays, counts=counts, pr=pr, hr=hr,
-                                                  can_manage=_may('payroll.manage'))))
+    return _logged(_private(make_response(render_template('school_payroll_staff.html', records=records, pays=pays, counts=counts, pr=pr,
+                                                          hr=hr, can_manage=_may('payroll.manage')))), 'payroll_staff_opened', 'payroll_staff', None)
 
 
 @app.route('/admin/payroll/staff/<int:sid>', methods=['GET', 'POST'])
@@ -612,11 +636,11 @@ def admin_payroll_staff_edit(sid):
     preview = None
     if pay:
         preview = pr.payslip(pay, [(item, given[item.id]) for item in items if item.id in given], [], settings)
-    db.session.commit()
-    audit_log('payroll_pay_opened', 'payroll', 'hr_staff', sid, {})
-    return _private(make_response(render_template(
+    response = _private(make_response(render_template(
         'school_payroll_staff_edit.html', person=person, pay=pay, items=items, given=given, preview=preview, pr=pr, hr=hr,
         own=_is_own(me, sid), can_manage=_may('payroll.manage'), has_pin=bool(pay and pay.rsa_pin_enc), has_tin=bool(pay and pay.tax_id_enc))))
+    db.session.commit()
+    return _logged(response, 'payroll_pay_opened', 'hr_staff', sid)
 
 
 # ---------------------------------------------------------------- settings

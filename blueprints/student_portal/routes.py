@@ -528,8 +528,7 @@ def student_assessment_integrity(assessment_id):
     if kind not in exam_integrity.PAGE_KINDS: return jsonify(ok=False),400
     settings=one(select(SchoolAssessment.exam_mode,SchoolAssessment.exam_leave_limit).where(SchoolAssessment.id==assessment_id))
     if not settings or not settings['exam_mode']: return jsonify(ok=False),409
-    exam_integrity.record(exam_integrity.SCHOOL,attempt['id'],kind,request.form.get('question'))
-    left=exam_integrity.count_of(exam_integrity.SCHOOL,attempt['id'],'left_page')
+    left=exam_integrity.record(exam_integrity.SCHOOL,attempt['id'],kind,request.form.get('question'))
     limit=settings['exam_leave_limit']
     if kind=='left_page' and limit and left>limit:
         student_assessment_grade(attempt['id'],auto=False)

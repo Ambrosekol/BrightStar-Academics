@@ -383,6 +383,19 @@ check("marking a linked member of staff as left warns that their account is stil
 teacher.post(ME, {"leave_type_id": CASUAL, "start_date": D(30), "end_date": D(30)}, page=ME)
 check("someone who has left cannot ask for leave", not one("SELECT COUNT(*) FROM hr_leave_requests WHERE start_date = :d", d=D(30)))
 
+# ================================================================ F. nobody changes their own record
+officer.post(f"/admin/hr/{OWN}/allowance", {"leave_type_id": ANNUAL, "year": YEAR, "days": "366"}, page=f"/admin/hr/{OWN}?tab=leave")
+check("the HR Officer cannot raise their own leave allowance", not one("SELECT COUNT(*) FROM hr_leave_allowances WHERE staff_id = :s", s=OWN)
+      and "your own staff record" in officer.said())
+officer.post(f"/admin/hr/{OWN}/edit", {"first_name": "Hr", "last_name": "Officer", "job_title": "Head of HR", "category": "teaching",
+                                       "employment_type": "full_time", "status": "active", "admin_id": str(OFFICER)}, page=f"/admin/hr/{OWN}/edit")
+check("…nor edit their own record", one("SELECT job_title FROM hr_staff WHERE id = :s", s=OWN) != "Head of HR")
+officer.post(f"/admin/hr/{OWN}/career", {"kind": "commendation", "effective_date": TODAY.isoformat(), "summary": "Self-praise"}, page=f"/admin/hr/{OWN}?tab=career")
+officer.post(f"/admin/hr/{OWN}/leave", {"leave_type_id": CASUAL, "start_date": D(40), "end_date": D(40)}, page=f"/admin/hr/{OWN}?tab=leave")
+check("…nor record their own career or leave", not one("SELECT COUNT(*) FROM hr_career_events WHERE staff_id = :s", s=OWN)
+      and not one("SELECT COUNT(*) FROM hr_leave_requests WHERE staff_id = :s AND start_date = :d", s=OWN, d=D(40)))
+check("each refusal is in the activity log", one("SELECT COUNT(*) FROM audit_logs WHERE action = 'authorization_denied' AND details LIKE '%own_record%'") >= 4)
+
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 failed = [name for name, ok, _ in results if not ok]
 print()

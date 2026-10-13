@@ -45,7 +45,7 @@ def test_every_marking_route_checks_permission_and_scope_itself():
             assert "_open_paper(" in body and "if refused is not None" in body, name
         if "@app.post" in decorators:
             assert "@csrf_protect" in decorators, name
-    assert "_school_pair_allowed(" in MARKING and "_student_subject_allowed(" in MARKING
+    assert "_school_pair_allowed(" in MARKING and "_students_for_subject(" in MARKING  # students checked together, same rule
     save = next(body for name, _, body in routes if name == "admin_school_marking_save")
     assert "_students_i_mark(me['id'], paper, [student_id])" in save, "each student must be checked on their own"
     assert "'released'" in save, "a released result's marks must be locked"

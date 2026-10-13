@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "version": "2.31.1",
+      "date": "2026-10-13",
+      "title": "Safer staff records, attendance and payroll, and faster pages",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Nobody in HR changes their own staff record, leave allowance or career, and nobody marks their own attendance by hand: someone else does. The payroll page now shows each person's net pay against the last paid month, so the approver can see a rise at a glance.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Staff leave, payroll and staff records pages load faster, however many staff the school has.",
+          "help": "finance"
+        }
+      ]
+    },
+    {
       "version": "2.31.0",
       "date": "2026-10-13",
       "title": "Payroll",

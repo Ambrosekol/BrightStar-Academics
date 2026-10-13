@@ -385,6 +385,12 @@ got = sql("SELECT day, clock_in FROM staff_attendance_records WHERE staff_id = :
 check("clocking in now uses the school's own time zone", status == 200 and got and f"{got[0][0]} {got[0][1]}" in expected,
       f"{got} not in {expected}")
 
+OFFICER_REC = one("SELECT id FROM hr_staff WHERE admin_id = :a", a=OFFICER)
+officer.post("/admin/staff-attendance/mark", {"staff_id": OFFICER_REC, "day": TODAY.isoformat(), "kind": "in", "time": "07:00",
+                                              "note": "I was here early"}, page="/admin/staff-attendance")
+check("a manager cannot mark their own attendance by hand", not one("SELECT COUNT(*) FROM staff_attendance_records WHERE staff_id = :s", s=OFFICER_REC)
+      and "nobody marks their own" in officer.said())
+
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 failed = [name for name, ok, _ in results if not ok]
 print()

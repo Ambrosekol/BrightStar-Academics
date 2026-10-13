@@ -28,8 +28,10 @@ from control_plane.ratelimit import allow
 from core import hr
 from core import staff_attendance as sa
 from core.id_cards import qr_path
-from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
-from core.short_cache import remember
+from core.security import (
+    admin_has_permission, admin_required, admins_holding, audit_log, csrf_protect, current_admin, is_school_admin,
+)
+from core.short_cache import forget_here, remember
 from models import (
     Admin, AdminNotification, LeaveRequest, StaffAttendanceClosedDay, StaffAttendanceCorrection, StaffAttendanceDevice,
     StaffAttendanceRecord, StaffAttendanceSettings, StaffRecord, db,
@@ -103,6 +105,16 @@ def staff_clock_menu(admin=None):
 app.jinja_env.globals.update(staff_clock_menu=staff_clock_menu)
 
 
+@app.after_request
+def _forget_staff_clock_menu(response):
+    """The menu's Clock in and the corrections waiting change only through these pages, so only a change made here drops the counts kept for the
+    menu (app.py's forget_counts_after_a_change drops the others on any write, which would recount these on every staff
+    page after every student's autosave)."""
+    if request.method == 'POST' and (request.endpoint or '').startswith(('admin_staff_attendance', 'admin_clock', 'admin_hr_')) and g.get('tenant') is not None:
+        forget_here('staff-clock-menu', 'staff-screen')
+    return response
+
+
 # ---------------------------------------------------------------- the people and their days
 def _people(day_from, day_to):
     """Staff records that were with the school at some point between the two days."""
@@ -152,8 +164,7 @@ def _notify(admin_ids, title, message, actor, endpoint):
 
 
 def _managers(exclude):
-    ids = [a for (a,) in db.session.execute(select(Admin.id).where(Admin.active == 1, ~Admin.username.startswith('platform@'))).all()]
-    return [a for a in ids if a != exclude and admin_has_permission(a, 'staff_attendance.manage')]
+    return [a for a in admins_holding('staff_attendance.manage') if a != exclude]
 
 
 # ---------------------------------------------------------------- clock in (everyone with a record)
@@ -360,6 +371,10 @@ def admin_staff_attendance_mark():
         return back
     if not note:
         flash('Add a note saying why this is marked by hand.', 'error')
+        return back
+    if person.admin_id == me['id'] and not is_school_admin(me):
+        audit_log('authorization_denied', 'staff_attendance', 'hr_staff', person.id, {'reason': 'own_record'}, False)
+        flash('Nobody marks their own attendance by hand: someone else does, or ask for a correction on Clock in.', 'error')
         return back
     rec = db.session.scalars(select(StaffAttendanceRecord).where(StaffAttendanceRecord.staff_id == person.id,
                                                                  StaffAttendanceRecord.day == day.isoformat()).with_for_update()).first()
@@ -615,12 +630,21 @@ def admin_staff_attendance_closed():
 
 
 # ---------------------------------------------------------------- the screen at the school (no sign-in)
-def _display_settings(token):
+def _screen_facts():
+    """What the screen needs, kept a few seconds: the screen asks every 30 seconds, and its address answers anyone, so
+    a stranger sending it requests must not cost the school's database a query each."""
     settings = _settings()
-    if (not settings or not settings.display_token_hash or not token or len(token) > 100
-            or not hmac.compare_digest(sa.token_hash(token), settings.display_token_hash)):
+    if not settings:
         return None
-    return settings
+    return {'token_hash': settings.display_token_hash, 'enabled': settings.enabled, 'code_secret': settings.code_secret}
+
+
+def _display_settings(token):
+    facts = remember('staff-screen', 5, _screen_facts)
+    if (not facts or not facts['token_hash'] or not token or len(token) > 100
+            or not hmac.compare_digest(sa.token_hash(token), facts['token_hash'])):
+        return None
+    return facts
 
 
 def _screen(response):
@@ -641,9 +665,9 @@ def staff_attendance_display(token):
 @app.route('/staff-attendance/display/<token>/code')
 def staff_attendance_display_code(token):
     settings = _display_settings(token)
-    if settings is None or not settings.enabled:
+    if settings is None or not settings['enabled']:
         return _screen(make_response(jsonify(ok=False), 404))
-    qr, digits = sa.code_for(settings.code_secret, sa.window_of())
+    qr, digits = sa.code_for(settings['code_secret'], sa.window_of())
     path, size = qr_path(url_for('admin_clock', c=qr, _external=True))
     return _screen(make_response(jsonify(ok=True, path=path, size=size, digits=digits, left=sa.seconds_left(),
                                          time=sa.school_now().strftime('%H:%M'))))

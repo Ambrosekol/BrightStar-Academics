@@ -179,15 +179,17 @@ def admin_id_cards_print():
             cards[p['id']] = _issue(kind, p['id'], me['id'])
             issued += 1
         cards[p['id']].printed_count = (cards[p['id']].printed_count or 0) + 1
-    db.session.commit()
-    audit_log('id_cards_printed', 'school', 'id_cards', None, {'kind': kind, 'cards': len(people), 'issued_new': issued})
+    db.session.flush()
     brand = school_brand()
     layout = _layout(kind)
     views = [_card_view(kind, p, cards[p['id']], brand) for p in people]
+    db.session.commit()
     response = make_response(render_template('school_id_card_sheet.html', layout=layout, views=views, kind=kind,
                                              backs=request.form.get('backs') == '1', logo_url=brand.get('logo_url'),
                                              signature_url=_signature_url(), brand=brand))
     response.headers['Cache-Control'] = 'no-store, private'
+    # Logged once the sheet is made: logging commits, and the cards would otherwise be read again one by one.
+    audit_log('id_cards_printed', 'school', 'id_cards', None, {'kind': kind, 'cards': len(people), 'issued_new': issued})
     return response
 
 

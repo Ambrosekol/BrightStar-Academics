@@ -166,7 +166,13 @@ and the Head Teacher preset has {{ perm('hr.leave.approve') }}.</p>
   payroll.approve; both are logged and CSV-defused. Pages with salaries are <code>no-store</code>; opening a run or payslip is logged, and
   logs name what changed, never amounts or numbers.</li>
   <li>{{ route('admin_payroll_payslip') }} serves payroll.view, or the person themselves once the run is approved; {{ route('admin_my_payslips') }}
-  lists their own.</li>
+  lists their own. The run page shows each net against the last approved or paid month, so an unagreed rise stands out to the approver.</li>
+  <li><strong>Load</strong>: the newer areas are held to query budgets by tests/verification/write_paths_query_budget.py (a page's
+  queries do not grow with the number of staff). Balances, unpaid leave and payslips are read in bulk; approvers come from
+  <code>admins_holding()</code> ({{ file('core/security.py') }}) in one query; logged pages are drawn before the log commits; the menu
+  counts (<code>hr-menu</code>, <code>staff-clock-menu</code>, <code>payroll-menu</code>) are dropped only by a change in their own area, and
+  a student's or candidate's write drops no staff cache at all. {{ file('core/short_cache.py') }} holds entries school by school, at most
+  50,000, dropping expired entries and then the least recently served schools, never everything at once.</li>
 </ul>
 
 <h2 id="staff-attendance">Staff attendance</h2>

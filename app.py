@@ -989,8 +989,13 @@ SECRET_URL_ENDPOINTS=frozenset({'password_reset','forgot_password'})
 def forget_counts_after_a_change(response):
     """A change made by an administrator (a payment, a read notification) must show on the next page at
     once, so the counts saved for the badges are dropped whenever a request changes something."""
-    if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
-        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu', 'staff-clock-menu', 'payroll-menu')
+    # A student's or a candidate's own write (an answer saved during an exam, a homework handed in) changes none of
+    # these - no notification, message, payment, transfer or permission - and during an exam there are thousands of
+    # them a minute, which would otherwise make every staff page count everything again. Staff, parents and the
+    # payment provider's notices (no session) still drop them.
+    learner = (session.get('student_id') or session.get('candidate_id')) and not session.get('admin_id')
+    if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None and not learner:
+        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu')
         clear_school_admin_caches()
     return response
 

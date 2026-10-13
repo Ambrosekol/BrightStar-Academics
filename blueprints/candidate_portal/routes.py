@@ -376,8 +376,8 @@ def exam_integrity_report():
     if not a or a['status']!='active': return jsonify(ok=False,ended=True),409
     kind=request.form.get('kind','')
     if kind not in exam_integrity.PAGE_KINDS: return jsonify(ok=False),400
-    exam_integrity.record(exam_integrity.ENTRANCE,a['id'],kind,request.form.get('question'))
-    return jsonify(ok=True,ended=False,left=exam_integrity.count_of(exam_integrity.ENTRANCE,a['id'],'left_page'))
+    left=exam_integrity.record(exam_integrity.ENTRANCE,a['id'],kind,request.form.get('question'))
+    return jsonify(ok=True,ended=False,left=left)
 
 @app.post('/exam/heartbeat')
 @csrf_protect

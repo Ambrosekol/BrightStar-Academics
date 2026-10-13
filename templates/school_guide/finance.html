@@ -182,7 +182,8 @@ Salaries are seen only by people allowed to see the payroll: not by HR, not by o
   they get (Housing, Transport, Cooperative, or the school's own items), their bank, pension administrator, RSA PIN and tax ID. Bank
   numbers, PINs and tax IDs are kept encrypted; only the last four digits show. Nobody sets their own pay.</li>
   <li><strong>A month.</strong> <em>Prepare</em> works out everyone's payslip. Check them; <em>Add a line</em> pays arrears or a bonus,
-  or takes back a salary advance, for that month only. Then someone other than whoever prepared it <em>Approves</em> it: it is locked,
+  or takes back a salary advance, for that month only. Then someone other than whoever prepared it <em>Approves</em> it, checking the
+  <em>Change from</em> column, which shows each net pay against the last paid month (a rise of more than a tenth is marked): it is locked,
   and staff see their payslips on <a href="{{ url_for('admin_my_payslips') }}">My payslips</a>.</li>
   <li><strong>Paying.</strong> Download the <em>bank schedule</em> (name, bank, account number, amount) for the bank, and the
   <em>PAYE, pension and NHF</em> returns for remitting them, then <em>Mark paid</em>; a paid month is final. An approved month not yet paid
