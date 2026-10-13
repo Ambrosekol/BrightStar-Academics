@@ -80,6 +80,35 @@ own class teacher. The rules live in {{ file('core/subdivisions.py') }}; the Sch
 </ol>
 <div class="why"><p>The copy exists so editing a question later cannot change an exam already taken, and so grading is reproducible. Timing is enforced on the server from the stored expiry, never trusted from the browser's clock.</p></div>
 
+<h3 id="theory">Theory questions and marking</h3>
+<p>{{ table('school_questions') }} has <code>question_type</code> (<code>objective</code> or <code>theory</code>) and
+<code>marking_guide</code>. A theory question keeps blank options and <code>correct_option = -1</code>; its
+<code>points</code> are its marks. Practice tests refuse theory. The scoring is {{ file('core/theory_marking.py') }};
+the teacher's pages are {{ file('blueprints/school/marking.py') }}.</p>
+<ul>
+  <li><strong>Taking.</strong> The frozen copy carries <code>question_type</code> but never the guide. A written answer is
+  {{ table('school_assessment_answers') }}.<code>answer_text</code> (at most 5,000 characters), saved by the same answer
+  route with <code>autosave=1</code> (JSON) as the student types, on leaving the page and before the clock ends.</li>
+  <li><strong>Submitting.</strong> <code>student_assessment_grade</code> marks the objective questions only, sets the
+  attempt's <code>theory_status</code> to <code>pending</code> and calls <code>sync_result</code>, which writes the result
+  with <code>score = NULL</code>. A NULL score is left out of the term sums, refused by the result workflow and by
+  <code>_submittable</code>, and keeps the report card from being ready; the result list shows <em>Awaiting marking</em>
+  and the hand-edit form sends it to marking instead.</li>
+  <li><strong>Marking.</strong> {{ route('admin_school_marking') }} and {{ route('admin_school_marking_paper') }} need the
+  edit permission of the paper's type ({{ perm('school.tests.edit') }} or {{ perm('school.examinations.edit') }}) and
+  <code>_school_pair_allowed</code>; each student is checked with <code>_student_subject_allowed</code> (SSS departments).
+  They are not in <code>ADMIN_ENDPOINT_PERMISSIONS</code>: each route checks for itself and logs a refusal.
+  {{ route('admin_school_marking_save') }} stores <code>awarded</code>, the comment, who and when, then
+  <code>sync_result</code> fills the score once nothing is pending.</li>
+  <li><strong>The split.</strong> {{ table('school_assessments') }}.<code>objective_marks</code> and
+  <code>theory_marks</code> ({{ route('admin_school_marking_split') }}); blank means each part keeps its raw marks. Each
+  part is scaled to its share: <code>objective/objective_raw × objective_marks + theory/theory_raw × theory_marks</code>.
+  Changing it re-scores every finished attempt (<code>refresh_paper</code>).</li>
+  <li><strong>Locks.</strong> A released result is never re-scored and its marks are refused; the split is refused once
+  any result of the paper is released. A score that changes on a verified or approved result returns it to
+  <code>entered</code> with a {{ table('result_workflow_events') }} row.</li>
+</ul>
+
 <h2 id="practice">Practice tests</h2>
 <p>Practice is a self-study bank for students who want to prepare. It is deliberately outside the record:</p>
 <ul>

@@ -334,7 +334,10 @@ def _submittable(student_id, session_id, term, me, class_id):
         select(SchoolStudentResult)
         .outerjoin(SchoolAssessment, SchoolAssessment.id == SchoolStudentResult.assessment_id)
         .where(SchoolStudentResult.student_id == student_id, SchoolStudentResult.session_id == session_id,
-               _term_of() == term, SchoolStudentResult.status.in_(('entered', 'verified')), _official())).all()
+               _term_of() == term, SchoolStudentResult.status.in_(('entered', 'verified')), _official(),
+               # A CBT paper still waiting for its theory answers to be marked has no score and is not sent; a
+               # hand-entered result with no score (an absence) still is.
+               or_(SchoolStudentResult.score.is_not(None), SchoolStudentResult.assessment_id.is_(None)))).all()
     return [r for r in rows if r.id in allowed]
 
 

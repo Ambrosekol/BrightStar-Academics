@@ -1,14 +1,30 @@
-{# The fields of one objective question, shared by "Add a question", editing a question in the list, and the
-   question's own edit page. The correct answer is the radio button beside its option. ``key`` keeps the ids of
-   several copies on one page apart. #}
-{% macro question_fields(q, key) -%}
+{# The fields of one question, shared by "Add a question", editing a question in the list, and the question's own
+   edit page. ``key`` keeps the ids of several copies on one page apart.
+
+   An objective question has four options, the correct one the radio button beside it. A theory question is a
+   written answer the subject teacher marks: its marks, and an optional marking guide that only staff ever see.
+   A new question on a test or examination (``allow_theory``) chooses its type; practice tests are objective
+   only, and a saved question keeps its type. The part not in use is disabled, so it is neither sent nor required
+   (the switch is wired in templates/school_assessment_detail.html). #}
+{% macro question_fields(q, key, allow_theory=false, limits=none) -%}
 {% set q = q or {} %}
-<div class="acq-fields">
+{% set saved_type = q.question_type if q.question_type else none %}
+{% set theory = saved_type == 'theory' %}
+{% set limits = limits or {'guide': 5000, 'marks': 100} %}
+<div class="acq-fields" data-qfields>
+  {% if allow_theory and not saved_type %}
+  <fieldset class="acq-kindpick ac-field--wide">
+    <legend>Question type</legend>
+    <label><input type="radio" name="question_type" value="objective" checked data-qkind> Objective <span class="ac-hint">four options, marked by the system</span></label>
+    <label><input type="radio" name="question_type" value="theory" data-qkind> Theory <span class="ac-hint">a written answer, marked by the subject teacher</span></label>
+  </fieldset>
+  {% endif %}
   <div class="ac-field ac-field--wide"><label for="qText{{ key }}">Question</label>
-    <textarea id="qText{{ key }}" name="question_text" rows="2" required placeholder="e.g. What is 3 × 4?">{{ q.question_text or '' }}</textarea></div>
+    <textarea id="qText{{ key }}" name="question_text" rows="{{ 3 if theory else 2 }}" required placeholder="{{ 'e.g. Explain two causes of soil erosion.' if theory else 'e.g. What is 3 × 4?' }}">{{ q.question_text or '' }}</textarea></div>
   <div class="ac-field ac-field--wide"><label for="qInstr{{ key }}">Instruction <span class="ac-hint">optional</span></label>
-    <input id="qInstr{{ key }}" type="text" name="instruction" value="{{ q.instruction or '' }}" placeholder="e.g. Choose the best answer"></div>
-  <fieldset class="acq-options ac-field--wide">
+    <input id="qInstr{{ key }}" type="text" name="instruction" value="{{ q.instruction or '' }}" placeholder="{{ 'e.g. Answer in full sentences' if theory else 'e.g. Choose the best answer' }}"></div>
+  {% if not theory %}
+  <fieldset class="acq-options ac-field--wide" data-qpart="objective">
     <legend>Options <span class="ac-hint">tick the correct one</span></legend>
     {% for letter in 'ABCD' %}{% set i = loop.index0 %}
     <label class="acq-option">
@@ -18,7 +34,14 @@
     </label>
     {% endfor %}
   </fieldset>
-  <div class="ac-field"><label for="qPoints{{ key }}">Marks</label><input id="qPoints{{ key }}" type="number" min="1" name="points" value="{{ q.points or 1 }}" required></div>
+  {% endif %}
+  {% if theory or (allow_theory and not saved_type) %}
+  <div class="ac-field ac-field--wide" data-qpart="theory" {% if not theory %}hidden{% endif %}>
+    <label for="qGuide{{ key }}">Marking guide <span class="ac-hint">optional · only staff see it, when marking</span></label>
+    <textarea id="qGuide{{ key }}" name="marking_guide" rows="3" maxlength="{{ limits.guide }}" {% if not theory %}disabled{% endif %}
+              placeholder="e.g. 1 mark for each correct cause named, 1 for each explained">{{ q.marking_guide or '' }}</textarea></div>
+  {% endif %}
+  <div class="ac-field"><label for="qPoints{{ key }}">Marks</label><input id="qPoints{{ key }}" type="number" min="1" {% if theory %}max="{{ limits.marks }}"{% endif %} name="points" value="{{ q.points or 1 }}" required data-qmarks></div>
   <div class="ac-field"><label for="qImage{{ key }}">Picture <span class="ac-hint">optional</span></label>
     <input id="qImage{{ key }}" type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs() }}>
     {{ upload_hint() }}

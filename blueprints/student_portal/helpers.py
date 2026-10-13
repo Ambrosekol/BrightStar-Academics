@@ -16,6 +16,7 @@ from models import (
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, obj, one, one_scalar, tuples, _flatten
 from core.school_structure import class_is_senior, student_is_early_years, takes_subject
+from core.theory_marking import sync_result
 
 
 def student_required(fn):
@@ -90,21 +91,25 @@ def student_assessment_grade(attempt_id,auto=False):
         if attempt.status in ('submitted','expired'):
             return attempt
 
-        # Grade from the frozen snapshot, never from the live question bank.
+        # Grade from the frozen snapshot, never from the live question bank. Only objective questions are
+        # marked here; a paper with theory questions is finished by the subject teacher (core/theory_marking.py).
         questions=all_rows(
             select(SchoolAssessmentAttemptQuestion.question_id,
                    SchoolAssessmentAttemptQuestion.correct_option,
-                   SchoolAssessmentAttemptQuestion.points)
+                   SchoolAssessmentAttemptQuestion.points,
+                   SchoolAssessmentAttemptQuestion.question_type)
             .where(SchoolAssessmentAttemptQuestion.attempt_id==attempt_id)
             .order_by(SchoolAssessmentAttemptQuestion.question_order))
         answers={qid:opt for qid,opt in tuples(
             select(SchoolAssessmentAnswer.question_id,SchoolAssessmentAnswer.option_index)
             .where(SchoolAssessmentAnswer.attempt_id==attempt_id))}
+        objective=[q for q in questions if (q['question_type'] or 'objective')!='theory']
+        with_theory=len(objective)!=len(questions)
 
-        score=sum(int(q['points'] or 1) for q in questions
-                  if answers.get(q['question_id'])==q['correct_option'])
-        max_score=sum(int(q['points'] or 1) for q in questions)
-        pct=(score/max_score*100) if max_score else 0
+        score=sum(int(q['points'] or 1) for q in objective
+                  if answers.get(q['question_id']) is not None and answers.get(q['question_id'])==q['correct_option'])
+        max_score=sum(int(q['points'] or 1) for q in objective)
+        pct=None if with_theory else ((score/max_score*100) if max_score else 0)
         status='expired' if auto else 'submitted'
         submitted=datetime.now(timezone.utc).isoformat()
 
@@ -128,10 +133,17 @@ def student_assessment_grade(attempt_id,auto=False):
             .where(SchoolAssessmentAttempt.id==attempt_id,
                    SchoolAssessmentAttempt.status=='active')
             .values(submitted_at=submitted,score=score,max_score=max_score,
-                    percentage=pct,status=status)).rowcount
+                    percentage=pct,status=status,
+                    theory_status='pending' if with_theory else None)).rowcount
         if not updated:
             db.session.rollback()
             return obj(SchoolAssessmentAttempt,attempt_id)
+        if with_theory:
+            # Written with no score until the subject teacher has marked every written answer.
+            sync_result(attempt_id)
+            db.session.commit()
+            db.session.refresh(attempt)
+            return attempt
 
         # Never overwrite a result that has already been released.
         already_released=one_scalar(select(SchoolStudentResult.id).where(

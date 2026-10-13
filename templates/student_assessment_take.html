@@ -19,7 +19,7 @@
     <div class="candidate">Student<br><strong>{{student.first_name}} {{student.last_name}}</strong></div>
     <details class="exam-instructions" open>
       <summary>Instructions</summary>
-      <p>{{assessment.instructions or 'Read each question carefully. Select the best answer. Use Save & Next to record your answer and move forward. You may revisit questions before submitting.'}}</p>
+      <p>{{assessment.instructions or 'Read each question carefully. Select the best answer, or write your answer where a question asks you to. Use Save & Next to record your answer and move forward. You may revisit questions before submitting.'}}</p>
     </details>
     <div class="palette">
       {% for n in range(1,total+1) %}
@@ -37,12 +37,22 @@
     {% if question.image_path %}
     <div class="question-image"><img src="{{url_for('static',filename=question.image_path)}}" alt="Question illustration"></div>
     {% endif %}
-    <h2>{{question.question_text}}</h2>
+    {% set theory = question.question_type == 'theory' %}
+    {% if theory %}<p class="ex-theory-tag">Written answer · {{ question.points }} mark{{ '' if question.points == 1 else 's' }} · marked by your teacher</p>{% endif %}
+    <h2 class="ex-question-text">{{question.question_text}}</h2>
     <form method="post" action="{{url_for('student_assessment_answer',assessment_id=assessment.id)}}" id="studentAssessmentForm">
       <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
       <input type="hidden" name="attempt_id" value="{{attempt_id}}">
       <input type="hidden" name="question_id" value="{{question.question_id}}">
       <input type="hidden" name="next_q" value="{{current+1 if current<total else current}}">
+      {% if theory %}
+      <div class="ex-theory">
+        <label for="exAnswer" class="ex-theory__label">Your answer</label>
+        <textarea id="exAnswer" name="answer_text" rows="12" maxlength="{{ answer_limit }}" spellcheck="true"
+                  data-ex-answer data-limit="{{ answer_limit }}">{{ saved_text.get(question.question_id, '') }}</textarea>
+        <div class="ex-theory__foot"><span data-ex-saved role="status" aria-live="polite">{% if saved_text.get(question.question_id) %}Saved{% else %}Saved as you type{% endif %}</span><span data-ex-count></span></div>
+      </div>
+      {% else %}
       <div class="options student-exam-options">
         {% for opt in [question.option_a,question.option_b,question.option_c,question.option_d] %}
         {% if opt is not none %}
@@ -53,6 +63,7 @@
         {% endif %}
         {% endfor %}
       </div>
+      {% endif %}
       <div class="nav">
         <a class="secondary {% if current==1 %}disabled{% endif %}"
            href="{% if current>1 %}{{url_for('student_assessment_take',assessment_id=assessment.id,q=current-1)}}{% else %}#{% endif %}">Previous</a>
@@ -69,16 +80,48 @@
 let remaining={{remaining}};
 const timer=document.getElementById('studentTimer');
 const form=document.getElementById('studentAssessmentForm');
+// A written answer is saved as it is typed (a moment after the last key), when the page is left, and before the
+// time runs out, so a power cut, a lost connection or the clock costs the student nothing they wrote.
+const answer=document.querySelector('[data-ex-answer]');
+const savedNote=document.querySelector('[data-ex-saved]');
+const countNote=document.querySelector('[data-ex-count]');
+let dirty=false, saving=null, debounce=null;
+function saveAnswer(keepalive){
+  if(!answer || !dirty) return Promise.resolve();
+  dirty=false;
+  const fd=new FormData();
+  fd.append('_csrf_token',document.getElementById('csrfToken').value);
+  fd.append('attempt_id','{{attempt_id}}'); fd.append('question_id','{{question.question_id}}');
+  fd.append('answer_text',answer.value); fd.append('autosave','1');
+  savedNote.textContent='Saving…';
+  saving=fetch("{{url_for('student_assessment_answer',assessment_id=assessment.id)}}",{method:'POST',body:fd,credentials:'same-origin',keepalive:!!keepalive})
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+      if(r.ok && j.ok){ savedNote.textContent='Saved'; }
+      else if(j.closed){ savedNote.textContent='Time is up'; }
+      else { dirty=true; savedNote.textContent=j.error||'Not saved yet. It will be saved with Save & Next.'; }
+    }); })
+    .catch(function(){ dirty=true; savedNote.textContent='Offline. Your answer is kept here and saved with Save & Next.'; });
+  return saving;
+}
+if(answer){
+  const count=function(){ countNote.textContent=answer.value.length+' / '+answer.dataset.limit; };
+  answer.addEventListener('input',function(){ dirty=true; count(); clearTimeout(debounce); debounce=setTimeout(saveAnswer,1500); });
+  count();
+  window.addEventListener('pagehide',function(){ if(dirty) saveAnswer(true); });
+}
 function tick(){
   const m=Math.floor(Math.max(0,remaining)/60), s=Math.max(0,remaining)%60;
   timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  if(remaining===5) saveAnswer(false);
   if(remaining<=0){
-    window.location.href="{{url_for('student_assessment_result',assessment_id=assessment.id)}}";
+    const go=function(){ window.location.href="{{url_for('student_assessment_result',assessment_id=assessment.id)}}"; };
+    Promise.race([saveAnswer(false),new Promise(function(r){ setTimeout(r,2000); })]).then(go,go);
+    clearInterval(clock);
     return;
   }
   remaining--;
 }
-setInterval(tick,1000); tick();
+const clock=setInterval(tick,1000); tick();
 // A liveness ping, not an answer save: tells the server this paper is still open, so a real
 // connectivity or power outage (a gap much bigger than this interval) can be credited back to the
 // student's time instead of silently costing them minutes they never got to use.
@@ -88,6 +131,11 @@ setInterval(function(){
   fetch("{{url_for('student_assessment_heartbeat',assessment_id=assessment.id)}}",{method:'POST',body:fd}).catch(function(){});
 },10000);
 form.addEventListener('submit',e=>{
+  clearTimeout(debounce); dirty=false;
+  if(answer){
+    if(!answer.value.trim()) window.brandDialog.confirmSubmit(e, 'You have not written an answer. Continue without one?', {title: 'No answer written', ok: 'Continue without an answer', danger: false});
+    return;
+  }
   const choice=form.querySelector('input[name="option_index"]:checked');
   if(!choice) window.brandDialog.confirmSubmit(e, 'No answer is selected. Continue without saving an answer?', {title: 'No answer chosen', ok: 'Continue without an answer', danger: false});
 });

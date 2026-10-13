@@ -1,0 +1,126 @@
+{% extends 'admin_base.html' %}
+{% block title %}Marking {{ paper.title }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Marking one paper (blueprints/school/marking.py): how its marks are shared between the objective and theory parts,
+   the students whose scripts this teacher marks, and one student's written answers with a mark and an optional
+   comment for each. Answers are shown exactly as written, as plain text. A released result is locked. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<div class="ac mk" data-mk>
+<header class="acq-head">
+  <div class="acq-head__text">
+    <span class="acq-kind">Marking · {{ kinds.get(paper.assessment_type, '') }}</span>
+    <h2>{{ paper.title }}</h2>
+    <p>{{ paper.class_name }} · {{ paper.subject_name }}{% if paper.term %} · {{ paper.term }}{% endif %}{% if paper.session_name %} · {{ paper.session_name }}{% endif %}</p>
+  </div>
+  <a class="ac-btn" href="{{ url_for('admin_school_marking') }}">← To mark</a>
+</header>
+
+{# ---------------------------------------------------------------- the split #}
+<section class="ac-panel mk-split">
+  <div class="mk-split__head">
+    <h3>How the {{ '%g'|format(split.total) }} marks are shared</h3>
+    <p>The objective questions add up to {{ split.objective_raw }} mark{{ '' if split.objective_raw == 1 else 's' }} and the theory questions to {{ split.theory_raw }}.
+      {% if split.chosen %}You have shared them out differently.{% else %}Each part keeps its own marks until you change it.{% endif %}
+      Giving theory more marks takes them from the objective part; every score on this paper follows.</p>
+  </div>
+  {% if split_locked %}
+  <p class="mk-lock">Locked: results of this paper have been released. Objective {{ '%g'|format(split.objective) }} · theory {{ '%g'|format(split.theory) }}.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('admin_school_marking_split', assessment_id=paper.id) }}" class="mk-split__form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    {% if current %}<input type="hidden" name="student" value="{{ current.student_id }}">{% endif %}
+    <div class="mk-split__vals">
+      <label>Objective <output data-mk-obj>{{ '%g'|format(split.objective) }}</output></label>
+      <input type="range" min="0" max="{{ split.total }}" step="0.5" value="{{ split.theory }}" data-mk-range aria-label="Marks for theory"
+             {% if not split.objective_raw %}disabled{% endif %}>
+      <label for="mkTheory">Theory <input id="mkTheory" type="number" name="theory_marks" min="0" max="{{ split.total }}" step="0.5" value="{{ '%g'|format(split.theory) }}" data-mk-theory required
+             {% if not split.objective_raw %}readonly{% endif %}></label>
+    </div>
+    <div class="mk-split__acts">
+      <button class="ac-btn ac-btn--primary ac-btn--sm" type="submit"
+              data-confirm="Share this paper's {{ '%g'|format(split.total) }} marks the new way? Every student's score on it is recalculated."
+              data-confirm-title="Change how the marks are shared" data-confirm-ok="Yes, recalculate" data-confirm-danger="0">Save how marks are shared</button>
+      {% if split.chosen %}<button class="ac-link" type="submit" name="reset" value="1" formnovalidate
+              data-confirm="Go back to each part keeping its own question marks? Every student's score on this paper is recalculated." data-confirm-danger="0">Use the questions' own marks</button>{% endif %}
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+{% if not students %}
+<section class="ac-panel"><div class="ac-empty"><strong>No scripts yet</strong>When students you teach submit this {{ kinds.get(paper.assessment_type, 'paper')|lower }}, their written answers appear here.</div></section>
+{% else %}
+<div class="mk-grid">
+  {# ---------------------------------------------------------------- the students #}
+  <nav class="ac-panel mk-students" aria-label="Students">
+    <p class="mk-students__count">{{ students|length }} script{{ '' if students|length == 1 else 's' }} · <b>{{ pending }}</b> to mark</p>
+    <ul>{% for s in students %}
+      <li><a href="{{ url_for('admin_school_marking_paper', assessment_id=paper.id, student=s.student_id) }}" class="{{ 'is-current' if current and current.student_id == s.student_id }}"{% if current and current.student_id == s.student_id %} aria-current="true"{% endif %}>
+        <span><b>{{ s.name }}</b><small>{{ s.admission_no }}</small></span>
+        {% if s.released %}<span class="ac-tag" title="Released: locked">Released</span>
+        {% elif s.theory_status == 'pending' %}<span class="ac-tag ac-tag--attn">To mark</span>
+        {% else %}<span class="ac-tag ac-tag--good">Marked</span>{% endif %}
+      </a></li>{% endfor %}
+    </ul>
+  </nav>
+
+  {# ---------------------------------------------------------------- one student's script #}
+  <section class="ac-panel mk-script">
+    {% set parts = current.parts %}
+    <header class="mk-script__head">
+      <div><h3>{{ current.name }}</h3><small>{{ current.admission_no }}{% if current.submitted_at %} · submitted {{ current.submitted_at[:16]|replace('T', ' ') }}{% endif %}</small></div>
+      <dl class="mk-sum">
+        <div><dt>Objective</dt><dd>{{ parts.objective }} / {{ parts.objective_raw }}</dd></div>
+        <div><dt>Theory</dt><dd>{% if parts.theory is none %}{{ parts.pending }} to mark{% else %}{{ '%g'|format(parts.theory) }} / {{ parts.theory_raw }}{% endif %}</dd></div>
+        <div class="is-lead"><dt>Score</dt><dd>{% if current.score is none %}—{% else %}{{ '%g'|format(current.score) }}{% endif %} / {{ '%g'|format(split.total) }}</dd></div>
+      </dl>
+    </header>
+    {% if current.released %}<p class="mk-lock">This result has been released, so its marks are locked.</p>{% endif %}
+    {% set checked = current.result_status in ('verified', 'approved') %}
+    <form method="post" action="{{ url_for('admin_school_marking_save', assessment_id=paper.id, student_id=current.student_id) }}"
+          {% if checked %}data-confirm="This result has already been checked. Changing a mark sends it back to be checked again." data-confirm-title="Result already checked" data-confirm-ok="Save and send back" data-confirm-danger="0"{% endif %}>
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <ol class="mk-qs">{% for q in current.questions %}
+        <li class="mk-q">
+          <div class="mk-q__head"><span class="acq-n">{{ q.question_order }}</span><span class="ac-tag">{{ q.points }} mark{{ '' if q.points == 1 else 's' }}</span></div>
+          {% if q.instruction %}<small class="acq-instr">{{ q.instruction }}</small>{% endif %}
+          <p class="mk-q__text">{{ q.question_text }}</p>
+          {% if q.image_path %}<img class="acq-img" src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for question {{ q.question_order }}">{% endif %}
+          {% if q.guide %}<details class="mk-guide"><summary>Marking guide</summary><p>{{ q.guide }}</p></details>{% endif %}
+          {% if q.answered %}
+          <div class="mk-answer" aria-label="The student's answer">{{ q.answer }}</div>
+          <div class="mk-q__mark">
+            <label>Mark <input type="number" name="mark_{{ q.question_id }}" min="0" max="{{ q.points }}" step="0.25" inputmode="decimal"
+                   value="{{ '%g'|format(q.awarded) if q.awarded is not none else '' }}" {% if current.released %}disabled{% endif %}> / {{ q.points }}</label>
+            <input type="text" name="comment_{{ q.question_id }}" maxlength="{{ comment_limit }}" value="{{ q.comment }}" placeholder="Comment (optional)" aria-label="Comment on question {{ q.question_order }}" {% if current.released %}disabled{% endif %}>
+          </div>
+          {% else %}
+          <p class="mk-answer is-empty">No answer written. It scores 0 and needs no mark.</p>
+          {% endif %}
+        </li>{% endfor %}
+      </ol>
+      {% if not current.released %}
+      <div class="ac-form-foot"><span class="ac-hint">Leave a mark blank to come back to it.</span><span class="ac-grow"></span>
+        <button class="ac-btn" type="submit" name="then" value="stay">Save marks</button>
+        {% if pending > 1 or (pending == 1 and current.theory_status != 'pending') %}<button class="ac-btn ac-btn--primary" type="submit" name="then" value="next">Save and next student</button>{% endif %}
+      </div>
+      {% endif %}
+    </form>
+  </section>
+</div>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-mk]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  // The split: the slider and the number move together, and the objective share is what is left.
+  var range=root.querySelector('[data-mk-range]'), theory=root.querySelector('[data-mk-theory]'), obj=root.querySelector('[data-mk-obj]');
+  if(range && theory && obj){
+    var total=parseFloat(range.max)||0;
+    function show(v){ v=Math.max(0,Math.min(total,parseFloat(v)||0)); obj.textContent=String(Math.round((total-v)*100)/100); return v; }
+    range.addEventListener('input',function(){ theory.value=range.value; show(range.value); });
+    theory.addEventListener('input',function(){ range.value=theory.value; show(theory.value); });
+  }
+})();
+</script>
+{% endblock %}

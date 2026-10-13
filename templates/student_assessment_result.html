@@ -22,7 +22,7 @@
   <div class="is-lead"><dt>Submission</dt><dd>Submission received</dd></div>
   <div><dt>Score</dt><dd>Withheld</dd><small>until the school releases results</small></div>
 </dl>
-<p class="ac-note">Your submission has been recorded. The score is withheld for now and will appear with your results when the school releases them.</p>
+<p class="ac-note">Your submission has been recorded.{% if result.theory_status == 'pending' %} Your written answers will be marked by your subject teacher.{% endif %} The score is withheld for now and will appear with your results when the school releases them.</p>
 {% endif %}
 <div class="pf-go"><a class="ac-btn ac-btn--primary" href="{{ url_for('student_dashboard') }}">Back to dashboard</a></div>
 </div>

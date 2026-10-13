@@ -18,6 +18,26 @@
   ],
   "releases": [
     {
+      "version": "2.25.0",
+      "date": "2026-10-13",
+      "title": "Theory questions, marked by the subject teacher",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Tests and examinations can now have theory questions as well as objective ones. Students write their answers, which are saved as they type. The subject teacher marks them under To mark in the menu, with an optional marking guide beside each answer, and can move marks between the objective and theory parts of a paper. A result waits, shown as Awaiting marking, until every written answer is marked.",
+          "help": "work"
+        },
+        {
+          "audience": "student",
+          "text": "Some tests and examinations now have written (theory) questions. Type your answer in the box: it is saved as you type, so a power cut or a lost connection keeps it. Your teacher marks these answers, so your score appears once they have."
+        },
+        {
+          "audience": "student",
+          "text": "Moving to the next question without choosing an answer now works, instead of showing an error."
+        }
+      ]
+    },
+    {
       "version": "2.24.2",
       "date": "2026-10-12",
       "title": "Billing a class, live and faster",

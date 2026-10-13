@@ -5,7 +5,7 @@
    reason, which goes to the audit trail, and saving returns to the student. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac st">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}{% endif %}
 <div class="ac-modal-head"><h2>Correct a school-journey entry</h2><p>A correction to the record needs a reason; it is written to the audit trail.</p></div>
 {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}

@@ -22,6 +22,16 @@ body.student-assessment-page, body.student-portal-page { background: color-mix(i
 .qnum { border-color: color-mix(in srgb, var(--ex-brand) 18%, #e4e1da) !important; color: var(--ex-brand) !important; }
 .qnum.answered { background: color-mix(in srgb, var(--ex-accent) 14%, #fff) !important; border-color: var(--ex-accent) !important; }
 .qnum.current { outline: 3px solid var(--ex-accent) !important; outline-offset: 1px; }
+/* A theory question: the student writes their answer, saved as they type. */
+.ex-theory-tag { display: inline-block; margin: 0 0 6px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--ex-accent) 12%, #fff); color: var(--ex-brand); }
+.ex-question-text { white-space: pre-line; overflow-wrap: anywhere; }
+.ex-theory { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 14px; }
+.ex-theory__label { font-weight: 700; font-size: 13px; color: var(--ex-brand); }
+.ex-theory textarea { width: 100%; min-height: 220px; padding: 12px; border: 1px solid color-mix(in srgb, var(--ex-brand) 18%, #d8d4cc);
+  border-radius: 12px; font: inherit; font-size: 15px; line-height: 1.55; resize: vertical; background: #fff; box-sizing: border-box; }
+.ex-theory textarea:focus { outline: 3px solid color-mix(in srgb, var(--ex-accent) 30%, transparent); border-color: var(--ex-accent); }
+.ex-theory__foot { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #6b6b6b; }
 /* A button pressed (Save & Next, Submit) spins until the next page arrives (static/parent-loading.js). */
 .pp-busy { position: relative; pointer-events: none; opacity: .9; }
 .pp-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%;

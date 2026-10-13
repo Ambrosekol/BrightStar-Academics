@@ -25,6 +25,7 @@ from models import (
 from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _flatten
 from core.security import audit_log, csrf_protect
+from core.theory_marking import OBJECTIVE, THEORY, THEORY_ANSWER_LIMIT
 from core.school_structure import class_is_early_years, student_department_filter
 from core.session_guard import refresh_password_stamp
 from blueprints.student_portal.helpers import (
@@ -323,13 +324,19 @@ def student_assessment_start(assessment_id):
             started_at=now.isoformat(),expires_at=expires.isoformat(),status='active')
         db.session.add(attempt); db.session.flush()
         attempt_id=attempt.id
+        # A theory question is frozen with no options and no correct answer; its marking guide stays with the
+        # teacher and is never copied here.
         db.session.add_all([
             SchoolAssessmentAttemptQuestion(
                 attempt_id=attempt_id,question_id=q['id'],question_order=order,
-                question_text=q['question_text'],option_a=q['option_a'],option_b=q['option_b'],
-                option_c=q['option_c'],option_d=q['option_d'],instruction=q['instruction'],
-                image_path=q['image_path'],correct_option=int(q['correct_option']),
-                points=int(q['points'] or 1))
+                question_text=q['question_text'],
+                option_a=None if q['question_type']==THEORY else q['option_a'],
+                option_b=None if q['question_type']==THEORY else q['option_b'],
+                option_c=None if q['question_type']==THEORY else q['option_c'],
+                option_d=None if q['question_type']==THEORY else q['option_d'],
+                instruction=q['instruction'],image_path=q['image_path'],
+                correct_option=-1 if q['question_type']==THEORY else int(q['correct_option']),
+                points=int(q['points'] or 1),question_type=q['question_type'] or OBJECTIVE)
             for order,q in enumerate(questions,1)])
         db.session.commit()
     except sa.exc.IntegrityError:
@@ -372,8 +379,12 @@ def student_assessment_take(assessment_id):
     rows=db.session.scalars(select(SchoolAssessmentAttemptQuestion)
         .where(SchoolAssessmentAttemptQuestion.attempt_id==attempt['id'])
         .order_by(SchoolAssessmentAttemptQuestion.question_order)).all()
-    saved=dict(tuples(select(SchoolAssessmentAnswer.question_id,SchoolAssessmentAnswer.option_index)
-        .where(SchoolAssessmentAnswer.attempt_id==attempt['id'])))
+    saved={}; saved_text={}
+    for qid,opt,text in tuples(select(SchoolAssessmentAnswer.question_id,SchoolAssessmentAnswer.option_index,
+                                      SchoolAssessmentAnswer.answer_text)
+            .where(SchoolAssessmentAnswer.attempt_id==attempt['id'])):
+        if opt is not None: saved[qid]=opt
+        if text: saved_text[qid]=text
     if not rows: abort(409,description='This assessment attempt has no frozen question set.')
     try: current=int(request.args.get('q',1))
     except (TypeError,ValueError): current=1
@@ -383,9 +394,9 @@ def student_assessment_take(assessment_id):
     public_q.pop('correct_option',None)
     return render_template('student_assessment_take.html',
         student=student,assessment=a,question=public_q,current=current,
-        total=len(rows),saved=saved,remaining=remaining(attempt),
-        csrf_token_value=csrf_token(),attempt_id=attempt['id'],
-        rows_answered={r['question_order'] for r in rows if r['question_id'] in saved})
+        total=len(rows),saved=saved,saved_text=saved_text,remaining=remaining(attempt),
+        csrf_token_value=csrf_token(),attempt_id=attempt['id'],answer_limit=THEORY_ANSWER_LIMIT,
+        rows_answered={r['question_order'] for r in rows if r['question_id'] in saved or r['question_id'] in saved_text})
 
 @app.post('/student/assessments/<int:assessment_id>/answer')
 @student_required
@@ -400,13 +411,17 @@ def student_assessment_answer(assessment_id):
         SchoolAssessmentAttempt.assessment_id==assessment_id)).first()
     if not attempt:
         abort(404)
+    # autosave=1 is the take page saving a written answer as it is typed: it is answered with JSON, never a page.
+    autosave=request.form.get('autosave')=='1'
     if attempt['status']!='active':
+        if autosave: return jsonify(ok=False,closed=True),409
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
     apply_connectivity_grace(attempt)
     if remaining(attempt)<=0:
         student_assessment_grade(attempt['id'],auto=True)
+        if autosave: return jsonify(ok=False,closed=True),409
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
-    try: qid=int(request.form.get('question_id','0')); opt=int(request.form.get('option_index','-1'))
+    try: qid=int(request.form.get('question_id','0'))
     except (TypeError,ValueError):
         abort(400)
     q=db.session.scalars(select(SchoolAssessmentAttemptQuestion).where(
@@ -414,17 +429,42 @@ def student_assessment_answer(assessment_id):
         SchoolAssessmentAttemptQuestion.question_id==qid)).first()
     if not q:
         abort(400)
-    option_count=sum(1 for x in (q['option_a'],q['option_b'],q['option_c'],q['option_d']) if x is not None)
-    if opt<0 or opt>=option_count:
+    now=datetime.now(timezone.utc).isoformat()
+    if (q['question_type'] or OBJECTIVE)==THEORY:
+        text=(request.form.get('answer_text') or '').replace('\r\n','\n').rstrip()
+        if len(text)>THEORY_ANSWER_LIMIT:
+            if autosave: return jsonify(ok=False,error=f'An answer can be at most {THEORY_ANSWER_LIMIT} characters.'),413
+            abort(413)
+        if text.strip():
+            answer_stmt=insert_stmt(SchoolAssessmentAnswer).values(
+                attempt_id=attempt['id'],question_id=qid,option_index=None,answer_text=text,answered_at=now)
+            db.session.execute(answer_stmt.on_conflict_do_update(
+                index_elements=['attempt_id','question_id'],
+                set_={'answer_text':answer_stmt.excluded.answer_text,'answered_at':answer_stmt.excluded.answered_at}))
+        else:
+            # Cleared: the question is unanswered again.
+            db.session.execute(sa.delete(SchoolAssessmentAnswer).where(
+                SchoolAssessmentAnswer.attempt_id==attempt['id'],SchoolAssessmentAnswer.question_id==qid))
+        db.session.commit()
+        if autosave: return jsonify(ok=True,saved_at=now)
+    elif autosave:
         abort(400)
-    answer_stmt=insert_stmt(SchoolAssessmentAnswer).values(
-        attempt_id=attempt['id'],question_id=qid,option_index=opt,
-        answered_at=datetime.now(timezone.utc).isoformat())
-    db.session.execute(answer_stmt.on_conflict_do_update(
-        index_elements=['attempt_id','question_id'],
-        set_={'option_index':answer_stmt.excluded.option_index,
-              'answered_at':answer_stmt.excluded.answered_at}))
-    db.session.commit()
+    else:
+        raw=request.form.get('option_index')
+        if raw not in (None,''):
+            # No option chosen ("continue without an answer") saves nothing and moves on; a chosen one must be real.
+            try: opt=int(raw)
+            except (TypeError,ValueError): abort(400)
+            option_count=sum(1 for x in (q['option_a'],q['option_b'],q['option_c'],q['option_d']) if x is not None)
+            if opt<0 or opt>=option_count:
+                abort(400)
+            answer_stmt=insert_stmt(SchoolAssessmentAnswer).values(
+                attempt_id=attempt['id'],question_id=qid,option_index=opt,answered_at=now)
+            db.session.execute(answer_stmt.on_conflict_do_update(
+                index_elements=['attempt_id','question_id'],
+                set_={'option_index':answer_stmt.excluded.option_index,
+                      'answered_at':answer_stmt.excluded.answered_at}))
+            db.session.commit()
     next_q=request.form.get('next_q')
     try: next_q=int(next_q)
     except (TypeError,ValueError): next_q=1

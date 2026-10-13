@@ -7,7 +7,7 @@
 {% set modal = request.values.get('modal') == '1' %}
 {% set a = assignment or {} %}
 <div class="ac">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
 <div class="ac-modal-head"><h2>Edit assignment</h2><p>{{ a.get('title', '') }}</p></div>
 {% else %}{% set work_tab = 'assignments' %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 

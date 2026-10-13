@@ -222,6 +222,10 @@ class SchoolAssessment(db.Model):
     created_by = db.Column(Integer, ForeignKey('admins.id'), nullable=False)
     created_at = db.Column(Text, nullable=False)
     term = db.Column(Text)
+    # How the marks of a test with theory questions are shared out (core/theory_marking.py). Blank means
+    # each part keeps the marks its questions add up to; the subject teacher can move marks between them.
+    objective_marks = db.Column(Float)
+    theory_marks = db.Column(Float)
 
 
 class SchoolQuestion(db.Model):
@@ -244,6 +248,11 @@ class SchoolQuestion(db.Model):
     correct_option = db.Column(Integer, nullable=False)
     points = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
     sort_order = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    # 'objective' (four options, marked by the system) or 'theory' (a written answer the subject teacher
+    # marks). A theory question keeps its options blank and correct_option -1; points are its marks.
+    question_type = db.Column(Text, nullable=False, default='objective', server_default=text("'objective'"))
+    # What a good answer contains, for the teacher marking it. Never sent to a student.
+    marking_guide = db.Column(Text)
 
 
 class SchoolAssessmentAttempt(db.Model):
@@ -271,6 +280,9 @@ class SchoolAssessmentAttempt(db.Model):
     # how much of the capped allowance has already been granted to this attempt.
     last_seen_at = db.Column(Text)
     grace_extended_seconds = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
+    # Theory marking: blank for a paper with no theory; 'pending' until the subject teacher has marked
+    # every written answer, then 'marked'. score/max_score stay the objective part alone.
+    theory_status = db.Column(Text)
 
 
 class SchoolAssessmentAttemptQuestion(db.Model):
@@ -296,6 +308,7 @@ class SchoolAssessmentAttemptQuestion(db.Model):
     image_path = db.Column(Text)
     correct_option = db.Column(Integer, nullable=False)
     points = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    question_type = db.Column(Text, nullable=False, default='objective', server_default=text("'objective'"))
 
 
 class SchoolAssessmentAnswer(db.Model):
@@ -308,6 +321,12 @@ class SchoolAssessmentAnswer(db.Model):
     question_id = db.Column(Integer, primary_key=True, nullable=False)
     option_index = db.Column(Integer)
     answered_at = db.Column(Text, nullable=False)
+    # A theory question's written answer, and the teacher's mark for it (blank until marked).
+    answer_text = db.Column(Text)
+    awarded = db.Column(Float)
+    marker_comment = db.Column(Text)
+    marked_by = db.Column(Integer, ForeignKey('admins.id'))
+    marked_at = db.Column(Text)
 
 
 class SchoolStudentResult(db.Model):

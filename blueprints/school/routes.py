@@ -39,6 +39,7 @@ from core.security import (
 from core.uploads import _save_image_upload
 from core.names import clean_part
 from core import subdivisions as subdivision_reach
+from core import theory_marking
 from core.notifications import _notify_guardians_of_school_work
 from blueprints.school.report_card_data import class_term_stats, grade_for
 from blueprints.school.result_notices import announce_ready_report_cards
@@ -1510,7 +1511,9 @@ def admin_school_assessment_detail(assessment_id):
     perm='school.practice.edit' if a['assessment_type']=='practice' else ('school.examinations.edit' if a['assessment_type']=='examination' else 'school.tests.edit')
     if not admin_has_permission(current_admin()['id'],perm): return admin_access_error(perm)
     if not _school_pair_allowed(current_admin()['id'],a['class_id'],a['subject_id']): return admin_access_error(perm)
-    return render_template('school_assessment_detail.html',assessment=a,questions=questions,sessions=_school_sessions(),terms=ACADEMIC_TERMS)
+    split=theory_marking.split_for(assessment_id) if a['assessment_type']!='practice' else None
+    return render_template('school_assessment_detail.html',assessment=a,questions=questions,sessions=_school_sessions(),terms=ACADEMIC_TERMS,
+                           split=split,limits={'guide':theory_marking.MARKING_GUIDE_LIMIT,'marks':theory_marking.MAX_QUESTION_MARKS})
 
 @app.post('/admin/school/assessments/<int:assessment_id>/edit')
 @admin_required
@@ -1559,22 +1562,42 @@ def admin_school_assessment_question_new(assessment_id):
     perm='school.practice.edit' if a['assessment_type']=='practice' else ('school.examinations.edit' if a['assessment_type']=='examination' else 'school.tests.edit')
     if not admin_has_permission(current_admin()['id'],perm): return admin_access_error(perm)
     if not _school_pair_allowed(current_admin()['id'],a['class_id'],a['subject_id']): return admin_access_error(perm)
-    text=request.form.get('question_text','').strip(); instruction=request.form.get('instruction','').strip(); opts=[request.form.get(f'option_{x}','').strip() for x in 'abcd']
-    try: correct=int(request.form.get('correct_option','-1')); points=max(1,int(request.form.get('points','1') or 1))
-    except: correct=-1; points=1
+    back=url_for('admin_school_assessment_detail',assessment_id=assessment_id)
+    kind=request.form.get('question_type','objective')
+    if kind not in theory_marking.QUESTION_TYPES: kind='objective'
+    if kind==theory_marking.THEORY and a['assessment_type']=='practice':
+        flash('Practice tests have objective questions only.','error'); return redirect(back)
+    text=request.form.get('question_text','').strip(); instruction=request.form.get('instruction','').strip()
+    try: points=int(request.form.get('points','1') or 1)
+    except (TypeError,ValueError): points=0
+    if kind==theory_marking.THEORY:
+        guide=request.form.get('marking_guide','').strip()
+        opts=['','','','']; correct=-1
+        if not text: flash('Write the question.','error'); return redirect(back)
+        if not 1<=points<=theory_marking.MAX_QUESTION_MARKS:
+            flash(f'A theory question carries between 1 and {theory_marking.MAX_QUESTION_MARKS} marks.','error'); return redirect(back)
+        if len(guide)>theory_marking.MARKING_GUIDE_LIMIT:
+            flash(f'Keep the marking guide under {theory_marking.MARKING_GUIDE_LIMIT} characters.','error'); return redirect(back)
+    else:
+        guide=None
+        opts=[request.form.get(f'option_{x}','').strip() for x in 'abcd']
+        try: correct=int(request.form.get('correct_option','-1'))
+        except (TypeError,ValueError): correct=-1
+        points=max(1,points)
+        if not text or any(not x for x in opts) or correct not in range(4): flash('Question text, four options and a correct answer are required.','error'); return redirect(back)
     try:
         image_path=_save_image_upload(request.files.get('image'),'questions',f'school_{assessment_id}')
     except ValueError as exc:
-        flash(str(exc),'error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
-    if not text or any(not x for x in opts) or correct not in range(4): flash('Question text, four options and a correct answer are required.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+        flash(str(exc),'error'); return redirect(back)
     n=one_scalar(select(func.coalesce(func.max(SchoolQuestion.sort_order),0)+1)
                  .where(SchoolQuestion.assessment_id==assessment_id),1)
     db.session.add(SchoolQuestion(assessment_id=assessment_id,question_text=text,
         instruction=instruction,image_path=image_path,option_a=opts[0],option_b=opts[1],
-        option_c=opts[2],option_d=opts[3],correct_option=correct,points=points,sort_order=n))
+        option_c=opts[2],option_d=opts[3],correct_option=correct,points=points,sort_order=n,
+        question_type=kind,marking_guide=guide or None))
     db.session.flush()
     _resync_question_count(assessment_id)
-    db.session.commit(); audit_log('school_assessment_question_added','school',a['assessment_type'],assessment_id,{'question_number':n}); flash('Question added.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+    db.session.commit(); audit_log('school_assessment_question_added','school',a['assessment_type'],assessment_id,{'question_number':n,'question_type':kind}); flash('Question added.','success'); return redirect(back)
 
 @app.route('/admin/school/assessments/<int:assessment_id>/questions/<int:question_id>/edit',methods=['GET','POST'])
 @admin_required
@@ -1594,12 +1617,14 @@ def admin_school_assessment_question_edit(assessment_id,question_id):
 
     text=request.form.get('question_text','').strip()
     instruction=request.form.get('instruction','').strip()
-    opts=[request.form.get(f'option_{x}','').strip() for x in 'abcd']
+    theory=q['question_type']==theory_marking.THEORY   # a question keeps the type it was made with
+    guide=request.form.get('marking_guide','').strip() if theory else None
+    opts=['','','',''] if theory else [request.form.get(f'option_{x}','').strip() for x in 'abcd']
     try:
-        correct=int(request.form.get('correct_option','-1'))
-        points=max(1,int(request.form.get('points','1') or 1))
+        correct=-1 if theory else int(request.form.get('correct_option','-1'))
+        points=int(request.form.get('points','1') or 1)
     except (TypeError,ValueError):
-        correct=-1; points=1
+        correct=-1; points=0
     errors=[]
     image_path=q['image_path']
     if request.form.get('remove_image')=='1':
@@ -1610,21 +1635,25 @@ def admin_school_assessment_question_edit(assessment_id,question_id):
     except ValueError as exc:
         errors.append(str(exc))
     if not text: errors.append('Question text is required.')
-    if any(not x for x in opts): errors.append('All four options are required.')
-    if correct not in range(4): errors.append('Select the correct option.')
-    if points<1: errors.append('Points must be at least 1.')
+    if theory:
+        if not 1<=points<=theory_marking.MAX_QUESTION_MARKS: errors.append(f'A theory question carries between 1 and {theory_marking.MAX_QUESTION_MARKS} marks.')
+        if len(guide or '')>theory_marking.MARKING_GUIDE_LIMIT: errors.append(f'Keep the marking guide under {theory_marking.MARKING_GUIDE_LIMIT} characters.')
+    else:
+        if any(not x for x in opts): errors.append('All four options are required.')
+        if correct not in range(4): errors.append('Select the correct option.')
+        if points<1: errors.append('Points must be at least 1.')
     if errors:
         return render_template('school_question_form.html',assessment=a,question={
             'id':question_id,'question_text':text,'instruction':instruction,'image_path':image_path,
             'option_a':opts[0],'option_b':opts[1],'option_c':opts[2],'option_d':opts[3],
-            'correct_option':correct,'points':points
+            'correct_option':correct,'points':points,'question_type':q['question_type'],'marking_guide':guide
         },errors=errors)
 
     db.session.execute(sa_update(SchoolQuestion)
         .where(SchoolQuestion.id==question_id,SchoolQuestion.assessment_id==assessment_id)
         .values(question_text=text,instruction=instruction,image_path=image_path,
                 option_a=opts[0],option_b=opts[1],option_c=opts[2],option_d=opts[3],
-                correct_option=correct,points=points))
+                correct_option=correct,points=points,marking_guide=guide or None))
     db.session.commit()
     audit_log('school_assessment_question_updated','school',a['assessment_type'],assessment_id,{'question_id':question_id})
     flash(f'Question {question_id} updated.','success')
@@ -1862,6 +1891,11 @@ def admin_school_result_edit(result_id):
     if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error('school.results.enter')
     if row['status'] in ('approved','released'):
         flash('Approved or released results cannot be edited here. Use the authorised correction process.','error'); return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
+    if row['assessment_id'] and theory_marking.has_theory(row['assessment_id']):
+        # Its score is made from the system's objective marks and the subject teacher's theory marks; a typed-over
+        # score would be undone by the next mark, so it is changed by marking, never here.
+        flash('This score comes from a paper with theory questions. Change it by marking the paper (To mark).','error')
+        return redirect(url_for('admin_school_marking_paper',assessment_id=row['assessment_id'],student=row['student_id']))
     if request.method=='POST':
         try: score=_finite(float(request.form.get('score',''))); max_score=_finite(float(request.form.get('max_score','')))
         except (TypeError,ValueError): score=max_score=-1
@@ -1909,6 +1943,11 @@ def admin_school_result_workflow(result_id):
     if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error(required)
     if action in ('release','return') and not _may_release_class(me['id'],row['class_id']):
         return admin_access_error('Releasing results is for the class teacher of '+(row['class_name'] or 'this class'))
+    if action!='return' and row['score'] is None and row['assessment_id']:
+        # A CBT paper whose theory answers are not all marked has no score yet: it cannot be checked, sent on or
+        # released. (A hand-entered result with no score, such as an absence, is not one of these.)
+        flash('This result is waiting for its theory answers to be marked, so it cannot move on yet.','error')
+        return redirect(results_return_url(url_for('admin_school_results',**{'class':row['class_name']})))
     transitions={'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}
     teacher_steps={'submit':(('entered','verified'),'approved'),'return':(('verified','approved'),'entered')}
     allowed_from,to=teacher_steps[action] if action in teacher_steps else ((transitions[action][0],),transitions[action][1])

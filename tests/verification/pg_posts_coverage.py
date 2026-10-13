@@ -20,6 +20,10 @@ EXEMPT = {
     # transfer (asking, approving, declining, cancelling), valid and hostile, in write_paths_subdivisions.py.
     # Finance > New students to bill: taking students off the list and putting them back, valid and hostile, in
     # write_paths_new_students.py.
+    # To mark: marking written answers and sharing a paper's marks, valid and hostile (another subject's teacher, a
+    # released result, marks out of range), in write_paths_theory_marking.py.
+    "/admin/school/marking/<int:assessment_id>/students/<int:student_id>": "see write_paths_theory_marking.py",
+    "/admin/school/marking/<int:assessment_id>/split": "see write_paths_theory_marking.py",
     "/admin/finance/new-students/remove": "see write_paths_new_students.py",
     "/admin/finance/new-students/<int:student_id>/restore": "see write_paths_new_students.py",
     "/admin/school/subdivisions/<int:class_id>": "see write_paths_subdivisions.py",

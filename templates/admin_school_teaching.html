@@ -8,7 +8,7 @@
 {% set no_ct = board|rejectattr('class_teachers')|list %}
 {% set untaught = board|map(attribute='untaught')|sum(start=[]) %}
 {% set no_duties = teachers|rejectattr('duties')|list %}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <div class="ac st tc" data-tc>

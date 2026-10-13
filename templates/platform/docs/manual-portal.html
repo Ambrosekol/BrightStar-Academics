@@ -132,6 +132,25 @@ roles and duties instead (below).</p>
 
 <h2 id="portals">The student and parent portals</h2>
 
+<h3 id="awaiting-marking">A result shows "Awaiting marking" and will not move on</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"Awaiting marking" in a student's results; "This result is waiting for its theory answers to be marked, so it cannot move on yet."; or a report card that is not ready.</div></div>
+  <div><b>Why</b><div><p>The test or examination has theory questions, and at least one of the student's written answers has no mark yet. Until it does the result has no score ({{ file('core/theory_marking.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>The subject teacher opens To mark ({{ route('admin_school_marking') }}), the paper, and the student, and gives every written answer a mark.</li>
+    <li>The teacher does not see the paper or the student? They need the edit permission for that kind of paper ({{ perm('school.tests.edit') }} or {{ perm('school.examinations.edit') }}) and a teaching duty for that subject in that class (in SSS, that student's department).</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The result shows a score and can be sent to the class teacher.</div></div>
+</div>
+
+<h3 id="marks-locked">"its marks are locked" / the split "can no longer change"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"This result has been released, so its marks are locked." or "Results of this paper have been released, so how its marks are shared can no longer change."</div></div>
+  <div><b>Why</b><div><p>A released result is part of the student's record and is never re-scored by marking; once any result of a paper is released, its objective/theory split is fixed for everyone.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Correct a released result through the result correction process. Decide the split before releasing.</p></div></div>
+  <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
+</div>
+
 <h3 id="parent-no-child">A parent cannot see their child</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"No students are linked to this account", or one child missing.</div></div>

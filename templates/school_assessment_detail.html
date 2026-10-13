@@ -9,8 +9,9 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set noun = {'test':'test','practice':'practice test','examination':'examination'}[assessment.assessment_type] %}
 {% set marks = questions|sum(attribute='points') %}
+{% set has_theory = split and split.theory_raw %}
 <div class="ac acq" data-acq="{{ assessment.id }}">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='11') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
 {% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 
 <header class="acq-head">
@@ -34,11 +35,19 @@
 
 <dl class="acq-stats">
   <div><dt>Questions</dt><dd>{{ questions|length }}</dd></div>
+  {% if has_theory %}
+  <div><dt>Marks</dt><dd>{{ '%g'|format(split.total) }}</dd><small>objective {{ '%g'|format(split.objective) }} · theory {{ '%g'|format(split.theory) }}</small></div>
+  {% else %}
   <div><dt>Total marks</dt><dd>{{ marks }}</dd></div>
+  {% endif %}
   <div><dt>Time allowed</dt><dd>{{ assessment.duration_minutes }} min</dd></div>
   <div><dt>Per question</dt><dd>{% if questions %}{% set per = (assessment.duration_minutes * 60 / questions|length)|round(0)|int %}{% if per >= 60 %}{{ per // 60 }} min{% if per % 60 %} {{ per % 60 }} s{% endif %}{% else %}{{ per }} s{% endif %}{% else %}—{% endif %}</dd></div>
 </dl>
 
+{% if has_theory %}
+<p class="acq-markbar"><span>Theory answers are marked by the subject teacher, who can also move marks between the objective and theory parts.</span>
+  <a class="ac-btn ac-btn--primary ac-btn--sm" href="{{ url_for('admin_school_marking_paper', assessment_id=assessment.id) }}" data-full>Mark theory answers</a></p>
+{% endif %}
 <div class="ac-seg acq-tabs" role="tablist" aria-label="{{ noun|capitalize }}">
   <button type="button" role="tab" data-acq-tab="questions">Questions <small>{{ questions|length }}</small></button>
   <button type="button" role="tab" data-acq-tab="add">+ Add a question</button>
@@ -56,6 +65,7 @@
           {% if q.instruction %}<small class="acq-instr">{{ q.instruction }}</small>{% endif %}
           <p>{{ q.question_text }}</p>
         </div>
+        {% if q.question_type == 'theory' %}<span class="ac-tag ac-tag--blue">Theory</span>{% endif %}
         <span class="ac-tag">{{ q.points }} mark{{ '' if q.points == 1 else 's' }}</span>
         <span class="acq-actions">
           <button type="button" class="acq-icon" data-acq-move="-1" aria-label="Move up" title="Move up">↑</button>
@@ -68,16 +78,20 @@
       </div>
       <div class="acq-q__view">
         {% if q.image_path %}<img class="acq-img" src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for question {{ loop.index }}">{% endif %}
+        {% if q.question_type == 'theory' %}
+        <p class="acq-guide"><b>Marking guide</b>{% if q.marking_guide %}<span>{{ q.marking_guide }}</span>{% else %}<span class="ac-hint">None written. The teacher marks it on their own judgement.</span>{% endif %}</p>
+        {% else %}
         <ul class="acq-opts">
           {% for letter in 'ABCD' %}
           <li class="{{ 'is-correct' if q.correct_option == loop.index0 }}"><span class="acq-letter">{{ letter }}</span>{{ q['option_' ~ letter|lower] }}{% if q.correct_option == loop.index0 %}<span class="acq-tick" aria-label="correct answer">✓</span>{% endif %}</li>
           {% endfor %}
         </ul>
+        {% endif %}
       </div>
       <form class="acq-edit" method="post" enctype="multipart/form-data" hidden
             action="{{ url_for('admin_school_assessment_question_edit', assessment_id=assessment.id, question_id=q.id) }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        {{ question_fields(q, 'e' ~ q.id) }}
+        {{ question_fields(q, 'e' ~ q.id, limits=limits) }}
         <div class="ac-form-foot"><span class="ac-grow"></span><button type="button" class="ac-btn" data-acq-cancel>Cancel</button><button class="ac-btn ac-btn--primary" type="submit">Save question {{ loop.index }}</button></div>
       </form>
     </li>
@@ -99,7 +113,7 @@
   <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_school_assessment_question_new', assessment_id=assessment.id) }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <p class="acq-lede">Question {{ questions|length + 1 }}. After you save, this form is ready for the next one.</p>
-    {{ question_fields(none, 'new') }}
+    {{ question_fields(none, 'new', allow_theory=assessment.assessment_type != 'practice', limits=limits) }}
     <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Add question {{ questions|length + 1 }}</button></div>
   </form>
 </section>
@@ -137,6 +151,24 @@
   root.querySelectorAll('[data-acq-tab]').forEach(function(b){ b.addEventListener('click',function(){ show(b.dataset.acqTab); }); });
   root.querySelectorAll('[data-acq-goto]').forEach(function(b){ b.addEventListener('click',function(){ show(b.dataset.acqGoto); }); });
   show(start);
+
+  // A new question's type: the objective options or the theory marking guide, never both sent.
+  root.querySelectorAll('[data-qfields]').forEach(function(box){
+    var kinds=box.querySelectorAll('[data-qkind]'); if(!kinds.length) return;
+    function apply(){
+      var theory=box.querySelector('[data-qkind]:checked').value==='theory';
+      box.querySelectorAll('[data-qpart]').forEach(function(part){
+        var on=part.dataset.qpart===(theory?'theory':'objective');
+        part.hidden=!on;
+        part.querySelectorAll('input,textarea,select').forEach(function(f){ f.disabled=!on; });
+      });
+      var marks=box.querySelector('[data-qmarks]'); if(marks){ if(theory) marks.max='{{ limits.marks }}'; else marks.removeAttribute('max'); }
+      var text=box.querySelector('textarea[name=question_text]'); if(text) text.placeholder=theory?'e.g. Explain two causes of soil erosion.':'e.g. What is 3 × 4?';
+      var instr=box.querySelector('input[name=instruction]'); if(instr) instr.placeholder=theory?'e.g. Answer in full sentences':'e.g. Choose the best answer';
+    }
+    kinds.forEach(function(k){ k.addEventListener('change',apply); });
+    apply();
+  });
 
   // Editing a question where it is.
   root.querySelectorAll('.acq-q').forEach(function(item){

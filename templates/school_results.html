@@ -111,9 +111,10 @@
       <tr>
         <td><strong>{{ r.subject_name }}</strong></td>
         <td>{{ r.component_name or r.assessment_title or 'CBT assessment' }}</td>
-        <td class="n">{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}</td>
+        {% set awaiting = r.score is none and r.assessment_id %}
+        <td class="n">{% if awaiting %}<span class="ac-tag ac-tag--attn" title="Waiting for the subject teacher to mark the written answers">Awaiting marking</span>{% else %}{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}{% endif %}</td>
         <td><span class="ac-tag {{ status_tone.get(r.status, '') }}">{{ status_labels.get(r.status, r.status) }}</span></td>
-        <td class="ac-actions">
+        <td class="ac-actions">{% if not awaiting %}
           {% if r.status in ('entered','verified') and can_enter %}<a class="ac-link" href="{{ url_for('admin_school_result_edit',result_id=r.id) }}">Edit</a>{% endif %}
           {# One step each, in the order the work goes: send (subject teacher), release or send back (class teacher). #}
           {% if r.status in ('entered','verified') and can_submit and not can_release %}{% set act,label = 'submit','Send to class teacher' %}
@@ -123,7 +124,7 @@
           {% else %}{% set act = None %}{% endif %}
           {% if act %}<form method="post" action="{{ url_for('admin_school_result_workflow',result_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ act }}"><input type="hidden" name="return_to" value="{{ back_here }}"><button class="ac-link" type="submit">{{ label }}</button></form>{% endif %}
           {% if r.status in ('verified','approved') and can_release %}<form method="post" action="{{ url_for('admin_school_result_workflow',result_id=r.id) }}" data-confirm="Send this mark back to be corrected? It will need to be sent to the class teacher again."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="return"><input type="hidden" name="return_to" value="{{ back_here }}"><button class="ac-link ac-link--danger" type="submit">Send back</button></form>{% endif %}
-        </td>
+        {% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="5"><div class="ac-empty">No results recorded for {{ student.first_name }} in {{ period.term }}, {{ period.session.name }}.</div></td></tr>

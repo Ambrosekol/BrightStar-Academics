@@ -92,6 +92,37 @@ three tabs:</p>
 <p>A test can only be opened to students once it has at least one question. When you close the pop-up, the list
 underneath shows the new question count.</p>
 
+<h2 id="theory">Theory questions and marking (To mark)</h2>
+<p>A test or an examination can mix <strong>objective</strong> questions (four options, marked by the system) with
+<strong>theory</strong> questions, where the student writes their answer and the subject teacher marks it. Practice
+tests are objective only.</p>
+<ul>
+  <li><strong>Adding one.</strong> In <em>Add a question</em>, choose <strong>Theory</strong>, write the question, give
+  it its marks (up to 100) and, if you like, a <strong>marking guide</strong>: what a good answer contains. Only staff
+  ever see the guide; it is shown beside each answer while marking.</li>
+  <li><strong>What students see.</strong> A box to write in, saved as they type and again before the time runs out,
+  so a power cut or a lost connection keeps what they wrote.</li>
+  <li><strong>After they submit.</strong> The objective part is marked at once. The result waits, marked
+  <em>Awaiting marking</em> on the results page, until every written answer has a mark: until then it does not count
+  towards the term, cannot be sent to the class teacher or released, and holds back the report card. A student who
+  left every theory question blank is scored straight away.</li>
+  <li><strong>Marking.</strong> <a href="{{ url_for('admin_school_marking') }}">To mark</a>, in the menu under
+  Teaching, lists your tests and examinations with theory questions by class, with how many scripts wait (the number
+  beside it in the menu). Open one: the students are on the left, and the chosen student's answers on the right, each
+  with the question, the marking guide, a mark and an optional comment. <strong>Save marks</strong> keeps them (a
+  blank mark can be filled in later); <strong>Save and next student</strong> moves on. Answers are shown exactly as
+  written.</li>
+  <li><strong>Sharing the marks.</strong> At the top of the paper, move marks between the objective and theory parts:
+  giving theory more takes the same from the objective part, and the paper's total stays the same. Every student's
+  score on the paper is recalculated, after you confirm. <em>Use the questions' own marks</em> undoes it.</li>
+  <li><strong>Who can mark.</strong> Whoever may edit that test or examination and teaches that subject to that
+  class; in SSS only the students of the departments they teach. Each mark and each change to the split is recorded
+  in the activity log.</li>
+  <li><strong>Locks.</strong> Changing a mark after the result was checked sends it back to be checked again.
+  Once a student's result is released its marks are locked, and once any result of the paper is released the split is
+  locked too.</li>
+</ul>
+
 <h2 id="practice">Practice tests</h2>
 <p><a href="{{ url_for('admin_school_practice_tests') }}">Practice</a> is a self-study bank: nothing a
 student does there is ever written to the database — no attempt, no answers, no score — so it can
