@@ -1,0 +1,124 @@
+{% extends 'admin_base.html' %}
+{% block title %}Clock in — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Clock in (blueprints/school/staff_attendance.py): a member of staff clocks in and out with the code on the school's
+    screen and their phone's location, and sees their last month. What is checked, and what is kept, is
+    core/staff_attendance.py. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='staff-attendance.css', v='1') }}">
+<div class="ac sat">
+<header class="ac-top"><h1>Clock in</h1><span class="ac-hint">{{ today }}</span></header>
+{% if not settings or not settings.enabled %}
+<div class="ac-panel"><div class="ac-empty"><strong>Staff attendance is not on</strong>The school is not taking staff attendance on the portal.</div></div>
+{% elif not record or record.status == 'left' %}
+<div class="ac-panel"><div class="ac-empty"><strong>You have no staff record</strong>Ask the school office to add one, then you can clock in here.</div></div>
+{% else %}
+{% set needs_code = settings.method in ('qr_gps', 'qr') %}
+{% set needs_gps = settings.method in ('qr_gps', 'gps') %}
+{% set action = 'out' if day and day.clock_in and not day.clock_out else ('done' if day and day.clock_out else 'in') %}
+<section class="ac-panel sat-punch" data-clock data-action="{{ action }}" data-gps="{{ '1' if needs_gps else '0' }}" data-url="{{ url_for('admin_clock_punch') }}">
+  <div class="sat-today">
+    {% if day and day.clock_in %}
+      <div><small>In</small><strong>{{ day.clock_in }}</strong>{% if day.late %}<span class="ac-tag ac-tag--attn">Late</span>{% endif %}</div>
+      <div><small>Out</small><strong>{{ day.clock_out or '—' }}</strong></div>
+    {% else %}
+      <div><small>Today</small><strong>Not in yet</strong>{% if settings.late_after %}<span class="ac-hint">late after {{ settings.late_after }}</span>{% endif %}</div>
+    {% endif %}
+  </div>
+  {% if action == 'done' %}
+  <p class="ac-note sat-done">You have clocked in and out today.</p>
+  {% else %}
+  <form data-clock-form>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="{{ action }}">
+    {% if needs_code %}
+      {% if code %}
+      <input type="hidden" name="code" value="{{ code }}">
+      <p class="sat-code-ok">✓ Code from the school's screen</p>
+      {% else %}
+      <label class="sat-code"><span>The six digits on the school's screen</span>
+        <input name="code" inputmode="numeric" autocomplete="off" pattern="[0-9 ]{6,7}" maxlength="7" required placeholder="000000"></label>
+      <p class="ac-hint">Or scan the QR code on the screen with your phone's camera.</p>
+      {% endif %}
+    {% endif %}
+    <button class="ac-btn ac-btn--primary sat-go" type="submit" data-clock-go>{{ 'Clock out' if action == 'out' else 'Clock in' }}</button>
+  </form>
+  {% endif %}
+  <div class="sat-msg" data-clock-msg role="status" aria-live="polite" hidden></div>
+  <p class="ac-hint sat-fine">
+    {% if needs_gps %}Your phone's location is read once, when you press the button, to check you are at the school. Only how far you were from it is kept, never where you were.{% endif %}
+    {% if this_device %}This phone is your clock-in phone.{% elif device %}Your clock-in phone is another one ({{ device.label }}). Use it, or ask the attendance manager to reset it if you changed phones.{% else %}The first phone you clock in with becomes your clock-in phone.{% endif %}
+  </p>
+</section>
+
+<section class="ac-panel">
+  <h2>Your last month</h2>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Day</th><th>In</th><th>Out</th><th></th></tr></thead>
+    <tbody>{% for h in history %}{% if h.status not in ('off', 'not_counted') or h.record %}
+      <tr><td class="sat-day">{{ h.day.strftime('%a %d %b') }}</td>
+        <td>{{ h.record.clock_in if h.record and h.record.clock_in else '' }}</td>
+        <td>{{ h.record.clock_out if h.record and h.record.clock_out else '' }}</td>
+        <td><span class="ac-tag sat-{{ h.status }}">{{ sa.STATUS_LABELS[h.status] }}</span>
+          {% if h.record and (h.record.in_method in ('register', 'correction') or h.record.out_method in ('register', 'correction')) %}<small>{{ 'by hand' if 'register' in (h.record.in_method, h.record.out_method) else 'corrected' }}</small>{% endif %}</td></tr>
+    {% endif %}{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="ac-panel">
+  <h2>Put a day right <small>a day you could not clock in or out</small></h2>
+  <form method="post" action="{{ url_for('admin_clock_correction') }}" class="sat-add">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-field"><label for="cday">Day</label><input id="cday" type="date" name="day" min="{{ earliest }}" max="{{ today }}" required></div>
+    <div class="ac-field"><label for="ckind">What</label><select id="ckind" name="kind"><option value="in">I arrived at</option><option value="out">I left at</option></select></div>
+    <div class="ac-field"><label for="ctime">Time</label><input id="ctime" type="time" name="time" required></div>
+    <div class="ac-field sat-wide"><label for="creason">Why</label><input id="creason" name="reason" maxlength="300" required placeholder="My phone was off; I was at the zonal sports meeting..."></div>
+    <button class="ac-btn" type="submit">Ask</button>
+  </form>
+  {% if corrections %}
+  <table class="ac-t" style="margin-top:8px"><tbody>{% for c in corrections %}
+    <tr><td class="sat-day">{{ c.day }}</td><td>{{ 'Arrived' if c.kind == 'in' else 'Left' }} {{ c.time }}<small>{{ c.reason }}</small></td>
+      <td><span class="ac-tag{{ {'approved': ' ac-tag--good', 'pending': ' ac-tag--blue', 'declined': ' ac-tag--attn'}.get(c.status, '') }}">{{ {'pending': 'Waiting', 'approved': 'Approved', 'declined': 'Declined'}.get(c.status) }}</span>
+        {% if c.decision_note %}<small>"{{ c.decision_note }}"</small>{% endif %}</td></tr>
+  {% endfor %}</tbody></table>
+  {% endif %}
+</section>
+{% endif %}
+</div>
+{% if settings and settings.enabled and record and record.status != 'left' %}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-clock]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-clock-form]'), msg=root.querySelector('[data-clock-msg]'), go=root.querySelector('[data-clock-go]');
+  if(!form) return;
+  function say(text, bad){ msg.hidden=false; msg.textContent=text; msg.className='sat-msg'+(bad?' is-bad':' is-good'); }
+  function send(extra){
+    var data=new FormData(form);
+    Object.keys(extra||{}).forEach(function(k){ data.set(k, extra[k]); });
+    fetch(root.getAttribute('data-url'),{method:'POST',body:data,credentials:'same-origin',headers:{'Accept':'application/json'}})
+      .then(function(r){ return r.json().catch(function(){ return {ok:false,error:'The server did not answer properly. Try again.'}; }); })
+      .then(function(j){
+        if(j.ok){ say(j.message,false); setTimeout(function(){ window.location.replace(window.location.pathname); },1500); }
+        else { say(j.error||'That did not work. Try again.',true); go.disabled=false; go.classList.remove('is-busy'); }
+      })
+      .catch(function(){ say('No connection. Try again when you are online.',true); go.disabled=false; go.classList.remove('is-busy'); });
+  }
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    go.disabled=true; go.classList.add('is-busy');
+    if(root.getAttribute('data-gps')!=='1'){ send(); return; }
+    if(!window.isSecureContext){ say('Location works only on the secure (https) address of the portal. Open the portal by its https address.',true); go.disabled=false; go.classList.remove('is-busy'); return; }
+    if(!navigator.geolocation){ say('This browser cannot give your location. Use another browser on your phone.',true); go.disabled=false; go.classList.remove('is-busy'); return; }
+    say('Finding where you are…',false);
+    navigator.geolocation.getCurrentPosition(function(p){
+      send({lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy});
+    },function(err){
+      var text=err.code===1?'Location is blocked for this page. Allow location for the school portal in your browser, then try again.'
+              :'Your phone could not find where it is. Turn on location (precise), step outside or near a window, and try again.';
+      say(text,true); go.disabled=false; go.classList.remove('is-busy');
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

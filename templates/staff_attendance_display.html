@@ -1,0 +1,78 @@
+{#- The screen at the school (blueprints/school/staff_attendance.py), with no sign-in: the QR code and six digits staff
+    clock in with, changing every 30 seconds, fetched from the server (which alone can make them). Only the current
+    link's random token opens it; never cached or indexed. -#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Staff clock-in — {{ school_brand.name }}</title>
+<style>
+  :root { --brand: {{ school_brand.primary or '#0d2b52' }}; --accent: {{ school_brand.accent or '#1d6fd8' }}; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--brand);
+         font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #18202b; }
+  .box { width: min(560px, 100%); background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.3); text-align: center; }
+  .head { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #eceef1; }
+  .head img { width: 44px; height: 44px; border-radius: 10px; object-fit: contain; }
+  .head b { display: block; font-size: 18px; color: var(--brand); text-transform: uppercase; letter-spacing: .03em; }
+  .head span { font-size: 13px; color: #5d6673; }
+  .qr { width: min(360px, 78vw); aspect-ratio: 1; margin: 18px auto 4px; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+  .digits { font: 800 clamp(34px, 9vw, 54px)/1.1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .12em; color: var(--brand); }
+  .bar { height: 6px; margin: 14px 24px 0; border-radius: 99px; background: #eceef1; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+  .how { margin: 12px 20px 18px; font-size: 14px; color: #5d6673; }
+  .clock { font-weight: 700; color: #18202b; }
+  .off { padding: 40px 24px; }
+  .off b { display: block; font-size: 20px; margin-bottom: 6px; color: var(--brand); }
+  .stale .qr, .stale .digits { opacity: .2; }
+</style>
+</head>
+<body>
+<main class="box" data-screen{% if settings %} data-url="{{ url_for('staff_attendance_display_code', token=token) }}"{% endif %}>
+  <div class="head">{% if school_brand.logo_url %}<img src="{{ school_brand.logo_url }}" alt="">{% endif %}
+    <div><b>{{ school_brand.name }}</b><span>Staff clock-in</span></div></div>
+  {% if not settings %}
+  <div class="off"><b>This link no longer works</b>Ask the attendance manager for the screen's new link.</div>
+  {% else %}
+  <div data-live>
+    <div class="qr" data-qr aria-label="QR code to clock in"></div>
+    <div class="digits" data-digits>······</div>
+    <div class="bar"><i data-bar style="width:100%"></i></div>
+    <p class="how">Scan with your phone's camera, or open <b>Clock in</b> on the portal and type the six digits. <span class="clock" data-time></span></p>
+  </div>
+  <div class="off" data-off hidden><b>Staff attendance is off</b>The school has switched clocking in off for now.</div>
+  {% endif %}
+</main>
+{% if settings %}
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-screen]'), url=root.getAttribute('data-url');
+  var qr=root.querySelector('[data-qr]'), digits=root.querySelector('[data-digits]'), bar=root.querySelector('[data-bar]');
+  var time=root.querySelector('[data-time]'), live=root.querySelector('[data-live]'), off=root.querySelector('[data-off]');
+  var NS='http://www.w3.org/2000/svg', left=30, timer=null;
+  function draw(path,size){
+    var svg=document.createElementNS(NS,'svg'); svg.setAttribute('viewBox','0 0 '+size+' '+size); svg.setAttribute('shape-rendering','crispEdges');
+    var bg=document.createElementNS(NS,'rect'); bg.setAttribute('width',size); bg.setAttribute('height',size); bg.setAttribute('fill','#fff');
+    var p=document.createElementNS(NS,'path'); p.setAttribute('d',path); p.setAttribute('fill','#000');
+    svg.appendChild(bg); svg.appendChild(p); qr.replaceChildren(svg);
+  }
+  function tick(){ left-=1; bar.style.width=Math.max(left,0)/30*100+'%'; if(left<=0){ load(); } }
+  function load(){
+    clearInterval(timer);
+    fetch(url,{cache:'no-store',credentials:'omit'}).then(function(r){ return r.json(); }).then(function(j){
+      if(!j.ok){ live.hidden=true; off.hidden=false; setTimeout(load,15000); return; }
+      live.hidden=false; off.hidden=true; root.classList.remove('stale');
+      draw(j.path,j.size); digits.textContent=j.digits.slice(0,3)+' '+j.digits.slice(3); time.textContent=j.time;
+      left=j.left; bar.style.width=left/30*100+'%'; timer=setInterval(tick,1000);
+    }).catch(function(){ root.classList.add('stale'); time.textContent='No connection: trying again…'; setTimeout(load,5000); });
+  }
+  // Keep the screen awake where the browser allows it.
+  function awake(){ if(navigator.wakeLock){ navigator.wakeLock.request('screen').catch(function(){}); } }
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden){ awake(); load(); } });
+  awake(); load();
+})();
+</script>
+{% endif %}
+</body>
+</html>

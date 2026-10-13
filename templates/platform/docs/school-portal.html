@@ -148,6 +148,31 @@ and the Head Teacher preset has {{ perm('hr.leave.approve') }}.</p>
   is cached as <code>hr-menu</code> and dropped on any write.</li>
 </ul>
 
+<h2 id="staff-attendance">Staff attendance</h2>
+<p>{{ route('admin_clock') }} ({{ file('blueprints/school/staff_attendance.py') }}) is where staff clock in and out;
+{{ route('admin_staff_attendance') }} is the register. The rules are {{ file('core/staff_attendance.py') }}; the tables
+{{ table('staff_attendance_settings') }} (one row), {{ table('staff_attendance_records') }} (one per staff record and day,
+unique), {{ table('staff_attendance_devices') }}, {{ table('staff_attendance_corrections') }} and
+{{ table('staff_attendance_closed_days') }}. Permissions: {{ perm('staff_attendance.view') }} and {{ perm('staff_attendance.manage') }}.
+The school's day is kept in its own time zone, <code>tenants.timezone</code>, chosen by a platform admin from
+{{ file('control_plane/timezones.py') }} when the school is created or on its page ({{ route('platform_school_timezone') }}); Africa/Lagos, which
+is all of Nigeria, unless changed.</p>
+<ul>
+  <li><strong>The code</strong> is an HMAC of the 30-second window under <code>code_secret</code> (QR text and six digits);
+  the current and two earlier windows are accepted. {{ route('staff_attendance_display') }} and
+  {{ route('staff_attendance_display_code') }} need no sign-in and answer only for the token whose hash is
+  <code>display_token_hash</code>; a new link also renews <code>code_secret</code>.</li>
+  <li><strong>The location</strong> must be within <code>radius_m</code> and at least as sure as <code>max_accuracy_m</code>;
+  only the distance and accuracy are stored. The clock and settings pages send <code>Permissions-Policy: geolocation=(self)</code>.</li>
+  <li><strong>The phone</strong>: a random tag in an HttpOnly cookie, its SHA-256 in {{ table('staff_attendance_devices') }};
+  registered on the first successful clock-in, refused on any other until {{ route('admin_staff_attendance_device_reset') }}.
+  {{ route('admin_clock_punch') }} allows 12 tries per account per ten minutes.</li>
+  <li><strong>A day's status</strong> (<code>day_status</code>): in or late from the record; then approved leave; a closed
+  day; not a work day; not counted before <code>started_on</code>, before employment or after leaving; otherwise absent
+  (or not in yet today). Hand-marking ({{ route('admin_staff_attendance_mark') }}) needs a note and never overwrites a phone
+  time; corrections are decided by {{ route('admin_staff_attendance_correction_decide') }}, never by the person who asked.</li>
+</ul>
+
 <h2 id="id-cards">ID cards</h2>
 <p>{{ route('admin_id_cards') }} ({{ file('blueprints/school/id_cards.py') }}) prints student and staff cards from the
 school's design; {{ route('admin_id_card_designer') }} edits it. The rules are {{ file('core/id_cards.py') }}; the tables

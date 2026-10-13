@@ -1,0 +1,61 @@
+/* Staff attendance (blueprints/school/staff_attendance.py). Built on academics.css: the same small type, hairlines and
+   the school's own colours; only what those pages need besides. */
+.ac-t td small { display: block; font-size: 11px; color: var(--ac-muted); }
+
+/* Clock in: one card, one big button, readable on a phone in the sun */
+.sat-punch { text-align: center; }
+.sat-today { display: flex; justify-content: center; gap: 28px; margin: 4px 0 12px; }
+.sat-today small { display: block; font-size: 11px; color: var(--ac-muted); text-transform: uppercase; letter-spacing: .06em; }
+.sat-today strong { display: block; font-size: 26px; color: var(--ac-brand); font-variant-numeric: tabular-nums; }
+.sat-today .ac-tag, .sat-today .ac-hint { display: inline-block; margin-top: 2px; }
+.ac .sat-go { display: flex; justify-content: center; width: min(320px, 100%); margin: 10px auto 0; padding: 12px 16px; font-size: 16px; border-radius: 10px; }
+.sat-code { display: flex !important; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ac-ink-2); }
+.sat-code input { width: 200px; padding: 8px 10px; font: 700 26px/1.2 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .2em;
+  text-align: center; border: 1px solid var(--ac-line); border-radius: 10px; background: var(--ac-surface); color: var(--ac-ink); }
+.sat-code-ok { margin: 0; font-size: 13px; font-weight: 700; color: var(--ac-good); }
+.sat-msg { margin: 12px auto 0; max-width: 460px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.sat-msg.is-good { background: var(--ac-good-tint); color: var(--ac-good); }
+.sat-msg.is-bad { background: var(--ac-attn-tint); color: var(--ac-attn); }
+.sat-fine { max-width: 520px; margin: 12px auto 0; }
+.sat-done { display: inline-block; }
+.sat-day { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The day's status, the same colour everywhere */
+.ac-tag.sat-present { background: var(--ac-good-tint); color: var(--ac-good); }
+.ac-tag.sat-late { background: color-mix(in srgb, #c77700 14%, var(--card)); color: #9a5b00; }
+.ac-tag.sat-absent { background: var(--ac-attn-tint); color: var(--ac-attn); }
+.ac-tag.sat-leave { background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.ac-tag.sat-waiting, .ac-tag.sat-closed, .ac-tag.sat-off, .ac-tag.sat-not_counted { background: var(--ac-grid); color: var(--ac-ink-2); }
+
+/* Small forms */
+.sat-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-top: 6px; }
+.sat-add .ac-field { flex: 1 1 130px; }
+.sat-add .sat-wide { flex: 3 1 240px; }
+.sat-decide, .sat-mark form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.sat-mark summary { list-style: none; cursor: pointer; }
+.sat-mark summary::-webkit-details-marker { display: none; }
+.sat-mark form { margin-top: 6px; }
+.sat-mark input[name=note] { min-width: 150px; }
+.sat-days { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.ac .sat-days label { display: inline-flex !important; gap: 4px; align-items: center; font-size: 12px; }
+.ac .ac-field > label.sat-switch { display: flex !important; gap: 10px; align-items: flex-start; font-weight: 400; }
+.ac.sat .ac-field input[type=checkbox], .ac.sat .ac-field input[type=radio] { width: auto !important; padding: 0 !important; margin-top: 2px; }
+.sat-switch b { display: block; font-size: 13px; }
+.sat-switch small { display: block; font-size: 11px; color: var(--ac-muted); font-weight: 400; }
+.sat-link { display: flex; gap: 6px; margin: 8px 0 4px; }
+.sat-link input { flex: 1; min-width: 0; }
+.sat-once { color: var(--ac-attn) !important; }
+
+/* The month: a dense grid of days */
+.sat-grid th, .sat-grid td { padding-left: 4px !important; padding-right: 4px !important; text-align: center; }
+.sat-grid th:first-child, .sat-grid td:first-child { text-align: left; white-space: nowrap; }
+.sat-grid th.is-off { color: var(--ac-muted); font-weight: 400; }
+.sat-c { font-size: 11px; font-weight: 700; min-width: 20px; }
+.sat-c.sat-present { color: var(--ac-good); }
+.sat-c.sat-late { color: #9a5b00; }
+.sat-c.sat-absent { color: var(--ac-attn); background: var(--ac-attn-tint); }
+.sat-c.sat-leave { color: var(--ac-accent-strong); }
+.sat-c.sat-closed, .sat-c.sat-off { background: var(--ac-wash); color: var(--ac-muted); }
+.sat-bad { color: var(--ac-attn); font-weight: 700; }
+.ac.sat .ac-field input[type=checkbox], .ac.sat .ac-field input[type=radio] { flex: 0 0 16px; width: 16px !important; height: 16px; }
+.ac.sat .ac-choices label > span, .ac.sat .sat-switch > span { flex: 1 1 auto; text-align: left; }

@@ -1,0 +1,38 @@
+{% extends 'admin_base.html' %}
+{% block title %}Staff attendance, {{ label }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- One month of staff attendance (blueprints/school/staff_attendance.py): each person's days in, late, absent and on
+    leave, and a grid of the days; the same as a CSV. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='staff-attendance.css', v='1') }}">
+{% set marks = {'present': '✓', 'late': 'L', 'absent': 'A', 'leave': 'Lv', 'closed': 'C', 'waiting': '·', 'off': '', 'not_counted': ''} %}
+<div class="ac sat">
+<header class="ac-top">
+  <h1>Staff attendance</h1>
+  <nav class="ac-tabs" aria-label="Views">
+    <a href="{{ url_for('admin_staff_attendance') }}">Day</a>
+    <a href="{{ url_for('admin_staff_attendance_month') }}" class="is-active" aria-current="true">Month</a>
+  </nav>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_staff_attendance_month', month=month, format='csv') }}">Download CSV</a></div>
+</header>
+<div class="ac-tools">
+  <a class="ac-btn" href="{{ url_for('admin_staff_attendance_month', month=prev_month) }}" aria-label="The month before">‹ Before</a>
+  <strong>{{ label }}</strong>
+  {% if next_month <= today.strftime('%Y-%m') %}<a class="ac-btn" href="{{ url_for('admin_staff_attendance_month', month=next_month) }}" aria-label="The month after">After ›</a>{% endif %}
+  <span class="ac-count">✓ in · L late · A absent · Lv on leave · C closed</span>
+</div>
+<div class="ac-panel">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t sat-grid">
+    <thead><tr><th>Name</th><th title="Days in">In</th><th title="Of which late">Late</th><th title="Absent">Abs.</th><th title="On leave">Leave</th>
+      {% for d in days %}{% set off = settings and (not sa.is_work_day(settings, d) or closed.get(d.isoformat())) %}<th class="{{ 'is-off' if off }}" title="{{ d.strftime('%A %d') }}">{{ d.day }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in rows %}{% set t = r.totals %}
+      <tr><td><b>{{ hr.full_name(r.person, False) }}</b></td>
+        <td>{{ t.present }}</td><td>{{ t.late or '' }}</td><td class="{{ 'sat-bad' if t.absent }}">{{ t.absent or '' }}</td><td>{{ t.leave or '' }}</td>
+        {% for c in r.cells %}<td class="sat-c sat-{{ c.status }}" title="{{ c.day.strftime('%a %d') }}: {{ sa.STATUS_LABELS[c.status] }}{% if c.record and c.record.clock_in %} {{ c.record.clock_in }}{% if c.record.clock_out %}–{{ c.record.clock_out }}{% endif %}{% endif %}">{{ marks[c.status] }}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>Nobody to show</strong>Staff appear here once they have a staff record.</div>{% endif %}
+</div>
+</div>
+{% endblock %}

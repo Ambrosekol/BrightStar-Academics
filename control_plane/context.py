@@ -33,6 +33,8 @@ class TenantInfo:
     db_url: str
     db_schema: Optional[str]
     storage_key: str
+    # The school's time zone (control_plane/timezones.py).
+    timezone: str = 'Africa/Lagos'
 
     @property
     def is_active(self):

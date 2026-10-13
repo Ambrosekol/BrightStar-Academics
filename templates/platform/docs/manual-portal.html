@@ -151,6 +151,19 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="staff-clock">A member of staff cannot clock in</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"That code is not the one on the school's screen now"; "only sure of where it is to within N m"; "N m from the school"; "This is not the phone you clock in with"; or no Clock in in their menu.</div></div>
+  <div><b>Why</b><div><p>The code changes every 30 seconds and is accepted for about a minute. Indoors, phones often cannot locate themselves well. Each person clocks in from one phone ({{ table('staff_attendance_devices') }}). Clock in shows only to someone with a staff record linked to their account, while attendance is on.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Scan the screen again just before pressing Clock in; check the screen is online.</li>
+    <li>Turn on precise location and step outside or near a window; for a large compound, raise the allowed distance or the accuracy in Settings.</li>
+    <li>Changed phones: Settings, Clock-in phones, Reset.</li>
+    <li>Meanwhile, mark them in by hand on the register, with a note.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>Their time appears on the register as "phone".</div></div>
+</div>
+
 <h3 id="hr-leave">A member of staff cannot ask for leave, or leave cannot be approved</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"You have no staff record yet"; "only N are left"; a request nobody can approve; or "it is not one you may decide".</div></div>

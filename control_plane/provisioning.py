@@ -217,7 +217,7 @@ def create_school_admin(info, username, display_name=None, password=None):
 
 def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
                   admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
-                  actor='cli', numbering_rules=None, admin_password=None):
+                  actor='cli', numbering_rules=None, admin_password=None, time_zone=None):
     """Register a new school and build its database.
 
     The school's portal hostname is generated here and works immediately; any
@@ -248,7 +248,8 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
         customs = _check_hostnames(session, hostnames, taken=[portal_host])
         db_url = db_url or _default_db_url(slug)
         tenant = Tenant(slug=slug, name=name, status=TENANT_ACTIVE, db_url=db_url,
-                        db_schema=db_schema or None, storage_key=slug, created_at=now_iso())
+                        db_schema=db_schema or None, storage_key=slug, created_at=now_iso(),
+                        timezone=_clean_timezone(time_zone))
         tenant.domains = [TenantDomain(hostname=portal_host, kind=DOMAIN_PORTAL, is_primary=1,
                                        created_at=now_iso())]
         tenant.domains += [TenantDomain(hostname=h, kind=DOMAIN_CUSTOM, is_primary=0,
@@ -933,6 +934,34 @@ def branding_of(info):
         return {}
 
 
+def _clean_timezone(value):
+    """A school's time zone from the console's list (control_plane/timezones.py); none chosen is the default."""
+    from control_plane import timezones
+    if value in (None, ''):
+        return timezones.DEFAULT
+    zone = timezones.clean(value)
+    if zone is None:
+        raise ProvisioningError('Choose the school\'s time zone from the list.')
+    return zone
+
+
+def set_timezone(slug, value, actor='cli', admin_id=None):
+    """Change the time zone a school keeps its day in. Recorded in the platform audit trail."""
+    zone = _clean_timezone(value)
+    with platform_session() as session:
+        tenant = get_tenant(session, slug)
+        if tenant is None:
+            raise ProvisioningError('No such school.')
+        old = tenant.timezone
+        if old == zone:
+            return zone
+        tenant.timezone, tenant.updated_at = zone, now_iso()
+        audit(session, 'tenant.timezone', f'{old} to {zone}', tenant.id, actor, admin_id)
+        session.commit()
+    clear_cache()
+    return zone
+
+
 def record(action, detail=None, tenant_id=None, actor='cli', admin_id=None):
     """Write one platform audit entry outside any other transaction."""
     with platform_session() as session:
@@ -1040,7 +1069,7 @@ def _copy_upload(upload):
 
 def start_tenant_creation(slug, name, hostnames=(), db_url=None, db_schema=None, admin_username=None,
                           admin_display_name=None, branding=None, logo=None, gallery=(), starter_banks=True,
-                          actor='cli', numbering_rules=None):
+                          actor='cli', numbering_rules=None, time_zone=None):
     """Check everything that can be checked now, then build the school in the background.
 
     Raises ProvisioningError for anything wrong with the request (so the form can show it);
@@ -1055,6 +1084,7 @@ def start_tenant_creation(slug, name, hostnames=(), db_url=None, db_schema=None,
         raise ProvisioningError('A school name is required.')
     check_branding_inputs(branding, _copy_upload(logo), [c for c in (_copy_upload(g) for g in gallery) if c])
     check_numbering_inputs(slug, name, numbering_rules)
+    time_zone = _clean_timezone(time_zone)
     init_platform_db()
     with platform_session() as session:
         if get_tenant(session, slug):
@@ -1067,7 +1097,7 @@ def start_tenant_creation(slug, name, hostnames=(), db_url=None, db_schema=None,
                admin_display_name=admin_display_name, branding=dict(branding or {}),
                logo=_copy_upload(logo), gallery=[c for c in (_copy_upload(g) for g in gallery) if c],
                starter_banks=starter_banks, actor=actor, numbering_rules=numbering_rules,
-               admin_password=password)
+               admin_password=password, time_zone=time_zone)
     _set_provision_state(slug, 'running')
 
     def run():

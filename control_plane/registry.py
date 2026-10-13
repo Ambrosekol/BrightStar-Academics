@@ -189,7 +189,8 @@ def validate_hostname(hostname):
 
 def to_info(tenant):
     return TenantInfo(id=tenant.id, slug=tenant.slug, name=tenant.name, status=tenant.status,
-                      db_url=tenant.db_url, db_schema=tenant.db_schema, storage_key=tenant.storage_key)
+                      db_url=tenant.db_url, db_schema=tenant.db_schema, storage_key=tenant.storage_key,
+                      timezone=tenant.timezone or 'Africa/Lagos')
 
 
 def clear_cache():

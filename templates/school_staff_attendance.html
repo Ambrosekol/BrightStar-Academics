@@ -1,0 +1,76 @@
+{% extends 'admin_base.html' %}
+{% block title %}Staff attendance — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The staff register for one day (blueprints/school/staff_attendance.py): who came in, when, who was late, absent or on
+    leave; corrections waiting; and marking someone in or out by hand, with a note. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='staff-attendance.css', v='1') }}">
+<div class="ac sat">
+<header class="ac-top">
+  <h1>Staff attendance</h1>
+  <nav class="ac-tabs" aria-label="Views">
+    <a href="{{ url_for('admin_staff_attendance') }}" class="is-active" aria-current="true">Day</a>
+    <a href="{{ url_for('admin_staff_attendance_month') }}">Month</a>
+  </nav>
+  {% if can_manage %}<div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_staff_attendance_settings') }}">Settings</a></div>{% endif %}
+</header>
+{% if not settings or not settings.enabled %}
+<p class="ac-note">Staff attendance is off, so nobody can clock in on their phone yet.{% if can_manage %} Turn it on in <a class="ac-link" href="{{ url_for('admin_staff_attendance_settings') }}">Settings</a>.{% endif %} Staff can still be marked by hand below.</p>
+{% endif %}
+
+{% if corrections %}
+<section class="ac-panel">
+  <h2>Corrections waiting <small>{{ corrections|length }}</small></h2>
+  <div class="ac-scroll"><table class="ac-t"><tbody>{% for w in corrections %}{% set c = w.c %}
+    <tr><td><b>{{ hr.full_name(w.person, False) if w.person else '—' }}</b><small>{{ c.day }} · asked {{ c.requested_at[:10] }}</small></td>
+      <td>{{ 'Arrived at' if c.kind == 'in' else 'Left at' }} <b>{{ c.time }}</b><small>{{ c.reason }}</small></td>
+      <td class="ac-actions">{% if w.mine %}<small>Your own: someone else decides it</small>{% else %}
+        <form method="post" action="{{ url_for('admin_staff_attendance_correction_decide', cid=c.id) }}" class="sat-decide">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input class="ac-input" name="note" maxlength="200" placeholder="Note (optional)" aria-label="A note for them">
+          <button class="ac-btn ac-btn--primary" type="submit" name="decision" value="approve">Approve</button>
+          <button class="ac-btn" type="submit" name="decision" value="decline">Decline</button></form>{% endif %}</td></tr>
+  {% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+
+<form method="get" class="ac-tools" action="{{ url_for('admin_staff_attendance') }}">
+  <a class="ac-btn" href="{{ url_for('admin_staff_attendance', day=prev_day) }}" aria-label="The day before">‹ Before</a>
+  <input class="ac-input" type="date" name="day" value="{{ day.isoformat() }}" max="{{ today.isoformat() }}" aria-label="Day" data-autosubmit>
+  {% if day < today %}<a class="ac-btn" href="{{ url_for('admin_staff_attendance', day=next_day) }}" aria-label="The day after">After ›</a>{% endif %}
+  {% if day != today %}<a class="ac-link" href="{{ url_for('admin_staff_attendance') }}">Today</a>{% endif %}
+  <span class="ac-count">{{ day.strftime('%A %d %B %Y') }}{% if closed_label %} · closed: {{ closed_label }}{% endif %}</span>
+</form>
+<div class="ac-sum">
+  {% for key in ('present', 'late', 'waiting', 'absent', 'leave') %}{% if counts.get(key) %}<span class="ac-tag sat-{{ key }}">{{ counts[key] }} {{ sa.STATUS_LABELS[key]|lower }}</span>{% endif %}{% endfor %}
+</div>
+
+<div class="ac-panel">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Name</th><th>Status</th><th>In</th><th>Out</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}{% set p = r.person %}{% set rec = r.record %}
+      <tr>
+        <td><b>{{ hr.full_name(p, False) }}</b><small>{{ p.job_title or '' }}{% if not p.admin_id %} · no portal account{% endif %}</small></td>
+        <td><span class="ac-tag sat-{{ r.status }}">{{ sa.STATUS_LABELS[r.status] }}</span></td>
+        <td>{% if rec and rec.clock_in %}<b>{{ rec.clock_in }}</b><small>{{ {'phone': 'phone', 'register': 'by hand', 'correction': 'corrected'}.get(rec.in_method, '') }}{% if rec.in_distance_m is not none %} · {{ rec.in_distance_m }} m{% endif %}</small>{% endif %}</td>
+        <td>{% if rec and rec.clock_out %}<b>{{ rec.clock_out }}</b><small>{{ {'phone': 'phone', 'register': 'by hand', 'correction': 'corrected'}.get(rec.out_method, '') }}</small>{% endif %}
+          {% if rec and rec.note %}<small title="{{ rec.note }}">{{ rec.note|truncate(40) }}</small>{% endif %}</td>
+        <td class="ac-actions">{% if can_manage and r.status not in ('leave',) and (not rec or not rec.clock_out) %}
+          {% set kind = 'out' if rec and rec.clock_in else 'in' %}
+          <details class="sat-mark"><summary class="ac-link">Mark {{ 'leaving' if kind == 'out' else 'in' }}</summary>
+            <form method="post" action="{{ url_for('admin_staff_attendance_mark') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="staff_id" value="{{ p.id }}"><input type="hidden" name="day" value="{{ day.isoformat() }}"><input type="hidden" name="kind" value="{{ kind }}">
+              <input class="ac-input" type="time" name="time" required aria-label="Time">
+              <input class="ac-input" name="note" maxlength="200" required placeholder="Why by hand" aria-label="Why it is marked by hand">
+              <button class="ac-btn" type="submit">Mark</button></form></details>
+        {% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody to show</strong>Staff appear here once they have a staff record (Staff records, under People).</div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

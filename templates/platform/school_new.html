@@ -37,6 +37,13 @@
     <p class="muted" style="margin:.5rem 0 0">Portal address:
       <code id="portal-preview">{{ form.code or 'code' }}.{{ portal_domain }}</code>
       <span class="hint" style="display:block">Issued automatically and works immediately.</span></p>
+
+    <label for="timezone">Time zone
+      <span class="hint">Where the school is: when its day starts, and when staff count as late. All of Nigeria is
+        West Africa Time.</span></label>
+    <select id="timezone" name="timezone">
+      {% for zone, label in timezones %}<option value="{{ zone }}"{% if form.timezone == zone %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
   </div>
 
   <div class="panel">

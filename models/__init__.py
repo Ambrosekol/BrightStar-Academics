@@ -115,6 +115,10 @@ from .finance import (
 
 from .subdivisions import ClassSubdivision, ClassTransfer
 from .id_cards import IdCard, IdCardDesign
+from .staff_attendance import (
+    StaffAttendanceClosedDay, StaffAttendanceCorrection, StaffAttendanceDevice, StaffAttendanceRecord,
+    StaffAttendanceSettings,
+)
 from .hr import (
     LeaveAllowance, LeaveRequest, LeaveType, StaffCareerEvent, StaffDocument, StaffQualification, StaffRecord,
 )
@@ -173,6 +177,9 @@ __all__ = [
     'FinanceRefund',
     # ID cards
     'IdCard', 'IdCardDesign',
+    # staff attendance
+    'StaffAttendanceClosedDay', 'StaffAttendanceCorrection', 'StaffAttendanceDevice', 'StaffAttendanceRecord',
+    'StaffAttendanceSettings',
     # HR
     'LeaveAllowance', 'LeaveRequest', 'LeaveType', 'StaffCareerEvent', 'StaffDocument', 'StaffQualification',
     'StaffRecord',

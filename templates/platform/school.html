@@ -199,6 +199,18 @@
   </table>
 </div>
 
+<h2 id="timezone">Time zone</h2>
+<form method="post" class="panel" action="{{ url_for('platform_school_timezone', slug=info.slug) }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <p class="muted" style="margin-top:0">Where the school is: when its day starts, and when its staff count as late on
+    the staff attendance register. All of Nigeria is West Africa Time.</p>
+  <div class="inline">
+    <div><label for="timezone">Time zone</label>
+      <select id="timezone" name="timezone">{% for zone, label in timezones %}<option value="{{ zone }}"{% if info.timezone == zone %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div style="flex:0"><button class="btn btn-primary" type="submit">Save</button></div>
+  </div>
+</form>
+
 <h2>Service</h2>
 <div class="panel">
   {% if info.is_active %}

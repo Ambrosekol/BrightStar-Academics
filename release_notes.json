@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.30.0",
+      "date": "2026-10-13",
+      "title": "Staff clock in on their phones",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Staff attendance: staff clock in and out on their phones by scanning a code on a screen at the school, which changes every 30 seconds, while their phone confirms they are at the school. Each person clocks in from one phone. The register shows who is in, late, absent or on leave each day, with a month view to download; mark someone in by hand, and decide the corrections staff ask for.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.29.0",
       "date": "2026-10-13",
       "title": "Staff records and leave",

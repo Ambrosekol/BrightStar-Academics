@@ -28,6 +28,7 @@ from core.uploads import IMAGE_EXTENSIONS
 from . import config
 from . import provisioning as pv
 from . import team
+from . import timezones
 from .entry import (
     authenticate_platform_admin, enter_school, mint_entry_token,
     platform_admin_by_id, purge_expired_entry_tokens, school_admins,
@@ -322,7 +323,7 @@ def platform_school_new():
     form = {'name': '', 'code': '', 'domains': '', 'admin_username': '',
             'admin_display_name': '', 'db_url': '', 'db_schema': '',
             'school_motto': '', 'school_tagline': '', 'school_phone': '',
-            'school_email': '', 'school_address': '',
+            'school_email': '', 'school_address': '', 'timezone': timezones.DEFAULT,
             theme.PRIMARY_KEY: theme.DEFAULT_PRIMARY, theme.ACCENT_KEY: theme.DEFAULT_ACCENT}
     errors = []
     starter_banks = True  # ticked unless the operator unticks it
@@ -348,7 +349,8 @@ def platform_school_new():
                     admin_username=form['admin_username'] or None,
                     admin_display_name=form['admin_display_name'] or None,
                     branding=branding, logo=logo, gallery=gallery, starter_banks=starter_banks,
-                    actor=g.platform_admin['username'], numbering_rules=numbering_values)
+                    actor=g.platform_admin['username'], numbering_rules=numbering_values,
+                    time_zone=form['timezone'])
             except (pv.ProvisioningError, ValueError) as exc:
                 errors.append(str(exc))
             else:
@@ -358,7 +360,7 @@ def platform_school_new():
                 return render_template('platform/school_creating.html', slug=slug, name=form['name'],
                                        portal=pv.config.portal_hostname(slug), customs=domains,
                                        admin_username=form['admin_username'], password=password)
-    return render_template('platform/school_new.html', form=form, errors=errors,
+    return render_template('platform/school_new.html', form=form, errors=errors, timezones=timezones.CHOICES,
                            starter_banks=starter_banks,
                            numbering=_numbering_view(numbering_values),
                            portal_domain=pv.config.portal_domain(),
@@ -408,7 +410,7 @@ def _school_page(slug, numbering_values=None, numbering_errors=()):
                            primary=branding.get(theme.PRIMARY_KEY) or theme.DEFAULT_PRIMARY,
                            accent=branding.get(theme.ACCENT_KEY) or theme.DEFAULT_ACCENT,
                            max_gallery=theme.MAX_GALLERY_IMAGES,
-                           audit=pv.recent_audit(tenant_id=info.id, limit=15))
+                           audit=pv.recent_audit(tenant_id=info.id, limit=15), timezones=timezones.CHOICES)
 
 
 @app.post('/platform/schools/<slug>/numbering')
@@ -526,6 +528,22 @@ def platform_school_status(slug):
                   actor=g.platform_admin['username'])
     flash(f'{info.name} is now {wanted}.', 'success')
     return redirect(url_for('platform_school', slug=slug))
+
+
+@app.post('/platform/schools/<slug>/timezone')
+@platform_host_only
+@platform_required
+@csrf_protect
+def platform_school_timezone(slug):
+    """Change the time zone a school keeps its day in (when a day starts, when staff are late)."""
+    info, _, _ = _tenant_or_404(slug)
+    try:
+        zone = pv.set_timezone(slug, request.form.get('timezone'), g.platform_admin['username'], g.platform_admin['id'])
+    except pv.ProvisioningError as exc:
+        flash(str(exc), 'error')
+    else:
+        flash(f'{info.name} now keeps its day in {timezones.NAMES[zone]}.', 'success')
+    return redirect(url_for('platform_school', slug=slug) + '#timezone')
 
 
 @app.post('/platform/schools/<slug>/delete')

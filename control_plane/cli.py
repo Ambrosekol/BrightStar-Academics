@@ -154,6 +154,8 @@ def main(argv=None):
             if password:
                 print(f'First admin: {args.admin_username}   temporary password (shown once): {password}')
         elif args.command == 'upgrade':
+            # The registry first: a school's row is read with every column the code now declares.
+            init_platform_db()
             if args.code:
                 with platform_session() as session:
                     tenant = get_tenant(session, args.code)

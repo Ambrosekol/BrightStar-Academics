@@ -982,7 +982,7 @@ def forget_counts_after_a_change(response):
     """A change made by an administrator (a payment, a read notification) must show on the next page at
     once, so the counts saved for the badges are dropped whenever a request changes something."""
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
-        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu')
+        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu', 'staff-clock-menu')
         clear_school_admin_caches()
     return response
 
@@ -1255,6 +1255,7 @@ import blueprints.school.teaching  # noqa: F401,E402
 import blueprints.school.marking  # noqa: F401,E402
 import blueprints.school.id_cards  # noqa: F401,E402
 import blueprints.school.hr  # noqa: F401,E402
+import blueprints.school.staff_attendance  # noqa: F401,E402
 import blueprints.school.subdivisions  # noqa: F401,E402
 import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402

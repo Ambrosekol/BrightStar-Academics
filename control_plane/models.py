@@ -43,6 +43,8 @@ class Tenant(PlatformBase):
     db_schema = mapped_column(Text)
     storage_key = mapped_column(Text, nullable=False)
     plan = mapped_column(Text)
+    # The time zone the school keeps its day in (control_plane/timezones.py): when a day starts, when someone is late.
+    timezone = mapped_column(Text, nullable=False, default='Africa/Lagos', server_default=text("'Africa/Lagos'"))
     created_at = mapped_column(Text, nullable=False)
     updated_at = mapped_column(Text)
 

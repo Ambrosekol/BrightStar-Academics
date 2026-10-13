@@ -37,6 +37,17 @@ EXEMPT = {
     "/admin/id-cards/design/<kind>/reset": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/cancel": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/replace": "see write_paths_id_cards.py",
+    # Staff attendance: clocking in and out (right and wrong codes, places and phones), corrections, marking by hand,
+    # settings, the screen's link, phones and closed days, valid and hostile, in write_paths_staff_attendance.py.
+    "/admin/clock": "see write_paths_staff_attendance.py",
+    "/platform/schools/<slug>/timezone": "see write_paths_staff_attendance.py",
+    "/admin/clock/correction": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/settings": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/display": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/devices/<int:did>/reset": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/closed": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/mark": "see write_paths_staff_attendance.py",
+    "/admin/staff-attendance/corrections/<int:cid>/decide": "see write_paths_staff_attendance.py",
     # HR: staff records, documents, career, allowances, kinds of leave, and leave asked for, recorded, decided and
     # cancelled, valid and hostile (a fake PDF, a teacher without the permission, one's own leave), in write_paths_hr.py.
     "/admin/hr/from-accounts": "see write_paths_hr.py",

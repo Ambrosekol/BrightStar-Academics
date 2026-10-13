@@ -126,6 +126,35 @@ the School Admin. The person is told on the bell either way. Below are who is on
   the person recording it may approve leave.</li>
 </ul>
 
+<h2 id="staff-attendance">Staff attendance</h2>
+<p>Staff clock in and out on their own phones. <a href="{{ url_for('admin_staff_attendance') }}">Staff attendance</a> (in
+the menu under People) is the register; setting it up needs the right to manage staff attendance (the HR Officer role has
+it; the head teacher may see the register). Only staff with a staff record can clock in, so add the staff records first.</p>
+<ul>
+  <li><strong>Setting up.</strong> In <em>Settings</em>, stand at the school and press <em>Use where this device is now</em>,
+  set how far from that point counts as the school (150 metres suits most), the time after which someone is late, and
+  the work days, then turn it on. Absences count from that day.</li>
+  <li><strong>The screen.</strong> <em>Make the link for the screen</em> and open it on a tablet or computer staff pass on
+  the way in. It shows a QR code and six digits that change every 30 seconds. It needs no sign-in, and shows nothing
+  else of the portal. The link is shown only once; making a new one stops the old one at once.</li>
+  <li><strong>Clocking in.</strong> A member of staff scans the QR code with their phone's camera (or opens
+  <a href="{{ url_for('admin_clock') }}">Clock in</a> and types the six digits) and presses <em>Clock in</em>; the same to
+  clock out. The phone's location is read at that moment only, and only how far from the school it was is kept. The first
+  phone someone clocks in with becomes theirs; another phone is refused until you <em>Reset</em> it in Settings.</li>
+  <li><strong>What it cannot do.</strong> No phone check is impossible to cheat: a location can be faked with an app, and
+  indoors a phone can be a hundred metres out. The changing code is the strong check; the location and the one phone make
+  cheating harder. You can choose the code only (where phones find their location badly) or the location only (the
+  weakest).</li>
+  <li><strong>The register</strong> shows each day: who is in and when (late in amber), who is absent, on approved leave,
+  or not in yet, and a closed day. <em>Mark in</em> and <em>Mark leaving</em> record someone by hand, with a note: staff
+  without a portal account, or a phone that would not work. A time made on a phone is never changed by hand.</li>
+  <li><strong>Corrections.</strong> On Clock in, staff ask to put right a day in the last month they could not clock
+  (a flat phone, a school trip). The request waits at the top of the register; approving it records the time as
+  corrected, and they are told either way. Nobody decides their own.</li>
+  <li><strong>The month</strong> is a grid of everyone's days with their totals, and <em>Download CSV</em> takes it to a
+  spreadsheet. Closed days (public holidays, a mid-term break) are added in Settings, and nobody is absent on them.</li>
+</ul>
+
 <h2 id="roles">Staff roles</h2>
 <p><a href="{{ url_for('admin_roles') }}">Staff roles</a>, in Settings, are the named bundles of permissions described
 in {{ page('roles-permissions', 'Roles, permissions and scope') }}. Each role's card shows its level in the school,
