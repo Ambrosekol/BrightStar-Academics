@@ -5,7 +5,7 @@
 {# Everything bought from the store, waiting to be collected first. Each purchase opens in a pop-up where it is handed
    over (to the student or a parent, who gets a text) or cancelled. Fifty at a time; the filters and search load in
    place. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
 {% set can_manage = admin_has_permission(current_admin['id'], 'store.manage') %}

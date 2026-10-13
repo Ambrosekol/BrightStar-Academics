@@ -19,6 +19,7 @@ from core.entrance import (
     entrance_practice_paper, entrance_subject_label, get_attempt, grade, remaining,
 )
 from models import (
+    Candidate,
     AcademicSession, Answer, Attempt, AttemptQuestion, CandidatePaper,
     EntranceBankConfig, Examination, RetakeGrant, SchoolAssessment,
     SchoolClass, SchoolQuestion, SchoolSubject, Student, db,
@@ -26,6 +27,7 @@ from models import (
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, _flatten
 from core.entrance_departments import pick_questions, question_department
 from core.security import csrf_protect
+from core import exam_integrity
 
 
 @app.route('/entrance-practice')
@@ -281,9 +283,10 @@ def candidate_start_paper(paper_id):
             db.session.rollback(); flash('The retake permission has already been used.','error'); return redirect(url_for('candidate_dashboard'))
 
     now=datetime.now(timezone.utc); exp=now+timedelta(seconds=int(b.get('duration_seconds',3600)))
+    device_raw,device_hash=exam_integrity.new_device_tag()
     attempt=Attempt(candidate=c['candidate_name'],exam_id=paper['exam_id'],
                     bank_id=paper['bank_id'],started_at=now.isoformat(),
-                    expires_at=exp.isoformat(),status='active',candidate_id=c['id'])
+                    expires_at=exp.isoformat(),status='active',candidate_id=c['id'],device_tag=device_hash)
     db.session.add(attempt); db.session.flush()
     # Freeze the served questions so later bank edits cannot alter this attempt.
     # A bank with department-tagged questions gives every candidate an equal share from each senior department
@@ -298,7 +301,7 @@ def candidate_start_paper(paper_id):
             correct_option=int(q.get('answer')) if q.get('answer') is not None else -1,
             points=float(marks),department=question_department(q)))
     db.session.commit(); session['attempt_id']=attempt.id
-    return redirect(url_for('exam',q=1))
+    return exam_integrity.set_device_cookie(redirect(url_for('exam',q=1)),exam_integrity.ENTRANCE,attempt.id,device_raw)
 
 @app.route('/exam')
 def exam():
@@ -324,7 +327,11 @@ def exam():
     try: requested_q=int(request.args.get('q',1))
     except (TypeError,ValueError): requested_q=1
     n=max(1,min(len(exam_questions),requested_q))
-    response=Response(render_template('exam.html',candidate=a['candidate'],exam={'questions':exam_questions},current=n,saved=saved,remaining=remaining(a),paper_label=paper_label,csrf_token_value=csrf_token()))
+    person=one(select(Candidate.candidate_code,Candidate.target_class,Candidate.photo_path)
+               .where(Candidate.id==a['candidate_id'])) if a['candidate_id'] else None
+    if not exam_integrity.same_device(exam_integrity.ENTRANCE,a['id'],a['device_tag']):
+        exam_integrity.record(exam_integrity.ENTRANCE,a['id'],'new_device')
+    response=Response(render_template('exam.html',candidate=a['candidate'],person=person,exam={'questions':exam_questions},current=n,saved=saved,remaining=remaining(a),paper_label=paper_label,csrf_token_value=csrf_token()))
     response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'; response.headers['Pragma']='no-cache'; return response
 
 @app.post('/answer')
@@ -359,6 +366,18 @@ def submit():
     if a['status']=='active': apply_connectivity_grace(a)
     grade(a['id'],auto=remaining(a)<=0)
     return redirect(url_for('candidate_dashboard') if session.get('candidate_id') else url_for('result'))
+
+@app.post('/exam/integrity')
+@csrf_protect
+def exam_integrity_report():
+    """Exam mode's report of something that happened on the entrance exam page (core/exam_integrity.py)."""
+    a=get_attempt(session.get('attempt_id'))
+    if session.get('candidate_id') and (not a or a['candidate_id'] != session.get('candidate_id')): return jsonify(ok=False),403
+    if not a or a['status']!='active': return jsonify(ok=False,ended=True),409
+    kind=request.form.get('kind','')
+    if kind not in exam_integrity.PAGE_KINDS: return jsonify(ok=False),400
+    exam_integrity.record(exam_integrity.ENTRANCE,a['id'],kind,request.form.get('question'))
+    return jsonify(ok=True,ended=False,left=exam_integrity.count_of(exam_integrity.ENTRANCE,a['id'],'left_page'))
 
 @app.post('/exam/heartbeat')
 @csrf_protect

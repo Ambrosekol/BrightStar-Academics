@@ -1,1 +1,38 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Practice Result — {{ school_brand.name }}</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head><body class="student-portal-page">{{ connectivity_banner() }}<main class="student-dashboard-shell"><section class="student-hero"><div><p class="student-eyebrow">PRACTICE RESULT</p><h1>{{score}} / {{max_score}}</h1><p>{{'%.1f'|format(percentage)}}% · {{assessment.title}} · {{assessment.class_name}} · {{assessment.subject_name}}</p></div></section><section class="student-panel" style="margin-top:20px">{% for r in results %}<article class="student-list-row"><div><strong>Q{{loop.index}}. {{r.text}}</strong><small>Your answer: {% if r.selected >= 0 %}{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.selected]}}{% else %}Not answered{% endif %} · Correct: {{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.correct]}}</small></div><span>{{'Correct' if r.selected==r.correct else 'Review'}}</span></article>{% endfor %}</section><a class="btn btn-primary" href="{{url_for('practice')}}">Back to practice</a> <a class="btn btn-light" href="{{url_for('login')}}">Portal sign-in</a></main></body></html>
+{% import 'includes/_paper.html' as paper with context %}
+{#- A public practice test's score (never saved) and each question's answer, in the paper's look (static/paper.css). -#}
+{% set letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+<!doctype html>
+<html lang="en">
+<head>{{ paper.head('Practice result') }}</head>
+<body class="pp">{{ connectivity_banner() }}
+<header class="pp-top"><div class="pp-brand"><img src="{{ school_brand.logo_url }}" alt=""><div><b>{{ school_brand.name }}</b><span>Practice test · result</span></div></div>
+  <a class="pp-btn" href="{{ url_for('login') }}">Portal sign-in</a></header>
+<main class="pp-sheet">
+  <section class="pp-card pp-hero">
+    <p class="pp-hero__kind">Practice result · NOT RECORDED</p>
+    <h1>{{ assessment.title }}</h1>
+    <p>{{ assessment.class_name }} · {{ assessment.subject_name }}</p>
+    <div class="pp-actions">
+      <a class="pp-btn pp-btn--primary" href="{{ url_for('practice_take', assessment_id=assessment.id) }}">Try again →</a>
+      <a class="pp-btn" href="{{ url_for('practice') }}">Back to practice</a>
+    </div>
+  </section>
+  <dl class="pp-card pp-stats">
+    <div><dt>Score</dt><dd>{{ score }} / {{ max_score }}</dd></div>
+    <div><dt>Percentage</dt><dd>{{ '%.0f'|format(percentage) }}%</dd></div>
+    <div><dt>To review</dt><dd>{{ max_score - score }}</dd></div>
+  </dl>
+  <section class="pp-card">
+    <ol class="pp-review">
+      {% for r in results %}
+      {% set right = r.selected == r.correct %}
+      <li><span class="n">{{ loop.index }}</span>
+        <div><b>{{ r.text }}</b>
+          <small>Your answer: {% if r.selected >= 0 %}{{ letters[r.selected] }}{% else %}not answered{% endif %}{% if not right %} · correct: {{ letters[r.correct] }}{% endif %}</small></div>
+        <span class="{{ 'ok' if right else 'no' }}">{{ 'Correct' if right else 'Review' }}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+</main>
+</body>
+</html>

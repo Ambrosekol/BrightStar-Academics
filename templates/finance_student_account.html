@@ -10,7 +10,7 @@
 {% set view_all = admin_has_permission(current_admin['id'], 'finance.view_all') or is_school_admin_ui %}
 {% set acct_url = url_for('admin_finance_student_account', student_id=student.id) %}
 <div class="ac fi" data-fi data-modal-scope="{{ acct_url }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 {% else %}{% set fin_tab = 'accounts' if view_all else 'collections' %}{% include 'includes/_finance_frame.html' %}
 {% if view_all %}<a class="fi-back" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id if fin_session else none) }}">← Student accounts</a>{% endif %}{% endif %}
 <div class="fi-who{{ ' fi-who--modal' if modal }}">

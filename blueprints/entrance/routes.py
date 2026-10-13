@@ -944,7 +944,11 @@ def admin_result_detail(aid):
         .where(CandidatePaper.candidate_id==a['candidate_id'],
                CandidatePaper.bank_id==a['bank_id']).limit(1)) if a['candidate_id'] else None
     paper_label=entrance_paper_label(slot_row['slot'],a['bank_id'],b.get('name','') if b else '') if slot_row else entrance_subject_label(a['bank_id'],b.get('name','') if b else '')
-    return render_template('admin_result_detail.html',attempt=a,exam=b,answers=answers,grade=_grade_label(a['percentage']),paper_label=paper_label)
+    from core import exam_integrity
+    return render_template('admin_result_detail.html',attempt=a,exam=b,answers=answers,grade=_grade_label(a['percentage']),paper_label=paper_label,
+                           integrity=exam_integrity.counts(exam_integrity.ENTRANCE,[aid]).get(aid,{}),
+                           integrity_kinds=exam_integrity.KINDS,
+                           integrity_timeline=exam_integrity.timeline(exam_integrity.ENTRANCE,aid))
 
 @app.route('/admin/results/<int:aid>/print')
 @admin_required

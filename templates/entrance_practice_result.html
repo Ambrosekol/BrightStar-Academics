@@ -1,38 +1,40 @@
+{% import 'includes/_paper.html' as paper with context %}
+{#- An entrance practice paper's score (never saved) and every question with the answer given and, where wrong, the
+    right one. Same look as the paper itself (static/paper.css). -#}
+{% set letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Practice Result — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-</head>
-<body class="student-portal-page">{{ connectivity_banner() }}
-<header class="student-topbar">
-  <div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Entrance Practice</span></div></div>
-  <div class="student-top-actions"><a href="{{url_for('login')}}">Portal sign-in</a></div>
-</header>
-<main class="student-dashboard-shell">
-  <section class="student-result-card">
-    <p class="student-eyebrow">PRACTICE RESULT &middot; NOT RECORDED</p>
-    <h1>{{group_label}} &middot; {{subject_label}}</h1>
-    <div class="student-result-score"><strong>{{score}}</strong><span>/ {{total}}</span></div>
-    <div class="student-result-percent">{{'%.0f'|format(percentage)}}%</div>
-    <p class="student-result-note">This was practice only. Nothing is saved. Try again for a new set of questions in a new order.</p>
-    <a class="student-start-btn student-result-back" href="{{url_for('entrance_practice_take',group=group,subject=subject)}}">Try again &rarr;</a>
-    <a class="student-start-btn student-result-back" href="{{url_for('entrance_practice',group=group)}}">Other subjects</a>
+<head>{{ paper.head('Practice result') }}</head>
+<body class="pp">{{ connectivity_banner() }}
+<header class="pp-top"><div class="pp-brand"><img src="{{ school_brand.logo_url }}" alt=""><div><b>{{ school_brand.name }}</b><span>Entrance practice · result</span></div></div>
+  <a class="pp-btn" href="{{ url_for('login') }}">Portal sign-in</a></header>
+<main class="pp-sheet">
+  <section class="pp-card pp-hero">
+    <p class="pp-hero__kind">Practice result · NOT RECORDED</p>
+    <h1>{{ group_label }} · {{ subject_label }}</h1>
+    <p>Practice only: nothing is saved. Try again for a new set of questions in a new order.</p>
+    <div class="pp-actions">
+      <a class="pp-btn pp-btn--primary" href="{{ url_for('entrance_practice_take', group=group, subject=subject) }}">Try again →</a>
+      <a class="pp-btn" href="{{ url_for('entrance_practice', group=group) }}">Other subjects</a>
+    </div>
   </section>
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head"><h2>Review your answers</h2></div>
-    {% for r in results %}
-    {% set right = r.selected == r.correct %}
-    <article class="student-list-row">
-      <div>
-        <strong>Q{{loop.index}}. {{r.text}}</strong>
-        <small>Your answer: {% if r.selected >= 0 %}{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.selected]}}. {{r.options[r.selected]}}{% else %}Not answered{% endif %}</small>
-        {% if not right and r.correct >= 0 and r.correct < r.options|length %}<small>Correct answer: {{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[r.correct]}}. {{r.options[r.correct]}}</small>{% endif %}
-      </div>
-      <span class="student-status" {% if not right %}style="background:#fdeceb;color:#a32626"{% endif %}>{{'Correct' if right else 'Review'}}</span>
-    </article>
-    {% endfor %}
+  <dl class="pp-card pp-stats">
+    <div><dt>Score</dt><dd>{{ score }} / {{ total }}</dd></div>
+    <div><dt>Percentage</dt><dd>{{ '%.0f'|format(percentage) }}%</dd></div>
+    <div><dt>To review</dt><dd>{{ total - score }}</dd></div>
+  </dl>
+  <section class="pp-card">
+    <ol class="pp-review">
+      {% for r in results %}
+      {% set right = r.selected == r.correct %}
+      <li><span class="n">{{ loop.index }}</span>
+        <div><b>{{ r.text }}</b>
+          <small>Your answer: {% if r.selected >= 0 %}{{ letters[r.selected] }}. {{ r.options[r.selected] }}{% else %}not answered{% endif %}</small>
+          {% if not right and r.correct >= 0 and r.correct < r.options|length %}<small>Correct answer: {{ letters[r.correct] }}. {{ r.options[r.correct] }}</small>{% endif %}</div>
+        <span class="{{ 'ok' if right else 'no' }}">{{ 'Correct' if right else 'Review' }}</span></li>
+      {% endfor %}
+    </ol>
   </section>
 </main>
-</body></html>
+</body>
+</html>

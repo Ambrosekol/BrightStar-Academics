@@ -109,6 +109,28 @@ the teacher's pages are {{ file('blueprints/school/marking.py') }}.</p>
   <code>entered</code> with a {{ table('result_workflow_events') }} row.</li>
 </ul>
 
+<h3 id="exam-mode">The paper page and exam mode</h3>
+<p>Every paper page (a school test or examination, practice, the entrance examination and entrance practice) is built
+from {{ tpl('includes/_paper.html') }}, {{ file('static/paper.css') }} and {{ file('static/paper.js') }}: the whole paper
+is sent at once (each question copied without its correct answer) and shown one question at a time, so moving between
+questions never reloads the page or drops full screen. The page supplies <code>window.paperHooks</code> (save, submit,
+time up); answers save in the background ({{ route('student_assessment_answer') }} with <code>autosave=1</code>, or
+<code>/answer</code> for the entrance), retried over a weak connection, and a test is handed in through
+{{ route('student_assessment_submit') }}.</p>
+<ul>
+  <li><strong>Exam mode</strong> ({{ file('core/exam_integrity.py') }}, {{ table('exam_integrity_events') }}): the page
+  starts in full screen on a press, turns off copy, paste and the context menu, and reports leaving the page or full
+  screen to {{ route('student_assessment_integrity') }} or {{ route('exam_integrity_report') }}. Only the person's own open
+  attempt, with the form token, and only page kinds (<code>new_device</code> is the server's) are recorded, at most 300
+  per attempt. Practice applies the rules without reporting.</li>
+  <li><strong>Another device</strong>: starting an attempt sets an HttpOnly cookie with a random tag; the attempt keeps its
+  SHA-256 (<code>device_tag</code>). A paper opened without it records <code>new_device</code>, and is never refused.</li>
+  <li><strong>Settings</strong> on {{ table('school_assessments') }}: <code>exam_mode</code>, <code>shuffle</code> (questions
+  and options, frozen per attempt with the moved correct option) and <code>exam_leave_limit</code>, enforced on the server:
+  past it, the report grades the attempt and logs <code>school_assessment_ended_by_exam_mode</code>.</li>
+  <li><strong>The record</strong> is the paper's <em>Exam mode record</em> tab, and the entrance attempt's result page.</li>
+</ul>
+
 <h3 id="printed">Papers sat on paper</h3>
 <p>{{ table('school_assessments') }}.<code>delivery</code> is <code>cbt</code> or <code>printed</code> (tests and
 examinations; practice is always <code>cbt</code>). The logic is {{ file('core/printed_papers.py') }}; the pages are in

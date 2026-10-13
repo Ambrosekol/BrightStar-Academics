@@ -230,6 +230,12 @@ class SchoolAssessment(db.Model):
     # booklet are printed, and the marks are entered by the subject teacher). A printed paper is never opened to
     # students online.
     delivery = db.Column(Text, nullable=False, default='cbt', server_default=text("'cbt'"))
+    # Exam mode (core/exam_integrity.py): full screen, leaving the page and copying recorded; on unless switched off.
+    exam_mode = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    # Each student gets the questions, and each question's options, in their own order.
+    shuffle = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    # End the paper (submit it) once the student has left the page more than this many times; blank never does.
+    exam_leave_limit = db.Column(Integer)
 
 
 class SchoolQuestion(db.Model):
@@ -287,6 +293,24 @@ class SchoolAssessmentAttempt(db.Model):
     # Theory marking: blank for a paper with no theory; 'pending' until the subject teacher has marked
     # every written answer, then 'marked'. score/max_score stay the objective part alone.
     theory_status = db.Column(Text)
+    # A hash of the random tag the browser that started the attempt was given (core/exam_integrity.py), so a paper
+    # opened on another device is recorded. Never a block: a student may move computers after a power cut.
+    device_tag = db.Column(Text)
+
+
+class ExamIntegrityEvent(db.Model):
+    """Something exam mode recorded during a paper: leaving the page, leaving full screen, trying to copy or paste,
+    opening the paper on another device. ``scope`` is 'school' (school_assessment_attempts) or 'entrance' (attempts)."""
+    __tablename__ = 'exam_integrity_events'
+    __table_args__ = (Index('idx_exam_integrity_attempt', 'scope', 'attempt_id'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    scope = db.Column(Text, nullable=False)
+    attempt_id = db.Column(Integer, nullable=False)
+    kind = db.Column(Text, nullable=False)
+    question_number = db.Column(Integer)
+    created_at = db.Column(Text, nullable=False)
+    ip_address = db.Column(Text)
 
 
 class SchoolAssessmentAttemptQuestion(db.Model):

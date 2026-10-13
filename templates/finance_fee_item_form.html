@@ -5,7 +5,7 @@
    mistake keeps it open, a save closes it and the catalogue shows the change. Its look is static/fee-structure.css. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac fi fee fee-item" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 {% else %}{% set fin_tab = 'fees' %}{% include 'includes/_finance_frame.html' %}{% endif %}
 <link rel="stylesheet" href="{{ url_for('static', filename='fee-structure.css', v='3') }}">
   <div class="ac-modal-head fee-item__head"><h2>{{ 'Edit ' ~ form.get('name', 'fee item') if editing else 'Add a fee to the catalogue' }}</h2>

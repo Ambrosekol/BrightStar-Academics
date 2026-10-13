@@ -1,144 +1,88 @@
+{% import 'includes/_paper.html' as paper with context %}
+{#- A school test or examination being taken (blueprints/student_portal/routes.py): the whole paper on one page, one
+    question at a time (static/paper.js), each answer saved the moment it is given and retried over a weak connection,
+    and exam mode unless the teacher switched it off. Never the correct answers or a marking guide. -#}
+{% set kind = assessment.assessment_type|replace('_', ' ')|title %}
+{% set mode = 'record' if exam_mode else 'off' %}
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{assessment.title}} — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"><link rel="stylesheet" href="{{ url_for('static', filename='exam-theme.css') }}">
-</head>
-<body class="exam-page student-assessment-page">{{ connectivity_banner() }}
-<header class="top exam-top student-exam-top">
-  <div class="portal-brand">
-    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
-    <div><strong>{{ school_brand.name|upper }}</strong><span>{{assessment.assessment_type|replace('_',' ')|title}} · {{assessment.subject_name}}</span></div>
-  </div>
-  <div class="timer student-assessment-timer" id="studentTimer">--:--</div>
-</header>
-<main class="layout student-exam-layout">
-  <input type="hidden" id="csrfToken" value="{{csrf_token()}}">
-  <aside class="student-exam-sidebar">
-    <div class="candidate">Student<br><strong>{{student.first_name}} {{student.last_name}}</strong></div>
-    <details class="exam-instructions" open>
-      <summary>Instructions</summary>
-      <p>{{assessment.instructions or 'Read each question carefully. Select the best answer, or write your answer where a question asks you to. Use Save & Next to record your answer and move forward. You may revisit questions before submitting.'}}</p>
-    </details>
-    <div class="palette">
-      {% for n in range(1,total+1) %}
-      <a class="qnum {% if n==current %}current{% endif %} {% if n in rows_answered %}answered{% endif %}"
-         href="{{url_for('student_assessment_take',assessment_id=assessment.id,q=n)}}">{{n}}</a>
-      {% endfor %}
-    </div>
-    <p class="hint">Answered questions are marked. You may change an answer before submission.</p>
+<head>{{ paper.head(assessment.title) }}</head>
+<body class="pp exam-page student-assessment-page" data-paper data-paper-mode="{{ mode }}" data-paper-key="school-{{ attempt_id }}"
+      data-start-q="{{ current }}" data-left="{{ left }}" data-leave-limit="{{ leave_limit or '' }}"
+      data-integrity-url="{{ url_for('student_assessment_integrity', assessment_id=assessment.id) }}"
+      data-result-url="{{ url_for('student_assessment_result', assessment_id=assessment.id) }}">{{ connectivity_banner() }}
+{{ paper.top(kind ~ ' · ' ~ assessment.subject_name ~ ' · ' ~ assessment.title, total, remaining, save_status=true) }}
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+<main class="pp-main student-exam-layout">
+  <aside class="pp-side">
+    {{ paper.who(student.first_name ~ ' ' ~ student.last_name, (student.admission_no or 'Student') ~ (' · ' ~ student.class_name if student.class_name else ''),
+                 student.photo_path, (kind, assessment.subject_name)) }}
+    {{ paper.palette(total, current) }}
+    {{ paper.mode_note(mode) }}
+    {{ paper.rules(assessment.instructions or 'Read each question carefully. Choose the best answer, or write your answer where a question asks you to. Your answers are saved as you go, and you can change any of them until you submit.') }}
   </aside>
-  <section class="paper student-exam-paper">
-    <div class="progress">Question {{current}} of {{total}}</div>
-    {% if question.instruction %}
-    <details class="question-instruction" open><summary>Question instruction</summary><p>{{question.instruction}}</p></details>
-    {% endif %}
-    {% if question.image_path %}
-    <div class="question-image"><img src="{{url_for('static',filename=question.image_path)}}" alt="Question illustration"></div>
-    {% endif %}
-    {% set theory = question.question_type == 'theory' %}
-    {% if theory %}<p class="ex-theory-tag">Written answer · {{ question.points }} mark{{ '' if question.points == 1 else 's' }} · marked by your teacher</p>{% endif %}
-    <h2 class="ex-question-text">{{question.question_text}}</h2>
-    <form method="post" action="{{url_for('student_assessment_answer',assessment_id=assessment.id)}}" id="studentAssessmentForm">
-      <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-      <input type="hidden" name="attempt_id" value="{{attempt_id}}">
-      <input type="hidden" name="question_id" value="{{question.question_id}}">
-      <input type="hidden" name="next_q" value="{{current+1 if current<total else current}}">
-      {% if theory %}
-      <div class="ex-theory">
-        <label for="exAnswer" class="ex-theory__label">Your answer</label>
-        <textarea id="exAnswer" name="answer_text" rows="12" maxlength="{{ answer_limit }}" spellcheck="true"
-                  data-ex-answer data-limit="{{ answer_limit }}">{{ saved_text.get(question.question_id, '') }}</textarea>
-        <div class="ex-theory__foot"><span data-ex-saved role="status" aria-live="polite">{% if saved_text.get(question.question_id) %}Saved{% else %}Saved as you type{% endif %}</span><span data-ex-count></span></div>
-      </div>
-      {% else %}
-      <div class="options student-exam-options">
-        {% for opt in [question.option_a,question.option_b,question.option_c,question.option_d] %}
-        {% if opt is not none %}
-        <label class="option">
-          <input type="radio" name="option_index" value="{{loop.index0}}" {% if saved.get(question.question_id)==loop.index0 %}checked{% endif %}>
-          <span><b>{{'ABCD'[loop.index0]}}.</b> {{opt}}</span>
-        </label>
-        {% endif %}
-        {% endfor %}
-      </div>
-      {% endif %}
-      <div class="nav">
-        <a class="secondary {% if current==1 %}disabled{% endif %}"
-           href="{% if current>1 %}{{url_for('student_assessment_take',assessment_id=assessment.id,q=current-1)}}{% else %}#{% endif %}">Previous</a>
-        {% if current < total %}
-        <button class="primary" type="submit">Save &amp; Next</button>
-        {% else %}
-        <button class="submit" type="submit" name="submit_assessment" value="1">Submit {{assessment.assessment_type|replace('_',' ')|title}}</button>
-        {% endif %}
-      </div>
-    </form>
+  <section class="pp-card pp-paper" aria-live="polite">
+    {% for q in questions %}
+    {% set theory = q.question_type == 'theory' %}
+    {{ paper.question(loop.index, total, q.question_id, q.question_text,
+                      [q.option_a, q.option_b, q.option_c, q.option_d]|reject('none')|list, name='option_' ~ q.question_id,
+                      checked=saved.get(q.question_id), instruction=q.instruction, image=q.image_path,
+                      marks=q.points if (theory or q.points != 1) else none, theory=theory,
+                      answer=saved_text.get(q.question_id, ''), limit=answer_limit) }}
+    {% endfor %}
+    {{ paper.nav('Submit ' ~ kind) }}
   </section>
 </main>
+<form method="post" action="{{ url_for('student_assessment_submit', assessment_id=assessment.id) }}" id="submitForm" hidden>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"></form>
+{{ paper.screens(mode, 'The ' ~ kind|lower, leave_limit) }}
 <script nonce="{{ csp_nonce() }}">
-let remaining={{remaining}};
-const timer=document.getElementById('studentTimer');
-const form=document.getElementById('studentAssessmentForm');
-// A written answer is saved as it is typed (a moment after the last key), when the page is left, and before the
-// time runs out, so a power cut, a lost connection or the clock costs the student nothing they wrote.
-const answer=document.querySelector('[data-ex-answer]');
-const savedNote=document.querySelector('[data-ex-saved]');
-const countNote=document.querySelector('[data-ex-count]');
-let dirty=false, saving=null, debounce=null;
-function saveAnswer(keepalive){
-  if(!answer || !dirty) return Promise.resolve();
-  dirty=false;
-  const fd=new FormData();
-  fd.append('_csrf_token',document.getElementById('csrfToken').value);
-  fd.append('attempt_id','{{attempt_id}}'); fd.append('question_id','{{question.question_id}}');
-  fd.append('answer_text',answer.value); fd.append('autosave','1');
-  savedNote.textContent='Saving…';
-  saving=fetch("{{url_for('student_assessment_answer',assessment_id=assessment.id)}}",{method:'POST',body:fd,credentials:'same-origin',keepalive:!!keepalive})
-    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
-      if(r.ok && j.ok){ savedNote.textContent='Saved'; }
-      else if(j.closed){ savedNote.textContent='Time is up'; }
-      else { dirty=true; savedNote.textContent=j.error||'Not saved yet. It will be saved with Save & Next.'; }
-    }); })
-    .catch(function(){ dirty=true; savedNote.textContent='Offline. Your answer is kept here and saved with Save & Next.'; });
-  return saving;
-}
-if(answer){
-  const count=function(){ countNote.textContent=answer.value.length+' / '+answer.dataset.limit; };
-  answer.addEventListener('input',function(){ dirty=true; count(); clearTimeout(debounce); debounce=setTimeout(saveAnswer,1500); });
-  count();
-  window.addEventListener('pagehide',function(){ if(dirty) saveAnswer(true); });
-}
-function tick(){
-  const m=Math.floor(Math.max(0,remaining)/60), s=Math.max(0,remaining)%60;
-  timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  if(remaining===5) saveAnswer(false);
-  if(remaining<=0){
-    const go=function(){ window.location.href="{{url_for('student_assessment_result',assessment_id=assessment.id)}}"; };
-    Promise.race([saveAnswer(false),new Promise(function(r){ setTimeout(r,2000); })]).then(go,go);
-    clearInterval(clock);
-    return;
+(function () {
+  const saveUrl = "{{ url_for('student_assessment_answer', assessment_id=assessment.id) }}";
+  const resultUrl = "{{ url_for('student_assessment_result', assessment_id=assessment.id) }}";
+  const status = document.getElementById('saveStatus');
+  const token = function () { return document.getElementById('csrfToken').value; };
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function setStatus(text, isError) { status.textContent = text; status.classList.toggle('save-status-error', !!isError); }
+  // A dropped connection is retried, never mistaken for the paper being over: only the server saying the attempt is
+  // closed (409) sends the student to their result.
+  async function attemptSave(fd, triesLeft) {
+    let res;
+    try { res = await fetch(saveUrl, { method: 'POST', body: fd, credentials: 'same-origin' }); }
+    catch (networkError) {
+      if (triesLeft > 0) { setStatus('Connection problem, retrying…', true); await sleep(1500); return attemptSave(fd, triesLeft - 1); }
+      setStatus('Not saved. Check your connection.', true); return false;
+    }
+    if (res.status === 409) { location.href = resultUrl; return false; }
+    if (!res.ok) {
+      if (triesLeft > 0 && res.status >= 500) { setStatus('Connection problem, retrying…', true); await sleep(1500); return attemptSave(fd, triesLeft - 1); }
+      const j = await res.json().catch(function () { return {}; });
+      setStatus(j.error || 'Not saved. Try again.', true); return false;
+    }
+    setStatus('Saved', false); return true;
   }
-  remaining--;
-}
-const clock=setInterval(tick,1000); tick();
-// A liveness ping, not an answer save: tells the server this paper is still open, so a real
-// connectivity or power outage (a gap much bigger than this interval) can be credited back to the
-// student's time instead of silently costing them minutes they never got to use.
-setInterval(function(){
-  const fd=new FormData();
-  fd.append('_csrf_token',document.getElementById('csrfToken').value);
-  fetch("{{url_for('student_assessment_heartbeat',assessment_id=assessment.id)}}",{method:'POST',body:fd}).catch(function(){});
-},10000);
-form.addEventListener('submit',e=>{
-  clearTimeout(debounce); dirty=false;
-  if(answer){
-    if(!answer.value.trim()) window.brandDialog.confirmSubmit(e, 'You have not written an answer. Continue without one?', {title: 'No answer written', ok: 'Continue without an answer', danger: false});
-    return;
-  }
-  const choice=form.querySelector('input[name="option_index"]:checked');
-  if(!choice) window.brandDialog.confirmSubmit(e, 'No answer is selected. Continue without saving an answer?', {title: 'No answer chosen', ok: 'Continue without an answer', danger: false});
-});
+  window.paperHooks = {
+    save: function (qid, kind, value) {
+      const fd = new FormData();
+      fd.append('_csrf_token', token()); fd.append('attempt_id', '{{ attempt_id }}'); fd.append('question_id', qid);
+      fd.append('autosave', '1');
+      fd.append(kind === 'text' ? 'answer_text' : 'option_index', value);
+      setStatus('Saving…', false);
+      return attemptSave(fd, 3);
+    },
+    submit: function () { document.getElementById('submitForm').submit(); },
+    timeUp: function () { location.href = resultUrl; }
+  };
+  // A liveness ping, not an answer save: a real power or connection cut (a gap far bigger than this) is credited back.
+  setInterval(function () {
+    const fd = new FormData(); fd.append('_csrf_token', token());
+    fetch("{{ url_for('student_assessment_heartbeat', assessment_id=assessment.id) }}", { method: 'POST', body: fd }).catch(function () {});
+  }, 10000);
+  window.addEventListener('offline', function () { setStatus('Offline. Answers are retried when you reconnect.', true); });
+  window.addEventListener('online', function () { setStatus('Back online', false); });
+})();
 </script>
 <script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='page-loading.js') }}"></script></body></html>
+<script src="{{ url_for('static', filename='paper.js', v='1') }}"></script>
+</body>
+</html>

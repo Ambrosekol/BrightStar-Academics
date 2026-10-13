@@ -923,8 +923,9 @@ def take(person, aid, right):
     total = alpha.one("SELECT question_count FROM school_assessments WHERE id = :a", a=aid)
     for q in range(1, total + 1):
         body = person.get(f"{page}?q={q}").get_data(as_text=True)
-        attempt = re.search(r'name="attempt_id" value="(\d+)"', body).group(1)
-        qid = int(re.search(r'name="question_id" value="(\d+)"', body).group(1))
+        # The whole paper is on one page: the attempt's id is in its script, each question's id on its article.
+        attempt = re.search(r"fd\.append\('attempt_id', '(\d+)'\)", body).group(1)
+        qid = int(re.findall(r'data-pq data-qid="(\d+)"', body)[q - 1])
         correct = alpha.one("SELECT correct_option FROM school_assessment_attempt_questions WHERE attempt_id = :t AND question_id = :q",
                             t=int(attempt), q=qid)
         data = {"attempt_id": attempt, "question_id": qid, "option_index": correct if q <= right else (correct + 1) % 4, "next_q": q + 1}

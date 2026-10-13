@@ -36,12 +36,15 @@ def test_student_assessment_server_enforces_expiry():
 
 
 def test_student_assessment_uses_entrance_style_left_palette():
+    """The test page and the entrance examination share one layout (templates/includes/_paper.html): the person's
+    card and the question palette on the left, the question on the right, Save & Next and Submit under it."""
     template=(ROOT/"templates/student_assessment_take.html").read_text(encoding="utf-8")
+    shared=(ROOT/"templates/includes/_paper.html").read_text(encoding="utf-8")
     assert 'student-exam-layout' in template
     assert '<aside' in template
-    assert 'class="palette"' in template
-    assert 'Save &amp; Next' in template
-    assert 'Submit {{assessment.assessment_type' in template
+    assert 'paper.palette(' in template and 'palette"' in shared
+    assert 'paper.nav(' in template and 'Save &amp; Next' in shared
+    assert "paper.nav('Submit ' ~ kind)" in template
 
 def test_student_assessment_timer_is_started_by_server_attempt_creation():
     start=STUDENT_PORTAL_ROUTES.index("def student_assessment_start")

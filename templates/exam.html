@@ -1,8 +1,35 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ school_brand.name }} CBT — Examination</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head><body class="exam-page"><header class="top exam-top"><div class="portal-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>{{paper_label}}</span></div></div><div class="timer" id="timer">--:--</div><div class="save-status" id="saveStatus" role="status" aria-live="polite"></div></header><main class="layout"><input type="hidden" id="csrfToken" value="{{csrf_token()}}"><aside><div class="candidate">Candidate<br><strong>{{candidate}}</strong></div><details class="exam-instructions" open><summary>Instructions</summary><p>Read each question carefully. Select the best answer, then click Save &amp; Next. Your answer is saved only when you click Save &amp; Next, and you may change your selection any time before then.</p></details><div class="palette">{% for q in exam.questions %}<a class="qnum {% if loop.index==current %}current{% endif %} {% if q.id in saved %}answered{% endif %}" href="/exam?q={{loop.index}}">{{loop.index}}</a>{% endfor %}</div><p class="hint">Answered questions are marked. You may change an answer before submission.</p></aside><section class="paper"><div class="progress">Question {{current}} of {{exam.questions|length}}</div>{% set q=exam.questions[current-1] %}{% if q.instruction %}<details class="question-instruction" open><summary>Question instruction</summary><p>{{q.instruction}}</p></details>{% endif %}{% if q.image_path %}<div class="question-image"><img src="{{url_for('static',filename=q.image_path)}}" alt="Question illustration"></div>{% endif %}<h2>{{q.text}}</h2><div class="options">{% for opt in q.options %}<label class="option"><input type="radio" name="option" value="{{loop.index0}}" {% if saved.get(q.id)==loop.index0 %}checked{% endif %}><span><b>{{'ABCD'[loop.index0]}}.</b> {{opt}}</span></label>{% endfor %}</div><div class="nav"><a class="secondary {% if current==1 %}disabled{% endif %}" href="{% if current>1 %}/exam?q={{current-1}}{% else %}#{% endif %}">Previous</a>{% if current < exam.questions|length %}<a class="primary" id="next" href="/exam?q={{current+1}}">Save &amp; Next</a>{% else %}<form method="post" action="/submit" id="submitForm"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"><button class="submit">Submit Examination</button></form>{% endif %}</div></section></main><script nonce="{{ csp_nonce() }}">
-const qid={{q.id}},timer=document.getElementById('timer'),status=document.getElementById('saveStatus');
-let remaining={{remaining}};
-function tick(){let m=Math.floor(remaining/60),s=remaining%60;timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');if(remaining<=0){location.href='/result';return}remaining--}
-setInterval(tick,1000);tick();
+{% import 'includes/_paper.html' as paper with context %}
+{#- The entrance examination being taken (blueprints/candidate_portal/routes.py): the whole paper on one page, one
+    question at a time (static/paper.js), each answer saved the moment it is chosen and retried over a weak
+    connection, and exam mode. Its own save status replaces the generic connectivity banner. -#}
+{% set total = exam.questions|length %}
+<!doctype html>
+<html lang="en">
+<head>{{ paper.head('Entrance examination') }}</head>
+<body class="pp exam-page" data-paper data-paper-mode="record" data-paper-key="entrance-{{ candidate }}" data-start-q="{{ current }}"
+      data-integrity-url="/exam/integrity" data-result-url="/result">
+{{ paper.top('Entrance examination · ' ~ paper_label, total, remaining, save_status=true) }}
+<input type="hidden" id="csrfToken" value="{{csrf_token()}}">
+<main class="pp-main layout">
+  <aside class="pp-side">
+    {{ paper.who(candidate, (person.candidate_code if person else 'Candidate') ~ (' · for ' ~ person.target_class if person and person.target_class else ''),
+                 person.photo_path if person else none, ('Entrance examination', paper_label)) }}
+    {{ paper.palette(total, current) }}
+    {{ paper.mode_note('record') }}
+    {{ paper.rules('Read each question carefully and choose the best answer. Each answer is saved as you choose it, and you can change it until you submit. Submit once you have finished; the school releases results.') }}
+  </aside>
+  <section class="pp-card pp-paper paper">
+    {% for q in exam.questions %}
+    {{ paper.question(loop.index, total, q.id, q.text, q.options, name='option_' ~ q.id, checked=saved.get(q.id),
+                      instruction=q.instruction, image=q.image_path) }}
+    {% endfor %}
+    {{ paper.nav('Submit examination') }}
+  </section>
+</main>
+<form method="post" action="/submit" id="submitForm" hidden><input type="hidden" name="_csrf_token" value="{{csrf_token()}}"></form>
+{{ paper.screens('record', 'The examination', who='school') }}
+<script nonce="{{ csp_nonce() }}">
+const saveUrl='/answer',status=document.getElementById('saveStatus');
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function setStatus(text,isError){status.textContent=text;status.classList.toggle('save-status-error',!!isError)}
 // A dropped connection is not the same as the paper being over: only a definite answer from the
@@ -12,7 +39,7 @@ function setStatus(text,isError){status.textContent=text;status.classList.toggle
 async function attemptSave(fd,triesLeft){
   let res;
   try{
-    res=await fetch('/answer',{method:'POST',body:fd});
+    res=await fetch(saveUrl,{method:'POST',body:fd});
   }catch(networkError){
     if(triesLeft>0){setStatus('Connection problem — retrying…',true);await sleep(1500);return attemptSave(fd,triesLeft-1)}
     setStatus('Could not save your answer. Check your connection, then pick the option again.',true);
@@ -27,15 +54,18 @@ async function attemptSave(fd,triesLeft){
   setStatus('Saved',false);
   return true;
 }
-async function save(){
-  const r=document.querySelector('input[name=option]:checked');
-  if(!r)return true;
+async function save(qid,value){
   const fd=new FormData();
-  fd.append('question_id',qid);fd.append('option_index',r.value);
+  fd.append('question_id',qid);fd.append('option_index',value);
   fd.append('_csrf_token',document.getElementById('csrfToken').value);
   setStatus('Saving…',false);
   return attemptSave(fd,3);
 }
+window.paperHooks={
+  save:function(qid,kind,value){return save(qid,value)},
+  submit:function(){document.getElementById('submitForm').submit()},
+  timeUp:function(){location.assign('/result')}
+};
 window.addEventListener('offline',()=>setStatus('You are offline. Answers will be retried once the connection returns.',true));
 window.addEventListener('online',()=>setStatus('Back online.',false));
 // A liveness ping, not an answer save: tells the server this paper is still open, so a real
@@ -46,8 +76,8 @@ setInterval(function(){
   fd.append('_csrf_token',document.getElementById('csrfToken').value);
   fetch('/exam/heartbeat',{method:'POST',body:fd}).catch(function(){});
 },10000);
-const next=document.getElementById('next');
-if(next)next.addEventListener('click',async e=>{e.preventDefault();if(await save())location.href=next.href});
-const form=document.getElementById('submitForm');
-if(form)form.addEventListener('submit',async e=>{e.preventDefault();if(await save())form.submit()});
-</script></body></html>
+</script>
+<script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='paper.js', v='1') }}"></script>
+</body>
+</html>

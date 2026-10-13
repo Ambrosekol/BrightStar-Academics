@@ -1,56 +1,37 @@
+{% import 'includes/_paper.html' as paper with context %}
+{#- Entrance practice (blueprints/candidate_portal/routes.py, no sign-in): the entrance examination's layout, one
+    question at a time, sent all together at the end. Exam mode's rules apply; nothing is recorded or saved. -#}
+{% set total = questions|length %}
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{subject_label}} Practice — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
-</head>
-<body class="exam-page student-assessment-page">{{ connectivity_banner() }}
-<header class="top exam-top student-exam-top">
-  <div class="portal-brand">
-    <img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo">
-    <div><strong>{{ school_brand.name|upper }}</strong><span>Entrance practice · {{subject_label}}</span></div>
-  </div>
-  {% if seconds %}<div class="timer student-assessment-timer" id="practiceTimer">--:--</div>{% endif %}
-</header>
-<main class="student-assessment-shell">
-  <section class="student-assessment-heading">
-    <p class="student-eyebrow">PRACTICE &middot; NOT RECORDED</p>
-    <h1>{{group_label}} &middot; {{subject_label}}</h1>
-    <p>{{questions|length}} questions in a fresh order. {{label}}. Your score is not saved.</p>
-  </section>
-  <form method="post" action="{{url_for('entrance_practice_take',group=group,subject=subject)}}" id="practiceForm">
-    <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
-    {% for q in questions %}
-    <article class="student-question-card">
-      <div class="student-question-number">Question {{loop.index}} of {{questions|length}}</div>
-      {% if q.instruction %}<div class="student-question-instruction"><strong>Instruction</strong><span>{{q.instruction}}</span></div>{% endif %}
-      {% if q.image_path %}<div class="student-question-image"><img src="{{url_for('static',filename=q.image_path)}}" alt="Question illustration"></div>{% endif %}
-      <h2>{{q.text}}</h2>
-      <div class="student-options">
-        {% for o in q.options %}
-        <label><input type="radio" name="q_{{q.id}}" value="{{loop.index0}}"><span><b>{{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[loop.index0]}}.</b> {{o}}</span></label>
-        {% endfor %}
-      </div>
-    </article>
-    {% endfor %}
-    <div class="student-submit-bar">
-      <span>You can leave a question blank and still submit.</span>
-      <button class="student-submit-btn" type="submit">Submit practice</button>
-    </div>
-  </form>
-</main>
-{% if seconds %}
+<head>{{ paper.head(subject_label ~ ' practice') }}</head>
+<body class="pp exam-page" data-paper data-paper-mode="practice" data-paper-key="entrance-practice-{{ group }}-{{ subject }}">{{ connectivity_banner() }}
+{{ paper.top('Entrance practice · ' ~ group_label ~ ' · ' ~ subject_label, total, seconds) }}
+<form method="post" action="{{url_for('entrance_practice_take',group=group,subject=subject)}}" id="practiceForm">
+  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+  <main class="pp-main">
+    <aside class="pp-side">
+      {{ paper.who('Entrance practice', group_label ~ ' · ' ~ subject_label, none, ('Not recorded', label)) }}
+      {{ paper.palette(total) }}
+      {{ paper.mode_note('practice') }}
+      {{ paper.rules(total ~ ' questions in a fresh order. ' ~ label ~ '. Your score is not saved. You can leave a question blank and still submit.') }}
+    </aside>
+    <section class="pp-card pp-paper">
+      {% for q in questions %}
+      {{ paper.question(loop.index, total, q.id, q.text, q.options, name='q_' ~ q.id, instruction=q.instruction, image=q.image_path) }}
+      {% endfor %}
+      {{ paper.nav('Submit practice') }}
+    </section>
+  </main>
+</form>
+{{ paper.screens('practice', 'The practice paper') }}
 <script nonce="{{ csp_nonce() }}">
-let remaining={{seconds}};
-const timer=document.getElementById('practiceTimer'), form=document.getElementById('practiceForm');
-function tick(){
-  const m=Math.floor(Math.max(0,remaining)/60), s=Math.max(0,remaining)%60;
-  timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  if(remaining<=0){form.submit();return}
-  remaining--;
-}
-setInterval(tick,1000); tick();
+window.paperHooks = {
+  submit: function () { document.getElementById('practiceForm').submit(); },
+  timeUp: function () { document.getElementById('practiceForm').submit(); }
+};
 </script>
-{% endif %}
-</body></html>
+<script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='paper.js', v='1') }}"></script>
+</body>
+</html>

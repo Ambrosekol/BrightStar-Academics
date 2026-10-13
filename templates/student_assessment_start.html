@@ -10,6 +10,10 @@
     <p>{{ assessment.subject_name }}</p>
   </div></div>
 </header>
+<section class="ac-panel pf-who">
+  <span class="pf-who__photo">{% if student.photo_path %}<img src="{{ url_for('static', filename=student.photo_path) }}" alt="">{% else %}{{ student.first_name[:1]|upper }}{{ student.last_name[:1]|upper }}{% endif %}</span>
+  <div><b>{{ student.first_name }} {{ student.last_name }}</b><small>{{ student.admission_no or '' }}{% if student.class_name %} · {{ student.class_name }}{% endif %}</small></div>
+</section>
 <dl class="fi-k">
   <div><dt>Questions</dt><dd>{{ assessment.question_count }}</dd></div>
   <div class="is-lead"><dt>Time allowed</dt><dd>{{ assessment.duration_minutes }} min</dd></div>
@@ -18,6 +22,17 @@
 <section class="ac-panel">
   <div class="pf-ph"><h2>Before you begin</h2></div>
   <p class="pf-copy">{{ assessment.instructions or 'Read each question carefully. Select an answer and use Save & Next to continue. You may move between questions and review your answers before submitting.' }}</p>
+  {% if assessment.exam_mode %}
+  <div class="pf-exam-mode">
+    <b>Exam mode</b>
+    <ul>
+      <li>The paper opens in full screen. Stay on its page and in full screen until you submit.</li>
+      <li>Leaving the page, or full screen, is recorded for your teacher.{% if assessment.exam_leave_limit %} After {{ assessment.exam_leave_limit }} times your paper is submitted for you.{% endif %}</li>
+      <li>Copying, pasting and the right-click menu are turned off.</li>
+      <li>Your answers are saved as you go. If the power or the connection goes, sign in again (here or on another computer) and carry on.</li>
+    </ul>
+  </div>
+  {% endif %}
   <p class="ac-note"><strong>Your timer does not start on this page.</strong> The countdown begins only after you press Start.</p>
   <form class="pf-go" method="post" action="{{ url_for('student_assessment_start', assessment_id=assessment.id) }}" data-full>
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

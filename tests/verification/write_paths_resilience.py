@@ -316,9 +316,8 @@ if not CHROME:
     print("SKIP the exam save-retry script in a real browser: Chrome was not found (set BRIGHTSTARS_CHROME).")
 else:
     exam_source = open(os.path.join(ROOT, "templates", "exam.html"), encoding="utf-8").read()
-    script_match = re.search(r"<script[^>]*>\s*\nconst qid=.*?\n</script>", exam_source, re.S)
-    script_body = re.sub(r"^<script[^>]*>|</script>$", "", script_match.group(0)).replace(
-        "{{q.id}}", "1").replace("{{remaining}}", "600")
+    script_match = re.search(r"<script[^>]*>\s*\nconst saveUrl=.*?\n</script>", exam_source, re.S)
+    script_body = re.sub(r"^<script[^>]*>|</script>$", "", script_match.group(0))
     page = f"""<!doctype html><html><body>
 <div class="timer" id="timer">--:--</div><div class="save-status" id="saveStatus"></div>
 <input type="hidden" id="csrfToken" value="test-token">
@@ -345,15 +344,15 @@ window.fetch = function(url, opts) {{
 <script>{script_body}</script>
 <script>
 (async function () {{
-  await save();
+  await save(1, 0);
   var afterSuccess = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
 
   window.__mode = 'always-fail-network'; window.__calls = 0;
-  await save();
+  await save(1, 0);
   var afterNetwork = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
 
   window.__mode = 'always-fail-server'; window.__calls = 0;
-  await save();
+  await save(1, 0);
   var afterServer = {{calls: window.__calls, status: document.getElementById('saveStatus').textContent}};
 
   document.getElementById('out').textContent = JSON.stringify(

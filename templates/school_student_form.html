@@ -7,7 +7,7 @@
    edit returns to the student, and a new registration shows the login details made for them. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac st sf" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}{% endif %}
 <div class="ac-modal-head sf-head"><h2>{{ 'Register a student' if mode == 'new' else 'Edit ' ~ (student.get('first_name', '') ~ ' ' ~ student.get('last_name', '')) }}</h2>
   <p>{{ 'The full admission record. An admission number and a student-portal login are made when you save.' if mode == 'new' else 'Changes apply at once; the class change moves them to that register.' }}</p></div>

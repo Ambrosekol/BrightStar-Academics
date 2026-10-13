@@ -1,0 +1,112 @@
+{#- The pieces every page a paper is taken on is built from (static/paper.css, static/paper.js): the top bar, the
+    person's card with the question palette, one question, the buttons under it, and exam mode's screens. Each page
+    supplies its own saving (window.paperHooks) and its own data; everything here is printed as plain text. -#}
+
+{% macro head(title) -%}
+<meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='paper.css', v='2') }}">
+{%- endmacro %}
+
+{% macro top(subtitle, total, seconds=none, save_status=false) -%}
+<header class="pp-top">
+  <div class="pp-brand"><img src="{{ school_brand.logo_url }}" alt=""><div><b>{{ school_brand.name }}</b><span>{{ subtitle }}</span></div></div>
+  <div class="pp-prog" aria-label="Progress"><span><b data-paper-answered>0</b> / {{ total }} answered</span><span class="pp-prog__bar"><i data-paper-bar></i></span></div>
+  {% if save_status %}<div class="save-status pp-save" id="saveStatus" role="status" aria-live="polite"></div>{% endif %}
+  {% if seconds %}<div class="pp-timer" id="timer" data-paper-timer data-seconds="{{ seconds|int }}" aria-label="Time left">--:--</div>{% endif %}
+</header>
+{%- endmacro %}
+
+{% macro who(name, line=none, photo=none, chips=()) -%}
+<div class="pp-card pp-who">
+  <span class="pp-who__photo">{% if photo %}<img src="{{ url_for('static', filename=photo) }}" alt="">{% else %}{{ (name or '?')[:1]|upper }}{% endif %}</span>
+  <div><b>{{ name }}</b>{% if line %}<small>{{ line }}</small>{% endif %}
+    {% if chips %}<div class="pp-chips">{% for c in chips if c %}<span class="pp-chip{{ ' pp-chip--plain' if loop.index > 1 }}">{{ c }}</span>{% endfor %}</div>{% endif %}</div>
+</div>
+{%- endmacro %}
+
+{% macro palette(total, current=1) -%}
+<nav class="pp-card pp-pal palette" aria-label="Questions">
+  <h2><span>Questions</span><b data-paper-palcount>0 / {{ total }}</b></h2>
+  <div class="pp-grid">{% for n in range(1, total + 1) %}<a class="pp-qn qnum{{ ' is-current' if n == current }}" href="?q={{ n }}" data-goto="{{ n }}" aria-label="Question {{ n }}">{{ n }}</a>{% endfor %}</div>
+  <div class="pp-legend"><span><i class="l-ans"></i>Answered</span><span><i></i>Not yet</span><span><i class="l-flag"></i>For review</span></div>
+</nav>
+{%- endmacro %}
+
+{% macro rules(text) -%}
+<details class="pp-card pp-rules"><summary>Instructions</summary><p>{{ text }}</p></details>
+{%- endmacro %}
+
+{% macro mode_note(mode) -%}
+{% if mode != 'off' %}
+<div class="pp-card pp-mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
+  <span>Exam mode: stay on this page and in full screen. Copying and pasting are turned off.{% if mode == 'record' %} Leaving the page is recorded.{% endif %}</span></div>
+{% endif %}
+{%- endmacro %}
+
+{#- One question. ``options`` is the list of option texts (blanks left out); ``theory`` gives a writing box instead. -#}
+{% macro question(n, total, qid, text, options=(), name='option', checked=none, instruction=none, image=none, marks=none,
+                  theory=false, answer='', limit=5000) -%}
+<article class="pp-q" data-pq data-qid="{{ qid }}" {% if n != 1 %}hidden{% endif %} aria-labelledby="pq{{ qid }}">
+  <div class="pp-q__head"><span class="pp-q__n" id="pq{{ qid }}" tabindex="-1" data-pq-head>Question {{ n }} of {{ total }}</span>
+    {% if theory %}<span class="pp-tag pp-tag--theory">Written answer</span>{% endif %}
+    {% if marks %}<span class="pp-tag">{{ marks }} mark{{ '' if marks == 1 else 's' }}</span>{% endif %}</div>
+  {% if instruction %}<p class="pp-instr">{{ instruction }}</p>{% endif %}
+  {% if image %}<div class="pp-img"><img src="{{ url_for('static', filename=image) }}" alt="Picture for question {{ n }}"></div>{% endif %}
+  <p class="pp-text">{{ text }}</p>
+  {% if theory %}
+  <div class="pp-write">
+    <label for="pa{{ qid }}">Your answer</label>
+    <textarea id="pa{{ qid }}" name="answer_{{ qid }}" maxlength="{{ limit }}" spellcheck="true" autocomplete="off">{{ answer }}</textarea>
+    <div class="pp-write__foot"><span>Saved as you type</span><span data-pq-count></span></div>
+  </div>
+  {% else %}
+  <fieldset class="pp-opts"><legend class="pp-sr" hidden>Options</legend>
+    {% for opt in options %}
+    <label class="pp-opt option"><input type="radio" name="{{ name }}" value="{{ loop.index0 }}" {% if checked is not none and checked == loop.index0 %}checked{% endif %}>
+      <span class="pp-opt__l">{{ 'ABCDEFGH'[loop.index0] }}</span><span class="pp-opt__t">{{ opt }}</span></label>
+    {% endfor %}
+  </fieldset>
+  {% endif %}
+</article>
+{%- endmacro %}
+
+{% macro nav(submit_label) -%}
+<div class="pp-nav">
+  <button type="button" class="pp-btn pp-btn--side" data-paper-prev aria-label="Previous question"><span class="pp-l">← Previous</span><span class="pp-s">←</span></button>
+  <button type="button" class="pp-btn pp-btn--flag pp-btn--side" data-paper-flag aria-pressed="false"><span class="pp-l">Mark for review</span><span class="pp-s">Review</span></button>
+  <span class="pp-grow"></span>
+  <button type="button" class="pp-btn pp-btn--primary" data-paper-next><span class="pp-l">Save &amp; Next →</span><span class="pp-s">Next →</span></button>
+  <button type="button" class="pp-btn pp-btn--submit" data-paper-submit><span class="pp-l">{{ submit_label }}</span><span class="pp-s">Submit</span></button>
+  <p class="pp-keys">Keys: <kbd>A</kbd>–<kbd>D</kbd> choose · <kbd>←</kbd> <kbd>→</kbd> move between questions</p>
+</div>
+{%- endmacro %}
+
+{#- Exam mode's screens: the start (which asks for full screen) and the warning after leaving the page. -#}
+{% macro screens(mode, what, leave_limit=none, who='teacher') -%}
+{% if mode != 'off' %}
+<div class="pp-over" data-paper-gate hidden role="dialog" aria-modal="true" aria-labelledby="ppGateTitle">
+  <div class="pp-over__card">
+    <div class="pp-over__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <h2 id="ppGateTitle">Exam mode</h2>
+    <p>{{ what }} opens in full screen. Before you begin:</p>
+    <ul>
+      <li>Stay on this page and in full screen until you submit.</li>
+      {% if mode == 'record' %}<li>Leaving the page, or full screen, is recorded for your {{ who }}.{% if leave_limit %} After {{ leave_limit }} times the paper is submitted for you.{% endif %}</li>{% endif %}
+      <li>Copying, pasting and the right-click menu are turned off.</li>
+      <li>Your answers are saved as you go. Move between questions with the palette or the buttons.</li>
+    </ul>
+    <button type="button" class="pp-btn pp-btn--primary" data-gate-start>Start in full screen</button>
+  </div>
+</div>
+<div class="pp-over pp-over--warn" data-paper-warn hidden role="alertdialog" aria-modal="true" aria-labelledby="ppWarnTitle">
+  <div class="pp-over__card">
+    <div class="pp-over__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+    <h2 id="ppWarnTitle" data-warn-title>You left the paper</h2>
+    <p data-warn-text>Stay on this page until you submit.</p>
+    <span class="pp-over__count" data-warn-count hidden></span>
+    <button type="button" class="pp-btn pp-btn--primary" data-warn-back>Back to the paper</button>
+  </div>
+</div>
+{% endif %}
+{%- endmacro %}

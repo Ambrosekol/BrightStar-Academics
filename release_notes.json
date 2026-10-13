@@ -18,6 +18,22 @@
   ],
   "releases": [
     {
+      "version": "2.27.0",
+      "date": "2026-10-13",
+      "title": "Exam mode, and a new page for taking tests",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Tests and examinations now open in exam mode: full screen, with copying, pasting and right-click turned off, and leaving the page, leaving full screen or opening the paper on another device recorded. Each student gets the questions and options in their own order. See what was recorded on the paper's Exam mode record tab, and choose in its Settings whether to end a paper after a student leaves it a number of times. Exam mode and shuffling can be switched off for any paper.",
+          "help": "work"
+        },
+        {
+          "audience": "student",
+          "text": "Tests, examinations and practice tests have a new, simpler page: your card and the question numbers on the left, one question at a time, your answers saved as you go, Mark for review, and a summary before you submit. Tests and examinations open in full screen in exam mode: stay on the page until you submit, because leaving it is recorded for your teacher."
+        }
+      ]
+    },
+    {
       "version": "2.26.0",
       "date": "2026-10-13",
       "title": "Tests and examinations sat on paper",

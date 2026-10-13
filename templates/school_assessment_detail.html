@@ -12,7 +12,7 @@
 {% set has_theory = split and split.theory_raw %}
 {% set printed = assessment.delivery == 'printed' %}
 <div class="ac acq" data-acq="{{ assessment.id }}">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 {% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 
 <header class="acq-head">
@@ -66,6 +66,7 @@
   <button type="button" role="tab" data-acq-tab="questions">Questions <small>{{ questions|length }}</small></button>
   <button type="button" role="tab" data-acq-tab="add">+ Add a question</button>
   <button type="button" role="tab" data-acq-tab="settings">Settings</button>
+  {% if assessment.assessment_type != 'practice' and not printed %}<button type="button" role="tab" data-acq-tab="record">Exam mode record <small>{{ record|selectattr('total')|list|length }}</small></button>{% endif %}
 </div>
 
 <section class="acq-panel" data-acq-panel="questions" role="tabpanel">
@@ -132,6 +133,29 @@
   </form>
 </section>
 
+{% if assessment.assessment_type != 'practice' and not printed %}
+<section class="acq-panel" data-acq-panel="record" role="tabpanel" hidden>
+  {% if record %}
+  <p class="acq-lede">What exam mode recorded while each student sat the {{ noun }}. It is a record, not proof: a power cut or a lost connection also counts as leaving the page.{% if assessment.exam_leave_limit %} The paper ends after a student leaves it {{ assessment.exam_leave_limit }} times.{% endif %}</p>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th class="n">Left the page</th><th class="n">Left full screen</th><th class="n">Copy / paste</th><th class="n">Right-click</th><th class="n">Another device</th><th></th></tr></thead>
+    <tbody>{% for r in record %}{% set c = r.counts %}
+    <tr>
+      <td><b>{{ r.last_name }} {{ r.first_name }}</b><small>{{ r.admission_no or '' }}</small></td>
+      <td class="n">{{ c.get('left_page', 0) or '—' }}</td>
+      <td class="n">{{ c.get('fullscreen_exit', 0) or '—' }}</td>
+      <td class="n">{{ (c.get('copy', 0) + c.get('paste', 0)) or '—' }}</td>
+      <td class="n">{{ c.get('context_menu', 0) or '—' }}</td>
+      <td class="n">{{ c.get('new_device', 0) or '—' }}</td>
+      <td>{% if r.ended %}<span class="ac-tag ac-tag--attn">Ended by exam mode</span>{% elif r.status == 'active' %}<span class="ac-tag ac-tag--blue">Sitting it now</span>{% elif not r.total %}<span class="ac-tag ac-tag--good">Nothing recorded</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody has started it yet</strong>When students sit the {{ noun }}, what exam mode records for each of them appears here.</div>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="acq-panel" data-acq-panel="settings" role="tabpanel" hidden>
   <form method="post" action="{{ url_for('admin_school_assessment_edit', assessment_id=assessment.id) }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -147,6 +171,19 @@
         <label><input type="radio" name="delivery" value="cbt" {% if not printed %}checked{% endif %} {% if delivery_locked %}disabled{% endif %}> On the computer</label>
         <label><input type="radio" name="delivery" value="printed" {% if printed %}checked{% endif %} {% if delivery_locked %}disabled{% endif %}> On paper</label>
         {% if delivery_locked %}<input type="hidden" name="delivery" value="{{ assessment.delivery }}">{% endif %}
+      </fieldset>
+      {% endif %}
+      {% if assessment.assessment_type != 'practice' and not printed %}
+      <fieldset class="ac-field ac-field--wide acq-exam">
+        <legend>Exam mode</legend>
+        <input type="hidden" name="exam_settings" value="1">
+        <label><input type="checkbox" name="exam_mode" value="1" {% if assessment.exam_mode %}checked{% endif %} data-exam-mode>
+          Exam mode <span class="ac-hint">opens in full screen; leaving the page or full screen is recorded; copying and pasting are turned off</span></label>
+        <label><input type="checkbox" name="shuffle" value="1" {% if assessment.shuffle %}checked{% endif %}>
+          Shuffle <span class="ac-hint">each student gets the questions, and each question's options, in their own order</span></label>
+        <label class="acq-exam__limit">End the paper after the student leaves it
+          <input type="number" name="exam_leave_limit" min="1" max="50" value="{{ assessment.exam_leave_limit or '' }}" placeholder="never"> times
+          <span class="ac-hint">blank: never. A power cut also counts as leaving, so be generous.</span></label>
       </fieldset>
       {% endif %}
       <div class="ac-field ac-field--wide"><label for="acqInstructions">Instructions for students</label><textarea id="acqInstructions" name="instructions" rows="3">{{ assessment.instructions or '' }}</textarea></div>

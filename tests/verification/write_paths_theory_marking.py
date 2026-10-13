@@ -240,22 +240,35 @@ TAKE = f"/student/assessments/{EXAM}"
 
 
 def open_q(person, q):
+    """The paper (all of it is on one page), the attempt's id and the q-th question's id."""
     body = person.text(f"{TAKE}?q={q}")
-    found = re.search(r'name="attempt_id" value="(\d+)"', body)
-    return body, (found.group(1) if found else None), int(re.search(r'name="question_id" value="(\d+)"', body).group(1)) if found else None
+    found = re.search(r"fd\.append\('attempt_id', '(\d+)'\)", body)
+    ids = re.findall(r'data-pq data-qid="(\d+)"', body)
+    return body, (found.group(1) if found else None), (int(ids[q - 1]) if found and len(ids) >= q else None)
+
+
+def right(attempt, qid):
+    """The right option of a question as this student's paper has it (shuffled for each student)."""
+    return one("SELECT correct_option FROM school_assessment_attempt_questions WHERE attempt_id = :t AND question_id = :q",
+               t=int(attempt), q=int(qid))
+
+
+def article(body, qid):
+    found = re.search(r'data-qid="%s".*?</article>' % qid, body, re.S)
+    return found.group(0) if found else ""
 
 
 ada = student("TH-1")
 ada.post(f"{TAKE}/start", {}, page=TAKE)
 body, attempt, qid = open_q(ada, 1)
-ada.post(f"{TAKE}/answer", {"attempt_id": attempt, "question_id": qid, "option_index": 0, "next_q": 2}, token=csrf_from(body))
+ada.post(f"{TAKE}/answer", {"attempt_id": attempt, "question_id": qid, "option_index": right(attempt, qid), "next_q": 2}, token=csrf_from(body))
 body, attempt, qid = open_q(ada, 2)
 r = ada.post(f"{TAKE}/answer", {"attempt_id": attempt, "question_id": qid, "next_q": 3}, token=csrf_from(body))
 check("moving on with no option chosen saves nothing and goes to the next question (it used to fail)",
       r.status_code == 302 and "q=3" in r.headers.get("Location", ""), str(r.status_code))
 body, attempt, theory1 = open_q(ada, 3)
 check("a theory question shows a box to write in, and never its marking guide",
-      'name="answer_text"' in body and "secret marking guide" not in body and 'type="radio"' not in body)
+      "<textarea" in article(body, theory1) and 'type="radio"' not in article(body, theory1) and "secret marking guide" not in body)
 r = ada.post(f"{TAKE}/answer", {"attempt_id": attempt, "question_id": theory1, "answer_text": "Step one, then step two.", "autosave": "1"},
              token=csrf_from(body))
 check("a written answer is saved as it is typed (autosave answers JSON)",
@@ -283,7 +296,7 @@ for q in range(1, 5):
     body, attempt, qid = open_q(bayo, q)
     data = {"attempt_id": attempt, "question_id": qid, "next_q": q + 1}
     if q <= 2:
-        data["option_index"] = 0
+        data["option_index"] = right(attempt, qid)
     if q == 4:
         data["submit_assessment"] = "1"
     bayo.post(f"{TAKE}/answer", data, token=csrf_from(body))
@@ -298,7 +311,7 @@ for q in range(1, 5):
     body, attempt, qid = open_q(chidi, q)
     data = {"attempt_id": attempt, "question_id": qid, "next_q": q + 1}
     if q <= 2:
-        data["option_index"] = 1
+        data["option_index"] = (right(attempt, qid) + 1) % 4
     else:
         data["answer_text"] = EVIL
     if q == 4:

@@ -31,6 +31,19 @@
 </dl>
 
 <section class="ac-panel">
+  <div class="en-ph"><h2>Exam mode record<small>{% if integrity %}{{ integrity.values()|sum }} event{{ '' if integrity.values()|sum == 1 else 's' }}{% else %}nothing recorded{% endif %}</small></h2></div>
+  {% if integrity %}
+  <p class="ac-hint" style="margin:0 0 6px">A record, not proof: a power cut or a lost connection also counts as leaving the page.</p>
+  <div class="ac-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">{% for kind, label in integrity_kinds.items() if integrity.get(kind) %}<span class="ac-tag{{ ' ac-tag--attn' if kind in ('left_page', 'new_device') }}">{{ label }}: {{ integrity[kind] }}</span>{% endfor %}</div>
+  <details><summary class="ac-link">When</summary>
+    <ul style="margin:6px 0 0;padding-left:18px;font-size:12px">{% for at, label, number in integrity_timeline %}<li>{{ at|replace('T', ' ')|truncate(19, true, '') }} · {{ label }}{% if number %} (question {{ number }}){% endif %}</li>{% endfor %}</ul>
+  </details>
+  {% else %}
+  <p class="ac-hint" style="margin:0">The candidate stayed on the paper, in full screen, and did not try to copy or paste.</p>
+  {% endif %}
+</section>
+
+<section class="ac-panel">
   <div class="en-ph"><h2>Answers<small>{{ exam.questions|length }} questions</small></h2></div>
   <div class="ac-scroll"><table class="ac-t">
     <thead><tr><th class="n">#</th><th>Question</th><th>Candidate's answer</th><th>Right answer</th><th></th></tr></thead>

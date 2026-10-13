@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import random
 
 import sqlalchemy as sa
-from flask import abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import abort, flash, jsonify, make_response, redirect, render_template, request, session, url_for
 from sqlalchemy import or_, func, select, update as sa_update
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -26,6 +26,7 @@ from core.accounts import _clear_identity_sessions
 from core.db_helpers import all_rows, insert_stmt, one, one_scalar, tuples, _flatten
 from core.security import audit_log, csrf_protect
 from core.theory_marking import OBJECTIVE, THEORY, THEORY_ANSWER_LIMIT
+from core import exam_integrity
 from core.school_structure import class_is_early_years, student_department_filter
 from core.session_guard import refresh_password_stamp
 from blueprints.student_portal.helpers import (
@@ -319,25 +320,39 @@ def student_assessment_start(assessment_id):
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
     now=datetime.now(timezone.utc)
     expires=now+timedelta(minutes=int(a['duration_minutes']))
+    device_raw,device_hash=exam_integrity.new_device_tag()
     try:
         attempt=SchoolAssessmentAttempt(student_id=sid,assessment_id=assessment_id,
-            started_at=now.isoformat(),expires_at=expires.isoformat(),status='active')
+            started_at=now.isoformat(),expires_at=expires.isoformat(),status='active',device_tag=device_hash)
         db.session.add(attempt); db.session.flush()
         attempt_id=attempt.id
-        # A theory question is frozen with no options and no correct answer; its marking guide stays with the
-        # teacher and is never copied here.
-        db.session.add_all([
-            SchoolAssessmentAttemptQuestion(
+        # The objective questions come first and the theory ones after. With shuffling on (the default), each student
+        # gets both in their own order, and each objective question's options too: the frozen copy keeps the
+        # shuffled options and where the right one moved to, so grading reads it exactly as the student saw it.
+        objective=[q for q in questions if q['question_type']!=THEORY]
+        theory=[q for q in questions if q['question_type']==THEORY]
+        shuffle=bool(a.get('shuffle',1))
+        if shuffle:
+            random.shuffle(objective); random.shuffle(theory)
+        frozen=[]
+        for order,q in enumerate(objective+theory,1):
+            if q['question_type']==THEORY:
+                options=[None,None,None,None]; correct=-1
+            else:
+                options=[q['option_a'],q['option_b'],q['option_c'],q['option_d']]
+                order_of=list(range(4))
+                if shuffle: random.shuffle(order_of)
+                correct=order_of.index(int(q['correct_option']))
+                options=[options[i] for i in order_of]
+            # A theory question is frozen with no options and no correct answer; its marking guide stays with the
+            # teacher and is never copied here.
+            frozen.append(SchoolAssessmentAttemptQuestion(
                 attempt_id=attempt_id,question_id=q['id'],question_order=order,
                 question_text=q['question_text'],
-                option_a=None if q['question_type']==THEORY else q['option_a'],
-                option_b=None if q['question_type']==THEORY else q['option_b'],
-                option_c=None if q['question_type']==THEORY else q['option_c'],
-                option_d=None if q['question_type']==THEORY else q['option_d'],
+                option_a=options[0],option_b=options[1],option_c=options[2],option_d=options[3],
                 instruction=q['instruction'],image_path=q['image_path'],
-                correct_option=-1 if q['question_type']==THEORY else int(q['correct_option']),
-                points=int(q['points'] or 1),question_type=q['question_type'] or OBJECTIVE)
-            for order,q in enumerate(questions,1)])
+                correct_option=correct,points=int(q['points'] or 1),question_type=q['question_type'] or OBJECTIVE))
+        db.session.add_all(frozen)
         db.session.commit()
     except sa.exc.IntegrityError:
         # The UNIQUE(student_id, assessment_id) constraint protects against
@@ -355,7 +370,8 @@ def student_assessment_start(assessment_id):
         raise
     audit_log('school_assessment_started','school_assessment','assessment',assessment_id,
               {'student_id':sid,'attempt_id':attempt_id},True)
-    return redirect(url_for('student_assessment_take',assessment_id=assessment_id,q=1))
+    return exam_integrity.set_device_cookie(redirect(url_for('student_assessment_take',assessment_id=assessment_id,q=1)),
+                                            exam_integrity.SCHOOL,attempt_id,device_raw)
 
 @app.route('/student/assessments/<int:assessment_id>',methods=['GET'])
 @student_required
@@ -389,14 +405,24 @@ def student_assessment_take(assessment_id):
     try: current=int(request.args.get('q',1))
     except (TypeError,ValueError): current=1
     current=max(1,min(len(rows),current))
-    q=rows[current-1]
-    public_q=dict(q)
-    public_q.pop('correct_option',None)
-    return render_template('student_assessment_take.html',
-        student=student,assessment=a,question=public_q,current=current,
+    # The whole paper is sent at once, so moving between questions never reloads the page (and never drops full
+    # screen). Never the correct answer: each question is copied without it.
+    paper=[]
+    for q in rows:
+        public_q=dict(q)
+        public_q.pop('correct_option',None)
+        paper.append(public_q)
+    exam_mode=bool(a.get('exam_mode',1))
+    if exam_mode and not exam_integrity.same_device(exam_integrity.SCHOOL,attempt['id'],attempt['device_tag']):
+        exam_integrity.record(exam_integrity.SCHOOL,attempt['id'],'new_device')
+    response=make_response(render_template('student_assessment_take.html',
+        student=student,assessment=a,questions=paper,current=current,
         total=len(rows),saved=saved,saved_text=saved_text,remaining=remaining(attempt),
         csrf_token_value=csrf_token(),attempt_id=attempt['id'],answer_limit=THEORY_ANSWER_LIMIT,
-        rows_answered={r['question_order'] for r in rows if r['question_id'] in saved or r['question_id'] in saved_text})
+        exam_mode=exam_mode,leave_limit=a.get('exam_leave_limit'),
+        left=exam_integrity.count_of(exam_integrity.SCHOOL,attempt['id'],'left_page') if exam_mode else 0))
+    response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 @app.post('/student/assessments/<int:assessment_id>/answer')
 @student_required
@@ -447,8 +473,6 @@ def student_assessment_answer(assessment_id):
                 SchoolAssessmentAnswer.attempt_id==attempt['id'],SchoolAssessmentAnswer.question_id==qid))
         db.session.commit()
         if autosave: return jsonify(ok=True,saved_at=now)
-    elif autosave:
-        abort(400)
     else:
         raw=request.form.get('option_index')
         if raw not in (None,''):
@@ -465,6 +489,7 @@ def student_assessment_answer(assessment_id):
                 set_={'option_index':answer_stmt.excluded.option_index,
                       'answered_at':answer_stmt.excluded.answered_at}))
             db.session.commit()
+        if autosave: return jsonify(ok=True,saved_at=now)
     next_q=request.form.get('next_q')
     try: next_q=int(next_q)
     except (TypeError,ValueError): next_q=1
@@ -472,6 +497,46 @@ def student_assessment_answer(assessment_id):
         student_assessment_grade(attempt['id'],auto=False)
         return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
     return redirect(url_for('student_assessment_take',assessment_id=assessment_id,q=max(1,next_q)))
+
+@app.post('/student/assessments/<int:assessment_id>/submit')
+@student_required
+@csrf_protect
+def student_assessment_submit(assessment_id):
+    """Hand the paper in. Every answer has already been saved as it was given; this only grades the attempt."""
+    sid=session.get('student_id')
+    attempt=db.session.scalars(select(SchoolAssessmentAttempt).where(
+        SchoolAssessmentAttempt.student_id==sid,
+        SchoolAssessmentAttempt.assessment_id==assessment_id)).first()
+    if not attempt: abort(404)
+    if attempt['status']=='active':
+        apply_connectivity_grace(attempt)
+        student_assessment_grade(attempt['id'],auto=remaining(attempt)<=0)
+    return redirect(url_for('student_assessment_result',assessment_id=assessment_id))
+
+@app.post('/student/assessments/<int:assessment_id>/integrity')
+@student_required
+@csrf_protect
+def student_assessment_integrity(assessment_id):
+    """Exam mode's report of something that happened on the page (core/exam_integrity.py). Leaving the page past
+    the paper's limit ends it here, on the server."""
+    sid=session.get('student_id')
+    attempt=db.session.scalars(select(SchoolAssessmentAttempt).where(
+        SchoolAssessmentAttempt.student_id==sid,
+        SchoolAssessmentAttempt.assessment_id==assessment_id)).first()
+    if not attempt or attempt['status']!='active': return jsonify(ok=False,ended=True),409
+    kind=request.form.get('kind','')
+    if kind not in exam_integrity.PAGE_KINDS: return jsonify(ok=False),400
+    settings=one(select(SchoolAssessment.exam_mode,SchoolAssessment.exam_leave_limit).where(SchoolAssessment.id==assessment_id))
+    if not settings or not settings['exam_mode']: return jsonify(ok=False),409
+    exam_integrity.record(exam_integrity.SCHOOL,attempt['id'],kind,request.form.get('question'))
+    left=exam_integrity.count_of(exam_integrity.SCHOOL,attempt['id'],'left_page')
+    limit=settings['exam_leave_limit']
+    if kind=='left_page' and limit and left>limit:
+        student_assessment_grade(attempt['id'],auto=False)
+        audit_log('school_assessment_ended_by_exam_mode','school_assessment','assessment',assessment_id,
+                  {'student_id':sid,'attempt_id':attempt['id'],'left':left,'limit':limit},True)
+        return jsonify(ok=True,ended=True,left=left)
+    return jsonify(ok=True,ended=False,left=left)
 
 @app.post('/student/assessments/<int:assessment_id>/heartbeat')
 @student_required

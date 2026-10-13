@@ -4,6 +4,7 @@ enrollment history, class promotion,
 and academic sessions.
 """
 
+import json
 import re
 import secrets
 from datetime import datetime, timezone
@@ -29,6 +30,7 @@ from models import (
     SchoolStudentResult, SchoolSubject, Student, StudentAdmissionContact,
     StudentAdmissionProfile, StudentEnrolment, StudentEnrollmentHistory,
     StudentNumberAllocation, ResultWorkflowEvent, PresenceSession, db,
+    AuditLog, SchoolAssessmentAttempt,
 )
 from core.db_helpers import all_rows, group_concat, insert_stmt, obj, one, one_scalar, tuples, _flatten, _ignore_insert
 from core.school_structure import class_is_senior, clean_department, format_departments
@@ -39,6 +41,7 @@ from core.security import (
 from core.uploads import _save_image_upload
 from core.names import clean_part
 from core import subdivisions as subdivision_reach
+from core import exam_integrity
 from core import printed_papers
 from core import theory_marking
 from core.notifications import _notify_guardians_of_school_work
@@ -1513,9 +1516,29 @@ def admin_school_assessment_detail(assessment_id):
     if not admin_has_permission(current_admin()['id'],perm): return admin_access_error(perm)
     if not _school_pair_allowed(current_admin()['id'],a['class_id'],a['subject_id']): return admin_access_error(perm)
     split=theory_marking.split_for(assessment_id) if a['assessment_type']!='practice' else None
+    record=_exam_mode_record(assessment_id,a) if a['assessment_type']!='practice' and a['delivery']!='printed' else []
     return render_template('school_assessment_detail.html',assessment=a,questions=questions,sessions=_school_sessions(),terms=ACADEMIC_TERMS,
+                           record=record,record_kinds=exam_integrity.KINDS,
                            split=split,limits={'guide':theory_marking.MARKING_GUIDE_LIMIT,'marks':theory_marking.MAX_QUESTION_MARKS},
                            delivery_locked=not printed_papers.can_change_delivery(assessment_id))
+
+def _exam_mode_record(assessment_id,a):
+    """Every student who has started the paper (and whom this teacher teaches), with what exam mode recorded."""
+    me=current_admin()
+    attempts=all_rows(select(SchoolAssessmentAttempt.id,SchoolAssessmentAttempt.student_id,SchoolAssessmentAttempt.status,
+                             Student.first_name,Student.last_name,Student.admission_no)
+                      .join(Student,Student.id==SchoolAssessmentAttempt.student_id)
+                      .where(SchoolAssessmentAttempt.assessment_id==assessment_id)
+                      .order_by(Student.last_name,Student.first_name))
+    attempts=[r for r in attempts if _student_subject_allowed(me['id'],r['student_id'],a['class_id'],a['subject_id'])]
+    counts=exam_integrity.counts(exam_integrity.SCHOOL,[r['id'] for r in attempts])
+    ended=set()
+    for (details,) in tuples(select(AuditLog.details).where(AuditLog.action=='school_assessment_ended_by_exam_mode',
+                                                            AuditLog.target_id==str(assessment_id))):
+        try: ended.add(int(json.loads(details or '{}').get('attempt_id') or 0))
+        except (TypeError,ValueError): pass
+    return [{**r,'counts':counts.get(r['id'],{}),'total':sum(counts.get(r['id'],{}).values()),'ended':r['id'] in ended}
+            for r in attempts]
 
 @app.post('/admin/school/assessments/<int:assessment_id>/edit')
 @admin_required
@@ -1543,6 +1566,17 @@ def admin_school_assessment_edit(assessment_id):
         flash('Students have already sat this, so whether it is on the computer or on paper can no longer change.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     values={'title':title,'instructions':instructions,'class_id':cid,'subject_id':sid,'session_id':session_id,
             'duration_minutes':duration,'term':term or 'Full Session','delivery':wanted}
+    if request.form.get('exam_settings')=='1' and a['assessment_type']!='practice':
+        # Exam mode (core/exam_integrity.py), shuffling, and ending the paper after leaving it too often.
+        raw_limit=(request.form.get('exam_leave_limit') or '').strip()
+        try: leave_limit=int(raw_limit) if raw_limit else None
+        except ValueError: leave_limit=-1
+        if leave_limit is not None and not 1<=leave_limit<=50:
+            flash('Give the number of times a student may leave the paper as a whole number from 1 to 50, or leave it blank.','error')
+            return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+        values.update(exam_mode=1 if request.form.get('exam_mode')=='1' else 0,
+                      shuffle=1 if request.form.get('shuffle')=='1' else 0,
+                      exam_leave_limit=leave_limit if request.form.get('exam_mode')=='1' else None)
     if wanted=='printed': values['active']=0   # a printed paper is never opened to students online
     db.session.execute(sa_update(SchoolAssessment).where(SchoolAssessment.id==assessment_id).values(**values))
     db.session.commit(); audit_log('school_assessment_updated','school',a['assessment_type'],assessment_id,{'class_id':cid,'subject_id':sid,'term':term,'delivery':wanted}); flash('Assessment updated.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))

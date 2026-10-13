@@ -151,6 +151,18 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="exam-mode">"My paper submitted itself", "it says I left the page", or full screen does not start</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A student's paper ended early; a student is warned they left the paper when they did not mean to; or the paper did not go full screen (an iPhone).</div></div>
+  <div><b>Why</b><div><p>Exam mode ({{ file('core/exam_integrity.py') }}) records leaving the page or full screen. A notification, switching apps, a power cut or a lost connection all count. With a leave limit set on the paper, going past it submits the paper on the server. iPhones do not allow a web page to go full screen; the paper still works and the record says so.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Read the paper's <em>Exam mode record</em> tab: how often, and whether exam mode ended it.</li>
+    <li>Ended unfairly (a power cut): the student's answers up to then were saved. Correct the result through the usual correction process, or set the paper again for that student.</li>
+    <li>Too strict for your students' conditions: clear <em>End the paper after…</em> in the paper's Settings, or switch exam mode off for that paper.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The record matches what the student describes.</div></div>
+</div>
+
 <h3 id="printed-paper">A paper "sat on paper": students cannot see it, or a booklet is missing someone</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"This is sat on paper, so it is never opened to students online."; students cannot find a test; or the answer booklets leave a student out.</div></div>

@@ -24,6 +24,11 @@ EXEMPT = {
     # released result, marks out of range), in write_paths_theory_marking.py.
     "/admin/school/marking/<int:assessment_id>/students/<int:student_id>": "see write_paths_theory_marking.py",
     "/admin/school/marking/<int:assessment_id>/split": "see write_paths_theory_marking.py",
+    # Exam mode: handing a paper in, and the page's reports (leaving it, leaving full screen, copying), valid and
+    # hostile, for school papers and the entrance examination, in write_paths_exam_mode.py.
+    "/student/assessments/<int:assessment_id>/submit": "see write_paths_exam_mode.py",
+    "/student/assessments/<int:assessment_id>/integrity": "see write_paths_exam_mode.py",
+    "/exam/integrity": "see write_paths_exam_mode.py",
     # Printed papers' marks sheets, valid and hostile, in write_paths_printed_papers.py.
     "/admin/school/marking/<int:assessment_id>/printed": "see write_paths_printed_papers.py",
     "/admin/finance/new-students/remove": "see write_paths_new_students.py",

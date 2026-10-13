@@ -201,3 +201,16 @@
 .pf-left[open] > summary::before { transform: rotate(45deg); }
 .pf-left > summary small { padding: 1px 7px; border-radius: 999px; background: var(--ac-wash); font-size: 11px; color: var(--ac-muted); }
 .pf-left > summary:focus-visible { outline: 2px solid var(--ac-accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Before a test or examination (templates/student_assessment_start.html): who is sitting it, and exam mode's rules */
+.pf-who { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pf-who__photo { width: 48px; height: 48px; flex: none; display: grid; place-items: center; overflow: hidden; border-radius: 12px;
+  background: var(--ac-accent-tint); color: var(--ac-brand); font-weight: 800; }
+.pf-who__photo img { width: 100%; height: 100%; object-fit: cover; }
+.pf-who b { display: block; font-size: 14px; color: var(--ac-ink); }
+.pf-who small { font-size: 12px; color: var(--ac-muted); }
+.pf-exam-mode { margin: 10px 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--ac-accent) 30%, var(--ac-line)); border-radius: 10px;
+  background: var(--ac-accent-tint); font-size: 13px; color: var(--ac-ink-2); }
+.pf-exam-mode b { color: var(--ac-brand); }
+.pf-exam-mode ul { margin: 4px 0 0; padding-left: 18px; }
+

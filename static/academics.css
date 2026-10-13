@@ -428,3 +428,11 @@ a.ac-step--done:hover b { text-decoration: underline; }
 .mk-grid-t tr.is-error td { background: var(--ac-attn-tint); }
 .mk-grid-t tr.mk-err td { padding-top: 0; background: var(--ac-attn-tint); color: var(--ac-attn); font-size: 12px; font-weight: 600; }
 
+/* Exam mode on a test or examination's Settings (templates/school_assessment_detail.html) */
+.acq-exam { display: grid; gap: 6px; margin: 0; padding: 8px 10px; border: 1px solid var(--ac-line); border-radius: 8px; }
+.acq-exam legend { padding: 0 4px; font-size: 12px; font-weight: 700; color: var(--ac-ink-2); }
+.ac .acq-exam label { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12.5px; font-weight: 600; color: var(--ac-ink); }
+.acq-exam .ac-hint { font-weight: 400; }
+.ac .acq-exam input[type=number] { width: 70px !important; padding: 3px 6px !important; }
+.acq-exam input[type=checkbox] { accent-color: var(--ac-accent); }
+

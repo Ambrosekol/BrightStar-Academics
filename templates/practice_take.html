@@ -1,2 +1,35 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1"><title>{{assessment.title}} — Practice Test</title><link rel="stylesheet" href="{{url_for('static',filename='app.css')}}"></head>
-<body class="practice-page">{{ connectivity_banner() }}<main class="practice-shell wide"><section class="practice-card"><div class="practice-test-head"><div><p class="eyebrow">PRACTICE TEST</p><h1>{{assessment.title}}</h1><p class="muted">{{assessment.class_name}} · {{assessment.subject_name}} · {{questions|length}} questions</p></div><span class="practice-badge">No login required</span></div><form method="post" action="{{url_for('practice_take',assessment_id=assessment.id)}}"><input type="hidden" name="_csrf_token" value="{{csrf_token()}}">{% if assessment.instructions %}<details class="question-instruction" open><summary>Test instructions</summary><p>{{assessment.instructions}}</p></details>{% endif %}{% for q in questions %}<article class="practice-question">{% if q.instruction %}<details class="question-instruction" open><summary>Instruction</summary><p>{{q.instruction}}</p></details>{% endif %}{% if q.image_path %}<div class="question-image"><img src="{{url_for('static',filename=q.image_path)}}" alt="Question illustration"></div>{% endif %}<h2>Q{{loop.index}}. {{q.question_text}}</h2>{% for text in [q.option_a,q.option_b,q.option_c,q.option_d] %}<label class="practice-option"><input type="radio" name="q_{{q.id}}" value="{{loop.index0}}" required><span>{{'ABCD'[loop.index0]}}. {{text}}</span></label>{% endfor %}</article>{% endfor %}<button class="primary full" type="submit">Submit Practice Test</button></form></section></main></body></html>
+{% import 'includes/_paper.html' as paper with context %}
+{#- A school practice test opened from the public practice page (blueprints/candidate_portal/routes.py, no sign-in):
+    the same layout, one question at a time, sent all together at the end. Nothing is recorded or saved. -#}
+{% set total = questions|length %}
+<!doctype html>
+<html lang="en">
+<head>{{ paper.head(assessment.title ~ ' · Practice test') }}</head>
+<body class="pp practice-page" data-paper data-paper-mode="practice" data-paper-key="public-practice-{{ assessment.id }}">{{ connectivity_banner() }}
+{{ paper.top('Practice test · ' ~ assessment.class_name ~ ' · ' ~ assessment.subject_name, total) }}
+<form method="post" action="{{url_for('practice_take',assessment_id=assessment.id)}}" id="practiceForm">
+  <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
+  <main class="pp-main">
+    <aside class="pp-side">
+      {{ paper.who(assessment.title, assessment.class_name ~ ' · ' ~ assessment.subject_name, none, ('Practice · no sign-in', 'Not recorded')) }}
+      {{ paper.palette(total) }}
+      {{ paper.mode_note('practice') }}
+      {{ paper.rules(assessment.instructions or 'Choose the best answer for each question, then submit to see how you did. Nothing is saved.') }}
+    </aside>
+    <section class="pp-card pp-paper">
+      {% for q in questions %}
+      {{ paper.question(loop.index, total, q.id, q.question_text, [q.option_a, q.option_b, q.option_c, q.option_d]|reject('none')|list,
+                        name='q_' ~ q.id, instruction=q.instruction, image=q.image_path) }}
+      {% endfor %}
+      {{ paper.nav('Submit practice test') }}
+    </section>
+  </main>
+</form>
+{{ paper.screens('practice', 'The practice test') }}
+<script nonce="{{ csp_nonce() }}">
+window.paperHooks = { submit: function () { document.getElementById('practiceForm').submit(); } };
+</script>
+<script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='paper.js', v='1') }}"></script>
+</body>
+</html>

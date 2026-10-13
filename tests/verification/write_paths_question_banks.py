@@ -671,8 +671,10 @@ r = c_cand.post(f"/candidate/papers/{paper_ids[0]}/start", data={"_csrf_token": 
 check("the candidate starts the Mathematics paper", r.status_code == 302 and "/exam" in r.headers["Location"], r.headers.get("Location", ""))
 exam = text_of(c_cand.get("/exam?q=1", base_url=u_cand))
 served = re.search(r"Question 1 of (\d+)", exam)
+# The whole paper is on one page (templates/exam.html): the first question is the first article, with its options.
+first_question = re.search(r'<article class="pp-q".*?</article>', exam, re.S)
 check("the paper is on screen, with a question and four options",
-      served is not None and 'name="option"' in exam and exam.count('name="option"') == 4, str(served))
+      served is not None and first_question is not None and first_question.group(0).count('type="radio"') == 4, str(served))
 
 
 def attempt_rows():

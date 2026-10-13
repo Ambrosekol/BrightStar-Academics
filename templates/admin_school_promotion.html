@@ -6,7 +6,7 @@
    commit it. Nothing about a student changes until a run is committed. #}
 {% set open_runs = runs|selectattr('status', 'in', ['draft', 'approved'])|list %}
 {% set by_from = {} %}{% for p in progressions %}{% set _ = by_from.update({p.from_class_id: p}) %}{% endfor %}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <div class="ac st pr">

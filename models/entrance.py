@@ -48,6 +48,8 @@ class Attempt(db.Model):
     # how much of the capped allowance has already been granted to this attempt.
     last_seen_at = db.Column(Text)
     grace_extended_seconds = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
+    # A hash of the tag given to the browser that started it (core/exam_integrity.py): another device is recorded.
+    device_tag = db.Column(Text)
 
 
 class Answer(db.Model):

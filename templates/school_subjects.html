@@ -10,7 +10,7 @@
 {% set can_delete = admin_has_permission(aid, 'school.subjects.delete') %}
 {% set locked = subjects|selectattr('locked_count')|list|length %}
 {% set unattached = subjects|rejectattr('classes')|list|length %}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <div class="ac st sj" data-sj>

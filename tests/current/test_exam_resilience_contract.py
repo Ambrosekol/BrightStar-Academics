@@ -12,10 +12,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAM_HTML = (ROOT / "templates" / "exam.html").read_text(encoding="utf-8")
+# The page's shared pieces (the top bar with the save status) live in templates/includes/_paper.html.
+PAPER_HTML = (ROOT / "templates" / "includes" / "_paper.html").read_text(encoding="utf-8")
 
 
 def _script():
-    match = re.search(r"<script[^>]*>\s*\nconst qid=.*?\n</script>", EXAM_HTML, re.S)
+    match = re.search(r"<script[^>]*>\s*\nconst saveUrl=.*?\n</script>", EXAM_HTML, re.S)
     assert match, "templates/exam.html lost its answer-autosave script"
     return match.group(0)
 
@@ -48,7 +50,8 @@ def test_a_giving_up_message_is_shown_in_plain_words():
 
 
 def test_the_page_carries_a_visible_status_the_person_can_read():
-    assert 'id="saveStatus"' in EXAM_HTML and 'role="status"' in EXAM_HTML
+    assert "save_status=true" in EXAM_HTML
+    assert 'id="saveStatus"' in PAPER_HTML and 'role="status"' in PAPER_HTML
     assert ".save-status" in (ROOT / "static" / "app.css").read_text(encoding="utf-8")
 
 
