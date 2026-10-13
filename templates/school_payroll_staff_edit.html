@@ -1,0 +1,75 @@
+{% extends 'admin_base.html' %}
+{% block title %}Pay: {{ hr.full_name(person, False) }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- One member of staff's pay (blueprints/school/payroll.py): basic salary, allowances and deductions, bank, pension and
+    tax details (encrypted; never shown back), and what a month's payslip would be. Nobody sets their own pay. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+{% set edit = can_manage and not own %}
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Pay: {{ hr.full_name(person, False) }}</h1>
+  <span class="ac-hint">{{ person.job_title or '' }}</span>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_payroll_staff') }}">All staff</a></div>
+</header>
+{% if own %}<p class="ac-note pay-warn">This is your own pay. Someone else sets it.</p>{% endif %}
+<div class="pay-grid pay-grid--wide">
+<form method="post" class="ac-panel">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <fieldset {% if not edit %}disabled{% endif %} class="pay-fs">
+  <h2>Pay</h2>
+  <div class="ac-fields">
+    <div class="ac-field ac-field--wide"><label class="pay-tick"><input type="checkbox" name="on_payroll" value="1" {% if not pay or pay.on_payroll %}checked{% endif %}> On the payroll</label></div>
+    <div class="ac-field"><label for="basic">Basic salary a month (₦)</label><input id="basic" name="basic" inputmode="decimal" required value="{{ pr.naira_input(pay.basic) if pay else '' }}" placeholder="150000"></div>
+    <div class="ac-field"><label for="rent">Rent they pay a year (₦)</label><input id="rent" name="annual_rent" inputmode="decimal" value="{{ pr.naira_input(pay.annual_rent) if pay and pay.annual_rent else '' }}" placeholder="optional">
+      <small>For rent relief on PAYE, if they have shown their rent.</small></div>
+  </div>
+  <h2 class="pay-h2">Allowances and deductions</h2>
+  <table class="ac-t pay-items"><tbody>{% for item in items if item.active or given.get(item.id) %}{% set own_row = given.get(item.id) %}
+    <tr><td><label class="pay-tick"><input type="checkbox" name="item_{{ item.id }}" value="1" {% if own_row %}checked{% endif %}> {{ item.name }}</label>
+        <small>{{ 'Paid' if item.kind == 'earning' else 'Taken' }}{% if item.kind == 'earning' %}{{ ', taxed' if item.taxable else ', not taxed' }}{{ ', counts for pension' if item.pensionable }}{% endif %}</small></td>
+      <td><input class="ac-input pay-amt" name="item_amount_{{ item.id }}" inputmode="decimal"
+        value="{% if own_row %}{{ (pr.percent(own_row.rate_bp)|replace('%','')) if item.calc == 'percent_basic' and own_row.rate_bp is not none else (pr.naira_input(own_row.amount) if own_row.amount is not none else '') }}{% endif %}"
+        placeholder="{{ pr.percent(item.rate_bp) ~ ' of basic' if item.calc == 'percent_basic' else (pr.naira(item.amount) if item.amount else '₦') }}" aria-label="{{ item.name }}: their own amount"></td></tr>
+  {% endfor %}</tbody></table>
+  <p class="ac-hint">Tick what they get or pay. An amount left empty uses the item's own amount.</p>
+
+  <h2 class="pay-h2">Bank</h2>
+  <div class="ac-fields">
+    <div class="ac-field"><label for="bank">Bank</label><select id="bank" name="bank_name"><option value=""></option>{% for b in pr.NIGERIAN_BANKS %}<option {% if pay and pay.bank_name == b %}selected{% endif %}>{{ b }}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="acct">Account number</label><input id="acct" name="account_number" inputmode="numeric" maxlength="12" autocomplete="off"
+      placeholder="{{ '····' ~ pay.account_last4 ~ ' (type to change)' if pay and pay.account_last4 else '10 digits' }}"></div>
+    <div class="ac-field ac-field--wide"><label for="acname">Account name</label><input id="acname" name="account_name" maxlength="80" value="{{ pay.account_name if pay and pay.account_name else '' }}"></div>
+  </div>
+  <h2 class="pay-h2">Pension and tax</h2>
+  <div class="ac-fields">
+    <div class="ac-field"><label for="pfa">Pension administrator (PFA)</label><input id="pfa" name="pfa" maxlength="80" value="{{ pay.pfa if pay and pay.pfa else '' }}" placeholder="e.g. Stanbic IBTC Pension"></div>
+    <div class="ac-field"><label for="pin">RSA PIN</label><input id="pin" name="rsa_pin" maxlength="30" autocomplete="off" placeholder="{{ 'kept (type to change)' if has_pin else 'PEN...' }}"></div>
+    <div class="ac-field"><label for="tin">Tax ID</label><input id="tin" name="tax_id" maxlength="30" autocomplete="off" placeholder="{{ 'kept (type to change)' if has_tin else 'optional' }}"></div>
+    <div class="ac-field ac-field--wide pay-ticks">
+      <label class="pay-tick"><input type="checkbox" name="paye_exempt" value="1" {% if pay and pay.paye_exempt %}checked{% endif %}> No PAYE</label>
+      <label class="pay-tick"><input type="checkbox" name="pension_exempt" value="1" {% if pay and pay.pension_exempt %}checked{% endif %}> No pension</label>
+      <label class="pay-tick"><input type="checkbox" name="nhf_exempt" value="1" {% if pay and pay.nhf_exempt %}checked{% endif %}> No NHF</label>
+      <small>For someone the accountant says is exempt (an NYSC corps member, say).</small></div>
+  </div>
+  </fieldset>
+  {% if edit %}<div class="ac-form-foot"><span class="ac-grow"></span><a class="ac-btn" href="{{ url_for('admin_payroll_staff') }}">Cancel</a>
+    <button class="ac-btn ac-btn--primary" type="submit">Save</button></div>{% endif %}
+</form>
+
+<section class="ac-panel">
+  <h2>A month's payslip <small>as saved, before one-off lines</small></h2>
+  {% if preview %}
+  <table class="ac-t pay-lines"><tbody>
+    {% for l in preview.lines if l.kind == 'earning' %}<tr><td>{{ l.label }}</td><td class="pay-n">{{ l.amount|naira }}</td></tr>{% endfor %}
+    <tr class="pay-total"><td>Gross</td><td class="pay-n">{{ preview.gross|naira }}</td></tr>
+    {% for l in preview.lines if l.kind == 'deduction' %}<tr><td>{{ l.label }}</td><td class="pay-n">-{{ l.amount|naira }}</td></tr>{% endfor %}
+    <tr class="pay-total is-net"><td>Net pay</td><td class="pay-n">{{ preview.net|naira }}</td></tr>
+  </tbody></table>
+  {% if preview.pension_employer %}<p class="ac-hint">The school also pays {{ preview.pension_employer|naira }} into their pension.</p>{% endif %}
+  {% if preview.warnings %}<p class="pay-w">⚠ {{ preview.warnings|join('; ') }}</p>{% endif %}
+  {% else %}<div class="ac-empty">Save their pay to see it.</div>{% endif %}
+</section>
+</div>
+</div>
+{% endblock %}

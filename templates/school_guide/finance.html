@@ -170,4 +170,27 @@ automatically, with a note that it was refunded, not just corrected by hand - an
 reports the refund failed, the payment is left exactly as it was, so nothing is ever marked refunded
 that did not really happen. A payment recorded by hand, or already refunded, does not offer this
 button - void it instead, and settle the parent outside the system, the same way as always.</p>
+<h2 id="payroll">Payroll</h2>
+<p><a href="{{ url_for('admin_payroll') }}">Payroll</a> (in the menu under Finance) pays the school's staff each month. The
+<strong>Payroll Officer</strong> role keeps people's pay and prepares each month; the bursar (the Finance Manager role) approves it.
+Salaries are seen only by people allowed to see the payroll: not by HR, not by other staff.</p>
+<ul>
+  <li><strong>Settings first.</strong> PAYE bands, rent relief, pension (8% from the employee, 10% from the school) and NHF start from
+  the Nigeria Tax Act 2025 and the Pension Reform Act 2014. They are a starting point, not tax advice: have the school's accountant check
+  them and put their name on the settings page. Every payroll keeps a copy of the settings it used.</li>
+  <li><strong>Staff pay.</strong> For each member of staff (from Staff records): their basic salary a month, the allowances and deductions
+  they get (Housing, Transport, Cooperative, or the school's own items), their bank, pension administrator, RSA PIN and tax ID. Bank
+  numbers, PINs and tax IDs are kept encrypted; only the last four digits show. Nobody sets their own pay.</li>
+  <li><strong>A month.</strong> <em>Prepare</em> works out everyone's payslip. Check them; <em>Add a line</em> pays arrears or a bonus,
+  or takes back a salary advance, for that month only. Then someone other than whoever prepared it <em>Approves</em> it: it is locked,
+  and staff see their payslips on <a href="{{ url_for('admin_my_payslips') }}">My payslips</a>.</li>
+  <li><strong>Paying.</strong> Download the <em>bank schedule</em> (name, bank, account number, amount) for the bank, and the
+  <em>PAYE, pension and NHF</em> returns for remitting them, then <em>Mark paid</em>; a paid month is final. An approved month not yet paid
+  can be reopened, and must be approved again by someone else.</li>
+  <li><strong>Unpaid leave</strong> can be taken off pay automatically (a setting): each working day of approved leave of a kind that is not
+  paid takes a day's share of basic and allowances.</li>
+  <li>PAYE is worked out on each month's pay as if paid all year. If someone's pay changes during the year, the accountant settles the
+  difference at the year's end.</li>
+</ul>
+
 {% endblock %}

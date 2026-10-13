@@ -139,6 +139,9 @@ ADMIN_PERMISSION_DEFS = [
     ('id_cards.print','Print ID cards','school','Print student and staff ID cards from the school\'s design; issues a card (with its QR code) to anyone printed for the first time.'),
     ('hr.view','View staff records','school','See the staff list and each staff record: profile, qualifications, documents, career and leave.'),
     ('hr.manage','Manage staff records','school','Add and change staff records, upload documents, record career entries, set leave allowances and kinds of leave, and record leave.'),
+    ('payroll.view','View payroll','school','See the payroll: every run, every payslip and each member of staff\'s pay. Salaries are seen nowhere else.'),
+    ('payroll.manage','Run payroll','school','Set staff pay, the pay items and the statutory settings; prepare a monthly payroll, add one-off lines, and mark an approved payroll paid. Never one\'s own pay.'),
+    ('payroll.approve','Approve payroll','school','Approve a payroll someone else prepared, which locks it, and reopen one not yet paid.'),
     ('staff_attendance.view','View staff attendance','school','See the staff attendance register for any day, and the month, and download it.'),
     ('staff_attendance.manage','Manage staff attendance','school','Set up staff attendance (where the school is, the screen at the school), mark staff in or out by hand, reset a clock-in phone, set closed days and decide corrections.'),
     ('hr.leave.approve','Approve leave','school','Approve or decline staff leave requests (never their own).'),
@@ -209,7 +212,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Manager': {
         'description': 'The bursar: oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
+        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage','payroll.view','payroll.approve']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
@@ -226,6 +229,10 @@ ADMIN_ROLE_PRESETS = {
     'HR Officer': {
         'description': 'Keeps staff records (profiles, qualifications, documents and career), and runs staff leave and staff attendance.',
         'permissions': ['school.view','hr.view','hr.manage','hr.leave.approve','staff_attendance.view','staff_attendance.manage']
+    },
+    'Payroll Officer': {
+        'description': 'Keeps staff pay and prepares the monthly payroll, for someone else (the bursar) to approve.',
+        'permissions': ['school.view','payroll.view','payroll.manage']
     },
     'Report Card Officer': {
         'description': "Writes class teachers' comments and prepares report cards for the classes assigned, and sets the head's signature.",
@@ -255,6 +262,11 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_id_card_designer':'id_cards.manage','admin_id_card_design_save':'id_cards.manage',
     'admin_id_card_design_lock':'id_cards.manage','admin_id_card_design_reset':'id_cards.manage',
     'admin_id_card_cancel':'id_cards.manage','admin_id_card_replace':'id_cards.manage',
+    'admin_payroll':'payroll.view','admin_payroll_run':'payroll.view','admin_payroll_staff':'payroll.view',
+    'admin_payroll_staff_edit':'payroll.view','admin_payroll_run_bank':'payroll.view','admin_payroll_run_returns':'payroll.view',
+    'admin_payroll_run_new':'payroll.manage','admin_payroll_run_refresh':'payroll.manage','admin_payroll_run_adjust':'payroll.manage',
+    'admin_payroll_run_paid':'payroll.manage','admin_payroll_run_cancel':'payroll.manage','admin_payroll_settings':'payroll.manage',
+    'admin_payroll_items':'payroll.manage','admin_payroll_run_approve':'payroll.approve','admin_payroll_run_reopen':'payroll.approve',
     'admin_staff_attendance':'staff_attendance.view','admin_staff_attendance_month':'staff_attendance.view',
     'admin_staff_attendance_mark':'staff_attendance.manage','admin_staff_attendance_correction_decide':'staff_attendance.manage',
     'admin_staff_attendance_settings':'staff_attendance.manage','admin_staff_attendance_display':'staff_attendance.manage',

@@ -1,0 +1,36 @@
+{% extends 'admin_base.html' %}
+{% block title %}Staff pay — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Each member of staff's pay (blueprints/school/payroll.py), from their staff records. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Payroll</h1>
+  <nav class="ac-tabs" aria-label="Payroll">
+    <a href="{{ url_for('admin_payroll') }}">Months</a>
+    <a href="{{ url_for('admin_payroll_staff') }}" class="is-active" aria-current="true">Staff pay</a>
+    {% if can_manage %}<a href="{{ url_for('admin_payroll_settings') }}">Settings</a>{% endif %}
+  </nav>
+</header>
+<p class="ac-note">Everyone with a staff record (Staff records, under People). Someone is paid once they are on the payroll with a basic salary.
+  Bank details are kept encrypted; only the last four digits show here.</p>
+<div class="ac-panel">
+  {% if records %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Name</th><th>On payroll</th><th class="pay-n">Basic a month</th><th>Allowances and deductions</th><th>Bank</th><th>Pension</th><th></th></tr></thead>
+    <tbody>{% for r in records %}{% set p = pays.get(r.id) %}
+      <tr>
+        <td><b>{{ hr.full_name(r, False) }}</b><small>{{ r.job_title or '' }}</small></td>
+        <td>{% if p and p.on_payroll %}<span class="ac-tag ac-tag--good">Yes</span>{% else %}<span class="ac-tag">No</span>{% endif %}</td>
+        <td class="pay-n">{{ p.basic|naira if p else '—' }}</td>
+        <td>{{ counts.get(r.id, 0) or '—' }}</td>
+        <td>{% if p and p.account_last4 %}{{ p.bank_name or '' }}<small>····{{ p.account_last4 }}</small>{% else %}<small class="pay-w">none</small>{% endif %}</td>
+        <td>{{ (p.pfa if p and p.pfa else '—') }}</td>
+        <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_payroll_staff_edit', sid=r.id) }}">{{ 'Set pay' if can_manage else 'Open' }}</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>No staff records</strong>Add the school's staff in Staff records first.</div>{% endif %}
+</div>
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 """Rotating BRIGHTSTARS_DELIVERY_KEY safely.
 
-Every school's own mail-server password, SMS API token and Paystack secret key are encrypted
+Every school's own mail-server password, SMS API token, Paystack secret key and its staff's bank account numbers,
+pension PINs and tax IDs (core/payroll.py) are encrypted
 under this one key (core/delivery.py, core/payments.py's own domain-separated derivations of it).
 Simply changing the environment variable and restarting, the way recommendations.html's Hardening
 section frames "rotate the platform secrets on a calendar" for the session secret, would instead
@@ -17,10 +18,11 @@ import os
 
 from sqlalchemy import select
 
-from models import SchoolDeliverySetting, SchoolPaymentSetting, db
+from models import SchoolDeliverySetting, SchoolPaymentSetting, StaffPay, db
 
 _DELIVERY_KEYS = ('smtp_password', 'sms_api_token')
 _PAYMENT_KEYS = ('paystack_secret_key',)
+_PAYROLL_FIELDS = ('account_number_enc', 'rsa_pin_enc', 'tax_id_enc')
 
 
 def rotate_one_tenant(old_key, new_key):
@@ -30,7 +32,7 @@ def rotate_one_tenant(old_key, new_key):
     not be read under ``old_key`` (left untouched, never blanked - a wrong old key must never
     silently destroy a working setting).
     """
-    from core import delivery, payments  # deferred: both import core.security, a heavier import
+    from core import delivery, payments, payroll  # deferred: both import core.security, a heavier import
 
     delivery_rows = db.session.scalars(
         select(SchoolDeliverySetting).where(SchoolDeliverySetting.setting_key.in_(_DELIVERY_KEYS))).all()
@@ -45,6 +47,11 @@ def rotate_one_tenant(old_key, new_key):
             plain[('delivery', row.setting_key)] = delivery.decrypt(row.setting_value)
         for row in payment_rows:
             plain[('payment', row.setting_key)] = payments.decrypt(row.setting_value)
+        pay_rows = db.session.scalars(select(StaffPay)).all()
+        for row in pay_rows:
+            for field in _PAYROLL_FIELDS:
+                if getattr(row, field):
+                    plain[('payroll', row.id, field)] = payroll.decrypt(getattr(row, field))
 
         os.environ['BRIGHTSTARS_DELIVERY_KEY'] = new_key
         rotated, skipped = 0, []
@@ -62,6 +69,16 @@ def rotate_one_tenant(old_key, new_key):
                 continue
             row.setting_value = payments.encrypt(value)
             rotated += 1
+        for row in pay_rows:
+            for field in _PAYROLL_FIELDS:
+                if ('payroll', row.id, field) not in plain:
+                    continue
+                value = plain[('payroll', row.id, field)]
+                if not value:
+                    skipped.append(f'payroll_staff.{row.id}.{field}')
+                    continue
+                setattr(row, field, payroll.encrypt(value))
+                rotated += 1
         db.session.commit()
         return rotated, skipped
     finally:

@@ -1,0 +1,73 @@
+{% extends 'admin_base.html' %}
+{% block title %}Payroll settings — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Payroll settings (blueprints/school/payroll.py): PAYE bands and rent relief, pension, NHF, unpaid leave, who checked
+    them; and the pay items. The defaults are a starting point (core/payroll.py), not tax advice. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Payroll</h1>
+  <nav class="ac-tabs" aria-label="Payroll">
+    <a href="{{ url_for('admin_payroll') }}">Months</a>
+    <a href="{{ url_for('admin_payroll_staff') }}">Staff pay</a>
+    <a href="{{ url_for('admin_payroll_settings') }}" class="is-active" aria-current="true">Settings</a>
+  </nav>
+</header>
+<p class="ac-note pay-warn">These start from the Nigeria Tax Act 2025 (PAYE from January 2026) and the Pension Reform Act 2014. They are a
+  starting point, not tax advice: the school's accountant should check them, and they change when the law does.</p>
+
+<form method="post" class="ac-panel">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <h2>PAYE</h2>
+  <label class="pay-tick"><input type="checkbox" name="paye_enabled" value="1" {% if settings.paye_enabled %}checked{% endif %}> Take PAYE</label>
+  <p class="ac-hint">Bands of yearly taxable pay (after pension, NHF and rent relief). Each band's rate applies to the part of pay within it;
+    the last band has no limit.</p>
+  <table class="ac-t pay-bands"><thead><tr><th>Up to (₦ a year)</th><th>Rate (%)</th></tr></thead><tbody>
+    {% for i in range(8) %}{% set b = bands[i] if i < bands|length else none %}
+    <tr><td><input class="ac-input" name="band_upper_{{ i }}" inputmode="decimal" value="{{ pr.naira_input(b[0]) if b and b[0] is not none else '' }}"
+        placeholder="{{ 'no limit' if b and b[0] is none else '' }}" aria-label="Band {{ i + 1 }}: up to"></td>
+      <td><input class="ac-input" name="band_rate_{{ i }}" inputmode="decimal" value="{{ pr.percent(b[1])|replace('%','') if b else '' }}" aria-label="Band {{ i + 1 }}: rate"></td></tr>
+    {% endfor %}</tbody></table>
+  <div class="ac-fields">
+    <div class="ac-field"><label for="rr">Rent relief (% of yearly rent)</label><input id="rr" name="rent_relief_bp" inputmode="decimal" value="{{ pr.percent(settings.rent_relief_bp)|replace('%','') }}"></div>
+    <div class="ac-field"><label for="rc">At most (₦ a year)</label><input id="rc" name="rent_relief_cap" inputmode="decimal" value="{{ pr.naira_input(settings.rent_relief_cap) }}"></div>
+  </div>
+  <h2 class="pay-h2">Pension and NHF</h2>
+  <div class="ac-fields">
+    <div class="ac-field ac-field--wide"><label class="pay-tick"><input type="checkbox" name="pension_enabled" value="1" {% if settings.pension_enabled %}checked{% endif %}> Contributory pension</label></div>
+    <div class="ac-field"><label for="pe">From the employee (% of basic and pensionable allowances)</label><input id="pe" name="pension_employee_bp" inputmode="decimal" value="{{ pr.percent(settings.pension_employee_bp)|replace('%','') }}"></div>
+    <div class="ac-field"><label for="ps">From the school (%)</label><input id="ps" name="pension_employer_bp" inputmode="decimal" value="{{ pr.percent(settings.pension_employer_bp)|replace('%','') }}"></div>
+    <div class="ac-field"><label class="pay-tick"><input type="checkbox" name="nhf_enabled" value="1" {% if settings.nhf_enabled %}checked{% endif %}> National Housing Fund</label></div>
+    <div class="ac-field"><label for="nhf">NHF (% of basic)</label><input id="nhf" name="nhf_bp" inputmode="decimal" value="{{ pr.percent(settings.nhf_bp)|replace('%','') }}"></div>
+    <div class="ac-field ac-field--wide"><label class="pay-tick"><input type="checkbox" name="deduct_unpaid_leave" value="1" {% if settings.deduct_unpaid_leave %}checked{% endif %}>
+      Take approved unpaid leave off pay</label><small>Each working day of leave of a kind that is not paid (Kinds of leave) takes a day's share of basic and allowances.</small></div>
+    <div class="ac-field ac-field--wide"><label for="cb">Checked by the school's accountant</label><input id="cb" name="checked_by" maxlength="120" value="{{ settings.checked_by or '' }}" placeholder="Their name, and firm">
+      <small>{% if settings.checked_on %}Recorded on {{ settings.checked_on }}.{% else %}Not checked yet.{% endif %} Every payroll keeps a copy of the settings it used.</small></div>
+  </div>
+  <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Save</button></div>
+</form>
+
+<form method="post" action="{{ url_for('admin_payroll_items') }}" class="ac-panel" id="items">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <h2>Pay items <small>allowances paid, and deductions taken; each person's own are set on their pay</small></h2>
+  <div class="ac-scroll"><table class="ac-t pay-itemlist">
+    <thead><tr><th>Name</th><th>Kind</th><th>Usual amount</th><th>Taxed</th><th>Pension</th><th>In use</th></tr></thead>
+    <tbody>{% for item in items %}
+      <tr><td><input class="ac-input" name="name_{{ item.id }}" value="{{ item.name }}" maxlength="60" aria-label="Name"></td>
+        <td>{{ 'Paid' if item.kind == 'earning' else 'Taken' }}<small>{{ '% of basic' if item.calc == 'percent_basic' else 'fixed' }}</small></td>
+        <td><input class="ac-input pay-amt" name="value_{{ item.id }}" inputmode="decimal" value="{{ pr.percent(item.rate_bp)|replace('%','') if item.calc == 'percent_basic' else pr.naira_input(item.amount) }}" aria-label="{{ item.name }}: usual amount"></td>
+        <td>{% if item.kind == 'earning' %}<input type="checkbox" name="taxable_{{ item.id }}" value="1" {% if item.taxable %}checked{% endif %} aria-label="{{ item.name }} is taxed">{% endif %}</td>
+        <td>{% if item.kind == 'earning' %}<input type="checkbox" name="pensionable_{{ item.id }}" value="1" {% if item.pensionable %}checked{% endif %} aria-label="{{ item.name }} counts for pension">{% endif %}</td>
+        <td><input type="checkbox" name="active_{{ item.id }}" value="1" {% if item.active %}checked{% endif %} aria-label="{{ item.name }} is in use"></td></tr>
+    {% endfor %}
+      <tr><td><input class="ac-input" name="new_name" maxlength="60" placeholder="Add an item" aria-label="New item"></td>
+        <td><select class="ac-input" name="new_kind" aria-label="Paid or taken"><option value="earning">Paid</option><option value="deduction">Taken</option></select>
+          <select class="ac-input" name="new_calc" aria-label="Fixed or a percentage"><option value="fixed">fixed</option><option value="percent_basic">% of basic</option></select></td>
+        <td><input class="ac-input pay-amt" name="new_value" inputmode="decimal" placeholder="0" aria-label="New item: usual amount"></td>
+        <td></td><td><input type="checkbox" name="new_pensionable" value="1" aria-label="New item counts for pension"></td><td></td></tr>
+    </tbody></table></div>
+  <div class="ac-form-foot"><span class="ac-grow"></span><button class="ac-btn ac-btn--primary" type="submit">Save items</button></div>
+</form>
+</div>
+{% endblock %}

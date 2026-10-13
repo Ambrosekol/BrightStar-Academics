@@ -115,6 +115,9 @@ from .finance import (
 
 from .subdivisions import ClassSubdivision, ClassTransfer
 from .id_cards import IdCard, IdCardDesign
+from .payroll import (
+    PayItem, PayrollAdjustment, PayrollRun, PayrollSettings, Payslip, StaffPay, StaffPayItem,
+)
 from .staff_attendance import (
     StaffAttendanceClosedDay, StaffAttendanceCorrection, StaffAttendanceDevice, StaffAttendanceRecord,
     StaffAttendanceSettings,
@@ -177,6 +180,8 @@ __all__ = [
     'FinanceRefund',
     # ID cards
     'IdCard', 'IdCardDesign',
+    # payroll
+    'PayItem', 'PayrollAdjustment', 'PayrollRun', 'PayrollSettings', 'Payslip', 'StaffPay', 'StaffPayItem',
     # staff attendance
     'StaffAttendanceClosedDay', 'StaffAttendanceCorrection', 'StaffAttendanceDevice', 'StaffAttendanceRecord',
     'StaffAttendanceSettings',

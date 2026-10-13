@@ -1,0 +1,58 @@
+{% extends 'admin_base.html' %}
+{% block title %}Payroll — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Payroll (blueprints/school/payroll.py): each month's payroll and preparing the next one. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Payroll</h1>
+  <nav class="ac-tabs" aria-label="Payroll">
+    <a href="{{ url_for('admin_payroll') }}" class="is-active" aria-current="true">Months</a>
+    <a href="{{ url_for('admin_payroll_staff') }}">Staff pay</a>
+    {% if can_manage %}<a href="{{ url_for('admin_payroll_settings') }}">Settings</a>{% endif %}
+  </nav>
+</header>
+{% if not settings.checked_by %}
+<p class="ac-note pay-warn">The PAYE, pension and NHF settings have not been checked by the school's accountant yet. They start from the
+  Nigeria Tax Act 2025 and the Pension Reform Act 2014, but tax law changes: {% if can_manage %}<a class="ac-link" href="{{ url_for('admin_payroll_settings') }}">have them checked</a>{% else %}ask for them to be checked{% endif %} before paying anyone.</p>
+{% endif %}
+
+<div class="pay-grid">
+  {% if can_manage %}
+  <form method="post" action="{{ url_for('admin_payroll_run_new') }}" class="ac-panel">
+    <h2>Prepare a month's payroll</h2>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <p class="ac-hint">{{ people }} {{ 'person is' if people == 1 else 'people are' }} on the payroll, with {{ basic_total|naira }} of basic salary a month.
+      Everyone's payslip is worked out from their pay as it is now; you check it, add one-off lines, then someone else approves it.</p>
+    <div class="pay-row"><input class="ac-input" type="month" name="period" value="{{ next_period }}" required aria-label="Month">
+      <button class="ac-btn ac-btn--primary" type="submit">Prepare</button></div>
+  </form>
+  {% endif %}
+  <section class="ac-panel">
+    <h2>How a payroll goes</h2>
+    <ol class="pay-steps">
+      <li><b>Prepare</b> the month. Check each payslip; add an arrears payment or take back an advance.</li>
+      <li><b>Approve</b>: someone other than whoever prepared it. It is then locked, and staff see their payslips.</li>
+      <li><b>Pay</b> from the bank schedule, remit PAYE, pension and NHF from the returns, then mark it paid.</li>
+    </ol>
+  </section>
+</div>
+
+<div class="ac-panel">
+  {% if runs %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Month</th><th>Status</th><th class="pay-n">People</th><th class="pay-n">Gross</th><th class="pay-n">Net pay</th><th>Prepared</th><th>Approved</th></tr></thead>
+    <tbody>{% for r in runs %}
+      <tr class="{{ 'is-cancelled' if r.status == 'cancelled' }}">
+        <td><a class="ac-title" href="{{ url_for('admin_payroll_run', rid=r.id) }}">{{ r.period }}</a></td>
+        <td><span class="ac-tag pay-{{ r.status }}">{{ pr.STATUSES[r.status] }}</span></td>
+        <td class="pay-n">{{ r.headcount }}</td><td class="pay-n">{{ r.gross|naira }}</td><td class="pay-n"><b>{{ r.net|naira }}</b></td>
+        <td><small>{{ names.get(r.prepared_by, '') }} · {{ r.prepared_at[:10] }}</small></td>
+        <td>{% if r.approved_at %}<small>{{ names.get(r.approved_by, '') }} · {{ r.approved_at[:10] }}</small>{% elif r.status == 'draft' %}<small>waiting</small>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>No payroll yet</strong>Set each person's pay in Staff pay, then prepare the first month.</div>{% endif %}
+</div>
+</div>
+{% endblock %}

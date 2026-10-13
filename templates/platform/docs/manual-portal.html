@@ -151,6 +151,18 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="payroll-approve">A payroll cannot be approved, or a payslip is wrong</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"You prepared or last changed this payroll, so someone else approves it"; "A payslip takes more than it pays"; or PAYE, pension or NHF that the accountant disagrees with.</div></div>
+  <div><b>Why</b><div><p>Four eyes: whoever prepared, worked out again, added a line to or reopened a run ({{ table('payroll_runs') }}, <code>prepared_by</code>) cannot approve it. A negative net pay is refused. Statutory amounts come from the school's own payroll settings ({{ table('payroll_settings') }}), copied into each run.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Ask another person with {{ perm('payroll.approve') }} (the bursar, or the School Admin) to approve it.</li>
+    <li>Reduce the one-off deductions on that payslip, or correct the person's pay, then Work out again.</li>
+    <li>Have the accountant correct Payroll, Settings; then Work out again on a draft. Approved months keep the settings they were approved with; reopen one only if it is not paid.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The month shows Approved, and staff see the payslip on My payslips.</div></div>
+</div>
+
 <h3 id="staff-clock">A member of staff cannot clock in</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"That code is not the one on the school's screen now"; "only sure of where it is to within N m"; "N m from the school"; "This is not the phone you clock in with"; or no Clock in in their menu.</div></div>

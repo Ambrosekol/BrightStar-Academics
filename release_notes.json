@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "version": "2.31.0",
+      "date": "2026-10-13",
+      "title": "Payroll",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Payroll, under Finance: set each member of staff's salary, allowances, deductions and bank details, then prepare each month's payroll with PAYE, pension and NHF worked out. Someone other than whoever prepared it approves it; then download the bank schedule and the PAYE, pension and NHF returns. Bank details are kept encrypted, and salaries are seen only by those allowed to run payroll. Have the school's accountant check the tax settings first.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "My payslips: everyone on the payroll sees and prints their own payslip once the month is approved.",
+          "help": "finance"
+        }
+      ]
+    },
+    {
       "version": "2.30.0",
       "date": "2026-10-13",
       "title": "Staff clock in on their phones",

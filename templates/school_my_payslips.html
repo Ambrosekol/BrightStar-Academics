@@ -1,0 +1,22 @@
+{% extends 'admin_base.html' %}
+{% block title %}My payslips — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- My payslips (blueprints/school/payroll.py): a member of staff's own payslips, once each payroll is approved. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+<div class="ac pay">
+<header class="ac-top"><h1>My payslips</h1></header>
+<div class="ac-panel">
+  {% if slips %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Month</th><th class="pay-n">Gross</th><th class="pay-n">Deductions</th><th class="pay-n">Net pay</th><th></th></tr></thead>
+    <tbody>{% for s, run in slips %}
+      <tr><td><b>{{ label(run.period) }}</b>{% if run.status == 'paid' %}<small>paid {{ run.paid_at[:10] }}</small>{% endif %}</td>
+        <td class="pay-n">{{ s.gross|naira }}</td><td class="pay-n">{{ s.deductions|naira }}</td><td class="pay-n"><b>{{ s.net|naira }}</b></td>
+        <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_payroll_payslip', pid=s.id) }}" target="_blank" rel="noopener">Open</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>No payslips yet</strong>{% if record %}Your payslip appears here once a month's payroll is approved.{% else %}You have no staff record. Ask the school office.{% endif %}</div>{% endif %}
+</div>
+</div>
+{% endblock %}

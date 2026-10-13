@@ -1,0 +1,49 @@
+/* Payroll (blueprints/school/payroll.py). Built on academics.css: the same small type, hairlines and the school's own
+   colours; only what those pages need besides. */
+.ac-t td small { display: block; font-size: 11px; color: var(--ac-muted); }
+.pay-n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ac-t th.pay-n { text-align: right; }
+.pay-w { color: var(--ac-attn) !important; }
+.pay-warn { border-color: color-mix(in srgb, var(--ac-attn) 30%, var(--ac-line)); background: var(--ac-attn-tint); color: var(--ac-attn); }
+.pay-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 10px; }
+.pay-grid--wide { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+.pay-grid > .ac-panel + .ac-panel { margin-top: 0; }
+@media (max-width: 900px) { .pay-grid, .pay-grid--wide { grid-template-columns: 1fr; } }
+.pay-row { display: flex; gap: 6px; }
+.pay-steps { margin: 0; padding-left: 18px; font-size: 12px; color: var(--ac-ink-2); }
+.pay-steps li { margin-bottom: 4px; }
+.pay-h2 { margin-top: 14px !important; }
+.pay-fs { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+.ac-tag.pay-draft { background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.ac-tag.pay-approved { background: var(--ac-good-tint); color: var(--ac-good); }
+.ac-tag.pay-paid { background: var(--ac-brand-tint); color: var(--ac-brand); }
+tr.is-cancelled td { color: var(--ac-muted); text-decoration: line-through; }
+tr.is-cancelled td .ac-tag { text-decoration: none; }
+tr.pay-bad td { background: var(--ac-attn-tint); }
+tr.pay-adjrow td { padding-top: 0 !important; border-top: 0 !important; }
+
+/* The month's totals */
+.pay-sum { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0 0 10px; }
+.pay-sum div { border: 1px solid var(--ac-line); border-radius: 8px; padding: 7px 10px; background: var(--ac-surface); }
+.pay-sum small { display: block; font-size: 11px; color: var(--ac-muted); }
+.pay-sum strong { display: block; font-size: 16px; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+.pay-sum .is-net { border-color: var(--ac-accent); background: var(--ac-accent-tint); }
+.pay-sum .is-net strong { color: var(--ac-brand); }
+
+/* Small forms */
+.pay-adj summary { list-style: none; cursor: pointer; }
+.pay-adj summary::-webkit-details-marker { display: none; }
+.pay-adj form { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-end; margin-top: 6px; }
+.pay-amt { width: 110px; text-align: right; }
+.ac .pay-tick { display: inline-flex !important; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.ac.pay .ac-field input[type=checkbox] { width: auto !important; padding: 0 !important; }
+.pay-ticks { flex-direction: row !important; flex-wrap: wrap; gap: 6px 14px !important; }
+.pay-items td { vertical-align: middle; }
+.pay-items td:last-child { text-align: right; }
+.pay-bands { max-width: 420px; }
+.pay-bands input { width: 160px; }
+.pay-itemlist input[name^=name_], .pay-itemlist input[name=new_name] { width: 180px; }
+.pay-lines .pay-total td { font-weight: 700; border-top: 1px solid var(--ac-ink-2); }
+.pay-lines .is-net td { color: var(--ac-brand); font-size: 14px; }
+.ac.pay .ac-t th.pay-n { text-align: right; }

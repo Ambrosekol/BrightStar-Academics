@@ -765,6 +765,14 @@ def _init_db(school):
         {'name':name,'days_per_year':days,'paid':paid,'active':1,'sort_order':order,'created_at':now}
         for order,(name,days,paid) in enumerate(DEFAULT_LEAVE_TYPES)
     ])
+    # The pay items a school starts with (core/payroll.py), at no amount until it sets one for each person.
+    from core.payroll import DEFAULT_ITEMS
+    from models import PayItem
+    _ignore_insert(PayItem, [
+        {'name':name,'kind':kind,'calc':'fixed','amount':0,'rate_bp':0,'taxable':taxable,'pensionable':pensionable,
+         'active':1,'sort_order':order,'created_at':now}
+        for order,(name,kind,taxable,pensionable) in enumerate(DEFAULT_ITEMS)
+    ])
     if not one(select(AcademicSession.id).order_by(AcademicSession.id).limit(1)):
         db.session.add(AcademicSession(name='2026/2027',is_current=1,active=1,created_at=now))
     _seed_school_tenant(now, **school)
@@ -982,7 +990,7 @@ def forget_counts_after_a_change(response):
     """A change made by an administrator (a payment, a read notification) must show on the next page at
     once, so the counts saved for the badges are dropped whenever a request changes something."""
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and g.get('tenant') is not None:
-        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu', 'staff-clock-menu')
+        forget_here('notification-counts', 'finance-unallocated', 'unread-messages', 'transfers-menu', 'hr-menu', 'staff-clock-menu', 'payroll-menu')
         clear_school_admin_caches()
     return response
 
@@ -1256,6 +1264,7 @@ import blueprints.school.marking  # noqa: F401,E402
 import blueprints.school.id_cards  # noqa: F401,E402
 import blueprints.school.hr  # noqa: F401,E402
 import blueprints.school.staff_attendance  # noqa: F401,E402
+import blueprints.school.payroll  # noqa: F401,E402
 import blueprints.school.subdivisions  # noqa: F401,E402
 import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402

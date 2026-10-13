@@ -37,6 +37,18 @@ EXEMPT = {
     "/admin/id-cards/design/<kind>/reset": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/cancel": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/replace": "see write_paths_id_cards.py",
+    # Payroll: pay, settings, items, and a month prepared, changed, approved, reopened, paid and cancelled, valid and
+    # hostile (one's own pay, the preparer approving, a locked run), in write_paths_payroll.py.
+    "/admin/payroll/runs": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/refresh": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/adjust": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/approve": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/reopen": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/paid": "see write_paths_payroll.py",
+    "/admin/payroll/runs/<int:rid>/cancel": "see write_paths_payroll.py",
+    "/admin/payroll/staff/<int:sid>": "see write_paths_payroll.py",
+    "/admin/payroll/settings": "see write_paths_payroll.py",
+    "/admin/payroll/items": "see write_paths_payroll.py",
     # Staff attendance: clocking in and out (right and wrong codes, places and phones), corrections, marking by hand,
     # settings, the screen's link, phones and closed days, valid and hostile, in write_paths_staff_attendance.py.
     "/admin/clock": "see write_paths_staff_attendance.py",

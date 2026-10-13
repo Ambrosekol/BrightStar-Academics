@@ -148,6 +148,27 @@ and the Head Teacher preset has {{ perm('hr.leave.approve') }}.</p>
   is cached as <code>hr-menu</code> and dropped on any write.</li>
 </ul>
 
+<h2 id="payroll">Payroll</h2>
+<p>{{ route('admin_payroll') }} ({{ file('blueprints/school/payroll.py') }}); the rules are {{ file('core/payroll.py') }}, the tables
+{{ table('payroll_settings') }}, {{ table('payroll_items') }}, {{ table('payroll_staff') }}, {{ table('payroll_staff_items') }},
+{{ table('payroll_runs') }}, {{ table('payroll_payslips') }} and {{ table('payroll_adjustments') }}. Permissions: {{ perm('payroll.view') }},
+{{ perm('payroll.manage') }} and {{ perm('payroll.approve') }} (Payroll Officer: view and manage; Finance Manager: view and approve).</p>
+<ul>
+  <li><strong>Money</strong> is integer kobo; percentages are basis points rounded half up (<code>pct</code>). PAYE is annualised: taxable pay x 12
+  less pension, NHF and rent relief, through the school's bands, / 12. The defaults are the Nigeria Tax Act 2025 bands and the PRA 2014 rates;
+  each run stores the settings it used (<code>settings_json</code>) and each payslip its own lines (<code>lines_json</code>).</li>
+  <li><strong>Four eyes</strong>: {{ route('admin_payroll_run_approve') }} refuses the run's <code>prepared_by</code>, which every change
+  (work out again, a one-off line, reopening) resets to whoever made it. Nobody edits their own pay or payslip. Approved runs refuse changes;
+  paid runs are final.</li>
+  <li><strong>Secrets</strong>: account numbers, RSA PINs and tax IDs are Fernet-encrypted under an HKDF key per school from
+  <code>BRIGHTSTARS_DELIVERY_KEY</code>, and included in {{ file('core/secrets_rotation.py') }}. They are decrypted only by
+  {{ route('admin_payroll_run_bank') }} and {{ route('admin_payroll_run_returns') }}, for an approved run, for payroll.manage or
+  payroll.approve; both are logged and CSV-defused. Pages with salaries are <code>no-store</code>; opening a run or payslip is logged, and
+  logs name what changed, never amounts or numbers.</li>
+  <li>{{ route('admin_payroll_payslip') }} serves payroll.view, or the person themselves once the run is approved; {{ route('admin_my_payslips') }}
+  lists their own.</li>
+</ul>
+
 <h2 id="staff-attendance">Staff attendance</h2>
 <p>{{ route('admin_clock') }} ({{ file('blueprints/school/staff_attendance.py') }}) is where staff clock in and out;
 {{ route('admin_staff_attendance') }} is the register. The rules are {{ file('core/staff_attendance.py') }}; the tables

@@ -1,0 +1,89 @@
+{% extends 'admin_base.html' %}
+{% block title %}Payroll {{ label }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- One month's payroll (blueprints/school/payroll.py): the totals, the payslips with their lines and one-off lines,
+    approving (four eyes), the bank schedule and returns, marking paid. A draft changes; an approved run is locked. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+{% set draft = run.status == 'draft' %}
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Payroll, {{ label }}</h1>
+  <span class="ac-tag pay-{{ run.status }}">{{ pr.STATUSES[run.status] }}</span>
+  <div class="ac-top__act">
+    {% if draft and can_manage %}
+      <form method="post" action="{{ url_for('admin_payroll_run_refresh', rid=run.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="ac-btn" type="submit">Work out again</button></form>
+      <form method="post" action="{{ url_for('admin_payroll_run_cancel', rid=run.id) }}" data-confirm="Cancel the {{ label }} payroll? A new one can be prepared for the month."><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="ac-btn" type="submit">Cancel</button></form>
+    {% endif %}
+    {% if draft and can_approve %}
+      <form method="post" action="{{ url_for('admin_payroll_run_approve', rid=run.id) }}" data-confirm="Approve the {{ label }} payroll: {{ run.headcount }} people, {{ run.net|naira }} net? It is then locked, and staff see their payslips." data-confirm-danger="0" data-confirm-ok="Approve">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--primary" type="submit">Approve</button></form>
+    {% endif %}
+    {% if run.status in ('approved', 'paid') and can_export %}
+      <a class="ac-btn" href="{{ url_for('admin_payroll_run_bank', rid=run.id) }}">Bank schedule (CSV)</a>
+      <a class="ac-btn" href="{{ url_for('admin_payroll_run_returns', rid=run.id) }}">PAYE, pension, NHF (CSV)</a>
+    {% endif %}
+    {% if run.status == 'approved' and can_manage %}
+      <form method="post" action="{{ url_for('admin_payroll_run_paid', rid=run.id) }}" data-confirm="Mark the {{ label }} payroll as paid? It becomes final and cannot be reopened." data-confirm-danger="0" data-confirm-ok="Mark paid">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--primary" type="submit">Mark paid</button></form>
+    {% endif %}
+  </div>
+</header>
+
+<p class="ac-note">
+  Prepared {{ run.prepared_at[:16]|replace('T', ' ') }} by {{ names.get(run.prepared_by, '—') }}{% if run.approved_at %} · approved {{ run.approved_at[:16]|replace('T', ' ') }} by {{ names.get(run.approved_by, '—') }}{% endif %}{% if run.paid_at %} · paid {{ run.paid_at[:10] }}{% endif %}.
+  {% if draft %}{% if can_approve %}Check it, then approve it.{% else %}It waits for someone other than {{ names.get(run.prepared_by, 'its preparer') }} to approve it.{% endif %}{% endif %}
+  {% if run.status == 'approved' %}
+    {% if can_reopen %}<form method="post" action="{{ url_for('admin_payroll_run_reopen', rid=run.id) }}" data-confirm="Reopen the {{ label }} payroll as a draft? Staff stop seeing these payslips until it is approved again." data-confirm-ok="Reopen">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link" type="submit">Reopen</button></form>{% endif %}
+  {% endif %}
+</p>
+
+<div class="pay-sum">
+  <div><small>People</small><strong>{{ run.headcount }}</strong></div>
+  <div><small>Gross pay</small><strong>{{ run.gross|naira }}</strong></div>
+  <div><small>Deductions</small><strong>{{ run.deductions|naira }}</strong></div>
+  <div class="is-net"><small>Net pay (to the bank)</small><strong>{{ run.net|naira }}</strong></div>
+  <div><small>PAYE to remit</small><strong>{{ totals.paye|naira }}</strong></div>
+  <div><small>Pension to remit</small><strong>{{ totals.pension|naira }}</strong><small>with the school's {{ run.employer_pension|naira }}</small></div>
+  {% if totals.nhf %}<div><small>NHF to remit</small><strong>{{ totals.nhf|naira }}</strong></div>{% endif %}
+</div>
+
+<section class="ac-panel" id="slips">
+  <h2>Payslips <small>{{ slips|length }}</small></h2>
+  {% if slips %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Name</th><th class="pay-n">Basic</th><th class="pay-n">Gross</th><th class="pay-n">PAYE</th><th class="pay-n">Pension</th><th class="pay-n">Other deductions</th><th class="pay-n">Net</th><th>Bank</th><th></th></tr></thead>
+    <tbody>{% for s in slips %}{% set other = s.deductions - s.paye - s.pension_employee - s.nhf %}
+      <tr class="{{ 'pay-bad' if s.net < 0 }}">
+        <td><b>{{ s.name }}</b><small>{{ s.job_title or '' }}</small>{% if s.warnings %}<small class="pay-w">⚠ {{ s.warnings }}</small>{% endif %}</td>
+        <td class="pay-n">{{ s.basic|naira }}</td><td class="pay-n">{{ s.gross|naira }}</td><td class="pay-n">{{ s.paye|naira }}</td>
+        <td class="pay-n">{{ s.pension_employee|naira }}</td><td class="pay-n">{{ other|naira if other else '' }}</td>
+        <td class="pay-n"><b>{{ s.net|naira }}</b></td>
+        <td>{% if s.account_last4 %}{{ s.bank_name or '' }}<small>····{{ s.account_last4 }}</small>{% else %}<small class="pay-w">none</small>{% endif %}</td>
+        <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_payroll_payslip', pid=s.id) }}" target="_blank" rel="noopener">Payslip</a>
+          {% if draft and can_manage and s.staff_id != own_staff_id %}<details class="pay-adj"><summary class="ac-link">Add a line</summary>
+            <form method="post" action="{{ url_for('admin_payroll_run_adjust', rid=run.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="staff_id" value="{{ s.staff_id }}">
+              <select class="ac-input" name="kind" aria-label="Paid or taken"><option value="earning">Pay</option><option value="deduction">Take</option></select>
+              <input class="ac-input" name="label" maxlength="60" required placeholder="Arrears for June" aria-label="What it is">
+              <input class="ac-input pay-amt" name="amount" inputmode="decimal" required placeholder="₦" aria-label="Amount">
+              <label class="pay-tick"><input type="checkbox" name="taxable" value="1" checked> taxed</label>
+              <button class="ac-btn" type="submit">Add</button></form></details>{% endif %}
+        </td>
+      </tr>
+      {% for adj in adjustments.get(s.staff_id, []) %}
+      <tr class="pay-adjrow"><td colspan="6"><small>{{ 'Paid' if adj.kind == 'earning' else 'Taken' }}: {{ adj.label }}{% if adj.kind == 'earning' and not adj.taxable %} (not taxed){% endif %}</small></td>
+        <td class="pay-n"><small>{{ ('' if adj.kind == 'earning' else '-') }}{{ adj.amount|naira }}</small></td><td></td>
+        <td class="ac-actions">{% if draft and can_manage and s.staff_id != own_staff_id %}<form method="post" action="{{ url_for('admin_payroll_run_adjust', rid=run.id) }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="remove" value="{{ adj.id }}">
+          <button class="ac-link ac-link--danger" type="submit">Remove</button></form>{% endif %}</td></tr>
+      {% endfor %}
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ac-empty"><strong>Nobody on this payroll</strong>Set people's pay in Staff pay, then work it out again.</div>{% endif %}
+</section>
+</div>
+{% endblock %}
