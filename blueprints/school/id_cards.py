@@ -2,8 +2,13 @@
 public page a card's QR code opens. The design rules and the QR code are core/id_cards.py.
 
 Who may do what. Printing needs id_cards.print (and, for students, the classes the person may see); designing,
-locking, cancelling and replacing need id_cards.manage. A locked design cannot be saved or reset until someone with
-id_cards.manage unlocks it. Every save, lock, print, cancel and replacement is in the activity log.
+locking, cancelling and replacing need id_cards.manage, as do the school's own card images (uploaded pictures for
+designs) and bringing back an earlier version of a design. A locked design cannot be saved or reset until someone
+with id_cards.manage unlocks it, and an image a locked design uses cannot be removed. The school's design images are
+shared with the report card studio (blueprints/school/report_card_studio.py), which reaches them with
+report_cards.manage through upload_design_image() and remove_design_image(). Every save, lock, print,
+cancel, replacement, upload and removal is in the activity log. Each save is also kept as a version (the newest
+VERSIONS for each kind of card).
 
 The verification page (/id/<token>) needs no sign-in: it answers only for a real card's random token, shows only the
 school, the name, the photo, the class or role and whether the card is valid, and is never cached or indexed.
@@ -11,10 +16,11 @@ school, the name, the photo, the class or role and whether the card is valid, an
 
 import json
 import mimetypes
+import re
 from datetime import datetime, timezone
 
 from flask import abort, flash, jsonify, make_response, redirect, render_template, request, url_for
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, delete as sa_delete, func, select
 
 from app import _school_current_session, app
 from blueprints.school.helpers import _school_class_allowed
@@ -23,12 +29,15 @@ from core import id_cards as ic
 from core.branding import school_brand
 from core.db_helpers import all_rows, one, tuples
 from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
-from core.storage import read_upload_bytes
+from core.storage import delete_upload, read_upload_bytes
+from core.uploads import _save_image_upload
 from models import (
-    AcademicSession, Admin, AdminType, IdCard, IdCardDesign, SchoolClass, Student, StudentEnrolment, db,
+    AcademicSession, Admin, AdminType, IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion, ReportCardDesign, SchoolClass,
+    StaffRecord, Student, StudentEnrolment, db,
 )
 
 PRINT_LIMIT = 300
+VERSIONS = 20
 
 
 def _now():
@@ -43,14 +52,31 @@ def _design_row(kind):
     return db.session.scalars(select(IdCardDesign).where(IdCardDesign.kind == kind)).first()
 
 
-def _layout(kind):
+def _asset_rows():
+    return db.session.scalars(select(IdCardAsset).order_by(IdCardAsset.id)).all()
+
+
+def _asset_list(rows=None):
+    return [{'id': a.id, 'name': a.name, 'url': _static(a.file_path)} for a in (rows if rows is not None else _asset_rows())]
+
+
+def _layout(kind, assets=None):
     row = _design_row(kind)
+    if assets is None:
+        assets = {a.id for a in _asset_rows()}
     if row:
         try:
-            return ic.clean_layout(row.layout_json, kind)
+            return ic.clean_layout(row.layout_json, kind, assets)
         except ValueError:
             app.logger.exception('A stored ID card design could not be read; using the default')
     return ic.default_layout(kind)
+
+
+def _versions(kind):
+    rows = db.session.execute(select(IdCardDesignVersion.id, IdCardDesignVersion.saved_at, Admin.display_name)
+                              .outerjoin(Admin, Admin.id == IdCardDesignVersion.saved_by)
+                              .where(IdCardDesignVersion.kind == kind).order_by(IdCardDesignVersion.id.desc()).limit(VERSIONS)).all()
+    return [{'id': vid, 'saved_at': (at or '')[:16].replace('T', ' '), 'by': by or ''} for vid, at, by in rows]
 
 
 def _static(path):
@@ -62,6 +88,12 @@ def _signature_url():
     return _static(path)
 
 
+def _common(brand, assets):
+    """What every card on a page shares: the school's colours and logo, and its own card images."""
+    return {'brand': {'primary': brand.get('primary') or '#0d2b52', 'accent': brand.get('accent') or '#1d6fd8'},
+            'logo': brand.get('logo_url'), 'assets': {a['id']: a['url'] for a in assets}}
+
+
 # ---------------------------------------------------------------- the people
 def _students(class_id=None, ids=None):
     current = _school_current_session()
@@ -69,6 +101,7 @@ def _students(class_id=None, ids=None):
         return []
     stmt = (select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
                    Student.gender, Student.blood_group, Student.guardian_phone, Student.department, Student.photo_path,
+                   Student.date_of_birth, Student.genotype, Student.state_of_origin, Student.religion, Student.guardian_name,
                    SchoolClass.id.label('class_id'), SchoolClass.name.label('class_name'),
                    AcademicSession.name.label('session_name'))
             .join(StudentEnrolment, and_(StudentEnrolment.student_id == Student.id, StudentEnrolment.active == 1,
@@ -93,8 +126,13 @@ def _students(class_id=None, ids=None):
 
 
 def _staff(ids=None):
-    stmt = (select(Admin.id, Admin.display_name, Admin.phone, Admin.email, Admin.photo_path, AdminType.name.label('role'))
+    stmt = (select(Admin.id, Admin.display_name, Admin.phone, Admin.email, Admin.photo_path, Admin.signature_path,
+                   AdminType.name.label('role'), StaffRecord.staff_no, StaffRecord.job_title, StaffRecord.department,
+                   StaffRecord.title, StaffRecord.first_name, StaffRecord.last_name, StaffRecord.gender, StaffRecord.date_of_birth,
+                   StaffRecord.state_of_origin, StaffRecord.category, StaffRecord.employment_type, StaffRecord.employment_date,
+                   StaffRecord.nok_name, StaffRecord.nok_phone)
             .outerjoin(AdminType, AdminType.id == Admin.admin_type_id)
+            .outerjoin(StaffRecord, StaffRecord.admin_id == Admin.id)
             .where(Admin.active == 1, ~Admin.username.startswith('platform@'))
             .order_by(Admin.display_name))
     if ids is not None:
@@ -121,12 +159,25 @@ def _issue(kind, person_id, actor_id):
     return card
 
 
-def _card_view(kind, person, card, brand, photo_url=None):
-    data = ic.card_data(kind, person, brand, card.serial if card else ic.serial_for(kind, 0), card.issued_at if card else _now())
+def _card_view(kind, person, card, brand, layout, head_signature=None, every_detail=False):
+    """What one card shows, for static/id-card-render.js: its details, photograph, QR code, the barcodes its design uses,
+    the signatures and the initials for a missing photograph. Plain values only, and only the details the design shows
+    (``every_detail`` for the studio's sample person)."""
+    full = data = ic.card_data(kind, person, brand, card.serial if card else ic.serial_for(kind, 0), card.issued_at if card else _now())
     name = data.get('name') or ''
+    if not every_detail:
+        shown = {el['field'] for side in ic.SIDES for el in layout['sides'][side] if el['type'] in ('field', 'barcode')}
+        data = {k: v for k, v in data.items() if k in shown}
     verify = url_for('id_card_verify', token=card.token, _external=True) if card else 'SAMPLE'
-    return {'data': data, 'photo_url': photo_url if photo_url is not None else _static(person.get('photo_path')),
-            'qr': ic.qr_path(verify), 'initials': ''.join(p[:1] for p in name.split()[:2]).upper()}
+    wanted = {el['field'] for side in ic.SIDES for el in layout['sides'][side] if el['type'] == 'barcode'}
+    barcodes = {}
+    for field in wanted:
+        code = ic.barcode_path(full.get(field))
+        if code:
+            barcodes[field] = code
+    return {'data': data, 'photo': _static(person.get('photo_path')), 'qr': ic.qr_path(verify), 'barcodes': barcodes,
+            'signatures': {'head': head_signature, 'holder': _static(person.get('signature_path')) if kind == 'staff' else None},
+            'initials': ''.join(p[:1] for p in name.split()[:2]).upper()}
 
 
 # ---------------------------------------------------------------- the list, and printing
@@ -181,12 +232,13 @@ def admin_id_cards_print():
         cards[p['id']].printed_count = (cards[p['id']].printed_count or 0) + 1
     db.session.flush()
     brand = school_brand()
-    layout = _layout(kind)
-    views = [_card_view(kind, p, cards[p['id']], brand) for p in people]
+    assets = _asset_list()
+    layout = _layout(kind, {a['id'] for a in assets})
+    head = _signature_url()
+    views = [_card_view(kind, p, cards[p['id']], brand, layout, head) for p in people]
     db.session.commit()
     response = make_response(render_template('school_id_card_sheet.html', layout=layout, views=views, kind=kind,
-                                             backs=request.form.get('backs') == '1', logo_url=brand.get('logo_url'),
-                                             signature_url=_signature_url(), brand=brand))
+                                             backs=request.form.get('backs') == '1', common=_common(brand, assets)))
     response.headers['Cache-Control'] = 'no-store, private'
     # Logged once the sheet is made: logging commits, and the cards would otherwise be read again one by one.
     audit_log('id_cards_printed', 'school', 'id_cards', None, {'kind': kind, 'cards': len(people), 'issued_new': issued})
@@ -253,13 +305,31 @@ def _sample(kind):
 def admin_id_card_designer(kind):
     if kind not in ic.KINDS:
         abort(404)
+    from blueprints.school.design_studios import phone_notice
+    notice = phone_notice()
+    if notice:
+        return notice
     brand = school_brand()
     row = _design_row(kind)
-    view = _card_view(kind, _sample(kind), None, brand)
+    assets = _asset_list()
+    layout = _layout(kind, {a['id'] for a in assets})
+    sample = _sample(kind)
+    view = _card_view(kind, sample, None, brand, {'sides': {'front': [{'type': 'barcode', 'field': f} for f in ic.BARCODE_FIELDS[kind]],
+                                                            'back': []}}, _signature_url(), every_detail=True)
     view['qr'] = ic.qr_path('https://example.com/id/sample')
-    return render_template('school_id_card_designer.html', kind=kind, layout=_layout(kind), design=row, view=view,
-                           fields=ic.fields_for(kind), brand=brand, logo_url=brand.get('logo_url'),
-                           signature_url=_signature_url(), limits={'elements': ic.MAX_ELEMENTS, 'text': ic.MAX_TEXT})
+    view.update(_common(brand, assets))
+    view['fields'] = ic.fields_for(kind)
+    data = {'layout': layout, 'kind': kind, 'view': view, 'fields': ic.fields_for(kind), 'barcode_fields': ic.BARCODE_FIELDS[kind],
+            'fonts': ic.FONTS, 'max': ic.MAX_ELEMENTS, 'asset_list': assets, 'versions': _versions(kind),
+            'templates': [{'key': key, 'name': text.split(':')[0], 'text': text.split(':', 1)[1].strip(),
+                           'layout': ic.default_layout(kind, key)} for key, text in ic.TEMPLATES.items()],
+            'locked': bool(row and row.locked),
+            'urls': {'save': url_for('admin_id_card_design_save', kind=kind), 'upload': url_for('admin_id_card_asset_upload'),
+                     'asset_delete': url_for('admin_id_card_asset_delete', asset_id=0),
+                     'version': url_for('admin_id_card_design_version', kind=kind, vid=0)}}
+    return render_template('school_id_card_designer.html', kind=kind, design=row, data=data, sample_name=view['data'].get('name'),
+                           person_fields=ic.FIELDS[kind], school_fields=ic.SCHOOL_FIELDS,
+                           templates=ic.TEMPLATES, brand=brand, has_staff_signature=bool(sample.get('signature_path')))
 
 
 @app.post('/admin/id-cards/design/<kind>')
@@ -273,17 +343,33 @@ def admin_id_card_design_save(kind):
     if row and row.locked:
         return jsonify(ok=False, error='The design is locked. Unlock it to make changes.'), 409
     try:
-        layout = ic.clean_layout(request.form.get('layout', ''), kind)
+        layout = ic.clean_layout(request.form.get('layout', ''), kind, {a.id for a in _asset_rows()})
     except ValueError as exc:
         return jsonify(ok=False, error=str(exc)), 400
     if row is None:
         row = IdCardDesign(kind=kind, layout_json='{}', updated_at=_now())
         db.session.add(row)
-    row.layout_json, row.updated_at, row.updated_by = json.dumps(layout, separators=(',', ':')), _now(), me['id']
+    stored = json.dumps(layout, separators=(',', ':'), sort_keys=True)
+    row.layout_json, row.updated_at, row.updated_by = stored, _now(), me['id']
+    _keep_version(kind, stored, me['id'])
     db.session.commit()
     audit_log('id_card_design_saved', 'school', 'id_card_design', kind,
               {'front': len(layout['sides']['front']), 'back': len(layout['sides']['back']), 'orientation': layout['orientation']})
-    return jsonify(ok=True, layout=layout, saved_at=row.updated_at)
+    return jsonify(ok=True, layout=layout, saved_at=row.updated_at, versions=_versions(kind))
+
+
+def _keep_version(kind, stored, admin_id):
+    """Keep this save as a version, unless it is the same as the last one, and only the newest VERSIONS."""
+    last = db.session.scalars(select(IdCardDesignVersion.layout_json).where(IdCardDesignVersion.kind == kind)
+                              .order_by(IdCardDesignVersion.id.desc())).first()
+    if last is not None and json.loads(last) == json.loads(stored):     # the same design (2 and 2.0 alike)
+        return
+    db.session.add(IdCardDesignVersion(kind=kind, layout_json=stored, saved_at=_now(), saved_by=admin_id))
+    db.session.flush()
+    old = db.session.scalars(select(IdCardDesignVersion.id).where(IdCardDesignVersion.kind == kind)
+                             .order_by(IdCardDesignVersion.id.desc()).offset(VERSIONS)).all()
+    if old:
+        db.session.execute(sa_delete(IdCardDesignVersion).where(IdCardDesignVersion.id.in_(old)))
 
 
 @app.post('/admin/id-cards/design/<kind>/lock')
@@ -317,14 +403,99 @@ def admin_id_card_design_reset(kind):
     if row and row.locked:
         flash('The design is locked. Unlock it to make changes.', 'error')
         return redirect(url_for('admin_id_card_designer', kind=kind))
+    template = request.form.get('template') if request.form.get('template') in ic.TEMPLATES else 'classic'
     if row is None:
         row = IdCardDesign(kind=kind, layout_json='{}', updated_at=_now())
         db.session.add(row)
-    row.layout_json, row.updated_at, row.updated_by = json.dumps(ic.default_layout(kind)), _now(), me['id']
+    stored = json.dumps(ic.default_layout(kind, template), separators=(',', ':'), sort_keys=True)
+    row.layout_json, row.updated_at, row.updated_by = stored, _now(), me['id']
+    _keep_version(kind, stored, me['id'])
     db.session.commit()
-    audit_log('id_card_design_reset', 'school', 'id_card_design', kind, {})
-    flash('The design is back to the standard one.', 'success')
+    audit_log('id_card_design_reset', 'school', 'id_card_design', kind, {'template': template})
+    flash(f'The design now starts from the {template} template. The one before is kept in Versions.', 'success')
     return redirect(url_for('admin_id_card_designer', kind=kind))
+
+
+@app.route('/admin/id-cards/design/<kind>/versions/<int:vid>')
+@admin_required
+def admin_id_card_design_version(kind, vid):
+    """An earlier saved design, to bring back into the designer (it is saved only when the person saves it)."""
+    if kind not in ic.KINDS:
+        abort(404)
+    row = db.session.get(IdCardDesignVersion, vid)
+    if row is None or row.kind != kind:
+        abort(404)
+    try:
+        layout = ic.clean_layout(row.layout_json, kind, {a.id for a in _asset_rows()})
+    except ValueError:
+        return jsonify(ok=False), 400
+    return jsonify(ok=True, layout=layout)
+
+
+# ---------------------------------------------------------------- the school's own card images
+@app.post('/admin/id-cards/assets')
+@admin_required
+@csrf_protect
+def admin_id_card_asset_upload():
+    return upload_design_image()
+
+
+def upload_design_image():
+    """An image for the school's designs (a pattern, a badge, a stamp): checked, re-encoded and kept under
+    uploads/idcards/. The caller has checked who may do this."""
+    me = current_admin()
+    if db.session.scalar(select(func.count(IdCardAsset.id))) >= ic.MAX_ASSETS:
+        return jsonify(ok=False, error=f'The school can keep at most {ic.MAX_ASSETS} card images. Remove one first.'), 400
+    upload = request.files.get('image')
+    if not upload or not upload.filename:
+        return jsonify(ok=False, error='Choose an image to upload.'), 400
+    try:
+        path = _save_image_upload(upload, 'idcards', 'card')
+    except ValueError as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+    if not path:
+        return jsonify(ok=False, error='Choose an image to upload.'), 400
+    stem = ' '.join(re.sub(r'[^\w .-]', ' ', (upload.filename or '').rsplit('.', 1)[0]).split())[:40] or 'Image'
+    asset = IdCardAsset(name=stem, file_path=path, created_at=_now(), created_by=me['id'])
+    db.session.add(asset)
+    db.session.commit()
+    audit_log('id_card_asset_uploaded', 'school', 'id_card_asset', asset.id, {})
+    return jsonify(ok=True, asset={'id': asset.id, 'name': asset.name, 'url': _static(asset.file_path)})
+
+
+@app.post('/admin/id-cards/assets/<int:asset_id>/delete')
+@admin_required
+@csrf_protect
+def admin_id_card_asset_delete(asset_id):
+    return remove_design_image(asset_id)
+
+
+def remove_design_image(asset_id):
+    """Remove one of the school's design images, unless a locked design (an ID card's or the report card's) uses it."""
+    from core import report_card_design as rcd
+    asset = db.session.get(IdCardAsset, asset_id)
+    if asset is None:
+        abort(404)
+    for row in db.session.scalars(select(IdCardDesign).where(IdCardDesign.locked == 1)).all():
+        try:
+            used = ic.assets_used(ic.clean_layout(row.layout_json, row.kind, {asset_id}))
+        except ValueError:
+            used = set()
+        if asset_id in used:
+            return jsonify(ok=False, error=f'The {row.kind} card design is locked and uses this image. Unlock it first.'), 409
+    for row in db.session.scalars(select(ReportCardDesign).where(ReportCardDesign.locked == 1)).all():
+        try:
+            used = rcd.assets_used(rcd.clean_layout(row.layout_json, {asset_id}))
+        except ValueError:
+            used = set()
+        if asset_id in used:
+            return jsonify(ok=False, error='The report card design is locked and uses this image. Unlock it first.'), 409
+    path = asset.file_path
+    db.session.delete(asset)
+    db.session.commit()
+    delete_upload(path)
+    audit_log('id_card_asset_removed', 'school', 'id_card_asset', asset_id, {})
+    return jsonify(ok=True)
 
 
 # ---------------------------------------------------------------- the public page a card's QR code opens

@@ -31,6 +31,10 @@ os.environ.update({
     "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
     "BRIGHTSTARS_SECRET": "x" * 40,
     "BRIGHTSTARS_ENV": "development",
+    # Counts and permissions are kept for their usual few seconds in production; here for the whole run, so a slow
+    # machine never sees one run out between the warm-up and the measured view and count it as a page's own query.
+    "BRIGHTSTARS_BADGE_CACHE_SECONDS": "3600",
+    "BRIGHTSTARS_ADMIN_CACHE_SECONDS": "3600",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -235,8 +239,8 @@ for n in range(EXTRA):
         if d.isoweekday() <= 5:
             sql("INSERT INTO staff_attendance_records (staff_id, day, clock_in, late, in_method, created_at) VALUES (:s, :d, '07:50', 0, 'phone', :c)",
                 s=sid, d=d.isoformat(), c=T.isoformat())
-officer.post("/admin/staff-attendance/settings", {"enabled": "1", "method": "qr_gps", "latitude": "6.5244", "longitude": "3.3792", "radius_m": "150",
-    "max_accuracy_m": "100", "late_after": "08:00", **{f"day_{d}": "1" for d in "12345"}}, page="/admin/staff-attendance/settings")
+officer.post("/admin/settings/staff-attendance", {"enabled": "1", "method": "qr_gps", "latitude": "6.5244", "longitude": "3.3792", "radius_m": "150",
+    "max_accuracy_m": "100", "late_after": "08:00", **{f"day_{d}": "1" for d in "12345"}}, page="/admin/settings/staff-attendance")
 sql("UPDATE staff_attendance_settings SET started_on = :d", d=(T - timedelta(days=25)).isoformat())
 pay_off.post(f"/admin/payroll/runs/{R2}/refresh", {}, page=f"/admin/payroll/runs/{R2}")
 
@@ -256,7 +260,7 @@ PAGES = [
     ("hr", officer, "/admin/hr", 10), ("hr", officer, f"/admin/hr/{OKON}", 10), ("hr", officer, f"/admin/hr/{OKON}?tab=leave", 15),
     ("hr", officer, f"/admin/hr/{OKON}?tab=career", 10), ("hr", officer, f"/admin/hr/{OKON}?tab=files", 10),
     ("hr", officer, "/admin/hr/leave", 12), ("hr", officer, "/admin/staff-attendance", 11),
-    ("hr", officer, "/admin/staff-attendance/month", 11), ("hr", officer, "/admin/staff-attendance/settings", 9),
+    ("hr", officer, "/admin/staff-attendance/month", 11), ("hr", officer, "/admin/settings/staff-attendance", 9),
     ("pay", pay_off, "/admin/payroll", 12), ("pay", pay_off, f"/admin/payroll/runs/{R2}", 12), ("pay", pay_off, "/admin/payroll/staff", 8),
     ("pay", pay_off, f"/admin/payroll/staff/{OKON}", 11), ("pay", pay_off, f"/admin/payroll/payslips/{EXTRA_SLIP}", 8),
     ("op", op, "/admin/id-cards?kind=staff", 7), ("op", op, "/admin/id-cards/design/student", 10),

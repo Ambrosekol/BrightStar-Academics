@@ -42,3 +42,30 @@ class IdCard(db.Model):
     cancelled_at = db.Column(Text)
     cancelled_by = db.Column(Integer, ForeignKey('admins.id'))
     cancel_reason = db.Column(Text)
+
+
+class IdCardAsset(db.Model):
+    """An image the school uploaded for its card designs (a pattern, a badge, a stamp). Kept under uploads/idcards/,
+    which only staff can open."""
+
+    __tablename__ = 'id_card_assets'
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    name = db.Column(Text, nullable=False)
+    file_path = db.Column(Text, nullable=False)
+    created_at = db.Column(Text, nullable=False)
+    created_by = db.Column(Integer, ForeignKey('admins.id'))
+
+
+class IdCardDesignVersion(db.Model):
+    """A saved design, kept so an earlier one can be brought back. The newest few are kept for each kind."""
+
+    __tablename__ = 'id_card_design_versions'
+    __table_args__ = (Index('idx_id_card_versions_kind', 'kind', 'id'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    kind = db.Column(Text, nullable=False)
+    layout_json = db.Column(Text, nullable=False)
+    note = db.Column(Text)
+    saved_at = db.Column(Text, nullable=False)
+    saved_by = db.Column(Integer, ForeignKey('admins.id'))

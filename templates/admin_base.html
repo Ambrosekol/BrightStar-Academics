@@ -32,8 +32,11 @@
         {% set academic_shown = academic.endpoint is not none %}
         {% set academic_endpoint = academic.endpoint or 'admin_school_results' %}
         {% set finance_all = finance_shown and admin_has_permission(aid,'finance.view_all') %}
-        {# The school menu, in the order a school's day runs: the front page and messages, then the people,
-           the teaching (classes and subjects first, then what happens in them), the money, and the library. #}
+        {# The school menu in two parts. TEACHING is the classroom's daily work: the classes and subjects, the register,
+           the academics, marking, the timetable and report cards. MANAGEMENT is running the school: students and
+           parents, staff, money, the design studios and printing, the store and the library. A person who can reach
+           both sees the two headings; a teacher sees only what is theirs. Above them: the front page, messages, and
+           each person's own clock-in, payslips and leave. #}
         {% set workspace_groups = [
             {'label':'', 'items':[
                 {'label':'Overview','endpoint':'admin_school_home','icon':'nav-overview',
@@ -42,6 +45,8 @@
                 {'label':'Messages','endpoint':'admin_messages','icon':'nav-messages','live': true,
                  'show': signed,
                  'active': ep == 'admin_messages' or path.startswith('/admin/school/parent-')},
+            ]},
+            {'label':'My work', 'items':[
                 {'label':'Clock in','endpoint':'admin_clock','icon':'nav-clock',
                  'show': signed and staff_clock_menu().clock,
                  'active': path.startswith('/admin/clock')},
@@ -52,38 +57,7 @@
                  'show': signed and hr_menu().mine,
                  'active': path.startswith('/admin/my-leave')},
             ]},
-            {'label':'People', 'items':[
-                {'label':'Students','endpoint':'admin_school_students','icon':'nav-students',
-                 'show': signed and admin_has_permission(aid,'school.students.view'),
-                 'active': path.startswith('/admin/school/students')},
-                {'label':'Parents','endpoint':'admin_school_parents','icon':'nav-parents',
-                 'show': signed and admin_has_permission(aid,'parent.view'),
-                 'active': path.startswith('/admin/school/parents')},
-                {'label':'Teachers','endpoint':'admin_school_teaching','icon':'nav-teachers',
-                 'show': signed and (is_school_admin_ui or admin_has_permission(aid,'school.staff.assign')),
-                 'active': path.startswith('/admin/school/teaching')},
-                {'label':'Staff records','endpoint':'admin_hr_staff','icon':'nav-hr',
-                 'show': signed and hr_menu().records,
-                 'active': path.startswith('/admin/hr') and not path.startswith('/admin/hr/leave')},
-                {'label':'Staff leave','endpoint':'admin_hr_leave','icon':'nav-leave',
-                 'show': signed and hr_menu().leave,
-                 'badge': hr_menu().waiting if signed else 0,
-                 'title': 'Leave requests waiting for a decision',
-                 'active': path.startswith('/admin/hr/leave')},
-                {'label':'Staff attendance','endpoint':'admin_staff_attendance','icon':'nav-staffatt',
-                 'show': signed and staff_clock_menu().register,
-                 'badge': staff_clock_menu().waiting if signed else 0,
-                 'title': 'Attendance corrections waiting for a decision',
-                 'active': path.startswith('/admin/staff-attendance')},
-                {'label':'ID cards','endpoint':'admin_id_cards','icon':'nav-idcard',
-                 'show': signed and id_cards_shown(),
-                 'active': path.startswith('/admin/id-cards')},
-                {'label':'Class transfers','endpoint':'admin_school_transfers','icon':'nav-transfers',
-                 'show': signed and class_transfers_access().show,
-                 'badge': class_transfers_access().waiting if signed else 0,
-                 'active': path.startswith('/admin/school/transfers')},
-            ]},
-            {'label':'Teaching', 'items':[
+            {'label':'Classroom', 'part':'Teaching', 'items':[
                 {'label':'Classes','endpoint':'admin_school_classes','icon':'nav-classes',
                  'show': signed and admin_has_permission(aid,'school.classes.view'),
                  'active': path.startswith('/admin/school/classes')},
@@ -95,6 +69,8 @@
                  'icon':'nav-attendance',
                  'show': signed and (admin_has_permission(aid,'school.attendance.mark') or admin_has_permission(aid,'school.attendance.view')),
                  'active': path.startswith('/admin/school/attendance')},
+            ]},
+            {'label':'Assessment', 'part':'Teaching', 'items':[
                 {'label':'Academics','endpoint': academic_endpoint,'icon':'nav-academics',
                  'show': academic_shown,
                  'active': path.startswith(('/admin/school/results','/admin/school/assignments','/admin/school/projects','/admin/school/tests','/admin/school/practice-tests','/admin/school/examinations','/admin/school/assessments'))},
@@ -109,11 +85,46 @@
                 {'label':'Report cards','endpoint':'admin_school_report_cards','icon':'nav-reportcard',
                  'show': signed and admin_has_permission(aid,'report_cards.view'),
                  'active': path.startswith('/admin/school/report-cards') and not path.startswith('/admin/school/report-cards/settings')},
+            ]},
+            {'label':'Students & parents', 'part':'Management', 'items':[
+                {'label':'Students','endpoint':'admin_school_students','icon':'nav-students',
+                 'show': signed and admin_has_permission(aid,'school.students.view'),
+                 'active': path.startswith('/admin/school/students')},
+                {'label':'Parents','endpoint':'admin_school_parents','icon':'nav-parents',
+                 'show': signed and admin_has_permission(aid,'parent.view'),
+                 'active': path.startswith('/admin/school/parents')},
+                {'label':'Class transfers','endpoint':'admin_school_transfers','icon':'nav-transfers',
+                 'show': signed and class_transfers_access().show,
+                 'badge': class_transfers_access().waiting if signed else 0,
+                 'active': path.startswith('/admin/school/transfers')},
                 {'label':'Promotion','endpoint':'admin_school_promotion','icon':'nav-promotion',
                  'show': signed and is_school_admin_ui,
                  'active': path.startswith('/admin/school/promotion')},
             ]},
-            {'label':'Finance', 'items':[
+            {'label':'Staff', 'part':'Management', 'items':[
+                {'label':'Staff records','endpoint':'admin_hr_staff','icon':'nav-hr',
+                 'show': signed and hr_menu().records,
+                 'active': path.startswith('/admin/hr') and not path.startswith('/admin/hr/leave')},
+                {'label':'Teachers','endpoint':'admin_school_teaching','icon':'nav-teachers',
+                 'show': signed and (is_school_admin_ui or admin_has_permission(aid,'school.staff.assign')),
+                 'active': path.startswith('/admin/school/teaching')},
+                {'label':'Staff attendance','endpoint':'admin_staff_attendance','icon':'nav-staffatt',
+                 'show': signed and staff_clock_menu().register,
+                 'badge': staff_clock_menu().waiting if signed else 0,
+                 'title': 'Attendance corrections waiting for a decision',
+                 'active': path.startswith('/admin/staff-attendance')},
+                {'label':'Staff leave','endpoint':'admin_hr_leave','icon':'nav-leave',
+                 'show': signed and hr_menu().leave,
+                 'badge': hr_menu().waiting if signed else 0,
+                 'title': 'Leave requests waiting for a decision',
+                 'active': path.startswith('/admin/hr/leave')},
+                {'label':'Payroll','endpoint':'admin_payroll','icon':'nav-payroll',
+                 'show': signed and payroll_menu().payroll,
+                 'badge': payroll_menu().waiting if signed else 0,
+                 'title': 'Payrolls waiting for your approval',
+                 'active': path.startswith('/admin/payroll')},
+            ]},
+            {'label':'Finance', 'part':'Management', 'items':[
                 {'label':'Collections','endpoint':'admin_finance_dashboard','icon':'nav-collections',
                  'show': finance_shown,
                  'active': path == '/admin/finance'},
@@ -128,18 +139,21 @@
                 {'label':'Fee structure','endpoint':'admin_finance_fee_items','icon':'nav-fees',
                  'show': finance_shown and admin_has_permission(aid,'finance.manage'),
                  'active': path.startswith('/admin/finance/fee-items')},
-                {'label':'Payroll','endpoint':'admin_payroll','icon':'nav-payroll',
-                 'show': signed and payroll_menu().payroll,
-                 'badge': payroll_menu().waiting if signed else 0,
-                 'title': 'Payrolls waiting for your approval',
-                 'active': path.startswith('/admin/payroll')},
                 {'label':'New students to bill','endpoint':'admin_finance_new_students','icon':'nav-newbill',
                  'badge': finance_new_students_badge() if finance_shown else 0,
                  'title': 'New students not billed yet',
                  'show': finance_shown and (is_school_admin_ui or admin_has_permission(aid,'finance.record') or admin_has_permission(aid,'finance.manage')),
                  'active': path.startswith('/admin/finance/new-students')},
             ]},
-            {'label':'Store', 'items':[
+            {'label':'Design & print', 'part':'Management', 'items':[
+                {'label':'Design studios','endpoint':'admin_design_studios','icon':'nav-design',
+                 'show': signed and design_studios_shown(),
+                 'active': path.startswith(('/admin/design-studios','/admin/id-cards/design','/admin/report-cards/studio'))},
+                {'label':'ID cards','endpoint':'admin_id_cards','icon':'nav-idcard',
+                 'show': signed and id_cards_shown(),
+                 'active': path.startswith('/admin/id-cards') and not path.startswith('/admin/id-cards/design')},
+            ]},
+            {'label':'Store & library', 'part':'Management', 'items':[
                 {'label':'Inventory','endpoint':'admin_store','icon':'nav-store',
                  'show': signed and admin_has_permission(aid,'store.view'),
                  'active': path == '/admin/store' or path.startswith('/admin/store/items')},
@@ -151,8 +165,6 @@
                 {'label':'Record a payment','endpoint':'admin_store_sell','icon':'nav-till',
                  'show': signed and admin_has_permission(aid,'store.manage'),
                  'active': path.startswith('/admin/store/sell')},
-            ]},
-            {'label':'Resources', 'items':[
                 {'label':'Library','endpoint':'admin_library','icon':'nav-library',
                  'show': signed and admin_has_permission(aid,'library.view'),
                  'active': path.startswith('/admin/library')},
@@ -195,6 +207,7 @@
     {% set unread_title %}{% if admin_unread_messages %}{% if admin_unread_message_summaries|length == 1 %}New message from {{ admin_unread_message_summaries[0].sender_name }}{% else %}{{ admin_unread_messages }} unread messages{% endif %}{% endif %}{% endset %}
     {#- Everything that is a setting, a control or a record of what happened lives behind one entry. -#}
     {% set settings_shown = signed and (is_school_admin_ui or admin_has_permission(aid,'audit.view') or admin_has_permission(aid,'presence.view')
+                                        or admin_has_permission(aid,'staff_attendance.manage')
                                         or admin_has_permission(aid,'report_cards.manage') or admin_has_permission(aid,'finance.manage')
                                         or admin_has_permission(aid,'entrance.config.view')) %}
     {% set administration_items = [
@@ -204,7 +217,7 @@
          'active': ep in ('admin_settings','admin_controls','admin_lock_resource','admin_unlock_resource','admin_control_resolve',
                           'admin_school_sessions','admin_school_branding','admin_school_delivery','admin_audit_logs','admin_presence',
                           'admin_school_report_card_settings','admin_finance_paystack_settings','admin_finance_receipt_settings')
-                   or path.startswith(('/admin/school/branding','/admin/school/delivery','/admin/school/report-cards/settings','/admin/finance/paystack'))
+                   or path.startswith(('/admin/school/branding','/admin/school/delivery','/admin/school/report-cards/settings','/admin/finance/paystack','/admin/settings/'))
                    or (path.startswith('/admin/administration') and not path.startswith(('/admin/administration/messages','/admin/administration/notifications')))},
     ] %}
     {% set sections = workspace_groups %}
@@ -227,7 +240,7 @@
     <link rel="preload" href="{{ url_for('static', filename='fonts/public-sans-latin-600-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='5') }}">
 </head>
 <body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/finance/new-students,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
 {{ connectivity_banner() }}
@@ -259,10 +272,18 @@
             </a>
         {%- endmacro %}
         <nav class="rail-nav" aria-label="Main">
+            {#- The Teaching and Management headings show only to someone who reaches both, and more of Management than
+                a list of students: a teacher who may look students up keeps a plain menu. -#}
+            {% set parts = namespace(teaching=0, management=0) %}
+            {% for section in sections %}{% if section['items']|selectattr('show')|list %}{% if section.part == 'Teaching' %}{% set parts.teaching = parts.teaching + 1 %}{% elif section.part == 'Management' %}{% set parts.management = parts.management + 1 %}{% endif %}{% endif %}{% endfor %}
+            {% set part_shown = namespace(last=None) %}
             {% for section in sections %}
                 {% set visible = section['items']|selectattr('show')|list %}
                 {% if visible %}
-                <div class="rail-section{% if not section['label'] %} rail-section--top{% endif %}">
+                {% set starts_part = parts.teaching > 0 and parts.management > 1 and section.part and section.part != part_shown.last %}
+                {% if section.part %}{% set part_shown.last = section.part %}{% endif %}
+                <div class="rail-section{% if not section['label'] %} rail-section--top{% endif %}{% if starts_part %} rail-section--part{% endif %}">
+                    {% if starts_part %}<div class="rail-part">{{ section.part }}</div>{% endif %}
                     {% if section['label'] %}<div class="rail-section__label nav-section-label" id="rail-section-{{ loop.index }}">{{ section['label'] }}</div>{% endif %}
                     <ul class="rail-list"{% if section['label'] %} aria-labelledby="rail-section-{{ loop.index }}"{% else %} aria-label="Start"{% endif %}>
                     {% for item in visible %}<li>{{ rail_link(item) }}</li>{% endfor %}

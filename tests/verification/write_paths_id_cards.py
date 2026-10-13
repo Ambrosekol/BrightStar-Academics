@@ -2,9 +2,11 @@
 
 A. Who: the School Admin and a Records Officer see ID cards; a Subject Teacher (without the permission) is refused
    the list, printing and the designer.
-B. The designer: the standard design to start from; a saved design is rebuilt from known keys only (an unknown
-   detail, a colour carrying CSS, an item off the card, a script typed as text are all made harmless); too many items
-   are refused. Locking stops saving and starting again until it is unlocked; each step is logged.
+B. The studio: the standard design to start from; a saved design is rebuilt from known keys only (an unknown detail,
+   a colour or a font or a clip carrying CSS, a gradient carrying CSS, another school's image, a script typed as text
+   are all made harmless); too many items are refused. Each save is kept as a version that can be brought back.
+   Templates. The school's own images: a real picture is kept, a fake one refused, a teacher refused; one a locked
+   design uses cannot be removed. Locking stops saving and starting again until it is unlocked; each step is logged.
 C. Printing: the ticked students' cards, front and back, each with its own QR code; the first print issues a card
    (random token, serial STU-000001), a second print reuses it. Never cached; logged. A student this account may not
    print for (one who has left) stops the whole print.
@@ -196,12 +198,78 @@ r = officer.post(DES, {"layout": json.dumps(hostile)}, page=DES)
 saved = json.loads(one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'") or "{}")
 front = saved.get("sides", {}).get("front", [])
 check("a saved design is rebuilt from known keys only",
-      r.status_code == 200 and saved.get("background") == "white" and len(front) == 2
-      and front[0] == {"type": "text", "x": 0, "y": 53.0, "w": 85.6, "h": 1.0, "size": 28, "bold": False, "upper": False,
-                       "align": "left", "color": "ink", "text": "<script>alert(1)</script>"}
+      r.status_code == 200 and saved.get("background", {}).get("color") == "white" and len(front) == 2
+      and front[0]["text"] == "<script>alert(1)</script>" and front[0]["color"] == "ink" and front[0]["size"] == 72
+      and front[0]["y"] == 54.0 and front[0]["w"] == 171.2 and "password" not in json.dumps(saved)
       and front[1]["field"] == "admission_no" and front[1]["color"] == "accent", str(front))
-r = officer.post(DES, {"layout": json.dumps({"sides": {"front": [{"type": "rect"}] * 31}})}, page=DES)
-check("a side with too many items is refused", r.status_code == 400 and "at most 30" in r.get_json().get("error", ""))
+v2 = {"orientation": "portrait", "background": {"color": "#ABCDEF", "gradient": {"type": "linear", "from": "red;x", "to": "#000000", "angle": 9999},
+                                                "image": 999},
+      "sides": {"front": [
+          {"type": "text", "text": "Hi\x00\x07 there\n\n\n\n\n\n\n\n\nlast", "font": "evil, url(x)", "weight": 550, "letter": 999,
+           "rotate": 720, "opacity": -5, "shadow": "neon", "x": 1, "y": 1, "w": 10, "h": 5},
+          {"type": "shape", "shape": "url(#x)", "fill": "expression(1)", "stroke": "#112233", "stroke_w": 99, "dash": "x",
+           "gradient": {"type": "conic", "from": "#000000"}, "x": 1, "y": 1, "w": 5, "h": 5},
+          {"type": "photo", "clip": "url(evil)", "fit": "scale-down", "border": "#fff;x", "x": 1, "y": 1, "w": 5, "h": 5},
+          {"type": "image", "asset": 999, "x": 1, "y": 1, "w": 5, "h": 5},
+          {"type": "barcode", "field": "password", "fg": "#ff0000", "x": 1, "y": 1, "w": 20, "h": 8},
+          {"type": "signature", "who": "someone", "x": 1, "y": 1, "w": 10, "h": 4}], "back": []}}
+r = officer.post(DES, {"layout": json.dumps(v2)}, page=DES)
+saved = json.loads(one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'") or "{}")
+f = saved.get("sides", {}).get("front", [])
+text, shape, photo = (f + [{}, {}, {}])[:3]
+check("…and so are every style, shape, clip and picture choice",
+      r.status_code == 200 and saved["orientation"] == "portrait" and saved["background"]["color"] == "#abcdef"
+      and saved["background"]["gradient"] == {"type": "linear", "from": "brand", "to": "#000000", "angle": 360}
+      and saved["background"]["image"] is None and len(f) == 5
+      and text.get("font") == "sans" and text.get("weight") == 400 and text.get("letter") == 100 and text.get("rotate") == 180
+      and text.get("opacity") == 0 and text.get("shadow") == "none" and "\x00" not in text.get("text", "") and text.get("text", "").count("\n") <= 7
+      and shape.get("shape") == "rect" and shape.get("fill") == "brand" and shape.get("stroke_w") == 5 and shape.get("dash") == "solid"
+      and shape.get("gradient") is None and photo.get("clip") == "none" and photo.get("fit") == "cover" and photo.get("border") == "none"
+      and [e["type"] for e in f] == ["text", "shape", "photo", "barcode", "signature"]
+      and f[3]["field"] == "serial" and f[4]["who"] == "head", json.dumps(f)[:600])
+r = officer.post(DES, {"layout": json.dumps({"sides": {"front": [{"type": "shape"}] * 61}})}, page=DES)
+check("a side with too many items is refused", r.status_code == 400 and "at most 60" in r.get_json().get("error", ""))
+versions = sql("SELECT id FROM id_card_design_versions WHERE kind = 'student' ORDER BY id")
+r = officer.get(f"{DES}/versions/{versions[0][0]}") if versions else None
+check("each save is kept as a version, and an earlier one can be read back to bring it back",
+      len(versions) == 2 and r is not None and r.status_code == 200 and r.get_json()["layout"]["orientation"] == "landscape")
+check("a teacher cannot read a version", teacher.get(f"{DES}/versions/{versions[0][0]}").status_code in (302, 403))
+officer.post(f"{DES}/reset", {"template": "modern"}, page=DES)
+check("starting from the Modern template gives an upright card with a barcode",
+      json.loads(one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'"))["orientation"] == "portrait"
+      and '"barcode"' in one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'"))
+
+# the school's own images
+def upload(person, name, data):
+    token = token_in(person.text(DES) if person is officer else person.text("/admin/password"))
+    return person.c.post("/admin/id-cards/assets", data={"_csrf_token": token, "image": (io.BytesIO(data), name)},
+                         base_url=UA, environ_base={"REMOTE_ADDR": person.addr}, content_type="multipart/form-data")
+
+
+badge = io.BytesIO()
+Image.new("RGBA", (40, 40), (200, 30, 30, 255)).save(badge, "PNG")
+r = upload(officer, "School badge.png", badge.getvalue())
+ASSET = (r.get_json() or {}).get("asset", {}).get("id")
+check("a real picture is kept as a card image, under its own name", r.status_code == 200 and ASSET
+      and one("SELECT name FROM id_card_assets WHERE id = :i", i=ASSET) == "School badge"
+      and (one("SELECT file_path FROM id_card_assets WHERE id = :i", i=ASSET) or "").startswith("uploads/idcards/"))
+r = upload(officer, "evil.png", b"<svg onload=alert(1)>")
+check("a file pretending to be a picture is refused", r.status_code == 400 and one("SELECT COUNT(*) FROM id_card_assets") == 1)
+r = upload(teacher, "x.png", badge.getvalue())
+check("a teacher cannot upload card images", r.status_code in (302, 403) and one("SELECT COUNT(*) FROM id_card_assets") == 1)
+with_image = {"orientation": "landscape", "background": {"color": "white", "image": ASSET},
+              "sides": {"front": [{"type": "image", "asset": ASSET, "x": 2, "y": 2, "w": 10, "h": 10, "clip": "hexagon"},
+                                  {"type": "barcode", "field": "admission_no", "x": 40, "y": 40, "w": 30, "h": 10},
+                                  {"type": "text", "text": "</script><script>alert(1)</script>", "x": 2, "y": 30, "w": 40, "h": 6}],
+                        "back": [{"type": "text", "text": "Back", "x": 2, "y": 2, "w": 20, "h": 5}]}}
+r = officer.post(DES, {"layout": json.dumps(with_image)}, page=DES)
+saved = json.loads(one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'"))
+check("the school's own image is kept on the design, and as its background", saved["sides"]["front"][0].get("asset") == ASSET
+      and saved["background"]["image"] == ASSET and saved["sides"]["front"][0]["clip"] == "hexagon")
+officer.post(f"{DES}/lock", {"lock": "1"}, page=DES)
+r = officer.post(f"/admin/id-cards/assets/{ASSET}/delete", {}, page=DES)
+check("an image a locked design uses cannot be removed", r.status_code == 409 and one("SELECT COUNT(*) FROM id_card_assets") == 1)
+officer.post(f"{DES}/lock", {"lock": "0"}, page=DES)
 officer.post(f"{DES}/reset", {}, page=DES)
 check("starting again restores the standard design", "STUDENT IDENTITY CARD" in (one("SELECT layout_json FROM id_card_designs WHERE kind = 'student'") or ""))
 officer.post(f"{DES}/lock", {"lock": "1"}, page=DES)
@@ -221,18 +289,47 @@ cards = sql("SELECT person_id, token, serial, status, printed_count FROM id_card
 check("printing issues each ticked student a card with a random token and a serial",
       r.status_code == 200 and len(cards) == 2 and {c[2] for c in cards} == {"STU-000001", "STU-000002"}
       and all(len(c[1]) >= 20 for c in cards) and cards[0][1] != cards[1][1], str(cards))
-check("the sheet has each card's front and back, its QR code and the student's details",
-      sheet.count('<div class="idc"') == 4 and sheet.count('<path d="M') == 2 and "Ada Okafor" in sheet and "ID-2" in sheet
-      and "STU-000001" in sheet)
+data = json.loads(re.search(r'<script type="application/json" id="idcSheet"[^>]*>(.*?)</script>', sheet, re.S).group(1))
+check("the sheet has each card's front and back, its QR code, barcode and the student's details",
+      sheet.count('data-side="front"') == 2 and sheet.count('data-side="back"') == 2 and len(data["cards"]) == 2
+      and all(c["qr"][0].startswith("M") for c in data["cards"]) and data["cards"][0]["data"]["name"] == "Ada Okafor"
+      and data["cards"][1]["data"]["admission_no"] == "ID-2" and data["cards"][0]["data"]["serial"] == "STU-000001"
+      and str(ASSET) in data["common"]["assets"] and "id-card-render.js" in sheet)
+check("…with text that tries to end the data block kept as data", "</script><script>alert(1)" not in sheet)
 check("…and is never cached", "no-store" in r.headers.get("Cache-Control", ""))
 officer.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"]]}, page="/admin/id-cards")
+officer.post(DES, {"layout": json.dumps(with_image)}, page=DES)
+r = officer.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"]]}, page="/admin/id-cards")
+data2 = json.loads(re.search(r'<script type="application/json" id="idcSheet"[^>]*>(.*?)</script>', r.get_data(as_text=True), re.S).group(1))
+check("a design with a barcode prints each card's own barcode", data2["cards"][0]["barcodes"].get("admission_no", [""])[0].startswith("M"))
+officer.post(f"{DES}/reset", {}, page=DES)
 check("a second print reuses the card", one("SELECT COUNT(*) FROM id_cards") == 2
-      and one("SELECT printed_count FROM id_cards WHERE person_id = :p", p=STU["Ada"]) == 2)
-check("printing is in the activity log", one("SELECT COUNT(*) FROM audit_logs WHERE action = 'id_cards_printed'") == 2)
+      and one("SELECT printed_count FROM id_cards WHERE person_id = :p", p=STU["Ada"]) == 3)
+check("printing is in the activity log", one("SELECT COUNT(*) FROM audit_logs WHERE action = 'id_cards_printed'") == 3)
 sql("UPDATE students SET archived_at = '2026-10-13' WHERE id = :s", s=STU["Chidi"])
 r = officer.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Bayo"], STU["Chidi"]]}, page="/admin/id-cards")
 check("a student this account may not print for (one who has left) stops the whole print",
       r.status_code == 302 and "nothing was printed" in officer.said() and one("SELECT COUNT(*) FROM id_cards") == 2)
+
+# The student's details a design can show, and only those it shows reach the printed sheet.
+sql("UPDATE students SET genotype = 'AS', guardian_name = 'Mr Emeka Okafor', date_of_birth = '2014-03-12', "
+    "drug_allergies = 'PENICILLIN-SECRET' WHERE id = :s", s=STU["Ada"])
+plain = officer.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"]]}, page="/admin/id-cards").get_data(as_text=True)
+studio = officer.text(DES)
+check("the studio's Details tab offers the student's details (date of birth, genotype, guardian and more)",
+      all(f'data-field="{f}"' in studio for f in ("date_of_birth", "age", "genotype", "guardian_name", "state_of_origin", "religion")))
+check("a design that does not show a detail never puts it in the printed sheet",
+      "Mr Emeka Okafor" not in plain and '"genotype"' not in plain and "PENICILLIN" not in plain)
+detailed = {"orientation": "landscape", "background": {"color": "white"}, "sides": {"front": [
+    {"type": "field", "field": f, "x": 4, "y": 4 + 6 * i, "w": 60, "h": 5, "label": f}
+    for i, f in enumerate(("name", "date_of_birth", "genotype", "guardian_name"))], "back": []}}
+officer.post(DES, {"layout": json.dumps(detailed)}, page=DES)
+r = officer.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"]]}, page="/admin/id-cards")
+shown = json.loads(re.search(r'<script type="application/json" id="idcSheet"[^>]*>(.*?)</script>', r.get_data(as_text=True), re.S).group(1))["cards"][0]["data"]
+check("…and one that shows them prints the student's own, and nothing else of the record",
+      shown == {"name": "Ada Okafor", "date_of_birth": "12 March 2014", "genotype": "AS", "guardian_name": "Mr Emeka Okafor"}
+      and "PENICILLIN" not in r.get_data(as_text=True), str(shown))
+officer.post(f"{DES}/reset", {}, page=DES)
 
 # ================================================================ D. the check page
 ADA_TOKEN = one("SELECT token FROM id_cards WHERE person_id = :p", p=STU["Ada"])
@@ -268,6 +365,10 @@ check("the staff list leaves out the platform's own accounts", "Records Officer"
 r = officer.post("/admin/id-cards/print", {"kind": "staff", "person": [TEACHER]}, page="/admin/id-cards")
 check("a staff card prints, with its own serial", r.status_code == 200 and "STF-" in r.get_data(as_text=True)
       and "Maths Teacher" in r.get_data(as_text=True))
+staff_studio = officer.text("/admin/id-cards/design/staff")
+check("the staff studio's Details tab offers the staff member's details (title, employed since, emergency contact)",
+      all(f'data-field="{f}"' in staff_studio for f in ("title", "employed_since", "nok_name", "nok_phone", "category", "staff_no"))
+      and 'data-field="genotype"' not in staff_studio)
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 failed = [name for name, ok, _ in results if not ok]

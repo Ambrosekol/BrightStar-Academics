@@ -70,6 +70,15 @@ def _report_status():
     return ('Head set', GOOD) if done else ('Head not set', WARN)
 
 
+def _attendance_status():
+    from models import StaffAttendanceSettings, db
+    from sqlalchemy import select
+    row = db.session.scalars(select(StaffAttendanceSettings).order_by(StaffAttendanceSettings.id)).first()
+    if not row or not row.enabled:
+        return ('Off', NEUTRAL)
+    return ('On', GOOD) if row.display_token_hash else ('On, no screen yet', WARN)
+
+
 def _alerts_status():
     _, open_controls = _notification_counts(current_admin()['id'])
     return (f'{open_controls} open', WARN) if open_controls else ('All clear', GOOD)
@@ -117,6 +126,9 @@ def _groups(me, workspace, statuses=True):
             E('Staff roles', 'Job-based roles that decide what each member of staff can do.',
               'admin_roles', 'set-roles', admin and can('roles.view'), keywords='permissions role access',
               action=('New role', 'admin_role_new') if can('roles.create') else None),
+            E('Staff attendance', "How staff clock in on their phones: the school's location, when someone is late, the work days, the screen at the school, each person's clock-in phone and closed days.",
+              'admin_staff_attendance_settings', 'nav-staffatt', can('staff_attendance.manage'), _attendance_status,
+              'clock in gps location late phone screen qr code holiday closed'),
         ]),
         ('results', 'Results & report cards', 'What is printed on a report card.', [
             E('Report card settings', "The head's title, name and signature, and the date the next term begins.",

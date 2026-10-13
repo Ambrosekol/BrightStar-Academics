@@ -2042,7 +2042,7 @@ check("no server error was logged by any request in this run", not errors.seen, 
 import pg_posts_coverage as coverage  # noqa: E402
 
 card_writes = {rule.rule for rule in A.app.url_map.iter_rules()
-               if rule.methods & {"POST"} and ("report-cards" in rule.rule)}
+               if rule.methods & {"POST"} and rule.rule.startswith("/admin/school/report-cards")}
 check("the four report card form routes (comments, traits, my-signature, settings) are in the form suite's list of exercised routes",
       card_writes == {RC + "/comments", RC + "/traits", RC + "/my-signature", RC + "/settings"} and card_writes <= set(coverage.EXERCISED),
       str(card_writes))

@@ -37,6 +37,15 @@ EXEMPT = {
     "/admin/id-cards/design/<kind>/reset": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/cancel": "see write_paths_id_cards.py",
     "/admin/id-cards/cards/<int:card_id>/replace": "see write_paths_id_cards.py",
+    "/admin/id-cards/assets": "see write_paths_id_cards.py",
+    "/admin/id-cards/assets/<int:asset_id>/delete": "see write_paths_id_cards.py",
+    # The report card studio: saving, locking, switching on, the preview and the school's images from it.
+    "/admin/report-cards/studio": "see write_paths_report_studio.py",
+    "/admin/report-cards/studio/lock": "see write_paths_report_studio.py",
+    "/admin/report-cards/studio/use": "see write_paths_report_studio.py",
+    "/admin/report-cards/studio/preview": "see write_paths_report_studio.py",
+    "/admin/report-cards/studio/assets": "see write_paths_report_studio.py",
+    "/admin/report-cards/studio/assets/<int:asset_id>/delete": "see write_paths_report_studio.py",
     # Payroll: pay, settings, items, and a month prepared, changed, approved, reopened, paid and cancelled, valid and
     # hostile (one's own pay, the preparer approving, a locked run), in write_paths_payroll.py.
     "/admin/payroll/runs": "see write_paths_payroll.py",
@@ -54,7 +63,7 @@ EXEMPT = {
     "/admin/clock": "see write_paths_staff_attendance.py",
     "/platform/schools/<slug>/timezone": "see write_paths_staff_attendance.py",
     "/admin/clock/correction": "see write_paths_staff_attendance.py",
-    "/admin/staff-attendance/settings": "see write_paths_staff_attendance.py",
+    "/admin/settings/staff-attendance": "see write_paths_staff_attendance.py",
     "/admin/staff-attendance/display": "see write_paths_staff_attendance.py",
     "/admin/staff-attendance/devices/<int:did>/reset": "see write_paths_staff_attendance.py",
     "/admin/staff-attendance/closed": "see write_paths_staff_attendance.py",

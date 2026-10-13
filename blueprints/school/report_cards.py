@@ -23,11 +23,10 @@ from blueprints.school.helpers import _class_teacher_allowed
 from core import subdivisions as subdivision_reach
 from blueprints.school.report_card_data import (
     HEAD_TITLES, MAX_COMMENT_LENGTH, SETTING_HEAD_NAME, SETTING_HEAD_SIGNATURE, SETTING_HEAD_TITLE,
-    SETTING_NEXT_TERM, TRAIT_GROUPS, TRAIT_SCALE, _parse_ratings, build_card, build_cards, card_for_web, class_overview,
+    SETTING_NEXT_TERM, TRAIT_GROUPS, TRAIT_SCALE, _parse_ratings, build_card, build_cards, card_for_web, report_cards_pdf, class_overview,
     report_settings, save_report_settings, term_from_slug, term_slug, traits_overview,
 )
 from blueprints.finance.helpers import _save_signature_data_url
-from core.report_card_pdf import render_report_cards_pdf
 from core.security import admin_required, audit_log, csrf_protect, current_admin
 from core.storage import delete_upload, upload_exists
 from core.uploads import _save_image_upload
@@ -96,7 +95,7 @@ def _file_name(card):
 
 
 def _pdf_response(cards, name):
-    response = Response(render_report_cards_pdf(cards), mimetype='application/pdf')
+    response = Response(report_cards_pdf(cards), mimetype='application/pdf')
     response.headers['Content-Disposition'] = f'inline; filename="{name}"'
     response.headers['Cache-Control'] = 'no-store'
     return response

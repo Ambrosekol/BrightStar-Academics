@@ -497,7 +497,7 @@ def admin_staff_attendance_month():
 
 
 # ---------------------------------------------------------------- settings
-@app.route('/admin/staff-attendance/settings', methods=['GET', 'POST'])
+@app.route('/admin/settings/staff-attendance', methods=['GET', 'POST'])
 @admin_required
 @csrf_protect
 def admin_staff_attendance_settings():

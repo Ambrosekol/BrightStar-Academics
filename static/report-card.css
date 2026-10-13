@@ -1,0 +1,10 @@
+/* A report card page as static/id-card-render.js and static/report-card-render.js draw it: the font the PDF uses,
+   shipped with the app, and the blocks' building pieces. */
+@font-face { font-family: "BS DejaVu Sans"; font-weight: 400; font-style: normal; src: url("fonts/DejaVuSans.ttf") format("truetype"); }
+@font-face { font-family: "BS DejaVu Sans"; font-weight: 700; font-style: normal; src: url("fonts/DejaVuSans-Bold.ttf") format("truetype"); }
+.rc-block { position: absolute; inset: 0; overflow: hidden; }
+.rc-cell { position: absolute; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-rect { position: absolute; }
+.rc-outline { position: absolute; inset: 0; box-sizing: border-box; pointer-events: none; }
+.rc-comment { white-space: pre-wrap; }
+.rc-page-num { display: none; }

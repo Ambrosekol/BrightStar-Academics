@@ -175,7 +175,7 @@ SCHOOL = (6.5244, 3.3792)
 NEAR = {"lat": "6.5250", "lng": "3.3795", "acc": "25"}          # about 70 m away
 FAR = {"lat": "6.6000", "lng": "3.3800", "acc": "20"}           # about 8 km away
 VAGUE = {"lat": "6.5250", "lng": "3.3795", "acc": "450"}
-SET = "/admin/staff-attendance/settings"
+SET = "/admin/settings/staff-attendance"
 CLOCK = "/admin/clock"
 
 

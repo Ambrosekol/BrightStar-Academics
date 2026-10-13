@@ -17,12 +17,17 @@ title, name and signature. The marks are the term result the school already work
 
 ``build_cards`` returns plain dictionaries. The PDF (core/report_card_pdf.py) and the web page
 (templates/report_card.html) are both drawn from the same dictionary, so they say the same thing.
+
+**The school's own design.** A school that designs its report card in the report card studio
+(blueprints/school/report_card_studio.py) and switches it on gets every card drawn from that design instead:
+``report_cards_pdf`` and ``card_for_web`` decide which, so every page that shows or downloads a card follows it.
 """
 
 import json
 import re
 from datetime import datetime, timezone
 
+from flask import current_app
 from sqlalchemy import case, func, or_, select
 
 from app import ACADEMIC_TERMS
@@ -33,7 +38,7 @@ from core.branding import school_brand
 from core.db_helpers import tuples
 from core.storage import upload_exists
 from models import (
-    AcademicSession, Admin, ReportCardComment, ReportCardTrait, SchoolAssessment, SchoolClass, SchoolSetting,
+    AcademicSession, Admin, AttendanceRecord, IdCardAsset, ReportCardComment, ReportCardDesign, ReportCardTrait, SchoolAssessment, SchoolClass, SchoolSetting,
     SchoolStudentResult, SchoolSubject, Student, StudentEnrolment, db,
 )
 
@@ -310,6 +315,55 @@ def _issued_on(latest_release):
     return f'{moment.day} {moment.strftime("%B %Y")}'
 
 
+def _positions(stats):
+    """``{student_id: position}`` in the class by overall percentage, equal scores sharing a place (1, 2, 2, 4)."""
+    scores = sorted(((e['percentage'], sid) for sid, e in (stats or {}).get('students', {}).items() if e.get('total_max')),
+                    reverse=True)
+    places, last, place = {}, None, 0
+    for i, (pct, sid) in enumerate(scores, 1):
+        if pct != last:
+            place, last = i, pct
+        places[sid] = place
+    return places
+
+
+def _attendance(student_ids, session_id, term):
+    """``{student_id: {'opened', 'present', 'late', 'absent', 'excused', 'percentage'}}`` for the term, in one query.
+    'present' counts a late arrival as present; 'opened' is the days the register was taken for the student."""
+    counts = {}
+    for sid, status, n in tuples(select(AttendanceRecord.student_id, AttendanceRecord.status, func.count())
+                                 .where(AttendanceRecord.student_id.in_(list(student_ids) or [0]),
+                                        AttendanceRecord.session_id == session_id, AttendanceRecord.term == term)
+                                 .group_by(AttendanceRecord.student_id, AttendanceRecord.status)):
+        counts.setdefault(sid, {})[status] = n
+    out = {}
+    for sid, c in counts.items():
+        present, late, absent, excused = (c.get(k, 0) for k in ('present', 'late', 'absent', 'excused'))
+        opened = present + late + absent + excused
+        out[sid] = {'opened': opened, 'present': present + late, 'late': late, 'absent': absent, 'excused': excused,
+                    'percentage': round((present + late) / opened * 100, 1) if opened else None}
+    return out
+
+
+def _date_text(value):
+    """'2014-03-12' as '12 March 2014' (anything else as it is)."""
+    try:
+        d = datetime.strptime(str(value or '')[:10], '%Y-%m-%d')
+    except ValueError:
+        return str(value or '')
+    return f'{d.day} {d.strftime("%B %Y")}'
+
+
+def _age(value):
+    try:
+        born = datetime.strptime(str(value or '')[:10], '%Y-%m-%d').date()
+    except ValueError:
+        return None
+    today = datetime.now(timezone.utc).date()
+    years = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+    return years if 0 < years < 120 else None
+
+
 def build_cards(student_ids, session_id, term):
     """The report cards that are ready, for these students in one term. Students whose card is not ready are left out.
 
@@ -353,8 +407,10 @@ def build_cards(student_ids, session_id, term):
     settings = report_settings()
     head = {'title': settings['head_title'], 'name': settings['head_name'], 'signature_path': _file(settings['head_signature'])}
     key = grading_key()
+    attendance = _attendance(ready_ids, session_id, term)
 
     stats_by_class = {}
+    positions_by_class = {}
     cards = []
     for student_id in ready_ids:
         person = people.get(student_id)
@@ -365,6 +421,9 @@ def build_cards(student_ids, session_id, term):
         if class_id not in stats_by_class:
             stats_by_class[class_id] = class_term_stats(class_id, session_id, term) if class_id else None
         stats = stats_by_class[class_id]
+        if class_id not in positions_by_class:
+            positions_by_class[class_id] = _positions(stats)
+        class_pcts = [e['percentage'] for e in (stats or {}).get('students', {}).values() if e.get('total_max')]
         mine = (stats or {}).get('students', {}).get(student_id)
         if mine is None:
             # Not in the class figures (no class that session): work this student's own out.
@@ -416,12 +475,22 @@ def build_cards(student_ids, session_id, term):
                         'class_name': person.class_name or '', 'gender': student.gender or '',
                         # Senior secondary only: the department the student belongs to, on a card earned in an SSS class.
                         'department': (student.department or '') if class_is_senior(class_id) else '',
-                        'photo_path': _file(student.photo_path)},
+                        'photo_path': _file(student.photo_path),
+                        # Further details a school's own design (the report card studio) may show. Never health details.
+                        'date_of_birth': _date_text(student.date_of_birth), 'age': _age(student.date_of_birth),
+                        'guardian_name': student.guardian_name or '', 'guardian_phone': student.guardian_phone or '',
+                        'guardian_email': student.guardian_email or '', 'blood_group': student.blood_group or '',
+                        'genotype': student.genotype or '', 'state_of_origin': student.state_of_origin or '',
+                        'religion': student.religion or ''},
             'subjects': rows,
             'summary': {'total': mine['total'], 'total_max': mine['total_max'], 'percentage': mine['percentage'],
                         'grade': letter, 'remark': remark,
                         'class_average_percentage': (stats or {}).get('class_average'),
-                        'class_size': (stats or {}).get('class_size') or 0, 'subjects_count': len(rows)},
+                        'class_size': (stats or {}).get('class_size') or 0, 'subjects_count': len(rows),
+                        'position': positions_by_class[class_id].get(student_id),
+                        'class_highest': max(class_pcts) if class_pcts else None,
+                        'class_lowest': min(class_pcts) if class_pcts else None},
+            'attendance': attendance.get(student_id) or {},
             'comment': comment_block,
             'traits': traits_block,
             'head': head,
@@ -493,6 +562,51 @@ def traits_overview(class_id, session_id, term):
     return out
 
 
+def school_design():
+    """``(layout, {image id: stored path})`` when the school's report cards use its own design, else None."""
+    from core import report_card_design as rcd
+    row = db.session.execute(select(ReportCardDesign.layout_json, ReportCardDesign.in_use)
+                             .order_by(ReportCardDesign.id).limit(1)).first()
+    if not row or not row.in_use:
+        return None
+    assets = dict(tuples(select(IdCardAsset.id, IdCardAsset.file_path)))
+    try:
+        return rcd.clean_layout(row.layout_json, set(assets)), assets
+    except ValueError:
+        current_app.logger.exception('The report card design could not be read; using the standard card')
+        return None
+
+
+def report_cards_pdf(cards):
+    """The PDF of these cards: drawn from the school's own design when it uses one, else the standard card."""
+    design = school_design()
+    if design:
+        from core.report_card_design_pdf import render_designed_pdf
+        return render_designed_pdf(cards, *design)
+    from core.report_card_pdf import render_report_cards_pdf
+    return render_report_cards_pdf(cards)
+
+
+def _designed_web(card, layout, assets, picture):
+    """What static/report-card-render.js draws the card's page from, with every picture embedded."""
+    from core import report_card_design as rcd
+    view = rcd.view_data(card)
+    school, student = card['school'], card['student']
+    comment = card.get('comment') or {}
+    view.update({'brand': {'primary': school.get('primary') or '#0d2b52', 'accent': school.get('accent') or '#1d6fd8'},
+                 'logo': picture(school.get('logo_path')), 'photo': picture(student.get('photo_path')),
+                 'initials': ''.join(p[:1] for p in (student.get('name') or '').split()[:2]).upper(),
+                 'signatures': {'head': picture(card['head'].get('signature_path')),
+                                'teacher': picture(comment.get('teacher_signature_path'))},
+                 'assets': {i: picture(assets[i]) for i in rcd.assets_used(layout) if assets.get(i)}})
+    # Only the details the design shows go into the page (a guardian's phone the design does not print stays out).
+    shown = {el['field'] for side in rcd.SIDES for el in layout['sides'][side] if el['type'] in ('field', 'barcode')}
+    view['data'] = {k: v for k, v in view['data'].items() if k in shown}
+    view['barcodes'] = {k: v for k, v in view['barcodes'].items() if k in shown}
+    pages = [side for side in rcd.SIDES if side == rcd.SIDES[0] or any(not e.get('hidden') for e in layout['sides'][side])]
+    return {'layout': layout, 'view': view, 'pages': pages}
+
+
 def card_for_web(card):
     """The card plus the pictures it needs as data, ready for the web page.
 
@@ -506,6 +620,9 @@ def card_for_web(card):
         return _result_file_data_uri(path) if path else ''
 
     comment = card.get('comment') or {}
+    design = school_design()
+    if design:
+        return {**card, 'design': _designed_web(card, design[0], design[1], picture), 'web': {}}
     return {**card, 'web': {'logo': picture(card['school']['logo_path']), 'photo': picture(card['student']['photo_path']),
                             'teacher_signature': picture(comment.get('teacher_signature_path')),
                             'head_signature': picture(card['head']['signature_path'])}}

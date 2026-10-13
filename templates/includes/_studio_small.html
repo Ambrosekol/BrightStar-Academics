@@ -1,0 +1,11 @@
+{#- Shown instead of a design studio on a phone or a small screen (static/id-card-designer.css shows it below 1024 px;
+    blueprints/school/design_studios.py sends it on its own to a phone). `always` shows it whatever the width. -#}
+<div class="ac studio-small{{ ' studio-small--always' if always }}" role="alertdialog" aria-labelledby="studioSmallTitle" aria-describedby="studioSmallText">
+  <div class="studio-small__box">
+    <div class="studio-small__ico" aria-hidden="true">🖥️</div>
+    <h1 id="studioSmallTitle">Please use a computer to design</h1>
+    <p id="studioSmallText">The design studios need a bigger screen and a mouse. Open this page on a laptop or desktop computer
+      to design the school's ID cards and report cards. Everything else works on your phone as usual.</p>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_home') }}">Back to the Overview</a>
+  </div>
+</div>

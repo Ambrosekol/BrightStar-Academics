@@ -18,6 +18,33 @@
   ],
   "releases": [
     {
+      "version": "2.32.0",
+      "date": "2026-10-13",
+      "title": "Design studios for ID cards and report cards, and a clearer menu",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Design your school's own report card in the new report card studio: start from one of four templates or a blank page, and add the results table, summary, attendance, position in class, trait ratings, grading key, teacher's comment, the student's details (date of birth, guardian, attendance and more), signatures, shapes, colours and your own images. Preview it as a PDF, then press Use this design and every report card follows it, for staff, parents and students.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "The menu is now in two parts: Teaching (your classes, attendance, academics, marking, report cards) and Management (students and parents, staff, finance, design and printing, store and library). The ID card and report card studios are together under Design studios. Both studios fill the whole screen, with every tool in view, and need a computer: on a phone they ask you to use one.",
+          "help": "welcome"
+        },
+        {
+          "audience": "staff",
+          "text": "Design your school's ID cards freely in the new ID card studio: text in many fonts, shapes with colours and gradients, the photograph and logo clipped to circles or other shapes, your own uploaded images, the head's and the staff member's signatures, a QR code and a barcode. Move, resize and turn anything, line items up, use layers, undo, zoom, start from a template, and bring back an earlier version. The Details tab puts any of the person's details on the card: for students the date of birth, age, blood group, genotype, guardian and more; for staff the title, job, staff number, date employed and an emergency contact. What you design is exactly what prints.",
+          "help": "students"
+        },
+        {
+          "audience": "staff",
+          "text": "Staff attendance settings are now in Settings, under Staff & access.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.31.1",
       "date": "2026-10-13",
       "title": "Safer staff records, attendance and payroll, and faster pages",

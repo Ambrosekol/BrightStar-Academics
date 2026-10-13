@@ -10,9 +10,8 @@ import re
 from flask import Response, abort, render_template, session, url_for
 
 from app import _release_due_school_results, app
-from blueprints.school.report_card_data import build_card, card_for_web, term_from_slug
+from blueprints.school.report_card_data import build_card, card_for_web, report_cards_pdf, term_from_slug
 from blueprints.student_portal.helpers import student_required
-from core.report_card_pdf import render_report_cards_pdf
 from models import db
 
 
@@ -42,7 +41,7 @@ def student_report_card_view(session_id, slug):
 def student_report_card_pdf(session_id, slug):
     card = _card_or_404(session_id, slug)
     name = re.sub(r'[^A-Za-z0-9._-]+', '-', f"Report-Card-{card['term']}-{card['session']}").strip('-')
-    response = Response(render_report_cards_pdf([card]), mimetype='application/pdf')
+    response = Response(report_cards_pdf([card]), mimetype='application/pdf')
     response.headers['Content-Disposition'] = f'inline; filename="{name}.pdf"'
     response.headers['Cache-Control'] = 'no-store'
     return response

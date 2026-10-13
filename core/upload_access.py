@@ -12,6 +12,7 @@ Folder       Who may open a file in it                                          
 branding     anyone (the sign-in page needs the logo and photographs)                     school branding
 messages     nobody here; only the permission-checked download route serves them          staff messages
 hr           nobody here; only the HR download route serves them, to hr.view              staff records
+idcards      staff (the ID card designer and the print sheet draw them)                   ID card studio
 admins       staff                                                                        staff accounts
 signatures   staff (report cards and receipts embed signatures in the file they build)    receipts, report cards
 candidates   staff, and the candidate the photograph belongs to                           candidate register
@@ -57,6 +58,7 @@ FOLDER_RULES = {
     'branding': PUBLIC,
     'messages': NEVER,
     'hr': NEVER,
+    'idcards': frozenset({'admin'}),
     'admins': frozenset({'admin'}),
     'signatures': frozenset({'admin'}),
     'candidates': frozenset({'admin', 'own_candidate'}),

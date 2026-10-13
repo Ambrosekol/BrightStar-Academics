@@ -15,7 +15,8 @@
   <span class="ac-hint">A card is ready once every result for the term is released; it then reaches the student and parent by itself.</span>
   <div class="ac-top__act">
     {% if can_comment %}<button type="button" class="ac-btn" id="rc-signature-open"><span class="rc-dot {{ 'is-on' if signature_path else 'is-off' }}" aria-hidden="true"></span>{{ 'My signature' if signature_path else 'Set my signature' }}</button>{% endif %}
-    {% if can_manage %}<a class="ac-btn" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature and settings</a>{% endif %}
+    {% if can_manage %}<a class="ac-btn" href="{{ url_for('admin_report_card_studio') }}">Design the report card</a>
+    <a class="ac-btn" href="{{ url_for('admin_school_report_card_settings') }}">Head's signature and settings</a>{% endif %}
   </div>
 </header>
 </div>

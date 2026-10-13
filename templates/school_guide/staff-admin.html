@@ -45,7 +45,7 @@ profile. Nobody else can be given access to them, no matter what permissions the
 in Settings, that is why, and it is normal for every account except the School Admin's own.</div>
 
 <h2 id="staff">Staff</h2>
-<p><strong>Teachers</strong> (in the menu under People) shows who teaches what. The figures across the top count the
+<p><strong>Teachers</strong> (in the menu under Management, Staff) shows who teaches what. The figures across the top count the
 gaps: classes with no class teacher, and subjects offered but taught by nobody. View it <strong>By class</strong> (each
 class with its class teacher and subject teachers) or <strong>By teacher</strong>, and tick <strong>Only what needs a
 teacher</strong> to see the gaps alone. <strong>Change duties</strong> opens a pop-up with the classes they are class
@@ -87,7 +87,7 @@ password, their username and one-time password show in the same pop-up, ready to
 changed at their first sign-in. Nobody, not even the School Admin, can see a password, only reset it.</p>
 
 <h2 id="hr">Staff records and leave</h2>
-<p><a href="{{ url_for('admin_hr_staff') }}">Staff records</a> (in the menu under People) is the school's file on
+<p><a href="{{ url_for('admin_hr_staff') }}">Staff records</a> (in the menu under Management, Staff) is the school's file on
 everyone it employs: teachers, and also the driver, the cleaners and the security men, who have no portal sign-in. It
 needs the right to view staff records; changing them needs the right to manage them. The <strong>HR Officer</strong>
 role has both, and may approve leave.</p>
@@ -130,10 +130,11 @@ the School Admin. The person is told on the bell either way. Below are who is on
 
 <h2 id="staff-attendance">Staff attendance</h2>
 <p>Staff clock in and out on their own phones. <a href="{{ url_for('admin_staff_attendance') }}">Staff attendance</a> (in
-the menu under People) is the register; setting it up needs the right to manage staff attendance (the HR Officer role has
+the menu under Management, Staff) is the register; setting it up needs the right to manage staff attendance (the HR Officer role has
 it; the head teacher may see the register). Only staff with a staff record can clock in, so add the staff records first.</p>
 <ul>
-  <li><strong>Setting up.</strong> In <em>Settings</em>, stand at the school and press <em>Use where this device is now</em>,
+  <li><strong>Setting up.</strong> In <a href="{{ url_for('admin_settings') }}">Settings</a>, under Staff &amp; access, open
+  <em>Staff attendance</em>; stand at the school and press <em>Use where this device is now</em>,
   set how far from that point counts as the school (150 metres suits most), the time after which someone is late, and
   the work days, then turn it on. Absences count from that day.</li>
   <li><strong>The screen.</strong> <em>Make the link for the screen</em> and open it on a tablet or computer staff pass on

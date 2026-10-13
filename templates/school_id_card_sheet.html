@@ -1,17 +1,18 @@
-{% from 'includes/_id_card.html' import card, styles %}
 {#- ID cards to print (blueprints/school/id_cards.py): A4 pages of real-size cards with cut marks - ten landscape cards
     (two across, five down) or nine portrait (three by three) a page. With the backs, each page of fronts is followed by
     its backs, mirrored left to right, so a double-sided print (flipped on the long edge) puts each back behind its
-    front. Never cached; every print is in the activity log. -#}
+    front. Each card is drawn by static/id-card-render.js, the same code as the designer, from the design and the
+    card's own details (plain values in a JSON block, never HTML). Never cached; every print is in the activity log. -#}
 {% set portrait = layout.orientation == 'portrait' %}
 {% set per_row = 3 if portrait else 2 %}
 {% set per_page = 9 if portrait else 10 %}
+{% set card_w, card_h = (54.0, 85.6) if portrait else (85.6, 54.0) %}
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ID cards — {{ school_brand.name }}</title>
-{{ styles(brand) }}
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: #e9e9ec; font: 13px/1.4 system-ui, sans-serif; }
@@ -21,11 +22,12 @@
   .sheet { width: 210mm; height: 297mm; margin: 14px auto; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.12);
            display: grid; grid-template-columns: repeat({{ per_row }}, auto); justify-content: center; align-content: start;
            gap: {{ '5mm 6mm' if portrait else '3mm 8mm' }}; padding: 7mm 6mm; }
-  .slot { position: relative; }
+  .slot { position: relative; width: {{ card_w }}mm; height: {{ card_h }}mm; }
   .slot .idc { border-radius: 3mm; outline: .2mm dashed #b8bdc5; outline-offset: 0; }
   .slot::before, .slot::after { content: ""; position: absolute; border: 0 solid #8a9099; pointer-events: none; }
   .slot::before { left: -2.5mm; right: -2.5mm; top: 0; bottom: 0; border-top-width: .2mm; border-bottom-width: .2mm; z-index: -1; }
   .slot::after { top: -2.5mm; bottom: -2.5mm; left: 0; right: 0; border-left-width: .2mm; border-right-width: .2mm; z-index: -1; }
+  .slot.is-empty::before, .slot.is-empty::after { display: none; }
   .back { direction: rtl; }
   .back .slot { direction: ltr; }
   .note { max-width: 210mm; margin: 0 auto; padding: 0 2mm; color: #5d6673; font-size: 12px; }
@@ -43,18 +45,27 @@
 <div class="bar"><span><b>{{ views|length }} {{ kind }} ID card{{ '' if views|length == 1 else 's' }}</b> · A4, {{ per_page }} a page{% if backs %}, each page of fronts followed by its backs{% endif %} · print at 100% (no "fit to page")</span>
   <button type="button" data-print-now>Print</button></div>
 <p class="note">Use card stock or print on paper and laminate. Cut along the marks. {% if backs %}For the backs, print double-sided and flip on the long edge.{% endif %}</p>
-{% for page in views|batch(per_page) %}
+{% for page in views|batch(per_page) %}{% set first = loop.index0 * per_page %}
 <section class="sheet">
-  {% for v in page %}<div class="slot">{{ card(layout, 'front', v, logo_url, signature_url) }}</div>{% endfor %}
+  {% for v in page %}<div class="slot" data-card="{{ first + loop.index0 }}" data-side="front"></div>{% endfor %}
 </section>
 {% if backs and layout.sides.back %}
 <section class="sheet back">
-  {% for row in page|batch(per_row) %}{% for v in row %}<div class="slot">{{ card(layout, 'back', v, logo_url, signature_url) }}</div>{% endfor %}{% for _ in range(per_row - row|length) %}<div class="slot"></div>{% endfor %}{% endfor %}
+  {% for row in page|batch(per_row) %}{% set row_first = first + loop.index0 * per_row %}{% for v in row %}<div class="slot" data-card="{{ row_first + loop.index0 }}" data-side="back"></div>{% endfor %}{% for _ in range(per_row - row|length) %}<div class="slot is-empty"></div>{% endfor %}{% endfor %}
 </section>
 {% endif %}
 {% endfor %}
+<script type="application/json" id="idcSheet" nonce="{{ csp_nonce() }}">{{ {'layout': layout, 'common': common, 'cards': views}|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
 <script nonce="{{ csp_nonce() }}">
-document.querySelector('[data-print-now]').addEventListener('click', function () { window.print(); });
+(function () {
+  var data = JSON.parse(document.getElementById('idcSheet').textContent);
+  document.querySelectorAll('[data-card]').forEach(function (slot) {
+    var card = data.cards[Number(slot.getAttribute('data-card'))];
+    if (card) window.IdCardRender.draw(slot, data.layout, slot.getAttribute('data-side'), Object.assign({}, data.common, card));
+  });
+  document.querySelector('[data-print-now]').addEventListener('click', function () { window.print(); });
+})();
 </script>
 </body>
 </html>

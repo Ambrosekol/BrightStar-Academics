@@ -1,0 +1,192 @@
+{% extends 'admin_base.html' %}
+{% block title %}Report card studio — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The report card studio (blueprints/school/report_card_studio.py, static/id-card-designer.js in report mode): design
+    the school's own report card on an A4 page (and a second one if wanted) - text and the student's details, attendance
+    and position, shapes, pictures, signatures and the report card's own blocks (results table, summary, trait ratings,
+    grading key, teacher's comment), each with its own styling - with layers, alignment, snapping, undo, zoom, earlier
+    versions and starting templates. The page is drawn by static/id-card-render.js and static/report-card-render.js,
+    the same code that shows report cards on the web; the PDF follows the same rules (core/report_card_design_pdf.py).
+    The server rebuilds whatever is saved from known keys only (core/report_card_design.clean_layout).
+
+    It fills the whole window, like a design program, so every tool is on screen at once and the page never scrolls:
+    the tools along the top, what to add on the left (one tab at a time), the page in the middle, and the chosen item,
+    the layers and the versions on the right. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='5') }}">
+{% set locked = design and design.locked %}
+{% set in_use = design and design.in_use %}
+{% set flashed = get_flashed_messages() %}
+<div class="ac idd idd--report idd--app" data-idd role="application" aria-label="Report card studio">
+
+<header class="rcs-bar">
+  <a class="rcs-exit" href="{{ url_for('admin_design_studios') }}" title="Leave the studio">← Exit</a>
+  <strong class="rcs-title">Report card studio</strong>
+  <span class="idd-sep"></span>
+  <div class="idd-toolbar" role="toolbar" aria-label="Tools">
+    <button type="button" class="idd-tool" data-tool="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button type="button" class="idd-tool" data-tool="redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool" data-tool="zoomout" title="Zoom out" aria-label="Zoom out">−</button>
+    <span class="idd-zoom" data-zoom-label>100%</span>
+    <button type="button" class="idd-tool" data-tool="zoomin" title="Zoom in (Ctrl + mouse wheel)" aria-label="Zoom in">+</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="fit" title="Show the whole page">Fit</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="grid" title="Show a 5 mm grid (and snap to 0.5 mm)">Grid</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="snap" title="Snap to the page and to other items">Snap</button>
+    <span class="idd-sep"></span>
+    <div class="idd-sides" role="group" aria-label="Page">
+      <button type="button" class="is-active" data-side="page1">Page 1</button>
+      <button type="button" data-side="page2">Page 2</button>
+    </div>
+  </div>
+  <span class="idd-grow"></span>
+  <form method="post" action="{{ url_for('admin_report_card_studio_use') }}" class="rcs-use{{ ' is-on' if in_use }}"
+        data-confirm="{{ 'Go back to the standard report card for every student?' if in_use else 'Use the saved design for every report card - the PDF and the page parents and students see? Save your changes first: report cards use the saved design.' }}" data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="use" value="{{ '0' if in_use else '1' }}">
+    <button type="submit" class="rcs-switch" role="switch" aria-checked="{{ 'true' if in_use else 'false' }}" data-use-btn
+            title="{{ 'Report cards use this design. Press to go back to the standard design.' if in_use else 'Report cards use the standard design. Press to use this one.' }}"
+            {% if not design %} disabled{% endif %}><span class="rcs-switch__knob"></span>{{ 'In use' if in_use else 'Use this design' }}</button>
+  </form>
+  <button class="ac-btn ac-btn--sm" type="button" data-preview title="The design as it prints, with a made-up student">Preview PDF</button>
+  {% if locked %}
+  <form method="post" action="{{ url_for('admin_report_card_studio_lock') }}" data-confirm="Unlock the report card design? It can then be changed by anyone allowed to manage report cards." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="0">
+    <button class="ac-btn ac-btn--sm" type="submit">Unlock</button></form>
+  {% else %}
+  <button class="ac-btn ac-btn--sm" type="button" data-templates>Templates</button>
+  <form method="post" action="{{ url_for('admin_report_card_studio_lock') }}" data-idd-lock data-confirm="Save and lock the report card design? Nobody can change it until it is unlocked." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="1">
+    <button class="ac-btn ac-btn--sm" type="submit">Lock</button></form>
+  <button class="ac-btn ac-btn--sm ac-btn--primary" type="button" data-idd-save title="Save (Ctrl+S)">Save</button>
+  {% endif %}
+  <button class="idd-tool rcs-fs" type="button" data-fullscreen title="Full screen (hide the browser's bars)" aria-label="Full screen">⛶</button>
+</header>
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<div class="rcs-body">
+  <aside class="rcs-left" aria-label="Add to the page" data-tabs="left">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="insert">Insert</button>
+      <button type="button" role="tab" data-tab="details">Details</button>
+      <button type="button" role="tab" data-tab="images">Images</button>
+      <button type="button" role="tab" data-tab="page">Page</button>
+    </div>
+    <section class="rcs-pane" data-tab-pane="insert" role="tabpanel">
+      <h2>Report blocks</h2>
+      <div class="idd-add">
+        <button type="button" data-add="results"><span class="idd-i idd-i-field">▦</span>Results table</button>
+        <button type="button" data-add="summary"><span class="idd-i idd-i-field">Σ</span>Summary</button>
+        <button type="button" data-add="summary" data-items="opened,present,absent,attendance" data-size="120x16"><span class="idd-i idd-i-field">✓</span>Attendance</button>
+        <button type="button" data-add="traits"><span class="idd-i idd-i-field">★</span>Trait ratings</button>
+        <button type="button" data-add="grading"><span class="idd-i idd-i-field">G</span>Grading key</button>
+        <button type="button" data-add="comment"><span class="idd-i idd-i-field">“</span>Comment</button>
+      </div>
+      <h2>Elements</h2>
+      <div class="idd-add">
+        <button type="button" data-add="text"><span class="idd-i idd-i-text">T</span>Text</button>
+        <button type="button" data-add="field"><span class="idd-i idd-i-field">≡</span>Detail</button>
+        <button type="button" data-add="photo"><span class="idd-i idd-i-photo"></span>Photo</button>
+        <button type="button" data-add="logo"><span class="idd-i idd-i-logo"></span>Logo</button>
+        <button type="button" data-add="barcode"><span class="idd-i idd-i-bar"></span>Barcode</button>
+        <button type="button" data-add="signature" data-who="head"><span class="idd-i idd-i-sign">✍</span>Head's sign</button>
+        <button type="button" data-add="signature" data-who="teacher"><span class="idd-i idd-i-sign">✍</span>Teacher's sign</button>
+      </div>
+      <h2>Shapes</h2>
+      <div class="idd-shapes">
+        {% for key, path in [('rect', 'M10 20H90V80H10Z'), ('ellipse', ''), ('triangle', 'M50 10L90 90H10Z'), ('diamond', 'M50 8L92 50L50 92L8 50Z'),
+                             ('hexagon', 'M28 12H72L92 50L72 88H28L8 50Z'), ('pentagon', 'M50 8L92 40L76 90H24L8 40Z'),
+                             ('star', 'M50 6L61 38H95L68 58L78 92L50 72L22 92L32 58L5 38H39Z'), ('chevron', 'M8 15H68L92 50L68 85H8L32 50Z'),
+                             ('arrow', 'M6 35H58V12L94 50L58 88V65H6Z'), ('wave', 'M6 50C26 20 44 20 56 44S80 72 94 40V90H6Z'),
+                             ('corner', 'M8 8H92C66 18 30 46 8 92Z'), ('line', 'M8 50H92')] %}
+        <button type="button" data-add="shape" data-shape="{{ key }}" title="{{ key|capitalize }}" aria-label="{{ key|capitalize }}">
+          <svg viewBox="0 0 100 100" aria-hidden="true">{% if key == 'ellipse' %}<ellipse cx="50" cy="50" rx="42" ry="30"/>{% elif key == 'line' %}<path d="{{ path }}" class="is-line"/>{% else %}<path d="{{ path }}"/>{% endif %}</svg></button>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="details" role="tabpanel" hidden>
+      <h2>Student details</h2>
+      <p class="ac-hint">Click one to put it on the page. A detail can be changed to any other from its settings.</p>
+      <div class="idd-fields">
+        {% for key, label in [('student_name', "Name"), ('admission_no', 'Admission no.'), ('class', 'Class'), ('gender', 'Gender'),
+                              ('date_of_birth', 'Date of birth'), ('age', 'Age'), ('department', 'Department'),
+                              ('guardian_name', 'Parent/guardian'), ('guardian_phone', "Guardian's phone"),
+                              ('blood_group', 'Blood group'), ('genotype', 'Genotype'), ('state_of_origin', 'State of origin'),
+                              ('religion', 'Religion')] %}
+        <button type="button" class="ac-chip" data-add="field" data-field="{{ key }}" data-label="{{ label }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <h2 class="rcs-h2-gap">Results and attendance</h2>
+      <div class="idd-fields">
+        {% for key, label in [('position_of', 'Position'), ('percentage', 'Percentage'), ('grade', 'Overall grade'), ('total', 'Total'),
+                              ('class_average', 'Class average'), ('class_highest', 'Highest in class'), ('class_lowest', 'Lowest in class'),
+                              ('days_opened', 'School opened'), ('days_present', 'Days present'), ('days_absent', 'Days absent'),
+                              ('attendance_percentage', 'Attendance %')] %}
+        <button type="button" class="ac-chip" data-add="field" data-field="{{ key }}" data-label="{{ label }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <h2 class="rcs-h2-gap">Term and school</h2>
+      <div class="idd-fields">
+        {% for key, label in [('title', 'Report title'), ('term', 'Term'), ('session', 'Session'), ('issued_on', 'Date issued'),
+                              ('next_term_begins', 'Next term begins'), ('teacher_name', "Teacher's name"), ('head_name', "Head's name"),
+                              ('school_name', 'School name'), ('school_motto', 'Motto'), ('school_address', 'Address'),
+                              ('school_phone', 'Phone'), ('school_email', 'Email')] %}
+        <button type="button" class="ac-chip" data-add="field" data-field="{{ key }}" data-label="{{ label }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="images" role="tabpanel" hidden>
+      <h2>The school's images</h2>
+      <p class="ac-hint">Watermarks, borders, the school's stamp: PNG or JPG. Shared with the ID card studio. Click one to put it on the page.</p>
+      <label class="ac-btn ac-btn--sm idd-upload">Upload an image<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-upload {{ upload_attrs('image') }} hidden></label>
+      {{ upload_hint() }}
+      <div class="idd-library" data-library></div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="page" role="tabpanel" hidden>
+      <h2>The page</h2>
+      <div data-cardpanel></div>
+    </section>
+  </aside>
+
+  <section class="rcs-centre">
+    <div class="idd-stage" data-stage tabindex="0" aria-label="The report card page. Click to choose, drag to move, arrow keys to nudge.">
+      <div class="idd-holder" data-holder>
+        <div class="idd-card-host" data-card-host></div>
+        <div class="idd-overlay" data-overlay></div>
+      </div>
+    </div>
+    <p class="idd-status{{ ' is-locked' if locked }}{{ ' is-saved' if flashed and not locked }}" data-idd-status role="status">
+      {% if flashed %}{{ flashed[-1] }}
+      {% elif locked %}Locked{% if design.locked_at %} since {{ design.locked_at[:10] }}{% endif %}: the design cannot change until it is unlocked.
+      {% elif design %}Saved {{ design.updated_at[:16]|replace('T', ' ') }}. Changes are kept when you press Save (Ctrl+S).
+      {% else %}This is the Classic template, shown with a made-up student. Change anything, or pick another template, then press Save.{% endif %}</p>
+  </section>
+
+  <aside class="rcs-right" aria-label="The chosen item" data-tabs="right">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="props">Properties</button>
+      <button type="button" role="tab" data-tab="layers">Layers</button>
+      <button type="button" role="tab" data-tab="versions">Versions</button>
+    </div>
+    <section class="rcs-pane idd-props" data-tab-pane="props" data-props role="tabpanel"></section>
+    <section class="rcs-pane" data-tab-pane="layers" role="tabpanel" hidden><div class="idd-layers" data-layers></div></section>
+    <section class="rcs-pane" data-tab-pane="versions" role="tabpanel" hidden><div class="idd-versions" data-versions></div></section>
+  </aside>
+</div>
+</div>
+{% include 'includes/_studio_small.html' %}
+<dialog class="idd-tpl idd-tpl--report" data-template-dialog aria-labelledby="iddTplTitle">
+  <div class="idd-tpl__head">
+    <h2 id="iddTplTitle">Start from a template</h2>
+    <button type="button" class="idd-tpl__close" data-template-close aria-label="Close">×</button>
+  </div>
+  <p class="ac-hint">Pick one to put it on the page. Undo (Ctrl+Z) brings your own design back, and nothing is kept until you press Save.</p>
+  <div class="idd-tpl__grid" data-template-grid></div>
+</dialog>
+<script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ data|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='id-card-designer.js', v='5') }}"></script>
+{% endblock %}

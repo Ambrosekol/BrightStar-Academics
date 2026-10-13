@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ROUTES = (ROOT / "blueprints" / "school" / "id_cards.py").read_text(encoding="utf-8")
 CORE = (ROOT / "core" / "id_cards.py").read_text(encoding="utf-8")
 JS = (ROOT / "static" / "id-card-designer.js").read_text(encoding="utf-8")
+RENDER = (ROOT / "static" / "id-card-render.js").read_text(encoding="utf-8")
 
 
 def _route(name):
@@ -25,11 +26,22 @@ def _route(name):
 
 def test_a_design_is_rebuilt_before_it_is_stored_and_a_lock_holds():
     save = _route("admin_id_card_design_save")
-    assert "ic.clean_layout(request.form.get('layout', ''), kind)" in save
+    assert "ic.clean_layout(request.form.get('layout', ''), kind, {a.id for a in _asset_rows()})" in save
     assert "row.locked" in save and "409" in save
     assert "row.locked" in _route("admin_id_card_design_reset")
-    for rule in ("ELEMENT_TYPES", "COLOUR = re.compile(r'^#[0-9a-fA-F]{6}$')", "MAX_ELEMENTS", "fields_for(kind)"):
+    for rule in ("ELEMENT_TYPES", "COLOUR = re.compile(r'^#[0-9a-fA-F]{6}$')", "MAX_ELEMENTS", "fields_for(kind)",
+                 "_choice(raw.get('font'), spec['fonts']","_choice(raw.get('shape'), SHAPES", "_choice(raw.get('clip'), CLIPS",
+                 "if assets is None or asset not in assets", "re.sub(r'[\\x00-\\x08\\x0b-\\x1f\\x7f]'"):
         assert rule in CORE, rule
+
+
+def test_school_images_are_checked_and_kept_where_only_staff_can_open_them():
+    upload = _route("admin_id_card_asset_upload")
+    assert "_save_image_upload(upload, 'idcards', 'card')" in upload and "ic.MAX_ASSETS" in upload
+    delete = _route("admin_id_card_asset_delete")
+    assert "IdCardDesign.locked == 1" in delete and "409" in delete and "delete_upload(path)" in delete
+    access = (ROOT / "core" / "upload_access.py").read_text(encoding="utf-8")
+    assert "'idcards': frozenset({'admin'})" in access    # staff only: never students, parents or the public
 
 
 def test_tokens_are_random():
@@ -50,8 +62,14 @@ def test_printing_needs_every_person_to_be_within_reach():
 
 
 def test_nothing_is_printed_raw():
-    for name in ("includes/_id_card.html", "school_id_card_sheet.html", "school_id_card_designer.html", "school_id_cards.html",
-                 "id_card_verify.html"):
+    for name in ("school_id_card_sheet.html", "school_id_card_designer.html", "school_id_cards.html", "id_card_verify.html"):
         source = (ROOT / "templates" / name).read_text(encoding="utf-8")
         assert "|safe" not in source.replace(" ", ""), name
-    assert "innerHTML" not in JS and "textContent" in JS
+    for source in (JS, RENDER):
+        assert "innerHTML" not in source and "insertAdjacentHTML" not in source and "outerHTML" not in source
+        assert "eval(" not in source and "new Function" not in source
+        assert "textContent" in source
+    # The data the sheet and the designer draw from is JSON in a script block, which tojson escapes ("<" as \u003c).
+    for name in ("school_id_card_sheet.html", "school_id_card_designer.html"):
+        source = (ROOT / "templates" / name).read_text(encoding="utf-8")
+        assert 'type="application/json"' in source and "|tojson" in source

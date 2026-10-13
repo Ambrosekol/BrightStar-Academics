@@ -68,6 +68,24 @@
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
+{% if card.design %}
+{#- The school's own design (the report card studio): each page drawn by the studio's own code from the design and
+    this card's plain values (JSON, never HTML), every picture embedded. Shrunk to fit a phone; printed at real size. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='1') }}">
+<style>
+  .rcd-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 0 16px 32px; }
+  .rcd-page { position: relative; overflow: hidden; background: #fff; box-shadow: 0 8px 30px rgba(20, 40, 80, .12); }
+  .rcd-page > .idc { transform-origin: 0 0; border-radius: 0; }
+  @media print {
+    @page { size: A4; margin: 0; }
+    .rcd-pages { display: block; padding: 0; }
+    .rcd-page { box-shadow: none; width: auto !important; height: auto !important; break-after: page; page-break-after: always; }
+    .rcd-page:last-child { break-after: auto; page-break-after: auto; }
+    .rcd-page > .idc { transform: none !important; }
+  }
+</style>
+{% endif %}
 </head>
 <body>{{ connectivity_banner() }}
 <div class="rc-toolbar no-print">
@@ -77,6 +95,31 @@
   <button type="button" data-print>Print</button>
 </div>
 
+{% if card.design %}
+<main class="rcd-pages" aria-label="{{ card.title }} — {{ card.student.name }}">
+  {% for side in card.design.pages %}<div class="rcd-page" data-rcd-page="{{ side }}"></div>{% endfor %}
+</main>
+<script type="application/json" id="rcdData" nonce="{{ csp_nonce() }}">{{ {'layout': card.design.layout, 'view': card.design.view}|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='1') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var data = JSON.parse(document.getElementById('rcdData').textContent), R = window.IdCardRender;
+  var size = R.sizeOf(data.layout), PX = 96 / 25.4;
+  var hosts = Array.prototype.slice.call(document.querySelectorAll('[data-rcd-page]'));
+  hosts.forEach(function (host) { R.draw(host, data.layout, host.getAttribute('data-rcd-page'), data.view, {}); });
+  function fit() {
+    var room = Math.min(document.documentElement.clientWidth - 32, size[0] * PX), scale = room / (size[0] * PX);
+    hosts.forEach(function (host) {
+      host.style.width = size[0] * PX * scale + 'px'; host.style.height = size[1] * PX * scale + 'px';
+      host.firstChild.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+    });
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>
+{% else %}
 <main class="rc-sheet">
   <header class="rc-head">
     {% if card.web.logo %}<img class="rc-logo" src="{{ card.web.logo }}" alt="{{ card.school.name }} logo">{% endif %}
@@ -187,5 +230,6 @@
     {% if card.next_term_begins %}<span>Next term begins: {{ card.next_term_begins }}</span>{% endif %}
   </footer>
 </main>
+{% endif %}
 <script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script></body>
 </html>

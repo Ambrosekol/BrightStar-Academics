@@ -87,6 +87,41 @@ above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is differ
 member of staff draws or uploads <em>their own</em> signature image, for use wherever their own name
 appears signed on a document. It opens as a window on the Report cards page.</p>
 
+<h2 id="studio">The report card studio: the school's own design</h2>
+<p><a href="{{ url_for('admin_design_studios') }}">Design studios</a> (in the menu under Management, Design &amp; print)
+opens the school's two design tools: the ID card studio and the <a href="{{ url_for('admin_report_card_studio') }}">report
+card studio</a>. The report card studio needs the right to manage report card settings (the Report Card Officer and
+Head Teacher roles have it); there is also a <strong>Design the report card</strong> button on the Report cards page.</p>
+<p>Both studios fill the whole screen, like a design program: the tools along the top, what to add on the left (Insert,
+Details, Images and Page tabs), the page in the middle, and the chosen item's settings, the layers and the versions on
+the right. A settings section folds away under its heading; <strong>Exit</strong> leaves, and the ⛶ button hides the
+browser's own bars. Designing needs a computer: on a phone, or in a window narrower than 1024 pixels, the studios ask
+you to use a computer instead.</p>
+<ul>
+  <li><strong>Start from a template.</strong> <strong>Templates</strong> shows four complete report cards (Classic,
+  Modern, Elegant, Bold) drawn in the school's own colours. Pick one, then change anything. Undo (Ctrl+Z) brings back
+  what was there before.</li>
+  <li><strong>The report blocks.</strong> The results table (choose its columns), the summary (total, percentage,
+  grade, class average, position, highest and lowest in class), <strong>Attendance</strong> (times school opened, days
+  present, days absent, attendance percentage), the trait ratings, the grading key and the class teacher's comment.
+  Each has its own font, sizes, heading band, stripes, lines, corners and colours. A table's rows grow or shrink to
+  fill its box, so the same design suits a class with eight subjects and one with sixteen.</li>
+  <li><strong>The student's details.</strong> Name, admission number, class, gender, date of birth, age, parent or
+  guardian, attendance, position, blood group, genotype, state of origin, religion and more: click one under
+  <em>Student details</em>, or add a <strong>Detail</strong> and choose what it shows. Health records are never
+  offered. A parent's or student's report card page only carries the details the design shows.</li>
+  <li><strong>Everything else.</strong> Text in any of four fonts, shapes with fills, gradients and outlines, the
+  photograph and the logo clipped to a circle or shape, the head's and the class teacher's signatures, a barcode of the
+  admission number, the school's own images (shared with the ID card studio) as pictures or a watermark, and a second
+  page (printed only when something is on it). Layers, alignment, snapping, a grid, zoom, copy and paste all work as in
+  the ID card studio.</li>
+  <li><strong>Preview, save, switch on.</strong> <strong>Preview PDF</strong> shows the design as it prints, with a
+  made-up student. <strong>Save design</strong> keeps it (each save is kept under Versions, so an earlier one can be
+  brought back). Report cards keep the standard design until you press <strong>Use this design</strong>; from then on
+  every report card - the PDF and the page staff, parents and students see - is drawn from the saved design.
+  <strong>Use the standard design</strong> goes back. <strong>Lock</strong> stops anyone changing it by accident.</li>
+</ul>
+
 <h2 id="past-results">Bringing in past results</h2>
 <p>Step 3 of <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> brings in a student's graded
 results from an earlier school year. It takes one row per student, subject, term and session. Required columns:

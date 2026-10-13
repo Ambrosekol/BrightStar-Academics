@@ -321,7 +321,7 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
     scrollbar-color: var(--line-strong) transparent;
 }
 
-/* Groups: Overview and Messages on top with no heading, then People, Teaching, Finance, Resources. Open, each
+/* Groups: Overview and Messages on top with no heading, then the Teaching and Management groups. Open, each
    group has a small heading; narrow, the heading folds into a short hairline so the icons stay grouped. */
 .rail-section { margin: 0 var(--sp-2); }
 /* Each group starts with a hairline across the menu, so the groups read apart at a glance, open or narrow. */
@@ -356,6 +356,26 @@ html[data-rail="pinned"] .rail .rail-section__label::after { opacity: 0; }
 .rail:not(.is-open) .rail-section__label { height: 13px; }
 html[data-rail="pinned"] .rail .rail-section__label { height: 24px; }
 .rail-list { margin: 0; padding: 0; list-style: none; }
+/* The two parts of the school menu, Teaching and Management: a stronger rule and a heading in the school's colour.
+   Narrow, only the rule shows. */
+.rail-section.rail-section--part { margin-top: var(--sp-3); border-top: 2px solid var(--brand); }
+.rail-part {
+    display: flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 var(--sp-3);
+    color: var(--brand);
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .1s ease, height var(--dur) var(--ease);
+}
+.rail:not(.is-open) .rail-part { height: 4px; }
+.rail.is-open .rail-part,
+html[data-rail="pinned"] .rail .rail-part { height: 22px; opacity: 1; transition-delay: .07s; }
 
 .rail-link {
     position: relative;
@@ -753,6 +773,7 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
     html.js .rail .rail-person__copy { opacity: 1; }
     html .rail .rail-section__label { height: 24px; }
     html .rail .rail-section__label::after { opacity: 0; }
+    html .rail .rail-part { height: 22px; opacity: 1; }
     html.js .rail .rail-dot { visibility: hidden; }
     html.js .rail .rail-pin { display: none; }
     html.js .rail-edge { display: none; }

@@ -1,101 +1,162 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ kind|capitalize }} ID card design — {{ school_brand.name }}{% endblock %}
+{% block title %}{{ kind|capitalize }} ID card studio — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{#- The ID card designer (blueprints/school/id_cards.py, static/id-card-designer.js): the card at its real proportions
-    with the school's colours, front and back; add, drag, resize and style its items; save, lock or start again. The
-    server rebuilds whatever is saved from known keys only (core/id_cards.clean_layout). A locked design is read-only. -#}
+{#- The ID card studio (blueprints/school/id_cards.py, static/id-card-designer.js): design the school's student or staff
+    card freely, front and back - text and the person's details in any font, shapes with fills, gradients and outlines,
+    the photograph, the logo, the school's own images and signatures clipped to shapes, the QR code and a barcode -
+    with layers, alignment, snapping, undo, zoom, earlier versions and starting templates. The card is drawn by
+    static/id-card-render.js, the same code that prints it. The server rebuilds whatever is saved from known keys
+    only (core/id_cards.clean_layout). A locked design is shown, not changed.
+
+    Like the report card studio it fills the whole window, so every tool is on screen at once and the page never
+    scrolls: the tools along the top, what to add on the left, the card in the middle, the chosen item on the right. -#}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='5') }}">
 {% set locked = design and design.locked %}
-<div class="ac idd" data-idd data-kind="{{ kind }}" data-locked="{{ '1' if locked else '0' }}"
-     data-save-url="{{ url_for('admin_id_card_design_save', kind=kind) }}"
-     style="--idc-brand:{{ brand.primary or '#0d2b52' }};--idc-accent:{{ brand.accent or '#1d6fd8' }}">
-<header class="ac-top">
-  <h1>ID card design</h1>
-  <nav class="ac-seg mk-views" aria-label="Which card">
-    <a href="{{ url_for('admin_id_card_designer', kind='student') }}" class="{{ 'is-active' if kind == 'student' }}">Student card</a>
-    <a href="{{ url_for('admin_id_card_designer', kind='staff') }}" class="{{ 'is-active' if kind == 'staff' }}">Staff card</a>
+{% set flashed = get_flashed_messages() %}
+<div class="ac idd idd--app" data-idd role="application" aria-label="{{ kind|capitalize }} ID card studio">
+
+<header class="rcs-bar">
+  <a class="rcs-exit" href="{{ url_for('admin_design_studios') }}" title="Leave the studio">← Exit</a>
+  <strong class="rcs-title">ID card studio</strong>
+  <nav class="idd-sides" aria-label="Which card">
+    <a href="{{ url_for('admin_id_card_designer', kind='student') }}" class="{{ 'is-active' if kind == 'student' }}"{% if kind == 'student' %} aria-current="page"{% endif %}>Student card</a>
+    <a href="{{ url_for('admin_id_card_designer', kind='staff') }}" class="{{ 'is-active' if kind == 'staff' }}"{% if kind == 'staff' %} aria-current="page"{% endif %}>Staff card</a>
   </nav>
-  <div class="ac-top__act">
-    <a class="ac-btn" href="{{ url_for('admin_id_cards', kind=kind) }}">Print cards</a>
-    {% if locked %}
-    <form method="post" action="{{ url_for('admin_id_card_design_lock', kind=kind) }}" data-confirm="Unlock the {{ kind }} card design? It can then be changed by anyone allowed to manage ID cards." data-confirm-danger="0">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="0">
-      <button class="ac-btn" type="submit">Unlock</button></form>
-    {% else %}
-    <form method="post" action="{{ url_for('admin_id_card_design_reset', kind=kind) }}" data-confirm="Start again from the standard design? Your changes to the {{ kind }} card are replaced.">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn" type="submit">Start again</button></form>
-    <form method="post" action="{{ url_for('admin_id_card_design_lock', kind=kind) }}" data-idd-lock data-confirm="Save and lock the {{ kind }} card design? Nobody can change it until it is unlocked." data-confirm-danger="0">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="1">
-      <button class="ac-btn" type="submit">Lock</button></form>
-    <button class="ac-btn ac-btn--primary" type="button" data-idd-save>Save design</button>
-    {% endif %}
-  </div>
-</header>
-<p class="idd-status{{ ' is-locked' if locked }}" data-idd-status role="status">
-  {% if locked %}Locked{% if design.locked_at %} since {{ design.locked_at[:10] }}{% endif %}: the design cannot change until it is unlocked.
-  {% elif design %}Saved {{ design.updated_at[:16]|replace('T', ' ') }}. Changes are not saved until you press Save design.
-  {% else %}This is the standard design. Change it, then press Save design.{% endif %}</p>
-<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
-
-<div class="idd-grid">
-  <aside class="ac-panel idd-tools" aria-label="Add to the card">
-    <h2>Add</h2>
-    <div class="idd-add">
-      <button type="button" class="ac-btn ac-btn--sm" data-add="field">Detail</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="text">Text</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="photo">Photo</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="logo">Logo</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="qr">QR code</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="rect">Colour block</button>
-      <button type="button" class="ac-btn ac-btn--sm" data-add="signature">Signature</button>
-    </div>
-    <h2>Card</h2>
-    <label class="idd-row">Shape <select data-card="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
-    <label class="idd-row">Background <select data-card="background" data-colour></select></label>
-    <p class="ac-hint">Real size: 85.6 × 54 mm, a bank card. Drag an item to move it, the corner to resize it; the arrow keys nudge it (with Shift, by 2 mm).</p>
-  </aside>
-
-  <section class="ac-panel idd-stage">
-    <div class="idd-sides" role="tablist">
+  <span class="idd-sep"></span>
+  <div class="idd-toolbar" role="toolbar" aria-label="Tools">
+    <button type="button" class="idd-tool" data-tool="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button type="button" class="idd-tool" data-tool="redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool" data-tool="zoomout" title="Zoom out" aria-label="Zoom out">−</button>
+    <span class="idd-zoom" data-zoom-label>100%</span>
+    <button type="button" class="idd-tool" data-tool="zoomin" title="Zoom in (Ctrl + mouse wheel)" aria-label="Zoom in">+</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="fit" title="Fit the card to the space">Fit</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="grid" title="Show a 5 mm grid (and snap to 0.5 mm)">Grid</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="snap" title="Snap to the card and to other items">Snap</button>
+    <span class="idd-sep"></span>
+    <div class="idd-sides" role="group" aria-label="Side of the card">
       <button type="button" class="is-active" data-side="front">Front</button>
       <button type="button" data-side="back">Back</button>
     </div>
-    <div class="idd-canvas-wrap"><div class="idd-canvas" data-canvas tabindex="0" aria-label="The card"></div></div>
-    <p class="ac-hint idd-sample">Shown with {{ view.data.get('name') or 'a sample person' }}'s details. The QR code on each printed card opens its own check page.</p>
-  </section>
+  </div>
+  <span class="idd-grow"></span>
+  <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_id_cards', kind=kind) }}">Print cards</a>
+  {% if locked %}
+  <form method="post" action="{{ url_for('admin_id_card_design_lock', kind=kind) }}" data-confirm="Unlock the {{ kind }} card design? It can then be changed by anyone allowed to manage ID cards." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="0">
+    <button class="ac-btn ac-btn--sm" type="submit">Unlock</button></form>
+  {% else %}
+  <button class="ac-btn ac-btn--sm" type="button" data-templates>Templates</button>
+  <form method="post" action="{{ url_for('admin_id_card_design_lock', kind=kind) }}" data-idd-lock data-confirm="Save and lock the {{ kind }} card design? Nobody can change it until it is unlocked." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="1">
+    <button class="ac-btn ac-btn--sm" type="submit">Lock</button></form>
+  <button class="ac-btn ac-btn--sm ac-btn--primary" type="button" data-idd-save title="Save (Ctrl+S)">Save design</button>
+  {% endif %}
+  <button class="idd-tool rcs-fs" type="button" data-fullscreen title="Full screen (hide the browser's bars)" aria-label="Full screen">⛶</button>
+</header>
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
 
-  <aside class="ac-panel idd-props" data-props aria-label="The selected item">
-    <h2 data-props-title>Nothing selected</h2>
-    <p class="ac-hint" data-props-empty>Choose an item on the card, or add one.</p>
-    <div data-props-body hidden>
-      <div class="idd-xywh">
-        <label>X <input type="number" step="0.5" data-p="x"></label><label>Y <input type="number" step="0.5" data-p="y"></label>
-        <label>W <input type="number" step="0.5" data-p="w"></label><label>H <input type="number" step="0.5" data-p="h"></label>
+<div class="rcs-body">
+  <aside class="rcs-left" aria-label="Add to the card" data-tabs="left">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="insert">Insert</button>
+      <button type="button" role="tab" data-tab="details">Details</button>
+      <button type="button" role="tab" data-tab="images">Images</button>
+      <button type="button" role="tab" data-tab="page">Card</button>
+    </div>
+    <section class="rcs-pane" data-tab-pane="insert" role="tabpanel">
+      <h2>Elements</h2>
+      <div class="idd-add">
+        <button type="button" data-add="text"><span class="idd-i idd-i-text">T</span>Text</button>
+        <button type="button" data-add="field"><span class="idd-i idd-i-field">≡</span>Detail</button>
+        <button type="button" data-add="photo"><span class="idd-i idd-i-photo"></span>Photo</button>
+        <button type="button" data-add="logo"><span class="idd-i idd-i-logo"></span>Logo</button>
+        <button type="button" data-add="qr"><span class="idd-i idd-i-qr"></span>QR code</button>
+        <button type="button" data-add="barcode"><span class="idd-i idd-i-bar"></span>Barcode</button>
+        <button type="button" data-add="signature" data-who="head"><span class="idd-i idd-i-sign">✍</span>Head's sign</button>
+        {% if kind == 'staff' %}<button type="button" data-add="signature" data-who="holder"><span class="idd-i idd-i-sign">✍</span>Their sign</button>{% endif %}
       </div>
-      <label class="idd-row" data-for="field">Detail <select data-p="field">{% for key, label in fields.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
-      <label class="idd-row" data-for="field">Label <input type="text" maxlength="30" data-p="label" placeholder="none"></label>
-      <label class="idd-row" data-for="text">Text <input type="text" maxlength="{{ limits.text }}" data-p="text"></label>
-      <label class="idd-row" data-for="text field">Size <input type="number" min="4" max="28" step="0.5" data-p="size"> pt</label>
-      <div class="idd-row idd-checks" data-for="text field">
-        <label><input type="checkbox" data-p="bold"> Bold</label><label><input type="checkbox" data-p="upper"> CAPITALS</label>
-        <select data-p="align" aria-label="Align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select>
+      <h2>Shapes</h2>
+      <div class="idd-shapes">
+        {% for key, path in [('rect', 'M10 20H90V80H10Z'), ('ellipse', ''), ('triangle', 'M50 10L90 90H10Z'), ('diamond', 'M50 8L92 50L50 92L8 50Z'),
+                             ('hexagon', 'M28 12H72L92 50L72 88H28L8 50Z'), ('pentagon', 'M50 8L92 40L76 90H24L8 40Z'),
+                             ('star', 'M50 6L61 38H95L68 58L78 92L50 72L22 92L32 58L5 38H39Z'), ('chevron', 'M8 15H68L92 50L68 85H8L32 50Z'),
+                             ('arrow', 'M6 35H58V12L94 50L58 88V65H6Z'), ('wave', 'M6 50C26 20 44 20 56 44S80 72 94 40V90H6Z'),
+                             ('corner', 'M8 8H92C66 18 30 46 8 92Z'), ('line', 'M8 50H92')] %}
+        <button type="button" data-add="shape" data-shape="{{ key }}" title="{{ key|capitalize }}" aria-label="{{ key|capitalize }}">
+          <svg viewBox="0 0 100 100" aria-hidden="true">{% if key == 'ellipse' %}<ellipse cx="50" cy="50" rx="42" ry="30"/>{% elif key == 'line' %}<path d="{{ path }}" class="is-line"/>{% else %}<path d="{{ path }}"/>{% endif %}</svg></button>
+        {% endfor %}
       </div>
-      <label class="idd-row" data-for="text field">Colour <select data-p="color" data-colour></select></label>
-      <label class="idd-row" data-for="rect">Fill <select data-p="fill" data-colour></select></label>
-      <label class="idd-row" data-for="photo">Frame <select data-p="border" data-colour></select></label>
-      <label class="idd-row" data-for="rect photo logo qr">Corners <input type="number" min="0" max="10" step="0.5" data-p="radius"> mm</label>
-      <div class="idd-acts">
-        <button type="button" class="ac-btn ac-btn--sm" data-act="up">Bring forward</button>
-        <button type="button" class="ac-btn ac-btn--sm" data-act="down">Send back</button>
-        <button type="button" class="ac-btn ac-btn--sm" data-act="copy">Duplicate</button>
-        <button type="button" class="ac-btn ac-btn--sm ac-btn--danger" data-act="delete">Remove</button>
+      <p class="ac-hint rcs-h2-gap">Shown with {{ sample_name or 'a sample person' }}'s details{% if kind == 'staff' and not has_staff_signature %} (they have no signature yet){% endif %}. Each printed card shows its own person, QR code and barcode.</p>
+    </section>
+    <section class="rcs-pane" data-tab-pane="details" role="tabpanel" hidden>
+      <h2>{{ 'Student' if kind == 'student' else 'Staff member' }} details</h2>
+      <p class="ac-hint">Click one to put it on the card. A detail can be changed to any other from its settings. Each printed card shows its own person's.</p>
+      {% set bare = ('name', 'surname', 'first_name', 'middle_name', 'title', 'role', 'job_title', 'school_name', 'school_motto', 'school_address') %}
+      <div class="idd-fields">
+        {% for key, label in person_fields.items() %}
+        <button type="button" class="ac-chip" data-add="field" data-field="{{ key }}"{% if key not in bare %} data-label="{{ label.split(' (')[0] }}"{% endif %}>{{ label.split(' (')[0] }}</button>
+        {% endfor %}
+      </div>
+      <h2 class="rcs-h2-gap">School and card</h2>
+      <div class="idd-fields">
+        {% for key, label in school_fields.items() %}
+        <button type="button" class="ac-chip" data-add="field" data-field="{{ key }}"{% if key not in bare %} data-label="{{ label }}"{% endif %}>{{ label }}</button>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="images" role="tabpanel" hidden>
+      <h2>The school's images</h2>
+      <p class="ac-hint">Patterns, badges, the school's stamp: PNG or JPG. Shared with the report card studio. Click one to put it on the card.</p>
+      <label class="ac-btn ac-btn--sm idd-upload">Upload an image<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-upload {{ upload_attrs('image') }} hidden></label>
+      {{ upload_hint() }}
+      <div class="idd-library" data-library></div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="page" role="tabpanel" hidden>
+      <h2>The card</h2>
+      <div data-cardpanel></div>
+    </section>
+  </aside>
+
+  <section class="rcs-centre">
+    <div class="idd-stage idd-stage--card" data-stage tabindex="0" aria-label="The card. Click to choose, drag to move, arrow keys to nudge.">
+      <div class="idd-holder" data-holder>
+        <div class="idd-card-host" data-card-host></div>
+        <div class="idd-overlay" data-overlay></div>
       </div>
     </div>
+    <p class="idd-status{{ ' is-locked' if locked }}{{ ' is-saved' if flashed and not locked }}" data-idd-status role="status">
+      {% if flashed %}{{ flashed[-1] }}
+      {% elif locked %}Locked{% if design.locked_at %} since {{ design.locked_at[:10] }}{% endif %}: the design cannot change until it is unlocked.
+      {% elif design %}Saved {{ design.updated_at[:16]|replace('T', ' ') }}. Changes are not saved until you press Save design (Ctrl+S).
+      {% else %}This is the standard design. Change anything, then press Save design.{% endif %}</p>
+  </section>
+
+  <aside class="rcs-right" aria-label="The chosen item" data-tabs="right">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="props">Properties</button>
+      <button type="button" role="tab" data-tab="layers">Layers</button>
+      <button type="button" role="tab" data-tab="versions">Versions</button>
+    </div>
+    <section class="rcs-pane idd-props" data-tab-pane="props" data-props role="tabpanel"></section>
+    <section class="rcs-pane" data-tab-pane="layers" role="tabpanel" hidden><div class="idd-layers" data-layers></div></section>
+    <section class="rcs-pane" data-tab-pane="versions" role="tabpanel" hidden><div class="idd-versions" data-versions></div></section>
   </aside>
 </div>
 </div>
-<script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ {'layout': layout, 'data': view.data, 'photo': view.photo_url, 'initials': view.initials,
-  'qr': view.qr, 'logo': logo_url, 'signature': signature_url, 'fields': fields, 'max': limits.elements}|tojson }}</script>
-<script src="{{ url_for('static', filename='id-card-designer.js', v='1') }}"></script>
+{% include 'includes/_studio_small.html' %}
+<dialog class="idd-tpl" data-template-dialog aria-labelledby="iddTplTitle">
+  <div class="idd-tpl__head">
+    <h2 id="iddTplTitle">Start from a template</h2>
+    <button type="button" class="idd-tpl__close" data-template-close aria-label="Close">×</button>
+  </div>
+  <p class="ac-hint">Pick one to put it on the card. Undo (Ctrl+Z) brings your own design back, and nothing is kept until you press Save design.</p>
+  <div class="idd-tpl__grid" data-template-grid></div>
+</dialog>
+<script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ data|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='id-card-designer.js', v='5') }}"></script>
 {% endblock %}

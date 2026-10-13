@@ -11,8 +11,7 @@ from flask import Response, abort, render_template, session, url_for
 
 from app import _release_due_school_results, app
 from blueprints.parents.helpers import _parent_owns_student, parent_required
-from blueprints.school.report_card_data import build_card, card_for_web, term_from_slug
-from core.report_card_pdf import render_report_cards_pdf
+from blueprints.school.report_card_data import build_card, card_for_web, report_cards_pdf, term_from_slug
 from models import db
 
 
@@ -44,7 +43,7 @@ def parent_report_card_pdf(student_id, session_id, slug):
     card = _card_or_404(student_id, session_id, slug)
     # Plain ASCII only: a header cannot carry letters like the dotted O of a Yoruba name.
     name = re.sub(r'[^A-Za-z0-9._-]+', '-', f"Report-Card-{card['student']['name']}-{card['term']}-{card['session']}").strip('-')
-    response = Response(render_report_cards_pdf([card]), mimetype='application/pdf')
+    response = Response(report_cards_pdf([card]), mimetype='application/pdf')
     response.headers['Content-Disposition'] = f'inline; filename="{name[:120]}.pdf"'
     response.headers['Cache-Control'] = 'no-store'
     return response

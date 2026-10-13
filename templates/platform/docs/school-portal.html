@@ -206,10 +206,17 @@ school's design; {{ route('admin_id_card_designer') }} edits it. The rules are {
 {{ table('id_card_designs') }} (one design per kind, with a lock) and {{ table('id_cards') }} (each card issued: a random
 token, a serial, active or cancelled). Permissions: {{ perm('id_cards.print') }} and {{ perm('id_cards.manage') }}.</p>
 <ul>
-  <li><strong>The design</strong> is positioned boxes in millimetres on a CR80 card. <code>clean_layout</code> rebuilds
-  anything saved from known keys only: element types, fields and colours (<code>#rrggbb</code> or the school's
-  <code>brand</code>/<code>accent</code>) from allow-lists, every number clamped, at most 30 items a side. It is printed by
-  {{ tpl('includes/_id_card.html') }} as plain text and boxes. A locked design refuses saves and resets (409).</li>
+  <li><strong>The design</strong> is positioned boxes in millimetres on a CR80 card (design version 2:
+  text and details with fonts, weights, spacing and alignment; shapes with fills, gradients and outlines; the photograph,
+  logo, the school's own images ({{ table('id_card_assets') }}, uploaded to <code>uploads/idcards/</code>) and signatures with a fit,
+  a clip shape and a frame; the QR code and a Code 128 barcode; each with rotation, opacity and a shadow). <code>clean_layout</code>
+  rebuilds anything saved from known keys only: element types, fonts, shapes, clips and fields from allow-lists, colours
+  <code>#rrggbb</code> or the school's <code>brand</code>/<code>accent</code>, every number clamped, text cut and stripped of control characters,
+  images only the school's own, at most 60 items a side. One renderer, {{ file('static/id-card-render.js') }}, draws the
+  designer's canvas and the print sheet with createElement, textContent and style properties only. Each save is kept in
+  {{ table('id_card_design_versions') }} (the newest 20 a kind); {{ route('admin_id_card_design_version') }} brings one back
+  into the designer. A locked design refuses saves and resets (409), and an image it uses cannot be removed
+  ({{ route('admin_id_card_asset_delete') }}).</li>
   <li><strong>Printing</strong> ({{ route('admin_id_cards_print') }}) issues a card to anyone without an active one, and is
   refused whole if any person is outside the account's reach (another class, a leaver, a removed account). The sheet is
   <code>no-store</code> and logged (<code>id_cards_printed</code>).</li>
@@ -217,6 +224,32 @@ token, a serial, active or cancelled). Permissions: {{ perm('id_cards.print') }}
   <code>/id/&lt;token&gt;</code>. {{ route('id_card_verify') }} and {{ route('id_card_photo') }} need no sign-in, answer only
   for a real token, show only the school, name, photograph and class or role, and send <code>no-store</code>,
   <code>noindex</code> and no referrer. The photograph is served only while the card is active and the person current.</li>
+</ul>
+
+<h2 id="report-card-studio">The report card studio</h2>
+<p>{{ route('admin_report_card_studio') }} ({{ file('blueprints/school/report_card_studio.py') }}) is the ID card studio's
+editor ({{ file('static/id-card-designer.js') }} in report mode) on an A4 page or two. The rules are
+{{ file('core/report_card_design.py') }}; the tables {{ table('report_card_designs') }} (one row: the design, whether report
+cards use it, a lock) and {{ table('report_card_design_versions') }} (the newest 20 saves). Every route needs
+{{ perm('report_cards.manage') }}; the school's images are the ID card studio's ({{ table('id_card_assets') }}), reached here
+through {{ route('admin_report_card_asset_upload') }} and {{ route('admin_report_card_asset_delete') }}.</p>
+<ul>
+  <li><strong>The design</strong> holds the ID card's element types and five blocks only a report card has: the results
+  table (chosen columns), the summary (totals, position, class highest and lowest, attendance), the trait ratings, the
+  grading key and the teacher's comment, each with its own font, sizes and colours. <code>clean_layout</code> rebuilds it from
+  known keys only, at most 80 items a page. The details a design may show include the term's attendance (one grouped
+  query for a whole batch of cards), the position in class and the student's date of birth, guardian and similar; never a
+  health record.</li>
+  <li><strong>Drawing.</strong> {{ file('core/report_card_design_pdf.py') }} draws the PDF with reportlab;
+  {{ file('static/report-card-render.js') }} draws the same blocks in the browser by the same rules, for the studio and for
+  the report card page. A table shares its box between its rows, so any number of subjects fits.</li>
+  <li><strong>Switching on</strong> ({{ route('admin_report_card_studio_use') }}): <code>report_cards_pdf</code> and
+  <code>card_for_web</code> ({{ file('blueprints/school/report_card_data.py') }}) then draw every card - staff, parent and
+  student, PDF and page - from the saved design; a design that cannot be read falls back to the standard card. The page
+  embeds every picture and only the details the design shows. {{ route('admin_report_card_studio_preview') }} draws the
+  design on screen with a made-up student.</li>
+  <li><strong>Design studios</strong> ({{ route('admin_design_studios') }}, {{ file('blueprints/school/design_studios.py') }})
+  is the one menu entry for both studios: it shows each studio only to someone who may open it.</li>
 </ul>
 
 <h2 id="store">The school store</h2>

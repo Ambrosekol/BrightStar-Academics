@@ -114,7 +114,8 @@ from .finance import (
 )
 
 from .subdivisions import ClassSubdivision, ClassTransfer
-from .id_cards import IdCard, IdCardDesign
+from .id_cards import IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion
+from .report_card_design import ReportCardDesign, ReportCardDesignVersion
 from .payroll import (
     PayItem, PayrollAdjustment, PayrollRun, PayrollSettings, Payslip, StaffPay, StaffPayItem,
 )
@@ -179,7 +180,8 @@ __all__ = [
     'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
     'FinanceRefund',
     # ID cards
-    'IdCard', 'IdCardDesign',
+    'IdCard', 'IdCardAsset', 'IdCardDesign', 'IdCardDesignVersion',
+    'ReportCardDesign', 'ReportCardDesignVersion',
     # payroll
     'PayItem', 'PayrollAdjustment', 'PayrollRun', 'PayrollSettings', 'Payslip', 'StaffPay', 'StaffPayItem',
     # staff attendance
