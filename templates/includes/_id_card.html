@@ -1,0 +1,52 @@
+{#- One side of an ID card, drawn from a design (core/id_cards.py) at its real size in millimetres, for printing and for
+    the designer's preview. ``c`` is {'data': {field: text}, 'photo_url', 'qr': (svg path, modules) or none,
+    'initials'}. Every text is printed as plain text; colours were checked before the design was saved. -#}
+{% macro colour(name) -%}
+{{ {'brand': 'var(--idc-brand)', 'accent': 'var(--idc-accent)', 'white': '#ffffff', 'ink': '#15171a'}.get(name, name) }}
+{%- endmacro %}
+
+{% macro card(layout, side, c, logo_url=none, signature_url=none) -%}
+{% set size = {'landscape': (85.6, 54.0), 'portrait': (54.0, 85.6)}[layout.orientation] %}
+<div class="idc" style="width:{{ size[0] }}mm;height:{{ size[1] }}mm;background:{{ colour(layout.background) }}">
+  {% for el in layout.sides[side] %}
+  {% set box = 'left:%smm;top:%smm;width:%smm;height:%smm'|format(el.x, el.y, el.w, el.h) %}
+  {% if el.type == 'rect' %}
+  <div class="idc-el" style="{{ box }};background:{{ colour(el.fill) }};border-radius:{{ el.radius }}mm"></div>
+  {% elif el.type in ('text', 'field') %}
+  {% set value = el.text if el.type == 'text' else c.data.get(el.field, '') %}
+  <div class="idc-el idc-text{{ ' is-bold' if el.bold }}{{ ' is-upper' if el.upper }}" style="{{ box }};font-size:{{ el.size }}pt;text-align:{{ el.align }};color:{{ colour(el.color) }}">
+    {%- if el.type == 'field' and el.label and value %}<span class="idc-label">{{ el.label }}: </span>{% endif %}{{ value }}</div>
+  {% elif el.type == 'photo' %}
+  <div class="idc-el idc-photo" style="{{ box }};border-radius:{{ el.radius }}mm;border-color:{{ colour(el.border) }}">
+    {% if c.photo_url %}<img src="{{ c.photo_url }}" alt="">{% else %}<span>{{ c.initials or '' }}</span>{% endif %}</div>
+  {% elif el.type == 'logo' %}
+  <div class="idc-el idc-img" style="{{ box }};border-radius:{{ el.radius }}mm">{% if logo_url %}<img src="{{ logo_url }}" alt="">{% endif %}</div>
+  {% elif el.type == 'signature' %}
+  <div class="idc-el idc-img" style="{{ box }}">{% if signature_url %}<img src="{{ signature_url }}" alt="">{% endif %}</div>
+  {% elif el.type == 'qr' %}
+  <div class="idc-el idc-qr" style="{{ box }};border-radius:{{ el.radius }}mm">
+    {% if c.qr %}<svg viewBox="0 0 {{ c.qr[1] }} {{ c.qr[1] }}" shape-rendering="crispEdges" aria-label="QR code"><rect width="100%" height="100%" fill="#fff"/><path d="{{ c.qr[0] }}" fill="#15171a"/></svg>
+    {% else %}<span>QR</span>{% endif %}</div>
+  {% endif %}
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro styles(brand) -%}
+<style>
+  .idc { position: relative; overflow: hidden; box-sizing: border-box; font-family: Arial, "Helvetica Neue", sans-serif; color: #15171a;
+         --idc-brand: {{ brand.primary or '#0d2b52' }}; --idc-accent: {{ brand.accent or '#1d6fd8' }};
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .idc-el { position: absolute; box-sizing: border-box; overflow: hidden; }
+  .idc-text { line-height: 1.18; overflow-wrap: anywhere; }
+  .idc-text.is-bold { font-weight: 700; }
+  .idc-text.is-upper { text-transform: uppercase; letter-spacing: .02em; }
+  .idc-label { font-weight: 400; opacity: .72; }
+  .idc-photo { border: .45mm solid #fff; background: #e9edf3; display: grid; place-items: center; font-weight: 700; color: #5d6673; }
+  .idc-photo img, .idc-img img { width: 100%; height: 100%; display: block; }
+  .idc-photo img { object-fit: cover; }
+  .idc-img img { object-fit: contain; }
+  .idc-qr { background: #fff; display: grid; place-items: center; font: 700 7pt Arial, sans-serif; color: #5d6673; }
+  .idc-qr svg { width: 100%; height: 100%; display: block; }
+</style>
+{%- endmacro %}

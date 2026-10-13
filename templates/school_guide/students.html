@@ -81,6 +81,33 @@ with a button to print it), or turn their sign-in off or on without touching any
 kept separately and can be corrected with a reason if it was entered wrong.</p>
 {{ shot('student-modal', 'A student opens in a pop-up: their profile, results, every mark, work and school journey, each a tab.') }}
 
+<h2 id="id-cards">ID cards</h2>
+<p><a href="{{ url_for('admin_id_cards') }}">ID cards</a> (in the menu under People) prints student and staff ID cards
+from the school's own design, in its colours. It needs the right to print ID cards; designing them needs the right to
+design and manage them (the Records Officer and Head Teacher roles have both).</p>
+<ul>
+  <li><strong>Printing.</strong> Choose Students (by class) or Staff, tick the people and press <strong>Print ticked
+  cards</strong>. A sheet opens with ten bank-card-size cards to an A4 page and cut marks; with <em>Print the backs
+  too</em>, each page of fronts is followed by its backs, arranged for double-sided printing (flip on the long edge).
+  Print at 100%, on card or on paper to laminate. The first print issues each person a card with its own number
+  (STU-000001, STF-000001) and QR code; printing again reuses it. A student without a photograph is marked, so you can
+  add one on their page first.</li>
+  <li><strong>The designer.</strong> <em>Design the student card</em> (or staff card) shows the card at its real
+  proportions, front and back. Add details (name, class, admission number, session, role, the school's name, address
+  and phone, the card number), text, the photograph, the logo, the QR code, colour blocks and the head's signature;
+  drag them, resize them from the corner, nudge them with the arrow keys, and set their size, colour (the school's
+  colours, white or black), boldness and alignment on the right. <strong>Save design</strong> keeps it;
+  <em>Start again</em> returns to the standard design.</li>
+  <li><strong>Lock.</strong> <em>Lock</em> saves the design and stops anyone changing it until someone allowed to manage
+  ID cards unlocks it. Every save, lock and print is in the activity log.</li>
+  <li><strong>The QR code.</strong> Scanning it opens a check page on the school's portal, with no sign-in: the school,
+  the person's name, photograph and class or role, and whether the card is <em>Valid</em>. Nothing else about the person
+  is shown.</li>
+  <li><strong>A lost card.</strong> <em>Replace</em> cancels it (its QR code then says it is no longer valid) and issues a
+  new card to print. <em>Cancel</em> cancels it without a new one. A student who leaves the school shows as not valid
+  automatically.</li>
+</ul>
+
 <h2 id="archive">Archiving a student who has left</h2>
 <p>When a student leaves, <strong>archive</strong> them rather than deleting them. Archiving keeps their whole
 record and takes them out of everything current:</p>

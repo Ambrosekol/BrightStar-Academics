@@ -1246,6 +1246,7 @@ import blueprints.school.attendance  # noqa: F401,E402
 import blueprints.school.timetable  # noqa: F401,E402
 import blueprints.school.teaching  # noqa: F401,E402
 import blueprints.school.marking  # noqa: F401,E402
+import blueprints.school.id_cards  # noqa: F401,E402
 import blueprints.school.subdivisions  # noqa: F401,E402
 import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402

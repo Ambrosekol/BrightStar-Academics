@@ -1,0 +1,86 @@
+{% extends 'admin_base.html' %}
+{% block title %}ID cards — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- ID cards (blueprints/school/id_cards.py): students (by class) or staff, each person's card, and printing the ticked
+    ones on A4 from the school's design. Printing issues a card (with its QR code) to anyone without one. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='1') }}">
+<div class="ac idl" data-idl>
+<header class="ac-top">
+  <h1>ID cards</h1>
+  <nav class="ac-seg mk-views" aria-label="Whose cards">
+    <a href="{{ url_for('admin_id_cards', kind='student') }}" class="{{ 'is-active' if kind == 'student' }}"{% if kind == 'student' %} aria-current="true"{% endif %}>Students</a>
+    <a href="{{ url_for('admin_id_cards', kind='staff') }}" class="{{ 'is-active' if kind == 'staff' }}"{% if kind == 'staff' %} aria-current="true"{% endif %}>Staff</a>
+  </nav>
+  {% if can_manage %}<div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_id_card_designer', kind=kind) }}">Design the {{ kind }} card{% if design and design.locked %} · locked{% endif %}</a></div>{% endif %}
+</header>
+
+<form method="get" class="ac-tools" action="{{ url_for('admin_id_cards') }}" role="search">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  {% if kind == 'student' %}
+  <select name="class" aria-label="Class" data-autosubmit>
+    <option value="">All classes</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if c.id == class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="{{ 'Name, admission no. or class' if kind == 'student' else 'Name or role' }}" aria-label="Find"><button class="ac-btn" type="submit">Find</button></span>
+  <span class="ac-count">{{ people|length }} {{ 'student' if kind == 'student' else 'member of staff' }}{{ '' if people|length == 1 else ('s' if kind == 'student' else '') }} · {{ cards.values()|selectattr('status', 'equalto', 'active')|list|length }} with a card</span>
+</form>
+
+<form method="post" action="{{ url_for('admin_id_cards_print') }}" target="_blank" class="ac-panel" data-idl-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  {% if people %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="st-pick"><input type="checkbox" data-idl-all aria-label="Tick everyone shown"></th><th></th><th>{{ 'Student' if kind == 'student' else 'Name' }}</th>
+      <th>{{ 'Class' if kind == 'student' else 'Role' }}</th><th>Card</th><th></th></tr></thead>
+    <tbody>{% for p in people %}{% set card = cards.get(p.id) %}
+      {% set name = (p.last_name ~ ' ' ~ p.first_name) if kind == 'student' else p.display_name %}
+      <tr>
+        <td class="st-pick"><input type="checkbox" name="person" value="{{ p.id }}" aria-label="Tick {{ name }}"></td>
+        <td class="idl-ph">{% if p.photo_path %}<img src="{{ url_for('static', filename=p.photo_path) }}" alt="">{% else %}<span>{{ name[:1]|upper }}</span>{% endif %}</td>
+        <td><b>{{ name }}</b>{% if kind == 'student' %}<small>{{ p.admission_no or '' }}</small>{% endif %}{% if not p.photo_path %}<small class="idl-warn">No photograph</small>{% endif %}</td>
+        <td>{{ p.class_name if kind == 'student' else (p.role or '—') }}</td>
+        <td>{% if card and card.status == 'active' %}<span class="ac-tag ac-tag--good">{{ card.serial }}</span><small>issued {{ card.issued_at[:10] }}{% if card.printed_count %} · printed {{ card.printed_count }}×{% endif %}</small>
+            {% elif card %}<span class="ac-tag">{{ card.serial }} cancelled</span>
+            {% else %}<span class="ac-tag">Not issued</span>{% endif %}</td>
+        <td class="ac-actions">{% if can_manage and card and card.status == 'active' %}
+          <button class="ac-link" type="submit" form="idr{{ card.id }}">Replace</button>
+          <button class="ac-link ac-link--danger" type="submit" form="idc{{ card.id }}">Cancel</button>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="ac-form-foot">
+    <label class="idl-backs"><input type="checkbox" name="backs" value="1" checked> Print the backs too <span class="ac-hint">for double-sided printing, flipped on the long edge</span></label>
+    <span class="ac-grow"></span>
+    <span class="ac-hint" data-idl-count>None ticked</span>
+    <button class="ac-btn ac-btn--primary" type="submit" data-idl-print disabled>Print ticked cards</button>
+  </div>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody to show</strong>{% if kind == 'student' %}No student {% if class_id %}in this class {% endif %}is enrolled for the current session{% if q %} matching "{{ q }}"{% endif %}.{% else %}No staff match.{% endif %}</div>
+  {% endif %}
+</form>
+{% for p in people %}{% set card = cards.get(p.id) %}{% if can_manage and card and card.status == 'active' %}
+<form id="idr{{ card.id }}" method="post" action="{{ url_for('admin_id_card_replace', card_id=card.id) }}" hidden
+      data-confirm="Replace card {{ card.serial }}? It is cancelled (its QR code will say so) and a new card is issued, ready to print." data-confirm-danger="0">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="reason" value="Replaced (lost or damaged)"></form>
+<form id="idc{{ card.id }}" method="post" action="{{ url_for('admin_id_card_cancel', card_id=card.id) }}" hidden
+      data-confirm="Cancel card {{ card.serial }}? Its QR code will say it is no longer valid. No new card is issued.">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="reason" value="Cancelled"></form>
+{% endif %}{% endfor %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-idl]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-idl-form]'); if(!form) return;
+  var all=form.querySelector('[data-idl-all]'), btn=form.querySelector('[data-idl-print]'), count=form.querySelector('[data-idl-count]');
+  function boxes(){ return form.querySelectorAll('input[name=person]'); }
+  function refresh(){
+    var n=[].filter.call(boxes(),function(b){ return b.checked; }).length;
+    if(btn){ btn.disabled=!n || n>{{ limit }}; }
+    if(count){ count.textContent=n ? (n>{{ limit }} ? 'At most {{ limit }} at a time' : n+' ticked') : 'None ticked'; }
+  }
+  if(all) all.addEventListener('change',function(){ boxes().forEach(function(b){ b.checked=all.checked; }); refresh(); });
+  form.addEventListener('change',refresh); refresh();
+})();
+</script>
+{% endblock %}

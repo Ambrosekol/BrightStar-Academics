@@ -151,6 +151,18 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="id-cards">ID cards print the wrong size, a card shows "Not valid", or the design will not save</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Printed cards are too small or too large; a card's QR code says "Not valid"; or "The design is locked. Unlock it to make changes."</div></div>
+  <div><b>Why</b><div><p>The sheet is drawn at real size (85.6 × 54 mm); a printer set to "fit to page" shrinks it. A card is not valid once it was cancelled or replaced, or when the person has left the school (archived) or their account was removed. A locked design ({{ table('id_card_designs') }}) refuses changes until unlocked.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Print at 100% (scale "Actual size"), with no margins added by the printer.</li>
+    <li>"Not valid" by mistake: check the person is still active and enrolled; a replaced card's old one stays cancelled, so print the new one.</li>
+    <li>To change the design, someone with {{ perm('id_cards.manage') }} presses <em>Unlock</em> on the designer.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>A card measures like a bank card, and its QR code opens a page saying "Valid card".</div></div>
+</div>
+
 <h3 id="exam-mode">"My paper submitted itself", "it says I left the page", or full screen does not start</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>A student's paper ended early; a student is warned they left the paper when they did not mean to; or the paper did not go full screen (an iPhone).</div></div>

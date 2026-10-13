@@ -23,6 +23,8 @@ EXEMPT = {
     "admin_candidate_result_print.html", "admin_result_print.html",
     "admin_results_summary_print.html", "finance_receipt_print.html",
     "student_credentials_print.html", "school_print_paper.html", "school_print_booklets.html",
+    # the ID card print sheet (print-only) and the public card check a QR code opens (one read, no state to lose)
+    "school_id_card_sheet.html", "id_card_verify.html",
     "error_4xx.html", "error_5xx.html", "marketing.html", "privacy.html",
 }
 

@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.28.0",
+      "date": "2026-10-13",
+      "title": "ID cards, designed by the school",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Print student and staff ID cards from ID cards in the menu: tick the people, and an A4 sheet of cards opens, with the backs for double-sided printing. Design the cards yourself in the school's colours (photo, name, class, admission number, logo, QR code, signature and more), then lock the design so it cannot change by accident. Each card's QR code opens a page that shows whether it is valid; a lost card can be replaced.",
+          "help": "students"
+        }
+      ]
+    },
+    {
       "version": "2.27.0",
       "date": "2026-10-13",
       "title": "Exam mode, and a new page for taking tests",

@@ -1,0 +1,53 @@
+{#- The page an ID card's QR code opens (blueprints/school/id_cards.py), with no sign-in: is this card valid, and whose
+    is it - the school, the name, the photograph and the class or role, nothing more. Never cached or indexed. -#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>ID card check — {{ school_brand.name }}</title>
+<style>
+  :root { --brand: {{ school_brand.primary or '#0d2b52' }}; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #f1f2f4;
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #18202b; }
+  .card { width: min(420px, 100%); background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,.12); }
+  .head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: var(--brand); color: #fff; }
+  .head img { width: 38px; height: 38px; border-radius: 9px; background: #fff; padding: 3px; object-fit: contain; }
+  .head b { display: block; font-size: 14px; text-transform: uppercase; letter-spacing: .03em; }
+  .head span { font-size: 12px; opacity: .85; }
+  .state { display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 10px 14px; border-radius: 12px; font-weight: 800; }
+  .state.ok { background: #e7f5ec; color: #1f7a45; }
+  .state.no { background: #fdeceb; color: #a8322a; }
+  .state svg { width: 22px; height: 22px; flex: none; }
+  .who { display: flex; gap: 14px; align-items: center; padding: 16px 18px 20px; }
+  .who .ph { width: 84px; height: 100px; flex: none; border-radius: 12px; overflow: hidden; background: #e9edf3; display: grid; place-items: center;
+             font-size: 28px; font-weight: 800; color: #5d6673; }
+  .who .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .who b { display: block; font-size: 18px; line-height: 1.25; }
+  .who small { display: block; color: #5d6673; }
+  .foot { padding: 10px 18px 16px; font-size: 12px; color: #5d6673; border-top: 1px solid #eceef1; }
+</style>
+</head>
+<body>
+<main class="card">
+  <header class="head"><img src="{{ school_brand.logo_url }}" alt=""><div><b>{{ school_brand.name }}</b><span>ID card check</span></div></header>
+  {% if not card %}
+  <div class="state no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>No such card</div>
+  <p class="foot">This code does not belong to any card issued by {{ school_brand.name }}.</p>
+  {% else %}
+  {% if valid %}
+  <div class="state ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>Valid card</div>
+  {% else %}
+  <div class="state no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>Not valid{% if card.status == 'cancelled' %}: this card was cancelled{% else %}: no longer at the school{% endif %}</div>
+  {% endif %}
+  {% if holder %}
+  <div class="who">
+    <span class="ph">{% if valid and holder.photo_path %}<img src="{{ url_for('id_card_photo', token=card.token) }}" alt="">{% else %}{{ (holder.name or '?')[:1]|upper }}{% endif %}</span>
+    <div><b>{{ holder.name }}</b><small>{{ holder.label }}{% if holder.detail %} · {{ holder.detail }}{% endif %}</small><small>Card {{ card.serial }}</small></div>
+  </div>
+  {% endif %}
+  <p class="foot">{% if valid %}The person holding this card should match the photograph.{% else %}Do not accept this card. Contact {{ school_brand.name }}{% if school_brand.phone %} on {{ school_brand.phone }}{% endif %}.{% endif %}</p>
+  {% endif %}
+</main>
+</body>
+</html>

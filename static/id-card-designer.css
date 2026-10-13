@@ -1,0 +1,53 @@
+/* The ID card designer (templates/school_id_card_designer.html) and the ID cards list (school_id_cards.html). */
+.idd-status { margin: 0 0 10px; padding: 6px 10px; border-radius: 8px; background: var(--ac-wash); font-size: 12px; color: var(--ac-ink-2); }
+.idd-status.is-locked { background: var(--ac-accent-tint); color: var(--ac-accent-strong); font-weight: 600; }
+.idd-status.is-dirty { background: color-mix(in srgb, #f6c453 30%, #fff); color: #6a4c00; }
+.idd-status.is-error { background: var(--ac-attn-tint); color: var(--ac-attn); font-weight: 600; }
+.idd .ac-top__act { display: flex; flex-wrap: wrap; gap: 6px; }
+.idd .ac-top__act form { display: inline; }
+.idd-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr) 250px; gap: 10px; align-items: start; }
+.idd-grid > .ac-panel + .ac-panel { margin-top: 0; }
+.idd h2 { margin: 0 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ac-muted); }
+.idd-tools h2 + .idd-add { margin-bottom: 12px; }
+.idd-add { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.idd-row { display: flex !important; align-items: center; gap: 6px; margin: 0 0 7px !important; font-size: 12px; font-weight: 600; color: var(--ac-ink-2); }
+.ac .idd-row select, .ac .idd-row input[type=text] { flex: 1; min-width: 0; padding: 3px 6px !important; font-size: 12px !important; }
+.ac .idd-row input[type=number] { width: 64px !important; padding: 3px 6px !important; font-size: 12px !important; }
+.idd-checks { flex-wrap: wrap; }
+.idd-checks label { display: inline-flex !important; align-items: center; gap: 4px; font-weight: 600; }
+.idd-xywh { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.ac .idd-xywh label { display: flex !important; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--ac-muted); }
+.ac .idd-xywh input { width: 100% !important; padding: 3px 5px !important; font-size: 12px !important; }
+.idd-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+.idd-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.idd-sides { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-wash); }
+.idd-sides button { padding: 4px 16px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--ac-ink-2); cursor: pointer; }
+.idd-sides button.is-active { background: var(--ac-surface); color: var(--ac-brand); box-shadow: 0 1px 2px var(--ac-shadow); }
+.idd-canvas-wrap { padding: 18px; border-radius: 12px; background: repeating-conic-gradient(#eef0f3 0 25%, #f7f8fa 0 50%) 0 0 / 16px 16px; overflow: auto; max-width: 100%; }
+.idd-canvas { position: relative; overflow: hidden; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,.18); outline: none;
+              font-family: Arial, "Helvetica Neue", sans-serif; color: #15171a; touch-action: none; user-select: none; }
+.idd-canvas:focus-visible { box-shadow: 0 10px 30px rgba(0,0,0,.18), 0 0 0 3px color-mix(in srgb, var(--ac-accent) 40%, transparent); }
+.idd-el { position: absolute; box-sizing: border-box; overflow: hidden; line-height: 1.18; overflow-wrap: anywhere; cursor: move; }
+.idd-el.is-selected { outline: 2px solid #1d6fd8; outline-offset: 0; z-index: 5; overflow: visible; }
+.idd-el.is-selected > :not(.idd-handle) { overflow: hidden; }
+.idd-label { font-weight: 400; opacity: .72; }
+.idd-photo { border: 2px solid #fff; background: #e9edf3; display: grid; place-items: center; font-weight: 700; color: #5d6673; font-size: 18px; }
+.idd-photo img, .idd-logo img, .idd-signature img { width: 100%; height: 100%; display: block; }
+.idd-photo img { object-fit: cover; }
+.idd-logo img, .idd-signature img { object-fit: contain; }
+.idd-logo, .idd-signature { display: grid; place-items: center; font-size: 10px; color: #8a9099; }
+.idd-qr { background: #fff; }
+.idd-qr svg { width: 100%; height: 100%; display: block; }
+.idd-handle { display: none; position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; border-radius: 3px; background: #1d6fd8;
+              border: 2px solid #fff; cursor: nwse-resize; }
+.idd-el.is-selected .idd-handle { display: block; }
+.idd-sample { margin: 0; text-align: center; }
+[data-locked="1"] .idd-el { cursor: default; }
+@media (max-width: 1100px) { .idd-grid { grid-template-columns: 1fr; } }
+
+/* The ID cards list */
+.idl-ph { width: 34px; }
+.idl-ph img, .idl-ph span { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: grid; place-items: center;
+                            background: var(--ac-accent-tint); color: var(--ac-brand); font-weight: 800; font-size: 12px; }
+.idl-warn { color: var(--ac-attn) !important; }
+.ac .idl-backs { display: inline-flex !important; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }

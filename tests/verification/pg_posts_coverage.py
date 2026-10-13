@@ -29,6 +29,14 @@ EXEMPT = {
     "/student/assessments/<int:assessment_id>/submit": "see write_paths_exam_mode.py",
     "/student/assessments/<int:assessment_id>/integrity": "see write_paths_exam_mode.py",
     "/exam/integrity": "see write_paths_exam_mode.py",
+    # ID cards: printing (and issuing), the designer's save, lock and reset, cancelling and replacing a card, valid
+    # and hostile (a hostile design, a locked design, a teacher without the permission), in write_paths_id_cards.py.
+    "/admin/id-cards/print": "see write_paths_id_cards.py",
+    "/admin/id-cards/design/<kind>": "see write_paths_id_cards.py",
+    "/admin/id-cards/design/<kind>/lock": "see write_paths_id_cards.py",
+    "/admin/id-cards/design/<kind>/reset": "see write_paths_id_cards.py",
+    "/admin/id-cards/cards/<int:card_id>/cancel": "see write_paths_id_cards.py",
+    "/admin/id-cards/cards/<int:card_id>/replace": "see write_paths_id_cards.py",
     # Printed papers' marks sheets, valid and hostile, in write_paths_printed_papers.py.
     "/admin/school/marking/<int:assessment_id>/printed": "see write_paths_printed_papers.py",
     "/admin/finance/new-students/remove": "see write_paths_new_students.py",

@@ -114,6 +114,7 @@ from .finance import (
 )
 
 from .subdivisions import ClassSubdivision, ClassTransfer
+from .id_cards import IdCard, IdCardDesign
 from .library import LibraryBook, LibraryLoan
 from .store import StoreItem, StorePurchase
 
@@ -167,6 +168,8 @@ __all__ = [
     'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem', 'FinanceNewStudent',
     'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
     'FinanceRefund',
+    # ID cards
+    'IdCard', 'IdCardDesign',
     # library
     'LibraryBook', 'LibraryLoan',
     # store

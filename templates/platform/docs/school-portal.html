@@ -123,6 +123,25 @@ student items are complete on their own and never carry one, because families ca
   It needs no database read, and it always matches What's new, because both come from the same file.</li>
 </ul>
 
+<h2 id="id-cards">ID cards</h2>
+<p>{{ route('admin_id_cards') }} ({{ file('blueprints/school/id_cards.py') }}) prints student and staff cards from the
+school's design; {{ route('admin_id_card_designer') }} edits it. The rules are {{ file('core/id_cards.py') }}; the tables
+{{ table('id_card_designs') }} (one design per kind, with a lock) and {{ table('id_cards') }} (each card issued: a random
+token, a serial, active or cancelled). Permissions: {{ perm('id_cards.print') }} and {{ perm('id_cards.manage') }}.</p>
+<ul>
+  <li><strong>The design</strong> is positioned boxes in millimetres on a CR80 card. <code>clean_layout</code> rebuilds
+  anything saved from known keys only: element types, fields and colours (<code>#rrggbb</code> or the school's
+  <code>brand</code>/<code>accent</code>) from allow-lists, every number clamped, at most 30 items a side. It is printed by
+  {{ tpl('includes/_id_card.html') }} as plain text and boxes. A locked design refuses saves and resets (409).</li>
+  <li><strong>Printing</strong> ({{ route('admin_id_cards_print') }}) issues a card to anyone without an active one, and is
+  refused whole if any person is outside the account's reach (another class, a leaver, a removed account). The sheet is
+  <code>no-store</code> and logged (<code>id_cards_printed</code>).</li>
+  <li><strong>The QR code</strong> is drawn on the server (reportlab's encoder, as an SVG path) and holds only
+  <code>/id/&lt;token&gt;</code>. {{ route('id_card_verify') }} and {{ route('id_card_photo') }} need no sign-in, answer only
+  for a real token, show only the school, name, photograph and class or role, and send <code>no-store</code>,
+  <code>noindex</code> and no referrer. The photograph is served only while the card is active and the person current.</li>
+</ul>
+
 <h2 id="store">The school store</h2>
 <p>{{ file('blueprints/store/routes.py') }} sells what parents buy from the school. {{ table('store_items') }} holds each
 item (price, a count in stock, up to three pictures under <code>uploads/store/</code>, hidden or shown);
