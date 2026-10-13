@@ -111,8 +111,9 @@
       <tr>
         <td><strong>{{ r.subject_name }}</strong></td>
         <td>{{ r.component_name or r.assessment_title or 'CBT assessment' }}</td>
-        {% set awaiting = r.score is none and r.assessment_id %}
-        <td class="n">{% if awaiting %}<span class="ac-tag ac-tag--attn" title="Waiting for the subject teacher to mark the written answers">Awaiting marking</span>{% else %}{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}{% endif %}</td>
+        {% set absent_paper = r.score is none and r.assessment_id and r.component_name == 'Absent' %}
+        {% set awaiting = r.score is none and r.assessment_id and not absent_paper %}
+        <td class="n">{% if awaiting %}<span class="ac-tag ac-tag--attn" title="Waiting for the subject teacher's marks">Awaiting marking</span>{% elif absent_paper %}<span class="ac-tag" title="Absent from this paper">Absent</span>{% else %}{{ r.score if r.score is not none else '—' }}{% if r.max_score is not none %} / {{ r.max_score }}{% endif %}{% endif %}</td>
         <td><span class="ac-tag {{ status_tone.get(r.status, '') }}">{{ status_labels.get(r.status, r.status) }}</span></td>
         <td class="ac-actions">{% if not awaiting %}
           {% if r.status in ('entered','verified') and can_enter %}<a class="ac-link" href="{{ url_for('admin_school_result_edit',result_id=r.id) }}">Edit</a>{% endif %}

@@ -5,7 +5,7 @@
    catalogue shows the change. Copies on loan can never be taken out of the count. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac st lb">
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_library') }}">← Library</a>{% endif %}
 <div class="ac-modal-head"><span class="acq-kind">{{ 'New book' if new else 'Book' }}</span><h2>{{ 'Add a book' if new else book.title }}</h2>
   <p>{{ 'Details can be corrected later without touching the loan history.' if new else book.on_loan ~ ' cop' ~ ('y' if book.on_loan == 1 else 'ies') ~ ' on loan now; the total cannot go below that.' }}</p></div>

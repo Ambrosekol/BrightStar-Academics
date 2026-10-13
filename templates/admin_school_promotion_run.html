@@ -9,7 +9,7 @@
 {% set editable = run.status in ['draft', 'approved'] %}
 {% set class_names = items|map(attribute='source_class_name')|unique|list %}
 <div class="ac st pr" data-pr="{{ run.id }}" data-modal-size="wide">
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_promotion') }}">← Promotion</a>{% endif %}
 <header class="fp-head">
   <div><span class="acq-kind">Promotion run #{{ run.id }}</span><h2>{{ run.from_session_name }} → {{ run.to_session_name }}</h2>

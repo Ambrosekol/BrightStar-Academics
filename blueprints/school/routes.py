@@ -39,6 +39,7 @@ from core.security import (
 from core.uploads import _save_image_upload
 from core.names import clean_part
 from core import subdivisions as subdivision_reach
+from core import printed_papers
 from core import theory_marking
 from core.notifications import _notify_guardians_of_school_work
 from blueprints.school.report_card_data import class_term_stats, grade_for
@@ -1513,7 +1514,8 @@ def admin_school_assessment_detail(assessment_id):
     if not _school_pair_allowed(current_admin()['id'],a['class_id'],a['subject_id']): return admin_access_error(perm)
     split=theory_marking.split_for(assessment_id) if a['assessment_type']!='practice' else None
     return render_template('school_assessment_detail.html',assessment=a,questions=questions,sessions=_school_sessions(),terms=ACADEMIC_TERMS,
-                           split=split,limits={'guide':theory_marking.MARKING_GUIDE_LIMIT,'marks':theory_marking.MAX_QUESTION_MARKS})
+                           split=split,limits={'guide':theory_marking.MARKING_GUIDE_LIMIT,'marks':theory_marking.MAX_QUESTION_MARKS},
+                           delivery_locked=not printed_papers.can_change_delivery(assessment_id))
 
 @app.post('/admin/school/assessments/<int:assessment_id>/edit')
 @admin_required
@@ -1534,10 +1536,16 @@ def admin_school_assessment_edit(assessment_id):
         flash('Select a valid term.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     if term and term not in ACADEMIC_TERMS:
         flash('Select a valid term.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
-    db.session.execute(sa_update(SchoolAssessment).where(SchoolAssessment.id==assessment_id)
-        .values(title=title,instructions=instructions,class_id=cid,subject_id=sid,
-                session_id=session_id,duration_minutes=duration,term=term or 'Full Session'))
-    db.session.commit(); audit_log('school_assessment_updated','school',a['assessment_type'],assessment_id,{'class_id':cid,'subject_id':sid,'term':term}); flash('Assessment updated.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+    delivery=a['delivery'] or 'cbt'
+    wanted=request.form.get('delivery',delivery) if a['assessment_type']!='practice' else 'cbt'
+    if wanted not in printed_papers.DELIVERIES: wanted=delivery
+    if wanted!=delivery and not printed_papers.can_change_delivery(assessment_id):
+        flash('Students have already sat this, so whether it is on the computer or on paper can no longer change.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
+    values={'title':title,'instructions':instructions,'class_id':cid,'subject_id':sid,'session_id':session_id,
+            'duration_minutes':duration,'term':term or 'Full Session','delivery':wanted}
+    if wanted=='printed': values['active']=0   # a printed paper is never opened to students online
+    db.session.execute(sa_update(SchoolAssessment).where(SchoolAssessment.id==assessment_id).values(**values))
+    db.session.commit(); audit_log('school_assessment_updated','school',a['assessment_type'],assessment_id,{'class_id':cid,'subject_id':sid,'term':term,'delivery':wanted}); flash('Assessment updated.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
 
 @app.post('/admin/school/assessments/<int:assessment_id>/toggle')
 @admin_required
@@ -1549,6 +1557,10 @@ def admin_school_assessment_toggle(assessment_id):
     if not admin_has_permission(current_admin()['id'],perm): return admin_access_error(perm)
     if not _school_pair_allowed(current_admin()['id'],a['class_id'],a['subject_id']): return admin_access_error(perm)
     new=0 if a['active'] else 1
+    if new and a['delivery']=='printed':
+        # Its questions are read on paper only; opening it online would show them to every student of the class.
+        flash('This is sat on paper, so it is never opened to students online. Print the question paper and the answer booklets instead.','error')
+        return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     db.session.execute(sa_update(SchoolAssessment).where(SchoolAssessment.id==assessment_id)
                        .values(active=new))
     db.session.commit(); audit_log('school_assessment_status_changed','school',a['assessment_type'],assessment_id,{'active':new}); flash('Assessment '+('activated.' if new else 'closed.'),'success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
@@ -1891,10 +1903,11 @@ def admin_school_result_edit(result_id):
     if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error('school.results.enter')
     if row['status'] in ('approved','released'):
         flash('Approved or released results cannot be edited here. Use the authorised correction process.','error'); return redirect(url_for('admin_school_results',**{'class':row['class_name']}))
-    if row['assessment_id'] and theory_marking.has_theory(row['assessment_id']):
-        # Its score is made from the system's objective marks and the subject teacher's theory marks; a typed-over
-        # score would be undone by the next mark, so it is changed by marking, never here.
-        flash('This score comes from a paper with theory questions. Change it by marking the paper (To mark).','error')
+    if row['assessment_id'] and (theory_marking.has_theory(row['assessment_id']) or printed_papers.is_printed(row['assessment_id'])):
+        # Its score is made from the paper's marks (the system's objective marks and the subject teacher's theory marks,
+        # or a printed paper's marks sheet); a typed-over score would be undone by the next mark, so it is changed by
+        # marking, never here.
+        flash('This score comes from the paper\'s own marks. Change it by marking the paper (To mark).','error')
         return redirect(url_for('admin_school_marking_paper',assessment_id=row['assessment_id'],student=row['student_id']))
     if request.method=='POST':
         try: score=_finite(float(request.form.get('score',''))); max_score=_finite(float(request.form.get('max_score','')))
@@ -1943,9 +1956,9 @@ def admin_school_result_workflow(result_id):
     if not _student_subject_allowed(me['id'],row['student_id'],row['class_id'],row['subject_id']): return admin_access_error(required)
     if action in ('release','return') and not _may_release_class(me['id'],row['class_id']):
         return admin_access_error('Releasing results is for the class teacher of '+(row['class_name'] or 'this class'))
-    if action!='return' and row['score'] is None and row['assessment_id']:
-        # A CBT paper whose theory answers are not all marked has no score yet: it cannot be checked, sent on or
-        # released. (A hand-entered result with no score, such as an absence, is not one of these.)
+    if action!='return' and row['score'] is None and row['assessment_id'] and row['component_name']!=theory_marking.ABSENT:
+        # A paper whose marks are not all in (theory unmarked, or a printed script half entered) has no score yet: it
+        # cannot be checked, sent on or released. (A result with no score because the student was absent is not one.)
         flash('This result is waiting for its theory answers to be marked, so it cannot move on yet.','error')
         return redirect(results_return_url(url_for('admin_school_results',**{'class':row['class_name']})))
     transitions={'verify':('entered','verified'),'approve':('verified','approved'),'release':('approved','released')}

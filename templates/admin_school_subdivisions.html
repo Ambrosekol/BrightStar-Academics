@@ -6,7 +6,7 @@
    until the School Admin unlocks it (blueprints/school/subdivisions.py). #}
 {% set split = classes|selectattr('subdivisions')|list %}
 {% set unplaced = classes|sum(attribute='unplaced') %}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <style nonce="{{ csp_nonce() }}">
 .sd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 10px; }

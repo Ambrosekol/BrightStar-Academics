@@ -226,6 +226,10 @@ class SchoolAssessment(db.Model):
     # each part keeps the marks its questions add up to; the subject teacher can move marks between them.
     objective_marks = db.Column(Float)
     theory_marks = db.Column(Float)
+    # 'cbt' (taken in the student portal) or 'printed' (sat on paper: the question paper and each student's answer
+    # booklet are printed, and the marks are entered by the subject teacher). A printed paper is never opened to
+    # students online.
+    delivery = db.Column(Text, nullable=False, default='cbt', server_default=text("'cbt'"))
 
 
 class SchoolQuestion(db.Model):
@@ -309,6 +313,33 @@ class SchoolAssessmentAttemptQuestion(db.Model):
     correct_option = db.Column(Integer, nullable=False)
     points = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
     question_type = db.Column(Text, nullable=False, default='objective', server_default=text("'objective'"))
+
+
+class SchoolPrintedScript(db.Model):
+    """One student's script for a printed paper: the objective total the teacher counted, or that they were absent.
+    The theory marks are SchoolPrintedMark rows. Scored by core/printed_papers.py."""
+    __tablename__ = 'school_printed_scripts'
+    __table_args__ = (UniqueConstraint('assessment_id', 'student_id'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    assessment_id = db.Column(Integer, ForeignKey('school_assessments.id', ondelete='CASCADE'), nullable=False)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    objective_score = db.Column(Float)
+    absent = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
+    updated_at = db.Column(Text, nullable=False)
+    updated_by = db.Column(Integer, ForeignKey('admins.id'))
+
+
+class SchoolPrintedMark(db.Model):
+    """The mark a printed script's theory question was given."""
+    __tablename__ = 'school_printed_marks'
+
+    script_id = db.Column(Integer, ForeignKey('school_printed_scripts.id', ondelete='CASCADE'),
+                          primary_key=True, nullable=False)
+    question_id = db.Column(Integer, primary_key=True, nullable=False)
+    awarded = db.Column(Float, nullable=False)
+    marked_by = db.Column(Integer, ForeignKey('admins.id'))
+    marked_at = db.Column(Text, nullable=False)
 
 
 class SchoolAssessmentAnswer(db.Model):

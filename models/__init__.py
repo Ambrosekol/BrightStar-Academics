@@ -84,6 +84,8 @@ from .school import (
     SchoolAssignmentAttemptQuestion,
     SchoolClass,
     SchoolClassProgression,
+    SchoolPrintedMark,
+    SchoolPrintedScript,
     SchoolProject,
     SchoolQuestion,
     SchoolStudentResult,
@@ -154,7 +156,7 @@ __all__ = [
     'SchoolAssessmentAttemptQuestion', 'SchoolAssignment',
     'SchoolAssignmentAnswer', 'SchoolAssignmentAttempt',
     'SchoolAssignmentAttemptQuestion', 'SchoolClass',
-    'SchoolClassProgression', 'SchoolProject', 'SchoolQuestion',
+    'SchoolClassProgression', 'SchoolPrintedMark', 'SchoolPrintedScript', 'SchoolProject', 'SchoolQuestion',
     'SchoolStudentResult', 'SchoolSubject', 'Student', 'StudentEnrolment',
     'ClassSubdivision', 'ClassTransfer',
     # admissions

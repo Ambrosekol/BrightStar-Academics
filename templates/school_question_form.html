@@ -6,7 +6,7 @@
    option, a picture that is too large); inside the pop-up it stays in the pop-up, and Back returns to the list. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac acq">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 {% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 <header class="acq-head">
   <div class="acq-head__text">

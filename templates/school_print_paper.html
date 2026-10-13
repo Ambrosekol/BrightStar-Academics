@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ paper.title }} · question paper — {{ school_brand.name }}</title>
+{# A printed paper's question paper (blueprints/school/marking.py): A4, the school's header, Section A (objective)
+   and Section B (theory). Answers go in the student's own answer booklet. Never cached (Cache-Control: no-store),
+   and every print of it is in the activity log. Everything is printed as plain text. #}
+<style>
+  :root { --brand: var(--navy, #0d2b52); --ink: #15171a; --muted: #5a5f66; --line: #c9ccd1; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e9ec; color: var(--ink); font: 12.5pt/1.45 "Times New Roman", Georgia, serif; }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between;
+         padding: 10px 16px; background: #0d2b52; color: #fff; font: 13px/1.4 system-ui, sans-serif; }
+  .bar button { padding: 7px 16px; border: 0; border-radius: 8px; background: #fff; color: #0d2b52; font: 700 13px system-ui, sans-serif; cursor: pointer; }
+  .sheet { width: 210mm; min-height: 297mm; margin: 14px auto; padding: 16mm 16mm 18mm; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.12); }
+  .head { display: grid; grid-template-columns: 22mm 1fr 22mm; align-items: center; gap: 4mm; padding-bottom: 4mm; border-bottom: 2px solid var(--ink); text-align: center; }
+  .head img { width: 20mm; height: 20mm; object-fit: contain; }
+  .head h1 { margin: 0; font-size: 17pt; letter-spacing: .02em; text-transform: uppercase; }
+  .head p { margin: 1mm 0 0; font-size: 10.5pt; color: var(--muted); }
+  .title { margin: 4mm 0 2mm; text-align: center; font-size: 14pt; font-weight: 700; }
+  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm 6mm; margin: 0 0 4mm; padding: 2.5mm 3mm; border: 1px solid var(--line); font-size: 10.5pt; }
+  .meta b { font-weight: 700; }
+  .rules { margin: 0 0 5mm; padding: 2.5mm 3mm; border-left: 3px solid var(--ink); background: #f4f4f5; font-size: 10.5pt; white-space: pre-line; }
+  h2 { margin: 6mm 0 1mm; font-size: 12.5pt; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--ink); }
+  .note { margin: 0 0 3mm; font-size: 10pt; font-style: italic; color: var(--muted); }
+  ol { margin: 0; padding-left: 7mm; }
+  li.q { margin: 0 0 4mm; break-inside: avoid; page-break-inside: avoid; }
+  .q-text { white-space: pre-line; overflow-wrap: anywhere; }
+  .q-instr { display: block; font-size: 10pt; font-style: italic; color: var(--muted); }
+  .q-marks { float: right; margin-left: 3mm; font-size: 10pt; color: var(--muted); }
+  .q img { display: block; max-width: 110mm; max-height: 70mm; margin: 2mm 0; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: .5mm 8mm; margin: 1.5mm 0 0; padding: 0; list-style: none; }
+  .opts li { overflow-wrap: anywhere; }
+  .end { margin-top: 8mm; text-align: center; font-size: 10pt; letter-spacing: .2em; color: var(--muted); }
+  @page { size: A4; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none; }
+    .sheet { width: auto; min-height: 0; margin: 0; padding: 14mm 15mm 16mm; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="bar"><span><b>{{ paper.title }}</b> · question paper · {{ objective|length }} objective, {{ theory|length }} theory</span>
+  <button type="button" data-print-now>Print</button></div>
+<article class="sheet">
+  <header class="head">
+    <img src="{{ school_brand.logo_url }}" alt="">
+    <div><h1>{{ school_brand.name }}</h1>{% if school_brand.motto %}<p>{{ school_brand.motto }}</p>{% endif %}</div>
+    <span></span>
+  </header>
+  <p class="title">{{ paper.title }}</p>
+  <div class="meta">
+    <span><b>Class:</b> {{ paper.class_name }}</span>
+    <span><b>Subject:</b> {{ paper.subject_name }}</span>
+    <span><b>Time allowed:</b> {{ paper.duration_minutes }} minutes</span>
+    <span><b>Term:</b> {{ paper.term or '—' }}</span>
+    <span><b>Session:</b> {{ paper.session_name or '—' }}</span>
+    <span><b>Total marks:</b> {{ '%g'|format(split.total) }}{% if objective and theory %} (A {{ '%g'|format(split.objective) }}, B {{ '%g'|format(split.theory) }}){% endif %}</span>
+  </div>
+  <div class="rules">{{ paper.instructions or 'Write your name and admission number on your answer booklet. Answer every question. Write all your answers in your answer booklet, not on this question paper.' }}</div>
+
+  {% if objective %}
+  <h2>Section A · Objective</h2>
+  <p class="note">Answer all {{ objective|length }} question{{ '' if objective|length == 1 else 's' }}. On your answer booklet, shade the letter of the correct option.</p>
+  <ol>
+    {% for q in objective %}
+    <li class="q">{% if q.points != 1 %}<span class="q-marks">{{ q.points }} marks</span>{% endif %}
+      {% if q.instruction %}<span class="q-instr">{{ q.instruction }}</span>{% endif %}
+      <span class="q-text">{{ q.question_text }}</span>
+      {% if q.image_path %}<img src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for question {{ loop.index }}">{% endif %}
+      <ol class="opts">{% for letter in 'ABCD' %}<li><b>{{ letter }}.</b> {{ q['option_' ~ letter|lower] }}</li>{% endfor %}</ol>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  {% if theory %}
+  <h2>Section {{ 'B' if objective else 'A' }} · Theory</h2>
+  <p class="note">Answer in the space for each question in your answer booklet. The marks for each question are shown.</p>
+  <ol>
+    {% for q in theory %}
+    <li class="q"><span class="q-marks">{{ q.points }} mark{{ '' if q.points == 1 else 's' }}</span>
+      {% if q.instruction %}<span class="q-instr">{{ q.instruction }}</span>{% endif %}
+      <span class="q-text">{{ q.question_text }}</span>
+      {% if q.image_path %}<img src="{{ url_for('static', filename=q.image_path) }}" alt="Picture for theory question {{ loop.index }}">{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  <p class="end">END OF PAPER</p>
+</article>
+<script nonce="{{ csp_nonce() }}">
+document.querySelector('[data-print-now]').addEventListener('click', function () { window.print(); });
+</script>
+</body>
+</html>

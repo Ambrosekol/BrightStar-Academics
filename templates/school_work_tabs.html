@@ -1,7 +1,7 @@
 {# The Academics frame: one page for results and every kind of class work, switched by the tabs below.
    Set work_tab before including it. Only the sections this person may open are shown, and the one button
    on the right is the main thing to create in the open section. Links inside load in place (static/inplace.js). #}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 {% set aid = current_admin['id'] %}
 {% set ac_tabs = [
     ('results', 'Results', 'admin_school_results', 'school.results.view', 'admin_school_result_manual_new', 'school.results.enter', 'Enter offline scores'),

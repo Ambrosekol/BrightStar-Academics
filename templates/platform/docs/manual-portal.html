@@ -151,6 +151,18 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>The result reads correctly in the student's results.</div></div>
 </div>
 
+<h3 id="printed-paper">A paper "sat on paper": students cannot see it, or a booklet is missing someone</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"This is sat on paper, so it is never opened to students online."; students cannot find a test; or the answer booklets leave a student out.</div></div>
+  <div><b>Why</b><div><p>A printed paper ({{ file('core/printed_papers.py') }}) is never opened online, by design. Booklets are printed for students who are active, enrolled in the paper's class <strong>for the paper's session</strong>, take the subject (in SSS, by department), and whom the printing teacher teaches.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol>
+    <li>Meant to be on the computer? Change <em>How students sit it</em> in the paper's Settings (only possible before anyone has sat it).</li>
+    <li>A student is missing from the booklets: check their enrolment for that session and class, their department (SSS), and the teacher's teaching duty.</li>
+    <li>No photograph on a booklet: add the student's photo on their page; the booklet otherwise has a box to paste one in.</li>
+  </ol></div></div>
+  <div><b>Check</b><div>The booklets list every student who sits the paper.</div></div>
+</div>
+
 <h3 id="parent-no-child">A parent cannot see their child</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"No students are linked to this account", or one child missing.</div></div>

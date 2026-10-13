@@ -123,6 +123,30 @@ tests are objective only.</p>
   locked too.</li>
 </ul>
 
+<h2 id="on-paper">Tests and examinations sat on paper</h2>
+<p>When you create a test or an examination, <strong>How students sit it</strong> chooses <strong>On the computer</strong>
+(in the student portal, as before) or <strong>On paper</strong>. You can change it under Settings until anyone has sat
+it.</p>
+<ul>
+  <li><strong>Never online.</strong> A paper sat on paper is never opened to students in the portal, so its questions
+  can only be read on paper. Its page says <em>Sat on paper</em> instead of <em>Open to students</em>.</li>
+  <li><strong>Printing.</strong> <em>Print question paper</em> prints the paper on A4 with the school's name and logo,
+  the class, subject, time allowed and marks, Section A (objective, with options) and Section B (theory). <em>Print
+  answer booklets</em> prints one booklet per student, each on its own pages, with their name, admission number, class
+  and passport photograph filled in (a box to paste one in if there is none), a grid of A B C D to shade for the
+  objective answers, ruled space for each theory question, and a box for the marks. Use the browser's Print (or Save as
+  PDF). Only the subject teacher of that class can print them, and every print is recorded in the activity log.</li>
+  <li><strong>Entering the marks.</strong> In <a href="{{ url_for('admin_school_marking') }}">To mark</a>, the paper
+  opens as a marks sheet for the whole class: tick <em>Absent</em>, or type the objective total you counted and the mark
+  for each theory question. The score is worked out for you. If any mark on the sheet is wrong (above its question's
+  marks, say), nothing is saved and the row is shown in red. Leave a box blank to come back to it: the student's
+  result waits as <em>Awaiting marking</em> until every mark is in.</li>
+  <li><strong>Absent students.</strong> Their result says <em>Absent</em>; it can be sent on and released like any other,
+  and counts no marks.</li>
+  <li><strong>The same rules as the computer.</strong> Marks can be moved between the objective and theory parts at the
+  top of the sheet; a changed mark on a checked result sends it back to be checked; a released result's row is locked.</li>
+</ul>
+
 <h2 id="practice">Practice tests</h2>
 <p><a href="{{ url_for('admin_school_practice_tests') }}">Practice</a> is a self-study bank: nothing a
 student does there is ever written to the database — no attempt, no answers, no score — so it can

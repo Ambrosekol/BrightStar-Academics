@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.26.0",
+      "date": "2026-10-13",
+      "title": "Tests and examinations sat on paper",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "A test or examination can now be sat on paper instead of on the computer. Print the question paper, and an answer booklet for each student with their name, admission number and photograph already filled in, then enter the marks for the whole class on one sheet under To mark. Absent students are recorded as absent. A paper sat on paper is never shown to students online.",
+          "help": "work"
+        }
+      ]
+    },
+    {
       "version": "2.25.0",
       "date": "2026-10-13",
       "title": "Theory questions, marked by the subject teacher",

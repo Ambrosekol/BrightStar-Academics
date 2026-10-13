@@ -4,7 +4,7 @@
 {# Marking one paper (blueprints/school/marking.py): how its marks are shared between the objective and theory parts,
    the students whose scripts this teacher marks, and one student's written answers with a mark and an optional
    comment for each. Answers are shown exactly as written, as plain text. A released result is locked. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <div class="ac mk" data-mk>
 <header class="acq-head">
   <div class="acq-head__text">
@@ -15,37 +15,7 @@
   <a class="ac-btn" href="{{ url_for('admin_school_marking') }}">← To mark</a>
 </header>
 
-{# ---------------------------------------------------------------- the split #}
-<section class="ac-panel mk-split">
-  <div class="mk-split__head">
-    <h3>How the {{ '%g'|format(split.total) }} marks are shared</h3>
-    <p>The objective questions add up to {{ split.objective_raw }} mark{{ '' if split.objective_raw == 1 else 's' }} and the theory questions to {{ split.theory_raw }}.
-      {% if split.chosen %}You have shared them out differently.{% else %}Each part keeps its own marks until you change it.{% endif %}
-      Giving theory more marks takes them from the objective part; every score on this paper follows.</p>
-  </div>
-  {% if split_locked %}
-  <p class="mk-lock">Locked: results of this paper have been released. Objective {{ '%g'|format(split.objective) }} · theory {{ '%g'|format(split.theory) }}.</p>
-  {% else %}
-  <form method="post" action="{{ url_for('admin_school_marking_split', assessment_id=paper.id) }}" class="mk-split__form">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    {% if current %}<input type="hidden" name="student" value="{{ current.student_id }}">{% endif %}
-    <div class="mk-split__vals">
-      <label>Objective <output data-mk-obj>{{ '%g'|format(split.objective) }}</output></label>
-      <input type="range" min="0" max="{{ split.total }}" step="0.5" value="{{ split.theory }}" data-mk-range aria-label="Marks for theory"
-             {% if not split.objective_raw %}disabled{% endif %}>
-      <label for="mkTheory">Theory <input id="mkTheory" type="number" name="theory_marks" min="0" max="{{ split.total }}" step="0.5" value="{{ '%g'|format(split.theory) }}" data-mk-theory required
-             {% if not split.objective_raw %}readonly{% endif %}></label>
-    </div>
-    <div class="mk-split__acts">
-      <button class="ac-btn ac-btn--primary ac-btn--sm" type="submit"
-              data-confirm="Share this paper's {{ '%g'|format(split.total) }} marks the new way? Every student's score on it is recalculated."
-              data-confirm-title="Change how the marks are shared" data-confirm-ok="Yes, recalculate" data-confirm-danger="0">Save how marks are shared</button>
-      {% if split.chosen %}<button class="ac-link" type="submit" name="reset" value="1" formnovalidate
-              data-confirm="Go back to each part keeping its own question marks? Every student's score on this paper is recalculated." data-confirm-danger="0">Use the questions' own marks</button>{% endif %}
-    </div>
-  </form>
-  {% endif %}
-</section>
+{% include 'includes/_marking_split.html' %}
 
 {% if not students %}
 <section class="ac-panel"><div class="ac-empty"><strong>No scripts yet</strong>When students you teach submit this {{ kinds.get(paper.assessment_type, 'paper')|lower }}, their written answers appear here.</div></section>

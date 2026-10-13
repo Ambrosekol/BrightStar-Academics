@@ -9,18 +9,23 @@ paper's type decides the permission; every route checks it itself, and a refusal
 
 What is locked. A student's released result is never re-marked, and a paper's split cannot move once any of its
 results is released. A mark that changes after the result was checked sends the result back to be checked
-again (core/theory_marking.sync_result). Every mark and every split change is in the activity log.
+again (core/theory_marking.write_result). Every mark and every split change is in the activity log.
+
+Printed papers (core/printed_papers.py) are marked here too: their page is a marks sheet for the whole class, and
+the question paper and the answer booklets are printed from here, by the same people. A printed question paper is
+the exam itself, so printing it is recorded in the activity log, and the pages are never kept in a browser cache.
 """
 
 import math
 from datetime import datetime, timezone
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, flash, make_response, redirect, render_template, request, url_for
 from sqlalchemy import select
 
 from app import app
 from blueprints.school.helpers import _school_pair_allowed, _student_subject_allowed
 from control_plane.config import badge_cache_seconds
+from core import printed_papers as pp
 from core import theory_marking as tm
 from core.db_helpers import all_rows, one, tuples
 from core.security import admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
@@ -53,8 +58,15 @@ def _students_i_mark(admin_id, paper, student_ids):
 def _my_papers(admin_id):
     """The papers with theory this teacher marks, each with how many of their students' scripts wait."""
     papers = [dict(p) for p in tm.papers_with_theory() if _may_mark_paper(admin_id, p)]
-    scripts = tm.script_counts([p['id'] for p in papers])
+    scripts = tm.script_counts([p['id'] for p in papers if p['delivery'] != pp.PRINTED])
     for p in papers:
+        if p['delivery'] == pp.PRINTED:
+            mine = _students_i_mark(admin_id, p, [s['id'] for s in pp.roster(p)])
+            states = pp.paper_states(p['id'], mine)
+            p['pending'] = sum(1 for st in states.values() if st == 'pending')
+            p['marked'] = sum(1 for st in states.values() if st in ('marked', 'absent'))
+            p['scripts'] = len(mine)
+            continue
         rows = scripts.get(p['id'], [])
         mine = set(_students_i_mark(admin_id, p, [sid for sid, _ in rows]))
         p['pending'] = sum(1 for sid, status in rows if sid in mine and status == 'pending')
@@ -88,7 +100,8 @@ def may_open_to_mark():
 def _paper(assessment_id):
     return one(select(SchoolAssessment.id, SchoolAssessment.title, SchoolAssessment.assessment_type,
                       SchoolAssessment.class_id, SchoolAssessment.subject_id, SchoolAssessment.term,
-                      SchoolAssessment.session_id, SchoolAssessment.active,
+                      SchoolAssessment.session_id, SchoolAssessment.active, SchoolAssessment.delivery,
+                      SchoolAssessment.duration_minutes, SchoolAssessment.instructions,
                       SchoolClass.name.label('class_name'), SchoolSubject.name.label('subject_name'),
                       AcademicSession.name.label('session_name'))
                .join(SchoolClass, SchoolClass.id == SchoolAssessment.class_id)
@@ -101,7 +114,9 @@ def _open_paper(assessment_id):
     """(admin, paper, None) for a paper this person may mark, or (admin, None, the refusal to send)."""
     me = current_admin()
     paper = _paper(assessment_id)
-    if not paper or paper['assessment_type'] not in EDIT_PERMISSION or not tm.has_theory(assessment_id):
+    if not paper or paper['assessment_type'] not in EDIT_PERMISSION:
+        abort(404)
+    if paper['delivery'] != pp.PRINTED and not tm.has_theory(assessment_id):
         abort(404)
     if not _may_mark_paper(me['id'], paper):
         perm = EDIT_PERMISSION[paper['assessment_type']]
@@ -168,6 +183,8 @@ def admin_school_marking_paper(assessment_id):
     me, paper, refused = _open_paper(assessment_id)
     if refused is not None:
         return refused
+    if paper['delivery'] == pp.PRINTED:
+        return _printed_sheet(me, paper)
     attempts = all_rows(select(SchoolAssessmentAttempt.id, SchoolAssessmentAttempt.student_id,
                                SchoolAssessmentAttempt.theory_status, SchoolAssessmentAttempt.score,
                                SchoolAssessmentAttempt.max_score, SchoolAssessmentAttempt.submitted_at)
@@ -315,6 +332,140 @@ def admin_school_marking_split(assessment_id):
     flash(f"Objective is now worth {after['objective']:g} and theory {after['theory']:g} of {after['total']:g}. "
           f"{looked_at} student score{'' if looked_at == 1 else 's'} recalculated.", 'success')
     return redirect(back)
+
+
+
+
+
+# ---------------------------------------------------------------- printed papers
+def _printed_rows(me, paper, posted=None):
+    """The marks sheet: each student this teacher marks, with their script as entered (or as just typed)."""
+    everyone = pp.roster(paper)
+    mine = set(_students_i_mark(me['id'], paper, [r['id'] for r in everyone]))
+    students = [s for s in everyone if s['id'] in mine]
+    questions = pp.paper_questions(paper['id'])
+    theory = [q for q in questions if (q['question_type'] or tm.OBJECTIVE) == tm.THEORY]
+    objective_raw = sum(int(q['points'] or 1) for q in questions if (q['question_type'] or tm.OBJECTIVE) != tm.THEORY)
+    found = pp.scripts(paper['id'], [s['id'] for s in students])
+    released = {sid for (sid,) in tuples(select(SchoolStudentResult.student_id).where(
+        SchoolStudentResult.assessment_id == paper['id'], SchoolStudentResult.status == 'released'))}
+    split = tm.split_for(paper['id'])
+    rows = []
+    for st in students:
+        script = found.get(st['id'])
+        typed = (posted or {}).get(st['id'])
+        rows.append({**st, 'script': script, 'state': pp.script_state(script, theory, objective_raw),
+                     'score': pp.script_score(script, theory, objective_raw, split), 'released': st['id'] in released,
+                     'typed': typed})
+    return rows, theory, objective_raw, split
+
+
+def _printed_sheet(me, paper, posted=None, errors=None, status=200):
+    rows, theory, objective_raw, split = _printed_rows(me, paper, posted)
+    response = make_response(render_template(
+        'school_marking_printed.html', paper=paper, rows=rows, theory=theory, objective_raw=objective_raw, split=split,
+        split_locked=tm.split_locked(paper['id']), kinds=KIND_LABEL, errors=errors or {},
+        pending=sum(1 for r in rows if r['state'] == 'pending')), status)
+    return response
+
+
+@app.post('/admin/school/marking/<int:assessment_id>/printed')
+@admin_required
+@csrf_protect
+def admin_school_marking_printed_save(assessment_id):
+    me, paper, refused = _open_paper(assessment_id)
+    if refused is not None:
+        return refused
+    if paper['delivery'] != pp.PRINTED:
+        abort(404)
+    rows, theory, objective_raw, _ = _printed_rows(me, paper)
+    sent = {int(v) for v in request.form.getlist('student') if str(v).isdigit()}
+    mine = {r['id']: r for r in rows}
+    if sent - set(mine):
+        audit_log('authorization_denied', 'school', 'marking', assessment_id, {'students': sorted(sent - set(mine))}, False, me)
+        return admin_access_error(EDIT_PERMISSION[paper['assessment_type']])
+    entries, errors, posted = {}, {}, {}
+    for sid in sent:
+        if mine[sid]['released']:
+            continue
+        absent = request.form.get(f'absent_{sid}') == '1'
+        raw_obj = request.form.get(f'obj_{sid}', '')
+        raw_marks = {q['id']: request.form.get(f'm_{sid}_{q["id"]}', '') for q in theory}
+        posted[sid] = {'absent': absent, 'objective': raw_obj, 'marks': raw_marks}
+        try:
+            entries[sid] = pp.check_entry(raw_obj, absent, raw_marks, theory, objective_raw)
+        except ValueError as exc:
+            errors[sid] = str(exc)
+    if errors:
+        # Nothing is saved until every row is right, so a sheet is never half-entered by mistake.
+        flash(f"Nothing was saved: {len(errors)} student{'' if len(errors) == 1 else 's'} need{'s' if len(errors) == 1 else ''} a correction (marked in red).", 'error')
+        return _printed_sheet(me, paper, posted, errors, 400)
+    changed_students = 0
+    sent_back = 0
+    for sid, (objective, absent, marks) in entries.items():
+        before = db.session.scalars(select(SchoolStudentResult.status).where(
+            SchoolStudentResult.assessment_id == assessment_id, SchoolStudentResult.student_id == sid)
+            .order_by(SchoolStudentResult.id.desc())).first()
+        changed, status = pp.save_script(assessment_id, sid, objective, absent, marks, me['id'])
+        if changed:
+            changed_students += 1
+            if before in ('verified', 'approved') and status == 'entered':
+                sent_back += 1
+    db.session.commit()
+    forget_here(CACHE)
+    audit_log('school_printed_marks_entered', 'school', paper['assessment_type'], assessment_id,
+              {'students_changed': changed_students, 'sent_back_to_check': sent_back})
+    message = f"Saved. {changed_students} student{'' if changed_students == 1 else 's'} updated."
+    if sent_back:
+        message += f" {sent_back} result{'' if sent_back == 1 else 's'} had already been checked and go{'es' if sent_back == 1 else ''} back to be checked again."
+    flash(message, 'success')
+    return redirect(url_for('admin_school_marking_paper', assessment_id=assessment_id))
+
+
+def _no_store(response):
+    # The question paper is the exam: never left in a shared computer's cache or a proxy.
+    response.headers['Cache-Control'] = 'no-store, private'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
+
+@app.route('/admin/school/marking/<int:assessment_id>/print/paper')
+@admin_required
+def admin_school_paper_print(assessment_id):
+    me, paper, refused = _open_paper(assessment_id)
+    if refused is not None:
+        return refused
+    if paper['delivery'] != pp.PRINTED:
+        abort(404)
+    questions = pp.paper_questions(assessment_id)
+    audit_log('school_paper_printed', 'school', paper['assessment_type'], assessment_id, {'what': 'question paper'})
+    return _no_store(make_response(render_template(
+        'school_print_paper.html', paper=paper, kinds=KIND_LABEL, split=tm.split_for(assessment_id),
+        objective=[q for q in questions if (q['question_type'] or tm.OBJECTIVE) != tm.THEORY],
+        theory=[q for q in questions if (q['question_type'] or tm.OBJECTIVE) == tm.THEORY])))
+
+
+@app.route('/admin/school/marking/<int:assessment_id>/print/booklets')
+@admin_required
+def admin_school_paper_booklets(assessment_id):
+    me, paper, refused = _open_paper(assessment_id)
+    if refused is not None:
+        return refused
+    if paper['delivery'] != pp.PRINTED:
+        abort(404)
+    students = pp.roster(paper)
+    mine = set(_students_i_mark(me['id'], paper, [s['id'] for s in students]))
+    students = [s for s in students if s['id'] in mine]
+    only = request.args.get('student', type=int)
+    if only:
+        students = [s for s in students if s['id'] == only]
+    questions = pp.paper_questions(assessment_id)
+    audit_log('school_paper_printed', 'school', paper['assessment_type'], assessment_id,
+              {'what': 'answer booklets', 'students': len(students)})
+    return _no_store(make_response(render_template(
+        'school_print_booklets.html', paper=paper, kinds=KIND_LABEL, students=students,
+        objective=[q for q in questions if (q['question_type'] or tm.OBJECTIVE) != tm.THEORY],
+        theory=[q for q in questions if (q['question_type'] or tm.OBJECTIVE) == tm.THEORY])))
 
 
 app.jinja_env.globals.update(theory_to_mark_badge=to_mark_badge, may_open_to_mark=may_open_to_mark)

@@ -21,7 +21,7 @@ student the subject (blueprints/school/marking.py).
 
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from core.db_helpers import all_rows, one, one_scalar, tuples
 from models import (
@@ -152,54 +152,76 @@ def _first_status(assessment_id, at):
     return 'approved' if release and release <= at else 'entered'
 
 
-def sync_result(attempt_id, actor_id=None, reason=None):
-    """Write the attempt's result as its marks stand now. Returns 'released' when the result is already
-    released (and so was left alone), otherwise the result's status. The caller commits."""
-    attempt = db.session.get(SchoolAssessmentAttempt, attempt_id)
-    if attempt is None or attempt.status not in FINISHED:
-        return None
-    a = one(select(SchoolAssessment.subject_id, SchoolAssessment.session_id, SchoolAssessment.term)
-            .where(SchoolAssessment.id == attempt.assessment_id))
-    if a is None:
-        return None
+ABSENT = 'Absent'   # component_name of the result of a student who missed a printed paper
+
+
+def write_result(student_id, assessment_id, score, total, actor_id=None, reason=None, created_at=None, absent=False):
+    """Write one student's result for a paper: ``score`` out of ``total`` (None while marking is unfinished), or
+    absent. Returns 'released' when the result is already released (and so was left alone), otherwise its status.
+    The caller commits.
+
+    A changed mark on a checked (verified or approved) result sends it back to 'entered' to be checked again, with a
+    workflow event. A paper's first score starts the way an objective-only paper's does (_first_status)."""
     rows = db.session.scalars(select(SchoolStudentResult).where(
-        SchoolStudentResult.student_id == attempt.student_id,
-        SchoolStudentResult.assessment_id == attempt.assessment_id).order_by(SchoolStudentResult.id.desc())).all()
+        SchoolStudentResult.student_id == student_id,
+        SchoolStudentResult.assessment_id == assessment_id).order_by(SchoolStudentResult.id.desc())).all()
     if any(r.status == 'released' for r in rows):
         return 'released'
-    parts = attempt_parts(attempt_id)
-    split = split_for(attempt.assessment_id)
-    score = final_score(parts, split)
-    attempt.theory_status = 'pending' if parts['pending'] else 'marked'
+    a = one(select(SchoolAssessment.subject_id, SchoolAssessment.session_id, SchoolAssessment.term)
+            .where(SchoolAssessment.id == assessment_id))
+    if a is None:
+        return None
     now = _now()
+    component = ABSENT if absent else None
+    if absent:
+        score = None
     row = rows[0] if rows else None
     if row is None:
-        row = SchoolStudentResult(student_id=attempt.student_id, assessment_id=attempt.assessment_id,
-                                  subject_id=a['subject_id'], term=a['term'] or 'Full Session',
-                                  session_id=a['session_id'], created_at=attempt.submitted_at or now,
-                                  status='entered' if score is None else _first_status(attempt.assessment_id, now),
-                                  score=score, max_score=split['total'])
+        row = SchoolStudentResult(student_id=student_id, assessment_id=assessment_id, subject_id=a['subject_id'],
+                                  term=a['term'] or 'Full Session', session_id=a['session_id'],
+                                  created_at=created_at or now, score=score, max_score=total,
+                                  component_name=component, override_reason=component,
+                                  status='entered' if score is None else _first_status(assessment_id, now))
         db.session.add(row)
         return row.status
-    changed = row.score != score or row.max_score != split['total']
+    changed = row.score != score or row.max_score != total or (row.component_name or None) != component
     first_score = row.score is None and score is not None
-    row.score, row.max_score = score, split['total']
+    row.score, row.max_score, row.component_name, row.override_reason = score, total, component, component
     if changed:
         row.updated_at, row.updated_by = now, actor_id
         if row.status in ('verified', 'approved'):
             # A mark that changes after it was checked goes back to be checked again, never straight out.
             db.session.add(ResultWorkflowEvent(result_id=row.id, from_status=row.status, to_status='entered',
-                                               actor_admin_id=actor_id, reason=reason or 'Theory marks changed',
+                                               actor_admin_id=actor_id, reason=reason or 'Marks changed',
                                                created_at=now))
             row.status, row.verified_by, row.approved_by = 'entered', None, None
         elif first_score and row.status == 'entered':
-            # The paper's first score follows the same rule as an objective-only paper's.
-            row.status = _first_status(attempt.assessment_id, now)
+            row.status = _first_status(assessment_id, now)
     return row.status
 
 
+def sync_result(attempt_id, actor_id=None, reason=None):
+    """Write a CBT attempt's result as its marks stand now (see write_result). The caller commits."""
+    attempt = db.session.get(SchoolAssessmentAttempt, attempt_id)
+    if attempt is None or attempt.status not in FINISHED:
+        return None
+    if one_scalar(select(SchoolStudentResult.id).where(
+            SchoolStudentResult.student_id == attempt.student_id, SchoolStudentResult.assessment_id == attempt.assessment_id,
+            SchoolStudentResult.status == 'released').limit(1)) is not None:
+        return 'released'
+    parts = attempt_parts(attempt_id)
+    split = split_for(attempt.assessment_id)
+    attempt.theory_status = 'pending' if parts['pending'] else 'marked'
+    return write_result(attempt.student_id, attempt.assessment_id, final_score(parts, split), split['total'],
+                        actor_id, reason or 'Theory marks changed', attempt.submitted_at)
+
+
 def refresh_paper(assessment_id, actor_id=None, reason=None):
-    """Re-score every finished attempt of a paper (after its split changed). Returns how many were looked at."""
+    """Re-score every finished attempt (or, for a printed paper, every entered script) of a paper after its split
+    changed. Returns how many were looked at."""
+    if one_scalar(select(SchoolAssessment.delivery).where(SchoolAssessment.id == assessment_id)) == 'printed':
+        from core.printed_papers import refresh_printed   # deferred: it imports this module
+        return refresh_printed(assessment_id, actor_id, reason)
     ids = [i for (i,) in tuples(select(SchoolAssessmentAttempt.id).where(
         SchoolAssessmentAttempt.assessment_id == assessment_id, SchoolAssessmentAttempt.status.in_(FINISHED)))]
     for attempt_id in ids:
@@ -209,13 +231,16 @@ def refresh_paper(assessment_id, actor_id=None, reason=None):
 
 # ---------------------------------------------------------------- what is waiting to be marked
 def papers_with_theory():
-    """Every test and examination with theory questions: ``[{'id','title','assessment_type','class_id',
-    'subject_id','term','session_id','active'}]``. Practice tests never have theory."""
+    """Every test and examination a teacher marks: a CBT paper with theory questions, and every printed paper with
+    questions (all its marks are entered by hand). ``[{'id','title','assessment_type','class_id','subject_id','term',
+    'session_id','active','delivery'}]``. Practice tests are never marked."""
     theory = select(SchoolQuestion.assessment_id).where(SchoolQuestion.question_type == THEORY).distinct()
+    printed = and_(SchoolAssessment.delivery == 'printed', SchoolAssessment.question_count > 0)
     return all_rows(select(SchoolAssessment.id, SchoolAssessment.title, SchoolAssessment.assessment_type,
                            SchoolAssessment.class_id, SchoolAssessment.subject_id, SchoolAssessment.term,
-                           SchoolAssessment.session_id, SchoolAssessment.active)
-                    .where(SchoolAssessment.id.in_(theory), SchoolAssessment.assessment_type != 'practice'))
+                           SchoolAssessment.session_id, SchoolAssessment.active, SchoolAssessment.delivery)
+                    .where(or_(SchoolAssessment.id.in_(theory), printed),
+                           SchoolAssessment.assessment_type != 'practice'))
 
 
 def script_counts(assessment_ids):

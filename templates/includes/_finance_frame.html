@@ -3,7 +3,7 @@
    Set fin_tab before including it. Only the sections this person may open are shown. Recording a payment and
    adding a fee item open in a pop-up over whatever page you are on; everything else loads in place
    (static/inplace.js). #}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 {% set fin_aid = current_admin['id'] %}
 {% set fin_view_all = admin_has_permission(fin_aid, 'finance.view_all') or is_school_admin_ui %}

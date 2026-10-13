@@ -414,3 +414,17 @@ a.ac-step--done:hover b { text-decoration: underline; }
   .mk-grid { grid-template-columns: 1fr; }
   .mk-students { position: static; max-height: 240px; }
 }
+
+/* A printed paper's marks sheet (templates/school_marking_printed.html) */
+.mk-print { display: flex; flex-wrap: wrap; gap: 6px; }
+.mk-sheet { padding: 8px 10px; }
+.mk-grid-t th small { font-weight: 400; color: var(--ac-muted); }
+.mk-grid-t td small { display: block; font-size: 10px; color: var(--ac-muted); }
+.mk-grid-t .c { text-align: center; }
+.mk-grid-t input[type=checkbox] { accent-color: var(--ac-accent); width: 15px; height: 15px; }
+.ac .mk-grid-t input[type=number] { width: 70px !important; padding: 3px 6px !important; font-size: 13px !important; text-align: right; }
+.ac .mk-grid-t input[type=number]:disabled { background: var(--ac-wash); color: var(--ac-muted); }
+.mk-grid-t tr[data-dirty] td:first-child { box-shadow: inset 3px 0 0 var(--ac-accent); }
+.mk-grid-t tr.is-error td { background: var(--ac-attn-tint); }
+.mk-grid-t tr.mk-err td { padding-top: 0; background: var(--ac-attn-tint); color: var(--ac-attn); font-size: 12px; font-weight: 600; }
+

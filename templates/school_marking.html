@@ -1,42 +1,42 @@
 {% extends 'admin_base.html' %}
 {% block title %}To mark — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{# To mark (blueprints/school/marking.py): the tests and examinations with theory questions this teacher marks, by
-   class, with how many of their students' written answers wait. Only the papers and students they teach are
-   listed. Opening one marks it; its objective/theory split is set there too. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+{# To mark (blueprints/school/marking.py): the tests and examinations this teacher marks, by class - CBT papers with
+   theory questions, and papers sat on paper (whose marks are all entered here) - with how many of their students
+   still wait. Only the papers and students they teach are listed. Opening one marks it; its split is set there too. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <div class="ac mk">
 <header class="ac-top">
   <h1>To mark</h1>
   <nav class="ac-seg mk-views" aria-label="Which papers">
     <a href="{{ url_for('admin_school_marking') }}" class="{{ 'is-active' if view == 'waiting' }}"{% if view == 'waiting' %} aria-current="true"{% endif %}>Waiting <small>{{ waiting }}</small></a>
-    <a href="{{ url_for('admin_school_marking', view='all') }}" class="{{ 'is-active' if view == 'all' }}"{% if view == 'all' %} aria-current="true"{% endif %}>All papers with theory <small>{{ total }}</small></a>
+    <a href="{{ url_for('admin_school_marking', view='all') }}" class="{{ 'is-active' if view == 'all' }}"{% if view == 'all' %} aria-current="true"{% endif %}>All papers to mark <small>{{ total }}</small></a>
   </nav>
 </header>
-<p class="mk-lede">Written (theory) answers in your tests and examinations, marked by you. A student's score is complete,
-and can be sent on, once every one of their written answers has a mark.{% if scripts_waiting %} <b>{{ scripts_waiting }} script{{ '' if scripts_waiting == 1 else 's' }} waiting.</b>{% endif %}</p>
+<p class="mk-lede">Written (theory) answers in your tests and examinations, and the marks of papers sat on paper, entered by
+you. A student's score is complete, and can be sent on, once every one of their marks is in.{% if scripts_waiting %} <b>{{ scripts_waiting }} script{{ '' if scripts_waiting == 1 else 's' }} waiting.</b>{% endif %}</p>
 
 {% for g in groups %}
 <section class="ac-panel mk-class">
   <h2 class="mk-class__name">{{ g.class_name }}</h2>
   <div class="ac-scroll"><table class="ac-t">
-    <thead><tr><th>Paper</th><th>Subject</th><th>Term</th><th class="n">Scripts</th><th class="n">To mark</th><th class="n">Marked</th><th></th></tr></thead>
+    <thead><tr><th>Paper</th><th>Subject</th><th>Term</th><th class="n">Students</th><th class="n">To mark</th><th class="n">Marked</th><th></th></tr></thead>
     <tbody>{% for p in g.papers %}
     <tr>
-      <td><a class="ac-title" href="{{ url_for('admin_school_marking_paper', assessment_id=p.id) }}">{{ p.title }}</a><small>{{ kinds.get(p.assessment_type, '') }}{% if not p.active %} · closed{% endif %}</small></td>
+      <td><a class="ac-title" href="{{ url_for('admin_school_marking_paper', assessment_id=p.id) }}">{{ p.title }}</a><small>{{ kinds.get(p.assessment_type, '') }}{% if p.delivery == 'printed' %} · on paper{% elif not p.active %} · closed{% endif %}</small></td>
       <td>{{ p.subject_name }}</td>
       <td>{{ p.term or '—' }}</td>
       <td class="n">{{ p.scripts }}</td>
       <td class="n">{% if p.pending %}<span class="ac-tag ac-tag--attn">{{ p.pending }}</span>{% else %}—{% endif %}</td>
       <td class="n">{{ p.marked }}</td>
-      <td class="ac-actions"><a class="ac-btn ac-btn--sm{{ ' ac-btn--primary' if p.pending }}" href="{{ url_for('admin_school_marking_paper', assessment_id=p.id) }}">{{ 'Mark' if p.pending else 'Open' }}</a></td>
+      <td class="ac-actions"><a class="ac-btn ac-btn--sm{{ ' ac-btn--primary' if p.pending }}" href="{{ url_for('admin_school_marking_paper', assessment_id=p.id) }}">{{ ('Enter marks' if p.delivery == 'printed' else 'Mark') if p.pending else 'Open' }}</a></td>
     </tr>{% endfor %}</tbody>
   </table></div>
 </section>
 {% else %}
 <section class="ac-panel"><div class="ac-empty">
-  {% if view == 'waiting' and total %}<strong>Nothing waiting to be marked</strong>Every written answer in your papers has a mark. <a class="ac-link" href="{{ url_for('admin_school_marking', view='all') }}">See all papers with theory</a>
-  {% else %}<strong>No papers with theory questions yet</strong>Add a theory question to a test or examination (Academics › Tests or Examinations › Questions › + Add a question › Theory). Students' written answers then come here to be marked.{% endif %}
+  {% if view == 'waiting' and total %}<strong>Nothing waiting to be marked</strong>Every mark in your papers is in. <a class="ac-link" href="{{ url_for('admin_school_marking', view='all') }}">See all papers to mark</a>
+  {% else %}<strong>Nothing to mark yet</strong>A test or examination with theory questions, or one sat on paper, comes here once it has questions (Academics › Tests or Examinations). Students' written answers, and the marks of papers sat on paper, are entered here.{% endif %}
 </div></section>
 {% endfor %}
 </div>

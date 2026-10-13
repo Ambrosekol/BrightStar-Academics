@@ -526,15 +526,18 @@ def _school_assessment_new(kind):
         if not session_id: errors.append('An academic session is required.')
         if kind!='practice' and term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
         elif kind=='practice' and term and term not in ACADEMIC_TERMS: errors.append('Select a valid term.')
+        # Practice is always taken online; a test or examination is sat on the computer or on paper.
+        delivery=request.form.get('delivery','cbt') if kind!='practice' else 'cbt'
+        if delivery not in ('cbt','printed'): errors.append('Choose how students sit it.')
         if errors: return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=request.form,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=errors)
         now=datetime.now(timezone.utc).isoformat()
         assessment=SchoolAssessment(assessment_type=kind,title=title,instructions=instructions,
                                     class_id=cid,subject_id=sid,session_id=session_id,
                                     duration_minutes=duration,question_count=0,active=0,
                                     created_by=current_admin()['id'],created_at=now,
-                                    term=term or 'Full Session')
+                                    term=term or 'Full Session',delivery=delivery)
         db.session.add(assessment); db.session.flush(); aid=assessment.id
-        db.session.commit(); audit_log('school_assessment_created','school',kind,aid,{'class_id':cid,'subject_id':sid,'term':term}); flash(f'{_school_assessment_title(kind)} item created. Add questions next.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=aid))
+        db.session.commit(); audit_log('school_assessment_created','school',kind,aid,{'class_id':cid,'subject_id':sid,'term':term,'delivery':delivery}); flash(f'{_school_assessment_title(kind)} item created. Add questions next.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=aid))
     return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=None,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=[])
 
 def _result_with_context(result_id, with_subject=True):

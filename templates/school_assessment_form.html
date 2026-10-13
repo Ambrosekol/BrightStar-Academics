@@ -32,6 +32,13 @@
     <div class="ac-fields ac-fields--3">
       <div class="ac-field ac-field--wide"><label for="asTitle">Title</label><input id="asTitle" name="title" value="{{ a.get('title', '') }}" required placeholder="e.g. Mid-term test"></div>
       <div class="ac-field"><label for="asMinutes">Time allowed (minutes)</label><input id="asMinutes" type="number" min="1" name="duration_minutes" value="{{ a.get('duration_minutes') or 30 }}" required></div>
+      {% if assessment_type != 'practice' %}
+      <fieldset class="ac-field ac-field--wide acq-kindpick">
+        <legend>How students sit it</legend>
+        <label><input type="radio" name="delivery" value="cbt" {% if a.get('delivery', 'cbt') != 'printed' %}checked{% endif %}> On the computer <span class="ac-hint">in the student portal</span></label>
+        <label><input type="radio" name="delivery" value="printed" {% if a.get('delivery') == 'printed' %}checked{% endif %}> On paper <span class="ac-hint">print the question paper and each student's answer booklet</span></label>
+      </fieldset>
+      {% endif %}
       <div class="ac-field ac-field--wide"><label for="asInstructions">Instructions <span class="ac-hint">optional</span></label><textarea id="asInstructions" name="instructions" rows="4" placeholder="e.g. Answer all questions. Each carries equal marks.">{{ a.get('instructions') or '' }}</textarea></div>
     </div>
   </section>

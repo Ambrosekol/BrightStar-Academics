@@ -1,0 +1,102 @@
+{% extends 'admin_base.html' %}
+{% block title %}Marks for {{ paper.title }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# A printed paper's marks sheet (blueprints/school/marking.py, core/printed_papers.py): every student this teacher
+   marks, one row each - absent, the objective total counted from their booklet, and a mark for each theory question.
+   Nothing is saved until every row is right. Only the rows that were changed are sent (the script below), so a large
+   class stays well inside the form's size. A released result's row is locked. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
+<div class="ac mk" data-mk>
+<header class="acq-head">
+  <div class="acq-head__text">
+    <span class="acq-kind">Marks · {{ kinds.get(paper.assessment_type, '') }} sat on paper</span>
+    <h2>{{ paper.title }}</h2>
+    <p>{{ paper.class_name }} · {{ paper.subject_name }}{% if paper.term %} · {{ paper.term }}{% endif %}{% if paper.session_name %} · {{ paper.session_name }}{% endif %}</p>
+  </div>
+  <div class="mk-print">
+    <a class="ac-btn" href="{{ url_for('admin_school_paper_print', assessment_id=paper.id) }}" target="_blank" rel="noopener">Print question paper</a>
+    <a class="ac-btn" href="{{ url_for('admin_school_paper_booklets', assessment_id=paper.id) }}" target="_blank" rel="noopener">Print answer booklets</a>
+    <a class="ac-btn" href="{{ url_for('admin_school_marking') }}">← To mark</a>
+  </div>
+</header>
+
+{% include 'includes/_marking_split.html' %}
+
+{% if not rows %}
+<section class="ac-panel"><div class="ac-empty"><strong>No students</strong>No student you teach is enrolled in {{ paper.class_name }} for this paper's session{% if paper.subject_name %} taking {{ paper.subject_name }}{% endif %}.</div></section>
+{% else %}
+<form method="post" action="{{ url_for('admin_school_marking_printed_save', assessment_id=paper.id) }}" class="ac-panel mk-sheet" data-mk-sheet>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <p class="mk-students__count">{{ rows|length }} student{{ '' if rows|length == 1 else 's' }} · <b>{{ pending }}</b> still to enter.
+    Count each booklet's objective answers{% if objective_raw %} (out of {{ objective_raw }}){% endif %}{% if theory %} and give each theory question its mark{% endif %}. Leave a box blank to come back to it.</p>
+  <div class="ac-scroll"><table class="ac-t mk-grid-t">
+    <thead><tr>
+      <th>Student</th><th class="c">Absent</th>
+      {% if objective_raw %}<th class="n">Objective <small>/ {{ objective_raw }}</small></th>{% endif %}
+      {% for q in theory %}<th class="n" title="{{ q.question_text }}">Theory {{ loop.index }} <small>/ {{ q.points }}</small></th>{% endfor %}
+      <th class="n">Score <small>/ {{ '%g'|format(split.total) }}</small></th><th></th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% set s = r.script or {} %}
+      {% set t = r.typed %}
+      {% set absent = t.absent if t else s.get('absent') %}
+      <tr data-mk-row class="{{ 'is-error' if errors.get(r.id) }}"{% if t %} data-dirty="1"{% endif %}>
+        <td><b>{{ r.list_name }}</b><small>{{ r.admission_no }}</small>{% if not r.released %}<input type="hidden" name="student" value="{{ r.id }}" data-mk-key>{% endif %}</td>
+        <td class="c"><input type="checkbox" name="absent_{{ r.id }}" value="1" {% if absent %}checked{% endif %} {% if r.released %}disabled{% endif %} data-mk-absent aria-label="{{ r.list_name }} was absent"></td>
+        {% if objective_raw %}
+        <td class="n"><input type="number" name="obj_{{ r.id }}" min="0" max="{{ objective_raw }}" step="0.5" inputmode="decimal"
+            value="{{ t.objective if t else ('%g'|format(s.objective_score) if s.get('objective_score') is not none else '') }}"
+            {% if r.released or absent %}disabled{% endif %} data-mk-num aria-label="Objective for {{ r.list_name }}"></td>
+        {% endif %}
+        {% for q in theory %}
+        {% set saved = s.get('marks', {}).get(q.id) %}
+        <td class="n"><input type="number" name="m_{{ r.id }}_{{ q.id }}" min="0" max="{{ q.points }}" step="0.25" inputmode="decimal"
+            value="{{ t.marks.get(q.id, '') if t else ('%g'|format(saved) if saved is not none else '') }}"
+            {% if r.released or absent %}disabled{% endif %} data-mk-num aria-label="Theory {{ loop.index }} for {{ r.list_name }}"></td>
+        {% endfor %}
+        <td class="n"><b>{% if r.state == 'absent' %}—{% elif r.score is not none %}{{ '%g'|format(r.score) }}{% else %}—{% endif %}</b></td>
+        <td>{% if r.released %}<span class="ac-tag" title="Released: locked">Released</span>
+            {% elif r.state == 'absent' %}<span class="ac-tag">Absent</span>
+            {% elif r.state == 'marked' %}<span class="ac-tag ac-tag--good">Entered</span>
+            {% else %}<span class="ac-tag ac-tag--attn">To enter</span>{% endif %}</td>
+      </tr>
+      {% if errors.get(r.id) %}<tr class="mk-err"><td colspan="{{ 4 + (1 if objective_raw else 0) + theory|length }}">{{ errors[r.id] }}</td></tr>{% endif %}
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ac-form-foot"><span class="ac-hint" data-mk-changed>No changes yet.</span><span class="ac-grow"></span>
+    <button class="ac-btn ac-btn--primary" type="submit">Save marks</button></div>
+</form>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-mk]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var range=root.querySelector('[data-mk-range]'), theory=root.querySelector('[data-mk-theory]'), obj=root.querySelector('[data-mk-obj]');
+  if(range && theory && obj){
+    var total=parseFloat(range.max)||0;
+    function show(v){ v=Math.max(0,Math.min(total,parseFloat(v)||0)); obj.textContent=String(Math.round((total-v)*100)/100); }
+    range.addEventListener('input',function(){ theory.value=range.value; show(range.value); });
+    theory.addEventListener('input',function(){ range.value=theory.value; show(theory.value); });
+  }
+  var sheet=root.querySelector('[data-mk-sheet]'); if(!sheet) return;
+  var note=sheet.querySelector('[data-mk-changed]');
+  function count(){ var n=sheet.querySelectorAll('[data-mk-row][data-dirty]').length; note.textContent=n?(n+' student'+(n===1?'':'s')+' changed, not saved yet.'):'No changes yet.'; }
+  sheet.querySelectorAll('[data-mk-row]').forEach(function(row){
+    var absent=row.querySelector('[data-mk-absent]');
+    row.addEventListener('input',function(){ row.setAttribute('data-dirty','1'); count(); });
+    if(absent) absent.addEventListener('change',function(){
+      row.querySelectorAll('[data-mk-num]').forEach(function(f){ f.disabled=absent.checked; });
+    });
+  });
+  // Only the rows that changed are sent: an unchanged row's fields are left out (disabled just before sending).
+  sheet.addEventListener('submit',function(){
+    sheet.querySelectorAll('[data-mk-row]:not([data-dirty])').forEach(function(row){
+      row.querySelectorAll('input').forEach(function(f){ f.disabled=true; });
+    });
+  });
+  count();
+})();
+</script>
+{% endblock %}

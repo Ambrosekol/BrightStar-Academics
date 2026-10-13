@@ -10,8 +10,9 @@
 {% set noun = {'test':'test','practice':'practice test','examination':'examination'}[assessment.assessment_type] %}
 {% set marks = questions|sum(attribute='points') %}
 {% set has_theory = split and split.theory_raw %}
+{% set printed = assessment.delivery == 'printed' %}
 <div class="ac acq" data-acq="{{ assessment.id }}">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 {% else %}{% set work_tab = {'test':'tests','practice':'practice','examination':'examinations'}[assessment.assessment_type] %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 
 <header class="acq-head">
@@ -20,6 +21,16 @@
     <h2>{{ assessment.title }}</h2>
     <p>{{ assessment.class_name }} · {{ assessment.subject_name }}{% if assessment.term %} · {{ assessment.term }}{% endif %}{% if assessment.session_name %} · {{ assessment.session_name }}{% endif %}</p>
   </div>
+  {% if printed %}
+  <div class="acq-status">
+    <span class="ac-tag ac-tag--blue">Sat on paper</span>
+    {% if questions %}
+    <a class="ac-btn" href="{{ url_for('admin_school_paper_print', assessment_id=assessment.id) }}" target="_blank" rel="noopener">Print question paper</a>
+    <a class="ac-btn" href="{{ url_for('admin_school_paper_booklets', assessment_id=assessment.id) }}" target="_blank" rel="noopener">Print answer booklets</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_marking_paper', assessment_id=assessment.id) }}" data-full>Enter marks</a>
+    {% endif %}
+  </div>
+  {% else %}
   <form method="post" action="{{ url_for('admin_school_assessment_toggle', assessment_id=assessment.id) }}" class="acq-status"
         {% if assessment.active %}data-confirm="Close this {{ noun }}? Students will no longer be able to start it."{% endif %}>
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -31,6 +42,7 @@
       <button class="ac-btn ac-btn--primary" type="submit" {% if not questions %}disabled title="Add at least one question first"{% endif %}>Open to students</button>
     {% endif %}
   </form>
+  {% endif %}
 </header>
 
 <dl class="acq-stats">
@@ -44,7 +56,9 @@
   <div><dt>Per question</dt><dd>{% if questions %}{% set per = (assessment.duration_minutes * 60 / questions|length)|round(0)|int %}{% if per >= 60 %}{{ per // 60 }} min{% if per % 60 %} {{ per % 60 }} s{% endif %}{% else %}{{ per }} s{% endif %}{% else %}—{% endif %}</dd></div>
 </dl>
 
-{% if has_theory %}
+{% if printed %}
+<p class="acq-markbar"><span>Sat on paper: students never see it online. Print the question paper and each student's answer booklet (name, admission number and photo filled in), then enter the marks under To mark.</span></p>
+{% elif has_theory %}
 <p class="acq-markbar"><span>Theory answers are marked by the subject teacher, who can also move marks between the objective and theory parts.</span>
   <a class="ac-btn ac-btn--primary ac-btn--sm" href="{{ url_for('admin_school_marking_paper', assessment_id=assessment.id) }}" data-full>Mark theory answers</a></p>
 {% endif %}
@@ -127,6 +141,14 @@
       <div class="ac-field"><label for="acqMinutes">Time allowed (minutes)</label><input id="acqMinutes" type="number" min="1" name="duration_minutes" value="{{ assessment.duration_minutes }}" required></div>
       <div class="ac-field"><label for="acqSession">Academic session</label><select id="acqSession" name="session_id">{% for s in sessions %}<option value="{{ s.id }}" {% if s.id == assessment.session_id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
       <div class="ac-field"><label for="acqTerm">Term</label><select id="acqTerm" name="term">{% if assessment.assessment_type == 'practice' %}<option value="">No term (practice)</option>{% endif %}{% for t in terms %}<option value="{{ t }}" {% if assessment.term == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+      {% if assessment.assessment_type != 'practice' %}
+      <fieldset class="ac-field ac-field--wide acq-kindpick">
+        <legend>How students sit it{% if delivery_locked %} <span class="ac-hint">fixed: students have already sat it</span>{% endif %}</legend>
+        <label><input type="radio" name="delivery" value="cbt" {% if not printed %}checked{% endif %} {% if delivery_locked %}disabled{% endif %}> On the computer</label>
+        <label><input type="radio" name="delivery" value="printed" {% if printed %}checked{% endif %} {% if delivery_locked %}disabled{% endif %}> On paper</label>
+        {% if delivery_locked %}<input type="hidden" name="delivery" value="{{ assessment.delivery }}">{% endif %}
+      </fieldset>
+      {% endif %}
       <div class="ac-field ac-field--wide"><label for="acqInstructions">Instructions for students</label><textarea id="acqInstructions" name="instructions" rows="3">{{ assessment.instructions or '' }}</textarea></div>
     </div>
     <p class="ac-hint" style="margin:8px 0 0">The class ({{ assessment.class_name }}) and subject ({{ assessment.subject_name }}) cannot be changed here.</p>

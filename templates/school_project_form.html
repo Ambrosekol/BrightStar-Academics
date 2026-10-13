@@ -7,7 +7,7 @@
 {% set modal = request.values.get('modal') == '1' %}
 {% set p = project or {} %}
 <div class="ac">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <div class="ac-modal-head"><h2>Edit project</h2><p>{{ p.get('title', '') }}</p></div>
 {% else %}{% set work_tab = 'projects' %}{% set entering = true %}{% include 'school_work_tabs.html' %}{% endif %}
 

@@ -109,6 +109,27 @@ the teacher's pages are {{ file('blueprints/school/marking.py') }}.</p>
   <code>entered</code> with a {{ table('result_workflow_events') }} row.</li>
 </ul>
 
+<h3 id="printed">Papers sat on paper</h3>
+<p>{{ table('school_assessments') }}.<code>delivery</code> is <code>cbt</code> or <code>printed</code> (tests and
+examinations; practice is always <code>cbt</code>). The logic is {{ file('core/printed_papers.py') }}; the pages are in
+{{ file('blueprints/school/marking.py') }}.</p>
+<ul>
+  <li><strong>Never online.</strong> {{ route('admin_school_assessment_toggle') }} refuses to open a printed paper, and
+  switching a paper to printed sets <code>active = 0</code>, so every student-portal query (which all require
+  <code>active = 1</code>) leaves it out. The delivery can change only while the paper has no attempt, script or result
+  (<code>can_change_delivery</code>).</li>
+  <li><strong>Printing.</strong> {{ route('admin_school_paper_print') }} and {{ route('admin_school_paper_booklets') }}
+  need the same rights as marking (the paper type's edit permission and the teacher's scope, per student), answer with
+  <code>Cache-Control: no-store</code>, and write <code>school_paper_printed</code> to the activity log. Booklets cover the
+  class's students enrolled for the paper's session who take the subject (SSS departments), narrowed to the teacher's own.</li>
+  <li><strong>Marks.</strong> {{ table('school_printed_scripts') }} (one per student: <code>objective_score</code>,
+  <code>absent</code>) and {{ table('school_printed_marks') }} (a mark per theory question).
+  {{ route('admin_school_marking_printed_save') }} validates every row first and saves nothing if any is wrong; only
+  changed rows are sent. Scores go through the paper's split and <code>theory_marking.write_result</code>, like CBT. An
+  absent student's result has no score and <code>component_name = 'Absent'</code>, which the workflow and
+  <code>_submittable</code> let through.</li>
+</ul>
+
 <h2 id="practice">Practice tests</h2>
 <p>Practice is a self-study bank for students who want to prepare. It is deliberately outside the record:</p>
 <ul>

@@ -5,7 +5,7 @@
    in SSS, which departments). Opens in a pop-up over Teachers; saving closes it and the page shows the change. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac st tc" data-modal-size="wide">
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_teaching') }}">← Teachers</a>{% endif %}
 <div class="ac-modal-head"><span class="acq-kind">Teaching duties</span><h2>{{ target.display_name }}</h2>
   <p>They see only these classes and subjects in the portal. A class teacher sees every subject of their class, takes its register and releases its results.</p></div>

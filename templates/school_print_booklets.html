@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ paper.title }} · answer booklets — {{ school_brand.name }}</title>
+{# A printed paper's answer booklets (blueprints/school/marking.py): one per student, each starting on a new page,
+   with the student's name, admission number, class and passport photograph filled in, a bubble grid for the
+   objective answers, ruled space for each theory question, and a box for the marks. Never cached; every print is
+   in the activity log. #}
+<style>
+  :root { --ink: #15171a; --muted: #5a5f66; --line: #c9ccd1; --rule: #b9bdc4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e9ec; color: var(--ink); font: 11.5pt/1.4 "Times New Roman", Georgia, serif; }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between;
+         padding: 10px 16px; background: #0d2b52; color: #fff; font: 13px/1.4 system-ui, sans-serif; }
+  .bar button { padding: 7px 16px; border: 0; border-radius: 8px; background: #fff; color: #0d2b52; font: 700 13px system-ui, sans-serif; cursor: pointer; }
+  .booklet { width: 210mm; min-height: 297mm; margin: 14px auto; padding: 14mm 15mm 16mm; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.12); }
+  .head { display: grid; grid-template-columns: 18mm 1fr; align-items: center; gap: 4mm; padding-bottom: 3mm; border-bottom: 2px solid var(--ink); }
+  .head img { width: 17mm; height: 17mm; object-fit: contain; }
+  .head h1 { margin: 0; font-size: 14pt; text-transform: uppercase; }
+  .head p { margin: .5mm 0 0; font-size: 10pt; color: var(--muted); }
+  .who { display: grid; grid-template-columns: 30mm 1fr; gap: 5mm; margin: 4mm 0; padding: 3mm; border: 1.5px solid var(--ink); }
+  .photo { width: 30mm; height: 36mm; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; text-align: center; font-size: 8.5pt; color: var(--muted); }
+  .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm 6mm; align-content: start; font-size: 11pt; }
+  .fields div { border-bottom: 1px solid var(--line); padding-bottom: .8mm; }
+  .fields .wide { grid-column: 1 / -1; }
+  .fields span { display: block; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .fields b { font-size: 12pt; }
+  h2 { margin: 5mm 0 1.5mm; font-size: 11.5pt; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--ink); }
+  .note { margin: 0 0 2.5mm; font-size: 9.5pt; font-style: italic; color: var(--muted); }
+  .grid { columns: 4; column-gap: 6mm; margin: 0; padding: 0; list-style: none; }
+  .grid li { display: flex; align-items: center; gap: 1.6mm; margin: 0 0 1.7mm; break-inside: avoid; font-size: 10.5pt; }
+  .grid .n { width: 7mm; text-align: right; font-weight: 700; }
+  .bub { display: inline-grid; place-items: center; width: 5.2mm; height: 5.2mm; border: 1px solid var(--ink); border-radius: 50%; font: 7.5pt/1 Arial, sans-serif; }
+  .tq { margin: 0 0 4mm; break-inside: avoid-page; }
+  .tq-head { display: flex; justify-content: space-between; gap: 4mm; font-size: 10.5pt; font-weight: 700; }
+  .tq-head small { font-weight: 400; color: var(--muted); }
+  .lines { margin-top: 1.5mm; }
+  .lines i { display: block; height: 8mm; border-bottom: 1px solid var(--rule); }
+  .official { margin-top: 5mm; border: 1.5px solid var(--ink); border-collapse: collapse; width: 100%; font-size: 10pt; break-inside: avoid; }
+  .official caption { text-align: left; font-weight: 700; padding: 0 0 1mm; text-transform: uppercase; font-size: 9pt; letter-spacing: .05em; }
+  .official th, .official td { border: 1px solid var(--ink); padding: 1.5mm 2mm; text-align: center; }
+  .official td { height: 9mm; }
+  .tag { margin-top: 3mm; display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--muted); }
+  .empty { margin: 30px auto; max-width: 520px; padding: 20px; background: #fff; border-radius: 10px; font: 14px/1.5 system-ui, sans-serif; text-align: center; }
+  @page { size: A4; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none; }
+    .booklet { width: auto; min-height: 0; margin: 0; padding: 12mm 14mm 14mm; box-shadow: none; break-after: page; page-break-after: always; }
+    .booklet:last-child { break-after: auto; page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="bar"><span><b>{{ paper.title }}</b> · {{ students|length }} answer booklet{{ '' if students|length == 1 else 's' }} · A4, each starts on a new page</span>
+  {% if students %}<button type="button" data-print-now>Print</button>{% endif %}</div>
+{% for s in students %}
+<section class="booklet">
+  <header class="head">
+    <img src="{{ school_brand.logo_url }}" alt="">
+    <div><h1>{{ school_brand.name }}</h1><p>Answer booklet · {{ paper.title }} · {{ paper.subject_name }} · {{ paper.class_name }}{% if paper.term %} · {{ paper.term }}{% endif %}{% if paper.session_name %} · {{ paper.session_name }}{% endif %}</p></div>
+  </header>
+  <div class="who">
+    <div class="photo">{% if s.photo_path %}<img src="{{ url_for('static', filename=s.photo_path) }}" alt="Photograph of {{ s.name }}">{% else %}Paste passport photograph here{% endif %}</div>
+    <div class="fields">
+      <div class="wide"><span>Name</span><b>{{ s.name }}</b></div>
+      <div><span>Admission number</span><b>{{ s.admission_no or '—' }}</b></div>
+      <div><span>Class</span><b>{{ paper.class_name }}</b></div>
+      <div><span>Subject</span><b>{{ paper.subject_name }}</b></div>
+      <div><span>Time allowed</span><b>{{ paper.duration_minutes }} minutes</b></div>
+      <div class="wide"><span>Student's signature</span>&nbsp;</div>
+    </div>
+  </div>
+
+  {% if objective %}
+  <h2>Section A · Objective answers</h2>
+  <p class="note">Shade one letter for each question, fully and neatly. To change an answer, cross it out clearly.</p>
+  <ol class="grid">
+    {% for q in objective %}<li><span class="n">{{ loop.index }}</span>{% for letter in 'ABCD' %}<span class="bub">{{ letter }}</span>{% endfor %}</li>{% endfor %}
+  </ol>
+  {% endif %}
+
+  {% if theory %}
+  <h2>Section {{ 'B' if objective else 'A' }} · Theory answers</h2>
+  {% for q in theory %}
+  <div class="tq">
+    <div class="tq-head"><span>Question {{ loop.index }} <small>({{ q.points }} mark{{ '' if q.points == 1 else 's' }})</small></span><small>{{ s.name }} · {{ s.admission_no }}</small></div>
+    <div class="lines">{% for _ in range([[4 + 2 * q.points, 8]|max, 30]|min) %}<i></i>{% endfor %}</div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <table class="official">
+    <caption>For official use only</caption>
+    <tr>{% if objective %}<th>Section A</th>{% endif %}{% for q in theory %}<th>Theory {{ loop.index }}</th>{% endfor %}<th>Marked by</th></tr>
+    <tr>{% if objective %}<td>&nbsp;/ {{ objective|sum(attribute='points') }}</td>{% endif %}{% for q in theory %}<td>&nbsp;/ {{ q.points }}</td>{% endfor %}<td></td></tr>
+  </table>
+  <div class="tag"><span>{{ s.name }} · {{ s.admission_no }}</span><span>{{ school_brand.name }}</span></div>
+</section>
+{% else %}
+<div class="empty"><b>No students to print for.</b><br>No student you teach is enrolled in {{ paper.class_name }} for this paper's session.</div>
+{% endfor %}
+{% if students %}
+<script nonce="{{ csp_nonce() }}">
+document.querySelector('[data-print-now]').addEventListener('click', function () { window.print(); });
+</script>
+{% endif %}
+</body>
+</html>

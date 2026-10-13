@@ -337,7 +337,8 @@ def _submittable(student_id, session_id, term, me, class_id):
                _term_of() == term, SchoolStudentResult.status.in_(('entered', 'verified')), _official(),
                # A CBT paper still waiting for its theory answers to be marked has no score and is not sent; a
                # hand-entered result with no score (an absence) still is.
-               or_(SchoolStudentResult.score.is_not(None), SchoolStudentResult.assessment_id.is_(None)))).all()
+               or_(SchoolStudentResult.score.is_not(None), SchoolStudentResult.assessment_id.is_(None),
+                   SchoolStudentResult.component_name == 'Absent'))).all()
     return [r for r in rows if r.id in allowed]
 
 

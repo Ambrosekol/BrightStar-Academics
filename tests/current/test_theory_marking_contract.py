@@ -34,10 +34,10 @@ def _routes(source):
 
 def test_every_marking_route_checks_permission_and_scope_itself():
     routes = _routes(MARKING)
-    assert len(routes) == 4, [r[0] for r in routes]
+    assert len(routes) == 7, [r[0] for r in routes]
     for name, decorators, body in routes:
         assert "@admin_required" in decorators, name
-        assert "admin_school_marking" in name
+        assert "admin_school_marking" in name or "admin_school_paper" in name
         assert f"'{name}'" not in SECURITY, f"{name} must check the paper's own permission, not a fixed one"
         if name == "admin_school_marking":
             assert "_may_mark_any(" in body and "_my_papers(" in body
@@ -51,6 +51,22 @@ def test_every_marking_route_checks_permission_and_scope_itself():
     assert "'released'" in save, "a released result's marks must be locked"
     split = next(body for name, _, body in routes if name == "admin_school_marking_split")
     assert "split_locked(" in split
+
+
+def test_printed_papers_are_printed_safely_and_never_opened_online():
+    routes = {name: body for name, _, body in _routes(MARKING)}
+    for name in ("admin_school_paper_print", "admin_school_paper_booklets"):
+        assert "_open_paper(" in routes[name] and "_no_store(" in routes[name] and "'school_paper_printed'" in routes[name], name
+    assert "'no-store, private'" in MARKING
+    save = routes["admin_school_marking_printed_save"]
+    assert "sent - set(mine)" in save and "'released'" in save, "only the teacher's own students, never a released row"
+    toggle = SCHOOL_ROUTES[SCHOOL_ROUTES.index("def admin_school_assessment_toggle"):SCHOOL_ROUTES.index("def admin_school_assessment_question_new")]
+    assert "a['delivery']=='printed'" in toggle, "a printed paper must never be opened to students"
+    settings = SCHOOL_ROUTES[SCHOOL_ROUTES.index("def admin_school_assessment_edit"):SCHOOL_ROUTES.index("def admin_school_assessment_toggle")]
+    assert "values['active']=0" in settings and "can_change_delivery(" in settings
+    for name in ("school_print_paper.html", "school_print_booklets.html", "school_marking_printed.html"):
+        source = (ROOT / "templates" / name).read_text(encoding="utf-8")
+        assert "|safe" not in source.replace(" ", "") and "marking_guide" not in source, name
 
 
 def test_a_student_never_receives_a_guide_or_a_correct_answer():
@@ -71,10 +87,10 @@ def test_answers_guides_and_comments_are_never_printed_raw():
 
 def test_an_unscored_result_cannot_move_on():
     workflow = SCHOOL_ROUTES[SCHOOL_ROUTES.index("def admin_school_result_workflow"):SCHOOL_ROUTES.index("def admin_school_results_release")]
-    assert "row['score'] is None and row['assessment_id']" in workflow
-    assert "or_(SchoolStudentResult.score.is_not(None), SchoolStudentResult.assessment_id.is_(None))" in RECORDS[RECORDS.index("def _submittable"):]
+    assert "row['score'] is None and row['assessment_id'] and row['component_name']!=theory_marking.ABSENT" in workflow
+    assert "or_(SchoolStudentResult.score.is_not(None), SchoolStudentResult.assessment_id.is_(None)," in RECORDS[RECORDS.index("def _submittable"):]
     edit = SCHOOL_ROUTES[SCHOOL_ROUTES.index("def admin_school_result_edit"):SCHOOL_ROUTES.index("def admin_school_result_workflow")]
-    assert "theory_marking.has_theory(" in edit
+    assert "theory_marking.has_theory(" in edit and "printed_papers.is_printed(" in edit
 
 
 def test_practice_tests_refuse_theory_and_answers_are_limited():

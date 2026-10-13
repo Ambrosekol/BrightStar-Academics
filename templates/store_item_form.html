@@ -6,7 +6,7 @@
    its card) and, for a new item, how many are in stock. A pop-up over Inventory; it works as a page too. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set f = form or {} %}
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='12') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='13') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
 <div class="ac sto" data-sto-item data-modal-size="wide">
