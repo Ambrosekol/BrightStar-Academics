@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.36.1",
+      "date": "2026-10-14",
+      "title": "Settings opens on its list",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Settings now opens on the list of every setting, by group, with what needs attention and each setting's state beside it, instead of a grid of cards. On a phone it opens on the list itself.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.36.0",
       "date": "2026-10-14",
       "title": "Who designs, and class teachers' ID cards",

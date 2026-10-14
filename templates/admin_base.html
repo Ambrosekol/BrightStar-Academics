@@ -364,10 +364,10 @@
         {% set in_modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
         {% set sx = settings_nav() if (has_rail and not in_modal) else none %}
         {% if sx %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='4') }}">
-        {#- The overview is the whole index of settings, full width; a setting's own page has the list beside it. -#}
+        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='5') }}">
+        {#- The list of settings is always on the left; the overview (no setting open) shows what needs attention beside it. -#}
         <div class="sx{{ ' sx--over' if not sx.current }}" data-sx>
-        {% if sx.current %}{% include 'includes/_settings_side.html' %}{% endif %}
+        {% include 'includes/_settings_side.html' %}
         <section class="sx-pane" aria-label="{{ sx.current.title if sx.current else 'Settings' }}">
         {% if sx.current %}
         <header class="sx-head">
