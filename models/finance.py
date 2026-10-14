@@ -44,9 +44,17 @@ class FinanceFeeItemClass(db.Model):
 
 
 class FinanceFeeAssessment(db.Model):
-    """A fee charged to one student for one session."""
+    """A fee charged to one student for one session.
+
+    ``amount`` is what the student owes for it, after any discount (blueprints/finance/discounts.py), so every
+    balance in finance stays ``amount`` minus what was applied. ``gross_amount`` is the fee before the discount and
+    ``discount_amount`` / ``discount_note`` what was taken off and why; all three are None for a fee charged in full.
+    """
 
     __tablename__ = 'finance_fee_assessments'
+    # Every balance reads a session's bills or a student's bills; the reminders and the report card hold read them all.
+    __table_args__ = (Index('idx_finance_assessments_session', 'session_id', 'active'),
+                      Index('idx_finance_assessments_student', 'student_id', 'active'))
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
@@ -61,6 +69,9 @@ class FinanceFeeAssessment(db.Model):
     fee_item_id = db.Column(Integer)
     term = db.Column(Text, default='Full Session', server_default=text("'Full Session'"))
     voided_at = db.Column(Text)
+    gross_amount = db.Column(Float)
+    discount_amount = db.Column(Float)
+    discount_note = db.Column(Text)
 
 
 class FinancePayment(db.Model):
@@ -227,3 +238,105 @@ class FinanceNewStudent(db.Model):
     cleared_by = db.Column(Integer, ForeignKey('admins.id'))
     cleared_reason = db.Column(Text)
     note = db.Column(Text)
+
+
+class FinanceDiscount(db.Model):
+    """A discount given to one student: a scholarship, a staff child's discount, or any other reduction.
+
+    It is taken off each fee charged to the student that it covers (``category``, or every fee when it is 'All'),
+    either as a percentage (``basis`` 'percent', ``value`` 0-100) or as a fixed number of naira off each such fee
+    (``basis`` 'amount'). ``session_id`` None means every session until it is ended. Ending one keeps the row, with who
+    ended it, so the school can always see who was given what. The sibling discount is not a row here but a school-wide
+    rule (blueprints/finance/discounts.py).
+    """
+
+    __tablename__ = 'finance_discounts'
+    __table_args__ = (Index('idx_finance_discounts_student', 'student_id', 'active'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    kind = db.Column(Text, nullable=False, default='discount', server_default=text("'discount'"))
+    label = db.Column(Text)
+    basis = db.Column(Text, nullable=False, default='percent', server_default=text("'percent'"))
+    value = db.Column(Float, nullable=False)
+    category = db.Column(Text, nullable=False, default='All', server_default=text("'All'"))
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'))
+    active = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    note = db.Column(Text)
+    created_by = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    ended_by = db.Column(Integer, ForeignKey('admins.id'))
+    ended_at = db.Column(Text)
+
+
+class FinanceInstalmentPlan(db.Model):
+    """How the fees of one billing period may be paid in parts: 60% by 15 September, 40% by 15 October.
+
+    ``parts_json`` is ``[[percent, 'YYYY-MM-DD'], ...]`` in date order, the percents adding up to 100. A student on the
+    plan (FinanceStudentPlan) owes, by each date, that share of everything charged to them for ``term`` of
+    ``session_id``; until a date passes, its part is not overdue (blueprints/finance/instalments.py)."""
+
+    __tablename__ = 'finance_instalment_plans'
+    __table_args__ = (Index('idx_finance_plans_session', 'session_id', 'term', 'active'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    name = db.Column(Text, nullable=False)
+    session_id = db.Column(Integer, ForeignKey('academic_sessions.id'), nullable=False)
+    term = db.Column(Text, nullable=False, default='Full Session', server_default=text("'Full Session'"))
+    parts_json = db.Column(Text, nullable=False)
+    active = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
+    created_by = db.Column(Integer, ForeignKey('admins.id'))
+    created_at = db.Column(Text, nullable=False)
+    updated_at = db.Column(Text)
+
+
+class FinanceStudentPlan(db.Model):
+    """A student on an instalment plan. One plan per student per billing period (kept so by the code that assigns)."""
+
+    __tablename__ = 'finance_student_plans'
+    __table_args__ = (UniqueConstraint('student_id', 'plan_id'), Index('idx_finance_student_plans_plan', 'plan_id'))
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    plan_id = db.Column(Integer, ForeignKey('finance_instalment_plans.id', ondelete='CASCADE'), nullable=False)
+    assigned_by = db.Column(Integer, ForeignKey('admins.id'))
+    assigned_at = db.Column(Text, nullable=False)
+
+
+class FinanceReportHoldExemption(db.Model):
+    """A student whose report cards reach the family even though fees are owed, while report cards are held for
+    unpaid fees (blueprints/finance/report_hold.py): a promise to pay, a hardship case. Removed when no longer given."""
+
+    __tablename__ = 'finance_report_hold_exemptions'
+    __table_args__ = (UniqueConstraint('student_id'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    note = db.Column(Text)
+    granted_by = db.Column(Integer, ForeignKey('admins.id'))
+    granted_at = db.Column(Text, nullable=False)
+
+
+class FinanceExpense(db.Model):
+    """Money the school spent: diesel, repairs, books, a vendor's bill. Staff salaries are not entered here; the
+    profit and loss takes them from the payroll. Never deleted: a mistake is voided with a reason, like a payment.
+    ``receipt_path`` is a photograph of the vendor's receipt, in the private 'expenses' uploads folder."""
+
+    __tablename__ = 'finance_expenses'
+    __table_args__ = (Index('idx_finance_expenses_spent', 'status', 'spent_on'),)
+
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    spent_on = db.Column(Text, nullable=False)          # YYYY-MM-DD
+    category = db.Column(Text, nullable=False)
+    amount = db.Column(Float, nullable=False)
+    paid_to = db.Column(Text)
+    description = db.Column(Text)
+    method = db.Column(Text)
+    reference = db.Column(Text)
+    receipt_path = db.Column(Text)
+    status = db.Column(Text, nullable=False, default='posted', server_default=text("'posted'"))
+    recorded_by = db.Column(Integer, ForeignKey('admins.id'), nullable=False)
+    created_at = db.Column(Text, nullable=False)
+    voided_at = db.Column(Text)
+    voided_by = db.Column(Integer, ForeignKey('admins.id'))
+    void_reason = db.Column(Text)

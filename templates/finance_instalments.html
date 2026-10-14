@@ -1,0 +1,49 @@
+{% extends 'admin_base.html' %}
+{% block title %}Instalments — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Finance > Instalments: the session's instalment plans (blueprints/finance/instalments.py). A plan splits a billing
+   period's fees into parts, each due by a date; students on it are only overdue for the parts whose date has passed. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'instalments' %}{% include 'includes/_finance_frame.html' %}
+
+{% if not fin_session %}
+<div class="fi-p"><div class="ac-empty"><strong>No active academic session</strong>Create or activate a session in Settings first.</div></div>
+{% else %}
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_instalments') }}">
+  <span class="ac-bar__label">Session</span>
+  <select class="ac-select" name="session_id" aria-label="Academic session" data-autosubmit>{% for s in sessions %}<option value="{{ s.id }}" {% if s.id == fin_session.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select>
+  <span class="ac-count">{{ on_plans }} student{{ '' if on_plans == 1 else 's' }} on a plan</span>
+</form>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Plan</th><th>For</th><th>Parts</th><th class="n">Students</th><th class="n">Overdue now</th><th class="n">Still owed</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}{% set p = r.plan %}<tr{% if not p.active %} class="is-muted"{% endif %}>
+      <td><b>{{ p.name }}</b>{% if not p.active %}<small>Not in use</small>{% endif %}</td>
+      <td><span class="fi-chip fi-chip--type">{{ p.term }}</span></td>
+      <td>{{ r.text }}</td>
+      <td class="n"><a class="ac-link" href="{{ url_for('admin_finance_instalment_students', plan_id=p.id) }}" data-modal>{{ r.students }}</a></td>
+      <td class="n">{% if r.overdue %}<span class="fi-owe">{{ naira(r.overdue) }}</span>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+      <td class="n">{{ naira(r.balance) if r.balance else '—' }}</td>
+      <td class="ac-actions">
+        <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_instalment_students', plan_id=p.id) }}" data-modal>Students</a>
+        <a class="ac-link" href="{{ url_for('admin_finance_instalment_edit', plan_id=p.id) }}" data-modal>Edit</a>
+        <form method="post" action="{{ url_for('admin_finance_instalment_toggle', plan_id=p.id) }}" class="fi-inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="ac-link" type="submit" {% if p.active %}data-confirm="Stop using this plan? Its students go back to each fee's own due date."{% endif %}>{{ 'Stop using' if p.active else 'Use again' }}</button>
+        </form>
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>No instalment plan for {{ fin_session.name }} yet</strong>
+    A plan lets families pay a term's fees in parts, each by its own date, for example 60% by 15 September and 40% by
+    15 October. Until a part's date passes it is not overdue: no reminder is sent and no report card is held for it.
+    Create one with <b>+ New plan</b>, then put a class or a student on it.</div>
+  {% endif %}
+</section>
+{% endif %}
+</div>
+{% endblock %}

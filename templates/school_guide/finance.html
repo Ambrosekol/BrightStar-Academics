@@ -1,9 +1,11 @@
 {% extends 'school_guide/_layout.html' %}
 {% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
-<p>Finance covers what a student is charged, what has been paid, and the receipt that proves it. It is
-one page with five tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong>,
-<strong>Fee structure</strong> and <strong>New students to bill</strong> (each shown only to those allowed to open it), and <strong>+ Record payment</strong> always at
+<p>Finance covers what a student is charged, what has been paid, the receipt that proves it, and what the school
+spends. It is one page with tabs in three groups (each shown only to those allowed to open it): taking the money in
+(<strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong>, <strong>New students to
+bill</strong>), what is charged (<strong>Fee structure</strong>, <strong>Discounts</strong>, <strong>Instalments</strong>)
+and money going out (<strong>Expenses</strong>, <strong>Profit &amp; loss</strong>), with <strong>+ Record payment</strong> at
 the top right. Recording a payment, adding or editing a fee item, a payment and a student's account all open in a
 pop-up over the page you are on; Cancel, the × or a click outside closes it.</p>
 
@@ -89,8 +91,78 @@ school before this list arrived are not on it.</p>
   marked <em>Paid in full</em>.</li>
   <li><strong>Not billing someone?</strong> (a scholarship, a staff child): tick them, say why, and press <strong>Take
   ticked students off the list</strong>. This needs the right to manage fees (the Finance Manager role has it); the note is
-  kept under Done, where <strong>Put back</strong> returns them to the list.</li>
+  kept under Done, where <strong>Put back</strong> returns them to the list. To bill them less rather than not at all, give
+  them a discount or scholarship under <em>Discounts</em> (below) and bill them as usual.</li>
 </ul>
+
+<h2 id="discounts">Discounts, scholarships and the sibling discount</h2>
+<p><a href="{{ url_for('admin_finance_discounts') }}">Discounts</a> (it needs the right to manage fees, which the Finance
+Manager has) lists every discount given to a student, and holds the school's one sibling rule. A discount is taken off
+each fee <em>as the student is billed</em>, by a student or a whole class: the bill shows the full fee, what was taken off
+and why, and the student owes the rest. Receipts, balances and reminders all use what is owed.</p>
+<ul>
+  <li><strong>+ Give a discount</strong>: choose the student, the kind (<em>Scholarship</em>, <em>Staff child</em> or
+  <em>Discount</em>), a percentage or a number of naira off each fee, which fees it covers (every fee, or one such as
+  Tuition), and whether it is for this session or every session until it is ended. Tick <em>Also take it off fees already
+  charged</em> to re-work this session's bills at once. A 100% scholarship is charged at nothing and shows as paid.</li>
+  <li><strong>Sibling discount</strong>: switch it on, choose from the 2nd or the 3rd child, the percentage and the fees. Children
+  are one family when a parent account is linked to each of them; the first child is the one who joined the school first.
+  Percentages add up (never past 100%).</li>
+  <li><strong>Ending a discount</strong> keeps it on the record under <em>Ended</em>. Fees charged from then on are charged in full;
+  tick <em>undo on this session's fees</em> to charge this session's unpaid bills in full again. A fee is never set below what
+  has already been paid on it: the page says how much could not be taken off, to be refunded or applied to another fee.</li>
+  <li>A student's own discounts are also on their fee account, where they can be given and ended.</li>
+</ul>
+
+<h2 id="instalments">Instalment plans</h2>
+<p><a href="{{ url_for('admin_finance_instalments') }}">Instalments</a> lets families pay a billing period's fees in
+parts, each by its own date: <em>First Term in two parts: 60% by 15 September, 40% by 15 October</em>. <strong>+ New plan</strong>
+asks for a name, the session, the billing period and the parts (they must add up to 100%; the running total says so).
+<strong>Students</strong> puts a whole class or one student on it, and shows each one's overdue amount and next part; a student
+can also be put on a plan from their fee account.</p>
+<p>A part is due by its date and overdue from the next day. Until then it is <em>not overdue</em>: Student accounts,
+the fee reminders and the report card hold all follow the plan, so a family paying on time is never chased or held back.
+A student on no plan is overdue by each fee's own due date, as before. <em>Stop using</em> a plan and its students go back to
+the fees' own dates.</p>
+
+<h2 id="reminders">Fee reminders</h2>
+<p><a href="{{ url_for('admin_finance_reminders') }}">Fee reminders</a> (Settings, Fees &amp; payments) texts and emails
+the families whose fees are overdue, on its own, every 3, 7, 14 or 30 days, between 9:00 and 18:00, to families owing at
+least the amount you set. The words of the text and the email are edited on the same page, with the parts in curly
+brackets (<code>{child}</code>, <code>{amount}</code> overdue, <code>{balance}</code> still owed) filled in for each family
+and a preview as you type; the text is kept to one text message.</p>
+<ul>
+  <li><strong>Due a reminder now</strong> lists who would be reminded today, and <strong>Send reminders now</strong> sends at
+  once, whether reminders are on or off. A family is never reminded twice in one day.</li>
+  <li>On a student's fee account, <strong>Send a reminder</strong> reminds that one family, and shows when they were last reminded.</li>
+  <li>A balance left from an earlier session counts as overdue in full. Every message is in the
+  <a href="{{ url_for('admin_audit_logs') }}">notice log</a> as <em>Fee reminder</em>, and parents also see it in the parent portal.</li>
+</ul>
+
+<h2 id="report-hold">Holding report cards for unpaid fees</h2>
+<p><a href="{{ url_for('admin_finance_report_hold') }}">Report card hold</a> (Settings, Fees &amp; payments; the School Admin
+only) keeps report cards from families who owe fees. Choose <em>only what is overdue</em> (which follows due dates and
+instalment plans) or <em>any unpaid balance</em>, and an amount it must be above. Results are still released and staff see
+and print every card; only the family's copy waits. A parent sees the cards marked <em>Held</em>, with what is owed and a
+link to pay; a student is asked to speak to their parent. The cards open the moment the balance is paid.</p>
+<p>To let one student's cards through (a promise to pay, a hardship case), open their fee account and press
+<strong>Let through…</strong> with a reason. Everyone let through is listed on the settings page, with <em>Hold again</em>.</p>
+
+<h2 id="expenses">Expenses</h2>
+<p><a href="{{ url_for('admin_finance_expenses') }}">Expenses</a> (the <em>Record expenses</em> permission, which the
+Finance Manager has) is what the school spends, other than staff pay: diesel, repairs, books, a vendor's bill.
+<strong>+ Record expense</strong> takes the amount, what it was for, the date, who was paid and how, and a photo of the
+receipt if there is one (only finance staff can open it). The page shows one month at a time (‹ and ›), with its total
+against the month before and each category's total; press a category to see only those. A mistake is voided with a reason,
+never deleted, and stays under <em>Voided</em>.</p>
+
+<h2 id="profit-loss">Profit and loss</h2>
+<p><a href="{{ url_for('admin_finance_profit_loss') }}">Profit &amp; loss</a> (the School Admin, or anyone given <em>See profit
+and loss</em>, since it includes the total paid in salaries) shows, for a month, a session (using its start and end dates,
+set under Academic sessions) or any dates: <em>money in</em> (fee payments, by the fee they paid, and store sales) and
+<em>money out</em> (staff pay from every payroll marked paid, with the school's pension contribution, and expenses by
+category), and the surplus or shortfall. A longer period also shows month by month. It counts money when it moved: fees still
+owed are not income until they are paid. <strong>Print</strong> gives a clean copy for the proprietor or the accountant.</p>
 
 <h2 id="payments">Recording a payment</h2>
 <p><strong>+ Record payment</strong> opens a short form in a pop-up: <em>who paid</em> (type part of the student's name or

@@ -742,9 +742,29 @@ def _clear_placeholder_middle_names():
         db.session.rollback()
 
 
+def _add_missing_indexes():
+    """Create the indexes models/ declares that an older database lacks.
+
+    ``create_all()`` makes a missing table with its indexes, but never adds an index to a table that already exists,
+    so one added to a model later would otherwise reach only new schools. Named indexes are compared by name; each
+    missing one is created on its own (IF NOT EXISTS), so a school whose tables are small loses nothing to the wait.
+    """
+    engine = current_engine()
+    inspector = sa.inspect(engine)
+    existing = set(inspector.get_table_names())
+    for table in db.metadata.sorted_tables:
+        if table.name not in existing or not table.indexes:
+            continue
+        have = {ix['name'] for ix in inspector.get_indexes(table.name)}
+        for index in table.indexes:
+            if index.name and index.name not in have:
+                index.create(engine, checkfirst=True)
+
+
 def _init_db(school):
     db.metadata.create_all(current_engine())
     _add_missing_columns()
+    _add_missing_indexes()
     _allow_fractional_marks()
     _clear_placeholder_middle_names()
     from core.retired_tables import drop_empty  # deferred: it imports the models
@@ -846,6 +866,9 @@ def inject_csrf_token():
         # Once a day (and not more often than every half hour) the school looks for birthdays coming up.
         from blueprints.school.birthdays import run_birthday_check_safely
         remember('birthday-check', 1800, run_birthday_check_safely)
+        # And, on the days they are due, starts the fee reminders (blueprints/finance/reminders.py).
+        from blueprints.finance.reminders import run_reminder_check_safely
+        remember('fee-reminder-check', 1800, run_reminder_check_safely)
         unread,open_controls=remember('notification-counts', badge_cache_seconds(), _notification_counts, admin['id'])
         if is_school_admin(admin) or admin_has_permission(admin['id'],'finance.record'):
             from blueprints.finance.helpers import _finance_can_view_all, _finance_unallocated_summary
@@ -1318,6 +1341,11 @@ import blueprints.administration.routes  # noqa: F401,E402
 # Moved to blueprints/finance/routes.py.
 import blueprints.finance.routes  # noqa: F401,E402
 import blueprints.finance.new_students  # noqa: F401,E402
+import blueprints.finance.discounts  # noqa: F401,E402
+import blueprints.finance.instalments  # noqa: F401,E402
+import blueprints.finance.reminders  # noqa: F401,E402  (registers the 'fee_reminders' background jobs)
+import blueprints.finance.report_hold  # noqa: F401,E402
+import blueprints.finance.expenses  # noqa: F401,E402
 
 # ---------------- online payments (Paystack) ----------------
 # Moved to blueprints/finance/paystack.py.

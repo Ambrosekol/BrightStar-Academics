@@ -1,0 +1,51 @@
+{% extends 'admin_base.html' %}
+{% block title %}Record an expense — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Recording money the school spent. Opens in a pop-up from any finance page; a mistake keeps it open with the form as
+   typed. Staff salaries are not entered here: the profit and loss takes them from the payroll. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+<div class="ac fi" data-fi-exp>
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<div class="ac-modal-head"><h2>Record an expense</h2><p>Money the school spent. Staff salaries come from the payroll, not here.</p></div>
+{% else %}{% set fin_tab = 'expenses' %}{% include 'includes/_finance_frame.html' %}
+<div class="fi-who"><div><h2>Record an expense</h2><p>Money the school spent. Staff salaries come from the payroll, not here.</p></div></div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_finance_expense_new') }}" class="fi-form" enctype="multipart/form-data" data-exp-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  <div class="ac-fields ac-fields--3">
+    <div class="ac-field"><label for="expAmount">Amount (₦)</label>
+      <input id="expAmount" class="fi-amount" type="number" name="amount" min="0.01" step="0.01" required inputmode="decimal" value="{{ f.get('amount', '') }}" placeholder="0.00"></div>
+    <div class="ac-field"><label for="expCat">What for</label>
+      <select id="expCat" name="category" required><option value="">Choose</option>
+        {% for c in categories %}<option {% if f.get('category') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="expDate">Date spent</label>
+      <input id="expDate" type="date" name="spent_on" max="{{ today }}" value="{{ f.get('spent_on') or today }}" required></div>
+  </div>
+  <div class="ac-fields">
+    <div class="ac-field"><label for="expTo">Paid to</label>
+      <input id="expTo" name="paid_to" maxlength="120" value="{{ f.get('paid_to', '') }}" placeholder="e.g. Total filling station, Mr Bello (plumber)"></div>
+    <div class="ac-field"><label for="expDesc">What was bought or done</label>
+      <input id="expDesc" name="description" maxlength="300" value="{{ f.get('description', '') }}" placeholder="e.g. 200 litres of diesel for the generator"></div>
+  </div>
+  <div class="fi-methods" role="radiogroup" aria-label="How it was paid">
+    {% set chosen = f.get('method') or 'Cash' %}
+    {% for m in methods %}<label><input type="radio" name="method" value="{{ m }}" {% if chosen == m %}checked{% endif %}><span>{{ m }}</span></label>{% endfor %}
+  </div>
+  <div class="ac-fields">
+    <div class="ac-field"><label for="expRef">Reference <span class="ac-hint">optional: invoice, transfer or cheque number</span></label>
+      <input id="expRef" name="reference" maxlength="80" value="{{ f.get('reference', '') }}"></div>
+    <div class="ac-field"><label for="expReceipt">Photo of the receipt <span class="ac-hint">optional</span></label>
+      <input id="expReceipt" type="file" name="receipt" accept="image/png,image/jpeg,image/gif,image/webp" {{ upload_attrs('image') }}>
+      {{ upload_hint('image') }}</div>
+  </div>
+  <div class="ac-form-foot">
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_finance_expenses') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Record the expense</button>
+  </div>
+</form>
+</div>
+{% endblock %}

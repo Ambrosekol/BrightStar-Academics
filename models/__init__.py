@@ -103,14 +103,19 @@ from .admissions import (
 
 from .finance import (
     FinanceDeliveryLog,
+    FinanceDiscount,
+    FinanceExpense,
     FinanceFeeAssessment,
     FinanceFeeItem,
     FinanceFeeItemClass,
+    FinanceInstalmentPlan,
     FinanceNewStudent,
     FinanceOnlinePayment,
     FinancePayment,
     FinancePaymentAllocation,
     FinanceRefund,
+    FinanceReportHoldExemption,
+    FinanceStudentPlan,
 )
 
 from .subdivisions import ClassSubdivision, ClassTransfer
@@ -179,7 +184,8 @@ __all__ = [
     # finance
     'FinanceDeliveryLog', 'FinanceFeeAssessment', 'FinanceFeeItem', 'FinanceNewStudent',
     'FinanceFeeItemClass', 'FinanceOnlinePayment', 'FinancePayment', 'FinancePaymentAllocation',
-    'FinanceRefund',
+    'FinanceRefund', 'FinanceDiscount', 'FinanceExpense', 'FinanceInstalmentPlan', 'FinanceReportHoldExemption',
+    'FinanceStudentPlan',
     # ID cards
     'IdCard', 'IdCardAsset', 'IdCardDesign', 'IdCardDesignVersion',
     'ReportCardDesign', 'ReportCardDesignVersion', 'ReceiptDesign', 'ReceiptDesignVersion',

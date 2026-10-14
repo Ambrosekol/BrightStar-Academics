@@ -74,7 +74,8 @@ def _money(value):
 def _payment_status(assessed, paid):
     """Paid, Part Paid or Unpaid, worked out to the kobo so a floating-point crumb never flips it."""
     assessed=round(float(assessed or 0),2); paid=round(float(paid or 0),2)
-    if paid>=assessed and assessed>0: return 'Paid'
+    # A fee a scholarship covers in full is charged at nothing: there is nothing left to pay on it.
+    if paid>=assessed: return 'Paid'
     return 'Part Paid' if paid>0 else 'Unpaid'
 
 def _wrap_text(text, width, max_lines):
@@ -480,7 +481,8 @@ def _finance_student_outstanding(student_id, session_id=None):
                          FinanceFeeAssessment.session_id,FinanceFeeAssessment.category,
                          FinanceFeeAssessment.amount,FinanceFeeAssessment.due_date,
                          FinanceFeeAssessment.term,FinanceFeeAssessment.active,
-                         FinanceFeeAssessment.fee_item_id,
+                         FinanceFeeAssessment.fee_item_id,FinanceFeeAssessment.gross_amount,
+                         FinanceFeeAssessment.discount_amount,FinanceFeeAssessment.discount_note,
                          func.coalesce(allocated,0).label('allocated'))
                   .where(*scope)
                   .order_by(FinanceFeeAssessment.id))
@@ -607,3 +609,32 @@ def finance_snapshot(admin):
             'bank':total(day==today,func.lower(FinancePayment.method)!='cash'),
             'outstanding':outstanding,
             'unallocated':_finance_unallocated_summary(None if not own else admin['id'])}
+
+
+def json_setting(key, default):
+    """A finance setting kept as JSON in school_settings (the sibling discount rule, fee reminders, report card hold),
+    laid over ``default`` so a key the school has never saved still reads as the default."""
+    school_id=_primary_school_id()
+    raw=one_scalar(select(SchoolSetting.setting_value).where(SchoolSetting.school_id==school_id,
+                                                              SchoolSetting.setting_key==key)) if school_id else None
+    value=dict(default)
+    try:
+        stored=json.loads(raw) if raw else {}
+    except ValueError:
+        stored={}
+    if isinstance(stored,dict):
+        value.update({k:v for k,v in stored.items() if k in default})
+    return value
+
+def save_json_setting(key, value, admin_id):
+    """Save a finance setting as JSON. Does not commit."""
+    school_id=_primary_school_id()
+    if not school_id: raise ValueError('No active school is configured.')
+    now=datetime.now(timezone.utc).isoformat()
+    row=db.session.scalars(select(SchoolSetting).where(SchoolSetting.school_id==school_id,
+                                                       SchoolSetting.setting_key==key)).first()
+    text=json.dumps(value,sort_keys=True)
+    if row:
+        row.setting_value=text; row.updated_at=now; row.updated_by=admin_id
+    else:
+        db.session.add(SchoolSetting(school_id=school_id,setting_key=key,setting_value=text,updated_at=now,updated_by=admin_id))

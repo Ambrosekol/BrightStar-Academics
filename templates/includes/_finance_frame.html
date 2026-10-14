@@ -4,22 +4,29 @@
    adding a fee item open in a pop-up over whatever page you are on; everything else loads in place
    (static/inplace.js). #}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 {% set fin_aid = current_admin['id'] %}
 {% set fin_view_all = admin_has_permission(fin_aid, 'finance.view_all') or is_school_admin_ui %}
 {% set fin_to_apply = finance_unallocated.count if finance_unallocated and finance_unallocated.count else 0 %}
+{#- Three groups, a thin line between them: taking the money in, what is charged, and money going out. -#}
+{% set fin_manage = admin_has_permission(fin_aid, 'finance.manage') %}
 {% set fin_tabs = [
-    ('collections', 'Collections', 'admin_finance_dashboard', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all),
-    ('payments', 'Payments', 'admin_finance_payments', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all),
-    ('accounts', 'Student accounts', 'admin_finance_accounts', fin_view_all),
-    ('fees', 'Fee structure', 'admin_finance_fee_items', admin_has_permission(fin_aid, 'finance.manage')),
-    ('new', 'New students to bill', 'admin_finance_new_students', is_school_admin_ui or admin_has_permission(fin_aid, 'finance.record') or admin_has_permission(fin_aid, 'finance.manage')),
+    ('collections', 'Collections', 'admin_finance_dashboard', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all, 1),
+    ('payments', 'Payments', 'admin_finance_payments', admin_has_permission(fin_aid, 'finance.view_own') or fin_view_all, 1),
+    ('accounts', 'Student accounts', 'admin_finance_accounts', fin_view_all, 1),
+    ('new', 'New students to bill', 'admin_finance_new_students', is_school_admin_ui or admin_has_permission(fin_aid, 'finance.record') or fin_manage, 1),
+    ('fees', 'Fee structure', 'admin_finance_fee_items', fin_manage, 2),
+    ('discounts', 'Discounts', 'admin_finance_discounts', fin_manage, 2),
+    ('instalments', 'Instalments', 'admin_finance_instalments', fin_manage, 2),
+    ('expenses', 'Expenses', 'admin_finance_expenses', admin_has_permission(fin_aid, 'finance.expenses'), 3),
+    ('pl', 'Profit & loss', 'admin_finance_profit_loss', admin_has_permission(fin_aid, 'finance.profit_loss'), 3),
 ] %}
 {% set fin_to_bill = finance_new_students_badge() %}
 <header class="ac-top">
   <h1>Finance</h1>
   <nav class="ac-tabs" aria-label="Finance sections">
-    {% for key, label, endpoint, shown in fin_tabs if shown %}
+    {% for key, label, endpoint, shown, group in fin_tabs if shown %}
+    {% if not loop.first and group != loop.previtem[4] %}<span class="fi-tabsep" aria-hidden="true"></span>{% endif %}
     <a href="{{ url_for(endpoint) }}" class="{{ 'is-active' if fin_tab == key }}" {% if fin_tab == key %}aria-current="page"{% endif %}{% if key == 'fees' %} data-full{% endif %}>{{ label }}{% if key == 'payments' and fin_to_apply %} <b class="fi-count" title="{{ fin_to_apply }} payment{{ '' if fin_to_apply == 1 else 's' }} not yet applied to a fee">{{ fin_to_apply }}</b>{% endif %}{% if key == 'new' and fin_to_bill %} <b class="fi-count" title="{{ fin_to_bill }} new student{{ '' if fin_to_bill == 1 else 's' }} not billed yet">{{ fin_to_bill }}</b>{% endif %}</a>
     {% endfor %}
   </nav>
@@ -28,6 +35,10 @@
       <a class="ac-btn" href="{{ url_for('admin_finance_receipt_settings') }}" data-full>Receipt settings</a>
       <a class="ac-btn" href="{{ url_for('admin_finance_fee_item_new') }}" data-modal>+ Add fee item</a>
     {% endif %}
-    {% if admin_has_permission(fin_aid, 'finance.record') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_record') }}" data-modal>+ Record payment</a>{% endif %}
+    {% if fin_tab == 'discounts' and fin_manage %}<a class="ac-btn" href="{{ url_for('admin_finance_discount_new') }}" data-modal>+ Give a discount</a>{% endif %}
+    {% if fin_tab == 'instalments' and fin_manage %}<a class="ac-btn" href="{{ url_for('admin_finance_instalment_new', session_id=fin_session.id if fin_session else none) }}" data-modal>+ New plan</a>{% endif %}
+    {% if fin_tab in ('expenses', 'pl') %}
+      {% if admin_has_permission(fin_aid, 'finance.expenses') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_expense_new') }}" data-modal>+ Record expense</a>{% endif %}
+    {% elif admin_has_permission(fin_aid, 'finance.record') %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_record') }}" data-modal>+ Record payment</a>{% endif %}
   </div>
 </header>

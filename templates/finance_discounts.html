@@ -1,0 +1,71 @@
+{% extends 'admin_base.html' %}
+{% block title %}Discounts — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Finance > Discounts: every scholarship, staff child's discount and other discount given to a student, and the one
+   sibling rule for the whole school (blueprints/finance/discounts.py). A discount is taken off when a fee is charged;
+   giving one can also re-work the fees already charged this session. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'discounts' %}{% include 'includes/_finance_frame.html' %}
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Taken off this session</dt><dd>{{ naira(given) }}</dd><small>{{ current_session.name if current_session else 'No current session' }}, every fee charged so far</small></div>
+  <div><dt>Students with a discount</dt><dd>{{ students_with }}</dd><small>{{ counts.active }} discount{{ '' if counts.active == 1 else 's' }} in force</small></div>
+  <div><dt>Sibling discount</dt><dd>{{ ('%g'|format(rule.percent)) ~ '%' if rule.enabled else 'Off' }}</dd><small>{% if rule.enabled %}{{ eligible }} child{{ '' if eligible == 1 else 'ren' }} qualify, in {{ family_count }} famil{{ 'y' if family_count == 1 else 'ies' }}{% else %}{{ family_count }} famil{{ 'y has' if family_count == 1 else 'ies have' }} 2 or more children here{% endif %}</small></div>
+</dl>
+
+<section class="fi-p" aria-labelledby="sibH">
+  <div class="fi-h"><h2 id="sibH">Sibling discount <small>one rule for every family</small></h2></div>
+  <form method="post" action="{{ url_for('admin_finance_sibling_rule') }}" class="fi-inline" data-sib>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="fi-switch"><input type="checkbox" name="enabled" value="1" {% if rule.enabled %}checked{% endif %}><span>On</span></label>
+    <label>From the <select class="ac-select" name="from_child" aria-label="From which child">
+      <option value="2" {% if rule.from_child == 2 %}selected{% endif %}>2nd</option>
+      <option value="3" {% if rule.from_child == 3 %}selected{% endif %}>3rd</option></select> child,</label>
+    <label><input class="ac-input fi-num" type="number" name="percent" min="1" max="100" step="0.5" value="{{ '%g'|format(rule.percent) }}" aria-label="Percentage off" required>% off</label>
+    <label><select class="ac-select" name="category" aria-label="Which fees">
+      <option value="All" {% if rule.category == 'All' %}selected{% endif %}>every fee</option>
+      {% for c in categories %}<option value="{{ c }}" {% if rule.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+    <label class="ac-hint"><input type="checkbox" name="reprice" value="1"> also re-work fees already charged this session</label>
+    <button class="ac-btn ac-btn--sm" type="submit">Save</button>
+  </form>
+  <p class="ac-hint" style="margin:6px 0 0">Children are one family when a parent account is linked to each of them. The first child is the one who joined the school first.</p>
+</section>
+
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_discounts') }}" role="search">
+  <input type="hidden" name="view" value="{{ view }}">
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Student, admission no. or reason" aria-label="Find a discount"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Which discounts">
+    <a href="{{ url_for('admin_finance_discounts', q=q or none) }}" class="{{ 'is-active' if view == 'active' }}">In force <small>{{ counts.active }}</small></a>
+    <a href="{{ url_for('admin_finance_discounts', view='ended', q=q or none) }}" class="{{ 'is-active' if view == 'ended' }}">Ended <small>{{ counts.ended }}</small></a>
+  </nav>
+</div>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Kind</th><th>Discount</th><th>For</th><th>Given</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}{% set d = r.row %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=d.student_id) }}" data-modal>{{ r.name }}</a><small>{{ r.admission_no }}{% if r.class_name %} · {{ r.class_name }}{% endif %}</small></td>
+      <td><span class="ac-tag{{ ' ac-tag--blue' if d.kind == 'scholarship' }}">{{ r.kind }}</span>{% if d.label %}<small>{{ d.label }}</small>{% endif %}</td>
+      <td><b>{{ r.what }}</b>{% if d.note %}<small>{{ d.note }}</small>{% endif %}</td>
+      <td>{{ r.session }}</td>
+      <td>{{ d.created_at[:10] }}<small>{{ r.by }}</small>{% if not d.active %}<small>Ended {{ d.ended_at[:10] }}{% if r.ended_by %} by {{ r.ended_by }}{% endif %}</small>{% endif %}</td>
+      <td class="ac-actions">{% if d.active %}
+        <form method="post" action="{{ url_for('admin_finance_discount_end', discount_id=d.id) }}" class="fi-inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <label class="ac-hint" title="Charge this session's unpaid fees in full again"><input type="checkbox" name="reprice" value="1"> undo on this session's fees</label>
+          <button class="ac-btn ac-btn--sm" type="submit" data-confirm="End this discount? Fees charged from now on are charged in full.">End</button>
+        </form>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty">{% if q %}<strong>No discount matches</strong><a class="ac-link" href="{{ url_for('admin_finance_discounts', view=view) }}">Clear the search</a>
+    {% elif view == 'ended' %}<strong>No discount has ended yet</strong>
+    {% else %}<strong>No discount given yet</strong>Give a scholarship, a staff child's discount or any other discount with <b>+ Give a discount</b>. It is taken off each fee as the student is billed.{% endif %}</div>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

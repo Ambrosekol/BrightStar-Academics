@@ -272,6 +272,18 @@ Each area is explained for staff in the **staff guide** (`/admin/guide` on any s
 - **Receipts** in the school's own design (page, print, PDF), sent to the guardian by email and SMS automatically.
 - **Online payments** through the school's own Paystack account (no shared platform account): confirmed only by asking
   Paystack, never by trusting the browser, with refunds.
+- **Discounts** (`blueprints/finance/discounts.py`): scholarships, staff children's and other discounts per student, and
+  one school-wide sibling rule, taken off as a fee is charged. The bill keeps the full fee and what was taken off, so
+  every balance stays "charged minus applied".
+- **Instalment plans** (`blueprints/finance/instalments.py`): a billing period's fees in parts, each due by a date.
+  `overdue_and_next` is the one definition of "overdue" used by Student accounts, reminders and the report card hold.
+- **Fee reminders** (`blueprints/finance/reminders.py`, Settings): texts and emails to overdue families every few days, in
+  the school's own words, started by page loads or `sweep-jobs` like the birthday texts, never twice a day.
+- **Report card hold** (`blueprints/finance/report_hold.py`, School Admin only): report cards wait in the parent and
+  student portals while fees are owed, with per-student exemptions.
+- **Expenses and profit & loss** (`blueprints/finance/expenses.py`): spending with receipt photos (a private uploads
+  folder), and a cash-basis statement of fees and store sales against paid payroll and expenses
+  (`finance.profit_loss`, the School Admin's by default).
 
 ### The store and the library
 

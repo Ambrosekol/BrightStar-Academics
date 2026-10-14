@@ -108,14 +108,17 @@
     {% if report_periods %}
     <section class="ac-panel" id="report-cards" aria-labelledby="pf-rc">
       <div class="pf-ph"><h2 id="pf-rc">Report cards<small>{{ report_periods|length }}</small></h2></div>
+      {% if report_held %}<p class="ac-note">Your report cards are being held by the school. Please ask your parent or guardian to contact the school's finance office.</p>{% endif %}
       <table class="ac-t">
         <tbody>
         {% for p in report_periods %}
         <tr>
           <td><b>{{ p.term }}</b><small>{{ p.session_name }} session</small></td>
           <td class="ac-actions">
+            {% if report_held %}<span class="ac-tag ac-tag--attn">Held</span>{% else %}
             <a class="ac-link" href="{{ url_for('student_report_card_view', session_id=p.session_id, slug=p.slug) }}" target="_blank" rel="noopener">View</a>
             <a class="ac-link" href="{{ url_for('student_report_card_pdf', session_id=p.session_id, slug=p.slug) }}" data-no-loader>PDF</a>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}

@@ -55,6 +55,17 @@ def _payments_status():
     return ('Connected', GOOD) if payments.payment_settings() is not None else ('Not connected', WARN)
 
 
+def _reminders_status():
+    from blueprints.finance.reminders import settings
+    s = settings()
+    return (f"Every {s['every_days']} days", GOOD) if s['enabled'] else ('Off', NEUTRAL)
+
+
+def _hold_status():
+    from blueprints.finance.report_hold import settings
+    return ('On', GOOD) if settings()['enabled'] else ('Off', NEUTRAL)
+
+
 def _session_status():
     current = _school_current_session()
     return (current['name'], NEUTRAL) if current else ('No current session', WARN)
@@ -151,6 +162,12 @@ def _groups(me, workspace, statuses=True):
               'admin_finance_paystack_settings', 'nav-payments', admin, _payments_status, 'paystack card pay fees'),
             E('Receipts', 'The signature printed on every receipt.',
               'admin_finance_receipt_settings', 'set-receipt', can('finance.manage'), keywords='receipt signature'),
+            E('Fee reminders', 'Remind families whose fees are overdue, by text and email, every few days, in your own words.',
+              'admin_finance_reminders', 'set-delivery', can('finance.manage'), _reminders_status,
+              'reminder overdue owing debtors chase sms text email schedule'),
+            E('Report card hold', 'Keep report cards from families who owe fees until they pay, and let a student through.',
+              'admin_finance_report_hold', 'nav-reportcard', admin, _hold_status,
+              'withhold hold report card fees owing debt unpaid'),
         ]),
         ('oversight', 'Controls & activity', 'Keeping an eye on what happens.', [
             E('Controls & alerts', 'Important changes that need attention, and locks on examination resources.',

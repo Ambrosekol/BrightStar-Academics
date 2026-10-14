@@ -12,7 +12,7 @@
 {% set can_history = admin_has_permission(aid, 'student.history.manage') %}
 {% set can_fees = finance_sees_accounts() %}
 <div class="ac st sp" data-sp="{{ student.id }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% else %}{% set students_tab = 'current' %}{% set archived_count = 0 %}{% include 'includes/_students_frame.html' %}
 <a class="fi-back" href="{{ url_for('admin_school_students', **({'class': current_enrol.class_name} if current_enrol else {})) }}">← {{ current_enrol.class_name if current_enrol else 'Students' }}</a>{% endif %}
 

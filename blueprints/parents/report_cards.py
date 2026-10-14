@@ -10,6 +10,7 @@ import re
 from flask import Response, abort, render_template, session, url_for
 
 from app import _release_due_school_results, app
+from blueprints.finance.report_hold import held
 from blueprints.parents.helpers import _parent_owns_student, parent_required
 from blueprints.school.report_card_data import build_card, card_for_web, report_cards_pdf, term_from_slug
 from models import db
@@ -19,6 +20,13 @@ def _card_or_404(student_id, session_id, slug):
     term = term_from_slug(slug)
     if term is None or not _parent_owns_student(session['parent_id'], student_id):
         abort(404)
+    # Held while fees are owed, if the school holds report cards for unpaid fees (blueprints/finance/report_hold.py).
+    hold = held(student_id)
+    if hold:
+        abort(Response(render_template('report_card_held.html', who='parent', owed=hold['owed'],
+                                       fees_url=url_for('parent_child_finance', student_id=student_id),
+                                       back_url=url_for('parent_child_detail', student_id=student_id) + '#report-cards'),
+                       403))
     _release_due_school_results()
     db.session.commit()
     card = build_card(student_id, session_id, term)

@@ -7,7 +7,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set f = form or {} %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
 <div class="ac sto" data-sto-item data-modal-size="wide">
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_store') }}">← Inventory</a>{% endif %}

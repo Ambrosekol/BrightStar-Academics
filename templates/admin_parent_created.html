@@ -5,7 +5,7 @@
    pop-up the form was in. The password is never stored readable, so this is the only time it can be seen. #}
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 <div class="ac st pe" data-modal-scope="{{ url_for('admin_school_parent_edit', pid=parent.id) }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <style>.pe-print{display:none}@media print{body *{visibility:hidden}.pe-print,.pe-print *{visibility:visible}.pe-print{display:block;position:fixed;inset:0;padding:24px;background:#fff}}</style>
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_parents') }}">← Parents</a>{% endif %}
 <div class="ac-modal-head"><span class="acq-kind">{{ 'New password' if reset else 'Parent added' }}</span>

@@ -1,0 +1,64 @@
+{% extends "admin_base.html" %}
+{% block title %}Report card hold — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Fees & payments > Report card hold (blueprints/finance/report_hold.py), the School Admin's alone: whether
+    report cards wait in the parent and student portals until fees are paid, who is held now, and who was let through. -#}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<div class="ac fi">
+
+<section class="ac-panel" aria-labelledby="holdRule">
+  <h2 id="holdRule">Hold report cards for unpaid fees <small>{{ 'On' if s.enabled else 'Off' }}</small></h2>
+  <form method="post" action="{{ url_for('admin_finance_report_hold') }}" class="fi-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="fi-switch"><input type="checkbox" name="enabled" value="1" {% if s.enabled %}checked{% endif %}><span>On</span></label>
+    <label>when the family owes <select class="ac-select" name="basis" aria-label="What counts">
+      {% for key, label in bases.items() %}<option value="{{ key }}" {% if s.basis == key %}selected{% endif %}>{{ label|lower }}</option>{% endfor %}</select></label>
+    <label>above ₦<input class="ac-input fi-num" type="number" name="min_owed" min="0" step="100" value="{{ '%g'|format(s.min_owed) }}" aria-label="Held above this amount"></label>
+    <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Save</button>
+  </form>
+  <p class="ac-hint" style="margin:6px 0 0">Results are still released, and staff see and print every card as before. Only the family's copy waits:
+    a parent sees the cards marked <em>Held</em> with what is owed and a link to pay, a student is asked to speak to their parent.
+    The cards open the moment the balance is paid. <em>Only what is overdue</em> follows each fee's due date and each student's
+    <a href="{{ url_for('admin_finance_instalments') }}">instalment plan</a>, so a family paying on time is never held.</p>
+</section>
+
+{% if s.enabled %}
+<section class="ac-panel" aria-labelledby="holdNow">
+  <h2 id="holdNow">Held now <small>{{ held|length }} student{{ '' if held|length == 1 else 's' }}</small></h2>
+  {% if held %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Class</th><th class="n">{{ 'Overdue' if s.basis == 'overdue' else 'Owed' }}</th><th></th></tr></thead>
+    <tbody>{% for r in held[:100] %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id) }}" data-modal>{{ r.name }}</a></td>
+      <td>{{ r.class_name or '—' }}</td>
+      <td class="n"><span class="fi-owe">{{ naira(r.overdue if s.basis == 'overdue' else r.balance) }}</span></td>
+      <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=r.id) }}" data-modal>Let through…</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% if held|length > 100 %}<p class="ac-hint">And {{ held|length - 100 }} more.</p>{% endif %}
+  {% else %}<div class="ac-empty"><strong>No family's report cards are held</strong></div>{% endif %}
+</section>
+{% endif %}
+
+<section class="ac-panel" aria-labelledby="holdLet">
+  <h2 id="holdLet">Let through while fees are owed <small>{{ exemptions|length }}</small></h2>
+  {% if exemptions %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Why</th><th>By</th><th></th></tr></thead>
+    <tbody>{% for e in exemptions %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=e.row.student_id) }}" data-modal>{{ e.name }}</a><small>{{ e.admission_no }}</small></td>
+      <td>{{ e.row.note }}</td>
+      <td>{{ e.by }}<small>{{ e.row.granted_at[:10] }}</small></td>
+      <td class="ac-actions"><form method="post" action="{{ url_for('admin_finance_student_report_hold', student_id=e.row.student_id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="settings">
+        <button class="ac-link" type="submit">Hold again</button></form></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty">Nobody. The bursar can let one student's cards through, with a reason, from the student's fee account.</div>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

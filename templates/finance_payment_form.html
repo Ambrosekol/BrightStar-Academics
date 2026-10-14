@@ -8,7 +8,7 @@
 {% set want_student = f.get('student_id') or request.args.get('student_id', '') %}
 {% set want_session = f.get('session_id') or request.args.get('session_id', '') or (current_session.id if current_session else '') %}
 <div class="ac fi" data-fi-pay>
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 <div class="ac-modal-head"><h2>Record a payment</h2><p>Money received. A numbered receipt is made at once and sent to the guardian.</p></div>
 {% else %}{% set fin_tab = 'payments' %}{% include 'includes/_finance_frame.html' %}
 <div class="fi-who"><div><h2>Record a payment</h2><p>Money received. A numbered receipt is made at once and sent to the guardian.</p></div></div>{% endif %}

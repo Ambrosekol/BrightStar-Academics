@@ -127,7 +127,7 @@ def accounts(session_id):
     classes = _class_of_students(session_id)
     charged = {}
     for r in all_rows(select(FinanceFeeAssessment.student_id, FinanceFeeAssessment.amount, FinanceFeeAssessment.due_date,
-                             FinanceFeeAssessment.id)
+                             FinanceFeeAssessment.id, FinanceFeeAssessment.term)
                       .where(FinanceFeeAssessment.session_id == session_id, FinanceFeeAssessment.active == 1)):
         charged.setdefault(r['student_id'], []).append(r)
     paid_by_fee = {r['assessment_id']: _r(r['total']) for r in all_rows(
@@ -147,22 +147,27 @@ def accounts(session_id):
     students = {r['id']: r for r in all_rows(
         select(Student.id, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no)
         .where(Student.active == 1, Student.id.in_(ids)))}
+    # What is overdue follows each student's instalment plan where they have one (blueprints/finance/instalments.py).
+    from blueprints.finance.instalments import overdue_and_next, plans_by_student
+    plans = plans_by_student(session_id)
     rows = []
     for sid, st in students.items():
-        assessed = paid = overdue = 0.0
+        assessed = paid = 0.0
         for fee in charged.get(sid, []):
             a = _r(fee['amount']); p = min(a, paid_by_fee.get(fee['id'], 0.0))
             assessed += a; paid += p
-            if fee['due_date'] and str(fee['due_date'])[:10] < today:
-                overdue += a - p
+        overdue, next_due = overdue_and_next(charged.get(sid, []), paid_by_fee, plans.get(sid, {}),
+                                             date.fromisoformat(today))
         assessed, paid = _r(assessed), _r(paid)
         balance = _r(max(0.0, assessed - paid))
         cid, cname, order = classes.get(sid, (None, '', 9999))
-        status = 'none' if not assessed else ('paid' if balance <= 0.004 else ('part' if paid > 0 else 'unpaid'))
+        # A student whose fees a scholarship covers in full was charged nothing, but was billed: paid, not "no fees".
+        status = 'none' if sid not in charged else ('paid' if balance <= 0.004 else ('part' if paid > 0 else 'unpaid'))
         rows.append({'id': sid, 'name': ' '.join(x for x in (st['last_name'] + ',', st['first_name'], st['middle_name'] or '') if x).strip(),
                      'admission_no': st['admission_no'], 'class_id': cid, 'class_name': cname, 'class_order': order,
                      'assessed': assessed, 'paid': paid, 'balance': balance, 'overdue': _r(overdue),
-                     'rate': round(100 * paid / assessed) if assessed else None, 'status': status,
+                     'rate': round(100 * paid / assessed) if assessed else (100 if sid in charged else None),
+                     'status': status, 'next_due': next_due, 'on_plan': bool(plans.get(sid)),
                      'last_paid': (last_paid.get(sid) or '')[:10]})
     return rows
 

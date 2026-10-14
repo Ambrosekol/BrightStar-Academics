@@ -16,6 +16,27 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 # Rules the script cannot submit, each with the reason. Empty is the goal. A rule here is
 # reported in the coverage summary on every run.
 EXEMPT = {
+    # Fee collection: discounts and the sibling rule, instalment plans and who is on them, fee reminders and their
+    # words, the report card hold and letting a student through, expenses (with a receipt photo) and voiding them,
+    # valid and hostile (a cashier, a bursar on the School Admin's page, bad amounts, plans not adding to 100%), in
+    # write_paths_fee_collection.py.
+    "/admin/finance/discounts/new": "see write_paths_fee_collection.py",
+    "/admin/finance/discounts/<int:discount_id>/end": "see write_paths_fee_collection.py",
+    "/admin/finance/discounts/sibling": "see write_paths_fee_collection.py",
+    "/admin/finance/instalments/new": "see write_paths_fee_collection.py",
+    "/admin/finance/instalments/<int:plan_id>/edit": "see write_paths_fee_collection.py",
+    "/admin/finance/instalments/<int:plan_id>/toggle": "see write_paths_fee_collection.py",
+    "/admin/finance/instalments/<int:plan_id>/students": "see write_paths_fee_collection.py",
+    "/admin/finance/instalments/<int:plan_id>/students/<int:student_id>/remove": "see write_paths_fee_collection.py",
+    "/admin/finance/students/<int:student_id>/plan": "see write_paths_fee_collection.py",
+    "/admin/finance/reminders": "see write_paths_fee_collection.py",
+    "/admin/finance/reminders/words/<key>": "see write_paths_fee_collection.py",
+    "/admin/finance/reminders/send": "see write_paths_fee_collection.py",
+    "/admin/finance/students/<int:student_id>/remind": "see write_paths_fee_collection.py",
+    "/admin/finance/report-hold": "see write_paths_fee_collection.py",
+    "/admin/finance/students/<int:student_id>/report-hold": "see write_paths_fee_collection.py",
+    "/admin/finance/expenses/new": "see write_paths_fee_collection.py",
+    "/admin/finance/expenses/<int:expense_id>/void": "see write_paths_fee_collection.py",
     # Class subdivisions (Settings) and class transfers: set-up, lock, placing students in turn, and every step of a
     # transfer (asking, approving, declining, cancelling), valid and hostile, in write_paths_subdivisions.py.
     # Finance > New students to bill: taking students off the list and putting them back, valid and hostile, in

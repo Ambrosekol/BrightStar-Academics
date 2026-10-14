@@ -1,0 +1,99 @@
+{% extends 'admin_base.html' %}
+{% block title %}Profit & loss — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Finance > Profit & loss (blueprints/finance/expenses.py): money in and money out for a month, a session or any dates,
+   counted when the money moved. Fees still owed are shown apart: they are not income until they are paid. #}
+{% macro naira(v) -%}{{ '−' if v < 0 }}₦{{ '{:,.2f}'.format((v or 0)|abs) }}{%- endmacro %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'pl' %}{% include 'includes/_finance_frame.html' %}
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Period">
+    <a href="{{ url_for('admin_finance_profit_loss', month=month) }}" class="{{ 'is-active' if period == 'month' }}">Month</a>
+    <a href="{{ url_for('admin_finance_profit_loss', period='session') }}" class="{{ 'is-active' if period == 'session' }}">Session</a>
+    <a href="{{ url_for('admin_finance_profit_loss', period='range') }}" class="{{ 'is-active' if period == 'range' }}">Dates</a>
+  </nav>
+  {% if period == 'month' %}
+  <nav class="fi-monthnav" aria-label="Month">
+    <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_profit_loss', month=prev_month) }}" aria-label="Previous month">‹</a>
+    <b>{{ label }}</b>
+    <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_profit_loss', month=next_month) }}" aria-label="Next month">›</a>
+  </nav>
+  {% elif period == 'session' %}
+  <form method="get" action="{{ url_for('admin_finance_profit_loss') }}" class="fi-inline">
+    <input type="hidden" name="period" value="session">
+    <select class="ac-select" name="session_id" aria-label="Session" data-autosubmit>{% for s in sessions %}<option value="{{ s.id }}" {% if label.startswith(s.name ~ ' ') %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+  </form>
+  {% else %}
+  <form method="get" action="{{ url_for('admin_finance_profit_loss') }}" class="fi-inline">
+    <input type="hidden" name="period" value="range">
+    <label>From <input class="ac-input" type="date" name="from" value="{{ range_from }}" required></label>
+    <label>to <input class="ac-input" type="date" name="to" value="{{ range_to }}" required></label>
+    <button class="ac-btn ac-btn--sm" type="submit">Show</button>
+  </form>
+  {% endif %}
+  <span class="ac-grow"></span>
+  {% if report %}<button class="ac-btn ac-btn--sm" type="button" data-print>Print</button>{% endif %}
+</div>
+
+{% if error %}
+<div class="fi-p"><div class="ac-empty"><strong>{{ error }}</strong></div></div>
+{% elif report %}
+<dl class="fi-k">
+  <div><dt>Money in</dt><dd>{{ naira(report.income) }}</dd><small>Fees and store sales received</small></div>
+  <div><dt>Money out</dt><dd>{{ naira(report.spending) }}</dd><small>Staff pay and expenses</small></div>
+  <div class="is-lead {{ 'is-alert' if report.net < 0 }}"><dt>{{ 'Surplus' if report.net >= 0 else 'Shortfall' }}</dt><dd>{{ naira(report.net) }}</dd>
+    <small>{{ label }}{% if report.income and report.net >= 0 %}, {{ (100 * report.net / report.income)|round(0)|int }}% of money in kept{% endif %}</small></div>
+</dl>
+
+<div class="fi-g fi-statement">
+  <section class="fi-p fi-p--6" aria-labelledby="plIn">
+    <div class="fi-h"><h2 id="plIn">Money in</h2></div>
+    <table class="ac-t">
+      <tbody>
+        <tr class="fi-subhead"><th colspan="2">Fees received</th></tr>
+        {% for f in report.fees %}<tr><td>{{ f.label }}</td><td class="n">{{ naira(f.value) }}</td></tr>{% else %}<tr><td class="fi-zero" colspan="2">No fee payment in this period</td></tr>{% endfor %}
+        <tr class="fi-subhead"><th>Store sales</th><td class="n">{{ naira(report.store) }}</td></tr>
+      </tbody>
+      <tfoot><tr><th>Total money in</th><td class="n"><b>{{ naira(report.income) }}</b></td></tr></tfoot>
+    </table>
+  </section>
+  <section class="fi-p fi-p--6" aria-labelledby="plOut">
+    <div class="fi-h"><h2 id="plOut">Money out</h2></div>
+    <table class="ac-t">
+      <tbody>
+        <tr class="fi-subhead"><th colspan="2">Staff pay <small>{{ report.runs }} payroll{{ '' if report.runs == 1 else 's' }} marked paid</small></th></tr>
+        {% for p in report.payroll %}<tr><td>{{ p.label }}</td><td class="n">{{ naira(p.value) }}</td></tr>{% endfor %}
+        <tr class="fi-subhead"><th colspan="2">Expenses</th></tr>
+        {% for e in report.expenses %}<tr><td>{% if not report.by_month %}<a class="ac-link" href="{{ url_for('admin_finance_expenses', month=report.start[:7], category=e.label) }}">{{ e.label }}</a>{% else %}{{ e.label }}{% endif %}</td><td class="n">{{ naira(e.value) }}</td></tr>{% else %}<tr><td class="fi-zero" colspan="2">No expense recorded in this period</td></tr>{% endfor %}
+      </tbody>
+      <tfoot><tr><th>Total money out</th><td class="n"><b>{{ naira(report.spending) }}</b></td></tr></tfoot>
+    </table>
+  </section>
+</div>
+
+{% if report.by_month %}
+<section class="fi-p" aria-labelledby="plMonths">
+  <div class="fi-h"><h2 id="plMonths">Month by month</h2></div>
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Month</th><th class="n">Money in</th><th class="n">Money out</th><th class="n">Surplus</th><th></th></tr></thead>
+    <tbody>{% for m in report.by_month %}<tr>
+      <td><a class="ac-link" href="{{ url_for('admin_finance_profit_loss', month=m.month) }}">{{ m.label }}</a></td>
+      <td class="n">{{ naira(m.income) }}</td><td class="n">{{ naira(m.spending) }}</td>
+      <td class="n"><b class="{{ 'fi-owe' if m.net < 0 }}">{{ naira(m.net) }}</b></td>
+      <td class="fi-pl-bars" aria-hidden="true">{% if report.max_month %}<i class="in" style="width:{{ (100 * m.income / report.max_month)|round(1) }}%"></i><i class="out" style="width:{{ (100 * m.spending / report.max_month)|round(1) }}%"></i>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+<p class="ac-hint">Counted when the money moved: a fee counts when it is paid, staff pay when the payroll is marked paid, an
+  expense on the day it was spent. {% if owed %}Fees charged and not yet paid ({{ naira(owed) }} today, across every session)
+  are not counted until they are paid.{% endif %} Voided payments and expenses are left out.</p>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){ var b=document.querySelector('[data-print]:not([data-ready])'); if(!b) return; b.setAttribute('data-ready','1');
+  b.addEventListener('click',function(){ window.print(); }); })();
+</script>
+{% endblock %}

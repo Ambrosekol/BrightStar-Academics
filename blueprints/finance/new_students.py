@@ -60,7 +60,8 @@ def _note_new_students(session, _context):
 # ---------------------------------------------------------------- reading the list
 def _sums():
     """(billed per student, applied per student, received per student) as subqueries, over every session."""
-    billed = (select(FinanceFeeAssessment.student_id.label('sid'), func.sum(FinanceFeeAssessment.amount).label('v'))
+    billed = (select(FinanceFeeAssessment.student_id.label('sid'), func.sum(FinanceFeeAssessment.amount).label('v'),
+                     func.count().label('n'))
               .where(FinanceFeeAssessment.active == 1, FinanceFeeAssessment.voided_at.is_(None))
               .group_by(FinanceFeeAssessment.student_id).subquery())
     applied = (select(FinanceFeeAssessment.student_id.label('sid'), func.sum(FinancePaymentAllocation.amount).label('v'))
@@ -74,8 +75,9 @@ def _sums():
     return billed, applied, received
 
 
-def _stage(billed, applied):
-    if billed <= 0:
+def _stage(billed, applied, bills=None):
+    # Billed means charged at least one fee: a fee a scholarship covers in full is charged at nothing, and is paid.
+    if not (bills if bills is not None else billed > 0):
         return 'unbilled'
     return 'paid' if round(applied, 2) >= round(billed, 2) else 'awaiting'
 
@@ -90,7 +92,8 @@ def _rows(open_only=True):
     stmt = (select(FinanceNewStudent, Student.first_name, Student.middle_name, Student.last_name, Student.admission_no,
                    Student.student_number, enrol.c.class_id, SchoolClass.name.label('class_name'),
                    ClassSubdivision.name.label('sub_name'),
-                   func.coalesce(billed.c.v, 0), func.coalesce(applied.c.v, 0), func.coalesce(received.c.v, 0))
+                   func.coalesce(billed.c.v, 0), func.coalesce(applied.c.v, 0), func.coalesce(received.c.v, 0),
+                   func.coalesce(billed.c.n, 0))
             .join(Student, Student.id == FinanceNewStudent.student_id)
             .outerjoin(enrol, enrol.c.student_id == Student.id)
             .outerjoin(SchoolClass, SchoolClass.id == enrol.c.class_id)
@@ -101,7 +104,7 @@ def _rows(open_only=True):
     if open_only:
         stmt = stmt.where(FinanceNewStudent.cleared_at.is_(None), Student.active == 1, Student.archived_at.is_(None))
     out = []
-    for row, first, middle, last, adm, number, class_id, class_name, sub_name, b, a, r in db.session.execute(
+    for row, first, middle, last, adm, number, class_id, class_name, sub_name, b, a, r, n in db.session.execute(
             stmt.order_by(FinanceNewStudent.added_at.desc(), FinanceNewStudent.id.desc())).all():
         b, a, r = round(float(b or 0), 2), round(float(a or 0), 2), round(float(r or 0), 2)
         out.append({'row': row, 'id': row.student_id,
@@ -109,7 +112,7 @@ def _rows(open_only=True):
                     'number': number or adm or '', 'class_id': class_id, 'class_name': class_name or '',
                     'sub_name': sub_name or '',
                     'billed': b, 'applied': a, 'owed': round(max(0.0, b - a), 2),
-                    'unapplied': round(max(0.0, r - a), 2), 'stage': _stage(b, a)})
+                    'unapplied': round(max(0.0, r - a), 2), 'stage': _stage(b, a, int(n or 0))})
     return out
 
 

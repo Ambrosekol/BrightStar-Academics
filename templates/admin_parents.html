@@ -9,7 +9,7 @@
 {% set no_phone = parents|rejectattr('phone')|list|length %}
 {% set active = parents|selectattr('active')|list|length %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <div class="ac st pe" data-pe>
 <header class="ac-top">

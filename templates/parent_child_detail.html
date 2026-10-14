@@ -74,6 +74,10 @@
     <section class="pp-panel ac-panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
       <div id="report-cards">
         <div class="pf-ph"><h2>Report cards</h2></div>
+        {% if report_periods and report_held %}
+        <p class="ac-note"><b>Held until fees are paid.</b> ₦{{ '{:,.2f}'.format(report_held.owed) }} is owed.
+          The report cards open here as soon as it is paid. <a class="ac-link" href="{{ url_for('parent_child_finance', student_id=child.id) }}">See the fees and pay</a></p>
+        {% endif %}
         {% if report_periods %}
         <table class="ac-t">
           <tbody>
@@ -81,8 +85,10 @@
           <tr>
             <td><b>{{ p.term }}</b><small>{{ p.session_name }} session</small></td>
             <td class="ac-actions">
+              {% if report_held %}<span class="ac-tag ac-tag--attn">Held</span>{% else %}
               <a class="ac-link" href="{{ url_for('parent_report_card_view', student_id=child.id, session_id=p.session_id, slug=p.slug) }}" target="_blank" rel="noopener">View</a>
               <a class="ac-link" href="{{ url_for('parent_report_card_pdf', student_id=child.id, session_id=p.session_id, slug=p.slug) }}" data-no-loader>PDF</a>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}

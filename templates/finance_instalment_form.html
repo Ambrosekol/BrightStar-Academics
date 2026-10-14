@@ -1,0 +1,76 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ 'Edit plan' if plan else 'New instalment plan' }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# An instalment plan: its name, the billing period it is for, and its parts (a share of the fees, and the last day to
+   pay it). Opens in a pop-up from Instalments. The shares must add up to 100%; the running total says so. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+{% set heading = 'Edit "' ~ plan.name ~ '"' if plan else 'New instalment plan' %}
+<div class="ac fi" data-fi-plan>
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<div class="ac-modal-head"><h2>{{ heading }}</h2><p>Families on the plan owe each part by its date, and are not overdue before then.</p></div>
+{% else %}{% set fin_tab = 'instalments' %}{% include 'includes/_finance_frame.html' %}
+<div class="fi-who"><div><h2>{{ heading }}</h2></div></div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_finance_instalment_edit', plan_id=plan.id) if plan else url_for('admin_finance_instalment_new') }}" class="fi-form" data-plan-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  <div class="ac-fields ac-fields--3">
+    <div class="ac-field"><label for="planName">Name</label>
+      <input id="planName" name="name" maxlength="80" required value="{{ f.get('name', '') }}" placeholder="e.g. First Term in two parts"></div>
+    <div class="ac-field"><label for="planSession">Session</label>
+      {% if plan %}<input id="planSession" value="{{ plan_session_name }}" disabled>
+      {% else %}<select id="planSession" name="session_id">{% for s in sessions %}<option value="{{ s.id }}" {% if fin_session and s.id == fin_session.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>{% endif %}</div>
+    <div class="ac-field"><label for="planTerm">For the fees of</label>
+      <select id="planTerm" name="term">{% for t in periods %}<option {% if f.get('term', 'First Term') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+  </div>
+
+  <table class="ac-t fi-parts" data-parts>
+    <thead><tr><th>Part</th><th>Share of the fees</th><th>Pay by</th><th></th></tr></thead>
+    <tbody>{% for pct, when in plan_parts %}<tr data-part>
+      <td data-part-n>{{ loop.index }}</td>
+      <td><input class="ac-input fi-num" type="number" name="part_percent" min="1" max="100" step="0.5" value="{{ pct }}" aria-label="Share in percent" data-pct> %</td>
+      <td><input class="ac-input" type="date" name="part_date" value="{{ when }}" aria-label="Last day to pay this part"></td>
+      <td class="ac-actions"><button type="button" class="ac-link" data-part-remove aria-label="Remove this part">Remove</button></td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  <div class="fi-row">
+    <button type="button" class="ac-btn ac-btn--sm" data-part-add>+ Add a part</button>
+    <span class="ac-hint" data-parts-total role="status"></span>
+  </div>
+
+  <div class="ac-form-foot">
+    <span class="ac-hint">Each part's date is the last day to pay it. It is overdue from the next day.</span>
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_finance_instalments') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Save the plan</button>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-fi-plan]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var body=root.querySelector('[data-parts] tbody'), total=root.querySelector('[data-parts-total]'), add=root.querySelector('[data-part-add]');
+  var MAX={{ max_parts }};
+  function rows(){ return body.querySelectorAll('[data-part]'); }
+  function refresh(){
+    var sum=0; rows().forEach(function(r,i){ r.querySelector('[data-part-n]').textContent=i+1; sum+=Number(r.querySelector('[data-pct]').value||0); });
+    sum=Math.round(sum*100)/100;
+    total.textContent=sum===100 ? 'Adds up to 100%.' : 'Adds up to '+sum+'%: it must come to 100%.';
+    total.classList.toggle('is-warn', sum!==100);
+    add.disabled=rows().length>=MAX;
+    rows().forEach(function(r){ r.querySelector('[data-part-remove]').disabled=rows().length<=2; });
+  }
+  add.addEventListener('click',function(){
+    var last=rows()[rows().length-1], copy=last.cloneNode(true);
+    copy.querySelectorAll('input').forEach(function(i){ i.value=''; });
+    body.appendChild(copy); refresh(); copy.querySelector('[data-pct]').focus();
+  });
+  body.addEventListener('click',function(e){
+    var b=e.target.closest('[data-part-remove]'); if(!b||rows().length<=2) return;
+    b.closest('[data-part]').remove(); refresh();
+  });
+  body.addEventListener('input',refresh); refresh();
+})();
+</script>
+{% endblock %}

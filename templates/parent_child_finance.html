@@ -59,6 +59,7 @@
   {% if paystack_available and owed > 0.005 %}<p class="pf-sub">Tick one fee or several, then pay securely with Paystack.</p>{% endif %}
 
   {% if account %}
+  {% set planned_terms = schedule|selectattr('parts')|map(attribute='term')|list %}
   {% set can_pay = paystack_available and account|selectattr('outstanding', 'gt', 0.005)|list|length > 0 %}
   <form id="fees" method="post" action="{{ url_for('parent_finance_pay_start', student_id=student.id) }}" data-full>
     {% if can_pay %}
@@ -76,8 +77,8 @@
           {% if can_pay %}<td class="pf-pick">{% if item.outstanding > 0.005 %}<input class="pay-pick" type="checkbox" name="assessment_ids" value="{{ item.id }}" data-amount="{{ '%.2f'|format(item.outstanding) }}" aria-label="Select {{ item.category }} to pay">{% endif %}</td>{% endif %}
           <td class="pf-rt__lead"><b>{{ item.category }}</b></td>
           <td data-label="Term">{{ item.term or 'Full Session' }}</td>
-          <td data-label="Due">{{ item.due_date or '—' }}</td>
-          <td class="n" data-label="Assessed">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
+          <td data-label="Due">{% if (item.term or 'Full Session') in planned_terms %}In parts, below{% else %}{{ item.due_date or '—' }}{% endif %}</td>
+          <td class="n" data-label="Assessed">₦{{ '{:,.2f}'.format(item.assessed) }}{% if item.discount_amount %}<small class="pf-sub">₦{{ '{:,.2f}'.format(item.discount_amount) }} off: {{ item.discount_note }}</small>{% endif %}</td>
           <td class="n" data-label="Paid">₦{{ '{:,.2f}'.format(item.paid) }}</td>
           <td class="n" data-label="Outstanding"><b{% if item.outstanding > 0.005 %} class="pf-owe"{% endif %}>₦{{ '{:,.2f}'.format(item.outstanding) }}</b></td>
           <td data-label="Status">{% if item.status == 'Paid' %}<span class="ac-tag pp-badge is-paid">Paid</span>{% elif item.status == 'Part Paid' %}<span class="ac-tag pp-badge is-part">Part paid</span>{% else %}<span class="ac-tag pp-badge is-unpaid">Unpaid</span>{% endif %}</td>
@@ -96,6 +97,11 @@
     </div>
     {% endif %}
   </form>
+  {% for t in schedule if t.parts %}
+  <p class="pf-sub"><b>{{ t.term }}, in parts:</b>
+    {% for p in t.parts %}₦{{ '{:,.2f}'.format(p.amount) }} by {{ p.date }} ({{ 'paid' if p.state == 'paid' else ('overdue' if p.state == 'overdue' else 'to pay') }}){{ ', ' if not loop.last else '.' }}{% endfor %}
+    Each part is due by its date; nothing is overdue before then.</p>
+  {% endfor %}
   <p class="pf-foot">Paid and outstanding figures, here and in the totals above, reflect payments the school office has applied to each fee. A payment you have just made may take a short while to be applied.</p>
   {% else %}
   <div class="ac-empty">No fees have been assessed for {{ session.name }} yet.</div>

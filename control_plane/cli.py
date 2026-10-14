@@ -227,6 +227,9 @@ def main(argv=None):
                         from blueprints.school.birthdays import start_birthday_texts
                         if start_birthday_texts(inline=True):
                             print(f'{info.slug:<16} birthday texts sent')
+                        from blueprints.finance.reminders import start_reminders
+                        if start_reminders(inline=True):
+                            print(f'{info.slug:<16} fee reminders sent')
                 except Exception as exc:  # a school mid-upgrade, or unreachable, must not stop the rest
                     print(f'{info.slug:<16} could not be swept: {exc}')
                     continue

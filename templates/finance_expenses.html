@@ -1,0 +1,74 @@
+{% extends 'admin_base.html' %}
+{% block title %}Expenses — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Finance > Expenses (blueprints/finance/expenses.py): what the school spent in a month, other than staff pay, by
+   category. Recording one opens a pop-up; a mistake is voided with a reason, never deleted. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set base = {'month': month, 'category': category or none, 'show': show if show != 'posted' else none, 'q': q or none} %}
+<div class="ac fi" data-fi>
+{% set fin_tab = 'expenses' %}{% include 'includes/_finance_frame.html' %}
+
+<form method="get" class="ac-bar" action="{{ url_for('admin_finance_expenses') }}" role="search">
+  <nav class="fi-monthnav" aria-label="Month">
+    <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_expenses', **dict(base, month=prev_month)) }}" aria-label="Previous month">‹</a>
+    <b>{{ month_label }}</b>
+    {% if month < this_month %}<a class="ac-btn ac-btn--sm" href="{{ url_for('admin_finance_expenses', **dict(base, month=next_month)) }}" aria-label="Next month">›</a>{% endif %}
+  </nav>
+  <input type="hidden" name="month" value="{{ month }}">
+  {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+  {% if show != 'posted' %}<input type="hidden" name="show" value="{{ show }}">{% endif %}
+  <span class="ac-search"><input type="search" name="q" value="{{ q }}" placeholder="Who was paid, what for, reference" aria-label="Find an expense"><button class="ac-btn" type="submit">Find</button></span>
+</form>
+
+{% if show == 'posted' %}
+<dl class="fi-k">
+  <div class="is-lead"><dt>Spent in {{ month_label }}</dt><dd>{{ naira(total) }}</dd>
+    <small>{% if prev_total %}{% set change = ((total - prev_total) / prev_total * 100)|round(0)|int %}{{ '+' if change > 0 }}{{ change }}% on last month ({{ naira(prev_total) }}){% else %}Nothing recorded last month{% endif %}</small></div>
+  <div><dt>Expenses</dt><dd>{{ count }}</dd><small>{% if voided %}{{ voided }} voided, not counted{% else %}None voided{% endif %}</small></div>
+  <div><dt>Most spent on</dt><dd>{{ by_cat[0][0] if by_cat else '—' }}</dd><small>{{ naira(by_cat[0][1]) if by_cat else 'Nothing yet' }}</small></div>
+</dl>
+{% endif %}
+
+<div class="fi-tools">
+  <nav class="ac-chips" aria-label="Category">
+    <a class="ac-chip{{ ' is-active' if not category }}" href="{{ url_for('admin_finance_expenses', **dict(base, category=none)) }}">All</a>
+    {% for c, v in by_cat %}<a class="ac-chip{{ ' is-active' if category == c }}" href="{{ url_for('admin_finance_expenses', **dict(base, category=c)) }}">{{ c }} <small>{{ naira(v) }}</small></a>{% endfor %}
+  </nav>
+  <nav class="fi-seg" aria-label="Which expenses">
+    <a href="{{ url_for('admin_finance_expenses', **dict(base, show=none)) }}" class="{{ 'is-active' if show == 'posted' }}">Counted</a>
+    <a href="{{ url_for('admin_finance_expenses', **dict(base, show='voided', category=none)) }}" class="{{ 'is-active' if show == 'voided' }}">Voided <small>{{ voided }}</small></a>
+  </nav>
+</div>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Date</th><th>What for</th><th>Paid to</th><th>How</th><th class="n">Amount</th><th></th></tr></thead>
+    <tbody>{% for e in rows %}<tr>
+      <td>{{ e.spent_on }}<small>{{ names.get(e.recorded_by, '') }}</small></td>
+      <td><span class="fi-chip fi-chip--type">{{ e.category }}</span>{% if e.description %}<small>{{ e.description }}</small>{% endif %}</td>
+      <td>{{ e.paid_to or '—' }}</td>
+      <td>{{ e.method or '—' }}{% if e.reference %}<small>{{ e.reference }}</small>{% endif %}</td>
+      <td class="n"><b>{{ naira(e.amount) }}</b>{% if e.status == 'voided' %}<small>Voided: {{ e.void_reason }}</small>{% endif %}</td>
+      <td class="ac-actions">
+        {% if e.receipt_path %}<a class="ac-link" href="{{ url_for('admin_finance_expense_receipt', expense_id=e.id) }}" target="_blank" rel="noopener">Receipt</a>{% endif %}
+        {% if e.status == 'posted' %}
+        <details class="fi-void"><summary class="ac-link">Void</summary>
+          <form method="post" action="{{ url_for('admin_finance_expense_void', expense_id=e.id) }}" class="fi-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input class="ac-input" name="reason" maxlength="300" required placeholder="Why, e.g. entered twice" aria-label="Why it is voided">
+            <button class="ac-btn ac-btn--sm ac-btn--danger" type="submit">Void</button>
+          </form></details>
+        {% endif %}
+      </td>
+    </tr>{% endfor %}</tbody>
+    {% if rows|length > 1 and show == 'posted' %}<tfoot><tr><td colspan="4">{{ rows|length }} shown</td><td class="n"><b>{{ naira(shown_total) }}</b></td><td></td></tr></tfoot>{% endif %}
+  </table></div>
+  {% else %}
+  <div class="ac-empty">{% if q or category %}<strong>No expense matches</strong><a class="ac-link" href="{{ url_for('admin_finance_expenses', month=month) }}">Show all of {{ month_label }}</a>
+    {% elif show == 'voided' %}<strong>Nothing voided in {{ month_label }}</strong>
+    {% else %}<strong>No expense recorded in {{ month_label }}</strong>Record what the school spends with <b>+ Record expense</b>: diesel, repairs, books, a vendor's bill. Staff salaries come from the payroll and are not entered here.{% endif %}</div>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

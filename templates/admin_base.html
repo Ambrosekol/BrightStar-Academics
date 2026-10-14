@@ -144,6 +144,18 @@
                  'title': 'New students not billed yet',
                  'show': finance_shown and (is_school_admin_ui or admin_has_permission(aid,'finance.record') or admin_has_permission(aid,'finance.manage')),
                  'active': path.startswith('/admin/finance/new-students')},
+                {'label':'Discounts','endpoint':'admin_finance_discounts','icon':'nav-discount',
+                 'show': finance_shown and admin_has_permission(aid,'finance.manage'),
+                 'active': path.startswith('/admin/finance/discounts')},
+                {'label':'Instalments','endpoint':'admin_finance_instalments','icon':'nav-instalment',
+                 'show': finance_shown and admin_has_permission(aid,'finance.manage'),
+                 'active': path.startswith('/admin/finance/instalments')},
+                {'label':'Expenses','endpoint':'admin_finance_expenses','icon':'nav-expense',
+                 'show': signed and admin_has_permission(aid,'finance.expenses'),
+                 'active': path.startswith('/admin/finance/expenses')},
+                {'label':'Profit & loss','endpoint':'admin_finance_profit_loss','icon':'nav-pl',
+                 'show': signed and admin_has_permission(aid,'finance.profit_loss'),
+                 'active': path.startswith('/admin/finance/profit-loss')},
             ]},
             {'label':'Design & print', 'part':'Management', 'items':[
                 {'label':'Design studios','endpoint':'admin_design_studios','icon':'nav-design',
@@ -242,7 +254,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='7') }}">
 </head>
-<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/finance/new-students,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
+<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/finance/new-students,/admin/finance/discounts,/admin/finance/instalments,/admin/finance/expenses,/admin/finance/profit-loss,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
 {{ connectivity_banner() }}
 {% if finance_unallocated and finance_unallocated.count %}
 <div class="finance-unallocated-banner" role="status">

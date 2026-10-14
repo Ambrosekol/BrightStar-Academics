@@ -1,0 +1,61 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ plan.name }}: students — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Who is on an instalment plan and where each stands, and putting a whole class or one student on it. Opens in a pop-up
+   from Instalments; adding or taking off stays in it. A student put on this plan comes off any other plan for the same
+   session and billing period. #}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set here = url_for('admin_finance_instalment_students', plan_id=plan.id) %}
+<div class="ac fi" data-modal-scope="{{ here }}" data-modal-size="wide">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+{% else %}{% set fin_tab = 'instalments' %}{% include 'includes/_finance_frame.html' %}{% endif %}
+<div class="fi-who{{ ' fi-who--modal' if modal }}"><div>
+  <span class="acq-kind">Instalment plan · {{ session_name }} · {{ plan.term }}</span>
+  <h2>{{ plan.name }}</h2><p>{{ text }}</p></div></div>
+
+{% if plan.active %}
+<div class="fi-g">
+  <form method="post" action="{{ here }}" class="fi-p fi-p--6 fi-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label for="planClass" class="ac-bar__label">A whole class</label>
+    <select class="ac-select" id="planClass" name="class_id" required>
+      <option value="">Choose the class</option>
+      {% for c in classes %}<option value="{{ c.id }}">{{ c.name }} ({{ c.n }})</option>{% endfor %}</select>
+    <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Put the class on it</button>
+  </form>
+  <form method="post" action="{{ here }}" class="fi-p fi-p--6 fi-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label for="planStudent" class="ac-bar__label">One student</label>
+    <select class="ac-select" id="planStudent" name="student_id" required style="max-width:240px">
+      <option value="">Choose the student</option>
+      {% for r in pick %}<option value="{{ r.id }}">{{ r.name }}{% if r.class_name %} · {{ r.class_name }}{% endif %}</option>{% endfor %}</select>
+    <button class="ac-btn ac-btn--sm" type="submit">Put on it</button>
+  </form>
+</div>
+{% else %}
+<p class="ac-note">This plan is not in use, so it has no effect: its students' fees are due by each fee's own date.</p>
+{% endif %}
+
+<section class="fi-p">
+  <div class="fi-h"><h2>On this plan <small>{{ students|length }}, the most overdue first</small></h2></div>
+  {% if students %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Class</th><th class="n">Still owed</th><th class="n">Overdue</th><th>Next to pay</th><th></th></tr></thead>
+    <tbody>{% for r in students %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=plan.session_id) }}" data-modal>{{ r.name }}</a><small>{{ r.admission_no }}</small></td>
+      <td>{{ r.class_name or '—' }}</td>
+      <td class="n">{{ naira(r.balance) if r.balance else '—' }}</td>
+      <td class="n">{% if r.overdue %}<span class="fi-owe">{{ naira(r.overdue) }}</span>{% elif r.status == 'paid' %}<span class="ac-tag ac-tag--good">Cleared</span>{% else %}<span class="fi-zero">On time</span>{% endif %}</td>
+      <td>{% if r.next_due %}{{ naira(r.next_due[1]) }}<small>by {{ r.next_due[0] }}</small>{% else %}—{% endif %}</td>
+      <td class="ac-actions"><form method="post" action="{{ url_for('admin_finance_instalment_student_remove', plan_id=plan.id, student_id=r.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="ac-link" type="submit">Take off</button></form></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody is on this plan yet</strong>Put a whole class on it, or one student, above.</div>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

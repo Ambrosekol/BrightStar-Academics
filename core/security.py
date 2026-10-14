@@ -125,7 +125,9 @@ ADMIN_PERMISSION_DEFS = [
     ('finance.record','Record payments','finance','Record student payments and generate official receipts.'),
     ('finance.receipt.send','Send receipts','finance','Send receipts by email, and payment texts by SMS, and print/download receipts.'),
     ('finance.view_all','View all finance','finance','View school-wide collections, balances, transactions and finance reports.'),
-    ('finance.manage','Manage finance','finance','Manage fee assessments, payment corrections and finance controls.'),
+    ('finance.manage','Manage finance','finance','Manage fee assessments, discounts and scholarships, instalment plans, fee reminders, payment corrections and finance controls.'),
+    ('finance.expenses','Record expenses','finance','Record what the school spends (other than staff pay), with a photograph of the receipt, and void an expense entered by mistake.'),
+    ('finance.profit_loss','See profit and loss','finance','See what came in and what went out for a month, a session or any dates, including the total paid in staff salaries.'),
     ('finance.paystack.manage','Manage online payments','finance','Set up and test the school\'s own Paystack account for parents to pay online.'),
     ('library.view','View library','library','View library books, members, loans and availability.'),
     ('library.manage','Manage library','library','Add books, issue/return books and manage library records.'),
@@ -212,7 +214,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Manager': {
         'description': 'The bursar: oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
+        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage','finance.expenses']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
@@ -345,6 +347,20 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_new_students_restore':'finance.manage',
     'admin_finance_paystack_settings':'finance.paystack.manage','admin_finance_paystack_save':'finance.paystack.manage',
     'admin_finance_paystack_clear':'finance.paystack.manage','admin_finance_paystack_test':'finance.paystack.manage',
+    # Fee collection: discounts, instalment plans, reminders, the report card hold (its settings page is the School
+    # Admin's alone, checked in the route), expenses, and the profit and loss.
+    'admin_finance_discounts':'finance.manage','admin_finance_discount_new':'finance.manage',
+    'admin_finance_discount_end':'finance.manage','admin_finance_sibling_rule':'finance.manage',
+    'admin_finance_instalments':'finance.manage','admin_finance_instalment_new':'finance.manage',
+    'admin_finance_instalment_edit':'finance.manage','admin_finance_instalment_toggle':'finance.manage',
+    'admin_finance_instalment_students':'finance.manage','admin_finance_instalment_student_remove':'finance.manage',
+    'admin_finance_student_plan':'finance.manage',
+    'admin_finance_reminders':'finance.manage','admin_finance_reminders_words':'finance.manage',
+    'admin_finance_reminders_send':'finance.manage','admin_finance_student_remind':'finance.manage',
+    'admin_finance_report_hold':'finance.manage','admin_finance_student_report_hold':'finance.manage',
+    'admin_finance_expenses':'finance.expenses','admin_finance_expense_new':'finance.expenses',
+    'admin_finance_expense_void':'finance.expenses','admin_finance_expense_receipt':'finance.expenses',
+    'admin_finance_profit_loss':'finance.profit_loss',
     'admin_library':'library.view',
     'admin_store':'store.view','admin_store_claims':'store.view','admin_store_purchase':'store.view',
     'admin_store_item_new':'store.manage','admin_store_item_edit':'store.manage','admin_store_item_toggle':'store.manage',

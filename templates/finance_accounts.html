@@ -52,10 +52,10 @@
     <tbody>{% for r in rows %}{% set pct = r.rate or 0 %}<tr>
       <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=fin_session.id) }}" data-modal>{{ r.name }}</a><small>{{ r.admission_no }}</small></td>
       <td>{{ r.class_name or '—' }}</td>
-      <td class="n">{% if r.assessed %}{{ naira(r.assessed) }}{% else %}<span class="fi-zero">No fees</span>{% endif %}</td>
-      <td class="n">{{ naira(r.paid) if r.assessed else '' }}</td>
-      <td>{% if r.assessed %}<span class="fi-meter{{ ' is-done' if r.status == 'paid' }}" data-tip="{{ naira(r.paid) }} of {{ naira(r.assessed) }}"><span><i style="width:{{ pct }}%"></i></span>{{ pct }}%</span>{% endif %}</td>
-      <td class="n">{% if r.balance %}<span class="fi-owe">{{ naira(r.balance) }}</span>{% if r.overdue %}<small>{{ short(r.overdue) }} overdue</small>{% endif %}{% elif r.assessed %}<span class="ac-tag ac-tag--good">Cleared</span>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
+      <td class="n">{% if r.status != 'none' %}{{ naira(r.assessed) }}{% else %}<span class="fi-zero">No fees</span>{% endif %}</td>
+      <td class="n">{{ naira(r.paid) if r.status != 'none' else '' }}</td>
+      <td>{% if r.status != 'none' %}<span class="fi-meter{{ ' is-done' if r.status == 'paid' }}" data-tip="{{ naira(r.paid) }} of {{ naira(r.assessed) }}"><span><i style="width:{{ pct }}%"></i></span>{{ pct }}%</span>{% endif %}</td>
+      <td class="n">{% if r.balance %}<span class="fi-owe">{{ naira(r.balance) }}</span>{% if r.overdue %}<small>{{ short(r.overdue) }} overdue</small>{% elif r.next_due %}<small>{{ short(r.next_due[1]) }} due {{ r.next_due[0] }}</small>{% endif %}{% elif r.status != 'none' %}<span class="ac-tag ac-tag--good">Cleared</span>{% else %}<span class="fi-zero">—</span>{% endif %}</td>
       <td class="n">{{ r.last_paid or '—' }}</td>
       <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_finance_student_account', student_id=r.id, session_id=fin_session.id) }}" data-modal>Account</a></td>
     </tr>{% endfor %}</tbody>

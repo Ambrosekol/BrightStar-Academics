@@ -137,7 +137,10 @@ def student_dashboard():
         .where(SchoolAssessment.assessment_type=='practice',SchoolAssessment.active==1,
                SchoolAssessment.question_count>0,
                SchoolAssessment.class_id==student['class_id']),0) if student['class_id'] else 0)
-    return render_template('student_dashboard.html',student=student,report_periods=student_periods(sid),assignments=assignments,projects=projects,notifications=notifications,results=results,assessments=assessments,assessment_counts=counts)
+    report_periods=student_periods(sid)
+    from blueprints.finance.report_hold import held
+    return render_template('student_dashboard.html',student=student,report_periods=report_periods,
+                           report_held=held(sid) if report_periods else None,assignments=assignments,projects=projects,notifications=notifications,results=results,assessments=assessments,assessment_counts=counts)
 
 @app.route('/student/assignments/<int:assignment_id>',methods=['GET','POST'])
 @student_required

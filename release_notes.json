@@ -18,6 +18,50 @@
   ],
   "releases": [
     {
+      "version": "2.39.0",
+      "date": "2026-10-14",
+      "title": "Collecting fees: discounts, instalments, reminders, report card hold, expenses",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Finance has a new Discounts tab. Give a student a scholarship, a staff child's discount or any other discount (a percentage, or naira off each fee, on every fee or one such as Tuition), and switch on a sibling discount for the whole school. Discounts are taken off as students are billed, and each bill shows the full fee, what was taken off and why.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Finance has a new Instalments tab. Make a plan such as 60% by 15 September and 40% by 15 October, and put a class or a student on it. A family on a plan is only overdue for the parts whose date has passed, in Student accounts, in reminders and in the report card hold.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Fee reminders (Settings, Fees & payments) text and email the families whose fees are overdue, every few days, in your own words, which you can change on the same page. Send reminders now sends them at once, and a student's fee account has Send a reminder for one family.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "The School Admin can now hold report cards from families who owe fees (Settings, Fees & payments, Report card hold). Staff still see and print every card. The bursar can let one student's cards through, with a reason, from their fee account.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Finance has new Expenses and Profit & loss tabs. Record what the school spends, with a photo of the receipt. Profit & loss shows money in (fees and store sales) against money out (paid payroll and expenses) for a month, a session or any dates. It shows the total paid in salaries, so it is for the School Admin unless given to someone else.",
+          "help": "finance"
+        },
+        {
+          "audience": "family",
+          "text": "Your child's fee account now shows any discount or scholarship taken off each fee, and, if the school lets you pay in parts, how much is due by each date. Nothing is overdue before its date."
+        },
+        {
+          "audience": "family",
+          "text": "If the school holds report cards until fees are paid, a held card shows what is owed and a link to pay, and opens as soon as it is paid."
+        },
+        {
+          "audience": "student",
+          "text": "If the school is holding your report cards, they are marked Held on your dashboard. Ask your parent or guardian to contact the school's finance office."
+        }
+      ]
+    },
+    {
       "version": "2.38.1",
       "date": "2026-10-14",
       "title": "Teachers: what still needs a teacher, first",

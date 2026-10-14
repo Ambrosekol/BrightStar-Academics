@@ -270,8 +270,23 @@ def admin_finance_student_account(student_id):
         .where(StudentEnrolment.student_id==student_id,StudentEnrolment.session_id==session_id,
                StudentEnrolment.active==1)) if session_id else None
 
+    # Collecting the fees: the student's discounts, instalment plan, what is overdue, the last reminder and whether
+    # their report cards are held (blueprints/finance/discounts.py, instalments.py, reminders.py, report_hold.py).
+    collect = None
+    if session_row:
+        from blueprints.finance import instalments, reminders, report_hold
+        from blueprints.finance.discounts import discounts_for_account
+        overdue, balance = reminders.student_overdue(student_id)
+        collect = {'discounts': discounts_for_account(student_id),
+                   'schedule': instalments.schedule(student_id, session_id),
+                   'plans': {t: instalments.session_plans(session_id, t) for t in instalments.PERIODS},
+                   'overdue': overdue, 'balance': balance, 'last_reminded': reminders.last_reminded(student_id),
+                   'hold': report_hold.settings(), 'held': report_hold.held(student_id),
+                   'exempt': report_hold.exempt(student_id)}
+
     return render_template(
         'finance_student_account.html',
+        collect=collect,
         student=student,
         sessions=sessions,
         fin_session=session_row,
@@ -946,6 +961,8 @@ def admin_finance_class_assessments_batch():
                    FinanceFeeAssessment.fee_item_id.in_(item_ids),
                    FinanceFeeAssessment.active==1)):
         charged.setdefault(int(sid),set()).add(int(fid))
+    from blueprints.finance.discounts import Pricer
+    pricer=Pricer(student_ids,session_id)
     for sid in student_ids:
         if sid not in active:
             results.append({'student_id':sid,'status':'failed','reason':'The student is no longer active.'})
@@ -959,10 +976,11 @@ def admin_finance_class_assessments_batch():
         if not missing:
             results.append({'student_id':sid,'status':'already','reason':'Already charged for this billing period.'})
             continue
-        rows=[FinanceFeeAssessment(student_id=sid,session_id=session_id,category=item['category'],
-                                   amount=item['amount'],due_date=due_date,notes=notes,
-                                   created_by=me['id'],created_at=now,active=1,
-                                   fee_item_id=item['id'],term=term)
+        # Each fee is charged less the student's discounts (blueprints/finance/discounts.py).
+        rows=[pricer.charge(FinanceFeeAssessment(student_id=sid,session_id=session_id,category=item['category'],
+                                                 amount=item['amount'],due_date=due_date,notes=notes,
+                                                 created_by=me['id'],created_at=now,active=1,
+                                                 fee_item_id=item['id'],term=term),item['amount'])
               for item in missing]
         try:
             db.session.add_all(rows)
@@ -973,10 +991,11 @@ def admin_finance_class_assessments_batch():
             results.append({'student_id':sid,'status':'failed',
                             'reason':'Could not be saved. Bill the class again; anyone already billed is skipped.'})
             continue
-        total=sum(item['amount'] for item in missing)
+        total=round(sum(float(r.amount) for r in rows),2)
+        off=round(sum(float(r.discount_amount or 0) for r in rows),2)
         billed.append((sid,[item['name'] for item in missing],total))
         results.append({'student_id':sid,'status':'billed','items':len(missing),
-                        'skipped_items':len(items)-len(missing),'total':total})
+                        'skipped_items':len(items)-len(missing),'total':total,'discount':off})
 
     if billed:
         audit_log('finance_class_assessment_batch','finance','class',class_id,{
@@ -1095,15 +1114,19 @@ def admin_finance_assessment_new():
         return redirect(url_for('admin_finance_fee_items'))
 
     now=datetime.now(timezone.utc).isoformat()
-    rows=[FinanceFeeAssessment(student_id=student_id,session_id=session_id,
-                               category=item.category,amount=float(item.amount or 0),
-                               due_date=due_date,notes=notes,created_by=me['id'],
-                               created_at=now,active=1,fee_item_id=item.id,term=term)
+    from blueprints.finance.discounts import Pricer
+    pricer=Pricer([student_id],session_id)
+    rows=[pricer.charge(FinanceFeeAssessment(student_id=student_id,session_id=session_id,
+                                             category=item.category,amount=float(item.amount or 0),
+                                             due_date=due_date,notes=notes,created_by=me['id'],
+                                             created_at=now,active=1,fee_item_id=item.id,term=term),
+                        float(item.amount or 0))
           for item in ordered]
     db.session.add_all(rows)
     db.session.commit()
     created=[r.id for r in rows]
-    total=sum(float(item.amount or 0) for item in ordered)
+    total=round(sum(float(r.amount) for r in rows),2)
+    off=round(sum(float(r.discount_amount or 0) for r in rows),2)
 
     audit_log('finance_assessment_created','finance','assessment',created[0] if created else 0,{
         'student_id':student_id,
@@ -1116,7 +1139,8 @@ def admin_finance_assessment_new():
         'total_assessed':total})
 
     student_name=' '.join(x for x in (student['first_name'],student['middle_name'],student['last_name']) if x)
-    flash(f'{len(created)} assessment(s) created for {student_name} — ₦{total:,.2f} total.','success')
+    flash(f'{len(created)} assessment(s) created for {student_name} — ₦{total:,.2f} total'
+          +(f', after ₦{off:,.2f} of discounts.' if off else '.'),'success')
     try:
         _notify_parents_fee_assessed(student_id,[item.name for item in ordered],total,term,
                                      session_row.name,me['id'])

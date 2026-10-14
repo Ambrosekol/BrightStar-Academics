@@ -1,0 +1,112 @@
+{% extends "admin_base.html" %}
+{% block title %}Fee reminders — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Fees & payments > Fee reminders (blueprints/finance/reminders.py): when overdue families are reminded,
+    the words of the text and the email, and who is due one now, with Send reminders now. -#}
+{% macro naira(v) -%}₦{{ '{:,.2f}'.format(v or 0) }}{%- endmacro %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<div class="ac fi" data-rem>
+
+<dl class="fi-k">
+  <div class="is-lead"><dt>Reminders</dt><dd>{{ 'Every ' ~ s.every_days ~ ' days' if s.enabled else 'Off' }}</dd>
+    <small>{% if s.enabled %}Next: {{ next_run.strftime('%a %d %b').replace(' 0', ' ') if next_run else '—' }}, between {{ window }}{% else %}Nothing is sent on its own{% endif %}</small></div>
+  <div class="{{ 'is-alert' if due }}"><dt>Due a reminder now</dt><dd>{{ due|length }}</dd><small>{{ naira(due_total) }} overdue{% if s.min_overdue %}, at least {{ naira(s.min_overdue) }} each{% endif %}</small></div>
+  <div><dt>Last sent</dt><dd>{{ last.day or '—' }}</dd><small>{% if last.day %}{{ last.students }} famil{{ 'y' if last.students == 1 else 'ies' }}: {{ last.sms }} text{{ '' if last.sms == 1 else 's' }}, {{ last.email }} email{{ '' if last.email == 1 else 's' }}{{ ' (sent by hand)' if last.manual }}{% else %}Not sent yet{% endif %}</small></div>
+</dl>
+
+{% if (s.sms and not sms_ok) or (s.email and not email_ok) %}
+<p class="ac-errors" role="alert">{% if s.sms and not sms_ok %}Text messages are not set up, so no reminder text can go. {% endif %}{% if s.email and not email_ok %}Email is not set up, so no reminder email can go. {% endif %}Set them up under <a href="{{ url_for('admin_school_delivery') }}">Email &amp; SMS</a>.</p>
+{% endif %}
+
+<section class="ac-panel" aria-labelledby="remWhen">
+  <h2 id="remWhen">When <small>sent between {{ window }} school time</small></h2>
+  <form method="post" action="{{ url_for('admin_finance_reminders') }}" class="fi-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="fi-switch"><input type="checkbox" name="enabled" value="1" {% if s.enabled %}checked{% endif %}><span>On</span></label>
+    <label>every <select class="ac-select" name="every_days" aria-label="How often">{% for n in every %}<option value="{{ n }}" {% if n == s.every_days %}selected{% endif %}>{{ n }} days</option>{% endfor %}</select>,</label>
+    <label>to families with at least ₦<input class="ac-input fi-num" type="number" name="min_overdue" min="0" step="100" value="{{ '%g'|format(s.min_overdue) }}" aria-label="Least amount overdue"> overdue,</label>
+    <label><input type="checkbox" name="sms" value="1" {% if s.sms %}checked{% endif %}> by text</label>
+    <label><input type="checkbox" name="email" value="1" {% if s.email %}checked{% endif %}> by email</label>
+    <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Save</button>
+  </form>
+  <p class="ac-hint" style="margin:6px 0 0">Overdue means past each fee's due date, or past a part's date for a student on an
+    <a href="{{ url_for('admin_finance_instalments') }}">instalment plan</a>. A balance from an earlier session counts in full.
+    A family already reminded that day is not reminded twice. Every message is in the <a href="{{ url_for('admin_audit_logs') }}">notice log</a>.</p>
+</section>
+
+<section class="ac-panel" aria-labelledby="remWords">
+  <h2 id="remWords">The words <small>the parts in curly brackets are filled in for each family</small></h2>
+  <div class="fi-g">
+  {% for key in ['sms_fee_reminder', 'email_fee_reminder'] %}{% set w = words[key] %}{% set spec = specs[key] %}{% set sms = key.startswith('sms') %}
+  <form method="post" action="{{ url_for('admin_finance_reminders_words', key=key) }}" class="fi-p fi-p--6 fi-words" id="{{ key }}" data-words data-sms="{{ 1 if sms else 0 }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="fi-h"><h2>{{ 'Text message' if sms else 'Email' }}</h2><span class="ac-tag {{ 'ac-tag--good' if w.custom }}">{{ 'Your words' if w.custom else 'Standard' }}</span></div>
+    {% if not sms %}<input class="ac-input" name="subject" maxlength="150" value="{{ w.subject }}" aria-label="Email subject" data-words-subject>{% endif %}
+    <textarea class="ac-input" name="body" rows="{{ 3 if sms else 7 }}" aria-label="{{ 'Text message' if sms else 'Email' }} words" data-words-body>{{ w.body }}</textarea>
+    <p class="fi-chips">{% for p in spec.placeholders %}<button type="button" class="fi-chip" data-words-insert="{{ '{' ~ p ~ '}' }}" title="{{ describe(p) }}">{{ '{' ~ p ~ '}' }}</button>{% endfor %}</p>
+    <p class="fi-preview" data-words-preview aria-live="polite"></p>
+    <div class="fi-row">
+      {% if sms %}<span class="ac-hint" data-words-count></span>{% endif %}
+      <span class="ac-grow"></span>
+      {% if w.custom %}<button class="ac-link" type="submit" name="reset" value="1" data-confirm="Go back to the standard words?">Restore the standard words</button>{% endif %}
+      <button class="ac-btn ac-btn--sm" type="submit">Save the words</button>
+    </div>
+  </form>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="ac-panel" aria-labelledby="remDue">
+  <h2 id="remDue">Due a reminder now <small>{{ due|length }} famil{{ 'y' if due|length == 1 else 'ies' }}, the most overdue first</small></h2>
+  {% if due %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Student</th><th>Class</th><th class="n">Overdue</th><th class="n">Still owed</th><th></th></tr></thead>
+    <tbody>{% for r in due[:50] %}<tr>
+      <td><a class="ac-title" href="{{ url_for('admin_finance_student_account', student_id=r.id) }}" data-modal>{{ r.name }}</a></td>
+      <td>{{ r.class_name or '—' }}</td>
+      <td class="n"><span class="fi-owe">{{ naira(r.overdue) }}</span></td>
+      <td class="n">{{ naira(r.balance) }}</td>
+      <td>{% if r.id in already %}<span class="ac-tag ac-tag--good">Reminded today</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% if due|length > 50 %}<p class="ac-hint">And {{ due|length - 50 }} more. <a href="{{ url_for('admin_finance_accounts', status='owing') }}">See everyone owing</a></p>{% endif %}
+  <form method="post" action="{{ url_for('admin_finance_reminders_send') }}" class="ac-form-foot">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <span class="ac-hint">Goes {{ 'by text and email' if s.sms and s.email else ('by text' if s.sms else ('by email' if s.email else 'nowhere: choose text or email above')) }}, now, whether reminders are on or off.</span>
+    <span class="ac-grow"></span>
+    <button class="ac-btn ac-btn--primary" type="submit" {% if not (s.sms or s.email) %}disabled{% endif %}
+            data-confirm="Remind the families of {{ due|length }} student{{ '' if due|length == 1 else 's' }} now? Anyone already reminded today is skipped.">Send reminders now</button>
+  </form>
+  {% else %}
+  <div class="ac-empty"><strong>Nobody is due a reminder</strong>No family owes {{ naira(s.min_overdue) if s.min_overdue else 'anything' }} past its date.</div>
+  {% endif %}
+</section>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-rem]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var sample={{ sample|tojson }}, PAGE={{ sms_page }};
+  // The same swaps the server makes for a one-page text (core/message_wording.py: plain()).
+  var PLAIN={'₦':'N','‘':"'",'’':"'",'“':'"','”':'"','–':'-','—':'-','…':'...'};
+  function fill(t){ return t.replace(/\{([a-z_]+)\}/g,function(m,k){ return k in sample ? sample[k] : m; }); }
+  root.querySelectorAll('[data-words]').forEach(function(form){
+    var body=form.querySelector('[data-words-body]'), subj=form.querySelector('[data-words-subject]');
+    var prev=form.querySelector('[data-words-preview]'), count=form.querySelector('[data-words-count]'), sms=form.dataset.sms==='1';
+    var last=body;
+    function show(){
+      var text=fill(body.value);
+      if(sms){ text=text.replace(/[₦‘’“”–—…]/g,function(c){ return PLAIN[c]; }).replace(/\s+/g,' ').trim();
+        var n=text.length; count.textContent=n+' of '+PAGE+' characters with a short name'; count.classList.toggle('is-warn', n>PAGE-30); }
+      prev.textContent=(subj ? fill(subj.value)+' — ' : '')+text;
+    }
+    [body,subj].forEach(function(el){ if(!el) return; el.addEventListener('input',show); el.addEventListener('focus',function(){ last=el; }); });
+    form.querySelectorAll('[data-words-insert]').forEach(function(b){ b.addEventListener('click',function(){
+      var el=last, s=el.selectionStart||el.value.length, e=el.selectionEnd||s, v=b.dataset.wordsInsert;
+      el.value=el.value.slice(0,s)+v+el.value.slice(e); el.focus(); el.setSelectionRange(s+v.length,s+v.length); show();
+    }); });
+    show();
+  });
+})();
+</script>
+{% endblock %}

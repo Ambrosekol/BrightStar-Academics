@@ -33,6 +33,7 @@ KIND_LABELS = {
     'timetable_released': 'Exam timetable released',
     'store_claimed': 'Store purchase collected',
     'birthday': 'Birthday greeting',
+    'fee_reminder': 'Fee reminder',
 }
 
 

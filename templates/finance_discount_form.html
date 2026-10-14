@@ -1,0 +1,87 @@
+{% extends 'admin_base.html' %}
+{% block title %}Give a discount — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{# Giving a student a scholarship, a staff child's discount or any other discount. Opens in a pop-up from Discounts or
+   a student's fee account; a mistake keeps it open with the form as typed. #}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+<div class="ac fi" data-fi-disc>
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<div class="ac-modal-head"><h2>Give a discount</h2><p>Taken off each fee it covers when the student is billed.</p></div>
+{% else %}{% set fin_tab = 'discounts' %}{% include 'includes/_finance_frame.html' %}
+<div class="fi-who"><div><h2>Give a discount</h2><p>Taken off each fee it covers when the student is billed.</p></div></div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_finance_discount_new', back=request.args.get('back')) }}" class="fi-form" data-disc-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">1</span>Who</legend>
+    <div class="ac-fields">
+      <div class="ac-field ac-field--wide"><label for="discStudent">Student</label>
+        <input type="search" class="fi-find" placeholder="Type to narrow the list: name or admission no." aria-label="Find a student" data-fi-find>
+        <select name="student_id" id="discStudent" required>
+          <option value="">Choose the student</option>
+          {% for s in students %}<option value="{{ s.id }}" {% if chosen|string == s.id|string %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div class="fi-methods" role="radiogroup" aria-label="Kind of discount" style="margin-top:8px">
+      {% set k = f.get('kind') or 'scholarship' %}
+      {% for key, label in kinds.items() %}<label><input type="radio" name="kind" value="{{ key }}" {% if k == key %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset class="fi-step">
+    <legend><span class="fi-step__n">2</span>How much</legend>
+    <div class="ac-fields ac-fields--3">
+      <div class="ac-field"><label for="discBasis">Taken off as</label>
+        <select id="discBasis" name="basis" data-disc-basis>
+          <option value="percent" {% if f.get('basis', 'percent') == 'percent' %}selected{% endif %}>A percentage</option>
+          <option value="amount" {% if f.get('basis') == 'amount' %}selected{% endif %}>Naira off each fee</option></select></div>
+      <div class="ac-field"><label for="discValue" data-disc-unit>{{ 'Naira' if f.get('basis') == 'amount' else 'Percent' }}</label>
+        <input id="discValue" class="fi-amount" type="number" name="value" min="0.01" step="0.01" value="{{ f.get('value', '') }}" required inputmode="decimal" placeholder="{{ '20000' if f.get('basis') == 'amount' else '50' }}"></div>
+      <div class="ac-field"><label for="discCat">Of</label>
+        <select id="discCat" name="category">
+          <option value="All">Every fee</option>
+          {% for c in categories %}<option value="{{ c }}" {% if f.get('category') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="ac-fields" style="margin-top:10px">
+      <div class="ac-field"><label for="discScope">For</label>
+        <select id="discScope" name="scope">
+          {% if current_session %}<option value="session" {% if f.get('scope') != 'every' %}selected{% endif %}>{{ current_session.name }} only</option>{% endif %}
+          <option value="every" {% if f.get('scope') == 'every' or not current_session %}selected{% endif %}>Every session, until ended</option></select></div>
+      <div class="ac-field"><label for="discLabel">Name <span class="ac-hint">optional, shown on the bill</span></label>
+        <input id="discLabel" name="label" maxlength="80" value="{{ f.get('label', '') }}" placeholder="e.g. Governor's scholarship"></div>
+      <div class="ac-field ac-field--wide"><label for="discNote">Why <span class="ac-hint">optional, for the record</span></label>
+        <input id="discNote" name="note" maxlength="300" value="{{ f.get('note', '') }}" placeholder="e.g. Approved by the proprietress, 12 Sep"></div>
+    </div>
+  </fieldset>
+
+  <div class="ac-form-foot">
+    {% if current_session %}<label class="ac-hint"><input type="checkbox" name="reprice" value="1" {% if not form or f.get('reprice') %}checked{% endif %}> Also take it off fees already charged in {{ current_session.name }}</label>{% endif %}
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_finance_discounts') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Give the discount</button>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-fi-disc]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-disc-form]'), sel=form.elements.student_id, find=root.querySelector('[data-fi-find]');
+  find.addEventListener('input',function(){
+    var q=find.value.trim().toLowerCase(), first=null;
+    [].forEach.call(sel.options,function(o){ if(!o.value) return; var hit=!q||o.textContent.toLowerCase().indexOf(q)!==-1; o.hidden=!hit; if(hit&&!first) first=o; });
+    if(q&&first&&(!sel.value||sel.selectedOptions[0].hidden)) sel.value=first.value;
+  });
+  var basis=root.querySelector('[data-disc-basis]'), unit=root.querySelector('[data-disc-unit]'), value=form.elements.value;
+  basis.addEventListener('change',function(){
+    var pct=basis.value==='percent'; unit.textContent=pct?'Percent':'Naira';
+    value.max=pct?'100':''; value.placeholder=pct?'50':'20000';
+  });
+  if(basis.value==='percent') value.max='100';
+  (sel.value?value:find).focus({preventScroll:true});
+})();
+</script>
+{% endblock %}

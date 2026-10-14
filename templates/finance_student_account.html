@@ -10,7 +10,7 @@
 {% set view_all = admin_has_permission(current_admin['id'], 'finance.view_all') or is_school_admin_ui %}
 {% set acct_url = url_for('admin_finance_student_account', student_id=student.id) %}
 <div class="ac fi" data-fi data-modal-scope="{{ acct_url }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 {% else %}{% set fin_tab = 'accounts' if view_all else 'collections' %}{% include 'includes/_finance_frame.html' %}
 {% if view_all %}<a class="fi-back" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id if fin_session else none) }}">← Student accounts</a>{% endif %}{% endif %}
 <div class="fi-who{{ ' fi-who--modal' if modal }}">
@@ -44,6 +44,72 @@
 <p class="fi-callout"><span class="fi-callout__n">!</span><span><strong>{{ naira(free_total) }} paid but not yet applied to a fee</strong>Open the payment and choose the fee it pays, so the balance below is right.</span></p>
 {% endif %}
 
+{% if collect %}{% set can = collect.discounts.can_manage %}
+<section class="fi-p fi-collect" aria-labelledby="fiCollectH">
+  <h2 id="fiCollectH" class="fi-vh">Collecting</h2>
+  <div class="fi-collect__row">
+    <span class="fi-collect__k">Overdue</span>
+    <span>{% if collect.overdue %}<b class="fi-owe">{{ naira(collect.overdue) }}</b> of {{ naira(collect.balance) }} owed, every session{% elif collect.balance %}Nothing overdue · {{ naira(collect.balance) }} owed, not yet due{% else %}Nothing owed{% endif %}
+      {% if collect.last_reminded %}<small>Last reminded {{ collect.last_reminded[:10] }}</small>{% endif %}</span>
+    {% if can and collect.overdue %}<form method="post" action="{{ url_for('admin_finance_student_remind', student_id=student.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="session_id" value="{{ fin_session.id }}">
+      <button class="ac-btn ac-btn--sm" type="submit" data-confirm="Text and email this family a reminder of {{ naira(collect.overdue) }} overdue now?">Send a reminder</button></form>{% endif %}
+  </div>
+
+  {% if collect.hold.enabled %}
+  <div class="fi-collect__row">
+    <span class="fi-collect__k">Report cards</span>
+    {% if collect.exempt %}
+      <span><span class="ac-tag ac-tag--good">Let through</span> “{{ collect.exempt.note }}”</span>
+      {% if can %}<form method="post" action="{{ url_for('admin_finance_student_report_hold', student_id=student.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-link" type="submit">Hold again</button></form>{% endif %}
+    {% elif collect.held %}
+      <span><span class="ac-tag ac-tag--attn">Held from the family</span> until {{ naira(collect.held.owed) }} is paid</span>
+      {% if can %}<details class="fi-void"><summary class="ac-link">Let through…</summary>
+        <form method="post" action="{{ url_for('admin_finance_student_report_hold', student_id=student.id) }}" class="fi-inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="release">
+          <input class="ac-input" name="note" maxlength="300" required placeholder="Why, e.g. promised to pay by 30 Oct" aria-label="Why they are let through">
+          <button class="ac-btn ac-btn--sm" type="submit">Let through</button></form></details>{% endif %}
+    {% else %}<span>The family can open them</span>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="fi-collect__row">
+    <span class="fi-collect__k">Discounts</span>
+    <span class="fi-collect__list">
+      {% for d in collect.discounts.list if d.row.active %}
+        <span class="fi-chip">{{ d.row.label or d.kind }}: {{ d.what }} <small>{{ d.session }}</small>
+          {% if can %}<form method="post" action="{{ url_for('admin_finance_discount_end', discount_id=d.row.id) }}" class="fi-chipx">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="account">
+            <button type="submit" aria-label="End this discount" data-confirm="End this discount? Fees charged from now on are charged in full.">×</button></form>{% endif %}</span>
+      {% endfor %}
+      {% set sib = collect.discounts.sibling %}{% set rule = collect.discounts.rule %}
+      {% if sib %}<span class="fi-chip fi-chip--type">Child {{ sib[0] }} of {{ sib[1] }} at the school{% if rule.enabled and sib[0] >= rule.from_child %}: sibling {{ '%g'|format(rule.percent) }}% off{% endif %}</span>{% endif %}
+      {% if not sib and not (collect.discounts.list|selectattr('row.active')|list) %}<span class="fi-zero">None</span>{% endif %}
+      {% if can %}<a class="ac-link" href="{{ url_for('admin_finance_discount_new', student_id=student.id, back='account') }}" data-modal>+ Give a discount</a>{% endif %}
+    </span>
+  </div>
+
+  {% for t in collect.schedule %}
+  <div class="fi-collect__row">
+    <span class="fi-collect__k">{{ t.term }}</span>
+    <span class="fi-collect__list">
+      {% if t.parts %}{% for p in t.parts %}<span class="fi-part fi-part--{{ p.state|replace(' ', '') }}">{{ naira(p.amount) }} <small>by {{ p.date }} · {{ 'Paid' if p.state == 'paid' else ('Overdue' if p.state == 'overdue' else 'To pay') }}</small></span>{% endfor %}
+      {% else %}<span class="fi-zero">Each fee by its own due date</span>{% endif %}
+    </span>
+    {% set options = collect.plans[t.term] if t.term in collect.plans else [] %}
+    {% if can and (options or t.plan_id) %}
+    <form method="post" action="{{ url_for('admin_finance_student_plan', student_id=student.id) }}" class="fi-inline">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="session_id" value="{{ fin_session.id }}"><input type="hidden" name="term" value="{{ t.term }}">
+      <select class="ac-select" name="plan_id" aria-label="Instalment plan for {{ t.term }}" data-autosubmit>
+        <option value="">No instalment plan</option>
+        {% for p in options %}<option value="{{ p.id }}" {% if p.id == t.plan_id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+    </form>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <div class="fi-g">
 <section class="fi-p fi-p--7" aria-labelledby="fiFeesH">
   <div class="fi-h"><h2 id="fiFeesH">Fees for {{ fin_session.name }}</h2></div>
@@ -51,9 +117,9 @@
   <div class="ac-scroll"><table class="ac-t">
     <thead><tr><th>Fee</th><th>Type</th><th class="n">Charged</th><th class="n">Paid</th><th class="n">Outstanding</th><th>Status</th></tr></thead>
     <tbody>{% for item in account %}<tr>
-      <td><strong>{{ item.category }}</strong>{% if item.due_date %}<small>due {{ item.due_date }}</small>{% endif %}</td>
+      <td><strong>{{ item.category }}</strong>{% if collect and (item.term or 'Full Session') in collect.schedule|selectattr('parts')|map(attribute='term')|list %}<small>due in parts</small>{% elif item.due_date %}<small>due {{ item.due_date }}</small>{% endif %}</td>
       <td><span class="fi-chip fi-chip--type">{{ item.fee_type }}</span></td>
-      <td class="n">₦{{ '{:,.2f}'.format(item.assessed) }}</td>
+      <td class="n">₦{{ '{:,.2f}'.format(item.assessed) }}{% if item.discount_amount %}<small class="fi-off" title="{{ item.discount_note }}">{{ naira(item.discount_amount) }} off · {{ item.discount_note }}</small>{% endif %}</td>
       <td class="n">₦{{ '{:,.2f}'.format(item.paid) }}</td>
       <td class="n"><strong{% if item.outstanding %} class="fi-owe"{% endif %}>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
       <td>{% if item.status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif item.status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>

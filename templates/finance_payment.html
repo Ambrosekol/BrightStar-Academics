@@ -17,7 +17,7 @@
 {% set receipt_url = url_for('admin_finance_receipt', payment_id=payment.id) %}
 {% set apply_url = url_for('admin_finance_payment_allocate', payment_id=payment.id) %}
 <div class="ac fi fp" data-fi data-fp="{{ payment.id }}" data-modal-scope="{{ receipt_url }} {{ apply_url }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
 {% else %}{% set fin_tab = 'payments' %}{% include 'includes/_finance_frame.html' %}
 <a class="fi-back" href="{{ url_for('admin_finance_payments') }}">← Payments</a>{% endif %}
 <link rel="stylesheet" href="{{ url_for('static', filename='receipt.css', v='2') }}">

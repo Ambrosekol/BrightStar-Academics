@@ -230,7 +230,10 @@ def parent_child_detail(student_id):
             .where(SchoolNotification.id.in_(unread_ids)).values(read_at=now))
         db.session.commit()
 
-    return render_template('parent_child_detail.html',child=child,report_periods=student_periods(student_id),assignments=assignments,
+    report_periods=student_periods(student_id)
+    from blueprints.finance.report_hold import held
+    return render_template('parent_child_detail.html',child=child,report_periods=report_periods,
+        report_held=held(student_id) if report_periods else None,assignments=assignments,
         projects=projects,results=results,feedback=feedback,replies=replies,avg=avg,
         completion=completion,trend=trend,fee_summary=fee_summary,notifications=notifications,
         siblings=_parent_children(pid),child_sessions=child_sessions,chosen_session=chosen,early_years=early_years)
@@ -271,6 +274,7 @@ def parent_child_finance(student_id):
         .order_by(FinancePayment.paid_at.desc(),FinancePayment.id.desc())).all()
 
     from core import payments as paystack
+    from blueprints.finance.instalments import schedule as instalment_schedule
     paystack_settings=paystack.payment_settings()
 
     return render_template(
@@ -280,6 +284,7 @@ def parent_child_finance(student_id):
         total_outstanding=lifetime['outstanding'],total_unallocated=lifetime['unallocated'],
         other_sessions_with_balance=other_sessions_with_balance,
         payments=payments,
+        schedule=instalment_schedule(student_id,session_id) if session_row else [],
         paystack_available=paystack_settings is not None)
 
 @app.route('/parent/children/<int:student_id>/receipts/<int:payment_id>/pdf')

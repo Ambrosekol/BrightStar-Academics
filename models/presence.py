@@ -48,7 +48,9 @@ class NotificationDeliveryLog(db.Model):
     else that goes through core/notifications.py's two guardian-contact senders."""
 
     __tablename__ = 'notification_delivery_logs'
-    __table_args__ = (Index('idx_notification_delivery_student', 'student_id', 'created_at'),)
+    # By kind and time: who was already sent today's birthday greeting or fee reminder.
+    __table_args__ = (Index('idx_notification_delivery_student', 'student_id', 'created_at'),
+                      Index('idx_notification_delivery_kind', 'kind', 'created_at'))
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'))

@@ -48,7 +48,7 @@ SAMPLES = {
     'subject': 'Visiting day', 'message': 'Please remember that visiting day is this Saturday.',
     'link': 'https://yourschool.portal.example/parent', 'details': 'Amount paid: N250,000.00\nDate: 14 Oct 2026\nPaid for: School Fees',
     'candidate': 'Chika Okafor', 'candidate_id': 'BSA-26-0042', 'target_class': 'JSS 1', 'result': '172/200 (86.0%)',
-    'grade': 'A',
+    'grade': 'A', 'balance': 'N1,850,000.00',
 }
 
 _P = {  # what each placeholder means, shown on the settings page
@@ -61,7 +61,7 @@ _P = {  # what each placeholder means, shown on the settings page
     'subject': "the message's subject", 'message': 'the message itself', 'link': 'the link to open',
     'details': 'the payment lines: amount, date, what for, balance', 'candidate': "the candidate's name",
     'candidate_id': 'the candidate ID', 'target_class': 'the class applied for', 'result': 'the cumulative result',
-    'grade': 'the overall grade',
+    'grade': 'the overall grade', 'balance': 'the whole balance still owed, as N25,000.00',
 }
 
 
@@ -78,6 +78,10 @@ MESSAGES = {
     'sms_payment_recorded': _m('sms', 'Fees', 'Payment received', 'A payment is recorded.',
                                ('school', 'child', 'amount', 'category', 'receipt_no'),
                                '{school}: {amount} received for {child} ({category}). Receipt {receipt_no}. Thank you.'),
+    'sms_fee_reminder': _m('sms', 'Fees', 'Fee reminder', 'Fees are overdue, if fee reminders are on (Settings, Fee reminders), '
+                                                          "or Send a reminder on a student's fee account.",
+                           ('school', 'child', 'amount', 'balance'),
+                           "{school}: {child}'s fees of {amount} are overdue. Please pay via the parent portal or the school office."),
     'sms_report_card_ready': _m('sms', 'Results', 'Report card ready', 'Results are released and the report card is ready.',
                                 ('school', 'child', 'report', 'session'),
                                 "{school}: {child}'s {report} report card ({session}) is ready in the parent portal."),
@@ -113,6 +117,14 @@ MESSAGES = {
                                 'Dear Parent/Guardian,\n\nThank you. We have received a payment for {child}, and the official '
                                 'receipt {receipt_no} is attached.\n\n{details}\n\n{school}',
                                 subject='{school} Payment Receipt {receipt_no}'),
+    'email_fee_reminder': _m('email', 'Fees', 'Fee reminder', 'Fees are overdue, if fee reminders are on (Settings, Fee reminders), '
+                                                              "or Send a reminder on a student's fee account.",
+                             ('child', 'amount', 'balance', 'school'),
+                             "Dear Parent/Guardian,\n\nThis is a reminder that {amount} of {child}'s school fees is now overdue. "
+                             'The whole balance still owed is {balance}.\n\nYou can see every fee, and pay online, in the parent '
+                             "portal, or pay at the school's finance office.\n\nIf you have paid in the last few days, thank you, "
+                             'and please ignore this message.\n\n{school}',
+                             subject='School fees overdue - {child}'),
     'email_report_card_ready': _m('email', 'Results', 'Report card ready', 'Results are released and the report card is ready.',
                                   ('child', 'report', 'period', 'session', 'link', 'school'),
                                   "Dear Parent/Guardian,\n\n{child}'s results for {period} report card ({session}) have been "
