@@ -1162,6 +1162,12 @@ def admin_finance_payment_void(payment_id):
     receipt_no,amount=row.receipt_no,row.amount
     row.status='voided'; row.voided_at=datetime.now(timezone.utc).isoformat()
     row.voided_by=me['id']; row.void_reason=reason
+    # A discount that was waiting because this payment had been made on the fee comes off now.
+    from blueprints.finance.discounts import release_held
+    changed,released=release_held([row.student_id])
     db.session.commit()
-    audit_log('finance_payment_voided','finance','payment',payment_id,{'receipt_no':receipt_no,'amount':amount,'reason':reason},True,me)
-    flash('Payment voided. The original receipt remains in the audit history.','success'); return redirect(url_for('admin_finance_receipt',payment_id=payment_id))
+    audit_log('finance_payment_voided','finance','payment',payment_id,{'receipt_no':receipt_no,'amount':amount,'reason':reason,
+              'discount_released':released},True,me)
+    flash('Payment voided. The original receipt remains in the audit history.'
+          +(f' ₦{released:,.2f} of discount that was waiting on it has now been taken off.' if changed else ''),'success')
+    return redirect(url_for('admin_finance_receipt',payment_id=payment_id))

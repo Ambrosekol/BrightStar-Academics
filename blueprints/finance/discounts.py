@@ -164,14 +164,19 @@ def reprice(student_ids, session_id):
         gross = round(float(b.gross_amount if b.gross_amount is not None else b.amount or 0), 2)
         owed, off, why = pricer.price(b.student_id, b.category, gross)
         floor = round(float(paid.get(b.id) or 0), 2)
+        held = 0.0
         if owed < floor:
-            out['paid_already'] += floor - owed
+            # Kept as waiting, so it comes off by itself if that payment is voided or refunded (release_held).
+            held = round(floor - owed, 2)
+            out['paid_already'] += held
             owed, off = floor, round(gross - floor, 2)
         old = round(float(b.amount or 0), 2)
-        if abs(owed - old) < 0.005 and (b.discount_note or '') == (why if off else ''):
+        if (abs(owed - old) < 0.005 and (b.discount_note or '') == (why if off or held else '')
+                and abs(float(b.discount_held or 0) - held) < 0.005):
             continue
         b.amount = owed
-        b.gross_amount, b.discount_amount, b.discount_note = (gross, off, why) if off > 0 else (None, None, None)
+        b.gross_amount, b.discount_amount, b.discount_note = (gross, off, why) if off > 0 or held else (None, None, None)
+        b.discount_held = held or None
         out['changed'] += 1
         if owed < old:
             out['less'] += old - owed
@@ -180,6 +185,40 @@ def reprice(student_ids, session_id):
     for k in ('less', 'more', 'paid_already'):
         out[k] = round(out[k], 2)
     return out
+
+
+def release_held(student_ids):
+    """Take off discount that was waiting on these students' bills, now that less has been paid on them (a payment
+    was voided or refunded). Only discount already given and held back is released: today's rules are not applied
+    again, so a discount ended on purpose never comes back. A bill still never goes below what is paid on it. Does not
+    commit. Returns ``(bills changed, naira taken off)``."""
+    ids = list({int(s) for s in student_ids})
+    if not ids:
+        return 0, 0.0
+    bills = db.session.scalars(select(FinanceFeeAssessment).where(
+        FinanceFeeAssessment.student_id.in_(ids), FinanceFeeAssessment.active == 1,
+        FinanceFeeAssessment.discount_held > 0)).all()
+    if not bills:
+        return 0, 0.0
+    db.session.flush()     # the void that brought us here must count in what is still paid
+    paid = dict(tuples(select(FinancePaymentAllocation.assessment_id, func.sum(FinancePaymentAllocation.amount))
+                       .join(FinancePayment, FinancePayment.id == FinancePaymentAllocation.payment_id)
+                       .where(FinancePaymentAllocation.assessment_id.in_([b.id for b in bills]),
+                              FinancePaymentAllocation.voided_at.is_(None), FinancePayment.status == 'posted')
+                       .group_by(FinancePaymentAllocation.assessment_id)))
+    changed, released = 0, 0.0
+    for b in bills:
+        gross = round(float(b.gross_amount if b.gross_amount is not None else b.amount or 0), 2)
+        meant = round(float(b.discount_amount or 0) + float(b.discount_held or 0), 2)
+        owed = max(round(float(paid.get(b.id) or 0), 2), round(gross - meant, 2))
+        if owed >= round(float(b.amount or 0), 2) - 0.004:
+            continue
+        released += round(float(b.amount) - owed, 2)
+        b.amount = owed
+        b.discount_amount = round(gross - owed, 2)
+        b.discount_held = round(meant - b.discount_amount, 2) or None
+        changed += 1
+    return changed, round(released, 2)
 
 
 def _reprice_message(result):
@@ -192,8 +231,8 @@ def _reprice_message(result):
         parts.append(f"{_naira(result['more'])} put back")
     text = ', '.join(parts) + '.'
     if result['paid_already']:
-        text += (f" {_naira(result['paid_already'])} could not be taken off because it had already been paid: refund it,"
-                 ' or apply it to another fee.')
+        text += (f" {_naira(result['paid_already'])} could not be taken off yet because it had already been paid. It comes"
+                 ' off on its own if that payment is refunded or voided.')
     return text
 
 

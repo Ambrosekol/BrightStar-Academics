@@ -483,6 +483,7 @@ def _finance_student_outstanding(student_id, session_id=None):
                          FinanceFeeAssessment.term,FinanceFeeAssessment.active,
                          FinanceFeeAssessment.fee_item_id,FinanceFeeAssessment.gross_amount,
                          FinanceFeeAssessment.discount_amount,FinanceFeeAssessment.discount_note,
+                         FinanceFeeAssessment.discount_held,
                          func.coalesce(allocated,0).label('allocated'))
                   .where(*scope)
                   .order_by(FinanceFeeAssessment.id))

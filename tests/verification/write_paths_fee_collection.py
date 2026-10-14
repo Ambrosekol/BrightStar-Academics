@@ -288,12 +288,16 @@ def pay(sid, amount, assessment_id):
     return pid
 
 
-pay(CHIDI, 30000, c_t[4])
+CHIDI_PAY = pay(CHIDI, 30000, c_t[4])
 bursar.post(f"{DISC}/new", {"student_id": CHIDI, "kind": "scholarship", "basis": "percent", "value": "100", "category": "Tuition",
                             "scope": "session", "reprice": "1"}, page=f"{DISC}/new")
 said = bursar.said()
 check("a full scholarship given after ₦30,000 was paid never sets the fee below what was paid, and says so",
       bill(CHIDI, TUITION)[0] == 30000 and "could not be taken off" in said, f"{bill(CHIDI, TUITION)} {said}")
+check("…taking ₦70,000 off and keeping the ₦30,000 it could not take off as waiting",
+      bill(CHIDI, TUITION)[2] == 70000 and one("SELECT discount_held FROM finance_fee_assessments WHERE id = :i", i=c_t[4]) == 30000)
+check("the fee account shows the discount waiting on a payment",
+      "₦30,000.00 more waiting on a payment" in bursar.text(f"/admin/finance/students/{CHIDI}/account"))
 check("the Discounts page lists them, with what was taken off this session",
       all(n in bursar.text(DISC) for n in ("Test, Adaone", "Staff child", "Taken off this session")))
 ada_award = one("SELECT id FROM finance_discounts WHERE student_id = :s", s=ADA)
@@ -491,6 +495,43 @@ check("…and the shortfall is the difference", report["net"] == -275000)
 page = op.text(PLP)
 check("the School Admin sees it, with both sides", all(x in page for x in ("Money in", "Money out", "Shortfall", "Staff pay (gross)")))
 check("the session view works from the session's dates", "Month by month" in op.text(f"{PLP}?period=session"))
+
+# ================================================================ G. a waiting discount comes off when its payment goes
+op.post(f"/admin/finance/payments/{CHIDI_PAY}/void", {"reason": "Paid into the wrong account"},
+        page=f"/admin/finance/receipts/{CHIDI_PAY}")
+said = op.said()
+check("voiding the payment that held Chidi's scholarship back takes the rest of it off: Tuition is now nothing",
+      bill(CHIDI, TUITION)[0] == 0 and bill(CHIDI, TUITION)[2] == 100000
+      and one("SELECT discount_held FROM finance_fee_assessments WHERE id = :i", i=c_t[4]) is None
+      and "30,000.00 of discount" in said, f"{bill(CHIDI, TUITION)} {said}")
+check("…and nothing else of Chidi's changes (the levy keeps its own discount)", bill(CHIDI, LEVY)[0] == 10000)
+check("…and Ada's Tuition, whose scholarship was ended on purpose, is not touched", bill(ADA, TUITION)[0] == 100000)
+
+# The same when Paystack confirms a refund of an online payment.
+ADA_PAY = pay(ADA, 40000, bill(ADA, TUITION)[4])
+bursar.post(f"{DISC}/new", {"student_id": ADA, "kind": "scholarship", "basis": "percent", "value": "100", "category": "Tuition",
+                            "scope": "session", "reprice": "1"}, page=f"{DISC}/new")
+check("a full scholarship given after Ada paid ₦40,000 takes ₦60,000 off and keeps ₦40,000 waiting",
+      bill(ADA, TUITION)[0] == 40000 and bill(ADA, TUITION)[2] == 60000
+      and one("SELECT discount_held FROM finance_fee_assessments WHERE id = :i", i=bill(ADA, TUITION)[4]) == 40000,
+      str(bill(ADA, TUITION)))
+sql("INSERT INTO finance_online_payments (reference, student_id, session_id, amount, status, payment_id, created_at) "
+    "VALUES ('T-REF-1', :s, :x, 40000, 'success', :p, :n)", s=ADA, x=SESSION, p=ADA_PAY, n=NOW)
+sql("INSERT INTO finance_refunds (payment_id, online_payment_id, amount, status, paystack_refund_id, requested_by, requested_at) "
+    "VALUES (:p, (SELECT id FROM finance_online_payments WHERE reference = 'T-REF-1'), 40000, 'pending', 'RF-1', 1, :n)",
+    p=ADA_PAY, n=NOW)
+
+
+def refunded():
+    from blueprints.finance.paystack import _finalize_refund
+    _finalize_refund('refund.processed', {'id': 'RF-1'})
+
+
+inside(refunded)
+check("once Paystack confirms the refund, the waiting discount comes off: Ada's Tuition is now nothing",
+      one("SELECT status FROM finance_payments WHERE id = :i", i=ADA_PAY) == "voided" and bill(ADA, TUITION)[0] == 0
+      and one("SELECT discount_held FROM finance_fee_assessments WHERE id = :i", i=bill(ADA, TUITION)[4]) is None,
+      str(bill(ADA, TUITION)))
 
 # ================================================================ every page opens
 for path in (DISC, f"{DISC}/new", INST, f"{INST}/new", f"{INST}/{PLAN}/edit", REM, EXP, f"{EXP}/new", "/admin/finance/accounts",

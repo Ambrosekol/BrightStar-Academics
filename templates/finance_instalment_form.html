@@ -7,7 +7,7 @@
 {% set f = form or {} %}
 {% set heading = 'Edit "' ~ plan.name ~ '"' if plan else 'New instalment plan' %}
 <div class="ac fi" data-fi-plan>
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 <div class="ac-modal-head"><h2>{{ heading }}</h2><p>Families on the plan owe each part by its date, and are not overdue before then.</p></div>
 {% else %}{% set fin_tab = 'instalments' %}{% include 'includes/_finance_frame.html' %}
 <div class="fi-who"><div><h2>{{ heading }}</h2></div></div>{% endif %}

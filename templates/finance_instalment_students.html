@@ -8,7 +8,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set here = url_for('admin_finance_instalment_students', plan_id=plan.id) %}
 <div class="ac fi" data-modal-scope="{{ here }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 {% else %}{% set fin_tab = 'instalments' %}{% include 'includes/_finance_frame.html' %}{% endif %}
 <div class="fi-who{{ ' fi-who--modal' if modal }}"><div>
   <span class="acq-kind">Instalment plan · {{ session_name }} · {{ plan.term }}</span>

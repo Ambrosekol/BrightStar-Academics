@@ -8,7 +8,7 @@
 {% set available = books|sum(attribute='available_copies') %}
 {% set overdue_loans = loans|selectattr('days_over')|list %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 <div class="ac st lb" data-lb>
 <header class="ac-top">

@@ -9,7 +9,7 @@
 {% set pics = store_photos(item) %}
 {% set child = (student.first_name ~ ' ' ~ student.last_name) if student else 'the student' %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='store.css', v='1') }}">
 <div class="ac sto" data-sto-claim>
 {% if not (request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1') %}<a class="fi-back" href="{{ url_for('admin_store_claims') }}">← Purchase claims</a>{% endif %}

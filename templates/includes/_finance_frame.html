@@ -4,7 +4,7 @@
    adding a fee item open in a pop-up over whatever page you are on; everything else loads in place
    (static/inplace.js). #}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 {% set fin_aid = current_admin['id'] %}
 {% set fin_view_all = admin_has_permission(fin_aid, 'finance.view_all') or is_school_admin_ui %}
 {% set fin_to_apply = finance_unallocated.count if finance_unallocated and finance_unallocated.count else 0 %}

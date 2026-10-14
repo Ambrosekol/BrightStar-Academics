@@ -6,7 +6,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set f = form or {} %}
 <div class="ac fi" data-fi-exp>
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 <div class="ac-modal-head"><h2>Record an expense</h2><p>Money the school spent. Staff salaries come from the payroll, not here.</p></div>
 {% else %}{% set fin_tab = 'expenses' %}{% include 'includes/_finance_frame.html' %}
 <div class="fi-who"><div><h2>Record an expense</h2><p>Money the school spent. Staff salaries come from the payroll, not here.</p></div></div>{% endif %}

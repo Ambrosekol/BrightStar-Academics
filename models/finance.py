@@ -49,6 +49,8 @@ class FinanceFeeAssessment(db.Model):
     ``amount`` is what the student owes for it, after any discount (blueprints/finance/discounts.py), so every
     balance in finance stays ``amount`` minus what was applied. ``gross_amount`` is the fee before the discount and
     ``discount_amount`` / ``discount_note`` what was taken off and why; all three are None for a fee charged in full.
+    ``discount_held`` is discount given but still waiting, because it would have taken the fee below what was already
+    paid on it.
     """
 
     __tablename__ = 'finance_fee_assessments'
@@ -72,6 +74,9 @@ class FinanceFeeAssessment(db.Model):
     gross_amount = db.Column(Float)
     discount_amount = db.Column(Float)
     discount_note = db.Column(Text)
+    # Discount given but not yet taken off, because that much had already been paid on the fee; it comes off on its
+    # own if the payment is voided or refunded (discounts.release_held). None when nothing is waiting.
+    discount_held = db.Column(Float)
 
 
 class FinancePayment(db.Model):

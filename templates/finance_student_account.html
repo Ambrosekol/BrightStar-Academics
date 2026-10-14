@@ -10,7 +10,7 @@
 {% set view_all = admin_has_permission(current_admin['id'], 'finance.view_all') or is_school_admin_ui %}
 {% set acct_url = url_for('admin_finance_student_account', student_id=student.id) %}
 <div class="ac fi" data-fi data-modal-scope="{{ acct_url }}" data-modal-size="wide">
-{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}">
+{% if modal %}<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
 {% else %}{% set fin_tab = 'accounts' if view_all else 'collections' %}{% include 'includes/_finance_frame.html' %}
 {% if view_all %}<a class="fi-back" href="{{ url_for('admin_finance_accounts', session_id=fin_session.id if fin_session else none) }}">← Student accounts</a>{% endif %}{% endif %}
 <div class="fi-who{{ ' fi-who--modal' if modal }}">
@@ -119,7 +119,7 @@
     <tbody>{% for item in account %}<tr>
       <td><strong>{{ item.category }}</strong>{% if collect and (item.term or 'Full Session') in collect.schedule|selectattr('parts')|map(attribute='term')|list %}<small>due in parts</small>{% elif item.due_date %}<small>due {{ item.due_date }}</small>{% endif %}</td>
       <td><span class="fi-chip fi-chip--type">{{ item.fee_type }}</span></td>
-      <td class="n">₦{{ '{:,.2f}'.format(item.assessed) }}{% if item.discount_amount %}<small class="fi-off" title="{{ item.discount_note }}">{{ naira(item.discount_amount) }} off · {{ item.discount_note }}</small>{% endif %}</td>
+      <td class="n">₦{{ '{:,.2f}'.format(item.assessed) }}{% if item.discount_amount %}<small class="fi-off" title="{{ item.discount_note }}">{{ naira(item.discount_amount) }} off · {{ item.discount_note }}</small>{% endif %}{% if item.discount_held %}<small class="fi-held" title="This much of the discount would take the fee below what has been paid on it. It comes off on its own if that payment is voided or refunded.">{{ naira(item.discount_held) }} more waiting on a payment</small>{% endif %}</td>
       <td class="n">₦{{ '{:,.2f}'.format(item.paid) }}</td>
       <td class="n"><strong{% if item.outstanding %} class="fi-owe"{% endif %}>₦{{ '{:,.2f}'.format(item.outstanding) }}</strong></td>
       <td>{% if item.status=='Paid' %}<span class="cr-finance-status paid">Paid</span>{% elif item.status=='Part Paid' %}<span class="cr-finance-status partial">Part Paid</span>{% else %}<span class="cr-finance-status unpaid">Unpaid</span>{% endif %}</td>

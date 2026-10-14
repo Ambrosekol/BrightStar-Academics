@@ -257,6 +257,7 @@
 .fi-void summary::-webkit-details-marker { display: none; }
 .fi-void[open] { display: block; margin-top: 4px; }
 .fi-void .ac-input { min-width: 180px; }
+.fi-held { display: block; font-size: 11px; font-weight: 500; color: var(--ac-attn); white-space: nowrap; cursor: help; }
 .fi-off { display: block; font-size: 11px; font-weight: 500; color: var(--ac-good); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; margin-left: auto; }
 
 /* A student's fee account: collecting it, one line per thing that can be done */

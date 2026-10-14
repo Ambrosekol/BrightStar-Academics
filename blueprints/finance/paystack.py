@@ -455,6 +455,9 @@ def _finalize_refund(event_type, data):
         payment.voided_at = now
         payment.voided_by = row.requested_by
         payment.void_reason = f'Refunded via Paystack: {row.reason}' if row.reason else 'Refunded via Paystack.'
+        # A discount that was waiting because this payment had been made on the fee comes off now.
+        from blueprints.finance.discounts import release_held
+        release_held([payment.student_id])
     db.session.commit()
     audit_log('finance_payment_refunded', 'finance', 'payment', row.payment_id,
               {'refund_id': row.id, 'paystack_refund_id': refund_id, 'amount': row.amount})

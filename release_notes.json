@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.39.1",
+      "date": "2026-10-15",
+      "title": "A discount waiting on a payment comes off by itself",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "When a discount or scholarship is given after part of a fee was paid, the fee never goes below what was paid, and the rest of the discount now waits instead of being lost. The student's fee account shows it as waiting on a payment. If that payment is voided, or refunded through Paystack, the waiting discount comes off on its own.",
+          "help": "finance"
+        }
+      ]
+    },
+    {
       "version": "2.39.0",
       "date": "2026-10-14",
       "title": "Collecting fees: discounts, instalments, reminders, report card hold, expenses",

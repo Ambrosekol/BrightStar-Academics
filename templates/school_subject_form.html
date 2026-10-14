@@ -7,7 +7,7 @@
 {% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
 {% set chosen_departments = request.form.getlist('departments') if request.method=='POST' else parse_departments(subject.departments if subject and subject.departments is defined else '') %}
 <div class="ac st sj" data-modal-size="wide">
-<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='4') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}"><link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
 {% if not modal %}<a class="fi-back" href="{{ url_for('admin_school_subjects') }}">← Subjects</a>{% endif %}
 <div class="ac-modal-head"><span class="acq-kind">{{ 'New subject' if mode=='new' else 'Subject' }}</span>
   <h2>{{ 'Create a subject' if mode=='new' else subject.name }}</h2>
