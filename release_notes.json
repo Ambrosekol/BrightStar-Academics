@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.36.2",
+      "date": "2026-10-14",
+      "title": "Clearer menu headings",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The two parts of the menu, Teaching and Management, now sit on a light band of the school's colour, so each part is easy to find.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.36.1",
       "date": "2026-10-14",
       "title": "Settings opens on its list",
