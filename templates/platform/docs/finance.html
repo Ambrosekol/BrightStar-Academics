@@ -20,7 +20,7 @@ Balances are summed across every session, so a debt left from last year is not h
 <p>Money is entered as naira and kept to the kobo. <code>_money</code> refuses NaN, infinity and absurd sizes; the amount in words on a receipt stops at the billions.</p>
 
 <h2 id="receipt-studio">The receipt studio</h2>
-<p>{{ route('admin_receipt_studio') }} ({{ file('blueprints/school/receipt_studio.py') }}, every route {{ perm('finance.manage') }})
+<p>{{ route('admin_receipt_studio') }} ({{ file('blueprints/school/receipt_studio.py') }}, every route a design studio: see may_use_studios in {{ file('core/security.py') }})
 is the report card studio's editor in receipt mode. The rules are {{ file('core/receipt_design.py') }} (A5 or A4, either way
 round; the studio's own elements plus three blocks: <code>amount</code>, <code>summary</code> for the balance, <code>stamp</code>),
 rebuilt from known keys only; the tables {{ table('receipt_designs') }} and {{ table('receipt_design_versions') }} (the newest

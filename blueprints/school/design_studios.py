@@ -15,7 +15,7 @@ from flask import render_template, request
 from sqlalchemy import select
 
 from app import app
-from core.security import admin_access_error, admin_has_permission, admin_required, current_admin
+from core.security import admin_access_error, admin_has_permission, admin_required, current_admin, may_use_studios
 from models import IdCardDesign, ReceiptDesign, ReportCardDesign, db
 
 
@@ -34,8 +34,8 @@ def _may():
     admin = current_admin()
     if not admin:
         return False, False, False
-    return (admin_has_permission(admin['id'], 'id_cards.manage'), admin_has_permission(admin['id'], 'report_cards.manage'),
-            admin_has_permission(admin['id'], 'finance.manage'))
+    return (may_use_studios(admin['id'], 'id_cards.manage'), may_use_studios(admin['id'], 'report_cards.manage'),
+            may_use_studios(admin['id'], 'finance.manage'))
 
 
 @app.route('/admin/design-studios')
@@ -43,7 +43,7 @@ def _may():
 def admin_design_studios():
     id_cards, report_cards, receipts = _may()
     if not (id_cards or report_cards or receipts):
-        return admin_access_error('id_cards.manage')
+        return admin_access_error('design studios')
     notice = phone_notice()
     if notice:
         return notice
@@ -61,4 +61,10 @@ def design_studios_shown():
     return any(_may())
 
 
-app.jinja_env.globals.update(design_studios_shown=design_studios_shown)
+def studio_allowed(permission):
+    """For a page's link into a studio: the studio's permission, and not teaching staff (core/security.py)."""
+    admin = current_admin()
+    return bool(admin and may_use_studios(admin['id'], permission))
+
+
+app.jinja_env.globals.update(design_studios_shown=design_studios_shown, studio_allowed=studio_allowed)

@@ -232,6 +232,14 @@ def staff(username, role_name):
 
 
 bursar, BURSAR = staff("the.bursar", "Finance Manager")
+
+
+def override(aid, code):
+    """The School Admin gives one member of staff a permission personally (an override on their staff record)."""
+    sql("INSERT INTO admin_permissions (admin_id, permission_id, granted_at) SELECT :a, id, '2026-10-14' FROM permissions "
+        "WHERE code = :c ON CONFLICT DO NOTHING", a=aid, c=code)
+    from core.short_cache import clear
+    clear()
 cashier, CASHIER = staff("the.cashier", "Finance Records Officer")
 
 
@@ -289,7 +297,10 @@ cfg = json.loads(re.search(r'<script type="application/json" id="iddData"[^>]*>(
 check("A2 the studio starts from the Classic template on A5 landscape, with four templates and four page sizes",
       cfg["mode"] == "receipt" and len(cfg["templates"]) == 4 and cfg["layout"] == recd.default_layout("classic")
       and (cfg["layout"]["page"], cfg["layout"]["orientation"]) == ("A5", "landscape") and len(cfg["page_choices"]) == 4)
-check("A3 the bursar (Finance Manager) opens the studio", bursar.get(STUDIO).status_code == 200)
+check("A3 the bursar (Finance Manager) is refused on the role alone: only the School Admin, a head teacher or a "
+      "personal override opens a studio", bursar.get(STUDIO).status_code in (302, 403))
+override(BURSAR, "finance.manage")
+check("A3 …and opens it once the School Admin gives the bursar the permission personally", bursar.get(STUDIO).status_code == 200)
 denied = [cashier.get(STUDIO).status_code, save(cashier, recd.default_layout()).status_code,
           cashier.post(STUDIO + "/preview", {"layout": json.dumps(recd.default_layout())}).status_code,
           cashier.post(STUDIO + "/use", {"use": "1"}).status_code, cashier.post(STUDIO + "/lock", {"lock": "1"}).status_code,

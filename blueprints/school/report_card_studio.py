@@ -26,7 +26,7 @@ from blueprints.school.report_card_data import _file, forget_design, grading_key
 from core import report_card_design as rcd
 from core.branding import school_brand
 from core.report_card_design_pdf import render_designed_pdf
-from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
+from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin, may_use_studios
 from core.storage import read_upload_bytes
 from models import Admin, ParentAccount, ReportCardDesign, ReportCardDesignVersion, Student, db
 
@@ -259,7 +259,7 @@ def admin_report_card_asset_delete(asset_id):
 
 def report_studio_shown():
     admin = current_admin()
-    return bool(admin and admin_has_permission(admin['id'], 'report_cards.manage'))
+    return bool(admin and may_use_studios(admin['id'], 'report_cards.manage'))
 
 
 app.jinja_env.globals.update(report_studio_shown=report_studio_shown)

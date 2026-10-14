@@ -10,14 +10,22 @@ so once you know one, you know them all.</p>
 print</strong>. It shows a card for each studio you are allowed to open, with how things stand (for example, whether
 report cards already use the school's design).</p>
 {{ shot('design-studios', 'Design studios: one card for each studio you may open, with its state. The menu on the left is in two parts, Teaching and Management.') }}
+<p>The studios decide what the whole school's documents look like, so they are for the <strong>School Admin</strong> (the
+proprietor or proprietress) and the <strong>head teacher</strong>. Nobody else opens one, whatever their role (class and
+subject teachers, the bursar, office staff), unless the School Admin gives them that studio's permission personally.</p>
 <table class="guide-table">
-  <thead><tr><th>Studio</th><th>Opens it</th><th>Also reached from</th></tr></thead>
+  <thead><tr><th>Studio</th><th>The permission to give personally</th><th>Also reached from</th></tr></thead>
   <tbody>
-    <tr><td>ID card studio</td><td>Anyone who may design and manage ID cards (Records Officer, Head Teacher, School Admin)</td><td><a href="{{ url_for('admin_id_cards') }}">ID cards</a> → <em>Design the student card</em></td></tr>
-    <tr><td>Report card studio</td><td>Anyone who may manage report card settings (Report Card Officer, Head Teacher, School Admin)</td><td><a href="{{ url_for('admin_school_report_cards') }}">Report cards</a> → <em>Design the report card</em>, and Report card settings</td></tr>
-    <tr><td>Receipt studio</td><td>Anyone who may manage finance (Finance Manager, School Admin)</td><td><a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt settings</a> → <em>Design the receipt</em></td></tr>
+    <tr><td>ID card studio</td><td>Design and manage ID cards</td><td><a href="{{ url_for('admin_id_cards') }}">ID cards</a> → <em>Design the student card</em></td></tr>
+    <tr><td>Report card studio</td><td>Manage report card settings</td><td><a href="{{ url_for('admin_school_report_cards') }}">Report cards</a> → <em>Design the report card</em>, and Report card settings</td></tr>
+    <tr><td>Receipt studio</td><td>Manage finance</td><td><a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt settings</a> → <em>Design the receipt</em></td></tr>
   </tbody>
 </table>
+<div class="guide-note"><strong>Letting someone else design.</strong> On <a href="{{ url_for('admin_accounts') }}">Staff</a>,
+open the person, then the permissions they hold personally (the individual overrides), and tick the studio's permission
+from the table. A permission that only comes with a role does not open a studio: the Records Officer, Report Card Officer
+and Finance Manager roles keep everything else they do, but design only when given it this way. Class teachers keep their
+report cards exactly as before: comments, traits, the cards themselves and releasing their class's results.</div>
 <div class="guide-note">The studios need a computer: a laptop or desktop with a screen at least 1024 pixels wide. On a phone,
 or in a browser window made narrower than that, a studio shows a short message instead. Everything else in the portal
 works on a phone as usual.</div>

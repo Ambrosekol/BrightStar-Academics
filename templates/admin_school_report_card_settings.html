@@ -5,7 +5,7 @@
   <div class="eyebrow">SCHOOL PORTAL / RESULTS</div>
   <h1>Report card settings</h1>
   <p class="hero-copy">The head's title, name and signature appear at the bottom of every report card, whichever class or term. The school's logo, address and colours come from the school profile.</p>
-</div><div><a class="btn btn-secondary" href="{{ url_for('admin_report_card_studio') }}">Design the report card</a></div></div>
+</div>{% if report_studio_shown() %}<div><a class="btn btn-secondary" href="{{ url_for('admin_report_card_studio') }}">Design the report card</a></div>{% endif %}</div>
 
 <section class="card modern-form" style="max-width:760px">
   {% if errors %}<div class="error">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}

@@ -196,7 +196,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Class Teacher': {
         'description': "In charge of the classes they are class teacher of: students, the register, report card comments, every subject's scores, and releasing the class's results once subject teachers send them.",
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.results.enter','school.results.submit','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','parent.feedback.view','report_cards.view','report_cards.comment']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.subjects.view','school.assignments.view','school.assignments.create','school.assignments.edit','school.projects.view','school.projects.create','school.projects.edit','school.tests.view','school.tests.create','school.tests.edit','school.practice.view','school.practice.create','school.practice.edit','school.examinations.view','school.examinations.create','school.examinations.edit','school.results.view','school.results.enter','school.results.submit','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','parent.feedback.view','report_cards.view','report_cards.comment','id_cards.print']
     },
     'Subject Teacher': {
         'description': 'Teaches chosen subjects in chosen classes (and, in SSS, chosen departments): sets work and tests, records scores and sends them to the class teacher.',
@@ -428,9 +428,9 @@ def _snapshot(admin):
 def clear_school_admin_caches():
     """Forget what this school's administrators were read as: their account rows, permissions and scopes.
     Called after any change a school makes, so the next request sees it."""
-    forget_here('admin-perms', 'admin-scopes', 'admin-duties', 'admin-levels', 'admin-role-names')
+    forget_here('admin-perms', 'admin-direct-perms', 'admin-scopes', 'admin-duties', 'admin-levels', 'admin-role-names')
     if has_request_context():
-        for kind in ('perms', 'duties', 'scopes', 'levels'):
+        for kind in ('perms', 'direct', 'duties', 'scopes', 'levels'):
             g.pop('_per_request_' + kind, None)
     tenant = current_tenant(required=False)
     scope = tenant.id if tenant is not None else None
@@ -502,6 +502,60 @@ RENAMED_PRESET_ROLES = {'Website & Content Manager': 'School Profile Manager',
 # school's copy only while it has no level yet, so a level the school chose itself is kept.
 PRESET_ROLE_LEVELS = {'Head Teacher': 'head_teacher', 'School Academic Administrator': 'head_teacher',
                       'Class Teacher': 'class_teacher', 'Subject Teacher': 'subject_teacher'}
+
+
+# The design studios (ID cards, report cards, receipts) decide what the whole school's documents look like. They are
+# for the School Admin (the proprietor or proprietress) and the head teacher; anyone else - a class or subject teacher,
+# the bursar, an office role - only with the studio's permission given to them personally, as an override on their
+# staff record (may_use_studios). A permission that merely comes with a role does not open a studio.
+STUDIO_PERMISSIONS = ('id_cards.manage', 'report_cards.manage', 'finance.manage')
+STUDIO_ENDPOINTS = frozenset({
+    'admin_design_studios',
+    'admin_id_card_designer', 'admin_id_card_design_save', 'admin_id_card_design_lock', 'admin_id_card_design_reset',
+    'admin_id_card_design_version', 'admin_id_card_asset_upload', 'admin_id_card_asset_delete',
+    'admin_report_card_studio', 'admin_report_card_studio_save', 'admin_report_card_studio_lock',
+    'admin_report_card_studio_use', 'admin_report_card_studio_version', 'admin_report_card_studio_preview',
+    'admin_report_card_asset_upload', 'admin_report_card_asset_delete',
+    'admin_receipt_studio', 'admin_receipt_studio_save', 'admin_receipt_studio_lock', 'admin_receipt_studio_use',
+    'admin_receipt_studio_version', 'admin_receipt_studio_preview',
+})
+
+
+def is_teaching_staff(admin_id):
+    """Whether this member of staff is teaching staff: their most senior role is a class teacher's or a subject
+    teacher's (core/school_structure.py). A head teacher, an office role or the School Admin is not."""
+    from core.school_structure import LEVEL_RANK
+    return bool(admin_id) and admin_rank(admin_id) >= LEVEL_RANK['class_teacher']
+
+
+def holds_level(admin_id, level):
+    """Whether any of this member of staff's roles sits at this level (core/school_structure.py)."""
+    admin=_active_admin(admin_id)
+    if not admin: return False
+    levels=_per_request('levels', admin.id, lambda: remember('admin-levels', config.admin_cache_seconds(), _admin_level_codes, admin.id))
+    return level in levels
+
+
+def _direct_permission_codes(admin_id):
+    return {code for (code,) in tuples(select(Permission.code).join(AdminPermission,AdminPermission.permission_id==Permission.id)
+                                      .where(AdminPermission.admin_id==admin_id))}
+
+
+def personal_permission(admin_id, code):
+    """Whether this permission was given to this member of staff personally (an override on their staff record), not
+    only through a role."""
+    if not admin_id: return False
+    return code in _per_request('direct', admin_id, lambda: remember('admin-direct-perms', config.admin_cache_seconds(),
+                                                                       _direct_permission_codes, admin_id))
+
+
+def may_use_studios(admin_id, permission):
+    """Whether this member of staff may open the studio that ``permission`` guards (see STUDIO_ENDPOINTS): the School
+    Admin and a head teacher always; anyone else only with that permission given to them personally."""
+    admin=_active_admin(admin_id)
+    if not admin: return False
+    if admin['admin_type_system'] or holds_level(admin.id, 'head_teacher'): return True
+    return personal_permission(admin.id, permission)
 
 
 def is_school_admin(admin=None):
@@ -907,7 +961,14 @@ def admin_required(fn):
         if admin['password_must_change'] and request.endpoint not in {'admin_password_change','admin_logout','logout'}:
             return redirect(url_for('admin_password_change'))
         permission=ADMIN_ENDPOINT_PERMISSIONS.get(request.endpoint,'admin.access')
-        if not admin_has_permission(admin['id'],permission):
+        if request.endpoint in STUDIO_ENDPOINTS:
+            # A studio: the School Admin, a head teacher, or the permission given personally (may_use_studios).
+            needed=STUDIO_PERMISSIONS if request.endpoint=='admin_design_studios' else (permission,)
+            if not any(may_use_studios(admin['id'],code) for code in needed):
+                audit_log('authorization_denied','administration','endpoint',request.endpoint,
+                          {'permission':permission,'reason':'design studios'},False,admin)
+                return admin_access_error('design studios')
+        elif not admin_has_permission(admin['id'],permission):
             audit_log('authorization_denied','administration','endpoint',request.endpoint,{'permission':permission},False,admin)
             return admin_access_error(permission)
         scope_type,scope_value=admin_scope_for_request(kwargs)

@@ -233,6 +233,14 @@ def staff(username, role_name):
 
 
 officer, OFFICER = staff("rc.officer", "Report Card Officer")
+
+
+def override(aid, code):
+    """The School Admin gives one member of staff a permission personally (an override on their staff record)."""
+    sql("INSERT INTO admin_permissions (admin_id, permission_id, granted_at) SELECT :a, id, '2026-10-14' FROM permissions "
+        "WHERE code = :c ON CONFLICT DO NOTHING", a=aid, c=code)
+    from core.short_cache import clear
+    clear()
 teacher, TEACHER = staff("subject.teacher", "Subject Teacher")
 
 
@@ -302,7 +310,10 @@ cfg = json.loads(re.search(r'<script type="application/json" id="iddData"[^>]*>(
 check("A2 the studio starts from the Classic template, with four templates to pick from",
       cfg["mode"] == "report" and len(cfg["templates"]) == 4 and cfg["layout"]["page"] == "A4"
       and cfg["layout"] == rcd.default_layout("classic"))
-check("A3 a Report Card Officer opens the studio", officer.get(STUDIO).status_code == 200)
+check("A3 a Report Card Officer is refused on the role alone: only the School Admin, a head teacher or a personal "
+      "override opens a studio", officer.get(STUDIO).status_code in (302, 403))
+override(OFFICER, "report_cards.manage")
+check("A3 …and opens it once the School Admin gives the officer the permission personally", officer.get(STUDIO).status_code == 200)
 denied = [teacher.get(STUDIO).status_code,
           save(teacher, rcd.default_layout()).status_code,
           teacher.post(STUDIO + "/preview", {"layout": json.dumps(rcd.default_layout())}).status_code,

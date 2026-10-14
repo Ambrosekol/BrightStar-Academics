@@ -145,6 +145,14 @@ def new_staff(username, role_name, extra=None):
 
 
 officer, OFFICER = new_staff("records.officer", "School Records Officer")
+
+
+def override(aid, code):
+    """The School Admin gives one member of staff a permission personally (an override on their staff record)."""
+    sql("INSERT INTO admin_permissions (admin_id, permission_id, granted_at) SELECT :a, id, '2026-10-14' FROM permissions "
+        "WHERE code = :c ON CONFLICT DO NOTHING", a=aid, c=code)
+    from core.short_cache import clear
+    clear()
 op.post("/admin/school/subjects/new", {"name": "Mathematics", "code": "MTH", "class_ids": [J1]}, page="/admin/school/subjects/new")
 MATHS = one("SELECT id FROM school_subjects WHERE name = 'Mathematics'")
 teacher, TEACHER = new_staff("maths.teacher", "Subject Teacher", {"duty_class": [str(J1)], "duty_subject": [str(MATHS)]})
@@ -187,6 +195,11 @@ check("the list shows each student and that no card is issued yet", "Okafor Ada"
 
 # ================================================================ B. the designer
 DES = "/admin/id-cards/design/student"
+check("the Records Officer is refused the designer on the role alone (studios: the School Admin, a head teacher, or a "
+      "personal override)", officer.get(DES).status_code in (302, 403) and "/admin/design-studios" not in officer.text("/admin/school"))
+override(OFFICER, "id_cards.manage")
+check("…and opens it, with Design studios in the menu, once given the permission personally",
+      officer.get(DES).status_code == 200 and "/admin/design-studios" in officer.text("/admin/school"))
 page = officer.text(DES)
 check("the designer opens on the standard design", "iddData" in page and "STUDENT IDENTITY CARD" in page)
 hostile = {"orientation": "landscape", "background": "red;background:url(evil)", "sides": {"front": [
@@ -369,6 +382,74 @@ staff_studio = officer.text("/admin/id-cards/design/staff")
 check("the staff studio's Details tab offers the staff member's details (title, employed since, emergency contact)",
       all(f'data-field="{f}"' in staff_studio for f in ("title", "employed_since", "nok_name", "nok_phone", "category", "staff_no"))
       and 'data-field="genotype"' not in staff_studio)
+
+# ================================================================ F. teaching staff: no studios; a class teacher prints for their own class
+# A school that went further and gave its class teachers every studio permission: still no studio for them.
+CT_ROLE = one("SELECT id FROM admin_types WHERE name = 'Class Teacher'")
+for code in ("id_cards.manage", "report_cards.manage", "finance.manage"):
+    sql("INSERT INTO admin_type_permissions (admin_type_id, permission_id, granted_at) "
+        "SELECT :r, id, '2026-10-14' FROM permissions WHERE code = :c ON CONFLICT DO NOTHING", r=CT_ROLE, c=code)
+check("the Class Teacher role can print ID cards from the start",
+      one("SELECT COUNT(*) FROM admin_type_permissions tp JOIN permissions p ON p.id = tp.permission_id "
+          "WHERE tp.admin_type_id = :r AND p.code = 'id_cards.print'", r=CT_ROLE) == 1)
+J2 = one("SELECT id FROM school_classes WHERE name = 'JSS 2'")
+with A.app.app_context():
+    with tenant_context(INFO):
+        from models import Student, StudentEnrolment, db
+        dayo = Student(admission_no="ID-4", student_number="ID-4", first_name="Dayo", last_name="Bello", created_at=now, active=1,
+                       school_id=school_id, gender="Male", account_active=1, password_must_change=0)
+        db.session.add(dayo)
+        db.session.flush()
+        db.session.add(StudentEnrolment(student_id=dayo.id, class_id=J2, session_id=SESSION, enrolled_at=now, active=1))
+        DAYO = dayo.id
+        db.session.commit()
+        db.session.remove()
+role["Class Teacher"] = CT_ROLE
+form_teacher, FORM_TEACHER = new_staff("form.teacher", "Class Teacher", {"duty_class_teacher": [str(J1)]})
+menu = form_teacher.text("/admin/school")
+check("a class teacher has ID cards in the menu, but no Design studios",
+      "/admin/id-cards" in menu and "/admin/design-studios" not in menu)
+listing = form_teacher.text("/admin/id-cards")
+check("…sees only their own class's students, with no Staff tab and no design link",
+      "Okafor Ada" in listing and "Bello Dayo" not in listing and "kind=staff" not in listing
+      and "/admin/id-cards/design/" not in listing)
+check("…and asking for staff cards still shows their class's students", "Bello Dayo" not in form_teacher.text("/admin/id-cards?kind=staff")
+      and "Okafor Ada" in form_teacher.text("/admin/id-cards?kind=staff"))
+cards_before = one("SELECT COUNT(*) FROM id_cards")
+r = form_teacher.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"], DAYO]}, page="/admin/id-cards")
+check("…cannot print a card for a student of another class", r.status_code in (302, 403)
+      and one("SELECT COUNT(*) FROM id_cards") == cards_before)
+r = form_teacher.post("/admin/id-cards/print", {"kind": "staff", "person": [OFFICER]}, page="/admin/id-cards")
+check("…nor a staff card", r.status_code in (302, 403) and one("SELECT COUNT(*) FROM id_cards") == cards_before)
+r = form_teacher.post("/admin/id-cards/print", {"kind": "student", "person": [STU["Ada"]]}, page="/admin/id-cards")
+check("…and prints their own class's cards", r.status_code == 200 and "Ada" in r.get_data(as_text=True), f"{r.status_code} {r.headers.get('Location')} {form_teacher.said()}")
+STAFF_CARD = one("SELECT id FROM id_cards WHERE kind = 'staff' AND status = 'active' LIMIT 1")
+form_teacher.post(f"/admin/id-cards/cards/{STAFF_CARD}/cancel", {"reason": "x"}, page="/admin/id-cards")
+check("…cannot cancel a card outside their class (here, a staff card), even with the permission to cancel",
+      one("SELECT status FROM id_cards WHERE id = :i", i=STAFF_CARD) == "active")
+for path in ("/admin/design-studios", "/admin/id-cards/design/student", "/admin/report-cards/studio", "/admin/finance/receipts/studio"):
+    r = form_teacher.get(path)
+    check(f"a class teacher is refused {path}, even holding the studio's permission", r.status_code in (302, 403)
+          and "iddData" not in r.get_data(as_text=True))
+before = one("SELECT COUNT(*) FROM id_card_design_versions")
+r = form_teacher.post("/admin/id-cards/design/student", {"layout": "{}"}, page="/admin/id-cards")
+check("…and cannot save a design", r.status_code in (302, 403) and one("SELECT COUNT(*) FROM id_card_design_versions") == before)
+check("the refusal is in the activity log", one("SELECT COUNT(*) FROM audit_logs WHERE action = 'authorization_denied' "
+                                                "AND details LIKE '%design studios%'") >= 4)
+check("a subject teacher has neither ID cards nor Design studios",
+      "/admin/id-cards" not in teacher.text("/admin/school") and "/admin/design-studios" not in teacher.text("/admin/school"))
+role["Head Teacher"] = one("SELECT id FROM admin_types WHERE name = 'Head Teacher'")
+head, HEAD = new_staff("the.head", "Head Teacher")
+check("the head teacher opens every design studio on their role", all(head.get(path).status_code == 200 for path in (
+      "/admin/design-studios", "/admin/id-cards/design/student", "/admin/report-cards/studio", "/admin/finance/receipts/studio"))
+      and "/admin/design-studios" in head.text("/admin/school"))
+override(FORM_TEACHER, "id_cards.manage")
+check("a class teacher given the ID card permission personally opens the ID card studio (only that one)",
+      "iddData" in form_teacher.text("/admin/id-cards/design/student")
+      and form_teacher.get("/admin/report-cards/studio").status_code in (302, 403)
+      and "/admin/design-studios" in form_teacher.text("/admin/school"))
+check("a class teacher still writes report card comments: their report cards page opens as before",
+      form_teacher.get("/admin/school/report-cards").status_code == 200)
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))
 failed = [name for name, ok, _ in results if not ok]

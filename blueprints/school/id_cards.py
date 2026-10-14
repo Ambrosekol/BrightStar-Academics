@@ -1,7 +1,8 @@
 """ID cards: printing them for students and staff, the school's card designer, cancelling a lost card, and the
 public page a card's QR code opens. The design rules and the QR code are core/id_cards.py.
 
-Who may do what. Printing needs id_cards.print (and, for students, the classes the person may see); designing,
+Who may do what. Printing needs id_cards.print (and, for students, the classes the person may see; for teaching
+staff, only the class - or the subdivision - they are class teacher of, and never staff cards); designing,
 locking, cancelling and replacing need id_cards.manage, as do the school's own card images (uploaded pictures for
 designs) and bringing back an earlier version of a design. A locked design cannot be saved or reset until someone
 with id_cards.manage unlocks it, and an image a locked design uses cannot be removed. The school's design images are
@@ -28,7 +29,10 @@ from blueprints.school.report_card_data import report_settings
 from core import id_cards as ic
 from core.branding import school_brand
 from core.db_helpers import all_rows, one, tuples
-from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
+from core.security import (
+    admin_access_error, admin_has_permission, admin_required, audit_log, csrf_protect, current_admin, is_teaching_staff,
+    may_use_studios, teaching_duties,
+)
 from core.storage import delete_upload, read_upload_bytes
 from core.uploads import _save_image_upload
 from models import (
@@ -95,6 +99,24 @@ def _common(brand, assets):
 
 
 # ---------------------------------------------------------------- the people
+def _teacher_reach(admin_id):
+    """For teaching staff, the students whose cards they handle: ``{class_id: subdivision ids, or None for the whole
+    class}`` for each class they are class teacher of (a subject they teach there does not count). None for anyone
+    else, whose usual class limits apply."""
+    if not is_teaching_staff(admin_id):
+        return None
+    reach = {}
+    for d in teaching_duties(admin_id):
+        if d['subject_id'] is not None:
+            continue
+        cid, sub = d['class_id'], d.get('subdivision_id')
+        if sub is None:
+            reach[cid] = None
+        elif cid not in reach or reach[cid] is not None:
+            reach.setdefault(cid, set()).add(sub)
+    return reach
+
+
 def _students(class_id=None, ids=None):
     current = _school_current_session()
     if not current:
@@ -103,7 +125,7 @@ def _students(class_id=None, ids=None):
                    Student.gender, Student.blood_group, Student.guardian_phone, Student.department, Student.photo_path,
                    Student.date_of_birth, Student.genotype, Student.state_of_origin, Student.religion, Student.guardian_name,
                    SchoolClass.id.label('class_id'), SchoolClass.name.label('class_name'),
-                   AcademicSession.name.label('session_name'))
+                   AcademicSession.name.label('session_name'), StudentEnrolment.subdivision_id)
             .join(StudentEnrolment, and_(StudentEnrolment.student_id == Student.id, StudentEnrolment.active == 1,
                                          StudentEnrolment.session_id == current['id']))
             .join(SchoolClass, SchoolClass.id == StudentEnrolment.class_id)
@@ -115,6 +137,11 @@ def _students(class_id=None, ids=None):
     if ids is not None:
         stmt = stmt.where(Student.id.in_(list(ids) or [0]))
     me = current_admin()
+    reach = _teacher_reach(me['id'])
+    if reach is not None:
+        # A class teacher: their own class (or subdivision) only.
+        return [dict(r) for r in all_rows(stmt) if r['class_id'] in reach
+                and (reach[r['class_id']] is None or r['subdivision_id'] in reach[r['class_id']])]
     allowed = {}
     out = []
     for r in all_rows(stmt):
@@ -185,7 +212,10 @@ def _card_view(kind, person, card, brand, layout, head_signature=None, every_det
 @admin_required
 def admin_id_cards():
     me = current_admin()
-    kind = _kind(request.args.get('kind'))
+    reach = _teacher_reach(me['id'])
+    if reach is not None and not reach:
+        return admin_access_error('ID cards for your own class (class teachers only)')
+    kind = 'student' if reach is not None else _kind(request.args.get('kind'))
     class_id = request.args.get('class', type=int)
     q = request.args.get('q', '').strip()[:80]
     people = _students(class_id) if kind == 'student' else _staff()
@@ -196,11 +226,12 @@ def admin_id_cards():
     cards = _cards(kind, [p['id'] for p in people])
     classes = [] if kind != 'student' else [c for c in all_rows(select(SchoolClass.id, SchoolClass.name)
                                                                    .where(SchoolClass.active == 1).order_by(SchoolClass.level_order, SchoolClass.name))
-                                           if _school_class_allowed(me['id'], c['id'])]
+                                           if (c['id'] in reach if reach is not None else _school_class_allowed(me['id'], c['id']))]
     design = _design_row(kind)
     return render_template('school_id_cards.html', kind=kind, people=people, cards=cards, classes=classes,
-                           class_id=class_id, q=q, design=design, limit=PRINT_LIMIT,
-                           can_manage=admin_has_permission(me['id'], 'id_cards.manage'))
+                           class_id=class_id, q=q, design=design, limit=PRINT_LIMIT, staff_allowed=reach is None,
+                           can_manage=admin_has_permission(me['id'], 'id_cards.manage'),
+                           can_design=may_use_studios(me['id'], 'id_cards.manage'))
 
 
 @app.post('/admin/id-cards/print')
@@ -209,6 +240,9 @@ def admin_id_cards():
 def admin_id_cards_print():
     me = current_admin()
     kind = _kind(request.form.get('kind'))
+    if kind == 'staff' and is_teaching_staff(me['id']):
+        audit_log('authorization_denied', 'school', 'id_cards', None, {'kind': kind, 'reason': 'teaching staff'}, False, me)
+        return admin_access_error('staff ID cards')
     ids = {int(v) for v in request.form.getlist('person') if str(v).isdigit()}
     if not ids:
         flash('Tick the people to print cards for.', 'error')
@@ -253,6 +287,9 @@ def admin_id_card_cancel(card_id):
     card = db.session.get(IdCard, card_id)
     if card is None:
         abort(404)
+    if not _may_handle(card):
+        flash('That card is not one you can cancel.', 'error')
+        return redirect(url_for('admin_id_cards', kind=card.kind))
     reason = ' '.join(request.form.get('reason', '').split())[:200]
     if card.status == 'active':
         card.status, card.cancelled_at, card.cancelled_by, card.cancel_reason = 'cancelled', _now(), me['id'], reason or 'Cancelled'
@@ -271,7 +308,7 @@ def admin_id_card_replace(card_id):
     card = db.session.get(IdCard, card_id)
     if card is None or card.status != 'active':
         abort(404)
-    people = _students(ids=[card.person_id]) if card.kind == 'student' else _staff(ids=[card.person_id])
+    people = (_students(ids=[card.person_id]) if card.kind == 'student' else _staff(ids=[card.person_id])) if _may_handle(card) else []
     if not people:
         flash('That person is not one you can issue cards for.', 'error')
         return redirect(url_for('admin_id_cards', kind=card.kind))
@@ -283,6 +320,15 @@ def admin_id_card_replace(card_id):
                                                                  'new_card': new.serial, 'reason': reason})
     flash(f'Card {card.serial} cancelled and {new.serial} issued. Tick the person and print their new card.', 'success')
     return redirect(url_for('admin_id_cards', kind=card.kind))
+
+
+def _may_handle(card):
+    """Whether the person signed in may cancel or replace this card: anyone may whom the route lets in, except that
+    teaching staff are kept to their own class's students."""
+    me = current_admin()
+    if _teacher_reach(me['id']) is None:
+        return True
+    return card.kind == 'student' and bool(_students(ids=[card.person_id]))
 
 
 # ---------------------------------------------------------------- the designer
@@ -574,7 +620,10 @@ def id_card_photo(token):
 
 def id_cards_shown():
     admin = current_admin()
-    return bool(admin and admin_has_permission(admin['id'], 'id_cards.print'))
+    if not (admin and admin_has_permission(admin['id'], 'id_cards.print')):
+        return False
+    reach = _teacher_reach(admin['id'])
+    return reach is None or bool(reach)
 
 
 app.jinja_env.globals.update(id_cards_shown=id_cards_shown)

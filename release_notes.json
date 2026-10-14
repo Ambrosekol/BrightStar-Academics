@@ -18,6 +18,23 @@
   ],
   "releases": [
     {
+      "version": "2.36.0",
+      "date": "2026-10-14",
+      "title": "Who designs, and class teachers' ID cards",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The design studios (ID cards, report cards and receipts) are now for the School Admin and the head teacher. Anyone else, including teachers, the bursar and office staff, designs only when the School Admin gives them the studio's permission personally on their staff record. A permission that comes with a role no longer opens a studio.",
+          "help": "design-studios"
+        },
+        {
+          "audience": "staff",
+          "text": "Class teachers can now print ID cards for the students of their own class (or their own subdivision), and only those. Subject teachers have no ID cards. Class teachers keep their report cards exactly as before.",
+          "help": "students"
+        }
+      ]
+    },
+    {
       "version": "2.35.0",
       "date": "2026-10-14",
       "title": "Birthday texts, and your own words in every message",

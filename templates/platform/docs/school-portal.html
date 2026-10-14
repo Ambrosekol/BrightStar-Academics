@@ -204,7 +204,10 @@ is all of Nigeria, unless changed.</p>
 <p>{{ route('admin_id_cards') }} ({{ file('blueprints/school/id_cards.py') }}) prints student and staff cards from the
 school's design; {{ route('admin_id_card_designer') }} edits it. The rules are {{ file('core/id_cards.py') }}; the tables
 {{ table('id_card_designs') }} (one design per kind, with a lock) and {{ table('id_cards') }} (each card issued: a random
-token, a serial, active or cancelled). Permissions: {{ perm('id_cards.print') }} and {{ perm('id_cards.manage') }}.</p>
+token, a serial, active or cancelled). Permissions: {{ perm('id_cards.print') }} and {{ perm('id_cards.manage') }}; teaching
+staff print only for the class (or subdivision) they are class teacher of, and never staff cards. Every design studio
+(STUDIO_ENDPOINTS in {{ file('core/security.py') }}) opens for the School Admin and a head teacher, and for anyone else only with
+the studio's permission given personally (may_use_studios), never through a role alone.</p>
 <ul>
   <li><strong>The design</strong> is positioned boxes in millimetres on a CR80 card (design version 2:
   text and details with fonts, weights, spacing and alignment; shapes with fills, gradients and outlines; the photograph,

@@ -10,9 +10,9 @@
   <h1>ID cards</h1>
   <nav class="ac-seg mk-views" aria-label="Whose cards">
     <a href="{{ url_for('admin_id_cards', kind='student') }}" class="{{ 'is-active' if kind == 'student' }}"{% if kind == 'student' %} aria-current="true"{% endif %}>Students</a>
-    <a href="{{ url_for('admin_id_cards', kind='staff') }}" class="{{ 'is-active' if kind == 'staff' }}"{% if kind == 'staff' %} aria-current="true"{% endif %}>Staff</a>
+    {% if staff_allowed %}<a href="{{ url_for('admin_id_cards', kind='staff') }}" class="{{ 'is-active' if kind == 'staff' }}"{% if kind == 'staff' %} aria-current="true"{% endif %}>Staff</a>{% endif %}
   </nav>
-  {% if can_manage %}<div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_id_card_designer', kind=kind) }}">Design the {{ kind }} card{% if design and design.locked %} · locked{% endif %}</a></div>{% endif %}
+  {% if can_design %}<div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_id_card_designer', kind=kind) }}">Design the {{ kind }} card{% if design and design.locked %} · locked{% endif %}</a></div>{% endif %}
 </header>
 
 <form method="get" class="ac-tools" action="{{ url_for('admin_id_cards') }}" role="search">
