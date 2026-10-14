@@ -139,6 +139,15 @@ class Payslip(db.Model):
     nhf = db.Column(Integer, nullable=False, default=0, server_default=text('0'))
     pfa = db.Column(Text)
     warnings = db.Column(Text)                         # what HR should look at (no bank details, net below zero...)
+    # Paid through the school's Paystack (core/payroll_transfers.py): None until sent, then pending, success, failed or
+    # reversed. A pending or successful one is never sent again.
+    transfer_status = db.Column(Text)
+    transfer_reference = db.Column(Text, index=True)
+    transfer_code = db.Column(Text)
+    transfer_error = db.Column(Text)
+    transfer_sent_at = db.Column(Text)
+    transfer_sent_by = db.Column(Integer, ForeignKey('admins.id'))
+    transfer_done_at = db.Column(Text)
 
 
 class PayrollAdjustment(db.Model):

@@ -879,8 +879,9 @@ texts = [(token, payload) for token, payload in Outbox.sms if payload["to"] == "
 check("…and texted the PARENT ACCOUNT's phone (08055550000), not the guardian phone typed on the student's record (08035550002), with the school's own token and sender name",
       len(texts) == 1 and texts[0][0] == "Bearer token-alpha" and texts[0][1]["from"] == "ALPHASCH"
       and not any(p["to"] == "+2348035550002" for _, p in Outbox.sms), str(Outbox.sms))
-check("…mentioning the school, the child, the amount and the term",
-      texts and all(s in texts[0][1]["body"] for s in ("Alpha School", "Bola Eze", "₦30,000.00", "First Term")), str(texts))
+check("…mentioning the school, the child, the amount and the term, as one plain text message (N for the naira sign)",
+      texts and all(s in texts[0][1]["body"] for s in ("Alpha School", "Bola Eze", "N30,000.00", "First Term"))
+      and len(texts[0][1]["body"]) <= 160 and "₦" not in texts[0][1]["body"], str(texts))
 notice_rows = alpha.sql(
     "SELECT channel, status FROM notification_delivery_logs WHERE student_id = :s AND kind = 'fee_assessed'", s=BOLA)
 check("the school's own notice log recorded both attempts, both sent",

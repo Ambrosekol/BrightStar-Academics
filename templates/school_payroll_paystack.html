@@ -1,0 +1,67 @@
+{% extends 'admin_base.html' %}
+{% block title %}Pay {{ label }} — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The School Admin's review before paying an approved payroll through Paystack (blueprints/school/payroll_paystack.py):
+    each person with the bank's own name for their account, whether it matches, the total and the balance; then the
+    password and Send. Nothing here is trusted on its own: the server checks everything again when it is sent. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='2') }}">
+<div class="ac pay">
+<header class="ac-top">
+  <h1>Pay {{ label }} through Paystack</h1>
+  <span class="ac-hint">Approved {{ run.approved_at[:10] if run.approved_at else '' }} · {{ run.headcount }} on the payroll · {{ run.net|naira }} net</span>
+  <div class="ac-top__act"><a class="ac-btn" href="{{ url_for('admin_payroll_run', rid=run.id) }}">Back to the payroll</a></div>
+</header>
+
+{% if problem %}
+<p class="ac-note ac-note--attn"><strong>Paystack could not be asked:</strong> {{ problem }} Nothing has been sent.</p>
+{% else %}
+<p class="ac-note">Each person is paid into the account on their approved payslip. The name beside it is the one the
+bank holds for that account: check it. Anyone whose name does not match is left unticked; tick them only if you are sure.
+Money goes from the school's Paystack balance, and each payment shows as paid once the bank confirms it.</p>
+
+<form method="post" action="{{ url_for('admin_payroll_paystack_send', rid=run.id) }}" autocomplete="off" data-pay-form
+      data-confirm="Send these salaries now? The money leaves the school's Paystack balance and cannot be called back from here."
+      data-confirm-danger="0" data-confirm-ok="Send salaries">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <section class="ac-panel">
+    <div class="ac-scroll"><table class="ac-t pay-rev">
+      <thead><tr><th></th><th>Name on the payroll</th><th>Bank</th><th>Name the bank holds</th><th class="pay-n">Net pay</th></tr></thead>
+      <tbody>{% for r in rows %}{% set s = r.slip %}
+        <tr class="{{ 'is-off' if r.state != 'ready' }}">
+          <td>{% if r.state == 'ready' %}<input class="pay-tick" type="checkbox" name="slip" value="{{ s.id }}" data-amount="{{ s.net }}" {% if r.match %}checked{% endif %} aria-label="Pay {{ s.name }}">{% endif %}</td>
+          <td><b>{{ s.name }}</b>{% if s.account_name and s.account_name != s.name %}<small>Account name given: {{ s.account_name }}</small>{% endif %}</td>
+          <td>{{ s.bank_name or '—' }}<small>····{{ s.account_last4 or '' }}</small></td>
+          <td>{% if r.state == 'paid' %}<span class="pay-tr is-success">Paid by Paystack</span>
+            {% elif r.state == 'pending' %}<span class="pay-tr is-pending">Being paid</span>
+            {% elif r.state == 'blocked' %}<span class="pay-tr is-failed">Not paid from here</span><small>{{ r.why }}</small>
+            {% else %}{{ r.bank_name_on_account }}{% if r.match %} <span class="pay-tr is-success">matches</span>{% else %} <span class="pay-tr is-failed">does not match</span>{% endif %}{% endif %}
+            {% if s.transfer_status in ('failed', 'reversed') and r.state == 'ready' %}<small>Last time: {{ s.transfer_error or 'not paid' }}</small>{% endif %}</td>
+          <td class="pay-n"><b>{{ s.net|naira }}</b></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <div class="pay-go">
+    <div class="pay-go__sum">To send: <strong data-pay-total>{{ ready_total|naira }}</strong> to <span data-pay-count>{{ ready_count }}</span>
+      {{ 'person' if ready_count == 1 else 'people' }}<br><small>School's Paystack balance: {{ balance|naira if balance is not none else '—' }}</small></div>
+    <label>Your password<input class="ac-input" type="password" name="password" autocomplete="current-password" required></label>
+    <button class="ac-btn ac-btn--primary" type="submit">Send salaries</button>
+  </div>
+</form>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var form = document.querySelector('[data-pay-form]'); if (!form) return;
+  var total = form.querySelector('[data-pay-total]'), count = form.querySelector('[data-pay-count]');
+  function naira(kobo) { return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function update() {
+    var sum = 0, n = 0;
+    form.querySelectorAll('input[name=slip]:checked').forEach(function (b) { sum += parseInt(b.dataset.amount, 10) || 0; n += 1; });
+    total.textContent = naira(sum); count.textContent = n;
+  }
+  form.addEventListener('change', update);
+})();
+</script>
+{% endblock %}

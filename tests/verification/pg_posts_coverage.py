@@ -28,6 +28,10 @@ EXEMPT = {
     # hostile, for school papers and the entrance examination, in write_paths_exam_mode.py.
     "/student/assessments/<int:assessment_id>/submit": "see write_paths_exam_mode.py",
     "/student/assessments/<int:assessment_id>/integrity": "see write_paths_exam_mode.py",
+    # Paying an approved payroll through the school's Paystack (the School Admin only), valid and hostile, against a
+    # stand-in Paystack, in write_paths_payroll_paystack.py.
+    "/admin/payroll/runs/<int:rid>/paystack/send": "see write_paths_payroll_paystack.py",
+    "/admin/payroll/runs/<int:rid>/paystack/check": "see write_paths_payroll_paystack.py",
     "/exam/integrity": "see write_paths_exam_mode.py",
     # ID cards: printing (and issuing), the designer's save, lock and reset, cancelling and replacing a card, valid
     # and hostile (a hostile design, a locked design, a teacher without the permission), in write_paths_id_cards.py.

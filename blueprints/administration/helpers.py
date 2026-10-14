@@ -45,7 +45,7 @@ def _duty_form_options(admin=None):
     ``admin``, when given and not the School Admin, limits the classes to those within their own reach."""
     from sqlalchemy import select
     from models import ClassSubject, SchoolClass, SchoolSubject
-    from core.school_structure import DEPARTMENTS, is_senior
+    from core.school_structure import DEPARTMENTS, is_senior, parse_departments
     from core.security import admin_scope_allows
     classes=[{'id':c.id,'name':c.name,'senior':is_senior(c.stage,c.name)}
              for c in db.session.scalars(select(SchoolClass).where(SchoolClass.active==1)
@@ -56,7 +56,9 @@ def _duty_form_options(admin=None):
     offered={}
     for class_id,subject_id in db.session.execute(select(ClassSubject.class_id,ClassSubject.subject_id)).all():
         offered.setdefault(subject_id,[]).append(class_id)
-    subjects=[{'id':s.id,'name':s.name,'class_ids':sorted(offered.get(s.id,[]))} for s in db.session.scalars(
+    # Each subject's SSS departments (Subjects page): none listed means every department takes it.
+    subjects=[{'id':s.id,'name':s.name,'class_ids':sorted(offered.get(s.id,[])),
+               'departments':parse_departments(s.departments) or list(DEPARTMENTS)} for s in db.session.scalars(
         select(SchoolSubject).where(SchoolSubject.active==1).order_by(SchoolSubject.name)).all()]
     # A subdivided JSS/SSS class offers each subdivision as a class-teacher duty of its own (core/subdivisions.py).
     from core.subdivisions import all_subdivisions, label as subdivision_label
@@ -101,12 +103,18 @@ def _parse_duties(form, options):
         elif sid is not None and sid not in subdivision_class: errors.append('Choose class teacher subdivisions from the list.')
     subjects=[]
     seen=set()
+    subject_departments={s['id']:s.get('departments') or [] for s in options['duty_subjects']}
+    subject_names={s['id']:s['name'] for s in options['duty_subjects']}
     rows=zip(ints('duty_class'),ints('duty_subject'),form.getlist('duty_department'))
     for cid,sid,dept in rows:
         if cid is None and sid is None: continue   # a blank row the person added and left empty
         if cid not in class_ids or sid not in subject_ids:
             errors.append('Each subject row needs a class and a subject from the lists.'); continue
         department=clean_department(dept) if class_ids[cid]['senior'] else None
+        if department and department not in subject_departments.get(sid,()):
+            errors.append(f"{subject_names.get(sid,'That subject')} is not taken by the {department} department "
+                          "(Subjects). Choose one of its departments, or All departments.")
+            continue
         key=(cid,sid,department)
         if key in seen: continue
         seen.add(key)

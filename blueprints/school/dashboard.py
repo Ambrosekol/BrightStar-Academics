@@ -7,6 +7,9 @@ Nobody sees a general page. The Overview is built from panels, and each panel is
     my_classes     a class teacher: each class they are in charge of
     my_teaching    a subject teacher: each subject they teach, in each class
     finance        bursar and finance officers (a cashier sees only their own takings)
+    staff          HR officer, head teacher and proprietor: who is in today, who is on leave, leave to decide
+    payroll        payroll officer and bursar: this month's payroll, what waits for approval, payslips to check
+    report_cards   report card officers (and the head teacher, the proprietor): each class's cards and comments
     library        librarian
     admissions     admissions officer
     parents        whoever answers parents
@@ -450,6 +453,7 @@ def _my_classes(me, session, term, prev, duties):
                 ReportCardComment.term == term)) or 0 if sid else 0
             for key in [k for k in absences if k[0] == cid and k[1] not in mine[cid]]:
                 del absences[key]
+    birthdays = _class_birthdays(sid, class_ids, mine)
     out = []
     for cid in class_ids:
         n = len(mine[cid]) if cid in mine else enrolled.get(cid, 0)
@@ -474,10 +478,37 @@ def _my_classes(me, session, term, prev, duties):
             'best': best.get(cid, []), 'weakest': weakest.get(cid, []),
             'absent': [{'name': absent_names.get(stid, ''), 'days': k} for (c, stid), k in absences.most_common() if c == cid][:3],
             'attendance_days': _attendance_days([cid]),
+            'birthdays': birthdays.get(cid, []),
             'can_release': _can(me, 'school.results.release'), 'can_comment': _can(me, 'report_cards.comment'),
             'can_mark': _can(me, 'school.attendance.mark'),
         })
     return out
+
+
+def _class_birthdays(sid, class_ids, mine):
+    """{class_id: [{'name', 'when', 'age', 'today'}]}: each class's birthdays from today to six days away, soonest first
+    (for the class teacher of a subdivision, its students only). One query."""
+    if not sid or not class_ids:
+        return {}
+    from blueprints.school.birthdays import next_birthday, parse_dob
+    from core.staff_attendance import school_now
+    today = school_now().date()
+    out = defaultdict(list)
+    for cid, stid, first, last, dob in tuples(
+            select(StudentEnrolment.class_id, Student.id, Student.first_name, Student.last_name, Student.date_of_birth)
+            .join(Student, Student.id == StudentEnrolment.student_id)
+            .where(StudentEnrolment.class_id.in_(class_ids), StudentEnrolment.session_id == sid, StudentEnrolment.active == 1,
+                   Student.active == 1, Student.date_of_birth.is_not(None))):
+        if cid in mine and stid not in mine[cid]:
+            continue
+        born = parse_dob(dob)
+        day = next_birthday(born, today) if born else None
+        if day is None or (day - today).days > 6:
+            continue
+        gap = (day - today).days
+        out[cid].append({'name': f'{first} {last}'.strip(), 'today': gap == 0, 'age': day.year - born.year, 'sort': gap,
+                         'when': 'Today' if gap == 0 else ('Tomorrow' if gap == 1 else day.strftime('%a %d %b'))})
+    return {cid: sorted(rows, key=lambda r: (r['sort'], r['name'])) for cid, rows in out.items()}
 
 
 def _my_teaching(me, session, term, prev, duties):
@@ -884,6 +915,196 @@ def _records(me, session):
             'gender': _gender_segments(gender)}
 
 
+def _staff(me):
+    """Staff: who is in today and who is late or not in yet (staff attendance), who is on leave, and the leave requests
+    waiting for a decision. Each part only for whoever may see it: staff_attendance.view, hr.view, hr.leave.approve."""
+    can_att, can_hr = _can(me, 'staff_attendance.view'), _can(me, 'hr.view')
+    can_leave = can_hr or _can(me, 'hr.leave.approve')
+    if not (can_att or can_hr or can_leave):
+        return None
+    from core.staff_attendance import day_status, school_now
+    from models import LeaveRequest, LeaveType, StaffAttendanceClosedDay, StaffAttendanceRecord, StaffAttendanceSettings, StaffRecord
+    now = school_now()
+    today = now.date()
+    iso = today.isoformat()
+    people = [r for r in db.session.scalars(select(StaffRecord).order_by(StaffRecord.last_name, StaffRecord.first_name)).all()
+              if r.status != 'left' and not (r.employment_date and r.employment_date > iso)]
+    if not people:
+        return None
+    ids = [p.id for p in people]
+    leave_today = {sid for (sid,) in tuples(select(LeaveRequest.staff_id).where(
+        LeaveRequest.status == 'approved', LeaveRequest.start_date <= iso, LeaveRequest.end_date >= iso,
+        LeaveRequest.staff_id.in_(ids)))}
+    name = {p.id: ' '.join(x for x in (p.title, p.first_name, p.last_name) if x) for p in people}
+    kpis, out = [], {'not_in': [], 'leave': [], 'columns': None, 'attendance_on': False, 'can_leave': can_leave}
+    if can_hr:
+        teaching = sum(1 for p in people if p.category == 'teaching')
+        kpis.append({'label': 'Staff', 'value': f'{len(people):,}', 'note': f'{teaching} teaching, {len(people) - teaching} not'})
+    settings = db.session.scalars(select(StaffAttendanceSettings).order_by(StaffAttendanceSettings.id)).first()
+    if can_att and settings and settings.enabled:
+        out['attendance_on'] = True
+        records = {r.staff_id: r for r in db.session.scalars(select(StaffAttendanceRecord).where(
+            StaffAttendanceRecord.day == iso, StaffAttendanceRecord.staff_id.in_(ids))).all()}
+        closed = one_scalar(select(func.count()).select_from(StaffAttendanceClosedDay).where(StaffAttendanceClosedDay.day == iso), 0)
+        status = Counter()
+        for p in people:
+            st = day_status(settings, today, today, None, records.get(p.id), p.id in leave_today, bool(closed),
+                            p.employment_date, None)
+            status[st] += 1
+            if st == 'waiting':
+                out['not_in'].append(name[p.id])
+        expected = status['present'] + status['late'] + status['waiting']
+        if closed:
+            kpis.append({'label': 'Today', 'value': 'School closed'})
+        elif status['off'] == len(people):
+            kpis.append({'label': 'Today', 'value': 'Not a work day'})
+        else:
+            kpis += [{'label': 'In today', 'value': f"{status['present'] + status['late']}/{expected}",
+                      'note': f"{_pct(status['present'] + status['late'], expected) or 0:.0f}% of those expected"},
+                     {'label': 'Late', 'value': str(status['late']), 'alert': bool(status['late'])},
+                     {'label': 'Not in yet', 'value': str(status['waiting']),
+                      'alert': bool(status['waiting']) and now.strftime('%H:%M') > (settings.late_after or '08:00')}]
+        # Staff in, each of the last ten work days.
+        start = today - timedelta(days=13)
+        daily = dict(tuples(select(StaffAttendanceRecord.day, func.count()).where(
+            StaffAttendanceRecord.day >= start.isoformat(), StaffAttendanceRecord.clock_in.is_not(None))
+            .group_by(StaffAttendanceRecord.day)))
+        days = [start + timedelta(days=i) for i in range(14) if str((start + timedelta(days=i)).isoweekday()) in (settings.work_days or '12345')][-10:]
+        out['columns'] = [{'label': d.strftime('%d %b'), 'value': int(daily.get(d.isoformat(), 0) or 0),
+                           'tip': f"{d.strftime('%a %d %b')}: {int(daily.get(d.isoformat(), 0) or 0)} in"} for d in days]
+        out['column_max'] = max([c['value'] for c in out['columns']] + [1])
+    kpis.append({'label': 'On leave today', 'value': str(len(leave_today))})
+    if can_leave:
+        waiting = db.session.scalars(select(LeaveRequest).where(LeaveRequest.status == 'pending')
+                                     .order_by(LeaveRequest.start_date).limit(6)).all()
+        n_waiting = one_scalar(select(func.count()).select_from(LeaveRequest).where(LeaveRequest.status == 'pending'), 0)
+        kpis.append({'label': 'Leave to decide', 'value': str(n_waiting), 'alert': bool(n_waiting),
+                     'href': url_for('admin_hr_leave')})
+        types = dict(tuples(select(LeaveType.id, LeaveType.name)))
+        others = {r.id: ' '.join(x for x in (r.title, r.first_name, r.last_name) if x) for r in db.session.scalars(
+            select(StaffRecord).where(StaffRecord.id.in_([x.staff_id for x in waiting] or [0]))).all()}
+        out['waiting'] = [{'name': others.get(x.staff_id, ''), 'type': types.get(x.leave_type_id, 'Leave'),
+                           'dates': _span(x.start_date, x.end_date), 'days': x.days} for x in waiting]
+    out['leave'] = sorted(name[i] for i in leave_today if i in name)
+    out['kpis'] = kpis
+    out['href'] = url_for('admin_staff_attendance') if can_att else (url_for('admin_hr_staff') if can_hr else url_for('admin_hr_leave'))
+    out['link'] = 'Staff attendance' if can_att else ('Staff' if can_hr else 'Leave')
+    return out
+
+
+def _span(start, end):
+    try:
+        a, b = date.fromisoformat(start[:10]), date.fromisoformat(end[:10])
+    except (TypeError, ValueError):
+        return f'{start} to {end}'
+    if a == b:
+        return a.strftime('%a %d %b')
+    return f"{a.strftime('%d %b')} to {b.strftime('%d %b')}"
+
+
+PAYROLL_STATES = {'draft': 'Prepared, waiting for approval', 'approved': 'Approved, not paid yet', 'paid': 'Paid'}
+
+
+def _payroll(me):
+    """Payroll: this month's run (its state, net pay against last month, how many are paid), what waits for this
+    person's approval, payslips that need a look, and net pay over six months."""
+    if not _can(me, 'payroll.view'):
+        return None
+    from core.staff_attendance import school_now
+    from models import PayrollRun, Payslip
+    today = school_now().date()
+    period = today.strftime('%Y-%m')
+    last_period = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+    first = today.replace(day=1)
+    months = []
+    m = first
+    for _ in range(6):
+        months.insert(0, m.strftime('%Y-%m'))
+        m = (m - timedelta(days=1)).replace(day=1)
+    runs = db.session.scalars(select(PayrollRun).where(PayrollRun.status != 'cancelled', PayrollRun.period >= months[0])
+                              .order_by(PayrollRun.period, PayrollRun.id)).all()
+    if not runs and not one_scalar(select(func.count()).select_from(PayrollRun), 0):
+        return None   # a school that does not run its payroll here
+    by_period = {}
+    for r in runs:
+        by_period[r.period] = r      # the newest run of each month
+    now_run, before = by_period.get(period), by_period.get(last_period)
+    kpis = [{'label': today.strftime('%B'), 'value': PAYROLL_STATES.get(now_run.status, now_run.status) if now_run else 'Not prepared yet',
+             'alert': not now_run or now_run.status != 'paid',
+             'href': url_for('admin_payroll_run', rid=now_run.id) if now_run else url_for('admin_payroll')}]
+    if now_run:
+        kpis.append({'label': 'Net pay', 'value': _naira(now_run.net / 100), 'note': f'{now_run.headcount} staff',
+                     'delta': delta(now_run.net / 100, before.net / 100 if before else None, '₦', label=_month(last_period))})
+        warnings = one_scalar(select(func.count()).select_from(Payslip).where(
+            Payslip.run_id == now_run.id, Payslip.warnings.is_not(None), Payslip.warnings != ''), 0)
+        kpis.append({'label': 'Payslips to check', 'value': str(warnings), 'alert': bool(warnings),
+                     'note': 'no bank details, net below zero...' if warnings else 'nothing flagged'})
+    elif before:
+        kpis.append({'label': f'Net pay, {_month(last_period)}', 'value': _naira(before.net / 100), 'note': f'{before.headcount} staff'})
+    if _can(me, 'payroll.approve'):
+        waiting = [r for r in runs if r.status == 'draft']
+        kpis.append({'label': 'Waiting for your approval', 'value': str(len(waiting)), 'alert': bool(waiting),
+                     'href': url_for('admin_payroll_run', rid=waiting[-1].id) if waiting else None})
+    columns = [{'label': _month(p, short=True), 'value': (by_period[p].net / 100) if p in by_period else 0,
+                'tip': f"{_month(p)}: " + (f"₦{by_period[p].net / 100:,.0f} net, {PAYROLL_STATES.get(by_period[p].status, '').lower()}"
+                                          if p in by_period else 'no payroll')} for p in months]
+    return {'kpis': kpis, 'columns': columns, 'column_max': max([c['value'] for c in columns] + [1])}
+
+
+def _month(period, short=False):
+    try:
+        return date.fromisoformat(period + '-01').strftime('%b' if short else '%B %Y')
+    except ValueError:
+        return period
+
+
+def _report_cards(me, session, term):
+    """Report cards, for report card staff who are not class teachers (the class teachers have their own classes above):
+    each class they may see, with its students, the cards ready to view, and the comments written."""
+    if not (_can(me, 'report_cards.comment') or _can(me, 'report_cards.manage')) or teaching_duties(me['id']) or not session:
+        return None
+    from blueprints.school.helpers import _school_class_allowed
+    from blueprints.school.report_card_data import _is_ready, _official_result_counts, report_settings
+    classes = [c for c in _classes() if _school_class_allowed(me['id'], c.id)]
+    if not classes:
+        return None
+    ids = [c.id for c in classes]
+    members = defaultdict(list)
+    for cid, stid in tuples(select(StudentEnrolment.class_id, StudentEnrolment.student_id)
+                            .join(Student, Student.id == StudentEnrolment.student_id)
+                            .where(StudentEnrolment.class_id.in_(ids), StudentEnrolment.session_id == session.id,
+                                   StudentEnrolment.active == 1, Student.active == 1)):
+        members[cid].append(stid)
+    everyone = [s for v in members.values() for s in v]
+    counts = _official_result_counts(everyone, session.id, term) if everyone else {}
+    commented = {sid for (sid,) in tuples(select(ReportCardComment.student_id).where(
+        ReportCardComment.student_id.in_(everyone or [0]), ReportCardComment.session_id == session.id,
+        ReportCardComment.term == term))}
+    rows = []
+    for c in classes:
+        studs = members.get(c.id, [])
+        if not studs:
+            continue
+        ready = sum(1 for s in studs if _is_ready(counts.get((s, session.id, term))))
+        rows.append({'name': c.name, 'students': len(studs), 'ready': ready, 'comments': sum(1 for s in studs if s in commented),
+                     'href': url_for('admin_school_report_cards', class_id=c.id, term=term)})
+    if not rows:
+        return None
+    total = sum(r['students'] for r in rows)
+    ready = sum(r['ready'] for r in rows)
+    comments = sum(r['comments'] for r in rows)
+    head = report_settings()
+    kpis = [{'label': 'Cards ready', 'value': f'{ready}/{total}', 'note': f'{_pct(ready, total) or 0:.0f}% of students'},
+            {'label': 'Comments written', 'value': f'{comments}/{total}', 'alert': comments < total},
+            {'label': 'Classes complete', 'value': f"{sum(1 for r in rows if r['comments'] >= r['students'])}/{len(rows)}",
+             'note': 'every comment written'}]
+    if _can(me, 'report_cards.manage'):
+        done = bool(head['head_name']) and bool(head['head_signature'])
+        kpis.append({'label': "Head's signature", 'value': 'Set' if done else 'Not set', 'alert': not done,
+                     'href': url_for('admin_school_report_card_settings')})
+    return {'kpis': kpis, 'rows': rows}
+
+
 # Every page the Overview may point to: (label, endpoint, the permission that opens it, url arguments).
 SHORTCUTS = [
     ('Students', 'admin_school_students', 'school.students.view', {}),
@@ -899,6 +1120,10 @@ SHORTCUTS = [
     ('Record a payment', 'admin_finance_record', 'finance.record', {}),
     ('Finance', 'admin_finance_dashboard', 'finance.view_own', {}),
     ('Fee structure', 'admin_finance_fee_items', 'finance.manage', {}),
+    ('Staff records', 'admin_hr_staff', 'hr.view', {}),
+    ('Leave', 'admin_hr_leave', 'hr.leave.approve', {}),
+    ('Staff attendance', 'admin_staff_attendance', 'staff_attendance.view', {}),
+    ('Payroll', 'admin_payroll', 'payroll.view', {}),
     ('Library', 'admin_library', 'library.view', {}),
     ('Admissions', 'admin_candidate_admissions', 'candidates.admit', {}),
     ('Parents', 'admin_school_parents', 'parent.view', {}),
@@ -927,13 +1152,16 @@ def build_dashboard(me):
         'my_classes': _my_classes(me, session, term, prev, duties),
         'my_teaching': _my_teaching(me, session, term, prev, duties),
         'finance': _finance(me, session),
+        'staff': _staff(me),
+        'payroll': _payroll(me),
+        'report_cards': _report_cards(me, session, term),
         'library': _library(me),
         'store': _store(me),
         'admissions': _admissions(me),
         'parents': _parents(me),
         'records': _records(me, session),
     }
-    academic_panels = any(panels[k] for k in ('academic', 'my_classes', 'my_teaching'))
+    academic_panels = any(panels[k] for k in ('academic', 'my_classes', 'my_teaching', 'report_cards'))
     return {'panels': panels, 'shortcuts': _shortcuts(me), 'term': term, 'terms': ACADEMIC_TERMS,
             'previous_label': prev[2] if prev else '', 'session_name': session.name if session else '',
             'role_label': role_label, 'show_term_picker': academic_panels,

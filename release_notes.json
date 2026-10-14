@@ -18,6 +18,38 @@
   ],
   "releases": [
     {
+      "version": "2.37.0",
+      "date": "2026-10-14",
+      "title": "More on the Overview for every role",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The Overview now has Staff today for HR and the head teacher (who is in, late or not in yet, who is on leave, and leave waiting for a decision), Payroll for the payroll officer and the bursar (this month's payroll, payslips to check, and what waits for approval), and Report cards for report card officers (cards ready and comments written, class by class).",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "Class teachers see their class's birthdays this week on the Overview. The entrance examination's Overview now shows registrations this week, papers being sat right now and, for whoever decides admissions, the admissions waitlist.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "staff",
+          "text": "Payroll is now only for the Payroll Officer, who prepares and pays it, and the School Admin, who alone approves it. The bursar (Finance Manager) no longer sees or approves payroll. The School Admin can still give one person payroll access personally.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Pay salaries through Paystack: once a month's payroll is approved and the school's Paystack is connected, the School Admin reviews each person with the name their bank holds for the account, then sends everyone's net pay from the Paystack balance with their password. Each payslip shows when it is paid, nobody is paid twice, and the month is marked paid on its own.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "Giving a teacher their subjects is quicker and safer: in an SSS class, the department list shows only the departments that take the chosen subject, and a subject already chosen for a class is taken off the other rows' lists.",
+          "help": "roles-permissions"
+        }
+      ]
+    },
+    {
       "version": "2.36.3",
       "date": "2026-10-14",
       "title": "Menu headings on bands",

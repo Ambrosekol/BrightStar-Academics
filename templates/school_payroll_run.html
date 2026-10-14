@@ -4,7 +4,7 @@
 {#- One month's payroll (blueprints/school/payroll.py): the totals, the payslips with their lines and one-off lines,
     approving (four eyes), the bank schedule and returns, marking paid. A draft changes; an approved run is locked. -#}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='payroll.css', v='2') }}">
 {% set draft = run.status == 'draft' %}
 <div class="ac pay">
 <header class="ac-top">
@@ -41,6 +41,22 @@
   {% endif %}
 </p>
 
+{% set ps = paystack %}
+{% if run.status in ('approved', 'paid') and (ps.counts or (run.status == 'approved' and ps.connected and ps.can_pay)) %}
+<section class="pay-ps" aria-labelledby="payPs">
+  <div class="pay-ps__copy">
+    <h2 id="payPs">Pay through Paystack</h2>
+    {% if ps.counts %}<p>{% for k, label in [('success', 'paid'), ('pending', 'being paid'), ('failed', 'not paid'), ('reversed', 'sent back')] if ps.counts.get(k) %}<span class="pay-ps__n is-{{ k }}">{{ ps.counts[k] }} {{ label }}</span>{% endfor %}</p>
+    {% else %}<p>Send each person's net pay straight to their bank from the school's Paystack balance. Only the School Admin sends it, with their password.</p>{% endif %}
+  </div>
+  <div class="pay-ps__act">
+    {% if ps.can_check %}<form method="post" action="{{ url_for('admin_payroll_paystack_check', rid=run.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="ac-btn" type="submit">Check transfers</button></form>{% endif %}
+    {% if run.status == 'approved' and ps.connected and ps.can_pay %}<a class="ac-btn ac-btn--primary" href="{{ url_for('admin_payroll_paystack', rid=run.id) }}">{{ 'Pay the rest' if ps.counts else 'Review and pay' }}</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
 <div class="pay-sum">
   <div><small>People</small><strong>{{ run.headcount }}</strong></div>
   <div><small>Gross pay</small><strong>{{ run.gross|naira }}</strong></div>
@@ -64,7 +80,8 @@
         <td class="pay-n"><b>{{ s.net|naira }}</b></td>
         {% if last_label %}{% set was = last_net.get(s.staff_id) %}<td class="pay-n">{% if was is none %}<small class="pay-w">new</small>
           {% elif s.net != was %}<span class="{{ 'pay-w' if s.net > was and (s.net - was) * 10 > was }}">{{ '+' if s.net > was }}{{ (s.net - was)|naira }}</span>{% else %}<small>same</small>{% endif %}</td>{% endif %}
-        <td>{% if s.account_last4 %}{{ s.bank_name or '' }}<small>····{{ s.account_last4 }}</small>{% else %}<small class="pay-w">none</small>{% endif %}</td>
+        <td>{% if s.account_last4 %}{{ s.bank_name or '' }}<small>····{{ s.account_last4 }}</small>{% else %}<small class="pay-w">none</small>{% endif %}
+          {% if s.transfer_status %}<span class="pay-tr is-{{ s.transfer_status }}"{% if s.transfer_error %} title="{{ s.transfer_error }}"{% endif %}>{{ {'pending': 'Sending', 'success': 'Paid by Paystack', 'failed': 'Not paid', 'reversed': 'Sent back'}[s.transfer_status] }}</span>{% endif %}</td>
         <td class="ac-actions"><a class="ac-link" href="{{ url_for('admin_payroll_payslip', pid=s.id) }}" target="_blank" rel="noopener">Payslip</a>
           {% if draft and can_manage and s.staff_id != own_staff_id %}<details class="pay-adj"><summary class="ac-link">Add a line</summary>
             <form method="post" action="{{ url_for('admin_payroll_run_adjust', rid=run.id) }}">

@@ -6,7 +6,9 @@ Who may do what.
 * payroll.view: the runs, every payslip in them, and each person's pay. Salaries are seen nowhere else.
 * payroll.manage: set people's pay, the pay items and the statutory settings; prepare a run, add one-off lines, work
   it out again, cancel a draft, mark an approved run paid.
-* payroll.approve: approve a run, which locks it, and reopen an approved run that is not yet paid.
+* payroll.approve: approve a run, which locks it, and reopen an approved run that is not yet paid (and has had no
+  salary sent through Paystack).
+* Paying an approved run through the school's Paystack is the School Admin's alone: blueprints/school/payroll_paystack.py.
 Four eyes. A run is approved by someone other than whoever last prepared or changed it. Nobody sets their own pay or
 adds a line to their own payslip. A paid run is final.
 Bank account numbers, pension PINs and tax IDs are decrypted only for the bank schedule and the statutory returns of an
@@ -273,7 +275,23 @@ def admin_payroll_run(rid):
         own_staff_id=own.id if own else None, names=_names({run.prepared_by, run.approved_by, run.paid_by, run.cancelled_by}),
         can_manage=_may('payroll.manage'), can_approve=_may('payroll.approve') and run.prepared_by != me['id'],
         can_export=_may('payroll.manage') or _may('payroll.approve'), can_reopen=_may('payroll.approve'),
+        paystack=_paystack_state(slips),
         lines={s.id: json.loads(s.lines_json) for s in slips}))), 'payroll_run_opened', 'payroll_run', rid)
+
+
+def _paystack_state(slips):
+    """How paying through Paystack stands for a run: ``{'connected', 'can_pay' (the School Admin), 'can_check', 'counts'}``."""
+    from core.payments import payment_settings
+    from core.security import is_school_admin
+    counts = {}
+    for s in slips:
+        if s.transfer_status:
+            counts[s.transfer_status] = counts.get(s.transfer_status, 0) + 1
+    me = current_admin()
+    own_admin = is_school_admin() and not str(me['username'] or '').startswith('platform@')
+    return {'connected': payment_settings() is not None, 'can_pay': own_admin, 'counts': counts,
+            'can_check': bool(counts.get('pending')) and (is_school_admin() or _may('payroll.manage'))}
+
 
 
 def _changed(run, me):
@@ -393,6 +411,11 @@ def admin_payroll_run_reopen(rid):
         db.session.rollback()
         flash('Only an approved payroll that is not yet paid can be reopened.', 'error')
         return redirect(url_for('admin_payroll_run', rid=rid))
+    if db.session.execute(select(Payslip.id).where(Payslip.run_id == rid, Payslip.transfer_status.in_(('pending', 'success')))).first():
+        db.session.rollback()
+        flash('Salaries from this payroll have been sent through Paystack, so it cannot be reopened. Put a mistake right '
+              'in next month\'s payroll.', 'error')
+        return redirect(url_for('admin_payroll_run', rid=rid))
     run.status, run.approved_by, run.approved_at = 'draft', None, None
     _changed(run, me)
     db.session.commit()
@@ -410,6 +433,10 @@ def admin_payroll_run_paid(rid):
     if run.status != 'approved':
         db.session.rollback()
         flash('Only an approved payroll can be marked as paid.', 'error')
+        return redirect(url_for('admin_payroll_run', rid=rid))
+    if db.session.execute(select(Payslip.id).where(Payslip.run_id == rid, Payslip.transfer_status == 'pending')).first():
+        db.session.rollback()
+        flash('Some salaries sent through Paystack are still being paid. Check the transfers first.', 'error')
         return redirect(url_for('admin_payroll_run', rid=rid))
     run.status, run.paid_by, run.paid_at = 'paid', me['id'], _now()
     db.session.commit()

@@ -211,8 +211,9 @@ that did not really happen. A payment recorded by hand, or already refunded, doe
 button - void it instead, and settle the parent outside the system, the same way as always.</p>
 <h2 id="payroll">Payroll</h2>
 <p><a href="{{ url_for('admin_payroll') }}">Payroll</a> (in the menu under Management, Staff) pays the school's staff each month. The
-<strong>Payroll Officer</strong> role keeps people's pay and prepares each month; the bursar (the Finance Manager role) approves it.
-Salaries are seen only by people allowed to see the payroll: not by HR, not by other staff.</p>
+<strong>Payroll Officer</strong> role keeps people's pay, prepares each month and marks it paid; only the <strong>School Admin</strong>
+(the proprietor or proprietress) approves it. Salaries are seen only by those two: not by the bursar, not by HR, not by other staff.
+If the School Admin ever wants someone else to see or approve payroll, they give that person the permission personally.</p>
 <ul>
   <li><strong>Settings first.</strong> PAYE bands, rent relief, pension (8% from the employee, 10% from the school) and NHF start from
   the Nigeria Tax Act 2025 and the Pension Reform Act 2014. They are a starting point, not tax advice: have the school's accountant check
@@ -223,26 +224,63 @@ Salaries are seen only by people allowed to see the payroll: not by HR, not by o
   <li><strong>A month.</strong> <em>Prepare</em> works out everyone's payslip. Check them; <em>Add a line</em> pays arrears or a bonus,
   or takes back a salary advance, for that month only. Then someone other than whoever prepared it <em>Approves</em> it, checking the
   <em>Change from</em> column, which shows each net pay against the last paid month (a rise of more than a tenth is marked): it is locked,
-  and staff see their payslips on <a href="{{ url_for('admin_my_payslips') }}">My payslips</a>.</li>
-  <li><strong>Paying.</strong> Download the <em>bank schedule</em> (name, bank, account number, amount) for the bank, and the
+  and staff see their payslips on <a href="{{ url_for('admin_my_payslips') }}">My payslips</a>. Only the School Admin approves.</li>
+  <li><strong>Paying by the bank.</strong> Download the <em>bank schedule</em> (name, bank, account number, amount) for the bank, and the
   <em>PAYE, pension and NHF</em> returns for remitting them, then <em>Mark paid</em>; a paid month is final. An approved month not yet paid
-  can be reopened, and must be approved again by someone else.</li>
+  can be reopened, and must be approved again (after someone else has changed it).</li>
+  <li><strong>Paying through Paystack.</strong> When the school's Paystack account is connected (Settings, Online payments), an approved
+  month shows <em>Review and pay</em>, to the School Admin only: nobody else sends salaries, and a platform operator visiting the school
+  cannot either. See below.</li>
   <li><strong>Unpaid leave</strong> can be taken off pay automatically (a setting): each working day of approved leave of a kind that is not
   paid takes a day's share of basic and allowances.</li>
   <li>PAYE is worked out on each month's pay as if paid all year. If someone's pay changes during the year, the accountant settles the
   difference at the year's end.</li>
 </ul>
+<h3 id="payroll-paystack">Paying salaries through Paystack</h3>
+<p>The School Admin (the proprietor or proprietress) can send each person's net pay straight to their bank from the school's Paystack
+balance, once the month is approved.</p>
+<ol>
+  <li><strong>Review.</strong> <em>Review and pay</em> lists everyone with pay to receive: their bank, the last four digits of the
+  account, their net pay, and the <strong>name the bank holds for that account</strong>, asked from Paystack. Check the names. Someone
+  whose name does not match the payroll's is left unticked: tick them only if you are sure (a married name, a nickname). The school's
+  Paystack balance is shown beside the total.</li>
+  <li><strong>Who is not offered.</strong> Someone with no bank account on their payslip; someone whose bank details were changed
+  <em>after</em> the month was approved (nobody can redirect a salary after approval: reopen the month and approve it again); or someone
+  whose bank or account Paystack cannot find. Pay them by the bank schedule.</li>
+  <li><strong>Send.</strong> Type your own password and press <em>Send salaries</em>. Everything is checked again first; if the balance
+  does not cover the total, nothing is sent. Each person's payslip then shows <em>Sending</em>, and <em>Paid by Paystack</em> once the
+  bank confirms. Nobody is ever paid twice: pressing again only sends to those not paid yet.</li>
+  <li><strong>Finished.</strong> When everyone has been paid through Paystack, the month is marked paid on its own. If you paid some
+  people by the bank instead, the Payroll Officer marks the month paid once nothing is still being sent.</li>
+</ol>
+<div class="guide-note">Once any salary has been sent, the month can no longer be reopened: put a mistake right in next month's payroll.
+Every review, payment and refusal is in the activity log; account numbers never are.</div>
+
 <h3 id="payroll-troubleshooting">Troubleshooting: payroll</h3>
 <dl class="guide-faq">
   <dt>Someone is missing from the month's payroll.</dt>
   <dd>They need a staff record and their pay set under Staff pay, marked as on the payroll. Add them, then prepare the month
   again (a month not yet approved can be prepared again).</dd>
   <dt>I cannot approve the payroll.</dt>
-  <dd>Whoever prepared it cannot approve it: someone else with the right to approve payroll must. A paid month is final.</dd>
+  <dd>Only the School Admin approves, and not a month they prepared or last changed themselves. A paid month is final.</dd>
   <dt>I cannot change my own pay.</dt>
   <dd>That is on purpose: nobody sets their own pay.</dd>
   <dt>A net pay is marked as a rise.</dt>
   <dd>It is more than a tenth higher than the last paid month. Check the reason (a promotion, arrears) before approving.</dd>
+  <dt>There is no Review and pay button.</dt>
+  <dd>It is for the School Admin only, on an approved month, with the school's Paystack connected under Settings, Online payments.</dd>
+  <dt>"…turn off the one-time code (OTP) for transfers".</dt>
+  <dd>Paystack asks for a code for each transfer, which stops several being sent at once. Turn off the OTP for transfers in your
+  Paystack dashboard (Settings, Preferences, Transfers; if it is not offered there, ask Paystack support to turn it off), then send
+  again: those not paid are offered again.</dd>
+  <dt>"The school's Paystack balance does not cover…".</dt>
+  <dd>Fund the Paystack balance (Paystack, Balance, Top up), then send again. Nothing was sent.</dd>
+  <dt>A payslip shows Sending for a long time.</dt>
+  <dd>Press <em>Check transfers</em> on the month: it asks Paystack about each one. A transfer Paystack has no record of after a quarter
+  of an hour is marked not paid, and can be sent again.</dd>
+  <dt>A payslip shows Not paid or Sent back.</dt>
+  <dd>Hover over it for Paystack's reason (often a closed account). Correct the person's bank details for next month, and pay this month
+  by the bank.</dd>
   <dt>The tax figures look wrong.</dt>
   <dd>Check the payroll settings with the school's accountant; every payroll keeps a copy of the settings it used.</dd>
 </dl>

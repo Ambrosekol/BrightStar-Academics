@@ -6,7 +6,7 @@ attempts, results/rankings/exports, and retake/regrade controls.
 import io
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -73,8 +73,17 @@ def admin_dashboard():
         'completed':one_scalar(select(func.count()).select_from(Attempt)
                                .where(Attempt.status.in_(('submitted','expired'))),0),
         'candidates':one_scalar(select(func.count()).select_from(Candidate)
-                                .where(Candidate.active==1),0)
+                                .where(Candidate.active==1),0),
+        # Sitting a paper right now, and registrations this week against the week before.
+        'sitting':one_scalar(select(func.count()).select_from(Attempt).where(Attempt.status=='active'),0),
     }
+    week_ago=(datetime.now(timezone.utc)-timedelta(days=7)).isoformat()
+    fortnight_ago=(datetime.now(timezone.utc)-timedelta(days=14)).isoformat()
+    stats['registered_week']=one_scalar(select(func.count()).select_from(Candidate).where(Candidate.created_at>=week_ago),0)
+    stats['registered_before']=one_scalar(select(func.count()).select_from(Candidate)
+                                          .where(Candidate.created_at>=fortnight_ago,Candidate.created_at<week_ago),0)
+    from blueprints.school.dashboard import _admissions
+    admissions=_admissions(current_admin())
     recent=db.session.scalars(select(Attempt).order_by(Attempt.id.desc()).limit(12)).all()
     current_session=_school_current_session()
     states={bank_id:active for bank_id,active in tuples(
@@ -107,7 +116,7 @@ def admin_dashboard():
 
     top_candidates=sorted([r for r in summaries if r['complete']], key=lambda r:(r['overall_percentage'],r['total_score']), reverse=True)[:5]
     for i,r in enumerate(top_candidates,1): r['rank']=i
-    return render_template('admin_dashboard.html',banks=banks.values(),stats=stats,recent=recent,exam_states=states,subject_analytics=subject_analytics,class_analytics=class_analytics,top_candidates=top_candidates,online_counts=online_counts)
+    return render_template('admin_dashboard.html',banks=banks.values(),stats=stats,recent=recent,exam_states=states,subject_analytics=subject_analytics,class_analytics=class_analytics,top_candidates=top_candidates,online_counts=online_counts,admissions=admissions)
 
 @app.route('/admin/practice-tests')
 @admin_required

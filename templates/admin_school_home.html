@@ -4,7 +4,7 @@
 {% block content %}
 {# The staff Overview: a dense report built for the person looking at it (blueprints/school/dashboard.py).
    Each block is present only when its panel was worked out for this person's role and duties. #}
-<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='4') }}">
 {% set p = panels %}
 <div class="ov">
 
@@ -100,6 +100,8 @@
       <ul class="ov-list">{% for s in c.weakest %}<li><span>{{ s.name }}</span><span>{{ '%.0f'|format(s.percentage) }}%</span></li>{% endfor %}
         {% for s in c.absent %}<li><span>{{ s.name }}</span><span>{{ s.days }} day{{ '' if s.days == 1 else 's' }} absent</span></li>{% endfor %}
         {% if not c.weakest and not c.absent %}<li><span class="dz-empty">Nothing to flag</span></li>{% endif %}</ul>
+      {% if c.birthdays %}<h3 class="ov-sec">Birthdays this week</h3>
+      <ul class="ov-list">{% for b in c.birthdays %}<li><span>{{ b.name }}</span><span{% if b.today %} class="ov-flag"{% endif %}>{{ b.when }} · {{ b.age }}</span></li>{% endfor %}</ul>{% endif %}
     </div>
   </div>
 </section>
@@ -190,6 +192,47 @@
     {{ d.hbars(f.owed_by_class, unit='₦', empty='Nothing owed.') }}
     <div class="ov-h" style="margin-top:12px"><h2>Collection rate, by class <small>paid of billed</small></h2></div>
     {{ d.hbars(f.rate_by_class, max_value=100, empty='Nothing billed yet.') }}
+  </section>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ---------------------------------------------------------------- staff, payroll, report cards #}
+{% if p.staff or p.payroll or p.report_cards %}
+<div class="ov-g">
+  {% if p.staff %}{% set sf = p.staff %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovStaff">
+    <div class="ov-h"><h2 id="ovStaff">Staff today</h2><a href="{{ sf.href }}">{{ sf.link }} →</a></div>
+    {{ d.kpis(sf.kpis) }}
+    {% if sf.columns %}<h3 class="ov-sec">Staff in, each work day</h3>{{ d.columns(sf.columns, sf.column_max, empty='Nobody has clocked in yet.') }}{% endif %}
+    <div class="ov-g" style="margin:0">
+      {% if sf.attendance_on %}<div class="ov-in ov-in--6"><h3 class="ov-sec">Not in yet</h3>
+        <ul class="ov-list">{% for n in sf.not_in[:6] %}<li><span>{{ n }}</span></li>{% else %}<li><span class="dz-empty">Everyone expected is in</span></li>{% endfor %}
+        {% if sf.not_in|length > 6 %}<li><span class="dz-empty">and {{ sf.not_in|length - 6 }} more</span></li>{% endif %}</ul></div>{% endif %}
+      <div class="ov-in ov-in--6"><h3 class="ov-sec">On leave today</h3>
+        <ul class="ov-list">{% for n in sf.leave[:6] %}<li><span>{{ n }}</span></li>{% else %}<li><span class="dz-empty">Nobody</span></li>{% endfor %}</ul></div>
+    </div>
+    {% if sf.waiting %}<h3 class="ov-sec">Leave waiting for a decision</h3>
+    <table class="ov-t"><tbody>{% for w in sf.waiting %}<tr><td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.dates }}</td><td class="n">{{ w.days }} day{{ '' if w.days == 1 else 's' }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+  </section>
+  {% endif %}
+  {% if p.payroll %}{% set pr = p.payroll %}
+  <section class="ov-p ov-p--6" aria-labelledby="ovPayroll">
+    <div class="ov-h"><h2 id="ovPayroll">Payroll</h2><a href="{{ url_for('admin_payroll') }}">Payroll →</a></div>
+    {{ d.kpis(pr.kpis) }}
+    <h3 class="ov-sec">Net pay, last six months</h3>
+    {{ d.columns(pr.columns, pr.column_max, unit='₦', empty='No payroll yet.') }}
+  </section>
+  {% endif %}
+  {% if p.report_cards %}{% set rc = p.report_cards %}
+  <section class="ov-p ov-p--{{ '12' if not (p.staff or p.payroll) else '6' }}" aria-labelledby="ovCards">
+    <div class="ov-h"><h2 id="ovCards">Report cards · {{ term }}</h2><a href="{{ url_for('admin_school_report_cards') }}">Report cards →</a></div>
+    {{ d.kpis(rc.kpis) }}
+    <div class="ov-scroll"><table class="ov-t">
+      <thead><tr><th>Class</th><th class="n">Students</th><th class="n">Cards ready</th><th class="n">Comments</th></tr></thead>
+      <tbody>{% for r in rc.rows %}<tr><td><a href="{{ r.href }}">{{ r.name }}</a></td><td class="n">{{ r.students }}</td>
+        <td class="n">{{ r.ready }}</td><td class="n">{% if r.comments < r.students %}<span class="ov-flag">{{ r.comments }}/{{ r.students }}</span>{% else %}{{ r.comments }}/{{ r.students }}{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
   </section>
   {% endif %}
 </div>

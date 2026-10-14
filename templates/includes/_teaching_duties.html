@@ -2,7 +2,9 @@
    Needs: duties ({'class_teacher':[class ids], 'subjects':[{class_id, subject_id, department}]}),
    duty_classes ([{id, name, senior}]), duty_subjects ([{id, name, class_ids}]) and duty_departments.
    A row's subject list shows only the subjects its chosen class takes (class_ids, from class_subjects); a subject
-   already saved on a duty stays listed even if the class no longer offers it, marked so, so nothing is dropped.
+   already saved on a duty stays listed even if the class no longer offers it, marked so, so nothing is dropped. A subject
+   chosen on one row is taken off the other rows' lists for the same class. In an SSS class the department list shows
+   only the departments that take the chosen subject (its departments on the Subjects page).
    Posts duty_class_teacher (repeated), and duty_class / duty_subject / duty_department (one of each per row). #}
 <style>
 .td-block{margin-top:4px}
@@ -57,12 +59,12 @@
       </select>
       <select name="duty_subject" aria-label="Subject" data-duty-subject>
         <option value="">Subject…</option>
-        {% for s in duty_subjects %}<option value="{{ s.id }}" data-classes=" {{ s.class_ids|join(' ') }} " {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        {% for s in duty_subjects %}<option value="{{ s.id }}" data-classes=" {{ s.class_ids|join(' ') }} " data-departments="|{{ (s.departments or duty_departments)|join('|') }}|" {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
         <option value="" disabled data-duty-none hidden>No subject is offered to this class yet</option>
       </select>
       <select name="duty_department" aria-label="Department (SSS only)" class="td-dept">
         <option value="">All departments</option>
-        {% for d in duty_departments %}<option value="{{ d }}" {% if d == row.department %}selected{% endif %}>{{ d }} only</option>{% endfor %}
+        {% for d in duty_departments %}<option value="{{ d }}" data-dept="{{ d }}" {% if d == row.department %}selected{% endif %}>{{ d }} only</option>{% endfor %}
       </select>
       <button type="button" class="td-remove" data-duty-remove aria-label="Remove this row">✕</button>
     </div>
@@ -74,10 +76,35 @@
 (function(){
   var box=document.querySelector('[data-duties]:not([data-ready])'); if(!box) return; box.setAttribute('data-ready','1');
   var rows=box.querySelector('[data-duty-rows]');
+  // Subjects already chosen on the other rows, by class: {classId: {subjectId: true}}.
+  function taken(except){
+    var out={};
+    Array.prototype.forEach.call(rows.children,function(r){
+      if(r===except) return;
+      var c=r.querySelector('[data-duty-class]').value, s=r.querySelector('[data-duty-subject]').value;
+      if(c && s){ (out[c]=out[c]||{})[s]=true; }
+    });
+    return out;
+  }
+  // In an SSS class, only the departments that take the chosen subject; one department only is chosen for them.
+  function departments(row, senior){
+    var dept=row.querySelector('.td-dept'), subj=row.querySelector('[data-duty-subject]');
+    var o=subj.options[subj.selectedIndex], allowed=o && o.value ? o.getAttribute('data-departments') : null, n=0, only='';
+    Array.prototype.forEach.call(dept.options,function(d){
+      if(!d.dataset.dept) return;
+      var ok=!allowed || allowed.indexOf('|'+d.dataset.dept+'|')!==-1;
+      d.hidden=!ok; d.disabled=!ok; if(ok){ n++; only=d.value; }
+    });
+    var all=dept.querySelector('option[value=""]');
+    if(dept.value && dept.options[dept.selectedIndex].disabled) dept.value='';
+    if(senior && allowed && n===1){ dept.value=only; all.hidden=true; all.disabled=true; }
+    else { all.hidden=false; all.disabled=false; }
+  }
   function sync(row){
     var cls=row.querySelector('[data-duty-class]'), dept=row.querySelector('.td-dept');
     var opt=cls.options[cls.selectedIndex], senior=opt && opt.getAttribute('data-senior')==='1';
     dept.hidden=!senior; if(!senior) dept.value='';
+    var used=(cls.value && taken(row)[cls.value]) || {};
     // Only the subjects the chosen class takes. A subject already chosen stays (marked) if the class does not
     // offer it any more, so editing someone never drops a duty they hold without anyone noticing.
     var subj=row.querySelector('[data-duty-subject]'), none=subj.querySelector('[data-duty-none]'), shown=0;
@@ -85,33 +112,36 @@
       if(!o.value || o===none) return;
       if(!o.dataset.name) o.dataset.name=o.textContent;
       var offered=!cls.value || o.getAttribute('data-classes').indexOf(' '+cls.value+' ')!==-1;
-      var keep=offered || o.selected;
+      var keep=(offered && !used[o.value]) || o.selected;
       o.hidden=!keep; o.disabled=!keep;
       o.textContent=o.dataset.name+(offered ? '' : ' (not offered to this class)');
-      if(offered) shown++;
+      if(offered && !used[o.value]) shown++;
     });
     none.hidden=!(cls.value && !shown);
+    departments(row, senior);
   }
+  function syncAll(){ Array.prototype.forEach.call(rows.children,sync); }
   function wire(row){
     row.querySelector('[data-duty-class]').addEventListener('change',function(){
       var subj=row.querySelector('[data-duty-subject]'), o=subj.options[subj.selectedIndex];
       // A new class: a subject it does not take is cleared rather than kept.
-      if(o && o.value && o.getAttribute('data-classes').indexOf(' '+this.value+' ')===-1) subj.value='';
-      sync(row);
+      if(o && o.value && (o.getAttribute('data-classes').indexOf(' '+this.value+' ')===-1 || (taken(row)[this.value]||{})[o.value])) subj.value='';
+      syncAll();
     });
-    row.querySelector('[data-duty-subject]').addEventListener('change',function(){ sync(row); });
+    row.querySelector('[data-duty-subject]').addEventListener('change',syncAll);
     row.querySelector('[data-duty-remove]').addEventListener('click',function(){
       if(rows.children.length>1){ row.remove(); }
-      else { row.querySelectorAll('select').forEach(function(s){ s.value=''; }); sync(row); }
+      else { row.querySelectorAll('select').forEach(function(s){ s.value=''; }); }
+      syncAll();
     });
-    sync(row);
   }
   Array.prototype.forEach.call(rows.children,wire);
+  syncAll();
   box.querySelector('[data-duty-add]').addEventListener('click',function(){
     var copy=rows.lastElementChild.cloneNode(true);
     copy.querySelectorAll('select').forEach(function(s){ s.value=''; });
     copy.querySelectorAll('option').forEach(function(o){ if(o.dataset.name) o.textContent=o.dataset.name; });
-    rows.appendChild(copy); wire(copy); copy.querySelector('select').focus();
+    rows.appendChild(copy); wire(copy); syncAll(); copy.querySelector('select').focus();
   });
 })();
 </script>

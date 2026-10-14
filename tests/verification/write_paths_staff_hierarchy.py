@@ -235,6 +235,17 @@ check("the staff form lists roles from the most senior down and offers teaching 
       staff_form.index("Head teacher") < staff_form.index("Class teacher") < staff_form.index("Subject teacher")
       and 'name="duty_class_teacher"' in staff_form and 'name="duty_department"' in staff_form)
 
+check("the duty editor knows each subject's SSS departments, so an SSS row offers only the departments that take it",
+      'data-departments="|Science|"' in staff_form and 'data-departments="|Art|Commercial|"' in staff_form
+      and 'data-departments="|Science|Art|Commercial|"' in staff_form)
+r = op.post("/admin/administration/admins/new", {
+    "username": "st.wrongdept", "display_name": "Wrong Dept", "admin_type_ids": [str(role["Subject Teacher"])],
+    "duty_class": [str(cls["SSS 1"])], "duty_subject": [str(PHYS)], "duty_department": ["Art"]},
+    page="/admin/administration/admins/new")
+check("a duty in a department that does not take the subject is refused, and nobody is created",
+      "Physics is not taken by the Art department" in r.get_data(as_text=True)
+      and alpha.one("SELECT COUNT(*) FROM admins WHERE username = 'st.wrongdept'") == 0)
+
 head, HEAD, _ = new_staff("head", ["Head Teacher"])
 bursar, BURSAR, _ = new_staff("bursar", ["Finance Manager"])
 ct_j1, CT_J1, _ = new_staff("ct.jss1", ["Class Teacher"], class_teacher=["JSS 1"])

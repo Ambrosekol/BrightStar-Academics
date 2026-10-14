@@ -152,11 +152,18 @@ and the Head Teacher preset has {{ perm('hr.leave.approve') }}.</p>
 <p>{{ route('admin_payroll') }} ({{ file('blueprints/school/payroll.py') }}); the rules are {{ file('core/payroll.py') }}, the tables
 {{ table('payroll_settings') }}, {{ table('payroll_items') }}, {{ table('payroll_staff') }}, {{ table('payroll_staff_items') }},
 {{ table('payroll_runs') }}, {{ table('payroll_payslips') }} and {{ table('payroll_adjustments') }}. Permissions: {{ perm('payroll.view') }},
-{{ perm('payroll.manage') }} and {{ perm('payroll.approve') }} (Payroll Officer: view and manage; Finance Manager: view and approve).</p>
+{{ perm('payroll.manage') }} and {{ perm('payroll.approve') }} (Payroll Officer: view and manage; approving is the School Admin's, and
+PRESET_ROLE_NEVER in {{ file('core/security.py') }} keeps payroll off the Finance Manager role in every school).</p>
 <ul>
   <li><strong>Money</strong> is integer kobo; percentages are basis points rounded half up (<code>pct</code>). PAYE is annualised: taxable pay x 12
   less pension, NHF and rent relief, through the school's bands, / 12. The defaults are the Nigeria Tax Act 2025 bands and the PRA 2014 rates;
   each run stores the settings it used (<code>settings_json</code>) and each payslip its own lines (<code>lines_json</code>).</li>
+  <li><strong>Paying through Paystack</strong>: {{ route('admin_payroll_paystack') }} ({{ file('blueprints/school/payroll_paystack.py') }}, the
+  Paystack calls in {{ file('core/payroll_transfers.py') }}) is the school's own School Admin's alone (never a platform operator's). Each
+  payslip keeps its own transfer (<code>transfer_status</code>, <code>transfer_reference</code>): marked pending and committed under a lock on
+  the run before anything is sent, never sent again while pending or paid, settled only by <code>/transfer/verify</code> (from the signed
+  webhook or Check transfers). Only the account on the approved payslip is paid (its bank and last four digits), after <code>/bank/resolve</code>;
+  the password is asked again, and only wrong ones count towards its limit. A run with any transfer pending or paid cannot be reopened.</li>
   <li><strong>Four eyes</strong>: {{ route('admin_payroll_run_approve') }} refuses the run's <code>prepared_by</code>, which every change
   (work out again, a one-off line, reopening) resets to whoever made it. Nobody edits their own pay or payslip. Approved runs refuse changes;
   paid runs are final.</li>

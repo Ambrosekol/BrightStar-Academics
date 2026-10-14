@@ -212,7 +212,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Finance Manager': {
         'description': 'The bursar: oversees the school-wide financial ledger, collections, balances, receipts and finance reports.',
-        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage','payroll.view','payroll.approve']
+        'permissions': ['school.view','school.students.view','finance.view_own','finance.record','finance.receipt.send','finance.view_all','finance.manage']
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
@@ -497,6 +497,12 @@ RETIRED_PERMISSIONS = {'website.manage': 'branding.manage', 'website.view': None
 RENAMED_PRESET_ROLES = {'Website & Content Manager': 'School Profile Manager',
                         'Primary Class Teacher': 'Class Teacher',
                         'College Subject Teacher': 'Subject Teacher'}
+
+# Permissions a starter role never carries, taken off that role in every school each time the school starts (app.py).
+# Payroll is for the Payroll Officer, who prepares and pays it, and the School Admin, who alone approves it: the bursar,
+# who holds the school's money, does not also see or sign off staff pay. The School Admin can still give one person a
+# permission personally (an override), which this never touches.
+PRESET_ROLE_NEVER = {'Finance Manager': ('payroll.view', 'payroll.approve', 'payroll.manage')}
 
 # Where each starter role sits in the chain of authority (core/school_structure.py). Applied to a
 # school's copy only while it has no level yet, so a level the school chose itself is kept.

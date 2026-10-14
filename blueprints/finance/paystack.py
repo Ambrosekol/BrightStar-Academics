@@ -292,6 +292,15 @@ def paystack_webhook():
     if event_type in ('refund.processed', 'refund.failed'):
         _finalize_refund(event_type, data)
         return '', 200
+    if event_type in ('transfer.success', 'transfer.failed', 'transfer.reversed'):
+        # A salary paid from the school's balance (blueprints/school/payroll_paystack.py): settled by asking Paystack.
+        from blueprints.school.payroll_paystack import transfer_webhook
+        try:
+            transfer_webhook(settings, data)
+        except payments.PaystackError as exc:
+            current_app.logger.warning('A payroll transfer webhook could not be checked with Paystack: %s', exc.detail)
+            return '', 503   # Paystack tries the webhook again later
+        return '', 200
     reference = data.get('reference', '')
     row = db.session.scalars(select(FinanceOnlinePayment).where(
         FinanceOnlinePayment.reference == reference)).first()

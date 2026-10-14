@@ -156,7 +156,7 @@ roles and duties instead (below).</p>
   <div class="see"><b>You see</b><div>"You prepared or last changed this payroll, so someone else approves it"; "A payslip takes more than it pays"; or PAYE, pension or NHF that the accountant disagrees with.</div></div>
   <div><b>Why</b><div><p>Four eyes: whoever prepared, worked out again, added a line to or reopened a run ({{ table('payroll_runs') }}, <code>prepared_by</code>) cannot approve it. A negative net pay is refused. Statutory amounts come from the school's own payroll settings ({{ table('payroll_settings') }}), copied into each run.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Ask another person with {{ perm('payroll.approve') }} (the bursar, or the School Admin) to approve it.</li>
+    <li>Ask the School Admin (or someone they gave {{ perm('payroll.approve') }} personally) to approve it.</li>
     <li>Reduce the one-off deductions on that payslip, or correct the person's pay, then Work out again.</li>
     <li>Have the accountant correct Payroll, Settings; then Work out again on a draft. Approved months keep the settings they were approved with; reopen one only if it is not paid.</li>
   </ol></div></div>

@@ -1,6 +1,7 @@
 """Payroll, proven end to end on PostgreSQL. In plain words:
 
-A. Who: the Payroll Officer and the bursar have Payroll; a teacher and the HR Officer do not, and are refused its pages.
+A. Who: the Payroll Officer and the School Admin have Payroll; the bursar, a teacher and the HR Officer do not, and are
+   refused its pages. Only the School Admin approves.
 B. Settings: bands out of order and percentages over 100 are refused; who checked them is kept; a teacher cannot change them.
 C. Pay: a bad account number is refused; bank numbers, pension PINs and tax IDs are encrypted and never shown or logged;
    nobody sets their own pay.
@@ -158,8 +159,10 @@ PERIOD = TODAY.strftime("%Y-%m")
 PAY = "/admin/payroll"
 
 # ================================================================ A. who
-check("the Payroll Officer and the bursar have Payroll in the menu",
-      "/admin/payroll" in officer.text("/admin/school") and "/admin/payroll" in bursar.text("/admin/school"))
+check("the Payroll Officer has Payroll in the menu; the bursar (Finance Manager) does not",
+      "/admin/payroll" in officer.text("/admin/school") and "/admin/payroll" not in bursar.text("/admin/school"))
+check("the bursar is refused the payroll and the staff pay", bursar.get(PAY).status_code in (302, 403)
+      and bursar.get(f"{PAY}/staff/{BELLO}").status_code in (302, 403))
 check("a teacher and the HR Officer do not: salaries are seen nowhere else",
       "/admin/payroll" not in teacher.text("/admin/school") and "/admin/payroll" not in hro.text("/admin/school"))
 for path in (PAY, f"{PAY}/staff", f"{PAY}/staff/{BELLO}", f"{PAY}/settings"):
@@ -242,8 +245,10 @@ check("the bank schedule is not ready before approval", r.status_code == 302)
 check("the teacher cannot see her payslip while it is a draft", "No payslips yet" in teacher.text("/admin/my-payslips"))
 officer.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
 check("the Payroll Officer cannot approve (no right, and it is theirs)", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "draft")
-bursar.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
-check("the bursar approves it", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "approved")
+bursar.post(f"{PAY}/runs/{RUN}/approve", {}, page="/admin/school")
+check("the bursar cannot approve it", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "draft")
+op.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
+check("the School Admin approves it", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "approved")
 officer.post(f"{PAY}/runs/{RUN}/adjust", {"staff_id": BELLO, "kind": "deduction", "label": "Late", "amount": "100"}, page=f"{PAY}/runs/{RUN}")
 officer.post(f"{PAY}/runs/{RUN}/refresh", {}, page=f"{PAY}/runs/{RUN}")
 check("an approved payroll is locked", one("SELECT gross FROM payroll_payslips WHERE run_id = :r AND staff_id = :s", r=RUN, s=BELLO) == 38_000_000
@@ -259,24 +264,25 @@ check("she opens her own payslip, never cached", r.status_code == 200 and "Net p
       and "no-store" in r.headers.get("Cache-Control", "") and "····6789" in r.get_data(as_text=True)
       and "0123456789" not in r.get_data(as_text=True))
 check("she cannot open a colleague's", teacher.get(f"{PAY}/payslips/{OTHER}").status_code in (302, 403))
-r = bursar.get(f"{PAY}/runs/{RUN}/bank.csv")
+check("the bursar cannot download the bank schedule", bursar.get(f"{PAY}/runs/{RUN}/bank.csv").status_code in (302, 403))
+r = officer.get(f"{PAY}/runs/{RUN}/bank.csv")
 body = r.get_data(as_text=True)
-check("the bursar downloads the bank schedule, with the full account numbers, never cached",
+check("the Payroll Officer downloads the bank schedule, with the full account numbers, never cached",
       r.status_code == 200 and r.mimetype == "text/csv" and "0123456789" in body and "no-store" in r.headers.get("Cache-Control", ""))
 import csv as _csv, io as _io  # noqa: E402
 cells = [c for line in _csv.reader(_io.StringIO(body)) for c in line]
 check("…with a formula-looking name defused", any(c.startswith("'=cmd") for c in cells)
       and not any(c[:1] in "=+@" for c in cells if c))
-returns = bursar.get(f"{PAY}/runs/{RUN}/returns.csv").get_data(as_text=True)
+returns = op.get(f"{PAY}/runs/{RUN}/returns.csv").get_data(as_text=True)
 check("the returns carry PAYE, the pension PIN and the tax ID", "PEN100200300400" in returns and "TIN-55-66" in returns and "45572.00" in returns.replace(",", ""))  # with the taxed arrears: 546,864 a year
 check("each download is logged", one("SELECT COUNT(*) FROM audit_logs WHERE action IN ('payroll_bank_schedule_downloaded', 'payroll_returns_downloaded')") == 2)
 check("a teacher cannot download them", teacher.get(f"{PAY}/runs/{RUN}/bank.csv").status_code in (302, 403))
 
 # ================================================================ F. reopen, approve again, pay
-bursar.post(f"{PAY}/runs/{RUN}/reopen", {}, page=f"{PAY}/runs/{RUN}")
-check("the bursar reopens it as a draft", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "draft")
+op.post(f"{PAY}/runs/{RUN}/reopen", {}, page=f"{PAY}/runs/{RUN}")
+check("the School Admin reopens it as a draft", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "draft")
 check("…and staff stop seeing it", teacher.get(f"{PAY}/payslips/{PID}").status_code in (302, 403))
-bursar.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
+op.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
 check("whoever reopened it cannot approve it again", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "draft")
 
 # unpaid leave, taken off pay when the school says so
@@ -294,7 +300,7 @@ op.post(f"{PAY}/runs/{RUN}/approve", {}, page=f"{PAY}/runs/{RUN}")
 check("the School Admin approves it", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "approved")
 officer.post(f"{PAY}/runs/{RUN}/paid", {}, page=f"{PAY}/runs/{RUN}")
 check("the Payroll Officer marks it paid", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "paid")
-bursar.post(f"{PAY}/runs/{RUN}/reopen", {}, page=f"{PAY}/runs/{RUN}")
+op.post(f"{PAY}/runs/{RUN}/reopen", {}, page=f"{PAY}/runs/{RUN}")
 officer.post(f"{PAY}/runs/{RUN}/cancel", {}, page=f"{PAY}/runs/{RUN}")
 check("a paid payroll is final: it cannot be reopened or cancelled", one("SELECT status FROM payroll_runs WHERE id = :r", r=RUN) == "paid")
 
@@ -318,7 +324,7 @@ NEXT = (TODAY.replace(day=28) + timedelta(days=5)).strftime("%Y-%m")
 op.post(f"{PAY}/staff/{BELLO}", {"on_payroll": "1", "basic": "400000", "bank_name": "GTBank"}, page=f"{PAY}/staff/{BELLO}")
 officer.post(f"{PAY}/runs", {"period": NEXT}, page=PAY)
 RUN2 = one("SELECT id FROM payroll_runs WHERE period = :p", p=NEXT)
-page = bursar.text(f"{PAY}/runs/{RUN2}")
+page = op.text(f"{PAY}/runs/{RUN2}")
 check("the next month shows each net pay against the last paid month", "Change from" in page and "+₦" in page)
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))

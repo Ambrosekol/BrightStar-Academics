@@ -5,7 +5,7 @@
 {#- The entrance examination's Overview, in the School Overview's own look (static/overview.css, includes/_dash.html):
     the figures that matter, how each subject and entry level is doing, the leading candidates and the banks behind
     the papers. Data from blueprints/entrance/routes.py (admin_dashboard). -#}
-<link rel="stylesheet" href="{{ url_for('static', filename='overview.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='overview.css', v='4') }}">
 {% include 'includes/_entrance_frame.html' %}
 {% set aid = current_admin['id'] if current_admin else None %}
 {% set completion_rate = (100 * stats.completed / stats.attempts) if stats.attempts else none %}
@@ -36,6 +36,8 @@
 
 {{ d.kpis([
   {'label': 'Candidates registered', 'value': stats.candidates, 'href': url_for('admin_candidates'), 'note': 'active registrations'},
+  {'label': 'Registered this week', 'value': stats.registered_week, 'note': stats.registered_before ~ ' the week before'},
+  {'label': 'Sitting a paper now', 'value': stats.sitting, 'note': 'papers in progress'},
   {'label': 'Papers attempted', 'value': stats.attempts, 'note': 'every attempt, all papers'},
   {'label': 'Papers completed', 'value': stats.completed, 'note': ('%.0f'|format(completion_rate) ~ '% of attempts') if completion_rate is not none else 'none yet'},
   {'label': 'Question banks', 'value': stats.banks, 'href': url_for('admin_question_banks'), 'alert': ns.inactive > 0, 'note': (ns.inactive ~ ' turned off') if ns.inactive else 'all available'},
@@ -44,6 +46,17 @@
 
 {% if admin_has_permission(aid, 'presence.view') %}
 <p class="ov-links" style="margin:0 0 10px;font-size:12px;color:var(--ac-muted)"><a href="{{ url_for('admin_presence') }}">Online now:</a> {{ online_counts.admins }} administrator{{ '' if online_counts.admins == 1 else 's' }} · {{ online_counts.students }} student{{ '' if online_counts.students == 1 else 's' }} · {{ online_counts.parents }} parent{{ '' if online_counts.parents == 1 else 's' }}</p>
+{% endif %}
+
+{% if admissions %}
+<div class="ov-g">
+  <section class="ov-p ov-p--12" aria-labelledby="enAdm">
+    <div class="ov-h"><h2 id="enAdm">Admissions</h2><a href="{{ url_for('admin_candidate_admissions') }}">Admissions →</a></div>
+    {{ d.kpis(admissions.kpis) }}
+    <h3 class="ov-sec">Waiting, by entry class</h3>
+    {{ d.hbars(admissions.groups, unit='', empty='Nobody is waiting.') }}
+  </section>
+</div>
 {% endif %}
 
 <div class="ov-g">

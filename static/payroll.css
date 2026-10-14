@@ -47,3 +47,26 @@ tr.pay-adjrow td { padding-top: 0 !important; border-top: 0 !important; }
 .pay-lines .pay-total td { font-weight: 700; border-top: 1px solid var(--ac-ink-2); }
 .pay-lines .is-net td { color: var(--ac-brand); font-size: 14px; }
 .ac.pay .ac-t th.pay-n { text-align: right; }
+
+/* Paying through Paystack: the card on a run (templates/school_payroll_run.html), each payslip's transfer, and the
+   School Admin's review (templates/school_payroll_paystack.html). */
+.pay-ps { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 0 0 10px;
+  padding: 10px 14px; border: 1px solid var(--ac-line); border-left: 3px solid var(--ac-brand); border-radius: 10px; background: var(--ac-surface); }
+.pay-ps h2 { margin: 0; font-size: 14px; color: var(--ac-ink); }
+.pay-ps p { margin: 3px 0 0; font-size: 12.5px; color: var(--ac-muted); display: flex; flex-wrap: wrap; gap: 6px; }
+.pay-ps__act { display: flex; gap: 8px; align-items: center; }
+.pay-ps__act form { margin: 0; }
+.pay-ps__n, .pay-tr { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--ac-wash); color: var(--ac-ink); }
+.pay-tr { margin-top: 3px; }
+.pay-ps__n.is-success, .pay-tr.is-success { background: var(--ac-good-tint); color: var(--ac-good); }
+.pay-ps__n.is-pending, .pay-tr.is-pending { background: var(--ac-accent-tint); color: var(--ac-accent-strong); }
+.pay-ps__n.is-failed, .pay-ps__n.is-reversed, .pay-tr.is-failed, .pay-tr.is-reversed { background: var(--ac-attn-tint); color: var(--ac-attn); }
+.pay-rev td small { display: block; font-size: 11.5px; color: var(--ac-muted); }
+.pay-rev tr.is-off td { color: var(--ac-muted); }
+.pay-rev .pay-tick { width: 18px; height: 18px; accent-color: var(--ac-brand); }
+.pay-go { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin-top: 12px; padding: 12px 14px; border: 1px solid var(--ac-line);
+  border-radius: 10px; background: var(--ac-wash); }
+.pay-go label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ac-ink); }
+.pay-go input[type=password] { min-width: 220px; }
+.pay-go__sum { flex: 1 1 220px; font-size: 13px; color: var(--ac-ink); }
+.pay-go__sum strong { font-size: 18px; font-variant-numeric: tabular-nums; }

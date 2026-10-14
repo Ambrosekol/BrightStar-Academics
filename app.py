@@ -189,7 +189,7 @@ from core.presence import _presence_identity, touch_presence, touch_presence_if_
 # audit_log and friends moved to core/security.py.
 from core.security import (  # noqa: E402
     clear_school_admin_caches,
-    ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS,
+    ADMIN_PERMISSION_DEFS, ADMIN_ROLE_PRESETS, ADMIN_ENDPOINT_PERMISSIONS, PRESET_ROLE_NEVER,
     admin_required, current_admin, is_school_admin, admin_has_permission,
     SCHOOL_ADMIN_ROLE, LEGACY_TOP_ROLE_NAMES, RETIRED_PERMISSIONS, RENAMED_PRESET_ROLES,
     PRESET_ROLE_LEVELS, admin_permission_codes, admin_scope_allows,
@@ -578,6 +578,13 @@ def init_admin_security():
         for code in spec['permissions']
         if code in perm_ids
     ])
+    # What a starter role never carries is taken off it, in every school (PRESET_ROLE_NEVER, core/security.py).
+    for role_name,codes in PRESET_ROLE_NEVER.items():
+        rid=role_ids.get(role_name)
+        never=[perm_ids[c] for c in codes if c in perm_ids]
+        if rid and never:
+            db.session.execute(sa_delete(AdminTypePermission).where(AdminTypePermission.admin_type_id==rid,
+                                                                    AdminTypePermission.permission_id.in_(never)))
     # Place the teaching roles in the chain of authority, once: a level a school later changes is kept.
     for role_name,level in PRESET_ROLE_LEVELS.items():
         db.session.execute(sa_update(AdminType)
@@ -1275,6 +1282,7 @@ import blueprints.school.receipt_studio  # noqa: F401,E402
 import blueprints.school.hr  # noqa: F401,E402
 import blueprints.school.staff_attendance  # noqa: F401,E402
 import blueprints.school.payroll  # noqa: F401,E402
+import blueprints.school.payroll_paystack  # noqa: F401,E402
 import blueprints.school.subdivisions  # noqa: F401,E402
 import blueprints.school.transfers  # noqa: F401,E402
 import blueprints.school.student_import  # noqa: F401,E402
