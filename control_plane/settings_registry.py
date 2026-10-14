@@ -256,6 +256,15 @@ VARIABLES = [
         breaks_if_wrong='A count can lag a change made on another worker by this long. A change made on the '
                         'same worker always shows at once.'),
     Variable(
+        name='BRIGHTSTARS_DESIGN_CACHE_SECONDS', category='Platform', risk=RISK_LOW, default='60',
+        purpose='How long each worker keeps a school\'s report card and receipt designs (from the design studios) and '
+                'the list of the images they use, instead of reading them for every report card or receipt.',
+        when_to_change='Wanting a switched-on design to reach other workers sooner (lower it), or fewer reads on a '
+                       'results day (raise it). 0 reads the design for every card.',
+        affects='Which design report cards and receipts are drawn with, on workers other than the one that saved it.',
+        breaks_if_wrong='Set high, other workers keep drawing the previous design (or the standard one) for that long '
+                        'after a school saves or switches. The worker that made the change always shows it at once.'),
+    Variable(
         name='BRIGHTSTARS_BRANDING_CACHE_SECONDS', category='Platform', risk=RISK_LOW, default='10',
         purpose='How long a school\'s computed branding (name, colours, logo, contact details) is kept in each '
                'worker.',

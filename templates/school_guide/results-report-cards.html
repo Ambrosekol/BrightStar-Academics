@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import shot with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>A mark goes through the same journey everywhere it comes from — a test, an assignment, a manually
 entered score — before it ever reaches a student or parent.</p>
@@ -89,7 +89,7 @@ appears signed on a document. It opens as a window on the Report cards page.</p>
 
 <h2 id="studio">The report card studio: the school's own design</h2>
 <p><a href="{{ url_for('admin_design_studios') }}">Design studios</a> (in the menu under Management, Design &amp; print)
-opens the school's two design tools: the ID card studio and the <a href="{{ url_for('admin_report_card_studio') }}">report
+opens the school's design tools: the ID card studio, the receipt studio (see Finance) and the <a href="{{ url_for('admin_report_card_studio') }}">report
 card studio</a>. The report card studio needs the right to manage report card settings (the Report Card Officer and
 Head Teacher roles have it); there is also a <strong>Design the report card</strong> button on the Report cards page.</p>
 <p>Both studios fill the whole screen, like a design program: the tools along the top, what to add on the left (Insert,
@@ -121,6 +121,29 @@ you to use a computer instead.</p>
   every report card - the PDF and the page staff, parents and students see - is drawn from the saved design.
   <strong>Use the standard design</strong> goes back. <strong>Lock</strong> stops anyone changing it by accident.</li>
 </ul>
+
+<p>Every tool in the studio, with pictures, is explained in {{ page('design-studios', 'Design studios') }}.</p>
+<h3 id="report-cards-troubleshooting">Troubleshooting: report cards</h3>
+<dl class="guide-faq">
+  <dt>A student has no report card, or it says "Waiting for N results".</dt>
+  <dd>A card is ready only when every one of the student's results for the term is released. Release the ones still
+  entered, verified or approved, and the card appears.</dd>
+  <dt>Attendance shows nothing, or too few days.</dt>
+  <dd>Attendance counts the days the class register was taken for that term. Days nobody marked are not counted; take
+  the register daily under Attendance.</dd>
+  <dt>The position in class is missing, or seems wrong.</dt>
+  <dd>Position counts only students whose card is ready; equal scores share a place (1st, 2nd, 2nd, 4th). Once the rest of
+  the class's results are released, it is right for everyone.</dd>
+  <dt>The class teacher's comment or signature is missing.</dt>
+  <dd>The comment is written on the Report cards page (Comments); the teacher draws or uploads their signature on My
+  signature. The head's title, name and signature are on Report card settings.</dd>
+  <dt>Parents still see the standard report card.</dt>
+  <dd>Press <em>Use this design</em> in the report card studio, after saving. A change can take up to a minute to reach
+  every report card.</dd>
+  <dt>A table looks cramped with many subjects.</dt>
+  <dd>Make the results table taller, or leave out a column (Assignment, Project, Remark) in its settings; the rows share
+  the table's height.</dd>
+</dl>
 
 <h2 id="past-results">Bringing in past results</h2>
 <p>Step 3 of <a href="{{ url_for('admin_school_students_import') }}">Bulk import</a> brings in a student's graded

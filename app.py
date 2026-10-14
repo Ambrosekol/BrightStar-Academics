@@ -1269,6 +1269,7 @@ import blueprints.school.marking  # noqa: F401,E402
 import blueprints.school.id_cards  # noqa: F401,E402
 import blueprints.school.design_studios  # noqa: F401,E402
 import blueprints.school.report_card_studio  # noqa: F401,E402
+import blueprints.school.receipt_studio  # noqa: F401,E402
 import blueprints.school.hr  # noqa: F401,E402
 import blueprints.school.staff_attendance  # noqa: F401,E402
 import blueprints.school.payroll  # noqa: F401,E402

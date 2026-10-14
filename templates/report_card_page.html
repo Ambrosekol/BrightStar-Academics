@@ -72,7 +72,7 @@
 {#- The school's own design (the report card studio): each page drawn by the studio's own code from the design and
     this card's plain values (JSON, never HTML), every picture embedded. Shrunk to fit a phone; printed at real size. -#}
 <link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='3') }}">
 <style>
   .rcd-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 0 16px 32px; }
   .rcd-page { position: relative; overflow: hidden; background: #fff; box-shadow: 0 8px 30px rgba(20, 40, 80, .12); }
@@ -100,8 +100,8 @@
   {% for side in card.design.pages %}<div class="rcd-page" data-rcd-page="{{ side }}"></div>{% endfor %}
 </main>
 <script type="application/json" id="rcdData" nonce="{{ csp_nonce() }}">{{ {'layout': card.design.layout, 'view': card.design.view}|tojson }}</script>
-<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
-<script src="{{ url_for('static', filename='report-card-render.js', v='1') }}"></script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var data = JSON.parse(document.getElementById('rcdData').textContent), R = window.IdCardRender;

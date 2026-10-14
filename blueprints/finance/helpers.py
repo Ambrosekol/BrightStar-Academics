@@ -140,13 +140,17 @@ def _receipt_signature_setting_row():
         SchoolSetting.school_id==school_id,
         SchoolSetting.setting_key==RECEIPT_SIGNATURE_SETTING_KEY)).first()
 
-def _school_logo_bytes():
-    """The school's own logo, stored when the school was created, as bytes, or None."""
+def _school_logo_stored():
+    """Where the school's own logo is kept (a stored upload), or None."""
     try:
-        stored=one_scalar(select(SchoolPublicSetting.setting_value)
+        return one_scalar(select(SchoolPublicSetting.setting_value)
                           .where(SchoolPublicSetting.setting_key=='school_logo'))
     except Exception:
         db.session.rollback(); return None
+
+def _school_logo_bytes():
+    """The school's own logo, stored when the school was created, as bytes, or None."""
+    stored=_school_logo_stored()
     return read_upload_bytes(stored) if stored else None
 
 
@@ -234,14 +238,66 @@ def _receipt_sheet(payment_id,row=None):
         'amount_naira':row['amount_naira'],'amount_kobo':row['amount_kobo'],
         'notes':' '.join(str(row.get('notes') or '').split()),'received_by':received_by or '',
         'summary':_receipt_summary(row),
+        # Each detail on its own, for a school's own receipt design (the receipt studio).
+        'logo_path':_school_logo_stored(),'student_name':_student_display(row),'admission_no':row.get('admission_no') or '',
+        'class_name':row.get('class_name') or '','session_name':row.get('session_name') or '',
+        'category':row.get('category') or 'School Fees','method_only':method,'reference':reference,
     }
 
+RECEIPT_DESIGN_CACHE='receipt-design'
+
+def _read_receipt_design():
+    from core import receipt_design as rd
+    from models import IdCardAsset, ReceiptDesign
+    row=db.session.execute(select(ReceiptDesign.layout_json,ReceiptDesign.in_use).order_by(ReceiptDesign.id).limit(1)).first()
+    if not row or not row.in_use: return None
+    try:
+        layout=rd.clean_layout(row.layout_json,{i for (i,) in db.session.execute(select(IdCardAsset.id)).all()})
+    except ValueError:
+        current_app.logger.exception('The receipt design could not be read; using the standard receipt'); return None
+    used=rd.assets_used(layout)
+    assets=dict(db.session.execute(select(IdCardAsset.id,IdCardAsset.file_path).where(IdCardAsset.id.in_(list(used)))).all()) if used else {}
+    return layout,assets
+
+def school_receipt_design():
+    """``(layout, {image id: stored path})`` when the school's receipts use its own design (the receipt studio), else
+    None. Kept like the report card design (blueprints/school/report_card_data.school_design): read once per
+    BRIGHTSTARS_DESIGN_CACHE_SECONDS in each process, cleared at once by any change in the studio."""
+    from control_plane.config import design_cache_seconds
+    from core.short_cache import remember
+    return remember(RECEIPT_DESIGN_CACHE,design_cache_seconds(),_read_receipt_design)
+
+def forget_receipt_design():
+    from core.short_cache import forget_here
+    forget_here(RECEIPT_DESIGN_CACHE)
+
 def _receipt_pdf(payment_id):
-    """``(pdf bytes, payment row)``. The design is in core/receipt_pdf.py."""
+    """``(pdf bytes, payment row)``. The standard design is core/receipt_pdf.py; a school that has switched on its
+    own (the receipt studio) gets core/receipt_design_pdf.py."""
     row=_receipt_payload(payment_id)
     if not row: abort(404)
+    sheet=_receipt_sheet(payment_id,row)
+    design=school_receipt_design()
+    if design:
+        from core.receipt_design_pdf import render_designed_receipt
+        return render_designed_receipt(sheet,*design),row
     from core.receipt_pdf import render_receipt_pdf
-    return render_receipt_pdf(_receipt_sheet(payment_id)),row
+    return render_receipt_pdf(sheet),row
+
+def receipt_design_web(sheet):
+    """What a receipt page draws the school's own design from (static/receipt-render.js), or None for the standard
+    receipt. Staff pages only: pictures are the school's own addresses, which staff may open."""
+    design=school_receipt_design()
+    if not design: return None
+    from flask import url_for
+    from core import receipt_design as rd
+    layout,assets=design
+    view=rd.view_data(sheet)
+    static=lambda p: url_for('static',filename=p) if p else None
+    view.update({'brand':{'primary':sheet['primary'],'accent':sheet['accent']},'logo':school_brand().get('logo_url') or None,
+                 'signatures':{'authorised':static(sheet.get('signature_relpath'))},
+                 'assets':{i:static(p) for i,p in assets.items()}})
+    return {'layout':layout,'view':view,'voided':bool(sheet.get('voided'))}
 
 
 def _send_email_receipt(payment_id):

@@ -83,3 +83,16 @@ def test_the_guide_carries_no_permission_of_its_own():
 
 def test_the_navigation_rail_links_to_the_guide():
     assert "admin_guide_home" in ADMIN_BASE, "no navigation entry points at the guide"
+
+
+def test_every_guide_page_imports_the_macros_it_uses():
+    """A page that calls page(...) or shot(...) without importing it fails to render (a server error for the reader)."""
+    for path in GUIDE_DIR.glob("*.html"):
+        if path.stem.startswith("_"):
+            continue
+        source = path.read_text(encoding="utf-8")
+        imported = re.search(r"\{%\s*from 'school_guide/_macros.html' import ([^%]+?)(?: with context)?\s*%\}", source)
+        names = {n.strip() for n in imported.group(1).split(",")} if imported else set()
+        for macro in ("page", "shot"):
+            if re.search(r"\{\{\s*" + macro + r"\(", source):
+                assert macro in names, f"{path.name} uses {macro}() without importing it"

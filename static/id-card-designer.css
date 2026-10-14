@@ -232,18 +232,32 @@ html.rcs-open, html.rcs-open body { overflow: hidden; }
 }
 
 /* A phone or a small screen: no room to design. Both studios say so instead (blueprints/school/design_studios.py also
-   answers a phone's request with the same message). */
+   answers a phone's request with the same message, templates/includes/_studio_small.html). Plain and left-aligned, in
+   the app's own card and buttons. */
 .studio-small { display: none; }
-.studio-small.studio-small--always { display: grid; place-items: center; padding: 40px 16px; }
+.studio-small.studio-small--always { display: flex; justify-content: center; padding: 8px 0 24px; }
 @media (max-width: 1023px) {
-    .studio-small { position: fixed; inset: 0; z-index: 1600; display: grid; place-items: center; padding: 24px; background: var(--ac-wash, #f3f5f8); }
-    .studio-small.studio-small--always { position: static; z-index: auto; background: none; }
+    .studio-small { position: fixed; inset: 0; z-index: 1600; display: flex; align-items: center; justify-content: center; padding: 16px;
+                    background: var(--ac-wash, #f3f5f8); }
+    .studio-small.studio-small--always { position: static; z-index: auto; align-items: flex-start; padding: 8px 0 24px; background: none; }
 }
-.studio-small__box { max-width: 420px; padding: 24px; border: 1px solid var(--ac-line); border-radius: 14px; background: var(--ac-surface); text-align: center;
-                     box-shadow: 0 10px 30px rgba(0, 0, 0, .08); }
-.studio-small__box h1 { margin: 10px 0 6px; font-size: 18px; color: var(--ac-brand); }
-.studio-small__box p { margin: 0 0 16px; font-size: 14px; color: var(--ac-ink-2); line-height: 1.5; }
-.studio-small__ico { font-size: 34px; }
+.studio-small__box { width: 100%; max-width: 400px; padding: 20px; border: 1px solid var(--ac-line); border-radius: 12px;
+                     background: var(--ac-surface); box-shadow: 0 1px 2px rgba(16, 24, 40, .05); text-align: left; }
+.studio-small__head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.studio-small__ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px;
+                     background: var(--ac-accent-tint, #eaf2fd); color: var(--ac-brand, #0d2b52); }
+.ac .studio-small__eyebrow { margin: 0 0 1px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+                             color: var(--ac-muted); }
+.ac .studio-small__box h1 { margin: 0; font-size: 17px; line-height: 1.25; font-weight: 700; color: var(--ac-ink); }
+.ac .studio-small__text { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ac-ink-2); }
+.studio-small__needs { display: grid; gap: 0; margin: 0 0 16px; border: 1px solid var(--ac-line); border-radius: 8px; overflow: hidden; }
+.studio-small__needs > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; font-size: 13px; }
+.studio-small__needs > div + div { border-top: 1px solid var(--ac-line); }
+.studio-small__needs dt { color: var(--ac-muted); }
+.studio-small__needs dd { margin: 0; font-weight: 600; color: var(--ac-ink); }
+.studio-small__acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.studio-small__acts .ac-btn { flex: 1 1 140px; justify-content: center; }
+.ac .studio-small__foot { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--ac-line); font-size: 12px; color: var(--ac-muted); }
 /* The ID card studio in the whole window: the Student / Staff switch, and the small card centred in its space. */
 .idd-sides a { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--ac-ink-2); text-decoration: none; white-space: nowrap; }
 .idd-sides a.is-active { background: var(--ac-surface); color: var(--ac-brand); box-shadow: 0 1px 2px var(--ac-shadow); }
@@ -253,3 +267,4 @@ html.rcs-open, html.rcs-open body { overflow: hidden; }
 .idd-two > .idd-prop { min-width: 0; }
 .ac .idd-two .idd-prop select { width: 100%; }
 .idd--app .rcs-pane { overflow-x: hidden; }
+.idd-tpl--receipt .idd-tpl__frame { height: 124px; }

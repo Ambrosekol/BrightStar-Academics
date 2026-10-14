@@ -46,6 +46,13 @@ EXEMPT = {
     "/admin/report-cards/studio/preview": "see write_paths_report_studio.py",
     "/admin/report-cards/studio/assets": "see write_paths_report_studio.py",
     "/admin/report-cards/studio/assets/<int:asset_id>/delete": "see write_paths_report_studio.py",
+    # The receipt studio: the same, for the school's receipt.
+    "/admin/finance/receipts/studio": "see write_paths_receipt_studio.py",
+    "/admin/finance/receipts/studio/lock": "see write_paths_receipt_studio.py",
+    "/admin/finance/receipts/studio/use": "see write_paths_receipt_studio.py",
+    "/admin/finance/receipts/studio/preview": "see write_paths_receipt_studio.py",
+    "/admin/finance/receipts/studio/assets": "see write_paths_receipt_studio.py",
+    "/admin/finance/receipts/studio/assets/<int:asset_id>/delete": "see write_paths_receipt_studio.py",
     # Payroll: pay, settings, items, and a month prepared, changed, approved, reopened, paid and cancelled, valid and
     # hostile (one's own pay, the preparer approving, a locked run), in write_paths_payroll.py.
     "/admin/payroll/runs": "see write_paths_payroll.py",

@@ -29,7 +29,7 @@ from blueprints.finance.helpers import (
     _finance_student_lifetime_totals, _finance_student_outstanding,
     _finance_unallocated_payments, _finance_unallocated_summary, finance_snapshot,
     _legacy_stage_for, _log_receipt_delivery, _money, _next_receipt_no, _payment_status,
-    _receipt_payload, _receipt_pdf, _receipt_sheet,
+    _receipt_payload, _receipt_pdf, _receipt_sheet, receipt_design_web,
     # importing this module registers _send_payment_receipt_to_guardian as the
     # 'send_payment_receipt' job handler (core/jobs.py); it is only ever called through enqueue().
     _send_payment_receipt_to_guardian,  # noqa: F401
@@ -175,7 +175,8 @@ def _payment_page(payment_id,focus='receipt'):
         FinanceOnlinePayment.payment_id==payment_id,FinanceOnlinePayment.status=='success')).first() is not None
     refund=db.session.scalars(select(FinanceRefund).where(FinanceRefund.payment_id==payment_id)
                               .order_by(FinanceRefund.id.desc())).first()
-    return render_template('finance_payment.html',payment=row,sheet=_receipt_sheet(payment_id,row),
+    sheet=_receipt_sheet(payment_id,row)
+    return render_template('finance_payment.html',payment=row,sheet=sheet,designed=receipt_design_web(sheet),
                            signature_path=_receipt_signature_relpath(),is_online_payment=is_online_payment,
                            refund=refund,focus=focus,recorded_by_name=one_scalar(select(Admin.display_name).where(Admin.id==row['recorded_by']),''),
                            **_payment_allocation_state(row))
@@ -437,7 +438,10 @@ def admin_finance_receipt_print(payment_id):
     me=current_admin(); row=_receipt_payload(payment_id)
     if not row: abort(404)
     if not _finance_can_view_all(me) and row['recorded_by']!=me['id']: return admin_access_error('finance.view_own')
-    return render_template('finance_receipt_print.html',payment=row,sheet=_receipt_sheet(payment_id),signature_path=_receipt_signature_relpath())
+    sheet=_receipt_sheet(payment_id,row)
+    designed=receipt_design_web(sheet)
+    return render_template('finance_receipt_print.html',payment=row,sheet=sheet,designed=designed,signature_path=_receipt_signature_relpath(),
+                           page_size=('{} {}'.format(designed['layout']['page'],designed['layout']['orientation']) if designed else 'A5 landscape'))
 
 @app.route('/admin/finance/receipts/<int:payment_id>/pdf')
 @admin_required

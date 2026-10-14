@@ -28,6 +28,7 @@ GUIDE_GROUPS = (
         ('classes-subjects', 'Classes and subjects', 'The shape of a school year'),
         ('roles-permissions', 'Roles, permissions and scope', 'Who can do what, and how it is limited'),
         ('staff-admin', 'Staff, roles and branding', 'Settings, staff, roles, activity and how the portal looks'),
+        ('design-studios', 'Design studios', 'ID cards, report cards and receipts, designed by the school'),
     )),
     ('Students and families', (
         ('students', 'Students', 'Registering, importing, archiving'),

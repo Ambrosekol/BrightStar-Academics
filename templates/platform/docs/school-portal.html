@@ -248,6 +248,17 @@ through {{ route('admin_report_card_asset_upload') }} and {{ route('admin_report
   student, PDF and page - from the saved design; a design that cannot be read falls back to the standard card. The page
   embeds every picture and only the details the design shows. {{ route('admin_report_card_studio_preview') }} draws the
   design on screen with a made-up student.</li>
+  <li><strong>Cost.</strong> The design and the paths of the images it uses are read once per
+  <code>BRIGHTSTARS_DESIGN_CACHE_SECONDS</code> (default 60) in each process ({{ file('core/short_cache.py') }}, per school),
+  not for every card; saving, switching, locking or changing an image clears it at once in the process that did it. The
+  card page embeds only the student's own photograph and the signatures: the logo is its public address and the design's
+  images come from {{ route('report_design_image') }} (anyone signed in at the school - staff, a parent, a student - and
+  only an image the design in use shows; <code>private, max-age=604800, immutable</code>, since an image never changes
+  under its number). The page's font is a 45 KB subset per weight (<code>static/fonts/DejaVuSans-web.woff2</code>, Latin,
+  Yoruba and Igbo letters, punctuation, the Naira sign), with the full font fetched only for a character outside it.
+  The PDF keeps one decoded copy of each picture per file, works out a fitting text size at once rather than step by
+  step, and is written without ASCII85 ({{ file('core/pdf_setup.py') }}, for every PDF); <code>rl_accel</code> gives
+  reportlab its C speed-ups. A card's QR code is made once at its own size, each row's dark modules one bar.</li>
   <li><strong>Design studios</strong> ({{ route('admin_design_studios') }}, {{ file('blueprints/school/design_studios.py') }})
   is the one menu entry for both studios: it shows each studio only to someone who may open it.</li>
 </ul>

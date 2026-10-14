@@ -56,7 +56,7 @@
 {% endif %}
 {% endfor %}
 <script type="application/json" id="idcSheet" nonce="{{ csp_nonce() }}">{{ {'layout': layout, 'common': common, 'cards': views}|tojson }}</script>
-<script src="{{ url_for('static', filename='id-card-render.js', v='2') }}"></script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var data = JSON.parse(document.getElementById('idcSheet').textContent);

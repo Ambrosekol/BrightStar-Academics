@@ -15,6 +15,7 @@ import os
 import re
 
 from PIL import Image, ImageOps
+import core.pdf_setup  # noqa: F401  (how every PDF is written)
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4

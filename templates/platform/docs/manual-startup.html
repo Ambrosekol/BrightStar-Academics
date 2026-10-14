@@ -200,4 +200,22 @@ this server yet".</p></div>
   <div><b>Check</b><div><code>systemctl status brightstars</code> stays "active (running)".</div></div>
 </div>
 
+<h2 id="studio-deploys">After deploying the design studios</h2>
+
+<h3 id="new-design-tables">"relation "report_card_designs" does not exist" (or "receipt_designs")</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A server error opening a report card, a receipt or a studio after a deploy; the log names one of those tables.</div></div>
+  <div><b>Why</b><div><p>The deploy added tables ({{ table('report_card_designs') }}, {{ table('report_card_design_versions') }}, {{ table('receipt_designs') }}, {{ table('receipt_design_versions') }}) and the schools' databases were not upgraded.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Run <code>python -m control_plane upgrade</code> (it creates the missing tables in every school), then restart.</p></div></div>
+  <div><b>Check</b><div>The pages open.</div></div>
+</div>
+
+<h3 id="pdf-slow">Report cards and receipts are slow to download</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A class's report cards take several seconds; CPU high while PDFs are made.</div></div>
+  <div><b>Why</b><div><p>Without <code>rl_accel</code> (requirements.txt), reportlab uses its slower pure-Python code: about a quarter more CPU for every PDF. PDFs are written without ASCII85 ({{ file('core/pdf_setup.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Run <code>pip install -r requirements.txt</code> on every server, then restart. Check with <code>python -c "import rl_accel"</code>.</p></div></div>
+  <div><b>Check</b><div>The import succeeds; a class PDF is faster.</div></div>
+</div>
+
 {% endblock %}

@@ -1354,6 +1354,11 @@ a.wd-online:hover { background: var(--surface-1); }
 }
 .guide-tip { border-color: var(--success); background: var(--success-bg); }
 .guide-warn { border-color: var(--warning); background: var(--warning-bg); }
+/* Troubleshooting: a problem as the reader would put it, then what to do. */
+.guide-faq { margin: var(--sp-3) 0 var(--sp-5); border: var(--border); border-radius: var(--radius); overflow: hidden; }
+.guide-faq dt { padding: 12px 16px 2px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.guide-faq dd { margin: 0; padding: 0 16px 12px; color: var(--ink-2); line-height: 1.6; }
+.guide-faq dd + dt { border-top: var(--border); }
 .guide-shot { margin: var(--sp-4) 0 var(--sp-5); }
 .guide-shot a { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1);
     box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 9%, transparent); transition: box-shadow .15s ease, transform .15s ease; }

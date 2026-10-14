@@ -200,6 +200,65 @@ roles and duties instead (below).</p>
   <div><b>Check</b><div>A card measures like a bank card, and its QR code opens a page saying "Valid card".</div></div>
 </div>
 
+<h2 id="studios">The design studios</h2>
+<p>The ID card, report card and receipt studios ({{ page('school-portal', 'The school portal') }}, {{ page('finance', 'Finance and receipts') }}). A design is saved per school; report cards and receipts use it only once switched on. Every save, lock and switch is in the activity log.</p>
+
+<h3 id="studio-phone">A studio shows "Open this on a computer"</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Open this on a computer · Designing ID cards, report cards and receipts needs a mouse and a larger screen.</div></div>
+  <div><b>Why</b><div><p>A phone (recognised by its browser's description, <code>phone_notice</code> in {{ file('blueprints/school/design_studios.py') }}) is sent this page instead of a studio; on any other device, a window narrower than 1024 pixels shows the same message over the studio ({{ file('static/id-card-designer.css') }}). It is about a usable screen, not access.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Use a laptop or desktop, with the browser window wider than 1024 pixels (or zoomed out).</p></div></div>
+  <div><b>Check</b><div>The studio opens.</div></div>
+</div>
+
+<h3 id="studio-missing">Design studios, or one studio, is not in someone's menu</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>No <em>Design studios</em> under Management, Design &amp; print; or the page shows only some of the three studios.</div></div>
+  <div><b>Why</b><div><p>Each studio needs its own permission: {{ perm('id_cards.manage') }}, {{ perm('report_cards.manage') }}, {{ perm('finance.manage') }}. The menu entry shows when the person holds at least one; the page shows only those they hold.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Give the person a role with the right permission (Records Officer, Report Card Officer, Finance Manager, Head Teacher).</p></div></div>
+  <div><b>Check</b><div>After a reload the entry and the studio appear.</div></div>
+</div>
+
+<h3 id="design-not-used">Report cards or receipts still use the standard design</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The school designed and saved its own, but PDFs and pages look the standard way.</div></div>
+  <div><b>Why</b><div><p>A design is used only while switched on (<em>Use this design</em>, <code>in_use</code> on {{ table('report_card_designs') }} / {{ table('receipt_designs') }}), and always as last <em>saved</em>. Workers keep it for <code>BRIGHTSTARS_DESIGN_CACHE_SECONDS</code> (60): the worker that saved or switched shows it at once, others within that time.</p></div></div>
+  <div class="do"><b>Fix</b><div><ol><li>In the studio, check the switch says <em>In use</em>; press Save after the last change.</li><li>Wait a minute, then reload.</li></ol></div></div>
+  <div><b>Check</b><div>A new PDF carries the design.</div></div>
+</div>
+
+<h3 id="design-unreadable">The log says "The report card design could not be read; using the standard card" (or the receipt one)</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Cards or receipts fall back to the standard design; the error log has that line with a traceback.</div></div>
+  <div><b>Why</b><div><p>The stored design (<code>layout_json</code>) is not valid JSON, which only happens if it was changed outside the studio. Cards never fail because of it: they fall back to the standard design.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>In the studio, bring back a version (Versions) or pick a template, and save. Or set <code>in_use</code> to 0 until it is fixed.</p></div></div>
+  <div><b>Check</b><div>The log line stops and the design is used again.</div></div>
+</div>
+
+<h3 id="design-image-missing">A design's image is blank on a parent's or student's report card</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A watermark, stamp or badge shows in the studio but is blank on the report card page.</div></div>
+  <div><b>Why</b><div><p>Those pictures come from {{ route('report_design_image') }}, which answers only someone signed in at that school, and only for an image the design in use shows (otherwise 404). The browser keeps each one for a week.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Check the design is switched on and saved with the image; check the image file still exists ({{ page('manual-files', 'Files') }}).</p></div></div>
+  <div><b>Check</b><div>The image loads at its address for a signed-in parent.</div></div>
+</div>
+
+<h3 id="report-details-empty">Attendance, the position in class or a personal detail is empty on a report card</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Days present, the position (3rd of 34), the date of birth or the guardian is blank.</div></div>
+  <div><b>Why</b><div><p>Attendance counts the days the class register was taken that term ({{ table('attendance_records') }}). The position ranks only students whose card is ready. Personal details come from the student's record; health details are never offered. A page carries only the details its design shows.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Take the register; release the class's results; fill in the student's record.</p></div></div>
+  <div><b>Check</b><div>The next card shows the figure.</div></div>
+</div>
+
+<h3 id="studio-image-locked">"The … design is locked and uses this image. Unlock it first."</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Removing one of the school's design images is refused (409).</div></div>
+  <div><b>Why</b><div><p>The images ({{ table('id_card_assets') }}) are shared by all three studios, and a locked design keeps the images it uses (<code>remove_design_image</code>, {{ file('blueprints/school/id_cards.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Unlock the design the message names, then remove the image.</p></div></div>
+  <div><b>Check</b><div>The image is removed and disappears from unlocked designs.</div></div>
+</div>
+
 <h3 id="exam-mode">"My paper submitted itself", "it says I left the page", or full screen does not start</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>A student's paper ended early; a student is warned they left the paper when they did not mean to; or the paper did not go full screen (an iPhone).</div></div>

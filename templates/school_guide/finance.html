@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import shot with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>Finance covers what a student is charged, what has been paid, and the receipt that proves it. It is
 one page with five tabs, <strong>Collections</strong>, <strong>Payments</strong>, <strong>Student accounts</strong>,
@@ -141,6 +141,45 @@ own receipt-number prefix, once, for the whole school.</p>
 <div class="guide-note">Recording a payment automatically tells the parent — an in-app alert, an email
 with the receipt attached and a text message — the moment it is saved.</div>
 
+<h2 id="receipt-studio">The receipt studio: the school's own receipt</h2>
+<p>The <a href="{{ url_for('admin_receipt_studio') }}">receipt studio</a> (under <strong>Design studios</strong>, in the menu
+under Management, Design &amp; print, or <strong>Design the receipt</strong> on Receipt settings) designs the school's own
+receipt. It needs the right to manage finance (the Finance Manager has it); a cashier who only records payments cannot
+open it.</p>
+<ul>
+  <li><strong>Start from a template.</strong> Classic, Modern, Elegant or Bold, in the school's colours, on A5 landscape
+  like today's receipt. A5 portrait and A4 either way round are under the <em>Page</em> tab.</li>
+  <li><strong>The receipt's blocks.</strong> <em>Amount paid</em> (the figure as large as its box allows, the amount in words
+  under it if wanted), <em>Balance</em> (fees for the session, paid so far, balance due) and a <em>Paid stamp</em> (round or
+  boxed, the school's own word, the date paid). Each has its own font, sizes and colours.</li>
+  <li><strong>The payment's details.</strong> Receipt number, date, who paid, the student, admission number, class, session,
+  what it was for, how it was paid, the reference, the amount in figures and in words, who received it, the bursar's note,
+  the balance, and the school's own details: click one under <em>Details</em>. And text, shapes, the logo, the authorised
+  signature (set on Receipt settings), a barcode of the receipt number and the school's own images.</li>
+  <li><strong>Preview, save, switch on.</strong> <em>Preview PDF</em> shows it with a made-up payment. Receipts keep the
+  standard design until you press <strong>Use this design</strong>; from then on every receipt - the payment page, the
+  printout, the PDF and the copy emailed to parents - is drawn from the saved design. A voided receipt is always marked
+  VOID across the page and never shows the Paid stamp, whatever the design.</li>
+</ul>
+<p>Every tool in the studio, with pictures, is explained in {{ page('design-studios', 'Design studios') }}.</p>
+<h3 id="receipts-troubleshooting">Troubleshooting: receipts</h3>
+<dl class="guide-faq">
+  <dt>The receipt has no signature.</dt>
+  <dd>Upload or draw the authorised signature on <a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt settings</a>.</dd>
+  <dt>The balance on the receipt is empty.</dt>
+  <dd>No fees are charged to the student for that session. Charge them under Fee structure (or Student accounts); the
+  balance then shows on every receipt.</dd>
+  <dt>Receipts still look the standard way.</dt>
+  <dd>Press <em>Use this design</em> in the receipt studio after saving. It can take up to a minute to reach every receipt.</dd>
+  <dt>A receipt says VOID.</dt>
+  <dd>The payment was voided (corrected). That is always shown, so a cancelled receipt can never pass for a paid one.</dd>
+  <dt>The PDF prints at the wrong size.</dt>
+  <dd>Print at 100% and choose the paper the design uses (A5 or A4, under the receipt studio's Page tab).</dd>
+  <dt>A parent did not get the receipt by email.</dt>
+  <dd>The student has no guardian email, or Email &amp; SMS is not set up. The payment's page shows each attempt; send it
+  again from there.</dd>
+</dl>
+
 <h2 id="what-parents-see">What a parent sees</h2>
 <p>A linked parent sees their child's full fee account: what has been charged, what has been paid,
 and the outstanding balance, with every receipt available to download again.</p>
@@ -193,5 +232,19 @@ Salaries are seen only by people allowed to see the payroll: not by HR, not by o
   <li>PAYE is worked out on each month's pay as if paid all year. If someone's pay changes during the year, the accountant settles the
   difference at the year's end.</li>
 </ul>
+<h3 id="payroll-troubleshooting">Troubleshooting: payroll</h3>
+<dl class="guide-faq">
+  <dt>Someone is missing from the month's payroll.</dt>
+  <dd>They need a staff record and their pay set under Staff pay, marked as on the payroll. Add them, then prepare the month
+  again (a month not yet approved can be prepared again).</dd>
+  <dt>I cannot approve the payroll.</dt>
+  <dd>Whoever prepared it cannot approve it: someone else with the right to approve payroll must. A paid month is final.</dd>
+  <dt>I cannot change my own pay.</dt>
+  <dd>That is on purpose: nobody sets their own pay.</dd>
+  <dt>A net pay is marked as a rise.</dt>
+  <dd>It is more than a tenth higher than the last paid month. Check the reason (a promotion, arrears) before approving.</dd>
+  <dt>The tax figures look wrong.</dt>
+  <dd>Check the payroll settings with the school's accountant; every payroll keeps a copy of the settings it used.</dd>
+</dl>
 
 {% endblock %}

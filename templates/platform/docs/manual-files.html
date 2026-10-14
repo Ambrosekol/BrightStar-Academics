@@ -55,6 +55,14 @@ writing goes through {{ file('core/storage.py') }}, so the rest of the code work
   <div><b>Check</b><div>A new upload shows on every server.</div></div>
 </div>
 
+<h3 id="report-fonts">Report card pages show a different font from the PDF</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>The text on a parent's report card page is in a fallback font.</div></div>
+  <div><b>Why</b><div><p>The page loads a small web copy of DejaVu Sans (<code>static/fonts/DejaVuSans-web.woff2</code>, Latin, Yoruba and Igbo letters, punctuation, ₦) and the full font only for characters outside it ({{ file('static/report-card.css') }}). A blocked or missing font file falls back to the device's own.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Check <code>/static/fonts/DejaVuSans-web.woff2</code> answers 200 (a CDN or proxy may block fonts). To rebuild it from the full font: <code>pyftsubset DejaVuSans.ttf --unicodes=U+0020-007E,U+00A0-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+20A6 --flavor=woff2</code>.</p></div></div>
+  <div><b>Check</b><div>The page's text matches the PDF.</div></div>
+</div>
+
 <h2 id="uploads">Uploads refused</h2>
 
 <h3 id="picture-too-large">"… is … The limit is … Choose a smaller picture"</h3>

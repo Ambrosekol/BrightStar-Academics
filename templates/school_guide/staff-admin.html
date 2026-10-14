@@ -13,12 +13,26 @@ no longer has it.</p>
 <p>The menu opens while you hover over it. A small box on its right edge, at the bottom of the screen,
 keeps it open: click it once and the menu stays open on every page until you click it again. While the
 menu is open from hovering, that box steps aside so it never covers an item.</p>
-<p>Each entry has its own icon, drawn for what it opens, so the closed menu can be read at a glance: a compass for
-Overview, two speech bubbles for Messages, a mortarboard for Students, a parent with a child for Parents, a teacher at a
-board for Teachers, rows of desks for Classes, a register with ticks for Attendance, an A+ for Academics, a calendar with
-a clock for the exam timetable, a document with a rosette for Report cards, stairs for Promotion, coins for Collections,
-a card for Payments, a ledger for Student accounts, a price tag for Fee structure, books on a shelf for the Library, a
-gear for Settings and two arrows for Switch workspace.</p>
+<p>The menu is in two parts. <strong>Teaching</strong> is the classroom's daily work: <em>Classroom</em> (classes,
+subjects, attendance) and <em>Assessment</em> (academics, marking, the exam timetable, report cards). <strong>Management</strong>
+is running the school: <em>Students &amp; parents</em> (students, parents, class transfers, promotion), <em>Staff</em> (staff
+records, teachers' duties, staff attendance, staff leave, payroll), <em>Finance</em>, <em>Design &amp; print</em> (the design
+studios and printing ID cards) and <em>Store &amp; library</em>. Above them are Overview, Messages and <em>My work</em> (your
+own clock-in, payslips and leave); Settings and Switch workspace are at the foot.</p>
+<p>You only see what your role allows. The two headings, Teaching and Management, appear only for someone who reaches both;
+a teacher sees just their own sections. Each entry has its own icon, so the closed menu can be read at a glance: a compass
+for Overview, two speech bubbles for Messages, rows of desks for Classes, a register with ticks for Attendance, an A+ for
+Academics, a document with a rosette for Report cards, a mortarboard for Students, a palette for Design studios, coins for
+Collections, books for the Library, a gear for Settings.</p>
+{{ shot('overview', 'The menu in two parts: Teaching (Classroom, Assessment) and Management (Students & parents, Staff, Finance, Design & print, Store & library).') }}
+<dl class="guide-faq">
+  <dt>I cannot find something in the menu.</dt>
+  <dd>Look under its part: classes, attendance, academics and report cards are under Teaching; students, staff, money,
+  the design studios, ID cards, the store and the library under Management; settings at the foot. If it is not there at
+  all, your role does not include it: ask the School Admin.</dd>
+  <dt>The menu closes when I move away.</dt>
+  <dd>Click the small box at its bottom right edge to keep it open on every page.</dd>
+</dl>
 
 <h2 id="settings">Settings</h2>
 <p><a href="{{ url_for('admin_settings') }}">Settings</a>, at the foot of the menu, holds everything that sets the
@@ -127,6 +141,21 @@ the School Admin. The person is told on the bell either way. Below are who is on
   <li><strong>For someone without an account</strong>, HR records the leave on their record; it is approved at once when
   the person recording it may approve leave.</li>
 </ul>
+<h3 id="hr-troubleshooting">Troubleshooting: staff records and leave</h3>
+<dl class="guide-faq">
+  <dt>I cannot change my own record, allowance or leave.</dt>
+  <dd>That is on purpose: nobody in HR changes their own. Ask another member of HR, or the School Admin.</dd>
+  <dt>A member of staff does not see My leave or My payslips.</dt>
+  <dd>Their staff record is not linked to their portal account. Open the record, choose their account under
+  <em>Portal account</em> and save.</dd>
+  <dt>A leave request is refused for too many days.</dt>
+  <dd>It would take more days than the person has left this year. Check their balance on the Leave tab; add days carried
+  over there if they are due, or choose a kind of leave with no set allowance (0 days).</dd>
+  <dt>My own leave request is waiting and nobody can approve it.</dt>
+  <dd>Nobody decides their own leave. A request from the HR Officer waits for the head teacher or the School Admin.</dd>
+  <dt>A career entry is wrong.</dt>
+  <dd>Entries cannot be changed or deleted. <em>Strike out</em> the wrong one with the reason, then add the right one.</dd>
+</dl>
 
 <h2 id="staff-attendance">Staff attendance</h2>
 <p>Staff clock in and out on their own phones. <a href="{{ url_for('admin_staff_attendance') }}">Staff attendance</a> (in
@@ -158,6 +187,30 @@ it; the head teacher may see the register). Only staff with a staff record can c
   <li><strong>The month</strong> is a grid of everyone's days with their totals, and <em>Download CSV</em> takes it to a
   spreadsheet. Closed days (public holidays, a mid-term break) are added in Settings, and nobody is absent on them.</li>
 </ul>
+<h3 id="attendance-troubleshooting">Troubleshooting: staff attendance</h3>
+<dl class="guide-faq">
+  <dt>"Your phone says it is … m from the school", or "Your phone is only sure of where it is to within … m".</dt>
+  <dd>The phone's location is outside the set distance from the school's point, or too rough to tell. Indoors, phones can
+  be a hundred metres out: step outside or near a window and try again, and turn on the phone's precise location. If it
+  happens to everyone, widen the distance in Settings → Staff attendance, or choose the code only.</dd>
+  <dt>"Your phone did not give its location".</dt>
+  <dd>The browser was not allowed to read the location. Allow location for the page (the padlock beside the address), then
+  try again.</dd>
+  <dt>"This is not the phone you clock in with".</dt>
+  <dd>The first phone someone clocks in with becomes theirs. For a new or changed phone, press <em>Reset</em> beside their
+  name in Settings → Staff attendance; their next clock-in makes the new phone theirs.</dd>
+  <dt>"That code is not the one on the school's screen now".</dt>
+  <dd>The six digits change every 30 seconds: type the one on the screen now, or scan the QR code. If the screen shows
+  nothing, its link may have been replaced: make a new link in Settings and open it on the screen again.</dd>
+  <dt>Someone has no Clock in in their menu.</dt>
+  <dd>Only staff with a staff record linked to their account can clock in, and only once staff attendance is turned on.</dd>
+  <dt>Times look an hour or more out.</dt>
+  <dd>Each school keeps its own time zone, set by Brightstars when the school was created (Lagos time unless the school is
+  elsewhere). Ask Brightstars support to change it.</dd>
+  <dt>Someone could not clock in on a day.</dt>
+  <dd>They ask for a correction on Clock in (for any day in the last month); someone else approves it from the register. Or
+  mark them in by hand with a note.</dd>
+</dl>
 
 <h2 id="roles">Staff roles</h2>
 <p><a href="{{ url_for('admin_roles') }}">Staff roles</a>, in Settings, are the named bundles of permissions described

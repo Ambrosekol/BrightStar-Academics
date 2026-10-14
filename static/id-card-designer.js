@@ -12,18 +12,32 @@
 
    The same studio designs the school's report card (templates/school_report_card_studio.html, cfg.mode "report"): an
    A4 page or two instead of a card's two sides, and the report card's own blocks - the results table, the summary,
-   attendance, the trait ratings, the grading key and the teacher's comment - drawn by static/report-card-render.js. */
+   attendance, the trait ratings, the grading key and the teacher's comment - drawn by static/report-card-render.js.
+   And the school's receipt (templates/school_receipt_studio.html, cfg.mode "receipt"): an A5 or A4 page with the
+   amount paid, the balance and a PAID stamp, drawn by static/receipt-render.js. */
 (function () {
     "use strict";
     var root = document.querySelector("[data-idd]");
     if (!root || root.dataset.ready) return;
     root.dataset.ready = "1";
     var cfg = JSON.parse(document.getElementById("iddData").textContent);
+    // Lists of choices come as [key, name] pairs, in the order they should be offered (a JSON object would be sorted by
+    // its keys on the way): kept as lookups, with their order beside them.
+    var ORDER = new WeakMap();
+    function ordered(x) {
+        if (!Array.isArray(x)) return x;
+        var o = {}; x.forEach(function (p) { o[p[0]] = p[1]; });
+        ORDER.set(o, x.map(function (p) { return p[0]; }));
+        return o;
+    }
+    function keysOf(o) { return ORDER.get(o) || Object.keys(o); }
+    ["fields", "barcode_fields", "fonts", "result_columns", "summary_items"].forEach(function (k) { if (cfg[k]) cfg[k] = ordered(cfg[k]); });
     var R = window.IdCardRender;
     var PX = 96 / 25.4;                                  // CSS pixels a millimetre at zoom 1
     var layout = cfg.layout;
     var locked = !!cfg.locked;
-    var REPORT = cfg.mode === "report";
+    var RECEIPT = cfg.mode === "receipt";
+    var REPORT = cfg.mode === "report" || RECEIPT;            // a page (A4 or A5), not a card
     var SIDES = cfg.sides || ["front", "back"];
     var NOUN = REPORT ? "page" : "card";
     // The whole-window layout (the report card studio): tabbed panels, a page fitted to the space, folding settings.
@@ -43,8 +57,10 @@
     var COLOUR_NAMES = { brand: "School colour", accent: "School accent", white: "White", ink: "Black", none: "None" };
     var TYPE_NAMES = { text: "Text", field: "Detail", shape: "Shape", photo: "Photo", logo: "Logo", image: "Image",
                        signature: "Signature", qr: "QR code", barcode: "Barcode", results: "Results table", summary: "Summary",
-                       traits: "Trait ratings", grading: "Grading key", comment: "Teacher's comment" };
-    var WHO_NAMES = { head: "Head's signature", holder: "Their signature", teacher: "Class teacher's signature" };
+                       traits: "Trait ratings", grading: "Grading key", comment: "Teacher's comment",
+                       amount: "Amount paid", stamp: "Paid stamp" };
+    if (RECEIPT) TYPE_NAMES.summary = "Balance";
+    var WHO_NAMES = { head: "Head's signature", holder: "Their signature", teacher: "Class teacher's signature", authorised: "Authorised signature" };
     var SHAPE_NAMES = { rect: "Rectangle", ellipse: "Ellipse", triangle: "Triangle", diamond: "Diamond", hexagon: "Hexagon",
                         pentagon: "Pentagon", star: "Star", chevron: "Chevron", arrow: "Arrow", wave: "Wave", corner: "Corner sweep", line: "Line" };
     var CLIP_NAMES = { none: "None", circle: "Circle", ellipse: "Ellipse", rounded: "Rounded", hexagon: "Hexagon",
@@ -463,6 +479,19 @@
         DEFAULTS.traits = Object.assign({ w: 186, h: 40, layout: "side" }, BLOCK);
         DEFAULTS.grading = Object.assign({ w: 186, h: 14, per_row: 3, title: "Grading key" }, BLOCK);
         DEFAULTS.comment = Object.assign({ w: 186, h: 24, label: "Class teacher's comment", lines: true, comment_size: 9.5 }, BLOCK);
+        if (RECEIPT) {
+            // A receipt is smaller than a report card: smaller starting sizes, and its own details and blocks.
+            Object.assign(DEFAULTS.text, { w: 60, h: 7, size: 9 });
+            Object.assign(DEFAULTS.field, { w: 70, h: 5.5, size: 8.5, field: "payer" });
+            Object.assign(DEFAULTS.shape, { w: 40, h: 20 });
+            Object.assign(DEFAULTS.logo, { w: 20, h: 20 });
+            Object.assign(DEFAULTS.image, { w: 30, h: 30 });
+            Object.assign(DEFAULTS.signature, { w: 44, h: 11, who: "authorised" });
+            Object.assign(DEFAULTS.barcode, { w: 50, h: 12, field: "receipt_no" });
+            DEFAULTS.amount = Object.assign({}, BLOCK, { w: 60, h: 34, label: "Amount paid", words: false, value_size: 16, fill: "#eef3f9", radius: 3, line: "brand", line_w: 0.4 });
+            DEFAULTS.summary = Object.assign({}, BLOCK, { w: 120, h: 15, items: ["charged", "paid", "balance"], layout: "row", value_size: 10, size: 7, radius: 2 });
+            DEFAULTS.stamp = Object.assign({}, BLOCK, { w: 30, h: 30, text: "PAID", shape: "round", show_date: true, accent: "#19734a", color: "#19734a", rotate: -12, opacity: 85 });
+        }
     }
     Object.keys(DEFAULTS).forEach(function (t) { if (DEFAULTS[t].font === "sans") DEFAULTS[t].font = FONT; });
     function add(type, extra) {
@@ -569,7 +598,7 @@
     }
     function choice(key, value, options) {
         var s = document.createElement("select"); s.disabled = locked; s.dataset.key = key;
-        Object.keys(options).forEach(function (v) { var o = el$("option", "", options[v]); o.value = v; if (String(value) === v) o.selected = true; s.appendChild(o); });
+        keysOf(options).forEach(function (v) { var o = el$("option", "", options[v]); o.value = v; if (String(value) === v) o.selected = true; s.appendChild(o); });
         s.addEventListener("change", function () { var v = s.value; set(key, /^\d+$/.test(v) && key !== "field" ? Number(v) : v); });
         return s;
     }
@@ -690,7 +719,7 @@
         }
         if (["photo", "logo", "image", "signature"].indexOf(el.type) >= 0) {
             var p = section("Picture");
-            if (el.type === "signature") p.appendChild(row("Whose", choice("who", el.who, REPORT ? { head: "The head's", teacher: "The class teacher's" } : cfg.kind === "staff" ? { head: "The head's", holder: "The card holder's" } : { head: "The head's" })));
+            if (el.type === "signature") p.appendChild(row("Whose", choice("who", el.who, RECEIPT ? { authorised: "The authorised signature" } : REPORT ? { head: "The head's", teacher: "The class teacher's" } : cfg.kind === "staff" ? { head: "The head's", holder: "The card holder's" } : { head: "The head's" })));
             if (el.type === "image") p.appendChild(row("Image", choice("asset", String(el.asset), assetOptions())));
             p.appendChild(row("Fit", choice("fit", el.fit, { cover: "Fill the box (crop)", contain: "Show it all", fill: "Stretch" })));
             p.appendChild(row("Clip to", choice("clip", el.clip, CLIP_NAMES)));
@@ -727,11 +756,11 @@
     }
     function picks(key, chosen, options, keepFirst) {
         // Several of a list, in the list's order (the results table's columns, the summary's items).
-        return toggles(Object.keys(options).map(function (k2) {
+        return toggles(keysOf(options).map(function (k2) {
             var on = chosen.indexOf(k2) >= 0;
             return { label: options[k2], title: options[k2], on: on, click: function () {
                 if (keepFirst && k2 === keepFirst) return;
-                var next = Object.keys(options).filter(function (x) { return x === k2 ? !on : chosen.indexOf(x) >= 0; });
+                var next = keysOf(options).filter(function (x) { return x === k2 ? !on : chosen.indexOf(x) >= 0; });
                 if (next.length) set(key, next);
             } };
         }));
@@ -755,6 +784,23 @@
         if (t === "traits") b.appendChild(row("Arrange", toggles([["side", "Side by side"], ["stack", "One under another"]].map(function (a) {
             return { label: a[1], title: a[1], on: el.layout === a[0], click: function () { set("layout", a[0]); } };
         }))));
+        if (t === "amount") {
+            var al = document.createElement("input"); al.type = "text"; al.maxLength = 40; al.value = el.label || ""; al.placeholder = "No heading"; al.disabled = locked;
+            al.addEventListener("change", function () { set("label", al.value.trim()); });
+            b.appendChild(row("Heading", al));
+            b.appendChild(row("In words", toggles([{ label: el.words ? "Shown" : "Hidden", title: "The amount in words under the figure", on: el.words, click: function () { set("words", !el.words); } }])));
+            b.appendChild(row("Figure size", number("value_size", el.value_size, 8, 40, 0.5, "pt")));
+        }
+        if (t === "stamp") {
+            var sw = document.createElement("input"); sw.type = "text"; sw.maxLength = 16; sw.value = el.text || ""; sw.placeholder = "PAID"; sw.disabled = locked;
+            sw.addEventListener("change", function () { set("text", sw.value.trim().slice(0, 16) || "PAID"); });
+            b.appendChild(row("Word", sw));
+            b.appendChild(row("Shape", toggles([["round", "Round"], ["box", "Box"]].map(function (a) {
+                return { label: a[1], title: a[1], on: el.shape === a[0], click: function () { set("shape", a[0]); } };
+            }))));
+            b.appendChild(row("Date", toggles([{ label: el.show_date ? "Shown" : "Hidden", title: "The date paid inside the stamp", on: el.show_date, click: function () { set("show_date", !el.show_date); } }])));
+            b.appendChild(el$("p", "ac-hint", "A voided receipt never shows the stamp: it is marked VOID instead."));
+        }
         if (t === "grading" || t === "comment") {
             var key = t === "grading" ? "title" : "label";
             var ti = document.createElement("input"); ti.type = "text"; ti.maxLength = 60; ti.value = el[key] || ""; ti.placeholder = "No heading"; ti.disabled = locked;
@@ -770,11 +816,12 @@
         s2.appendChild(row("Font", choice("font", el.font, cfg.fonts)));
         s2.appendChild(row("Size", number("size", el.size, 5, 16, 0.5, "pt")));
         s2.appendChild(row("Text", colourControl(el.color, false, function (v, live) { set("color", v, live); })));
-        if (t !== "summary") {
+        if (["results", "traits", "grading", "comment"].indexOf(t) >= 0) {
             s2.appendChild(row("Heading band", colourControl(el.head_fill || "none", true, function (v, live) { set("head_fill", v, live); })));
             s2.appendChild(row("Heading text", colourControl(el.head_color, false, function (v, live) { set("head_color", v, live); })));
         }
-        s2.appendChild(row("Highlight", colourControl(el.accent, false, function (v, live) { set("accent", v, live); })));
+        s2.appendChild(row(t === "stamp" ? "Ink" : "Highlight", colourControl(el.accent, false, function (v, live) { set("accent", v, live); })));
+        if (t === "stamp") return;
         var s3 = section("Box and lines");
         s3.appendChild(row("Fill", colourControl(el.fill || "none", true, function (v, live) { set("fill", v, live); })));
         if (t === "results" || t === "traits") s3.appendChild(row("Stripes", colourControl(el.zebra || "none", true, function (v, live) { set("zebra", v, live); })));
@@ -833,7 +880,8 @@
                 var li = el$("div", "idd-layer" + (selection.indexOf(i) >= 0 ? " is-on" : "") + (el.hidden ? " is-hidden" : ""));
                 var name = el$("button", "idd-layer-name"); name.type = "button";
                 name.appendChild(el$("span", "idd-layer-type", { text: "T", field: "D", shape: "\u25c6", photo: "P", logo: "L", image: "I", signature: "\u270d", qr: "Q", barcode: "B",
-                                                                results: "\u25a6", summary: "\u03a3", traits: "\u2605", grading: "G", comment: "\u201c" }[el.type] || "?"));
+                                                                results: "\u25a6", summary: "\u03a3", traits: "\u2605", grading: "G", comment: "\u201c",
+                                                                amount: "\u20a6", stamp: "\u2713" }[el.type] || "?"));
                 name.appendChild(el$("span", "", label(el)));
                 name.addEventListener("click", function (e) { select([i], e.shiftKey); stage.focus({ preventScroll: true }); });
                 var eye = el$("button", "idd-layer-btn", el.hidden ? "Show" : "Hide"); eye.type = "button"; eye.disabled = locked;
@@ -854,14 +902,18 @@
         box.textContent = "";
         var bg = layout.background;
         var o = document.createElement("select"); o.disabled = locked; o.setAttribute("aria-label", "Shape of the " + NOUN);
-        (REPORT ? [["portrait", "A4 portrait (210 × 297 mm)"], ["landscape", "A4 landscape (297 × 210 mm)"]]
-                : [["landscape", "Landscape (85.6 × 54 mm)"], ["portrait", "Portrait (54 × 85.6 mm)"]]).forEach(function (x) {
-            var op = el$("option", "", x[1]); op.value = x[0]; if (layout.orientation === x[0]) op.selected = true; o.appendChild(op);
+        var choices = cfg.page_choices ? cfg.page_choices.map(function (c) { return [c[0] + "|" + c[1], c[2]]; })
+            : (REPORT ? [["portrait", "A4 portrait (210 × 297 mm)"], ["landscape", "A4 landscape (297 × 210 mm)"]]
+                      : [["landscape", "Landscape (85.6 × 54 mm)"], ["portrait", "Portrait (54 × 85.6 mm)"]]);
+        var current = cfg.page_choices ? layout.page + "|" + layout.orientation : layout.orientation;
+        choices.forEach(function (x) {
+            var op = el$("option", "", x[1]); op.value = x[0]; if (current === x[0]) op.selected = true; o.appendChild(op);
         });
         o.addEventListener("change", function () {
-            if (o.value === layout.orientation) return;
+            if (o.value === current) return;
             var before = size();
-            layout.orientation = o.value;
+            if (cfg.page_choices) { layout.page = o.value.split("|")[0]; layout.orientation = o.value.split("|")[1]; }
+            else layout.orientation = o.value;
             var after = size(), sx = after[0] / before[0], sy = after[1] / before[1];
             // Everything keeps its place in proportion to the card; sizes stay, so nothing is squashed.
             SIDES.forEach(function (sd) { layout.sides[sd].forEach(function (el) {
@@ -895,7 +947,7 @@
             box.appendChild(row("Image strength", op2));
         }
     }
-    function snapshotCard() { return JSON.stringify([layout.orientation, layout.background, (cfg.asset_list || []).length, locked]); }
+    function snapshotCard() { return JSON.stringify([layout.page, layout.orientation, layout.background, (cfg.asset_list || []).length, locked]); }
     function redrawLive() { R.draw(cardHost, layout, side, cfg.view, { editor: true }).style.cssText += ";transform:scale(" + zoom + ");transform-origin:0 0"; }
 
     /* ------------------------------------------------ the school's own images */

@@ -24,8 +24,13 @@ def test_every_studio_route_needs_report_cards_manage():
     assert len(endpoints) == 8, endpoints
     for endpoint in endpoints:
         assert f"'{endpoint}':'report_cards.manage'" in security, endpoint
-    # every route signs in, and every write checks the CSRF token
+    # every route signs in, and every write checks the CSRF token; the one route for parents and students (the
+    # design's images on their report card page) checks the sign-in and the design itself
     for block in re.split(r"\n(?=@app\.)", routes):
+        if block.startswith("@app.route('/report-card-design/images/"):
+            assert 'if not _signed_in_here() or not design or asset_id not in design[1]:' in block
+            assert "'private, max-age=604800, immutable'" in block and "'nosniff'" in block
+            continue
         if block.startswith('@app.'):
             assert '@admin_required' in block, block[:80]
             if block.startswith('@app.post'):

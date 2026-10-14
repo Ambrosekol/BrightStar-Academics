@@ -18,6 +18,43 @@
   ],
   "releases": [
     {
+      "version": "2.33.0",
+      "date": "2026-10-14",
+      "title": "The receipt studio",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Design your school's own payment receipt in the new receipt studio (Design studios): start from one of four templates, add the amount in figures and words, the balance, a PAID stamp, the payment's details, the authorised signature, a barcode, your colours and images, on A5 or A4. Preview it as a PDF, then press Use this design and every receipt follows it - on screen, printed and emailed to parents. A voided receipt is always marked VOID.",
+          "help": "finance"
+        },
+        {
+          "audience": "staff",
+          "text": "The staff guide has a new Design studios page, with pictures of every studio and a step-by-step guide to its tools, and a Troubleshooting section on the pages for ID cards, report cards, receipts, payroll, staff records, leave and staff attendance.",
+          "help": "design-studios"
+        }
+      ]
+    },
+    {
+      "version": "2.32.1",
+      "date": "2026-10-13",
+      "title": "Faster report cards and ID cards",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Report cards in the school's own design are made faster and are smaller to download, a class's ID cards print faster, and report card pages need far less data on a phone.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "family",
+          "text": "Report cards open faster and use much less of your phone's data."
+        },
+        {
+          "audience": "student",
+          "text": "Your report card opens faster and uses much less data."
+        }
+      ]
+    },
+    {
       "version": "2.32.0",
       "date": "2026-10-13",
       "title": "Design studios for ID cards and report cards, and a clearer menu",

@@ -14,7 +14,7 @@
     var WIDTHS = { subject: 30, test: 9, assignment: 13, project: 11, ca: 11, exam: 12, total: 12, average: 12, grade: 9, remark: 26 };
     var HEADS = { subject: "Subject", test: "Test", assignment: "Assignment", project: "Project", ca: "CA", exam: "Exam",
                   total: "Total", average: "Class avg", grade: "Grade", remark: "Remark" };
-    var LABELS = { position: "Position", highest: "Highest in class", lowest: "Lowest in class",
+    var LABELS = { charged: "Fees for the session", paid: "Paid so far", balance: "Balance due", position: "Position", highest: "Highest in class", lowest: "Lowest in class",
                    opened: "School opened", present: "Days present", absent: "Days absent", late: "Days late",
                    attendance: "Attendance", total: "Total obtained", percentage: "Percentage", grade: "Overall grade", average: "Class average",
                    size: "Class size", subjects: "Subjects" };
@@ -25,10 +25,10 @@
     var ruler = document.createElement("canvas").getContext("2d");
     function fitted(text, size, bold, family, room) {
         // As the PDF does: too wide, the type is made smaller, to six tenths of its size, before it is cut short.
-        var least = size * 0.6;
-        function width(sz) { ruler.font = (bold ? "700 " : "400 ") + sz + "pt " + family; return ruler.measureText(text).width / 96 * 25.4; }
-        while (size > least && width(size) > room) size = Math.max(least, size - 0.25);
-        return size;
+        // A width grows in step with the size, so the size that fits is worked out from one measurement.
+        ruler.font = (bold ? "700 " : "400 ") + size + "pt " + family;
+        var w = ruler.measureText(text).width / 96 * 25.4;
+        return w > room && w > 0 ? Math.max(size * 0.6, size * room / w) : size;
     }
     function cell(parent, text, x, y, w, h, o) {
         text = text == null ? "" : String(text);
@@ -182,4 +182,7 @@
         }
         outline(f, el, colour);
     };
+
+    // The building pieces, for the receipt's own blocks (static/receipt-render.js).
+    R.rc = { frame: frame, outline: outline, cell: cell, rect: rect, div: div, mm: mm, PT: PT };
 })();

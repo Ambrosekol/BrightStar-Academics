@@ -45,7 +45,8 @@
 
 <div class="fp-grid">
   <section class="fp-receipt" aria-label="The receipt">
-    {% include 'includes/_receipt_sheet.html' %}
+    {% if designed %}{% with fit = true %}{% include 'includes/_receipt_designed.html' %}{% endwith %}
+    {% else %}{% include 'includes/_receipt_sheet.html' %}{% endif %}
     <div class="fp-receipt__acts">
       <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_finance_receipt_print', payment_id=payment.id) }}" target="_blank" rel="noopener">Print receipt</a>
       <a class="ac-btn" href="{{ url_for('admin_finance_receipt_pdf', payment_id=payment.id) }}" target="_blank" rel="noopener">Open PDF</a>

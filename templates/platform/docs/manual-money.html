@@ -66,6 +66,32 @@
   <div><b>Check</b><div>The second run reports every student billed or already charged, and the class's roster shows each fee charged to everyone.</div></div>
 </div>
 
+<h2 id="receipt-studio">Receipts in the school's own design</h2>
+
+<h3 id="receipt-void">A receipt shows VOID across it</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>A large VOID and "This receipt was cancelled" over a designed receipt.</div></div>
+  <div><b>Why</b><div><p>The payment was voided. Whatever the design, a voided receipt is always marked VOID over everything and never shows the Paid stamp ({{ file('core/receipt_design_pdf.py') }}, <code>_void</code>).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Nothing to fix: record the correct payment. The voided one stays for the audit history.</p></div></div>
+  <div><b>Check</b><div>The new payment's receipt shows PAID.</div></div>
+</div>
+
+<h3 id="receipt-naira">Amounts show "N" instead of ₦ in a receipt or report card PDF</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>"N85,000.00" in the PDF, "₦85,000.00" on screen.</div></div>
+  <div><b>Why</b><div><p>The built-in PDF fonts (Helvetica, Times, Courier) cannot draw the Naira sign; <code>_safe</code> ({{ file('core/report_card_design_pdf.py') }}) puts N in its place rather than a question mark.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Choose DejaVu Sans for amounts in the studio.</p></div></div>
+  <div><b>Check</b><div>The PDF shows ₦.</div></div>
+</div>
+
+<h3 id="receipt-balance-empty">The Balance block is empty on a receipt</h3>
+<div class="fix">
+  <div class="see"><b>You see</b><div>Fees for the session, Paid so far and Balance due are blank.</div></div>
+  <div><b>Why</b><div><p>The balance is worked out only when fees are charged to the student for the payment's session (<code>_receipt_summary</code>, {{ file('blueprints/finance/helpers.py') }}).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Charge the student's fees for that session.</p></div></div>
+  <div><b>Check</b><div>The receipt shows the three figures.</div></div>
+</div>
+
 <h2 id="paystack">Online payments (Paystack)</h2>
 <p>A school uses its <strong>own</strong> Paystack account (there is no shared platform account), set by the School Admin
 under Settings › Online payments ({{ route('admin_finance_paystack_settings') }}). A payment is confirmed only by asking

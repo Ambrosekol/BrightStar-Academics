@@ -1,0 +1,28 @@
+{#- A receipt in the school's own design (the receipt studio): drawn by the studio's own code (static/id-card-render.js,
+    static/report-card-render.js, static/receipt-render.js) from the design and this receipt's plain values (JSON, never
+    HTML). `designed` comes from blueprints/finance/helpers.receipt_design_web(). A voided receipt always carries VOID.
+    `fit` shrinks it to the space on screen; printing is at real size. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='3') }}">
+<div class="rcd-receipt" data-rcd-receipt{% if fit %} data-fit{% endif %}><div class="rcd-receipt__page" data-rcd-receipt-page></div></div>
+<script type="application/json" id="rcdReceipt" nonce="{{ csp_nonce() }}">{{ designed|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
+<script src="{{ url_for('static', filename='receipt-render.js', v='1') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var R = window.IdCardRender, data = JSON.parse(document.getElementById('rcdReceipt').textContent);
+  var wrap = document.querySelector('[data-rcd-receipt]'), host = wrap.querySelector('[data-rcd-receipt-page]');
+  var size = R.sizeOf(data.layout), PX = 96 / 25.4;
+  var page = R.draw(host, data.layout, 'page1', data.view, {});
+  if (data.voided) R.voidMark(page);
+  function fit() {
+    if (!wrap.hasAttribute('data-fit')) { host.style.width = size[0] + 'mm'; host.style.height = size[1] + 'mm'; return; }
+    var scale = Math.min(1, wrap.clientWidth / (size[0] * PX));
+    host.style.width = size[0] * PX * scale + 'px'; host.style.height = size[1] * PX * scale + 'px';
+    page.style.transformOrigin = '0 0'; page.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>

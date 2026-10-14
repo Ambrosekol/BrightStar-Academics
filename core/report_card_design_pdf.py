@@ -17,6 +17,7 @@ import math
 import re
 
 from PIL import Image
+import core.pdf_setup  # noqa: F401  (how every PDF is written)
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
@@ -104,7 +105,8 @@ def _safe(text, font):
     """Text the font can draw: the built-in PDF fonts know only Western European letters."""
     text = _clean(text)
     if font.startswith(('Helvetica', 'Times', 'Courier')):
-        text = text.encode('cp1252', 'replace').decode('cp1252')
+        # The Naira sign is not among them: the usual stand-in, N, rather than a question mark.
+        text = text.replace('₦', 'N').encode('cp1252', 'replace').decode('cp1252')
     return text
 
 
@@ -261,6 +263,22 @@ def _clip_shape(c, el, W, H):
     return p
 
 
+def _reader(pictures, stored, data, grayscale=False):
+    """One ImageReader for each picture in a PDF, so a logo or a watermark on every card is decoded and embedded once,
+    not once a page."""
+    readers = pictures.__dict__.setdefault('_readers', {})
+    key = (stored, grayscale, len(data))
+    if key not in readers:
+        if grayscale:
+            try:
+                with Image.open(io.BytesIO(data)) as im:
+                    out = io.BytesIO(); im.convert('L').save(out, 'PNG'); data = out.getvalue()
+            except Exception:
+                pass
+        readers[key] = ImageReader(io.BytesIO(data))
+    return readers[key]
+
+
 def _picture(box, el, stored, pictures, paint, photo=False, initials=''):
     c, W, H = box.c, box.W, box.H
     loaded = pictures.load(stored, max_px=900, photo=photo) if stored else None
@@ -268,12 +286,6 @@ def _picture(box, el, stored, pictures, paint, photo=False, initials=''):
     _shadow(box, el, 0, path)
     if loaded:
         data, iw, ih = loaded
-        if el.get('grayscale'):
-            try:
-                with Image.open(io.BytesIO(data)) as im:
-                    out = io.BytesIO(); im.convert('L').save(out, 'PNG'); data = out.getvalue()
-            except Exception:
-                pass
         fit = el.get('fit', 'contain')
         if fit == 'fill':
             dw, dh = W, H
@@ -283,7 +295,7 @@ def _picture(box, el, stored, pictures, paint, photo=False, initials=''):
         c.saveState()
         c.clipPath(path, stroke=0, fill=0)
         try:
-            c.drawImage(ImageReader(io.BytesIO(data)), (W - dw) / 2, (H - dh) / 2, dw, dh, mask='auto')
+            c.drawImage(_reader(pictures, stored, data, bool(el.get('grayscale'))), (W - dw) / 2, (H - dh) / 2, dw, dh, mask='auto')
         except Exception:
             pass
         c.restoreState()
@@ -338,14 +350,26 @@ def _text(box, el, value, label, paint):
     size = el.get('size') or 8
     room_w, room_h = max(W - 2 * pad, 1), max(H - 2 * pad, 1)
     runs = ([(label + ': ', label_font, 0.72)] if label and value else []) + [(value, font, 1.0)]
-    while True:
-        letter = (el.get('letter') or 0) / 100 * size
-        lead = (el.get('line') or 118) / 100 * size
-        lines = _wrap(runs, room_w, size, letter)
-        widest = max((sum(_width(t, f, size, letter) for t, f, _ in ln) for ln in lines), default=0)
-        if (len(lines) * lead <= room_h + 0.5 and widest <= room_w + 2) or size <= 4:
-            break
-        size = max(4, size - 0.5)
+
+    def layout_at(sz):
+        letter_ = (el.get('letter') or 0) / 100 * sz
+        lead_ = (el.get('line') or 118) / 100 * sz
+        lines_ = _wrap(runs, room_w, sz, letter_)
+        widest = max((sum(_width(t, f, sz, letter_) for t, f, _ in ln) for ln in lines_), default=0)
+        return (len(lines_) * lead_ <= room_h + 0.5 and widest <= room_w + 2), letter_, lead_, lines_
+
+    fits, letter, lead, lines = layout_at(size)
+    if not fits and size > 4:
+        # The largest size, in half points, that fits: halving the range takes a handful of tries, not dozens.
+        lo, hi = 0, int((size - 4) * 2)          # steps of 0.5 above 4 pt; hi does not fit
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if layout_at(4 + mid / 2)[0]:
+                lo = mid
+            else:
+                hi = mid - 1
+        size = 4 + lo / 2
+        fits, letter, lead, lines = layout_at(size)
     colour = paint(el.get('color'), colors.HexColor('#15171a'))
     block_h = len(lines) * lead
     valign = el.get('valign', 'top')
@@ -387,18 +411,25 @@ def _cell(c, box, text, x, y, w, h, size, colour, bold=False, align='left', pad_
     if not text:
         return
     room = (w - 2 * pad_x) * PT
-    if shrink:
-        least = size * 0.6
-        while _width(text, font, size) > room and size > least:
-            size = max(least, size - 0.25)
-    if _width(text, font, size) > room:
-        while text and _width(text + '…', font, size) > room:
-            text = text[:-1]
-        text = (text.rstrip() + '…') if text else ''
+    width = _width(text, font, size)
+    if shrink and width > room:
+        # A text's width grows in step with its size, so the size that fits is worked out at once.
+        size = max(size * 0.6, size * room / width)
+        width = _width(text, font, size)
+    if width > room:
+        # Cut it short with '…', finding the longest start that fits by halving, not a letter at a time.
+        lo, hi = 0, len(text)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if _width(text[:mid] + '…', font, size) <= room:
+                lo = mid
+            else:
+                hi = mid - 1
+        text = (text[:lo].rstrip() + '…') if lo else ''
         if font.startswith(('Helvetica', 'Times', 'Courier')):
             text = text.replace('…', '...')
     base = box.top(y + h / 2) - size * 0.35
-    _fillc(c, colour)
+    c.setFillColor(colour)
     c.setFillAlpha(box.alpha * alpha)
     c.setFont(font, size)
     left = (x + pad_x) * PT
@@ -408,7 +439,8 @@ def _cell(c, box, text, x, y, w, h, size, colour, bold=False, align='left', pad_
         c.drawRightString((x + w - pad_x) * PT, base, text)
     else:
         c.drawString(left, base, text)
-    c.setFillAlpha(box.alpha)
+    if alpha != 1.0:
+        c.setFillAlpha(box.alpha)
 
 
 def _band(c, box, x, y, w, h, colour):
@@ -631,8 +663,12 @@ def _barcode(box, el, value, paint):
 
 
 # ---------------------------------------------------------------- a page
-def _page(c, layout, side, card, view, pictures, assets, paint):
-    width, height = PAGE_MM[layout['orientation']]
+def draw_page(c, size_mm, layout, side, data, rep, pictures, assets, paint, picture_of, blocks):
+    """One page of a designed document: the background, then each element in order. Shared by every studio's PDF (the
+    report card here, the receipt in core/receipt_design_pdf.py): ``data`` is {field: text}, ``rep`` what the
+    ``blocks`` draw from, and ``picture_of(el)`` gives (stored upload, is a photograph, initials) for a photo, logo or
+    signature."""
+    width, height = size_mm
     page_h = height * PT
     bg = layout['background']
     c.saveState()
@@ -643,7 +679,7 @@ def _page(c, layout, side, card, view, pictures, assets, paint):
     if bg.get('image') and assets.get(bg['image']):
         loaded = pictures.load(assets[bg['image']], max_px=1600)
         if loaded:
-            data, iw, ih = loaded
+            img, iw, ih = loaded
             W, H = width * PT, page_h
             if bg.get('fit') == 'fill':
                 dw, dh = W, H
@@ -652,40 +688,49 @@ def _page(c, layout, side, card, view, pictures, assets, paint):
                 dw, dh = iw * s, ih * s
             c.setFillAlpha((bg.get('opacity') or 100) / 100)
             try:
-                c.drawImage(ImageReader(io.BytesIO(data)), (W - dw) / 2, (H - dh) / 2, dw, dh, mask='auto')
+                c.drawImage(_reader(pictures, assets[bg['image']], img), (W - dw) / 2, (H - dh) / 2, dw, dh, mask='auto')
             except Exception:
                 pass
     c.restoreState()
-    data, rep = view['data'], view['report']
-    school, student = card.get('school') or {}, card.get('student') or {}
-    initials = ''.join(p[:1] for p in (student.get('name') or '').split()[:2]).upper()
     for el in layout['sides'][side]:
         if el.get('hidden'):
             continue
         box = _Box(c, page_h, el)
         try:
             t = el['type']
-            if t in BLOCKS:
-                BLOCKS[t](c, box, el, rep, paint)
+            if t in blocks:
+                blocks[t](c, box, el, rep, paint)
             elif t == 'shape':
                 _shape(box, el, paint)
             elif t in ('text', 'field'):
                 value = el['text'] if t == 'text' else data.get(el['field'], '')
                 _text(box, el, value, el.get('label', '') if t == 'field' else '', paint)
-            elif t == 'photo':
-                _picture(box, el, student.get('photo_path'), pictures, paint, photo=True, initials=initials)
-            elif t == 'logo':
-                _picture(box, el, school.get('logo_path'), pictures, paint)
             elif t == 'image':
                 _picture(box, el, assets.get(el.get('asset')), pictures, paint)
-            elif t == 'signature':
-                stored = (card.get('head') or {}).get('signature_path') if el.get('who') == 'head' \
-                    else (card.get('comment') or {}).get('teacher_signature_path')
-                _picture(box, el, stored, pictures, paint)
+            elif t in ('photo', 'logo', 'signature'):
+                stored, photo, initials = picture_of(el)
+                _picture(box, el, stored, pictures, paint, photo=photo, initials=initials)
             elif t == 'barcode':
                 _barcode(box, el, data.get(el.get('field'), ''), paint)
         finally:
             box.done()
+
+
+def _page(c, layout, side, card, view, pictures, assets, paint):
+    school, student = card.get('school') or {}, card.get('student') or {}
+    initials = ''.join(p[:1] for p in (student.get('name') or '').split()[:2]).upper()
+
+    def picture_of(el):
+        if el['type'] == 'photo':
+            return student.get('photo_path'), True, initials
+        if el['type'] == 'logo':
+            return school.get('logo_path'), False, ''
+        if el.get('who') == 'head':
+            return (card.get('head') or {}).get('signature_path'), False, ''
+        return (card.get('comment') or {}).get('teacher_signature_path'), False, ''
+
+    draw_page(c, PAGE_MM[layout['orientation']], layout, side, view['data'], view['report'], pictures, assets, paint,
+              picture_of, BLOCKS)
 
 
 def _has_content(layout, side):
@@ -698,7 +743,8 @@ def render_designed_pdf(cards, layout, assets=None):
     width, height = PAGE_MM[layout['orientation']]
     school = (cards[0].get('school') if cards else {}) or {}
     buffer = io.BytesIO()
-    c = rl_canvas.Canvas(buffer, pagesize=(width * PT, height * PT))
+    # Compressed pages, written as they are (core/pdf_setup.py): the smallest file to send.
+    c = rl_canvas.Canvas(buffer, pagesize=(width * PT, height * PT), pageCompression=1)
     c.setTitle(((school.get('name') or '') + ' - ' if school.get('name') else '') + 'Report Cards')
     c.setAuthor(school.get('name') or '')
     c.setCreator('Brightstars Academics')

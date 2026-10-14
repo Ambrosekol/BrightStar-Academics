@@ -14,6 +14,7 @@ import io
 import os
 import re
 
+import core.pdf_setup  # noqa: F401  (how every PDF is written)
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4, landscape

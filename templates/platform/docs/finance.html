@@ -19,6 +19,16 @@
 Balances are summed across every session, so a debt left from last year is not hidden when the school moves on. See <code>_finance_student_outstanding</code> and <code>_finance_student_lifetime_totals</code>.</p>
 <p>Money is entered as naira and kept to the kobo. <code>_money</code> refuses NaN, infinity and absurd sizes; the amount in words on a receipt stops at the billions.</p>
 
+<h2 id="receipt-studio">The receipt studio</h2>
+<p>{{ route('admin_receipt_studio') }} ({{ file('blueprints/school/receipt_studio.py') }}, every route {{ perm('finance.manage') }})
+is the report card studio's editor in receipt mode. The rules are {{ file('core/receipt_design.py') }} (A5 or A4, either way
+round; the studio's own elements plus three blocks: <code>amount</code>, <code>summary</code> for the balance, <code>stamp</code>),
+rebuilt from known keys only; the tables {{ table('receipt_designs') }} and {{ table('receipt_design_versions') }} (the newest
+20). Switched on, <code>_receipt_pdf</code> draws with {{ file('core/receipt_design_pdf.py') }} (the report card drawer's
+<code>draw_page</code>) and the payment page and printout with {{ tpl('includes/_receipt_designed.html') }}; the design is kept
+like the report card's (<code>school_receipt_design</code>, per process and school, cleared by every change). A voided receipt is
+always drawn VOID over everything, and its Paid stamp left off, whatever the design.</p>
+
 <h2 id="receipt-numbers">Receipt numbers</h2>
 <p>Each payment gets a number <code>&lt;PREFIX&gt;-&lt;year&gt;-&lt;5 digits&gt;</code> ({{ file('blueprints/finance/helpers.py') }}, <code>_next_receipt_no</code>). The prefix is a per-school setting (defaulting to the school's code) so a school keeps numbering the same way for ever. Numbers are unique per school (a database constraint), never shared or borrowed across schools.</p>
 

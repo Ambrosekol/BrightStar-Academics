@@ -20,6 +20,7 @@ so the page on screen, the printout and the PDF sent to a parent are the same re
 import io
 import os
 
+import core.pdf_setup  # noqa: F401  (how every PDF is written)
 from reportlab.lib.pagesizes import A5, landscape
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader, simpleSplit

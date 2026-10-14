@@ -427,22 +427,33 @@ def card_data(kind, person, brand, serial='', issued=''):
 
 def qr_path(text):
     """An SVG path (and its size in modules) drawing the QR code for ``text``: only 'M', 'h', 'v', 'z' and numbers, so it
-    is safe to place in an attribute as it is. The smallest version that holds the text, error correction M."""
-    for version in range(1, 21):
-        code = qrencoder.QRCode(version, qrencoder.QRErrorCorrectLevel.M)
-        code.addData(text)
-        try:
-            code.make()
-        except Exception:
-            continue
-        n = code.getModuleCount()
-        parts = []
-        for r in range(n):
-            for c in range(n):
-                if code.isDark(r, c):
-                    parts.append(f'M{c + 4} {r + 4}h1v1h-1z')
-        return ''.join(parts), n + 8
-    raise ValueError('That text is too long for a QR code.')
+    is safe to place in an attribute as it is. The smallest version that holds the text, error correction M.
+
+    The encoder works the version out itself (one code made, not one per size tried), and each row's dark modules
+    that touch are one bar, so a card's code is a few hundred short pieces rather than a thousand squares: a smaller
+    print sheet, drawn quicker, for the same code."""
+    code = qrencoder.QRCode(None, qrencoder.QRErrorCorrectLevel.M)
+    code.addData(text)
+    try:
+        code.make()
+    except Exception:
+        raise ValueError('That text is too long for a QR code.')
+    n = code.getModuleCount()
+    if n > 20 * 4 + 17:
+        raise ValueError('That text is too long for a QR code.')
+    parts = []
+    for r in range(n):
+        c = 0
+        while c < n:
+            if code.isDark(r, c):
+                start = c
+                while c < n and code.isDark(r, c):
+                    c += 1
+                run = c - start
+                parts.append(f'M{start + 4} {r + 4}h{run}v1h-{run}z')
+            else:
+                c += 1
+    return ''.join(parts), n + 8
 
 
 def barcode_path(text):

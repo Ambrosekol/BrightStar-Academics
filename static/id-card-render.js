@@ -11,10 +11,12 @@
     "use strict";
     var NS = "http://www.w3.org/2000/svg";
     var SIZES = { landscape: [85.6, 54], portrait: [54, 85.6] };
-    var PAGES = { portrait: [210, 297], landscape: [297, 210] };     // A4, for a report card
+    var PAGES = { portrait: [210, 297], landscape: [297, 210] };     // A4, for a report card (or a receipt)
+    var A5 = { landscape: [210, 148], portrait: [148, 210] };       // A5, for a receipt
     var blocks = {};                                                 // extra element types: blocks[type](box, el, view, opts, colour)
     function sizeOf(layout) {
         if (layout.page === "A4") return PAGES[layout.orientation] || PAGES.portrait;
+        if (layout.page === "A5") return A5[layout.orientation] || A5.landscape;
         return SIZES[layout.orientation] || SIZES.landscape;
     }
     var FONTS = {

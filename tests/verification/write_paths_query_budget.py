@@ -35,6 +35,9 @@ os.environ.update({
     # machine never sees one run out between the warm-up and the measured view and count it as a page's own query.
     "BRIGHTSTARS_BADGE_CACHE_SECONDS": "3600",
     "BRIGHTSTARS_ADMIN_CACHE_SECONDS": "3600",
+    # The school's branding is read again when its short-lived copy runs out; the run is long enough for that to land
+    # between the two measurements of a page and look like growth, so it is kept for the whole run.
+    "BRIGHTSTARS_BRANDING_CACHE_SECONDS": "3600",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -272,15 +275,21 @@ def measure():
     for who, person, path, budget in PAGES:
         for _ in range(2):
             person.get(path)
-        seen.clear()
-        r = person.get(path)
-        out[path] = (len(seen), r.status_code)
+        # Two views, the one with fewer statements kept: a short-lived copy (a session's "still signed in" check, the
+        # school's branding) can fall due on one view and look like growth; real growth shows on both.
+        best = None
+        for _ in range(2):
+            seen.clear()
+            r = person.get(path)
+            if best is None or len(seen) < best[0]:
+                best = (len(seen), r.status_code, [" ".join(q.split())[:90] for q in seen])
+        out[path] = best
     return out
 
 
 first = measure()
 for who, person, path, budget in PAGES:
-    count, status = first[path]
+    count, status, _ = first[path]
     check(f"{path} ({who}) makes at most {budget} queries", status == 200 and count <= budget, f"{count} queries, status {status}")
 seen.clear()
 pay_off.post(f"/admin/payroll/runs/{R2}/refresh", {}, page=f"/admin/payroll/runs/{R2}")
@@ -301,7 +310,8 @@ for n in range(EXTRA, EXTRA * 2):
         s=sid, d=(T + timedelta(days=21)).isoformat(), a=aid, c=T.isoformat())
 pay_off.post(f"/admin/payroll/runs/{R2}/refresh", {}, page=f"/admin/payroll/runs/{R2}")
 second = measure()
-grew = [f"{p}: {first[p][0]} -> {second[p][0]}" for p in first if second[p][0] > first[p][0]]
+grew = [f"{p}: {first[p][0]} -> {second[p][0]} (new: {[q for q in second[p][2] if q not in first[p][2]][:3]})"
+        for p in first if second[p][0] > first[p][0]]
 check("with twice as many staff, no page makes more queries", not grew, "; ".join(grew))
 
 check("no page answered with a server error", not PROBLEMS, "; ".join(PROBLEMS[:5]))

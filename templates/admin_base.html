@@ -148,7 +148,7 @@
             {'label':'Design & print', 'part':'Management', 'items':[
                 {'label':'Design studios','endpoint':'admin_design_studios','icon':'nav-design',
                  'show': signed and design_studios_shown(),
-                 'active': path.startswith(('/admin/design-studios','/admin/id-cards/design','/admin/report-cards/studio'))},
+                 'active': path.startswith(('/admin/design-studios','/admin/id-cards/design','/admin/report-cards/studio','/admin/finance/receipts/studio'))},
                 {'label':'ID cards','endpoint':'admin_id_cards','icon':'nav-idcard',
                  'show': signed and id_cards_shown(),
                  'active': path.startswith('/admin/id-cards') and not path.startswith('/admin/id-cards/design')},

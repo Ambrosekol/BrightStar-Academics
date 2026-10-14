@@ -120,6 +120,23 @@ class Person:
             return " | ".join(t for _, t in sess.pop("_flashes", [])).lower()
 
 
+def _unescape(raw):
+    """A PDF literal string (backslash escapes, octal codes) as bytes."""
+    out, i = bytearray(), 0
+    named = {ord("n"): 10, ord("r"): 13, ord("t"): 9, ord("b"): 8, ord("f"): 12}
+    while i < len(raw):
+        if raw[i] != 0x5C:
+            out.append(raw[i]); i += 1
+        elif i + 1 < len(raw) and 0x30 <= raw[i + 1] <= 0x37:
+            j = i + 1
+            while j < len(raw) and j < i + 4 and 0x30 <= raw[j] <= 0x37:
+                j += 1
+            out.append(int(raw[i + 1:j], 8) & 255); i = j
+        else:
+            out.append(named.get(raw[i + 1], raw[i + 1]) if i + 1 < len(raw) else 0x5C); i += 2
+    return bytes(out)
+
+
 def pdf_words(data):
     """Every piece of text a PDF draws, joined with single spaces (enough to find a phrase)."""
     objects = {int(m.group(1)): m.group(2) for m in re.finditer(rb"(\d+) 0 obj\s*(.*?)\s*endobj", data, re.S)}
@@ -156,7 +173,7 @@ def pdf_words(data):
             if m.group(1):
                 font = maps.get(fonts.get(m.group(1).decode()))
             else:
-                raw = re.sub(rb"\\([()\\])", rb"\1", m.group(2))
+                raw = _unescape(m.group(2))
                 words.append("".join(font.get(b, "") for b in raw) if font else raw.decode("cp1252", "replace"))
     return " ".join(" ".join(words).split())
 
@@ -416,13 +433,40 @@ for who, person, path in (("staff", op, STAFF_PAGE), ("parent", parent, PARENT_P
           and "guardian_phone" not in view.get("data", {}) and "0803 777 1234" not in body and "PENICILLIN" not in body
           and "genotype" not in view.get("data", {}) and '<main class="rc-sheet">' not in body
           and view.get("report", {}).get("subjects", [{}])[0].get("subject") == "Mathematics"
-          and all(str(v).startswith("data:image/") for v in view.get("assets", {}).values()) and view.get("assets"))
+          and all(str(v) == f"/report-card-design/images/{k}" for k, v in view.get("assets", {}).items()) and view.get("assets"))
+    image = person.get(f"/report-card-design/images/{asset['id']}")
+    check(f"E4b the {who} gets the design's image from its own address, kept by the browser for a week",
+          image.status_code == 200 and image.mimetype.startswith("image/") and "private" in image.headers.get("Cache-Control", "")
+          and "max-age=604800" in image.headers.get("Cache-Control", ""))
+visitor = Person("/admin/password", "visitor")
+other = officer.post(STUDIO + "/assets", page=STUDIO, files={"image": ("unused.png", PNG)}).get_json()["asset"]
+check("E4c a design image is not served to someone signed out, nor an image the design does not use",
+      visitor.get(f"/report-card-design/images/{asset['id']}").status_code == 404
+      and parent.get(f"/report-card-design/images/{other['id']}").status_code == 404
+      and parent.get("/report-card-design/images/999999").status_code == 404)
+statements = []
+
+
+def _note(conn, cursor, statement, *rest):
+    statements.append(statement)
+
+
+parent.get(PARENT_PAGE)                                 # the first view after a change reads the design once
+sa.event.listen(sa.engine.Engine, "before_cursor_execute", _note)
+for _ in range(3):
+    parent.get(PARENT_PAGE); student.get(STUDENT_PAGE + "/pdf")
+sa.event.remove(sa.engine.Engine, "before_cursor_execute", _note)
+design_reads = [s for s in statements if "report_card_designs" in s or "id_card_assets" in s]
+check("E4d the design is read once and kept, not read again for every card shown or downloaded", design_reads == [], str(design_reads[:2]))
 op.post(STUDIO + "/use", {"use": "0"}, page=STUDIO)
 r = op.get(STAFF_PAGE + "/pdf")
 check("E5 switching back restores the standard card, and is logged", "DESIGNEDMARK7731" not in pdf_words(r.get_data())
       and 'id="rcdData"' not in op.text(STAFF_PAGE) and logged("report_card_design_standard") == 1)
 op.post(STUDIO + "/use", {"use": "1"}, page=STUDIO)
 sql("UPDATE report_card_designs SET layout_json = 'broken{'")
+with A.app.app_context(), tenant_context(INFO):         # a change made behind the app's back: drop the kept copy
+    from blueprints.school.report_card_data import forget_design
+    forget_design()
 r = op.get(STAFF_PAGE + "/pdf")
 check("E6 a design that cannot be read falls back to the standard card instead of failing",
       r.status_code == 200 and r.get_data()[:4] == b"%PDF" and op.get(STAFF_PAGE).status_code == 200)
@@ -449,7 +493,7 @@ def as_device(path, agent):
 
 phone_pages = [as_device(p, a) for p in (STUDIO, "/admin/id-cards/design/student", "/admin/design-studios") for a in (IPHONE, ANDROID)]
 check("E9 on a phone, both studios and the Design studios page ask for a computer instead",
-      all(code == 200 and "Please use a computer to design" in body and 'id="iddData"' not in body and "/admin/id-cards/design/staff" not in body
+      all(code == 200 and "Open this on a computer" in body and 'id="iddData"' not in body and "/admin/id-cards/design/staff" not in body
           for code, body in phone_pages), str([c for c, _ in phone_pages]))
 code, body = as_device(STUDIO, DESKTOP)
 check("E10 on a computer the studio opens, carrying the small-screen message only for a narrow window",

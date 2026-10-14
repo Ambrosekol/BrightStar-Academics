@@ -562,19 +562,40 @@ def traits_overview(class_id, session_id, term):
     return out
 
 
-def school_design():
-    """``(layout, {image id: stored path})`` when the school's report cards use its own design, else None."""
+DESIGN_CACHE = 'report-card-design'
+
+
+def _read_school_design():
     from core import report_card_design as rcd
     row = db.session.execute(select(ReportCardDesign.layout_json, ReportCardDesign.in_use)
                              .order_by(ReportCardDesign.id).limit(1)).first()
     if not row or not row.in_use:
         return None
-    assets = dict(tuples(select(IdCardAsset.id, IdCardAsset.file_path)))
     try:
-        return rcd.clean_layout(row.layout_json, set(assets)), assets
+        layout = rcd.clean_layout(row.layout_json, set(dict(tuples(select(IdCardAsset.id, IdCardAsset.file_path)))))
     except ValueError:
         current_app.logger.exception('The report card design could not be read; using the standard card')
         return None
+    used = rcd.assets_used(layout)
+    # Only the images the design uses: the paths of the school's other images are never needed here.
+    assets = dict(tuples(select(IdCardAsset.id, IdCardAsset.file_path).where(IdCardAsset.id.in_(list(used))))) if used else {}
+    return layout, assets
+
+
+def school_design():
+    """``(layout, {image id: stored path})`` when the school's report cards use its own design, else None.
+
+    Read once per BRIGHTSTARS_DESIGN_CACHE_SECONDS in each process (core/short_cache.py, this school only), not for
+    every card: a release day's thousands of report card views cost nothing here. Saving, switching, locking or
+    changing an image calls forget_design(). The value is shared, so it is never changed by whoever reads it."""
+    from control_plane.config import design_cache_seconds
+    from core.short_cache import remember
+    return remember(DESIGN_CACHE, design_cache_seconds(), _read_school_design)
+
+
+def forget_design():
+    from core.short_cache import forget_here
+    forget_here(DESIGN_CACHE)
 
 
 def report_cards_pdf(cards):
@@ -588,17 +609,20 @@ def report_cards_pdf(cards):
 
 
 def _designed_web(card, layout, assets, picture):
-    """What static/report-card-render.js draws the card's page from, with every picture embedded."""
+    """What static/report-card-render.js draws the card's page from. The student's photograph and the signatures are
+    embedded (they are this card's own); the logo and the design's images are addresses the browser keeps, so a
+    parent opening card after card, or every parent in the school, downloads each of them once."""
+    from flask import url_for
     from core import report_card_design as rcd
     view = rcd.view_data(card)
     school, student = card['school'], card['student']
     comment = card.get('comment') or {}
     view.update({'brand': {'primary': school.get('primary') or '#0d2b52', 'accent': school.get('accent') or '#1d6fd8'},
-                 'logo': picture(school.get('logo_path')), 'photo': picture(student.get('photo_path')),
+                 'logo': school_brand().get('logo_url') or picture(school.get('logo_path')), 'photo': picture(student.get('photo_path')),
                  'initials': ''.join(p[:1] for p in (student.get('name') or '').split()[:2]).upper(),
                  'signatures': {'head': picture(card['head'].get('signature_path')),
                                 'teacher': picture(comment.get('teacher_signature_path'))},
-                 'assets': {i: picture(assets[i]) for i in rcd.assets_used(layout) if assets.get(i)}})
+                 'assets': {i: url_for('report_design_image', asset_id=i) for i in rcd.assets_used(layout) if assets.get(i)}})
     # Only the details the design shows go into the page (a guardian's phone the design does not print stays out).
     shown = {el['field'] for side in rcd.SIDES for el in layout['sides'][side] if el['type'] in ('field', 'barcode')}
     view['data'] = {k: v for k, v in view['data'].items() if k in shown}

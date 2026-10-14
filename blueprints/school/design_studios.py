@@ -1,6 +1,7 @@
 """Design studios: one menu entry for the school's two design tools, and a page to choose between them - the ID card
 studio (blueprints/school/id_cards.py, needs id_cards.manage) and the report card studio
-(blueprints/school/report_card_studio.py, needs report_cards.manage). Each card on the page is shown only to someone
+(blueprints/school/report_card_studio.py, needs report_cards.manage) and the receipt studio
+(blueprints/school/receipt_studio.py, needs finance.manage). Each card on the page is shown only to someone
 who may open that studio; the studios check the permission again themselves. Someone with neither is refused.
 
 Designing needs a computer. A phone (told apart by its browser's own description of itself) is answered with a page
@@ -15,7 +16,7 @@ from sqlalchemy import select
 
 from app import app
 from core.security import admin_access_error, admin_has_permission, admin_required, current_admin
-from models import IdCardDesign, ReportCardDesign, db
+from models import IdCardDesign, ReceiptDesign, ReportCardDesign, db
 
 
 PHONE = re.compile(r'iPhone|iPod|Android.+Mobile|Windows Phone|IEMobile|BlackBerry|BB10|Opera Mini|Mobile Safari(?!.*iPad)|webOS', re.I)
@@ -29,17 +30,19 @@ def phone_notice():
 
 
 def _may():
+    """(ID cards, report cards, receipts): which studios the person signed in may open."""
     admin = current_admin()
     if not admin:
-        return False, False
-    return admin_has_permission(admin['id'], 'id_cards.manage'), admin_has_permission(admin['id'], 'report_cards.manage')
+        return False, False, False
+    return (admin_has_permission(admin['id'], 'id_cards.manage'), admin_has_permission(admin['id'], 'report_cards.manage'),
+            admin_has_permission(admin['id'], 'finance.manage'))
 
 
 @app.route('/admin/design-studios')
 @admin_required
 def admin_design_studios():
-    id_cards, report_cards = _may()
-    if not (id_cards or report_cards):
+    id_cards, report_cards, receipts = _may()
+    if not (id_cards or report_cards or receipts):
         return admin_access_error('id_cards.manage')
     notice = phone_notice()
     if notice:
@@ -48,7 +51,10 @@ def admin_design_studios():
              db.session.execute(select(IdCardDesign.kind, IdCardDesign.locked, IdCardDesign.updated_at)).all()} if id_cards else {}
     report = db.session.execute(select(ReportCardDesign.in_use, ReportCardDesign.locked)
                                 .order_by(ReportCardDesign.id).limit(1)).first() if report_cards else None
-    return render_template('school_design_studios.html', id_cards=id_cards, report_cards=report_cards, cards=cards, report=report)
+    receipt = db.session.execute(select(ReceiptDesign.in_use, ReceiptDesign.locked)
+                                 .order_by(ReceiptDesign.id).limit(1)).first() if receipts else None
+    return render_template('school_design_studios.html', id_cards=id_cards, report_cards=report_cards, receipts=receipts,
+                           cards=cards, report=report, receipt=receipt)
 
 
 def design_studios_shown():

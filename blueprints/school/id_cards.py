@@ -32,7 +32,7 @@ from core.security import admin_has_permission, admin_required, audit_log, csrf_
 from core.storage import delete_upload, read_upload_bytes
 from core.uploads import _save_image_upload
 from models import (
-    AcademicSession, Admin, AdminType, IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion, ReportCardDesign, SchoolClass,
+    AcademicSession, Admin, AdminType, IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion, ReceiptDesign, ReportCardDesign, SchoolClass,
     StaffRecord, Student, StudentEnrolment, db,
 )
 
@@ -319,8 +319,9 @@ def admin_id_card_designer(kind):
     view['qr'] = ic.qr_path('https://example.com/id/sample')
     view.update(_common(brand, assets))
     view['fields'] = ic.fields_for(kind)
-    data = {'layout': layout, 'kind': kind, 'view': view, 'fields': ic.fields_for(kind), 'barcode_fields': ic.BARCODE_FIELDS[kind],
-            'fonts': ic.FONTS, 'max': ic.MAX_ELEMENTS, 'asset_list': assets, 'versions': _versions(kind),
+    # Lists of choices as [key, name] pairs, so they keep their order (static/id-card-designer.js, ordered()).
+    data = {'layout': layout, 'kind': kind, 'view': view, 'fields': list(ic.fields_for(kind).items()),
+            'barcode_fields': list(ic.BARCODE_FIELDS[kind].items()), 'fonts': list(ic.FONTS.items()), 'max': ic.MAX_ELEMENTS, 'asset_list': assets, 'versions': _versions(kind),
             'templates': [{'key': key, 'name': text.split(':')[0], 'text': text.split(':', 1)[1].strip(),
                            'layout': ic.default_layout(kind, key)} for key, text in ic.TEMPLATES.items()],
             'locked': bool(row and row.locked),
@@ -459,6 +460,9 @@ def upload_design_image():
     asset = IdCardAsset(name=stem, file_path=path, created_at=_now(), created_by=me['id'])
     db.session.add(asset)
     db.session.commit()
+    from blueprints.school.report_card_data import forget_design
+    from blueprints.finance.helpers import forget_receipt_design
+    forget_design(); forget_receipt_design()
     audit_log('id_card_asset_uploaded', 'school', 'id_card_asset', asset.id, {})
     return jsonify(ok=True, asset={'id': asset.id, 'name': asset.name, 'url': _static(asset.file_path)})
 
@@ -490,9 +494,20 @@ def remove_design_image(asset_id):
             used = set()
         if asset_id in used:
             return jsonify(ok=False, error='The report card design is locked and uses this image. Unlock it first.'), 409
+    from core import receipt_design as recd
+    for row in db.session.scalars(select(ReceiptDesign).where(ReceiptDesign.locked == 1)).all():
+        try:
+            used = recd.assets_used(recd.clean_layout(row.layout_json, {asset_id}))
+        except ValueError:
+            used = set()
+        if asset_id in used:
+            return jsonify(ok=False, error='The receipt design is locked and uses this image. Unlock it first.'), 409
     path = asset.file_path
     db.session.delete(asset)
     db.session.commit()
+    from blueprints.school.report_card_data import forget_design
+    from blueprints.finance.helpers import forget_receipt_design
+    forget_design(); forget_receipt_design()
     delete_upload(path)
     audit_log('id_card_asset_removed', 'school', 'id_card_asset', asset_id, {})
     return jsonify(ok=True)

@@ -14,18 +14,21 @@ preview is drawn from that rebuilt design and a made-up student, never a real on
 import json
 from datetime import datetime, timezone
 
-from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
+import mimetypes
+
+from flask import Response, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import delete as sa_delete, select
 
 from app import app
 from blueprints.school.id_cards import _asset_list, _asset_rows, _static, remove_design_image, upload_design_image
 from blueprints.school.design_studios import phone_notice
-from blueprints.school.report_card_data import _file, grading_key, report_settings
+from blueprints.school.report_card_data import _file, forget_design, grading_key, report_settings, school_design
 from core import report_card_design as rcd
 from core.branding import school_brand
 from core.report_card_design_pdf import render_designed_pdf
 from core.security import admin_has_permission, admin_required, audit_log, csrf_protect, current_admin
-from models import Admin, ReportCardDesign, ReportCardDesignVersion, db
+from core.storage import read_upload_bytes
+from models import Admin, ParentAccount, ReportCardDesign, ReportCardDesignVersion, Student, db
 
 VERSIONS = 20
 
@@ -103,9 +106,11 @@ def admin_report_card_studio():
                  'logo': brand.get('logo_url'), 'photo': None, 'initials': 'AO',
                  'signatures': {'head': _static(card['head'].get('signature_path')), 'teacher': None},
                  'assets': {a['id']: a['url'] for a in assets}, 'fields': rcd.FIELDS})
-    data = {'mode': 'report', 'layout': layout, 'view': view, 'sides': list(rcd.SIDES), 'fields': rcd.FIELDS,
-            'barcode_fields': rcd.BARCODE_FIELDS, 'fonts': rcd.FONTS, 'default_font': 'dejavu', 'max': rcd.MAX_ELEMENTS,
-            'result_columns': rcd.RESULT_COLUMNS, 'summary_items': rcd.SUMMARY_ITEMS,
+    # Lists of choices as [key, name] pairs, so they keep their order (static/id-card-designer.js, ordered()).
+    data = {'mode': 'report', 'layout': layout, 'view': view, 'sides': list(rcd.SIDES), 'fields': list(rcd.FIELDS.items()),
+            'barcode_fields': list(rcd.BARCODE_FIELDS.items()), 'fonts': list(rcd.FONTS.items()), 'default_font': 'dejavu',
+            'max': rcd.MAX_ELEMENTS, 'result_columns': list(rcd.RESULT_COLUMNS.items()),
+            'summary_items': list(rcd.SUMMARY_ITEMS.items()),
             'asset_list': assets, 'versions': _versions(), 'locked': bool(row and row.locked),
             'saved_text': 'Saved.' + ('' if row and row.in_use else ' Report cards use it once you switch it on.'),
             'templates': [{'key': key, 'name': text.split(':')[0], 'text': text.split(':', 1)[1].strip(),
@@ -134,6 +139,7 @@ def admin_report_card_studio_save():
     row.layout_json, row.updated_at, row.updated_by = stored, _now(), me['id']
     _keep_version(stored, me['id'])
     db.session.commit()
+    forget_design()
     audit_log('report_card_design_saved', 'school', 'report_card_design', None,
               {side: len(layout['sides'][side]) for side in rcd.SIDES})
     return jsonify(ok=True, layout=layout, saved_at=row.updated_at, versions=_versions())
@@ -149,6 +155,7 @@ def admin_report_card_studio_lock():
     row.locked = 1 if lock else 0
     row.locked_by, row.locked_at = (me['id'], _now()) if lock else (None, None)
     db.session.commit()
+    forget_design()
     audit_log('report_card_design_locked' if lock else 'report_card_design_unlocked', 'school', 'report_card_design', None, {})
     flash('Design locked: it cannot change until someone unlocks it.' if lock else 'Design unlocked: it can be changed again.', 'success')
     return redirect(url_for('admin_report_card_studio'))
@@ -165,6 +172,7 @@ def admin_report_card_studio_use():
     use = request.form.get('use') == '1'
     row.in_use = 1 if use else 0
     db.session.commit()
+    forget_design()
     audit_log('report_card_design_used' if use else 'report_card_design_standard', 'school', 'report_card_design', None, {})
     flash('Report cards now use the school\'s own design.' if use else 'Report cards now use the standard design.', 'success')
     return redirect(url_for('admin_report_card_studio'))
@@ -208,6 +216,38 @@ def admin_report_card_studio_preview():
 @csrf_protect
 def admin_report_card_asset_upload():
     return upload_design_image()
+
+
+# ---------------------------------------------------------------- the design's images, for the report card page
+def _signed_in_here():
+    """Someone of this school is signed in: staff, a parent or a student (the session belongs to this school's own
+    address, so it is never another school's)."""
+    if current_admin():
+        return True
+    if session.get('parent_id'):
+        return db.session.scalar(select(ParentAccount.id).where(ParentAccount.id == session['parent_id'], ParentAccount.active == 1)) is not None
+    if session.get('student_id'):
+        return db.session.scalar(select(Student.id).where(Student.id == session['student_id'], Student.active == 1,
+                                                          Student.account_active == 1)) is not None
+    return False
+
+
+@app.route('/report-card-design/images/<int:asset_id>')
+def report_design_image(asset_id):
+    """One of the images the school's report card design uses, for its report card pages. Only to someone signed in
+    at this school, and only an image the design in use shows (never one of the school's other images). An image never
+    changes under its number (a new upload is a new number), so the browser keeps it for a week."""
+    design = school_design()
+    if not _signed_in_here() or not design or asset_id not in design[1]:
+        abort(404)
+    data = read_upload_bytes(design[1][asset_id])
+    if data is None:
+        abort(404)
+    response = Response(data, mimetype=mimetypes.guess_type(design[1][asset_id])[0] or 'application/octet-stream')
+    response.headers['Cache-Control'] = 'private, max-age=604800, immutable'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Robots-Tag'] = 'noindex'
+    return response
 
 
 @app.post('/admin/report-cards/studio/assets/<int:asset_id>/delete')

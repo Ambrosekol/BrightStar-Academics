@@ -1,0 +1,209 @@
+{% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
+{% block guide %}
+<p>The design studios let the school design its own ID cards, report cards and receipts: the layout, the colours, the
+pictures and exactly which details appear, from a ready-made template or from a blank page. All three work the same way,
+so once you know one, you know them all.</p>
+
+<h2 id="open">Opening a studio</h2>
+<p><a href="{{ url_for('admin_design_studios') }}">Design studios</a> is in the menu under <strong>Management, Design &amp;
+print</strong>. It shows a card for each studio you are allowed to open, with how things stand (for example, whether
+report cards already use the school's design).</p>
+{{ shot('design-studios', 'Design studios: one card for each studio you may open, with its state. The menu on the left is in two parts, Teaching and Management.') }}
+<table class="guide-table">
+  <thead><tr><th>Studio</th><th>Opens it</th><th>Also reached from</th></tr></thead>
+  <tbody>
+    <tr><td>ID card studio</td><td>Anyone who may design and manage ID cards (Records Officer, Head Teacher, School Admin)</td><td><a href="{{ url_for('admin_id_cards') }}">ID cards</a> → <em>Design the student card</em></td></tr>
+    <tr><td>Report card studio</td><td>Anyone who may manage report card settings (Report Card Officer, Head Teacher, School Admin)</td><td><a href="{{ url_for('admin_school_report_cards') }}">Report cards</a> → <em>Design the report card</em>, and Report card settings</td></tr>
+    <tr><td>Receipt studio</td><td>Anyone who may manage finance (Finance Manager, School Admin)</td><td><a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt settings</a> → <em>Design the receipt</em></td></tr>
+  </tbody>
+</table>
+<div class="guide-note">The studios need a computer: a laptop or desktop with a screen at least 1024 pixels wide. On a phone,
+or in a browser window made narrower than that, a studio shows a short message instead. Everything else in the portal
+works on a phone as usual.</div>
+{{ shot('studio-small', 'On a phone or a small window, a studio asks you to open it on a computer, with a way back.') }}
+
+<h2 id="screen">The studio screen</h2>
+<p>A studio fills the whole browser window, like a design program, so every tool is on screen at once and the page never
+scrolls. Press the ⛶ button (top right) to hide the browser's own bars as well; press it again, or Esc, to bring them
+back. <strong>← Exit</strong> (top left) leaves the studio.</p>
+{{ shot('studio-report', 'The report card studio with the results table chosen: the tools along the top, what to add on the left, the page in the middle, and the chosen item\'s settings on the right.') }}
+<ul>
+  <li><strong>Along the top:</strong> undo and redo, zoom (− and +, or <em>Fit</em> to see the whole page), <em>Grid</em>
+  and <em>Snap</em>, the side or page you are working on, and on the right <em>Templates</em>, <em>Lock</em> and
+  <em>Save</em>. The report card and receipt studios also have <em>Preview PDF</em> and the <em>Use this design</em>
+  switch.</li>
+  <li><strong>On the left,</strong> one tab at a time: <em>Insert</em> (the blocks, elements and shapes to add),
+  <em>Details</em> (the person's or payment's details, one click each), <em>Images</em> (the school's own pictures) and
+  <em>Page</em> or <em>Card</em> (its size, background colour, gradient and background picture).</li>
+  <li><strong>In the middle,</strong> the page itself, drawn by the same code that prints it, with a made-up student,
+  staff member or payment so you can see real-looking details.</li>
+  <li><strong>On the right,</strong> three tabs: <em>Properties</em> (everything about the chosen item; it opens by itself
+  when you choose something), <em>Layers</em> (every item, top first) and <em>Versions</em> (earlier saves). A settings
+  section folds away under its heading; <em>Position and size</em>, <em>Look</em> and <em>Box and lines</em> start folded
+  to save room.</li>
+  <li><strong>The line under the page</strong> says what has happened: saved, changed but not saved yet, locked, or what
+  went wrong.</li>
+</ul>
+
+<h2 id="items">Adding and arranging items</h2>
+<ul>
+  <li><strong>Add</strong> anything from the left: it appears in the middle of the page, chosen, ready to move.</li>
+  <li><strong>Choose</strong> an item by clicking it. Shift-click adds more to the choice; drag a box round several on an
+  empty part of the page to choose them all.</li>
+  <li><strong>Move</strong> by dragging, or with the arrow keys. Items snap to the page's edges and centre and to each other
+  (pink lines show what they line up with); turn <em>Snap</em> off for free movement, or turn on <em>Grid</em> to snap to
+  half-millimetre steps.</li>
+  <li><strong>Resize</strong> from the eight square handles; hold Shift on a corner to keep the shape. <strong>Turn</strong>
+  it with the round handle above; hold Shift for 15° steps.</li>
+  <li><strong>Line up</strong> several items with the alignment buttons (left, centre, right, top, middle, bottom), or
+  space three or more evenly. With one item, they line it up with the page.</li>
+  <li><strong>Layers</strong> sets what sits in front: <em>To front</em>, <em>Forward</em>, <em>Back</em>, <em>To back</em>.
+  <em>Hide</em> keeps an item but leaves it off the printout; <em>Lock</em> stops it moving by accident.</li>
+  <li><strong>Exact numbers:</strong> under <em>Position and size</em>, type the position, width, height and turn in
+  millimetres and degrees.</li>
+</ul>
+<table class="guide-table">
+  <thead><tr><th>Keys</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td>Arrow keys</td><td>Nudge 0.5 mm (Shift: 2 mm, Alt: 0.1 mm)</td></tr>
+    <tr><td>Ctrl+Z / Ctrl+Y</td><td>Undo / redo</td></tr>
+    <tr><td>Ctrl+C, Ctrl+X, Ctrl+V</td><td>Copy, cut, paste (click the page first)</td></tr>
+    <tr><td>Ctrl+D</td><td>Duplicate</td></tr>
+    <tr><td>Ctrl+] / Ctrl+[</td><td>Forward / back (with Shift: to the front / to the back)</td></tr>
+    <tr><td>Ctrl+A / Esc</td><td>Choose everything / choose nothing</td></tr>
+    <tr><td>Delete</td><td>Remove what is chosen (a locked item stays)</td></tr>
+    <tr><td>Ctrl+S</td><td>Save</td></tr>
+    <tr><td>Ctrl + mouse wheel</td><td>Zoom</td></tr>
+    <tr><td>Double-click a text</td><td>Edit its words</td></tr>
+  </tbody>
+</table>
+
+<h2 id="text">Text and details</h2>
+<p><strong>Text</strong> is words you type, the same on every copy ("Student Identity Card", "Official Receipt").
+A <strong>detail</strong> is filled in for each person or payment: the student's name, the class, the amount paid. The
+<em>Details</em> tab lists every detail the studio knows; click one to put it on the page, already labelled ("Class: JSS 1").
+A detail can be changed to any other from <em>Shows</em> in its settings, and its label edited or removed.</p>
+{{ shot('studio-idcard-details', 'The ID card studio\'s Details tab: every detail a student card can show, one click each.') }}
+<p>For text and details you can choose the font, size, weight, italics, underline, capitals, letter and line spacing,
+alignment (including justified) and up-and-down position, the colour, and a coloured box behind the words with rounded
+corners and padding. Words that do not fit their box are made smaller until they do, never cut off, down to a small
+minimum, so a long name still shows whole; make the box bigger if the type gets too small.</p>
+
+<h2 id="pictures">Pictures, signatures and the school's images</h2>
+<ul>
+  <li><strong>The photograph and the logo</strong> are each person's and the school's own. Choose how a picture fits its
+  box (fill and crop, show it all, or stretch), clip it to a circle, rounded box, hexagon, shield, star or arch, give it a
+  frame, or make it black and white.</li>
+  <li><strong>Signatures:</strong> the head's (from Report card settings), the class teacher's own (from My signature), a
+  staff member's own on a staff card, and the authorised signature on receipts (from Receipt settings). A missing
+  signature shows as an empty box in the studio and is left blank when printed.</li>
+  <li><strong>The school's images</strong> (the <em>Images</em> tab): upload a PNG or JPG (a watermark, a border, a badge,
+  the school stamp) and click it to put it on the page, or choose it as the background under <em>Page</em>. The images are
+  shared by all three studios. An image a locked design uses cannot be removed until that design is unlocked.</li>
+</ul>
+
+<h2 id="colours">Colours, shapes and effects</h2>
+<p>Every colour can be the school's own colour or accent (so a design follows if the school's colours ever change), white,
+black, a recent colour, any colour you pick, or a typed code such as #1d6fd8. Shapes (rectangles, ellipses, triangles,
+diamonds, hexagons, stars, chevrons, arrows, waves, corner sweeps and lines) take a fill, a straight or round gradient, an
+outline of any thickness, solid, dashed or dotted, and rounded corners. Any item can be faded (opacity), given a soft or
+strong shadow, and turned.</p>
+
+<h2 id="templates">Templates and versions</h2>
+<p><strong>Templates</strong> shows complete ready-made designs (four for each studio), drawn in the school's own colours
+with its logo. Pick one to put it on the page; <em>Undo</em> brings back what was there before, and nothing is kept until
+you save.</p>
+{{ shot('studio-templates', 'Templates: four complete report card designs in the school\'s colours. Picking one replaces the page; Undo brings yours back.') }}
+<p>Every save is kept under <strong>Versions</strong> (the newest twenty), with who saved it and when. <em>Bring back</em>
+puts an earlier version on the page; save it to keep it.</p>
+
+<h2 id="save">Saving, locking and switching on</h2>
+<ul>
+  <li><strong>Save</strong> (or Ctrl+S) keeps the design. Until then, changes are only on your screen, and the page warns you
+  before you leave it with changes not saved.</li>
+  <li><strong>Lock</strong> saves it and stops anyone changing it by accident; <em>Unlock</em> allows changes again. Locking
+  and unlocking are in the activity log.</li>
+  <li><strong>ID cards</strong> print from the saved design straight away.</li>
+  <li><strong>Report cards and receipts</strong> keep the standard design until you switch the school's on: press
+  <em>Use this design</em> (the switch in the top bar). From then on every report card, or every receipt, is drawn from the
+  <em>saved</em> design; press it again to go back to the standard one. <em>Preview PDF</em> shows the design on your screen
+  (saved or not) as it will print, with a made-up student or payment, before you switch it on.</li>
+</ul>
+
+<h2 id="each">What each studio adds</h2>
+<h3>The ID card studio</h3>
+{{ shot('studio-idcard', 'The ID card studio: the student card with the photograph chosen, its picture settings on the right.') }}
+<p>A bank-card-sized card, front and back, landscape or portrait, with the QR code that opens the card's check page and a
+barcode of the card or admission number. Separate designs for student and staff cards (the switch at the top left).
+Printing, cancelling and replacing cards: see {{ page('students', 'Students') }}, ID cards.</p>
+<h3>The report card studio</h3>
+<p>An A4 page, portrait or landscape, and a second page printed only when something is on it. Its blocks are the results
+table (choose its columns), the summary, attendance, the trait ratings, the grading key and the class teacher's comment;
+each has its own fonts, sizes, heading band, stripes, lines and colours, and a table shares its space between its rows so
+eight subjects and sixteen both fit. Details include attendance, the position in class and the student's personal
+details. See {{ page('results-report-cards', 'Results and report cards') }}.</p>
+{{ shot('reportcard-designed', 'A parent\'s view of a report card in the school\'s own design (the Modern template).') }}
+<h3>The receipt studio</h3>
+{{ shot('studio-receipt', 'The receipt studio with the Paid stamp chosen: its word, shape and date on the right.') }}
+<p>An A5 or A4 page, either way round. Its blocks are the amount paid (in figures, and in words if wanted), the balance
+(fees for the session, paid so far, balance due) and a Paid stamp. Once switched on, the payment page, the printout, the
+PDF and the copy emailed to parents all follow it. See {{ page('finance', 'Fees, payments and receipts') }}.</p>
+{{ shot('receipt-designed', 'A payment\'s own page with its receipt in the school\'s design.') }}
+{{ shot('receipt-void', 'A voided receipt is always marked VOID across the page, whatever the design, and never shows the Paid stamp.') }}
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<dl class="guide-faq">
+  <dt>I cannot see Design studios in the menu, or a studio is missing from it.</dt>
+  <dd>Each studio needs its own right (see the table above), and Design studios shows only the studios you may open. Ask
+  the School Admin to add the right role to your account.</dd>
+
+  <dt>The studio says "Open this on a computer".</dt>
+  <dd>You are on a phone, or the browser window is narrower than 1024 pixels. Use a laptop or desktop; on a computer,
+  make the window wider or zoom the browser out (Ctrl and −).</dd>
+
+  <dt>My changes have gone.</dt>
+  <dd>Changes are kept only when you press Save. If you saved and want an earlier design back, open <em>Versions</em> and
+  press <em>Bring back</em>, then Save.</dd>
+
+  <dt>Save, Templates and the Add buttons are greyed out.</dt>
+  <dd>The design is locked. Press <em>Unlock</em> (top right) if you may change it; the status line says since when it
+  has been locked.</dd>
+
+  <dt>I cannot move or change one item.</dt>
+  <dd>It is locked on its own: choose it in <em>Layers</em> and press <em>Unlock</em>. If you cannot click it at all,
+  another item is in front of it: choose it in Layers instead, or move the one in front.</dd>
+
+  <dt>An item has disappeared.</dt>
+  <dd>It may be hidden (shown faded in Layers: press <em>Show</em>), behind another item (use <em>To front</em>), moved off
+  the page (choose it in Layers and set its position under <em>Position and size</em>), or on the other side or page.</dd>
+
+  <dt>Text looks very small.</dt>
+  <dd>Text too long for its box is made smaller so it fits. Make the box wider or taller, shorten a label, or choose a
+  smaller font size you are happy with.</dd>
+
+  <dt>The school's design is not used on report cards or receipts.</dt>
+  <dd>Press <em>Use this design</em>: until then the standard design is used. Report cards and receipts use the
+  <em>saved</em> design, so save your latest changes. A change can take up to a minute to reach every copy.</dd>
+
+  <dt>A signature, the logo or a photograph is blank.</dt>
+  <dd>The picture has not been set: the head's signature on Report card settings, a teacher's own on My signature, the
+  authorised signature on Receipt settings, the logo on the school profile, a photograph on the student's or staff
+  member's page.</dd>
+
+  <dt>A detail is empty on a printout.</dt>
+  <dd>It is empty in the record itself (for example, no date of birth was entered). Fill it in on the student's or staff
+  member's page, or the payment; the next copy shows it.</dd>
+
+  <dt>I cannot remove one of the school's images.</dt>
+  <dd>A locked design uses it. Unlock that design (the message says which), then remove the image.</dd>
+
+  <dt>The printout is the wrong size.</dt>
+  <dd>Print at 100% ("Actual size"), not "Fit to page". ID card sheets are A4; report cards are A4; receipts are the size
+  chosen under the receipt studio's <em>Page</em> tab.</dd>
+
+  <dt>The PDF shows "N" instead of the ₦ sign.</dt>
+  <dd>The Helvetica, Times and Courier fonts cannot draw the Naira sign in a PDF, so N stands in for it. Choose the
+  DejaVu Sans font for amounts to have ₦.</dd>
+</dl>
+{% endblock %}

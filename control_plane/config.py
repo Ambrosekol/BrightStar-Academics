@@ -255,6 +255,17 @@ def admin_cache_seconds():
         return 15.0
 
 
+def design_cache_seconds():
+    """How long each process keeps a school's report card design (and the list of its design images) after reading
+    it. Every report card that is shown or downloaded needs it, and it changes rarely: saving, switching, locking or
+    changing an image clears it at once in the process that did it, and every other process reads it again within
+    this many seconds. Zero reads it for every card."""
+    try:
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_DESIGN_CACHE_SECONDS', '60')))
+    except ValueError:
+        return 60.0
+
+
 def badge_cache_seconds():
     """How long the counts shown on every admin page (unread notifications, open controls, unallocated
     payments) are kept in each process. A count can therefore lag a change by this many seconds.
