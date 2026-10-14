@@ -27,6 +27,7 @@
 .td-remove:hover{border-color:#dc2626;color:#dc2626}
 .td-add{margin-top:10px}
 .td-dept-placeholder{font-size:12px;color:#94a3b8}
+.td-dept-note{grid-column:1/-1;margin:-2px 0 2px;font-size:12px;color:#64748b}
 @media (max-width:640px){.td-row{grid-template-columns:1fr 1fr}.td-row .td-remove{grid-column:2;justify-self:end}}
 </style>
 {% set dc = duties.class_teacher if duties else [] %}
@@ -69,6 +70,7 @@
         {% for d in duty_departments %}<option value="{{ d }}" data-dept="{{ d }}" {% if d == row.department %}selected{% endif %}>{{ d }} only</option>{% endfor %}
       </select>
       <button type="button" class="td-remove" data-duty-remove aria-label="Remove this row">✕</button>
+      <p class="td-dept-note" data-dept-note hidden></p>
     </div>
     {% endfor %}
   </div>
@@ -116,6 +118,11 @@
       all.hidden=true; all.disabled=true;
       if(n===1 || !dept.value) dept.value=only;
     } else { all.hidden=false; all.disabled=false; }
+    // Why "All departments" is missing: other departments of the subject already have their teacher.
+    var note=row.querySelector('[data-dept-note]'), busy=senior && allowed ? held.filter(function(d){ return d && d!==mine; }) : [];
+    note.hidden=!busy.length;
+    note.textContent=busy.length ? busy.join(' and ')+' already '+(busy.length>1?'have':'has')+' a teacher for this subject, so only '
+      +(n===1 ? 'the '+only+' department is' : 'the other departments are')+' left. To change that, replace the teacher on the Teachers page.' : '';
   }
   function sync(row){
     var cls=row.querySelector('[data-duty-class]'), dept=row.querySelector('.td-dept');

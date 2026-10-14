@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.38.1",
+      "date": "2026-10-14",
+      "title": "Teachers: what still needs a teacher, first",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "On the Teachers page, the Subject teachers tab now shows the subjects not taught yet at the top. On the staff form, when an SSS subject offers only some of its departments, a note now says which departments already have a teacher, instead of the All departments choice simply being missing.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.38.0",
       "date": "2026-10-14",
       "title": "Teachers: replace in one step",

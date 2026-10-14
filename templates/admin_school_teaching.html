@@ -61,6 +61,18 @@
 
 {# ---------------------------------------------------------------- subject teachers #}
 <div data-tc-panel="subjects" role="tabpanel"{% if tab != 'subjects' %} hidden{% endif %}>
+  {% if untaught %}
+  <section class="ac-panel tc2-panel tc2-untaught">
+    <h2>Not taught yet <small>{{ untaught|length }}</small></h2>
+    <div class="tc2-chips">
+      {% for u in untaught %}
+      <span class="tc2-chip is-gap" data-tc-item data-search="{{ (u.subject_name ~ ' ' ~ u.class_name ~ ' ' ~ u.department)|lower }}"><span>{{ u.subject_name }} <small>{{ u.class_name }}{% if u.department %} · {{ u.department }}{% endif %}</small></span>
+        <button type="button" data-tc-open data-kind="subject" data-class="{{ u.class_id }}" data-subject="{{ u.subject_id }}" data-department="{{ u.department }}"
+          data-what="{{ u.subject_name }} in {{ u.class_name }}{% if u.department %} ({{ u.department }}){% endif %}">Assign</button></span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
   <section class="ac-panel tc2-panel">
     {% if rows %}
     <ul class="tc2-teachers">
@@ -84,18 +96,6 @@
     <div class="ac-empty"><strong>No teachers you can assign yet</strong>Give a member of staff the Class Teacher or Subject Teacher role on their staff record first.</div>
     {% endif %}
   </section>
-  {% if untaught %}
-  <section class="ac-panel tc2-panel tc2-untaught">
-    <h2>Not taught yet <small>{{ untaught|length }}</small></h2>
-    <div class="tc2-chips">
-      {% for u in untaught %}
-      <span class="tc2-chip is-gap" data-tc-item data-search="{{ (u.subject_name ~ ' ' ~ u.class_name ~ ' ' ~ u.department)|lower }}"><span>{{ u.subject_name }} <small>{{ u.class_name }}{% if u.department %} · {{ u.department }}{% endif %}</small></span>
-        <button type="button" data-tc-open data-kind="subject" data-class="{{ u.class_id }}" data-subject="{{ u.subject_id }}" data-department="{{ u.department }}"
-          data-what="{{ u.subject_name }} in {{ u.class_name }}{% if u.department %} ({{ u.department }}){% endif %}">Assign</button></span>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
 </div>
 <div class="ac-empty" data-tc-none hidden><strong>Nothing matches</strong>Clear the search.</div>
 
