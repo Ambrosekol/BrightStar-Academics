@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.36.3",
+      "date": "2026-10-14",
+      "title": "Menu headings on bands",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "In the menu, Teaching and Management now run across its whole width, and each group within them (Classroom, Assessment, Students & parents and the rest) has a light band of its own.",
+          "help": "staff-admin"
+        }
+      ]
+    },
+    {
       "version": "2.36.2",
       "date": "2026-10-14",
       "title": "Clearer menu headings",

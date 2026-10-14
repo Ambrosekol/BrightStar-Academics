@@ -355,19 +355,28 @@ html:not(.js) .rail:focus-within { width: var(--rail-open); box-shadow: var(--sh
 html[data-rail="pinned"] .rail .rail-section__label::after { opacity: 0; }
 .rail:not(.is-open) .rail-section__label { height: 13px; }
 html[data-rail="pinned"] .rail .rail-section__label { height: 24px; }
+/* Open, each group's heading sits on a light band, so the hairlines between groups are not needed. */
+.rail.is-open .rail-section__label,
+html[data-rail="pinned"] .rail .rail-section__label {
+    margin-bottom: 2px;
+    border-radius: 6px;
+    color: var(--ink-2);
+    background: color-mix(in srgb, var(--brand) 5%, var(--surface-0));
+}
+.rail.is-open .rail-section + .rail-section,
+html[data-rail="pinned"] .rail .rail-section + .rail-section { border-top-color: transparent; }
 .rail-list { margin: 0; padding: 0; list-style: none; }
-/* The two parts of the school menu, Teaching and Management: a heading on a light band of the school's colour.
-   Narrow, only a thin band shows. */
+/* The two parts of the school menu, Teaching and Management: a heading on a band of the school's colour across the
+   whole width of the menu. Narrow, only a thin band shows. */
 .rail-section.rail-section--part { margin-top: var(--sp-3); }
 .rail-part {
     display: flex;
     align-items: center;
-    height: 28px;
-    margin: 0 var(--sp-2) var(--sp-1);
-    padding: 0 var(--sp-3);
-    border-radius: 8px;
+    height: 30px;
+    margin: 0 calc(-1 * var(--sp-2)) var(--sp-2);
+    padding: 0 calc(var(--sp-3) + var(--sp-2));
     color: var(--brand);
-    background: color-mix(in srgb, var(--brand) 10%, var(--surface-0));
+    background: color-mix(in srgb, var(--brand) 13%, var(--surface-0));
     font-size: var(--fs-xs);
     font-weight: 800;
     letter-spacing: .12em;
@@ -378,7 +387,7 @@ html[data-rail="pinned"] .rail .rail-section__label { height: 24px; }
 }
 .rail:not(.is-open) .rail-part { height: 4px; color: transparent; }
 .rail.is-open .rail-part,
-html[data-rail="pinned"] .rail .rail-part { height: 28px; color: var(--brand); transition-delay: .07s; }
+html[data-rail="pinned"] .rail .rail-part { height: 30px; color: var(--brand); transition-delay: .07s; }
 
 .rail-link {
     position: relative;
@@ -776,7 +785,10 @@ html[data-rail="pinned"] .school-ui .admin-shell.has-rail .main { margin-left: v
     html.js .rail .rail-person__copy { opacity: 1; }
     html .rail .rail-section__label { height: 24px; }
     html .rail .rail-section__label::after { opacity: 0; }
-    html .rail .rail-part { height: 28px; color: var(--brand); }
+    html .rail .rail-section__label { margin-bottom: 2px; border-radius: 6px; color: var(--ink-2);
+        background: color-mix(in srgb, var(--brand) 5%, var(--surface-0)); }
+    html .rail .rail-section + .rail-section { border-top-color: transparent; }
+    html .rail .rail-part { height: 30px; color: var(--brand); }
     html.js .rail .rail-dot { visibility: hidden; }
     html.js .rail .rail-pin { display: none; }
     html.js .rail-edge { display: none; }
