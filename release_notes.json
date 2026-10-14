@@ -18,6 +18,26 @@
   ],
   "releases": [
     {
+      "version": "2.37.1",
+      "date": "2026-10-14",
+      "title": "Smoother reloading",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Reloading a page (F5, the reload button, pulling down to refresh, or Reload in the installed app) now shows the outline of the page while it loads, as moving between pages does, instead of a blank or half-drawn screen.",
+          "help": "dashboard"
+        },
+        {
+          "audience": "family",
+          "text": "Refreshing a page in the parent portal now shows the outline of the page while it loads, instead of a blank screen."
+        },
+        {
+          "audience": "student",
+          "text": "Refreshing a page in the student portal now shows the outline of the page while it loads, instead of a blank screen."
+        }
+      ]
+    },
+    {
       "version": "2.37.0",
       "date": "2026-10-14",
       "title": "More on the Overview for every role",

@@ -19,6 +19,12 @@
    Coming back with the browser's Back clears it (the page is shown from memory), and so does a page that has not
    gone after a while - a "leave this page?" question answered Stay, or an answer that was a file download.
 
+   Reloading (F5, the reload button, pulling down to refresh, Reload in the installed app's menu) leaves no click to see,
+   so the page is told by "beforeunload": it gives way to the same outline at once, and the reloaded page, which knows it
+   was reloaded, keeps it until it has been drawn (templates/includes/_pwa_head.html). Not when the page is asking
+   "leave this page?" (an exam, a form not saved: another handler has asked for the question), not just after a file
+   was asked for, and cleared again if the page has not gone after a moment (a question answered Stay).
+
    Avatars: a photograph that cannot be loaded is replaced by the person's initials (data-avatar-fallback), never
    left as a broken picture. */
 (function () {
@@ -69,7 +75,7 @@
     document.documentElement.classList.add('is-loading');
   }
   function stop() {
-    clearTimeout(giveUp);
+    clearTimeout(giveUp); giveUp = null;
     note(false);
     if (staged) { staged.classList.remove('is-skeleton'); staged = null; }
     dimmed.forEach(function (el) { el.classList.remove('is-loading'); el.setAttribute('aria-busy', 'false'); });
@@ -111,6 +117,21 @@
   });
 
   window.addEventListener('pageshow', function (e) { if (e.persisted) stop(); });
+
+  // Reloading, and any other way of leaving that is not a click or a form seen above.
+  var fileAsked = 0;
+  window.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (a && (a.hasAttribute('download') || isFile(new URL(a.href, window.location.href)))) fileAsked = Date.now();
+  }, true);
+  window.addEventListener('beforeunload', function (e) {
+    if (giveUp || staged || dimmed.length) return;                       // a click or a form has already started it
+    if (e.defaultPrevented || (typeof e.returnValue === 'string' && e.returnValue)) return;   // "leave this page?"
+    if (Date.now() - fileAsked < 3000) return;                             // a download: the page stays
+    start(null);
+    clearTimeout(giveUp);
+    giveUp = setTimeout(stop, 8000);                                      // still here: it was not left after all
+  });
 
   // Avatars: initials instead of a picture that will not load.
   function fallback(img) {

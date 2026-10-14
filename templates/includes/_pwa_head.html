@@ -19,7 +19,9 @@
     (templates/includes/_skeleton.html) under a spinner; it leaves a note, and the next page, reading it first thing
     here, is drawn as the same outline from its very first paint and shows its content only once it has loaded and been
     drawn in full (stylesheets, pictures and fonts) - so there is never a blank, frozen or half-drawn screen between two
-    pages, also in the installed app. Inline, and first in <head>, so it needs no other file; it gives up after 8s.
+    pages, also in the installed app. A page that is being reloaded (F5, the reload button, pulling down to refresh,
+    Reload in the installed app's menu) is drawn the same way, with or without a note: the browser says it was reloaded.
+    Inline, and first in <head>, so it needs no other file; it gives up after 8s.
     A page without the outline (taking a paper, an error page) just shows the spinner meanwhile. -#}
 <style>
 .bs-stage { position: relative; }
@@ -68,6 +70,6 @@ html.bs-arriving body { cursor: progress; }
   .bs-sk::after, html.bs-arriving body::after, html.bs-arriving .auth-main::after { animation-duration: 2s !important; }
 }
 </style>
-<script nonce="{{ csp_nonce() }}">(function(d){try{var t=+sessionStorage.getItem('bs-nav');sessionStorage.removeItem('bs-nav');if(!t||Date.now()-t>20000)return;}catch(e){return;}d.classList.add('bs-arriving');var shown=false;function show(){if(shown)return;shown=true;d.classList.add('bs-revealing');d.classList.remove('bs-arriving');requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.remove('bs-revealing');});});}function painted(){var f=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();f.then(function(){requestAnimationFrame(function(){requestAnimationFrame(show);});});}if(document.readyState==='complete')painted();else window.addEventListener('load',painted);setTimeout(show,8000);window.addEventListener('pageshow',function(e){if(e.persisted)show();});})(document.documentElement);</script>
+<script nonce="{{ csp_nonce() }}">(function(d){var t=0,again=false;try{t=+sessionStorage.getItem('bs-nav');sessionStorage.removeItem('bs-nav');}catch(e){}try{var n=performance.getEntriesByType('navigation')[0];again=!!n&&n.type==='reload';}catch(e){}if(!again&&(!t||Date.now()-t>20000))return;d.classList.add('bs-arriving');var shown=false;function show(){if(shown)return;shown=true;d.classList.add('bs-revealing');d.classList.remove('bs-arriving');requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.remove('bs-revealing');});});}function painted(){var f=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();f.then(function(){requestAnimationFrame(function(){requestAnimationFrame(show);});});}if(document.readyState==='complete')painted();else window.addEventListener('load',painted);setTimeout(show,8000);window.addEventListener('pageshow',function(e){if(e.persisted)show();});})(document.documentElement);</script>
 {%- endif -%}
 {%- endif -%}
