@@ -364,18 +364,23 @@
         {% set in_modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
         {% set sx = settings_nav() if (has_rail and not in_modal) else none %}
         {% if sx %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
-        <div class="sx" data-sx>
-        {% include 'includes/_settings_side.html' %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='4') }}">
+        {#- The overview is the whole index of settings, full width; a setting's own page has the list beside it. -#}
+        <div class="sx{{ ' sx--over' if not sx.current }}" data-sx>
+        {% if sx.current %}{% include 'includes/_settings_side.html' %}{% endif %}
         <section class="sx-pane" aria-label="{{ sx.current.title if sx.current else 'Settings' }}">
         {% if sx.current %}
         <header class="sx-head">
-          <span class="sx-head__ico">{{ icon(sx.current.icon) }}</span>
-          <div class="sx-head__copy"><span class="sx-head__kicker">Settings</span><h1>{{ sx.current.title }}</h1><p>{{ sx.current.text }}</p></div>
-          <div class="sx-head__act">
+          <nav class="sx-crumb" aria-label="You are in">
+            <a href="{{ url_for('admin_settings') }}">Settings</a><span aria-hidden="true">/</span><span>{{ sx.current.group }}</span>
+          </nav>
+          <div class="sx-head__row">
+            <span class="sx-head__ico">{{ icon(sx.current.icon) }}</span>
+            <h1>{{ sx.current.title }}</h1>
             {% if sx.current.status %}<span class="sx-chip is-{{ sx.current.status[1] }}">{{ sx.current.status[0] }}</span>{% endif %}
-            {% if sx.current.action %}<a class="btn btn-primary btn-small" href="{{ url_for(sx.current.action[1]) }}" data-modal>{{ icon('set-plus', 'ico-sm') }} {{ sx.current.action[0] }}</a>{% endif %}
+            {% if sx.current.action %}<a class="btn btn-primary btn-small sx-head__btn" href="{{ url_for(sx.current.action[1]) }}" data-modal>{{ icon('set-plus', 'ico-sm') }} {{ sx.current.action[0] }}</a>{% endif %}
           </div>
+          <p>{{ sx.current.text }}</p>
         </header>
         {% endif %}
         {% endif %}
@@ -385,7 +390,7 @@
             {% endfor %}
         {% endwith %}
         {% block content %}{% endblock %}
-        {% if sx %}</section></div><script src="{{ url_for('static', filename='settings.js', v='2') }}"></script>{% endif %}
+        {% if sx %}</section></div><script src="{{ url_for('static', filename='settings.js', v='3') }}"></script>{% endif %}
 {% if not fragment %}
         </div></div>
         </div>

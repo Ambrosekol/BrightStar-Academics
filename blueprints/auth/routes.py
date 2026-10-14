@@ -64,8 +64,9 @@ def _send_recovery_email(recipient,name,reset_url):
     settings=email_settings()
     if settings is None: return False,'Email recovery is not configured by the school yet.'
     from email.message import EmailMessage
-    school=school_name()
-    msg=EmailMessage(); msg['Subject']=f'{school} — Password reset'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(f'Dear {name},\n\nA password reset was requested for your {school} account. Use this link within 30 minutes:\n\n{reset_url}\n\nIf you did not request this, you can ignore this message.\n\n{school}')
+    from core.message_wording import render
+    subject,body=render('email_password_reset',name=name,link=reset_url)
+    msg=EmailMessage(); msg['Subject']=subject; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(body)
     try:
         send_email(settings,msg)
         return True,'sent'

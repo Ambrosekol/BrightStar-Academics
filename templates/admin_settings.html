@@ -2,52 +2,57 @@
 {% from 'includes/_nav_icons.html' import icon %}
 {% block title %}Settings — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{# The overview Settings opens on (the list of settings is beside it, from templates/admin_base.html): first what
-   needs attention, then every setting by group with its state. Every card opens its page here, in place. #}
+{#- The overview Settings opens on: the whole index of settings, full width. A strip first with what needs attention,
+    then every setting by group, one slim row each with its state. Every row opens its page in place, with the list
+    of settings beside it (templates/includes/_settings_side.html). "Find a setting" narrows the index as you type. -#}
 {% if groups %}
 <div class="sx-over">
   <header class="sx-over__head">
-    <span class="sx-head__kicker">{{ 'Entrance examination' if workspace == 'entrance' else 'School portal' }}</span>
-    <h1>Settings</h1>
-    <p>Everything that sets up the portal, decides who can use it and records what happened. You see only what your role allows.</p>
+    <div class="sx-over__title">
+      <h1>Settings</h1>
+      <p>{{ 'Entrance examination' if workspace == 'entrance' else 'School portal' }} · {{ total }} setting{{ '' if total == 1 else 's' }} you can open</p>
+    </div>
+    <label class="sx-find sx-find--over"><span class="sx-sr">Find a setting</span>{{ icon('set-search') }}
+      <input type="search" placeholder="Find a setting" autocomplete="off" data-sx-find><kbd aria-hidden="true">/</kbd></label>
   </header>
 
   {% if attention %}
   <section class="sx-attn" aria-labelledby="sx-attn-h">
-    <h2 id="sx-attn-h"><span class="sx-attn__n">{{ attention|length }}</span> Worth a look</h2>
-    <div class="sx-attn__list">
+    <h2 id="sx-attn-h"><span class="sx-attn__n">{{ attention|length }}</span>Need{{ 's' if attention|length == 1 }} attention</h2>
+    <ul>
       {% for e in attention %}
-      <a class="sx-attn__item" href="{{ e.path }}"{% if not e.inplace %} data-full{% endif %}>
-        <span class="sx-ico">{{ icon(e.icon) }}</span>
-        <span class="sx-attn__copy"><strong>{{ e.title }}</strong><span>{{ e.status[0] }}</span></span>
-        <span class="sx-attn__go">Open {{ icon('arrow-right', 'ico-sm') }}</span>
-      </a>
+      <li><a href="{{ e.path }}"{% if not e.inplace %} data-full{% endif %}>
+        <strong>{{ e.title }}</strong><span>{{ e.status[0] }}</span><i aria-hidden="true"></i></a></li>
       {% endfor %}
-    </div>
+    </ul>
   </section>
   {% else %}
-  <p class="sx-allgood">{{ icon('check-circle') }} <span><strong>Everything is in order.</strong> Nothing in Settings needs your attention.</span></p>
+  <p class="sx-allgood">{{ icon('check-circle') }}<span><strong>Everything is in order.</strong> Nothing here needs your attention.</span></p>
   {% endif %}
 
-  {% for grp in groups %}
-  <section class="sx-sec" aria-labelledby="sx-g-{{ grp.key }}" data-sx-group>
-    <div class="sx-sec__h"><h2 id="sx-g-{{ grp.key }}">{{ grp.title }}</h2><p>{{ grp.blurb }}</p></div>
-    <div class="sx-cards">
-      {% for e in grp.entries %}
-      <article class="sx-card" data-find="{{ (e.title ~ ' ' ~ e.text ~ ' ' ~ e.keywords ~ ' ' ~ grp.title)|lower }}">
-        <a class="sx-card__main" href="{{ e.path }}"{% if not e.inplace %} data-full{% endif %}>
-          <span class="sx-ico sx-ico--lg">{{ icon(e.icon) }}</span>
-          <span class="sx-card__copy"><strong>{{ e.title }}</strong><span>{{ e.text }}</span></span>
-        </a>
-        <div class="sx-card__foot">
-          {% if e.status %}<span class="sx-chip is-{{ e.status[1] }}">{{ e.status[0] }}</span>{% else %}<span class="sx-card__hint">{{ 'Opens its own page' if not e.inplace else 'Open' }}</span>{% endif %}
-          {% if e.action %}<a class="sx-card__act" href="{{ url_for(e.action[1]) }}" data-modal>{{ icon('set-plus', 'ico-sm') }} {{ e.action[0] }}</a>{% endif %}
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
-  {% endfor %}
+  <div class="sx-index">
+    {% for grp in groups %}
+    <section class="sx-sec" aria-labelledby="sx-g-{{ grp.key }}" data-sx-group>
+      <div class="sx-sec__h"><h2 id="sx-g-{{ grp.key }}">{{ grp.title }}</h2><p>{{ grp.blurb }}</p></div>
+      <ul class="sx-rows">
+        {% for e in grp.entries %}
+        <li class="sx-row" data-find="{{ (e.title ~ ' ' ~ e.text ~ ' ' ~ e.keywords ~ ' ' ~ grp.title)|lower }}">
+          <a class="sx-row__main" href="{{ e.path }}" data-sx-entry{% if not e.inplace %} data-full{% endif %}>
+            <span class="sx-ico">{{ icon(e.icon) }}</span>
+            <span class="sx-row__copy"><strong>{{ e.title }}{% if not e.inplace %}<span class="sx-out" title="Opens its own page">{{ icon('arrow-right') }}</span>{% endif %}</strong><span>{{ e.text }}</span></span>
+          </a>
+          <span class="sx-row__end">
+            {% if e.action %}<a class="sx-row__act" href="{{ url_for(e.action[1]) }}" data-modal>{{ icon('set-plus', 'ico-sm') }}{{ e.action[0] }}</a>{% endif %}
+            {% if e.status %}<span class="sx-chip is-{{ e.status[1] }}">{{ e.status[0] }}</span>{% endif %}
+            <i class="sx-row__go" aria-hidden="true"></i>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+    <p class="sx-none" data-sx-none hidden>No setting matches.</p>
+  </div>
 </div>
 {% else %}
 <section class="card"><p class="muted" style="margin:0">Your role has no settings to manage here.</p></section>

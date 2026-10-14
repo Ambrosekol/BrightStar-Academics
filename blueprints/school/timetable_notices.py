@@ -64,9 +64,8 @@ def _announce(class_ids, session_id, term, exam_type, admin_id):
         except Exception:
             db.session.rollback()
             current_app.logger.exception('Timetable in-app notice failed for student %s', r.id)
-        subject = f'{label} released — {child}'
-        body = (f'Dear Parent/Guardian,\n\nThe {label} has been released.\n\n'
-               f'Sign in to the parent portal to view and download it.\n\nThank you,\n{school_name()}')
+        from core.message_wording import render
+        subject, body = render('email_timetable_released', child=child, timetable=label)
         try:
             _notify_guardian_email(r.guardian_email, subject, body, student_id=r.id, kind='timetable_released')
         except Exception:

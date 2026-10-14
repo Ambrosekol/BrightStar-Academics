@@ -256,7 +256,7 @@ other_mum, _ = mk_parent("other.mum", [CHI], phone="08039999999")
 check("a Store Keeper opens Inventory, Purchase claims and Record a payment",
       all(keeper_s.get(u).status_code == 200 for u in ("/admin/store", "/admin/store/claims", "/admin/store/sell")))
 menu = keeper_s.text("/admin/school")
-check("…and the menu has a Store group with all three", all(t in menu for t in (">Store<", "Inventory", "Purchase claims", "Record a payment")))
+check("…and the menu has a Store & library group with all three", all(t in menu for t in (">Store &amp; library<", "Inventory", "Purchase claims", "Record a payment")))
 check("someone with View the store opens Inventory and Purchase claims, but not Record a payment",
       looker.get("/admin/store").status_code == 200 and looker.get("/admin/store/claims").status_code == 200
       and looker.get("/admin/store/sell").status_code == 403)

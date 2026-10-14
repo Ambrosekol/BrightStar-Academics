@@ -312,13 +312,13 @@ def _send_email_receipt(payment_id):
     from email.message import EmailMessage
     school=school_name()
     sheet=_receipt_sheet(payment_id); summary=sheet['summary']
-    lines=[f'Dear Parent/Guardian,','',
-           f'Thank you. We have received a payment for {_student_display(row)}, and the official receipt {row["receipt_no"]} is attached.','',
-           f'Amount paid: {_format_money(row["amount"])}',f'Date: {sheet["date"]}',f'Paid for: {sheet["purpose"]}']
+    lines=[f'Amount paid: {_format_money(row["amount"])}',f'Date: {sheet["date"]}',f'Paid for: {sheet["purpose"]}']
     if summary: lines.append(f'Balance due for the session: {_format_money(summary["balance"])}')
     if sheet['notes']: lines+=['',f'Note from the school: {sheet["notes"]}']
-    lines+=['',school]
-    msg=EmailMessage(); msg['Subject']=f'{school} Payment Receipt {row["receipt_no"]}'; msg['From']=settings.sender; msg['To']=recipient; msg.set_content('\n'.join(lines)); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
+    from core.message_wording import render
+    subject,body=render('email_payment_receipt',school=school,child=_student_display(row),receipt_no=row['receipt_no'],
+                        details='\n'.join(lines))
+    msg=EmailMessage(); msg['Subject']=subject; msg['From']=settings.sender; msg['To']=recipient; msg.set_content(body); msg.add_attachment(pdf,maintype='application',subtype='pdf',filename=f'{row["receipt_no"]}.pdf')
     try:
         send_email(settings,msg)
         return True,recipient

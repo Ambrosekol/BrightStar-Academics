@@ -610,6 +610,21 @@ check("with its own email server and SMS account saved, 'Connect email and SMS' 
       step_state(op.text("/admin/school"), "Connect email and SMS") == (True, True, False))
 r = op.post(f"{DELIVERY}/sms/balance", {})
 check("the school can see its own SMS balance", r.said("Balance:") and r.said("1,000.00"))
+op.post(f"{DELIVERY}/birthdays/save", {"enabled": "1"})
+check("birthday texts were switched on", one("SELECT setting_value FROM school_settings WHERE setting_key = 'birthday_sms_enabled'") == "1")
+op.post(f"{DELIVERY}/birthdays/save", {})
+check("…and off again", one("SELECT setting_value FROM school_settings WHERE setting_key = 'birthday_sms_enabled'") == "")
+WORDING = "/admin/settings/message-wording"
+op.post(f"{WORDING}/sms_fee_assessed", {"body": "{school}: {child} owes a new fee of {amount} for {term}. Thank you."})
+check("a school's own words for a text were saved",
+      "owes a new fee" in (one("SELECT setting_value FROM school_settings WHERE setting_key = 'message_wording:sms_fee_assessed'") or ""))
+op.post(f"{WORDING}/email_work", {"subject": "Homework for {child}", "body": "Dear Parent,\n\n{child} has a new {kind}: {title}, due {due}.\n\n{school}"})
+r = op.post(f"{WORDING}/sms_fee_assessed", {"body": "{school}: {child} {nonsense}"}, valid=False)
+check("a text with a placeholder it does not have is refused", r.said("can use only these in curly brackets"))
+op.post(f"{WORDING}/sms_fee_assessed/reset", {})
+check("…and a message goes back to the standard words",
+      count("school_settings", "setting_key = 'message_wording:sms_fee_assessed'") == 0
+      and count("school_settings", "setting_key = 'message_wording:email_work'") == 1)
 
 # ================================================================ 4. assignments and projects
 ASSIGN = "/admin/school/assignments"

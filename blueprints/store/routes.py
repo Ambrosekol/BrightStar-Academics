@@ -436,10 +436,11 @@ def admin_store_purchase_claim(purchase_id):
     collector = f'{child}' if who == 'student' else name
     _notify_parents(purchase.student_id, f'Collected: {purchase.item_name}',
                     f'{purchase.quantity} × {purchase.item_name} for {child} was collected by {collector}.', admin_id=me['id'])
-    from core.branding import school_name
+    from core.message_wording import render
     from core.notifications import _notify_parents_sms
-    text = (f'{school_name()}: {purchase.quantity} x {purchase.item_name} bought for {child} was collected by '
-            f'{collector} ({"the student" if who == "student" else "parent"}). Receipt {receipt_label(purchase_id)}.')
+    text = render('sms_store_collected', quantity=purchase.quantity, item=purchase.item_name, child=child,
+                  collector=f'{collector} ({"the student" if who == "student" else "parent"})',
+                  receipt_no=receipt_label(purchase_id))[1]
     try:
         _notify_parents_sms(purchase.student_id, phone, text, kind='store_claimed')
     except Exception:

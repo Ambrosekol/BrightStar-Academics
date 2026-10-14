@@ -181,20 +181,19 @@ def deliver_parent_alerts(thread, body, *, started=False):
                   .where(ParentAccount.id == thread.parent_id))
     if not contact:
         return
+    from core.message_wording import render
     about = f' ({thread.subject})' if thread.subject else ''
-    subject_line = (f'Message from the school: {thread.subject}' if started else f'School replied: {thread.subject}') \
-        if thread.subject else ('A message from the school' if started else 'School replied to your message')
-    intro = 'The school has sent you a message' if started else 'The school has replied to your message'
+    subject_line, text = render('email_school_message' if started else 'email_school_reply',
+                                name=contact['display_name'] or 'Parent/Guardian', about=about, message=body,
+                                subject=thread.subject or ('a message from the school' if started else 'your message'))
     try:
-        _notify_guardian_email(contact['email'], subject_line,
-                               f"Dear {contact['display_name'] or 'Parent/Guardian'},\n\n{intro}{about}:\n\n{body}\n\n"
-                               "Sign in to the parent portal to continue the conversation.\n\n" + school_name())
+        _notify_guardian_email(contact['email'], subject_line, text)
     except Exception:
         app.logger.exception('Parent message email notification failed for thread %s', thread.id)
     # Only the first message of a conversation the school starts earns a text; replies go by email and the portal.
     if started:
         try:
-            _notify_guardian_sms(contact['phone'], f"{school_name()}: you have a new message from the school{about}. Sign in to the parent portal to read it.",
+            _notify_guardian_sms(contact['phone'], render('sms_school_message', about=about)[1],
                                  student_id=thread.student_id, kind='school_message')
         except Exception:
             app.logger.exception('Parent message SMS notification failed for thread %s', thread.id)

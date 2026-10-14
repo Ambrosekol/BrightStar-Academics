@@ -14,6 +14,7 @@ Runs a real (tiny) SMTP server so messages actually travel, and checks what matt
 Run:  python tests/verification/write_paths_delivery.py
 """
 import base64
+from datetime import datetime, timedelta, timezone
 import io
 import json
 import os
@@ -486,6 +487,95 @@ try:
     before = seen["calls"]
     ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("123", "hello"))
     check("a phone number that is not a real number is not texted at all", not ok and seen["calls"] == before)
+
+    # ---------------------------------------------------------- birthday texts (blueprints/school/birthdays.py)
+    from blueprints.school import birthdays as bd  # noqa: E402
+    from core.staff_attendance import school_now  # noqa: E402
+
+    def birthday_child():
+        """A current student whose birthday is today (school time), with only a guardian phone on file."""
+        M = A.sys.modules["models"]
+        now = datetime.now(timezone.utc).isoformat()
+        today = school_now().date()
+        session = A.db.session.scalars(sa.select(M.AcademicSession).where(M.AcademicSession.is_current == 1)).first()
+        if session is None:
+            session = M.AcademicSession(name="2026/2027", is_current=1, created_at=now)
+            A.db.session.add(session)
+        klass = M.SchoolClass(name="Birthday Class", stage="JSS", level_order=99, created_at=now)
+        child = M.Student(admission_no="BD-001", first_name="Chika", last_name="Obi", created_at=now,
+                          date_of_birth=f"{today.day:02d}/{today.month:02d}/2012",  # a leap year, so any day of the year exists
+                          guardian_phone="08031112222")
+        A.db.session.add_all([klass, child])
+        A.db.session.flush()
+        A.db.session.add(M.StudentEnrolment(student_id=child.id, class_id=klass.id, session_id=session.id, enrolled_at=now))
+        A.db.session.commit()
+        return child.id
+
+    CHILD = in_school(info_alpha, birthday_child)
+    html = page(alpha, ALPHA)
+    check("birthday texts: off until the school switches them on, with today's birthdays counted",
+          "Birthday texts are off" in html and "Today: <strong>1</strong> birthday" in html)
+    from core import message_wording as mw  # noqa: E402
+
+    def wording(client, base, key, **fields):
+        fields["_csrf_token"] = csrf(client, "/admin/settings/message-wording", base)
+        return client.post(f"/admin/settings/message-wording/{key}", data=fields, base_url=base, follow_redirects=True)
+
+    page_w = alpha.get("/admin/settings/message-wording", base_url=ALPHA).get_data(as_text=True)
+    check("message wording: every email and text is listed with the standard words",
+          all(f'id="{k}"' in page_w for k in mw.MESSAGES) and "Your words" not in page_w)
+    r = wording(alpha, ALPHA, "sms_birthday", body="Happy birthday {name}! {0.__class__}")
+    check("message wording: only the message's own placeholders are accepted (never a format string)",
+          "can use only these in curly brackets" in r.get_data(as_text=True) and in_school(info_alpha, mw.stored) == {})
+    r = wording(alpha, ALPHA, "sms_birthday", body="Happy birthday, {first_name}! " + "We are so proud of you. " * 6)
+    check("message wording: a text that would not fit in one text message with a long name is refused, and kept to edit",
+          "Shorten it so it costs one text" in r.get_data(as_text=True) and "We are so proud of you." in r.get_data(as_text=True))
+    r = wording(alpha, ALPHA, "sms_birthday", body="Happy birthday, {first_name}! 🎉")
+    check("message wording: emoji are refused in a text (they make it cost more)", "no emoji" in r.get_data(as_text=True))
+    r = wording(alpha, ALPHA, "email_password_reset", subject="Reset", body="Dear {name}, ask the office.")
+    check("message wording: the password-reset email must keep its link", "must keep {link}" in r.get_data(as_text=True))
+    r = wording(alpha, ALPHA, "sms_birthday", body="Happy birthday, {first_name}! From all of us at {school}.")
+    check("message wording: a school's own words are saved, shown, and recorded in the audit log",
+          "now uses your words" in r.get_data(as_text=True) and "Your words" in r.get_data(as_text=True)
+          and "message_wording_updated" in " ".join(
+              in_school(info_alpha, lambda: [a for (a,) in A.db.session.execute(sa.text("SELECT action FROM audit_logs"))])))
+    r = post(alpha, ALPHA, "/admin/school/delivery/birthdays/save", enabled="1")
+    check("birthday texts: switched on, and the card shows the school's words",
+          "Birthday texts are on" in r.get_data(as_text=True) and "From all of us at Alpha School." in r.get_data(as_text=True)
+          and in_school(info_alpha, bd.text_settings)["enabled"])
+    calls = seen["calls"]
+    early = in_school(info_alpha, lambda: bd.start_birthday_texts(school_now().replace(hour=6), inline=True))
+    check("birthday texts: nothing is sent before 7 in the morning, school time", early is False and seen["calls"] == calls)
+    started = in_school(info_alpha, lambda: bd.start_birthday_texts(school_now().replace(hour=10), inline=True))
+    check("birthday texts: on the day, the parent is texted the school's greeting from the school's own account",
+          started and seen["calls"] == calls + 1 and seen["auth"] == "Bearer alpha-sms-token"
+          and seen["body"]["to"] == "+2348031112222" and seen["body"]["body"] == "Happy birthday, Chika! From all of us at Alpha School.",
+          str(seen.get("body")))
+    again = in_school(info_alpha, lambda: bd.start_birthday_texts(school_now().replace(hour=11), inline=True))
+    retried = in_school(info_alpha, lambda: bd.send_birthday_texts(school_now().date().isoformat()))
+    check("birthday texts: once a day only; a second check, or a retry of the job, texts nobody again",
+          again is False and retried == 0 and seen["calls"] == calls + 1)
+    logged = in_school(info_alpha, lambda: A.db.session.execute(sa.text(
+        "SELECT channel, status, recipient FROM notification_delivery_logs WHERE kind = 'birthday' AND student_id = :s"),
+        {"s": CHILD}).fetchall())
+    check("birthday texts: the greeting is in the notice log", [tuple(x) for x in logged] == [("sms", "sent", "+2348031112222")], str(logged))
+    html = page(alpha, ALPHA)
+    check("birthday texts: the page shows they are on and today's greeting went",
+          "Birthday texts are on" in html and "<strong>1</strong> greeted" in html)
+    late = in_school(info_alpha, lambda: bd.send_birthday_texts((school_now().date() - timedelta(days=1)).isoformat()))
+    check("birthday texts: a job for a day that is over sends nothing (no greeting is ever late)", late == 0 and seen["calls"] == calls + 1)
+    post(alpha, ALPHA, "/admin/school/delivery/birthdays/save")
+    r = wording(alpha, ALPHA, "sms_birthday", body=mw.MESSAGES["sms_birthday"]["body"])
+    check("birthday texts: switched off again; saving the standard words goes back to them",
+          in_school(info_alpha, bd.text_settings) == {"enabled": False} and in_school(info_alpha, mw.stored) == {}
+          and "uses the standard words" in r.get_data(as_text=True))
+    # every text, whoever wrote it, goes as one plain text message
+    long_text = "Notice: " + "Ọ̀là’s fees — ₦25,000 “due” 🎉 " * 12
+    in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000009", long_text))
+    sent = seen["body"]["body"]
+    check("every text is sent as ONE plain text message: N for the naira sign, plain quotes, no emoji, cut at a word",
+          len(sent) <= 160 and sent.endswith("...") and "₦" not in sent and "🎉" not in sent and "N25,000" in sent
+          and "Olà's" in sent and all(ord(ch) < 0x2000 for ch in sent), sent)
 
     # who pays: 'either' lets a school without its own account use the platform's
     os.environ["BRIGHTSTARS_SMS_PAYER"] = "either"

@@ -1258,6 +1258,8 @@ import blueprints.entrance.routes  # noqa: F401,E402
 import blueprints.school.routes  # noqa: F401,E402
 import blueprints.school.branding  # noqa: F401,E402
 import blueprints.school.delivery  # noqa: F401,E402
+import blueprints.school.birthdays  # noqa: F401,E402  (registers the 'birthday_texts' background job)
+import blueprints.school.message_wording  # noqa: F401,E402
 import blueprints.school.report_cards  # noqa: F401,E402
 import blueprints.school.results_records  # noqa: F401,E402
 import blueprints.school.onboarding  # noqa: F401,E402

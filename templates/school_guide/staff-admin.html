@@ -37,19 +37,21 @@ Collections, books for the Library, a gear for Settings.</p>
 <h2 id="settings">Settings</h2>
 <p><a href="{{ url_for('admin_settings') }}">Settings</a>, at the foot of the menu, holds everything that sets the
 portal up, decides who can use it and records what happened: the school profile, academic sessions, class
-subdivisions, staff and their roles, report card settings, Email &amp; SMS, online payments, receipts, controls and alerts, the activity log and who
-is online. You see only what your role allows.</p>
-{{ shot('settings', 'Settings opens on what needs attention (Worth a look), then every setting by group with its state. The list on the left stays on every Settings page.') }}
+subdivisions, staff and their roles, report card settings, Email &amp; SMS, message wording, online payments, receipts,
+controls and alerts, the activity log and who is online. You see only what your role allows.</p>
+{{ shot('settings', 'Settings opens on the whole index: what needs attention first, then every setting by group, one row each with its state.') }}
 <ul>
-  <li><strong>The overview</strong> comes first. <em>Worth a look</em> lists anything that needs attention (online
-  payments not connected, the head's signature missing, alerts left open); below it is every setting by group, each
-  with its state at a glance, such as which session is current or whether Email &amp; SMS is the school's own
-  account.</li>
-  <li><strong>The list on the left</strong> stays on every Settings page. Each setting opens beside it, in place,
-  without leaving Settings. <strong>Find a setting</strong> narrows the list as you type (Enter opens the first match),
-  and a dot marks a setting that needs a look.</li>
-  <li><strong>Each page</strong> opens with its name, what it is for and its state, plus its main action where it has
-  one: <strong>+ Add staff</strong> on Staff, <strong>+ New role</strong> on Staff roles.</li>
+  <li><strong>The index</strong> comes first. A strip at the top names anything that needs attention (online payments not
+  connected, the head's signature missing, alerts left open); click one to fix it. Below it is every setting by group,
+  one row each with its state at a glance, such as which session is current or whether Email &amp; SMS is the school's
+  own account. Staff and Staff roles carry <strong>+ Add staff</strong> and <strong>+ New role</strong> on their rows.</li>
+  <li><strong>Find a setting</strong> narrows the index as you type; press <kbd>/</kbd> anywhere in Settings to jump to it,
+  Enter to open the first match and Escape to clear it.</li>
+  <li><strong>Inside a setting</strong>, the list of settings stays on the left so you can move between them without
+  going back; a dot marks one that needs a look, and <em>All settings</em> returns to the index. The page opens with
+  where you are (Settings / its group), its name, its state and its main action.</li>
+  <li><strong>On a phone</strong>, the list folds into one button at the top naming the setting you are in; tap it to
+  open the list from the bottom of the screen and choose another.</li>
   <li><strong>The entrance examination's set-up</strong> is a workspace of its own, so it opens as its own page (its
   entry carries a small arrow).</li>
 </ul>
@@ -241,13 +243,40 @@ parent or a student never sees it. <strong>Parents</strong> holds the conversati
 {{ page('families', 'Parents') }}). A small number by the link in the navigation rail shows how many
 messages you have not opened yet.</p>
 
-<h2 id="birthdays">Birthday reminders</h2>
+<h2 id="birthdays">Birthdays</h2>
 <p>Two days before a student's birthday, the staff who teach that student's class see a notification in
 their bell — for example "Ada Obi (JSS 1) turns 12 on Fri 11 Oct". Staff count as a class's teachers when
 they have access to that class and may write report card comments. Nothing needs setting up: the first
 time anyone opens an admin page each day, the school checks for birthdays coming up, and none is sent
 twice. It reads the date of birth on each student's record, so a student whose date is missing or not a
 readable date gets no reminder.</p>
+<h3 id="birthday-texts">Birthday texts to parents</h3>
+<p>The school can also text each parent a greeting on their child's birthday. The School Admin switches it on under
+<a href="{{ url_for('admin_school_delivery') }}#birthday-texts">Email &amp; SMS › Birthday texts</a>, which shows what a
+parent receives. Its words are changed like every other message's, on
+<a href="{{ url_for('admin_message_wording') }}#sms_birthday">Message wording</a>.</p>
+<ul>
+  <li><strong>The wording.</strong> <code>{first_name}</code> becomes the student's first name and <code>{school}</code>
+  the school's name. The standard message: "Happy birthday, Ada! Everyone at Bright Star Academy wishes you a wonderful
+  day and a great year ahead." Always one text message.</li>
+  <li><strong>Who.</strong> Active students enrolled in the current session, with a readable date of birth. The text goes to
+  each linked parent's phone, or to the guardian phone on the student's record when no parent account has one, the same
+  numbers as every other text.</li>
+  <li><strong>When.</strong> On the birthday itself, once, between 7:00 and 20:00 school time, from the first visit to the
+  portal that day. Never a day late and never at night. A 29 February birthday is greeted on 28 February in other
+  years.</li>
+  <li><strong>The record.</strong> Each greeting is in the <a href="{{ url_for('admin_notification_log') }}">notice log</a>
+  as "Birthday greeting", sent or failed, with the number it went to.</li>
+</ul>
+<dl class="guide-faq">
+  <dt>A student's parents were not texted on the birthday.</dt>
+  <dd>Look the student up in the notice log. No entry: the date of birth is missing or not readable (write it as
+  14/10/2012), the student is not enrolled in the current session, or birthday texts were off. A failed entry says why:
+  usually no phone number on file, or SMS not working (Check the connection on Email &amp; SMS).</dd>
+  <dt>A birthday on a weekend or holiday was missed.</dt>
+  <dd>Greetings start from the first visit to the portal that day. The platform runs a daily timer that sends them even
+  when nobody visits; if one was missed, tell the platform operator.</dd>
+</dl>
 
 <h2 id="presence">Who is online now</h2>
 <p><a href="{{ url_for('admin_presence') }}">Online now</a>, in Settings, shows how many staff, students and parents
@@ -291,6 +320,32 @@ connects its own mail server and BulkSMS Nigeria account, so every automatic not
 card, a payment, a released timetable — reaches a guardian on those channels too, not only in-app.
 School Admin only, since whoever holds these accounts can send a message that looks like it comes
 from the school.</p>
+
+<h2 id="message-wording">Message wording</h2>
+<p><a href="{{ url_for('admin_message_wording') }}">Message wording</a>, in Settings, lists every email and text
+message parents receive from the school: a fee charged, a payment, a receipt, a report card or timetable released, a
+message from the school, a store collection, a birthday, a password reset and an entrance result. Each starts with the
+platform's standard words; the School Admin can rewrite any of them in the school's own voice.</p>
+<ul>
+  <li><strong>Edit</strong> opens the message with what a parent would receive beside it. The parts in curly brackets,
+  such as <code>{child}</code> or <code>{amount}</code>, are filled in for each parent; click one under the message to
+  insert it. Only that message's own placeholders can be used.</li>
+  <li><strong>Every text message is one text</strong>, at most 160 characters, so a school never pays for two. The count
+  under the message is checked with a long name. Emoji cannot be used, and the naira sign, curly quotes and accents are
+  sent as plain N, quotes and letters, which keeps a text in the cheapest form. If a very long name still pushes a text
+  over, it is shortened at a word with "..." rather than sent as two.</li>
+  <li><strong>Use the standard words</strong> puts the platform's words back; save to go back to them.</li>
+  <li>The password-reset email must keep its <code>{link}</code>, or nobody could reset a password.</li>
+</ul>
+<dl class="guide-faq">
+  <dt>"Shorten it so it costs one text".</dt>
+  <dd>With a long name filled in, the text would pass 160 characters. Shorten the words, or leave out a placeholder
+  such as <code>{school}</code> (parents already see the school's sender name).</dd>
+  <dt>"This message can use only these in curly brackets".</dt>
+  <dd>A placeholder was misspelt or belongs to another message. Use the ones listed under the message.</dd>
+  <dt>A text arrived with "..." at the end.</dt>
+  <dd>The names in it were long enough to pass one text, so it was shortened. Shorten the wording a little.</dd>
+</dl>
 
 <h2 id="panel">The panel at the bottom right</h2>
 <p>Every member of staff sees a small panel at the bottom right of each page, with up to two cards.</p>

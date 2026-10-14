@@ -486,14 +486,9 @@ def admin_candidate_result_email(cid):
         return redirect(url_for('admin_candidate_detail',cid=cid))
     rows,total_score,total_max,pct,completed=candidate_cumulative(cid)
     score_line=f'{total_score}/{total_max} ({pct:.1f}%)' if completed else 'Not yet completed'
-    subject=f'Entrance Examination Result — {c["candidate_name"]}'
-    body=(f'{school_name()} — Entrance Examination Result\n\n'
-          f'Candidate: {c["candidate_name"]}\n'
-          f'Candidate ID: {c["candidate_code"]}\n'
-          f'Target class: {c["target_class"]}\n'
-          f'Cumulative result: {score_line}\n'
-          f'Overall grade: {_grade_label(pct) if completed else "Pending"}\n\n'
-          f'This result was prepared by {school_name()}.')
+    from core.message_wording import render
+    subject,body=render('email_entrance_result',candidate=c['candidate_name'],candidate_id=c['candidate_code'],
+                        target_class=c['target_class'],result=score_line,grade=_grade_label(pct) if completed else 'Pending')
     return redirect('mailto:'+quote(email,safe='@.')+'?subject='+quote(subject)+'&body='+quote(body))
 
 @app.route('/admin/candidates/<int:cid>/result/whatsapp')

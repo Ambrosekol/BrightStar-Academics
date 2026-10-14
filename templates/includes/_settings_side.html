@@ -1,14 +1,27 @@
-{#- The list of settings on the left of every Settings page (templates/admin_base.html wraps the page in it).
-    Every link opens its page beside the list, in place; the entrance examination's set-up is its own workspace
-    and opens as a page of its own (data-full). A dot marks a setting that needs attention. -#}
+{#- The list of settings beside a setting's own page (templates/admin_base.html wraps the page in it; the overview,
+    admin_settings.html, is the full index and has no list beside it). Every link opens its page in place; the
+    entrance examination's set-up is its own workspace and opens as a page of its own (data-full). A dot marks a
+    setting that needs attention. On a phone the list folds into one switcher ("Settings / Email & SMS") that opens
+    it as a sheet (static/settings.js). -#}
 {% from 'includes/_nav_icons.html' import icon %}
-<aside class="sx-side" aria-label="Settings">
-  <a class="sx-home{{ ' is-on' if not sx.current }}" href="{{ url_for('admin_settings') }}"{% if not sx.current %} aria-current="page"{% endif %}>
-    <span class="sx-home__ico">{{ icon('nav-settings') }}</span>
-    <span><strong>Settings</strong><small>{% if sx.attention %}{{ sx.attention|length }} need{{ 's' if sx.attention|length == 1 }} attention{% else %}Everything in order{% endif %}</small></span>
-  </a>
+<button type="button" class="sx-switch" data-sx-open aria-haspopup="dialog" aria-controls="sx-side">
+  <span class="sx-switch__ico">{{ icon('nav-settings') }}</span>
+  <span class="sx-switch__t"><small>Settings</small><strong>{{ sx.current.title }}</strong></span>
+  {% if sx.attention %}<span class="sx-switch__n" title="Need attention">{{ sx.attention|length }}</span>{% endif %}
+  <span class="sx-switch__chev" aria-hidden="true"></span>
+</button>
+<div class="sx-scrim" data-sx-close hidden></div>
+<aside class="sx-side" id="sx-side" aria-label="Settings" data-sx-side>
+  <div class="sx-side__top">
+    <a class="sx-all" href="{{ url_for('admin_settings') }}">
+      <span class="sx-all__back" aria-hidden="true"></span>
+      <span>All settings</span>
+      {% if sx.attention %}<span class="sx-all__n" title="{{ sx.attention|length }} need attention">{{ sx.attention|length }}</span>{% endif %}
+    </a>
+    <button type="button" class="sx-side__close" data-sx-close aria-label="Close">{{ icon('close') }}</button>
+  </div>
   <label class="sx-find"><span class="sx-sr">Find a setting</span>{{ icon('set-search') }}
-    <input type="search" placeholder="Find a setting" autocomplete="off" data-sx-find></label>
+    <input type="search" placeholder="Find a setting" autocomplete="off" data-sx-find><kbd aria-hidden="true">/</kbd></label>
   <nav class="sx-groups" aria-label="Settings sections">
     {% for grp in sx.groups %}
     <div class="sx-group" data-sx-group>
@@ -17,7 +30,7 @@
         {% for e in grp.entries %}
         {% set on = sx.current and sx.current.endpoint == e.endpoint %}
         <li data-find="{{ (e.title ~ ' ' ~ e.text ~ ' ' ~ e.keywords ~ ' ' ~ grp.title)|lower }}">
-          <a class="sx-link{{ ' is-on' if on }}" href="{{ e.path }}"{% if on %} aria-current="page"{% endif %}{% if not e.inplace %} data-full{% endif %}>
+          <a class="sx-link{{ ' is-on' if on }}" href="{{ e.path }}" data-sx-entry{% if on %} aria-current="page"{% endif %}{% if not e.inplace %} data-full{% endif %}>
             <span class="sx-ico">{{ icon(e.icon) }}</span>
             <span class="sx-t">{{ e.title }}</span>
             {% if e.status and e.status[1] == 'warn' %}<span class="sx-dot" title="{{ e.status[0] }}"><span class="sx-sr">{{ e.status[0] }}</span></span>{% endif %}

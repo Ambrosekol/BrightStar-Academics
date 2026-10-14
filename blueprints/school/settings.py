@@ -31,6 +31,12 @@ def _safe(fn, default=None):
         return default
 
 
+def _wording_status():
+    from core import message_wording
+    changed = len(message_wording.stored())
+    return (f'{changed} in your words', GOOD) if changed else ('Standard words', NEUTRAL)
+
+
 def _delivery_status():
     state = delivery.status()
     email, sms = state['email']['mode'], state['sms']['mode']
@@ -136,7 +142,9 @@ def _groups(me, workspace, statuses=True):
         ]),
         ('communication', 'Communication', 'How parents hear from the school.', [
             E('Email & SMS', "Send receipts, results and notices from the school's own email and text-message accounts.",
-              'admin_school_delivery', 'set-delivery', admin, _delivery_status, 'smtp mail notices sender text'),
+              'admin_school_delivery', 'set-delivery', admin, _delivery_status, 'smtp mail notices sender text birthday'),
+            E('Message wording', 'The words of every email and text message parents receive, in your own words.',
+              'admin_message_wording', 'set-delivery', admin, _wording_status, 'wording template words text email sms message'),
         ]),
         ('money', 'Fees & payments', 'Taking money and proving it was taken.', [
             E('Online payments', "The school's own Paystack keys, so parents can pay fees from their portal.",
@@ -156,6 +164,8 @@ def _groups(me, workspace, statuses=True):
     out = []
     for key, title, blurb, entries in groups:
         entries = [e for e in entries if e]
+        for e in entries:
+            e['group'] = title
         if entries:
             out.append({'key': key, 'title': title, 'blurb': blurb, 'entries': entries})
     return out

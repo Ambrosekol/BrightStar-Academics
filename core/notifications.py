@@ -19,6 +19,7 @@ import os
 from core.branding import school_name
 from core.delivery import email_settings, send_email, send_sms, sms_settings
 from core.jobs import job_handler
+from core.message_wording import render
 from models import NotificationDeliveryLog, ParentStudentLink, SchoolNotification, Student, db
 from core.db_helpers import all_rows, one, tuples
 
@@ -148,10 +149,7 @@ def _notify_guardians_of_school_work(student_ids, kind, title, due_date):
     due_text=due_date or 'no due date set'
     for r in rows:
         child=f"{r['first_name']} {r['last_name']}".strip()
-        subject=f'New {kind} for {child}'
-        body=(f'Dear Parent/Guardian,\n\n{child} has been given a new {kind}: "{title}".\n'
-              f'Due: {due_text}.\n\nPlease check the student/parent portal for details.\n\n'
-              f'{school_name()}')
+        subject,body=render('email_work',child=child,kind=kind,title=title,due=due_text)
         try: _notify_guardian_email(r['guardian_email'],subject,body,student_id=r['id'],kind='work')
         except Exception: current_app.logger.exception('Guardian email notification failed for student %s',r['id'])
 
@@ -183,12 +181,9 @@ def _notify_parents_fee_assessed(student_id, fee_names, total_amount, term, sess
     except Exception:
         db.session.rollback()
         current_app.logger.exception('In-app fee-assessed notification failed for student %s',student_id)
-    subject=f'New fee charged — {child}'
-    body=(f'Dear Parent/Guardian,\n\n{child} has been charged a new fee: {items_text}.\n'
-          f'Amount: ₦{total_amount:,.2f} — {term} ({session_name}).\n\n'
-          'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          f'{school_name()}')
-    text=f'{school_name()}: a new fee of ₦{total_amount:,.2f} has been charged for {child} ({term}). See the parent portal for details.'
+    amount=f'₦{total_amount:,.2f}'
+    subject,body=render('email_fee_assessed',child=child,fees=items_text,amount=amount,term=term,session=session_name)
+    _,text=render('sms_fee_assessed',child=child,amount=amount,term=term)
     try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='fee_assessed')
     except Exception: current_app.logger.exception('Guardian email (fee assessed) failed for student %s',student_id)
     try: _notify_parents_sms(student_id,student['guardian_phone'],text,kind='fee_assessed')
@@ -211,7 +206,7 @@ def _notify_parents_fees_assessed_job(students, term, session_name, admin_id):
 
 def payment_sms_text(child, amount, category, receipt_no):
     """The one-line text a parent gets when a payment is recorded."""
-    return f'{school_name()}: payment of ₦{amount:,.2f} received for {child} ({category}). Receipt {receipt_no}. Thank you.'
+    return render('sms_payment_recorded',child=child,amount=f'₦{amount:,.2f}',category=category,receipt_no=receipt_no)[1]
 
 
 def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, admin_id, external=True):
@@ -241,11 +236,7 @@ def _notify_parents_payment_recorded(student_id, receipt_no, amount, category, a
         db.session.rollback()
         current_app.logger.exception('In-app payment notification failed for student %s',student_id)
     if not external: return
-    subject=f'Payment received — {child}'
-    body=(f'Dear Parent/Guardian,\n\nWe have received a payment of ₦{amount:,.2f} for {category} '
-          f'on behalf of {child}. Receipt number: {receipt_no}.\n\n'
-          'Please check the parent portal for your full fee account and outstanding balance.\n\n'
-          f'Thank you,\n{school_name()}')
+    subject,body=render('email_payment_recorded',child=child,amount=f'₦{amount:,.2f}',category=category,receipt_no=receipt_no)
     text=payment_sms_text(child,amount,category,receipt_no)
     try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='payment_recorded')
     except Exception: current_app.logger.exception('Guardian email (payment recorded) failed for student %s',student_id)
@@ -280,12 +271,8 @@ def _notify_parents_report_card_ready(student_id, session_name, term, view_url, 
     except Exception:
         db.session.rollback()
         current_app.logger.exception('In-app report card notification failed for student %s',student_id)
-    subject=f'{label} report card ready — {child}'
-    body=(f'Dear Parent/Guardian,\n\n{child}’s results for {period} report card ({session_name}) have been released, '
-          'and the report card is now ready.\n\n'
-          f'Sign in to the parent portal to view and download it:\n{view_url}\n\n'
-          f'Thank you,\n{school_name()}')
-    text=f'{school_name()}: {child}’s {label} report card ({session_name}) is ready. Sign in to the parent portal to view it.'
+    subject,body=render('email_report_card_ready',child=child,report=label,period=period,session=session_name,link=view_url)
+    _,text=render('sms_report_card_ready',child=child,report=label,session=session_name)
     try: _notify_guardian_email(student['guardian_email'],subject,body,student_id=student_id,kind='report_card_ready')
     except Exception: current_app.logger.exception('Guardian email (report card ready) failed for student %s',student_id)
     try: _notify_parents_sms(student_id,student['guardian_phone'],text,kind='report_card_ready')

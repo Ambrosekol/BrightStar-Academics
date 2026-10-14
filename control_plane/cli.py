@@ -10,7 +10,9 @@
     drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
     sweep-jobs [CODE]              give every school's stuck background jobs another try (run this on a
                                   cron/systemd timer; ordinary traffic already does it opportunistically,
-                                  this is only needed for a school quiet enough that nothing else would)
+                                  this is only needed for a school quiet enough that nothing else would).
+                                  It also sends the day's birthday texts to parents when they are due, so
+                                  a weekend or holiday birthday is not missed
     add-domain CODE HOST [--primary] / remove-domain HOST
     suspend CODE [--reason TEXT] / activate CODE
     create-db-role CODE [--rotate] [--password PW]  create (or, with --rotate, give a new password to)
@@ -222,6 +224,9 @@ def main(argv=None):
                 try:
                     with A.app.app_context(), tenant_context(info):
                         restarted = jobs.sweep_all_kinds()
+                        from blueprints.school.birthdays import start_birthday_texts
+                        if start_birthday_texts(inline=True):
+                            print(f'{info.slug:<16} birthday texts sent')
                 except Exception as exc:  # a school mid-upgrade, or unreachable, must not stop the rest
                     print(f'{info.slug:<16} could not be swept: {exc}')
                     continue

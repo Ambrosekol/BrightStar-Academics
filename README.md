@@ -399,7 +399,7 @@ python -m control_plane <command>
   upgrade [CODE]                         bring school databases up to the current schema (with no CODE, also records
                                          a new launch: everyone signs in again, except people mid-exam)
   new-launch                             record a new launch only
-  sweep-jobs [CODE]                      retry stuck background jobs (run on a timer for quiet schools)
+  sweep-jobs [CODE]                      retry stuck background jobs and send due birthday texts (run on a timer)
   add-domain CODE HOST [--primary]  ·  remove-domain HOST
   suspend CODE [--reason TEXT]  ·  activate CODE
   create-db-role CODE [--rotate] [--password PW]   a PostgreSQL role owning only this school's database
@@ -488,6 +488,8 @@ Still to do: a second sign-in step for platform operators and School Admins (see
 5. TLS for every hostname (a wildcard for the portal domain, one per school domain); pass `Host` through unchanged.
 6. More than one application server: `BRIGHTSTARS_STORAGE_BACKEND=s3`, or shared storage for `BRIGHTSTARS_TENANTS_DIR`.
 7. A timer running `python -m control_plane sweep-jobs`, for schools quiet enough that nothing else retries their jobs.
+   Run it at least hourly in the daytime: it also sends a school's birthday texts on a day nobody opens the portal
+   (a weekend or holiday).
 8. Many schools: a connection pooler (PgBouncer in transaction mode) in front of PostgreSQL. See below.
 
 ### Operating

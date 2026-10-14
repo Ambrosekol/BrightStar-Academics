@@ -18,6 +18,37 @@
   ],
   "releases": [
     {
+      "version": "2.35.0",
+      "date": "2026-10-14",
+      "title": "Birthday texts, and your own words in every message",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The school can text each parent a greeting on their child's birthday. Switch it on under Email & SMS, Birthday texts. Greetings go once, on the day, between 7:00 and 20:00, and each one is in the notice log.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Write every email and text message parents receive in your school's own words: Settings, Message wording. Each starts with the standard words, shows what a parent receives, and can go back to the standard words at any time.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Every text message the school sends is now kept to one text (160 characters), so no message costs more than one. The naira sign and curly quotes are sent as plain characters, which keeps texts in the cheapest form.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Settings has a cleaner, more compact design: it opens on one index of every setting with its state and what needs attention, the list stays beside each setting, and on a phone a single button opens the list. Press / to find a setting.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "family",
+          "text": "On your child's birthday, the school may send you a short greeting by text message."
+        }
+      ]
+    },
+    {
       "version": "2.34.0",
       "date": "2026-10-14",
       "title": "Entrance practice with hundreds of questions",

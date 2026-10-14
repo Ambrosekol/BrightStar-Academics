@@ -1,0 +1,136 @@
+{% extends "admin_base.html" %}
+{% block title %}Message wording — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Every email and text message the school sends (core/message_wording.py), with the words in use: the platform's own
+    unless the school has written its own. Edit opens one pop-up for the message, with its placeholders, a preview, and
+    for a text the count against one text message. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='message-wording.css', v='1') }}">
+<div class="ac mw" data-mw data-edit="{{ edit }}">
+
+<p class="mw-lead">Each message starts with the platform's standard words. Change any of them to sound like your school;
+the parts in curly brackets, such as <code>{child}</code>, are filled in for each parent. <strong>Every text message is
+kept to one text ({{ sms_page }} characters)</strong>, so it never costs more than one. The accounts they are sent from are on <a href="{{ url_for('admin_school_delivery') }}">Email &amp; SMS</a>.
+{% if changed %}<span class="mw-count">{{ changed }} message{{ '' if changed == 1 else 's' }} in your own words</span>{% endif %}</p>
+
+{% for channel, title, rows in groups %}
+<section class="ac-panel mw-panel">
+  <div class="mw-ph"><h2>{{ title }}</h2><span class="ac-hint">{{ 'One text each, at most ' ~ sms_page ~ ' characters' if channel == 'sms' else 'Plain-text emails' }}</span></div>
+  <ul class="mw-list">
+    {% for r in rows %}
+    <li class="mw-row" id="{{ r.key }}">
+      <div class="mw-what">
+        <strong>{{ r.label }}</strong>
+        <small>{{ r.group }} · {{ r.when }}</small>
+      </div>
+      <p class="mw-words">{% if r.subject and channel == 'email' %}<b>{{ r.subject }}</b> — {% endif %}{{ r.body|replace('\n', ' ') }}</p>
+      <span class="ac-tag {{ 'ac-tag--good' if r.custom }}">{{ 'Your words' if r.custom else 'Standard' }}</span>
+      <button type="button" class="ac-btn" data-mw-edit="{{ r.key }}">Edit</button>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+
+<dialog class="ac-modal mw-dialog" data-mw-dialog aria-labelledby="mwTitle">
+  <button type="button" class="ac-modal__close" data-mw-close aria-label="Close">×</button>
+  <div class="ac-modal__body">
+    <div class="ac-modal-head"><h2 id="mwTitle"></h2><p data-mw-when></p></div>
+    <form method="post" data-mw-form>
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="mw-edit">
+        <div class="mw-fields">
+          <div class="ac-field" data-mw-subject-field><label for="mwSubject">Subject</label>
+            <input type="text" id="mwSubject" name="subject" maxlength="150" autocomplete="off"></div>
+          <div class="ac-field"><label for="mwBody" data-mw-body-label>Message</label>
+            <textarea id="mwBody" name="body" rows="7" spellcheck="true"></textarea>
+            <div class="mw-meter"><span data-mw-meter></span></div></div>
+          <div class="mw-chips"><span class="ac-hint">Insert:</span><span data-mw-chips></span></div>
+        </div>
+        <div class="mw-preview">
+          <div class="mw-preview__label" data-mw-preview-label>What a parent receives</div>
+          <div class="mw-preview__subject" data-mw-preview-subject></div>
+          <div class="mw-preview__body" data-mw-preview></div>
+        </div>
+      </div>
+      <div class="ac-form-foot">
+        <button type="button" class="ac-btn" data-mw-standard>Use the standard words</button>
+        <span class="ac-grow"></span>
+        <button type="button" class="ac-btn" data-mw-close>Cancel</button>
+        <button type="submit" class="ac-btn ac-btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+</div>
+<script type="application/json" id="mw-data" nonce="{{ csp_nonce() }}">{{ groups|map(attribute=2)|sum(start=[])|tojson }}</script>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var root = document.querySelector('[data-mw]:not([data-ready])'); if (!root) return; root.setAttribute('data-ready', '1');
+  var rows = {}; JSON.parse(document.getElementById('mw-data').textContent).forEach(function (r) { rows[r.key] = r; });
+  var dlg = root.querySelector('[data-mw-dialog]'), form = dlg.querySelector('[data-mw-form]');
+  var subject = form.elements.subject, body = form.elements.body, meter = dlg.querySelector('[data-mw-meter]');
+  var preview = dlg.querySelector('[data-mw-preview]'), previewSubject = dlg.querySelector('[data-mw-preview-subject]');
+  var LIMIT = {{ sms_page }}, current = null, lastField = body;
+  var urls = {save: {{ url_for('admin_message_wording_save', key='KEY')|tojson }}};
+  // The plain SMS alphabet, as core/message_wording.py: anything else is swapped for a plain form or dropped.
+  var GSM = "@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà\n", EXT = '^{}\\[~]|€';
+  var PLAIN = {'₦': 'N', '‘': "'", '’': "'", '“': '"', '”': '"', '–': '-', '—': '-', '…': '...', '×': 'x'};
+  function plain(t) {
+    var out = '';
+    for (var i = 0; i < t.length; i++) {
+      var c = PLAIN[t.charAt(i)] || t.charAt(i);
+      if (GSM.indexOf(c) < 0 && EXT.indexOf(c) < 0) c = c.normalize('NFKD').replace(/[̀-ͯ]/g, '').split('').filter(function (x) { return GSM.indexOf(x) >= 0 || EXT.indexOf(x) >= 0; }).join('');
+      out += c;
+    }
+    return out.replace(/\s+/g, ' ').trim();
+  }
+  function len(t) { var n = 0; for (var i = 0; i < t.length; i++) n += EXT.indexOf(t.charAt(i)) >= 0 ? 2 : 1; return n; }
+  function fill(t, values) { return t.replace(/\{([a-z_]+)\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(values, k) ? values[k] : m; }); }
+  function update() {
+    if (!current) return;
+    var sms = current.channel === 'sms';
+    previewSubject.textContent = sms ? '' : fill(subject.value, current.sample);
+    previewSubject.hidden = sms;
+    if (sms) {
+      var shown = plain(fill(body.value, current.sample)), longest = len(plain(fill(body.value, current.long)));
+      preview.textContent = shown;
+      meter.textContent = len(shown) + ' characters · ' + longest + ' with a long name · one text is ' + LIMIT;
+      meter.classList.toggle('is-over', longest > LIMIT);
+    } else {
+      preview.textContent = fill(body.value, current.sample);
+      meter.textContent = body.value.length + ' characters';
+      meter.classList.remove('is-over');
+    }
+  }
+  function open(key) {
+    current = rows[key]; if (!current) return;
+    var sms = current.channel === 'sms';
+    form.action = urls.save.replace('KEY', key);
+    dlg.querySelector('#mwTitle').textContent = current.label + (sms ? ' · text message' : ' · email');
+    dlg.querySelector('[data-mw-when]').textContent = 'Sent when: ' + current.when.charAt(0).toLowerCase() + current.when.slice(1);
+    dlg.querySelector('[data-mw-subject-field]').hidden = sms;
+    subject.required = !sms; subject.value = current.subject || '';
+    body.value = current.body; body.rows = sms ? 4 : 10;
+    var chips = dlg.querySelector('[data-mw-chips]'); chips.textContent = '';
+    current.placeholders.forEach(function (p) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'mw-chip'; b.textContent = '{' + p.name + '}'; b.title = p.means;
+      b.addEventListener('click', function () {
+        var f = lastField, s = f.selectionStart || 0, e = f.selectionEnd || 0, v = '{' + p.name + '}';
+        f.value = f.value.slice(0, s) + v + f.value.slice(e); f.focus(); f.selectionStart = f.selectionEnd = s + v.length; update();
+      });
+      chips.appendChild(b);
+    });
+    lastField = body; update(); dlg.showModal(); body.focus();
+  }
+  root.querySelectorAll('[data-mw-edit]').forEach(function (b) { b.addEventListener('click', function () { open(b.dataset.mwEdit); }); });
+  dlg.querySelectorAll('[data-mw-close]').forEach(function (b) { b.addEventListener('click', function () { dlg.close(); }); });
+  dlg.querySelector('[data-mw-standard]').addEventListener('click', function () {
+    if (!current) return; body.value = current.default_body; subject.value = current.default_subject; update(); body.focus();
+  });
+  [subject, body].forEach(function (f) { f.addEventListener('input', update); f.addEventListener('focus', function () { lastField = f; }); });
+  var start = root.dataset.edit || (location.hash || '').slice(1);
+  if (start && rows[start] && (root.dataset.edit || rows[start].draft)) open(start);
+})();
+</script>
+{% endblock %}

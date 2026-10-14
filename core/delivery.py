@@ -463,7 +463,12 @@ def _sms_problem(status, found):
 
 
 def send_sms(settings, to, body):
-    """Send one text message. Returns ``(ok, detail)`` - the provider's message id, or why it failed. Never raises."""
+    """Send one text message. Returns ``(ok, detail)`` - the provider's message id, or why it failed. Never raises.
+
+    Every text is made ONE page in the plain SMS alphabet first (core/message_wording.one_page), whoever wrote it, so a
+    school never pays for two."""
+    from core.message_wording import one_page
+    body = one_page(body)
     try:
         status, found = _sms_request(SMS_API_URL, settings,
                                      {'from': settings.sender, 'to': to, 'body': body, 'gateway': settings.gateway})

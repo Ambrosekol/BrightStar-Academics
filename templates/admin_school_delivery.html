@@ -14,12 +14,22 @@
   .inline-actions { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
   .inline-actions form { margin: 0; }
   .secret-note { color: #067647; font-size: 11px; margin-top: 4px; }
+  .bd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 18px; align-items: start; }
+  .bd-switch { display: flex; gap: 10px; align-items: center; font-weight: 600; font-size: 13px; margin-bottom: 10px; cursor: pointer; }
+  .bd-switch input { width: 18px; height: 18px; margin: 0; accent-color: var(--brand, #0d2b52); }
+  .bd-note { font-size: 12.5px; color: #475467; margin: 0 0 12px; line-height: 1.5; }
+  .bd-phone { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #f8fafc; }
+  .bd-phone-label { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #667085; margin-bottom: 8px; }
+  .bd-bubble { background: #fff; border: 1px solid #e4e7ec; border-radius: 12px 12px 12px 3px; padding: 9px 11px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+  .bd-facts { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #475467; margin-top: 4px; }
+  .bd-facts strong { color: #101828; display: inline; margin: 0; }
+  @media (max-width: 760px) { .bd-grid { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <div class="page-hero"><div>
   <div class="eyebrow">SCHOOL PORTAL / COMMUNICATION</div>
   <h1>Email &amp; SMS</h1>
-  <p class="hero-copy">Payment receipts, password-recovery emails and alerts about school work are sent to parents from these accounts. Use your school's own so that messages come from the school. Parents get a text message only for the moments that matter: a report card released, a new fee, a payment received, and the first message when the school starts a conversation. Passwords and tokens are stored encrypted and are never shown again.</p>
+  <p class="hero-copy">Payment receipts, password-recovery emails and alerts about school work are sent to parents from these accounts. Use your school's own so that messages come from the school. Parents get a text message only for the moments that matter: a report card released, a new fee, a payment received, the first message when the school starts a conversation, and, if you switch it on, their child's birthday. Every text is kept to one message, and the words of every text and email can be changed under <a href="{{ url_for('admin_message_wording') }}">Message wording</a>. Passwords and tokens are stored encrypted and are never shown again.</p>
 </div></div>
 
 <section class="card modern-form">
@@ -139,6 +149,40 @@
       </form>
       {% endif %}
     </div>
+  </div>
+
+  <div class="form-section" id="birthday-texts">
+    <div class="form-section-title"><span class="step">3</span><div>
+      <h2>Birthday texts</h2>
+      <p>On a student's birthday, each of their parents is texted the school's greeting.</p>
+    </div></div>
+
+    {% set bo = birthday_overview %}
+    {% if birthday.enabled and sms.mode in ('school', 'platform') %}
+      <div class="delivery-state ok"><span class="delivery-dot"></span><div><strong>Birthday texts are on</strong>Sent once, on the day, between {{ bo.window }} school time, to the students of the current session.
+        <div class="bd-facts"><span>Today: <strong>{{ bo.today }}</strong> birthday{{ '' if bo.today == 1 else 's' }}, <strong>{{ bo.sent_today }}</strong> greeted</span><span>Next 7 days: <strong>{{ bo.week }}</strong></span></div></div></div>
+    {% elif birthday.enabled %}
+      <div class="delivery-state warn"><span class="delivery-dot"></span><div><strong>Birthday texts are on, but SMS is not working</strong>No greeting can be sent until SMS is set up above.</div></div>
+    {% else %}
+      <div class="delivery-state"><span class="delivery-dot"></span><div><strong>Birthday texts are off</strong>Each greeting is one text message, charged like any other.
+        <div class="bd-facts"><span>Today: <strong>{{ bo.today }}</strong> birthday{{ '' if bo.today == 1 else 's' }}</span><span>Next 7 days: <strong>{{ bo.week }}</strong></span></div></div></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin_school_delivery_birthdays_save') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="bd-grid">
+        <div>
+          <label class="bd-switch"><input type="checkbox" name="enabled" value="1" {% if birthday.enabled %}checked{% endif %}> Text parents on their child's birthday</label>
+          <p class="bd-note">One text message per parent, sent once on the day. To change the words, open
+            <a href="{{ url_for('admin_message_wording') }}#sms_birthday">Message wording</a>.</p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit">Save birthday texts</button></div>
+        </div>
+        <div class="bd-phone">
+          <div class="bd-phone-label">What a parent receives</div>
+          <div class="bd-bubble">{{ birthday_preview }}</div>
+        </div>
+      </div>
+    </form>
   </div>
 </section>
 {% endblock %}

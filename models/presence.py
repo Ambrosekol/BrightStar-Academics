@@ -52,7 +52,7 @@ class NotificationDeliveryLog(db.Model):
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     student_id = db.Column(Integer, ForeignKey('students.id', ondelete='CASCADE'))
-    kind = db.Column(Text, nullable=False)  # 'work' | 'fee_assessed' | 'payment_recorded' | 'report_card_ready' | 'timetable_released'
+    kind = db.Column(Text, nullable=False)  # 'work' | 'fee_assessed' | 'payment_recorded' | 'report_card_ready' | 'timetable_released' | 'birthday' ...
     channel = db.Column(Text, nullable=False)  # 'email' | 'sms'
     recipient = db.Column(Text)
     status = db.Column(Text, nullable=False)  # 'sent' | 'failed'

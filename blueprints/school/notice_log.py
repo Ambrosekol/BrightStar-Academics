@@ -32,6 +32,7 @@ KIND_LABELS = {
     'report_card_ready': 'Report card ready',
     'timetable_released': 'Exam timetable released',
     'store_claimed': 'Store purchase collected',
+    'birthday': 'Birthday greeting',
 }
 
 

@@ -36,9 +36,13 @@ def _back():
 @admin_required
 def admin_school_delivery():
     if not is_school_admin(): return admin_access_error('Email & SMS settings')
+    from blueprints.school import birthdays
+    greeting = birthdays.text_settings()
     return render_template('admin_school_delivery.html', state=delivery.status(),
                            security_choices=delivery.SECURITY_CHOICES, ports=delivery.ALLOWED_SMTP_PORTS,
-                           production=config.is_production(), sms_gateways=delivery.SMS_GATEWAYS)
+                           production=config.is_production(), sms_gateways=delivery.SMS_GATEWAYS,
+                           birthday=greeting, birthday_overview=birthdays.text_overview(),
+                           birthday_preview=birthdays.preview_text())
 
 
 @app.post('/admin/school/delivery/email/save')
@@ -107,6 +111,21 @@ def admin_school_delivery_sms_save():
         # Only the names of what was set, never a value: a token must not reach the audit log.
         audit_log('school_delivery_updated', 'school', 'settings', 'sms', {'fields': fields})
         flash('Your SMS settings have been saved. Check the connection to be sure they work.', 'success')
+    return _back()
+
+
+@app.post('/admin/school/delivery/birthdays/save')
+@admin_required
+@csrf_protect
+def admin_school_delivery_birthdays_save():
+    """Switch the parents' birthday text on or off (blueprints/school/birthdays.py). Its words are on Message wording."""
+    if not is_school_admin(): return admin_access_error('Email & SMS settings')
+    from blueprints.school import birthdays
+    enabled = request.form.get('enabled') == '1'
+    birthdays.save_text_settings(enabled, current_admin()['id'])
+    audit_log('school_birthday_texts_updated', 'school', 'settings', 'birthday_sms', {'enabled': enabled})
+    flash("Birthday texts are on: parents are texted on their child's birthday." if enabled
+          else 'Birthday texts are off.', 'success')
     return _back()
 
 
