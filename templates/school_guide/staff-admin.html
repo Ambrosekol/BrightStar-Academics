@@ -63,11 +63,23 @@ in Settings, that is why, and it is normal for every account except the School A
 
 <h2 id="staff">Staff</h2>
 <p><strong>Teachers</strong> (in the menu under Management, Staff) shows who teaches what. The figures across the top count the
-gaps: classes with no class teacher, and subjects offered but taught by nobody. View it <strong>By class</strong> (each
-class with its class teacher and subject teachers) or <strong>By teacher</strong>, and tick <strong>Only what needs a
-teacher</strong> to see the gaps alone. <strong>Change duties</strong> opens a pop-up with the classes they are class
-teacher of and the subjects they teach.</p>
-{{ shot('teachers', 'Teachers: the gaps first (classes with no class teacher, subjects nobody teaches), by class or by teacher.') }}
+gaps: classes and subdivisions with no class teacher, and subjects (in SSS, departments of a subject) taught by nobody.
+It has two tabs:</p>
+<ul>
+  <li><strong>Class teachers</strong>: every class, with its subdivisions under it (in SSS, each department's
+  subdivision). Beside each class teacher, <strong>Replace</strong> opens a pop-up where you choose who takes over at
+  once, or <em>Nobody</em> to remove them; a class or subdivision without one has <strong>+ Assign a class
+  teacher</strong>.</li>
+  <li><strong>Subject teachers</strong>: one line per teacher with the subjects they teach. The &#8644; button on a
+  subject removes the teacher from it or hands it straight to someone else. <strong>+ Subject</strong> gives that
+  teacher one more subject from those nobody teaches yet, so a teacher can take on more subjects, or fewer, at any
+  time. <strong>All duties</strong> opens every duty of that teacher at once. Below the list, <em>Not taught yet</em>
+  lists each subject without a teacher, with <strong>Assign</strong>.</li>
+</ul>
+<p>Each subject in a class has one teacher (in SSS, one per department). On the staff form and on this page, a subject
+someone already teaches in that class is not offered: replace its teacher here instead. Every change is in the activity
+log.</p>
+{{ shot('teachers', 'Teachers: Class teachers by class and subdivision, and Subject teachers, each with Replace or remove.') }}
 <p><a href="{{ url_for('admin_accounts') }}">Staff</a>, in Settings, is everyone who signs in to the school's side of
 the portal: teachers, the bursar, the secretary, the librarian. Each person has a card with their name, username,
 whether they are active or suspended, their roles, their contact details and when they last signed in, and it says in

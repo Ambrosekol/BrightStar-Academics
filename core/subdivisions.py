@@ -29,6 +29,8 @@ from models import (
 )
 
 LOCK_KEY = 'class_subdivisions_locked'
+# Every SSS class starts split by department, one subdivision each, in this order (ensure_sss_defaults).
+SSS_DEFAULT_DEPARTMENTS = ('Science', 'Commercial', 'Art')
 
 
 # ---------------------------------------------------------------- the set-up and its lock
@@ -91,13 +93,38 @@ def counts(session_id):
 
 
 def label(subdivision, class_name=None):
-    """'JSS 1A', 'SS 1A (Science)': how a subdivision is named on a page."""
+    """'JSS 1A', 'SS 1A (Science)', 'SSS 1 Science': how a subdivision is named on a page (the department in brackets
+    unless the name already says it)."""
     if subdivision is None:
         return class_name or ''
     text = subdivision.name
-    if subdivision.department:
+    if subdivision.department and subdivision.department.casefold() not in text.casefold():
         text += f' ({subdivision.department})'
     return text
+
+
+def ensure_sss_defaults(session_id=None):
+    """Split each active SSS class that has never been subdivided into one subdivision per department (Science,
+    Commercial, Art), and place its students this session by their department. A class the school has subdivided
+    (or un-subdivided) itself is left alone, and nothing changes while the set-up is locked. Returns how many classes
+    were split. Does not commit."""
+    if lock_state()['locked']:
+        return 0
+    split = 0
+    for cls in secondary_classes():
+        if not is_senior(cls.stage, cls.name):
+            continue
+        if db.session.scalar(select(func.count()).select_from(ClassSubdivision).where(ClassSubdivision.class_id == cls.id)):
+            continue
+        now = datetime.now(timezone.utc).isoformat()
+        for position, department in enumerate(SSS_DEFAULT_DEPARTMENTS, 1):
+            db.session.add(ClassSubdivision(class_id=cls.id, name=f'{cls.name} {department}', department=department,
+                                            position=position, active=1, created_at=now))
+        db.session.flush()
+        if session_id:
+            spread(cls.id, session_id)
+        split += 1
+    return split
 
 
 # ---------------------------------------------------------------- placing a student

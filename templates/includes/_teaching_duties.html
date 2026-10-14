@@ -4,7 +4,9 @@
    A row's subject list shows only the subjects its chosen class takes (class_ids, from class_subjects); a subject
    already saved on a duty stays listed even if the class no longer offers it, marked so, so nothing is dropped. A subject
    chosen on one row is taken off the other rows' lists for the same class. In an SSS class the department list shows
-   only the departments that take the chosen subject (its departments on the Subjects page).
+   only the departments that take the chosen subject (its departments on the Subjects page). A subject another teacher
+   already teaches in the class is not offered (duty_taken, from _duty_form_options; in SSS, only the departments still
+   without a teacher are); the server refuses such a row too (_parse_duties).
    Posts duty_class_teacher (repeated), and duty_class / duty_subject / duty_department (one of each per row). #}
 <style>
 .td-block{margin-top:4px}
@@ -30,7 +32,7 @@
 {% set dc = duties.class_teacher if duties else [] %}
 {% set dsub = (duties.class_teacher_subdivisions or []) if duties else [] %}
 {% set ds = duties.subjects if duties else [] %}
-<div class="td-block" data-duties>
+<div class="td-block" data-duties data-taken="{{ (duty_taken or {})|tojson|forceescape }}">
   <h3>Class teacher of</h3>
   <p class="td-hint">A class teacher sees every subject of the class, takes its register, writes its report card comments and releases its results. Tick none for a subject-only teacher. In a class split into subdivisions (Settings, Class subdivisions), tick a subdivision to make them class teacher of its students only.</p>
   <div class="td-classes">
@@ -62,7 +64,7 @@
         {% for s in duty_subjects %}<option value="{{ s.id }}" data-classes=" {{ s.class_ids|join(' ') }} " data-departments="|{{ (s.departments or duty_departments)|join('|') }}|" {% if s.id == row.subject_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
         <option value="" disabled data-duty-none hidden>No subject is offered to this class yet</option>
       </select>
-      <select name="duty_department" aria-label="Department (SSS only)" class="td-dept">
+      <select name="duty_department" aria-label="Department (SSS only)" class="td-dept" data-saved="{{ row.department or '' }}">
         <option value="">All departments</option>
         {% for d in duty_departments %}<option value="{{ d }}" data-dept="{{ d }}" {% if d == row.department %}selected{% endif %}>{{ d }} only</option>{% endfor %}
       </select>
@@ -76,6 +78,14 @@
 (function(){
   var box=document.querySelector('[data-duties]:not([data-ready])'); if(!box) return; box.setAttribute('data-ready','1');
   var rows=box.querySelector('[data-duty-rows]');
+  var TAKEN={}; try{ TAKEN=JSON.parse(box.getAttribute('data-taken')||'{}'); }catch(e){}
+  // What other teachers already teach: the departments of this subject in this class ('' for every department).
+  function others(cls, sid){ return ((TAKEN[cls]||{})[sid])||[]; }
+  function free(o, cls, senior){
+    var held=others(cls, o.value); if(!held.length) return true;
+    if(!senior || held.indexOf('')!==-1) return false;
+    return (o.getAttribute('data-departments')||'').split('|').some(function(d){ return d && held.indexOf(d)===-1; });
+  }
   // Subjects already chosen on the other rows, by class: {classId: {subjectId: true}}.
   function taken(except){
     var out={};
@@ -90,15 +100,22 @@
   function departments(row, senior){
     var dept=row.querySelector('.td-dept'), subj=row.querySelector('[data-duty-subject]');
     var o=subj.options[subj.selectedIndex], allowed=o && o.value ? o.getAttribute('data-departments') : null, n=0, only='';
+    var cls=row.querySelector('[data-duty-class]').value, held=o && o.value ? others(cls, o.value) : [];
+    var mine=dept.getAttribute('data-saved')||'';
     Array.prototype.forEach.call(dept.options,function(d){
       if(!d.dataset.dept) return;
-      var ok=!allowed || allowed.indexOf('|'+d.dataset.dept+'|')!==-1;
+      // A department of the subject that no other teacher has (the one this row already holds always stays).
+      var ok=(!allowed || allowed.indexOf('|'+d.dataset.dept+'|')!==-1) && (held.indexOf(d.dataset.dept)===-1 || d.dataset.dept===mine);
       d.hidden=!ok; d.disabled=!ok; if(ok){ n++; only=d.value; }
     });
     var all=dept.querySelector('option[value=""]');
     if(dept.value && dept.options[dept.selectedIndex].disabled) dept.value='';
-    if(senior && allowed && n===1){ dept.value=only; all.hidden=true; all.disabled=true; }
-    else { all.hidden=false; all.disabled=false; }
+    // Every department only when nobody else teaches the subject to any of them; otherwise one of the free ones.
+    var allOk=held.length===0;
+    if(senior && allowed && (n===1 || !allOk)){
+      all.hidden=true; all.disabled=true;
+      if(n===1 || !dept.value) dept.value=only;
+    } else { all.hidden=false; all.disabled=false; }
   }
   function sync(row){
     var cls=row.querySelector('[data-duty-class]'), dept=row.querySelector('.td-dept');
@@ -112,10 +129,10 @@
       if(!o.value || o===none) return;
       if(!o.dataset.name) o.dataset.name=o.textContent;
       var offered=!cls.value || o.getAttribute('data-classes').indexOf(' '+cls.value+' ')!==-1;
-      var keep=(offered && !used[o.value]) || o.selected;
+      var keep=(offered && !used[o.value] && (!cls.value || free(o, cls.value, senior))) || o.selected;
       o.hidden=!keep; o.disabled=!keep;
       o.textContent=o.dataset.name+(offered ? '' : ' (not offered to this class)');
-      if(offered && !used[o.value]) shown++;
+      if(keep && offered) shown++;
     });
     none.hidden=!(cls.value && !shown);
     departments(row, senior);
@@ -140,6 +157,7 @@
   box.querySelector('[data-duty-add]').addEventListener('click',function(){
     var copy=rows.lastElementChild.cloneNode(true);
     copy.querySelectorAll('select').forEach(function(s){ s.value=''; });
+    copy.querySelector('.td-dept').setAttribute('data-saved','');
     copy.querySelectorAll('option').forEach(function(o){ if(o.dataset.name) o.textContent=o.dataset.name; });
     rows.appendChild(copy); wire(copy); syncAll(); copy.querySelector('select').focus();
   });

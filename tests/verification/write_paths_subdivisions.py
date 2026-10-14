@@ -217,7 +217,13 @@ with A.app.app_context():
         db.session.remove()
 check("a student admitted (enrolled the way the entrance admit does) is placed too", sub_of(ADMITTED) in J.values())
 
-r = save("SSS 1", {"new_name": ["SS 1A", "SS 1B", "SS 1C"], "new_department": ["Science", "Science", "Art"]})
+DEFAULTS = subs("SSS 1")
+check("every SSS class starts split by department: SSS 1 Science, Commercial and Art",
+      sorted(DEFAULTS) == ["SSS 1 Art", "SSS 1 Commercial", "SSS 1 Science"])
+# The school replaces the defaults with its own subdivisions.
+r = save("SSS 1", {"sub_id": [str(i) for i in DEFAULTS.values()], "sub_name": list(DEFAULTS),
+                   "sub_department": [n.rsplit(" ", 1)[-1] for n in DEFAULTS], "sub_remove": [str(i) for i in DEFAULTS.values()],
+                   "new_name": ["SS 1A", "SS 1B", "SS 1C"], "new_department": ["Science", "Science", "Art"]})
 S = subs("SSS 1")
 check("SSS 1 is split with departments", r.status_code == 302 and one(
     "SELECT department FROM class_subdivisions WHERE id = :i", i=S["SS 1C"]) == "Art")

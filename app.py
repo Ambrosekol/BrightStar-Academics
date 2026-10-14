@@ -785,6 +785,11 @@ def _init_db(school):
     _seed_school_tenant(now, **school)
     init_admin_security()
     sync_examinations()
+    db.session.flush()
+    # Every SSS class starts split by department (core/subdivisions.py), unless the school has set it up itself.
+    from core.subdivisions import ensure_sss_defaults
+    current=one(select(AcademicSession.id).where(AcademicSession.is_current==1).limit(1))
+    ensure_sss_defaults(current['id'] if current else None)
     db.session.commit()
 
 

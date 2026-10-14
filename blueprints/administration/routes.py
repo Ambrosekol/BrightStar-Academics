@@ -50,7 +50,7 @@ from core.uploads import ATTACHMENT_EXTENSIONS, _save_image_upload
 from blueprints.school.helpers import _school_class_allowed
 from blueprints.administration.helpers import (
     _admin_contact_fields, _sync_admin_roles, _validate_admin_contact_fields,
-    _duties_of, _duty_form_options, _duty_labels, _parse_duties, _save_duties,
+    _duties_of, _duty_form_options, _duty_labels, _held, _parse_duties, _save_duties,
 )
 
 
@@ -419,7 +419,7 @@ def admin_account_edit(aid):
                       .order_by(AcademicSession.name.desc()))
     if not row: abort(404)
     protected_school_admin = bool(row['admin_type_system'])
-    duty_options=_duty_form_options(); duties=_duties_of(aid)
+    duty_options=_duty_form_options(exclude=aid); duties=_duties_of(aid); held=_held(duties)
     # School Admin is a system authority, not an ordinary scoped staff account.
     # A School Admin may manage the profile of a School Admin account, but the
     # protected system role itself cannot be replaced or narrowed by this form.
@@ -436,7 +436,7 @@ def admin_account_edit(aid):
         display=request.form.get('display_name','').strip(); role_ids=[int(x) for x in request.form.getlist('admin_type_ids') if x.isdigit()]; contact=_admin_contact_fields(request.form); scope_type=request.form.get('scope_type','global').strip() or 'global'; scope_values=request.form.getlist('scope_value') or [request.form.get('scope_value','*').strip() or '*']; errors=[]
         if protected_school_admin: duties={'class_teacher':[],'class_teacher_subdivisions':[],'subjects':[]}   # the School Admin reaches everything
         else:
-            duties,duty_errors=_parse_duties(request.form,duty_options); errors+=duty_errors
+            duties,duty_errors=_parse_duties(request.form,duty_options,keep=held); errors+=duty_errors
         selected_scope_types=[x.strip() for x in request.form.getlist('scope_types') if x.strip()]
         if not selected_scope_types and scope_type!='global': selected_scope_types=[scope_type]
         scope_groups={}

@@ -40,9 +40,12 @@ def _validate_admin_contact_fields(contact):
 
 # ---------------- teaching duties (models/auth.py, TeachingDuty) ----------------
 
-def _duty_form_options(admin=None):
+def _duty_form_options(admin=None, exclude=None):
     """The classes and subjects a duty can name, for the duty editor (templates/includes/_teaching_duties.html).
-    ``admin``, when given and not the School Admin, limits the classes to those within their own reach."""
+    ``admin``, when given and not the School Admin, limits the classes to those within their own reach. ``duty_taken``
+    says which subjects other teachers already teach in each class - ``{class_id: {subject_id: [department, ...]}}``,
+    '' for every department - leaving out ``exclude`` (the person being edited), so the editor offers only what nobody
+    else teaches yet."""
     from sqlalchemy import select
     from models import ClassSubject, SchoolClass, SchoolSubject
     from core.school_structure import DEPARTMENTS, is_senior, parse_departments
@@ -65,7 +68,28 @@ def _duty_form_options(admin=None):
     subdivided=all_subdivisions()
     for c in classes:
         c['subdivisions']=[{'id':s.id,'name':subdivision_label(s)} for s in subdivided.get(c['id'],[])]
-    return {'duty_classes':classes,'duty_subjects':subjects,'duty_departments':DEPARTMENTS}
+    from models import Admin, TeachingDuty
+    taken={}
+    for aid,cid,sid,dept in db.session.execute(select(TeachingDuty.admin_id,TeachingDuty.class_id,TeachingDuty.subject_id,
+                                                      TeachingDuty.department)
+                                               .join(Admin,Admin.id==TeachingDuty.admin_id)
+                                               .where(TeachingDuty.subject_id.is_not(None),Admin.active==1)).all():
+        if exclude is not None and aid==exclude: continue
+        taken.setdefault(cid,{}).setdefault(sid,[]).append(dept or '')
+    return {'duty_classes':classes,'duty_subjects':subjects,'duty_departments':DEPARTMENTS,'duty_taken':taken}
+
+
+def duty_clash(taken, class_id, subject_id, department):
+    """Whether another teacher already teaches this subject in this class (in SSS, to this department, or to every
+    department). ``taken`` is _duty_form_options()['duty_taken']."""
+    others=taken.get(class_id,{}).get(subject_id,[])
+    if not others: return False
+    return '' in others or not department or department in others
+
+
+def _held(duties):
+    """The subject rows someone already holds, as (class_id, subject_id, department) - never refused as a clash."""
+    return {(r['class_id'],r['subject_id'],r['department'] or '') for r in duties.get('subjects',[])}
 
 def _duties_of(admin_id):
     """An account's duties as the editor shows them: class-teacher class ids, and subject rows."""
@@ -78,9 +102,10 @@ def _duties_of(admin_id):
             'subjects':[{'class_id':r.class_id,'subject_id':r.subject_id,'department':r.department or ''}
                         for r in rows if r.subject_id is not None]}
 
-def _parse_duties(form, options):
+def _parse_duties(form, options, keep=()):
     """Read the duty editor's fields. Returns (duties, errors): duties is the same shape _duties_of gives,
-    with anything outside ``options`` (classes not offered, unknown subjects) refused."""
+    with anything outside ``options`` (classes not offered, unknown subjects) refused, and a new subject row another
+    teacher already teaches refused too (``keep``: the rows this person already holds, which are kept as they are)."""
     from core.school_structure import clean_department
     class_ids={c['id']:c for c in options['duty_classes']}
     subject_ids={s['id'] for s in options['duty_subjects']}
@@ -114,6 +139,11 @@ def _parse_duties(form, options):
         if department and department not in subject_departments.get(sid,()):
             errors.append(f"{subject_names.get(sid,'That subject')} is not taken by the {department} department "
                           "(Subjects). Choose one of its departments, or All departments.")
+            continue
+        if (cid,sid,department or '') not in keep and duty_clash(options.get('duty_taken',{}),cid,sid,department):
+            errors.append(f"{subject_names.get(sid,'That subject')} in {class_ids[cid]['name']}"
+                          +(f" ({department})" if department else '')
+                          +" already has a teacher. Replace them on the Teachers page, or choose another subject.")
             continue
         key=(cid,sid,department)
         if key in seen: continue

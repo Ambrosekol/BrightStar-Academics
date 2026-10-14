@@ -32,6 +32,9 @@ EXEMPT = {
     # stand-in Paystack, in write_paths_payroll_paystack.py.
     "/admin/payroll/runs/<int:rid>/paystack/send": "see write_paths_payroll_paystack.py",
     "/admin/payroll/runs/<int:rid>/paystack/check": "see write_paths_payroll_paystack.py",
+    # Teachers: removing, replacing and assigning one class or subject teacher, valid and hostile, in
+    # write_paths_staff_hierarchy.py.
+    "/admin/school/teaching/change": "see write_paths_staff_hierarchy.py",
     "/exam/integrity": "see write_paths_exam_mode.py",
     # ID cards: printing (and issuing), the designer's save, lock and reset, cancelling and replacing a card, valid
     # and hostile (a hostile design, a locked design, a teacher without the permission), in write_paths_id_cards.py.

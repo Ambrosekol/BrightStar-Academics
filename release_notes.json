@@ -18,6 +18,28 @@
   ],
   "releases": [
     {
+      "version": "2.38.0",
+      "date": "2026-10-14",
+      "title": "Teachers: replace in one step",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The Teachers page now has two tabs. Class teachers shows every class with its subdivisions (and each SSS department); Subject teachers lists each teacher with the subjects they teach. Remove a class teacher or a subject teacher and choose their replacement in the same pop-up, give a teacher another subject with + Subject, or take one away.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "When choosing teaching duties for a member of staff, a class's subjects that already have a teacher are no longer offered (in SSS, only the departments still without one). To change who teaches it, replace the teacher on the Teachers page.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Every SSS class now starts split into three subdivisions, Science, Commercial and Art, and its students are placed by their department. The School Admin can still change them under Class subdivisions.",
+          "help": "classes-subjects"
+        }
+      ]
+    },
+    {
       "version": "2.37.1",
       "date": "2026-10-14",
       "title": "Smoother reloading",

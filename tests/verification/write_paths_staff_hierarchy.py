@@ -378,8 +378,18 @@ check("…and never the entrance workspace for someone who was not given it", r.
 op.get("/admin/workspace/school")   # Workspace Home clears the choice; carry on in the school portal
 check("a class teacher has no Teachers page", refused(ct_j1.get("/admin/school/teaching")))
 board = head.text("/admin/school/teaching")
-check("the head teacher's Teachers page shows each class's class teacher and subject teachers",
-      "Ct Jss1" in board and "St Maths" in board and "Not assigned" in board)
+check("the head teacher's Teachers page shows each class's class teacher and subject teachers, in two tabs",
+      "Ct Jss1" in board and "St Maths" in board and "Assign a class teacher" in board
+      and 'data-tc-tab="classes"' in board and 'data-tc-tab="subjects"' in board)
+subs = alpha.sql("SELECT name, department FROM class_subdivisions WHERE class_id = :c AND active = 1 ORDER BY position", c=cls["SSS 1"])
+check("every SSS class starts split by department: Science, Commercial, Art",
+      [tuple(x) for x in subs] == [("SSS 1 Science", "Science"), ("SSS 1 Commercial", "Commercial"), ("SSS 1 Art", "Art")]
+      and "SSS 1 Science" in board and not alpha.one("SELECT COUNT(*) FROM class_subdivisions WHERE class_id = :c", c=cls["JSS 1"]))
+check("…and its students are placed by their department",
+      alpha.one("SELECT s.name FROM student_enrolments e JOIN class_subdivisions s ON s.id = e.subdivision_id WHERE e.student_id = :i", i=SCI)
+      == "SSS 1 Science"
+      and alpha.one("SELECT s.name FROM student_enrolments e JOIN class_subdivisions s ON s.id = e.subdivision_id WHERE e.student_id = :i", i=ART)
+      == "SSS 1 Art")
 check("it lists the teachers below them, not the bursar", f"/admin/school/teaching/{ST}" in board and f"/admin/school/teaching/{BURSAR}" not in board)
 r = head.post(f"/admin/school/teaching/{ST}", {"duty_class": [str(cls["JSS 2"])], "duty_subject": [str(MATH)], "duty_department": [""]},
               page=f"/admin/school/teaching/{ST}")
@@ -500,7 +510,56 @@ r = mixed.post("/admin/school/results/release-term", {"student_id": str(SCI), "s
 check("but they cannot release SSS 1's results", refused(r))
 
 # ================================================================ a subject teacher sets their own work
-maker, MAKER, _ = new_staff("maker.teacher", ["Subject Teacher"], subjects=[("JSS 1", MATH, ""), ("SSS 1", PHYS, "")])
+r = op.post("/admin/administration/admins/new", {
+    "username": "clash.teacher", "display_name": "Clash Teacher", "admin_type_ids": [str(role["Subject Teacher"])],
+    "duty_class": [str(cls["SSS 1"])], "duty_subject": [str(PHYS)], "duty_department": [""]}, page="/admin/administration/admins/new")
+check("a subject another teacher already teaches in the class is refused on the staff form, and nobody is created",
+      "Physics in SSS 1 already has a teacher" in r.get_data(as_text=True)
+      and not alpha.one("SELECT COUNT(*) FROM admins WHERE username = 'clash.teacher'"))
+check("the staff form knows who teaches what, so it offers only subjects without a teacher",
+      'data-taken="' in op.text("/admin/administration/admins/new") and f"&#34;{PHYS}&#34;" in op.text("/admin/administration/admins/new"))
+maker, MAKER, _ = new_staff("maker.teacher", ["Subject Teacher"], subjects=[("JSS 1", MATH, "")])
+
+# ---------------------------------------------------------------- one change at a time, on the Teachers page
+CHANGE = "/admin/school/teaching/change"
+
+
+def change(person, **fields):
+    return person.post(CHANGE, {k: str(v) for k, v in fields.items()}, page="/admin/school/teaching")
+
+
+def holders(**where):
+    sql = "SELECT admin_id FROM teaching_duties WHERE class_id = :c AND " + (
+        "subject_id = :s" if where.get("s") else "subject_id IS NULL") + (
+        " AND subdivision_id = :d" if where.get("d") else (" AND subdivision_id IS NULL" if not where.get("s") else ""))
+    return sorted(a for (a,) in alpha.sql(sql, **where))
+
+
+r = change(head, kind="subject", class_id=cls["SSS 1"], subject_id=PHYS, department="", to_admin=MAKER)
+check("giving a subject that already has a teacher, without replacing them, is refused", holders(c=cls["SSS 1"], s=PHYS) == [MIXED])
+change(head, kind="subject", class_id=cls["SSS 1"], subject_id=PHYS, department="", from_admin=MIXED, to_admin=MAKER)
+check("the head teacher replaces a subject teacher at once: Physics in SSS 1 passes to the new teacher",
+      holders(c=cls["SSS 1"], s=PHYS) == [MAKER])
+SCI_SUB = alpha.one("SELECT id FROM class_subdivisions WHERE class_id = :c AND department = 'Science'", c=cls["SSS 1"])
+change(head, kind="class", class_id=cls["SSS 1"], subdivision_id=SCI_SUB, to_admin=CT_J1)
+check("a class teacher is assigned to an SSS subdivision", holders(c=cls["SSS 1"], d=SCI_SUB) == [CT_J1])
+change(head, kind="class", class_id=cls["SSS 1"], subdivision_id=SCI_SUB, to_admin=CT_NUR)
+check("…a second one is refused while it has one", holders(c=cls["SSS 1"], d=SCI_SUB) == [CT_J1])
+change(head, kind="class", class_id=cls["SSS 1"], subdivision_id=SCI_SUB, from_admin=CT_J1, to_admin=CT_NUR)
+check("…and replaced at once", holders(c=cls["SSS 1"], d=SCI_SUB) == [CT_NUR])
+change(head, kind="class", class_id=cls["SSS 1"], subdivision_id=SCI_SUB, from_admin=CT_NUR)
+check("…and removed", holders(c=cls["SSS 1"], d=SCI_SUB) == [])
+change(head, kind="subject", class_id=cls["JSS 1"], subject_id=MATH, department="", from_admin=MAKER, to_admin=BURSAR)
+check("a member of staff above the head teacher, or not a teacher, cannot be given a duty", holders(c=cls["JSS 1"], s=MATH) == [MAKER])
+r = ct_j1.post(CHANGE, {"kind": "class", "class_id": str(cls["JSS 1"]), "from_admin": str(CT_J1), "to_admin": str(CT_NUR)})
+check("a class teacher cannot change duties on the Teachers page", refused(r) and holders(c=cls["JSS 1"]) == [CT_J1], f"{r.status_code} {holders(c=cls['JSS 1'])}")
+change(head, kind="subject", class_id=cls["JSS 1"], subject_id=BASIC, department="", to_admin=MAKER)
+check("a teacher who already teaches subjects can be given one more", holders(c=cls["JSS 1"], s=BASIC) == [MAKER]
+      and alpha.one("SELECT COUNT(*) FROM teaching_duties WHERE admin_id = :a AND subject_id IS NOT NULL", a=MAKER) == 3)
+change(head, kind="subject", class_id=cls["JSS 1"], subject_id=BASIC, department="", from_admin=MAKER)
+check("…and have one taken off, keeping the rest", holders(c=cls["JSS 1"], s=BASIC) == []
+      and alpha.one("SELECT COUNT(*) FROM teaching_duties WHERE admin_id = :a AND subject_id IS NOT NULL", a=MAKER) == 2)
+check("each change is in the activity log", alpha.one("SELECT COUNT(*) FROM audit_logs WHERE action LIKE 'teaching_duty_%'") >= 4)
 for page in ("/admin/school/tests/new", "/admin/school/practice-tests/new", "/admin/school/examinations/new",
              "/admin/school/assignments/new", "/admin/school/projects/new"):
     check(f"a subject teacher can open {page}", maker.get(page).status_code == 200)

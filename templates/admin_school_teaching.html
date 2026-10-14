@@ -1,48 +1,57 @@
 {% extends 'admin_base.html' %}
 {% block title %}Teachers — {{ school_brand.name }}{% endblock %}
 {% block content %}
-{# Who teaches what: every class with its class teacher and subject teachers, and the gaps (a class with no class
-   teacher, a subject nobody teaches). Two views of the same thing, by class or by teacher; a teacher's duties open
-   in a pop-up (static/inplace.js) and saving refreshes this page. A teacher only reaches the classes, subjects and
-   (in SSS) departments given to them here. #}
-{% set no_ct = board|rejectattr('class_teachers')|list %}
-{% set untaught = board|map(attribute='untaught')|sum(start=[]) %}
-{% set no_duties = teachers|rejectattr('duties')|list %}
+{#- Teachers (blueprints/school/teaching.py), in two tabs. Class teachers: each class, its whole-class row and a row for
+    each subdivision (an SSS class by department), with its class teacher. Subject teachers: each teacher with the
+    subjects they teach, then what nobody teaches yet. Remove, Replace and Assign open one pop-up (data-tc-dialog) that
+    posts a single change; a teacher's whole set of duties opens in its own editor (data-modal). -#}
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='3') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='students.css', v='6') }}">
-<div class="ac st tc" data-tc>
+<link rel="stylesheet" href="{{ url_for('static', filename='teaching.css', v='2') }}">
+<div class="ac st tc2" data-tc data-tab="{{ tab }}">
 <header class="ac-top">
   <h1>Teachers</h1>
-  <span class="ac-hint">Class teachers, subject teachers, and what nobody teaches yet. New staff and roles are under Settings.</span>
+  <span class="ac-hint">Who is class teacher of each class, and who teaches each subject. New staff and roles are under Settings.</span>
 </header>
 
 <dl class="fi-k">
   <div class="is-lead"><dt>Teachers</dt><dd>{{ teachers|length }}</dd><small>you can assign</small></div>
-  <div><dt>Classes</dt><dd>{{ board|length }}</dd><small>{{ board|length - no_ct|length }} with a class teacher</small></div>
-  <div class="{{ 'is-alert' if no_ct }}"><dt>No class teacher</dt><dd>{{ no_ct|length }}</dd><small>{{ no_ct|map(attribute='class.name')|join(', ') if no_ct else 'every class has one' }}</small></div>
-  <div class="{{ 'is-alert' if untaught }}"><dt>Subjects not taught</dt><dd>{{ untaught|length }}</dd><small>offered, but no subject teacher</small></div>
-  {% if no_duties %}<div><dt>No duties yet</dt><dd>{{ no_duties|length }}</dd><small>they can reach every class</small></div>{% endif %}
+  <div class="{{ 'is-alert' if class_gaps }}"><dt>Without a class teacher</dt><dd>{{ class_gaps }}</dd><small>classes and subdivisions</small></div>
+  <div class="{{ 'is-alert' if untaught }}"><dt>Not taught</dt><dd>{{ untaught|length }}</dd><small>subjects (and SSS departments) without a teacher</small></div>
 </dl>
 
-<div class="fi-tools">
-  <div class="ac-seg" role="tablist" aria-label="View">
-    <label><input type="radio" name="tc-view" value="classes" checked><span>By class</span></label>
-    <label><input type="radio" name="tc-view" value="teachers"><span>By teacher</span></label>
+<div class="tc2-bar">
+  <div class="tc2-tabs" role="tablist" aria-label="Teachers">
+    <button type="button" role="tab" data-tc-tab="classes" aria-selected="{{ 'true' if tab == 'classes' else 'false' }}">Class teachers</button>
+    <button type="button" role="tab" data-tc-tab="subjects" aria-selected="{{ 'true' if tab == 'subjects' else 'false' }}">Subject teachers</button>
   </div>
-  <label class="ac-hint" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-tc-gaps> Only what needs a teacher</label>
-  <span class="ac-search" style="margin-left:auto"><input type="search" placeholder="Find a class, subject or teacher" aria-label="Find" data-tc-find></span>
+  <span class="ac-search"><input type="search" placeholder="Find a class, subject or teacher" aria-label="Find" data-tc-find></span>
 </div>
 
-<div data-tc-view="classes">
-  <div class="tc-grid">
-    {% for b in board %}
-    <section class="tc-class{{ ' has-gap' if not b.class_teachers or b.untaught }}" data-tc-item data-gap="{{ 1 if not b.class_teachers or b.untaught else 0 }}"
-             data-search="{{ (b.class.name ~ ' ' ~ b.class_teachers|join(' ') ~ ' ' ~ (b.subjects|map(attribute='name')|join(' ')) ~ ' ' ~ (b.subjects|map(attribute='teachers')|sum(start=[])|join(' ')) ~ ' ' ~ b.untaught|join(' '))|lower }}">
-      <header><h2>{{ b.class.name }}</h2><span class="ac-hint">{{ b.subjects|length }} taught{% if b.untaught %} · {{ b.untaught|length }} not{% endif %}</span></header>
-      <div class="tc-ct">{% if b.class_teachers %}<span class="tc-ct__label">Class teacher</span><b>{{ b.class_teachers|join(', ') }}</b>{% else %}<span class="ac-tag ac-tag--attn">Class teacher: Not assigned</span>{% endif %}</div>
-      {% if b.subjects %}<ul class="tc-subjects">{% for s in b.subjects %}<li><span>{{ s.name }}</span><b>{{ s.teachers|join(', ') }}</b></li>{% endfor %}</ul>{% endif %}
-      {% if b.untaught %}<p class="tc-untaught"><b>No subject teacher:</b> {{ b.untaught|join(', ') }}{% if b.class_teachers %} <small>(the class teacher covers these)</small>{% endif %}</p>{% endif %}
+{# ---------------------------------------------------------------- class teachers #}
+<div data-tc-panel="classes" role="tabpanel"{% if tab != 'classes' %} hidden{% endif %}>
+  <div class="tc2-classes">
+    {% for c in classes %}
+    <section class="tc2-class{{ ' has-gap' if c.gap }}" data-tc-item data-search="{{ (c.name ~ ' ' ~ (c.slots|map(attribute='label')|join(' ')) ~ ' ' ~ (c.slots|map(attribute='teachers')|sum(start=[])|map(attribute='name')|join(' ')))|lower }}">
+      <header><h2>{{ c.name }}</h2>{% if c.senior %}<span class="tc2-tag">SSS</span>{% endif %}</header>
+      <ul>
+        {% for s in c.slots %}
+        <li class="tc2-slot{{ ' is-empty' if not s.teachers }}">
+          <span class="tc2-slot__what">{{ s.label }}{% if s.department and s.department|lower not in s.label|lower %} <small>{{ s.department }}</small>{% endif %}</span>
+          <span class="tc2-slot__who">
+            {% for t in s.teachers %}
+            <span class="tc2-person"><b>{{ t.name }}</b>
+              {% if t.editable %}<button type="button" class="tc2-act" data-tc-open data-kind="class" data-class="{{ c.id }}" data-subdivision="{{ s.subdivision or '' }}"
+                data-from="{{ t.id }}" data-from-name="{{ t.name }}" data-what="class teacher of {{ s.label if s.subdivision else c.name }}">Replace</button>{% endif %}</span>
+            {% else %}
+            <button type="button" class="tc2-assign" data-tc-open data-kind="class" data-class="{{ c.id }}" data-subdivision="{{ s.subdivision or '' }}"
+              data-what="class teacher of {{ s.label if s.subdivision else c.name }}">+ Assign a class teacher</button>
+            {% endfor %}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
     </section>
     {% else %}
     <div class="ac-empty"><strong>No classes yet</strong>Switch classes on under Classes first.</div>
@@ -50,42 +59,137 @@
   </div>
 </div>
 
-<div data-tc-view="teachers" hidden>
-  <section class="ac-panel">
-    {% if teachers %}
-    <div class="ac-scroll"><table class="ac-t">
-      <thead><tr><th>Teacher</th><th>Role</th><th>Duties</th><th></th></tr></thead>
-      <tbody>{% for t in teachers %}
-      <tr data-tc-item data-gap="{{ 0 if t.duties else 1 }}" data-search="{{ (t.name ~ ' ' ~ t.roles|join(' ') ~ ' ' ~ t.duties|join(' '))|lower }}">
-        <td><a class="st-who" href="{{ url_for('admin_school_teaching_edit', aid=t.id) }}" data-modal><span class="st-ava">{{ t.name[:1]|upper }}{{ (t.name.split()[-1] if t.name.split()|length > 1 else '')[:1]|upper }}</span><span><b>{{ t.name }}</b><small>{{ t.level }}</small></span></a></td>
-        <td>{{ t.roles|join(', ') or '—' }}</td>
-        <td><span class="pe-kids">{% for d in t.duties %}<span class="fi-chip fi-chip--type">{{ d }}</span>{% else %}<span class="ac-tag ac-tag--attn">No duties yet</span>{% endfor %}</span></td>
-        <td class="ac-actions"><a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_teaching_edit', aid=t.id) }}" data-modal>Change duties</a></td>
-      </tr>{% endfor %}</tbody>
-    </table></div>
+{# ---------------------------------------------------------------- subject teachers #}
+<div data-tc-panel="subjects" role="tabpanel"{% if tab != 'subjects' %} hidden{% endif %}>
+  <section class="ac-panel tc2-panel">
+    {% if rows %}
+    <ul class="tc2-teachers">
+      {% for r in rows %}
+      <li class="tc2-teacher" data-tc-item data-search="{{ (r.name ~ ' ' ~ r.roles|join(' ') ~ ' ' ~ (r.subjects|map(attribute='subject_name')|join(' ')) ~ ' ' ~ (r.subjects|map(attribute='class_name')|join(' ')))|lower }}">
+        <div class="tc2-teacher__who"><span class="st-ava">{{ r.name[:1]|upper }}{{ (r.name.split()[-1] if r.name.split()|length > 1 else '')[:1]|upper }}</span>
+          <span><b>{{ r.name }}</b><small>{{ r.level or (r.roles|join(', ')) }}</small></span></div>
+        <div class="tc2-chips">
+          {% for s in r.subjects %}
+          <span class="tc2-chip"><span>{{ s.subject_name }} <small>{{ s.class_name }}{% if s.department %} · {{ s.department }}{% endif %}</small></span>
+            {% if r.editable %}<button type="button" data-tc-open data-kind="subject" data-class="{{ s.class_id }}" data-subject="{{ s.subject_id }}" data-department="{{ s.department }}"
+              data-from="{{ r.id }}" data-from-name="{{ r.name }}" data-what="{{ s.subject_name }} in {{ s.class_name }}{% if s.department %} ({{ s.department }}){% endif %}" aria-label="Replace or remove {{ r.name }} from {{ s.subject_name }} in {{ s.class_name }}">⇄</button>{% endif %}</span>
+          {% else %}<span class="tc2-none">No subjects yet</span>{% endfor %}
+        </div>
+        {% if r.editable %}<span class="tc2-row-act">{% if untaught %}<button type="button" class="tc2-act" data-tc-add data-to="{{ r.id }}" data-to-name="{{ r.name }}">+ Subject</button>{% endif %}
+          <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_teaching_edit', aid=r.id) }}" data-modal>All duties</a></span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
     {% else %}
     <div class="ac-empty"><strong>No teachers you can assign yet</strong>Give a member of staff the Class Teacher or Subject Teacher role on their staff record first.</div>
     {% endif %}
   </section>
+  {% if untaught %}
+  <section class="ac-panel tc2-panel tc2-untaught">
+    <h2>Not taught yet <small>{{ untaught|length }}</small></h2>
+    <div class="tc2-chips">
+      {% for u in untaught %}
+      <span class="tc2-chip is-gap" data-tc-item data-search="{{ (u.subject_name ~ ' ' ~ u.class_name ~ ' ' ~ u.department)|lower }}"><span>{{ u.subject_name }} <small>{{ u.class_name }}{% if u.department %} · {{ u.department }}{% endif %}</small></span>
+        <button type="button" data-tc-open data-kind="subject" data-class="{{ u.class_id }}" data-subject="{{ u.subject_id }}" data-department="{{ u.department }}"
+          data-what="{{ u.subject_name }} in {{ u.class_name }}{% if u.department %} ({{ u.department }}){% endif %}">Assign</button></span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 </div>
-<div class="ac-empty" data-tc-none hidden><strong>Nothing matches</strong>Clear the search, or untick “Only what needs a teacher”.</div>
+<div class="ac-empty" data-tc-none hidden><strong>Nothing matches</strong>Clear the search.</div>
+
+{# ---------------------------------------------------------------- the one pop-up: remove, replace or assign #}
+<dialog class="ac-modal tc2-dialog" data-tc-dialog aria-labelledby="tcDlgTitle">
+  <button type="button" class="ac-modal__close" data-tc-close aria-label="Close">×</button>
+  <div class="ac-modal__body">
+    <div class="ac-modal-head"><h2 id="tcDlgTitle"></h2><p data-tc-now></p></div>
+    <form method="post" action="{{ url_for('admin_school_teaching_change') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="kind"><input type="hidden" name="class_id"><input type="hidden" name="subdivision_id">
+      <input type="hidden" name="subject_id"><input type="hidden" name="department"><input type="hidden" name="from_admin">
+      <div class="ac-field" data-tc-pick-field hidden><label for="tcPick">Subject</label>
+        <select id="tcPick" data-tc-pick>
+          {% for u in untaught %}<option value="{{ u.class_id }}|{{ u.subject_id }}|{{ u.department }}">{{ u.subject_name }} · {{ u.class_name }}{% if u.department %} · {{ u.department }}{% endif %}</option>{% endfor %}
+        </select></div>
+      <div class="ac-field" data-tc-to-field><label for="tcTo" data-tc-to-label>Teacher</label>
+        <select id="tcTo" name="to_admin" data-tc-to>
+          <option value="" data-tc-nobody>Nobody: just remove them</option>
+          {% for t in teachers %}<option value="{{ t.id }}">{{ t.name }}{% if t.level %} · {{ t.level }}{% endif %}</option>{% endfor %}
+        </select></div>
+      <div class="ac-form-foot"><span class="ac-grow"></span>
+        <button type="button" class="ac-btn" data-tc-close>Cancel</button>
+        <button type="submit" class="ac-btn ac-btn--primary" data-tc-save>Save</button></div>
+    </form>
+  </div>
+</dialog>
 </div>
 <script nonce="{{ csp_nonce() }}">
-(function(){
-  var root=document.querySelector('[data-tc]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
-  var gaps=root.querySelector('[data-tc-gaps]'), find=root.querySelector('[data-tc-find]'), none=root.querySelector('[data-tc-none]');
-  var radios=root.querySelectorAll('input[name=tc-view]'), view='classes';
-  function apply(){
-    var q=(find.value||'').trim().toLowerCase(), n=0;
-    root.querySelectorAll('[data-tc-view]').forEach(function(p){ p.hidden=p.dataset.tcView!==view; });
-    root.querySelectorAll('[data-tc-view="'+view+'"] [data-tc-item]').forEach(function(el){
-      var ok=(!gaps.checked||el.dataset.gap==='1')&&(!q||el.dataset.search.indexOf(q)!==-1); el.hidden=!ok; if(ok) n++; });
-    none.hidden=n!==0;
-    try{ sessionStorage.setItem('tc-view',view); }catch(e){}
+(function () {
+  var root = document.querySelector('[data-tc]:not([data-ready])'); if (!root) return; root.setAttribute('data-ready', '1');
+  var find = root.querySelector('[data-tc-find]'), none = root.querySelector('[data-tc-none]'), tab = root.dataset.tab;
+  function show() {
+    var q = (find.value || '').trim().toLowerCase(), n = 0;
+    root.querySelectorAll('[data-tc-tab]').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tcTab === tab ? 'true' : 'false'); });
+    root.querySelectorAll('[data-tc-panel]').forEach(function (p) { p.hidden = p.dataset.tcPanel !== tab; });
+    root.querySelectorAll('[data-tc-panel="' + tab + '"] [data-tc-item]').forEach(function (el) {
+      var ok = !q || el.dataset.search.indexOf(q) !== -1; el.hidden = !ok; if (ok) n++; });
+    none.hidden = n !== 0 || !q;
+    try { history.replaceState(null, '', location.pathname + (tab === 'subjects' ? '?tab=subjects' : '')); } catch (e) {}
   }
-  radios.forEach(function(r){ r.addEventListener('change',function(){ view=r.value; apply(); }); });
-  try{ var saved=sessionStorage.getItem('tc-view'); if(saved==='teachers'){ view=saved; radios.forEach(function(r){ r.checked=r.value===view; }); } }catch(e){}
-  gaps.addEventListener('change',apply); find.addEventListener('input',apply); apply();
+  root.querySelectorAll('[data-tc-tab]').forEach(function (b) { b.addEventListener('click', function () { tab = b.dataset.tcTab; show(); }); });
+  find.addEventListener('input', show);
+
+  // The pop-up: one change at a time.
+  var dlg = root.querySelector('[data-tc-dialog]'), form = dlg.querySelector('form'), to = dlg.querySelector('[data-tc-to]');
+  var nobody = dlg.querySelector('[data-tc-nobody]');
+  var pickField = dlg.querySelector('[data-tc-pick-field]'), pick = dlg.querySelector('[data-tc-pick]');
+  var toField = dlg.querySelector('[data-tc-to-field]'), adding = false, saveBtn = dlg.querySelector('[data-tc-save]');
+  function mode(add) {
+    adding = add; pickField.hidden = !add; toField.hidden = add; pick.required = add; saveBtn.disabled = false;
+  }
+  // + Subject: one more subject for this teacher, from those nobody teaches yet.
+  root.querySelectorAll('[data-tc-add]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      mode(true);
+      form.elements.kind.value = 'subject'; form.elements.from_admin.value = ''; form.elements.subdivision_id.value = '';
+      to.required = false; nobody.hidden = true; nobody.disabled = true;
+      Array.prototype.forEach.call(to.options, function (o) { o.hidden = false; o.disabled = false; });
+      to.value = b.dataset.to;
+      dlg.querySelector('#tcDlgTitle').textContent = 'Give ' + b.dataset.toName + ' another subject';
+      dlg.querySelector('[data-tc-now]').textContent = 'Only subjects nobody teaches yet are listed (in SSS, by department).';
+      dlg.showModal(); pick.focus();
+    });
+  });
+  form.addEventListener('submit', function () {
+    if (!adding) return;
+    var parts = (pick.value || '').split('|');
+    form.elements.class_id.value = parts[0] || ''; form.elements.subject_id.value = parts[1] || ''; form.elements.department.value = parts[2] || '';
+  });
+  root.querySelectorAll('[data-tc-open]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      mode(false);
+      var d = b.dataset, replacing = !!d.from;
+      form.elements.kind.value = d.kind; form.elements.class_id.value = d['class'] || '';
+      form.elements.subdivision_id.value = d.subdivision || ''; form.elements.subject_id.value = d.subject || '';
+      form.elements.department.value = d.department || ''; form.elements.from_admin.value = d.from || '';
+      dlg.querySelector('#tcDlgTitle').textContent = (replacing ? 'Replace or remove: ' : 'Assign: ') + d.what;
+      dlg.querySelector('[data-tc-now]').textContent = replacing ? 'Now: ' + d.fromName + '. Choose who takes over, or nobody.' : 'Nobody yet. Choose the teacher.';
+      dlg.querySelector('[data-tc-to-label]').textContent = replacing ? 'Replace with' : 'Teacher';
+      Array.prototype.forEach.call(to.options, function (o) { if (o.value) { var self = o.value === d.from; o.hidden = self; o.disabled = self; } });
+      var first = (Array.prototype.find.call(to.options, function (o) { return o.value && !o.disabled; }) || {}).value || '';
+      // Assigning with nobody to choose from: say so, and nothing can be saved.
+      var stuck = !replacing && !first;
+      nobody.textContent = stuck ? 'No teacher you can assign yet' : 'Nobody: just remove them';
+      nobody.hidden = !(replacing || stuck); nobody.disabled = !replacing;
+      if (stuck) dlg.querySelector('[data-tc-now]').textContent = 'Give a member of staff the Class Teacher or Subject Teacher role on their staff record first.';
+      to.value = replacing ? '' : first;
+      to.required = !replacing; saveBtn.disabled = stuck;
+      dlg.showModal(); to.focus();
+    });
+  });
+  dlg.querySelectorAll('[data-tc-close]').forEach(function (b) { b.addEventListener('click', function () { dlg.close(); }); });
+  show();
 })();
 </script>
 {% endblock %}
