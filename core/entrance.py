@@ -8,6 +8,8 @@ single blueprint package since no one domain owns it.
 """
 
 import base64
+import functools
+import hashlib
 import json
 import mimetypes
 import os
@@ -28,7 +30,7 @@ from models import (
 from control_plane import config
 from core.db_helpers import all_rows, insert_stmt, obj, one, one_scalar, tuples, _flatten
 from core.marks import total as total_marks
-from core.storage import data_dir, generated_dir, list_data_names, read_data_text, read_upload_bytes, upload_exists
+from core.storage import BASE, data_dir, generated_dir, list_data_names, read_data_text, read_upload_bytes, upload_exists
 
 
 def _answers_for_attempt(aid):
@@ -676,17 +678,45 @@ def _current_exam_bank_ids():
                                  .where(EntranceBankConfig.session_id == current['id']))}
 
 
+PRACTICE_SOURCES = ('pool', 'last_session', 'custom')
+PRACTICE_MAX_QUESTIONS = 100      # one attempt's question keys ride in the signed session cookie
+PRACTICE_BANKS_DIR = os.path.join(BASE, 'practice_banks')
+
+
+@functools.lru_cache(maxsize=None)
+def builtin_practice_bank(entry_group, subject):
+    """The platform's built-in practice questions for one class and subject (practice_banks/, built by
+    tools/build_practice_banks.py), or None. Shipped with the app and read-only: the same for every school, never an
+    examination paper, read once per process."""
+    if entry_group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS:
+        return None
+    try:
+        with open(os.path.join(PRACTICE_BANKS_DIR, f'practice_{entry_group}_{subject}.json'), encoding='utf-8') as f:
+            found = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(found, dict) or not isinstance(found.get('questions'), list):
+        return None
+    return found
+
+
+def _practice_key(bank_id, question_id):
+    """A short key for one pool question, the same on every request: one attempt's keys are kept in the session."""
+    return hashlib.sha256(f'{bank_id}\x00{question_id}'.encode()).hexdigest()[:10]
+
+
 def entrance_practice_setting(entry_group, subject):
     """The administrator's choice for one entry class and subject, as a dict.
 
-    With nothing chosen, a subject serves the last session's paper.
+    With nothing chosen, a subject serves its question pool: every earlier session's paper (see
+    entrance_practice_paper).
     """
     row = db.session.scalars(select(EntrancePracticeSetting).where(
         EntrancePracticeSetting.entry_group == entry_group,
         EntrancePracticeSetting.subject == subject)).first()
     if not row:
-        return {'source': 'last_session', 'bank_id': None, 'questions_to_serve': None}
-    return {'source': row['source'] or 'last_session', 'bank_id': row['bank_id'],
+        return {'source': 'pool', 'bank_id': None, 'questions_to_serve': None}
+    return {'source': row['source'] if row['source'] in PRACTICE_SOURCES else 'pool', 'bank_id': row['bank_id'],
             'questions_to_serve': row['questions_to_serve']}
 
 
@@ -710,27 +740,86 @@ def _last_session_bank(entry_group, subject, protected):
     return None
 
 
+def _earlier_session_banks(entry_group, subject, protected):
+    """``[(bank_id, session_name, questions served)]`` for every earlier session's paper for this class and
+    subject, newest first, each bank once. A bank the current session uses is never among them."""
+    current = _school_current_session()
+    stmt = (select(EntranceBankConfig, AcademicSession.name.label('session_name'))
+            .join(AcademicSession, AcademicSession.id == EntranceBankConfig.session_id)
+            .where(EntranceBankConfig.entry_group == entry_group, EntranceBankConfig.subject == subject))
+    if current:
+        stmt = stmt.where(EntranceBankConfig.session_id != current['id'])
+    found, seen = [], set()
+    for row in all_rows(stmt.order_by(EntranceBankConfig.session_id.desc(), EntranceBankConfig.active.desc(),
+                                      EntranceBankConfig.id.desc())):
+        cfg = _flatten(row, 'EntranceBankConfig', 'session_name')
+        if cfg['bank_id'] in protected or cfg['bank_id'] in seen:
+            continue
+        seen.add(cfg['bank_id'])
+        found.append((cfg['bank_id'], cfg['session_name'], int(cfg['questions_to_serve'] or 0)))
+    return found
+
+
 def entrance_practice_paper(entry_group, subject):
     """What a practice taker is served for one class and subject, or None if nothing is set up.
 
-    Returns ``{'bank': <bank>, 'count': n, 'label': 'where the questions come from'}``. The
-    count is how many questions one sitting draws at random from the whole bank.
+    Returns ``{'bank': {'questions': [...], 'duration_seconds': s}, 'count': n, 'pool': size, 'label': 'where the
+    questions come from'}``. One sitting draws ``count`` questions at random from the whole ``pool``.
+
+    The source is the school's choice (entrance_practice_setting):
+      * ``pool`` (the default): every earlier session's paper for this class and subject, together with the school's
+        practice bank if one is chosen and the platform's built-in practice questions (builtin_practice_bank), each
+        question once. The bigger the pool, the less a retake repeats.
+      * ``last_session``: only the most recent earlier session's paper.
+      * ``custom``: only the school's practice bank.
+    The current session's papers are never in it, so practice cannot reveal an examination not yet sat. Each question
+    carries a short ``key`` (from its bank and its id), unique across the pool. The time allowed keeps the real paper's time per
+    question.
     """
     setting = entrance_practice_setting(entry_group, subject)
     protected = _current_exam_bank_ids()
-    if setting['source'] == 'custom':
-        bank_id = setting['bank_id']
-        if not bank_id or bank_id in protected:
-            return None
-        found, wanted, label = bank(bank_id), setting['questions_to_serve'], 'Practice questions set by the school'
-    else:
-        last = _last_session_bank(entry_group, subject, protected)
-        if not last:
-            return None
-        bank_id, session_name, wanted = last
-        found, label = bank(bank_id), f'Questions from the {session_name} entrance examination'
-    questions = (found or {}).get('questions') or []
-    if not questions:
+    sources = []                    # (bank, how many its examination served, its session or None)
+    if setting['source'] in ('pool', 'last_session'):
+        earlier = _earlier_session_banks(entry_group, subject, protected)
+        if setting['source'] == 'last_session':
+            earlier = earlier[:1]
+        sources += [(bank(bid), served, session_name) for bid, session_name, served in earlier]
+    if setting['source'] in ('pool', 'custom') and setting['bank_id'] and setting['bank_id'] not in protected:
+        sources.append((bank(setting['bank_id']), 0, None))
+    builtin = builtin_practice_bank(entry_group, subject) if setting['source'] == 'pool' else None
+    if builtin:
+        sources.append((builtin, int(builtin.get('questions_to_serve') or 0), None))
+    pool, texts, keys = [], set(), set()
+    for found, _, _ in sources:
+        for q in (found or {}).get('questions') or []:
+            text = ' '.join(str(q.get('text', '')).split()).casefold()
+            key = _practice_key(found.get('id'), q.get('id'))
+            if not text or text in texts or key in keys or not q.get('options'):
+                continue
+            texts.add(text)
+            keys.add(key)
+            pool.append(dict(q, key=key))
+    if not pool:
         return None
-    count = min(len(questions), int(wanted or PRACTICE_DEFAULT_QUESTIONS))
-    return {'bank': found, 'count': count, 'label': label}
+    papers = [(found, served, session_name) for found, served, session_name in sources if found and session_name]
+    wanted = setting['questions_to_serve'] or (papers[0][1] if papers else 0) or PRACTICE_DEFAULT_QUESTIONS
+    count = min(len(pool), int(wanted))
+    # The time allowed: the real paper's time for each question, times the questions in a sitting.
+    timed = next((f for f, _, _ in sources if f and f.get('duration_seconds')), None)
+    per_question = 0.0
+    if timed:
+        served = next((s for f, s, _ in sources if f is timed and s), 0) or len(timed.get('questions') or []) or 1
+        per_question = float(timed['duration_seconds']) / served
+    sessions = [s for _, _, s in sources if s]
+    own = bool(setting['bank_id']) and any(f and f is not builtin and not s for f, _, s in sources)
+    if setting['source'] == 'custom':
+        label = 'Practice questions set by the school'
+    elif setting['source'] == 'last_session':
+        label = f'Questions from the {sessions[0]} entrance examination' if sessions else 'Practice questions'
+    else:
+        span = sessions[0] if len(sessions) == 1 else (f'{sessions[-1]} to {sessions[0]}' if sessions else '')
+        parts = (([f'past entrance examinations ({span})'] if span else []) + (['the school\'s practice questions'] if own else [])
+                 + (['ready-made practice questions'] if builtin else []))
+        label = f'A pool of {len(pool)} questions: ' + ', '.join(parts[:-1]) + (' and ' if len(parts) > 1 else '') + parts[-1]
+    return {'bank': {'questions': pool, 'duration_seconds': round(per_question * count)}, 'count': count,
+            'pool': len(pool), 'label': label}

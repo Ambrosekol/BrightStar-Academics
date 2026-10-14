@@ -1,0 +1,3481 @@
+{
+ "id": "practice_year10_english",
+ "name": "English Language - entrance practice into Year 10",
+ "level": "Year 10",
+ "entry_group": "year10",
+ "subject": "English Language",
+ "duration_seconds": 3600,
+ "questions_to_serve": 25,
+ "version": "1.0",
+ "source_status": "platform_practice",
+ "questions": [
+  {
+   "id": 1,
+   "text": "Choose the word nearest in meaning to \"abundant\".",
+   "options": [
+    "gentle",
+    "candid",
+    "average",
+    "plentiful"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "Choose the word nearest in meaning to \"candid\".",
+   "options": [
+    "tranquil",
+    "unfriendly",
+    "frank",
+    "imminent"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "Choose the word nearest in meaning to \"diligent\".",
+   "options": [
+    "hardworking",
+    "eloquent",
+    "hazardous",
+    "frugal"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "Choose the word nearest in meaning to \"frugal\".",
+   "options": [
+    "candid",
+    "tough",
+    "vacant",
+    "thrifty"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "Choose the word nearest in meaning to \"hostile\".",
+   "options": [
+    "average",
+    "eloquent",
+    "unfriendly",
+    "jovial"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "Choose the word nearest in meaning to \"lethargic\".",
+   "options": [
+    "wary",
+    "showy",
+    "unclear",
+    "sluggish"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "Choose the word nearest in meaning to \"obstinate\".",
+   "options": [
+    "scarce",
+    "diligent",
+    "stubborn",
+    "weak"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "Choose the word nearest in meaning to \"ponder\".",
+   "options": [
+    "placid",
+    "consider",
+    "deceive",
+    "authentic"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "Choose the word nearest in meaning to \"scarce\".",
+   "options": [
+    "trivial",
+    "tough",
+    "hardworking",
+    "rare"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "Choose the word nearest in meaning to \"tranquil\".",
+   "options": [
+    "kind",
+    "frugal",
+    "calm",
+    "wise"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "Choose the word nearest in meaning to \"vacant\".",
+   "options": [
+    "unimportant",
+    "empty",
+    "watchful",
+    "placid"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "Choose the word nearest in meaning to \"verbose\".",
+   "options": [
+    "vigilant",
+    "rare",
+    "conceal",
+    "wordy"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "Choose the word nearest in meaning to \"wary\".",
+   "options": [
+    "affluent",
+    "cautious",
+    "unfriendly",
+    "showy"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "Choose the word nearest in meaning to \"eminent\".",
+   "options": [
+    "enthusiastic",
+    "distinguished",
+    "conceal",
+    "diminish"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "Choose the word nearest in meaning to \"benevolent\".",
+   "options": [
+    "cautious",
+    "kind",
+    "ponder",
+    "peaceful"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "Choose the word nearest in meaning to \"ambiguous\".",
+   "options": [
+    "unclear",
+    "reduce",
+    "empty",
+    "obstinate"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "Choose the word nearest in meaning to \"affluent\".",
+   "options": [
+    "wealthy",
+    "clear",
+    "plentiful",
+    "reduce"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Choose the word nearest in meaning to \"commence\".",
+   "options": [
+    "hide",
+    "begin",
+    "plentiful",
+    "conceal"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "Choose the word nearest in meaning to \"conceal\".",
+   "options": [
+    "commence",
+    "sluggish",
+    "hide",
+    "distinguished"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "Choose the word nearest in meaning to \"deceive\".",
+   "options": [
+    "beginner",
+    "careful",
+    "serene",
+    "mislead"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "Choose the word nearest in meaning to \"diminish\".",
+   "options": [
+    "jovial",
+    "reduce",
+    "obsolete",
+    "watchful"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "Choose the word nearest in meaning to \"eloquent\".",
+   "options": [
+    "boring",
+    "average",
+    "articulate",
+    "gentle"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "Choose the word nearest in meaning to \"feeble\".",
+   "options": [
+    "weak",
+    "gentle",
+    "unimportant",
+    "beginner"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "Choose the word nearest in meaning to \"hazardous\".",
+   "options": [
+    "authentic",
+    "resilient",
+    "dangerous",
+    "imminent"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "Choose the word nearest in meaning to \"imminent\".",
+   "options": [
+    "obsolete",
+    "mediocre",
+    "impending",
+    "sluggish"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "Choose the word nearest in meaning to \"jovial\".",
+   "options": [
+    "calm",
+    "zealous",
+    "cheerful",
+    "lucid"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Choose the word nearest in meaning to \"meticulous\".",
+   "options": [
+    "lucid",
+    "ponder",
+    "careful",
+    "clear"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "Choose the word nearest in meaning to \"novice\".",
+   "options": [
+    "ambiguous",
+    "unimportant",
+    "beginner",
+    "weak"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "Choose the word nearest in meaning to \"obsolete\".",
+   "options": [
+    "frugal",
+    "benevolent",
+    "tranquil",
+    "outdated"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "Choose the word nearest in meaning to \"prudent\".",
+   "options": [
+    "kind",
+    "wise",
+    "hide",
+    "commence"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Choose the word nearest in meaning to \"reluctant\".",
+   "options": [
+    "boring",
+    "unwilling",
+    "showy",
+    "wealthy"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "Choose the word nearest in meaning to \"serene\".",
+   "options": [
+    "mislead",
+    "enthusiastic",
+    "peaceful",
+    "diligent"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Choose the word nearest in meaning to \"tedious\".",
+   "options": [
+    "vacant",
+    "wordy",
+    "boring",
+    "abundant"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "Choose the word nearest in meaning to \"vigilant\".",
+   "options": [
+    "frugal",
+    "watchful",
+    "genuine",
+    "ponder"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Choose the word nearest in meaning to \"zealous\".",
+   "options": [
+    "average",
+    "enthusiastic",
+    "unwilling",
+    "cautious"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "Choose the word nearest in meaning to \"authentic\".",
+   "options": [
+    "genuine",
+    "careful",
+    "scarce",
+    "cheerful"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Choose the word nearest in meaning to \"lucid\".",
+   "options": [
+    "clear",
+    "gentle",
+    "consider",
+    "obstinate"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Choose the word nearest in meaning to \"mediocre\".",
+   "options": [
+    "serene",
+    "zealous",
+    "average",
+    "unwilling"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Choose the word nearest in meaning to \"ostentatious\".",
+   "options": [
+    "showy",
+    "reluctant",
+    "average",
+    "vacant"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Choose the word nearest in meaning to \"placid\".",
+   "options": [
+    "wary",
+    "trivial",
+    "gentle",
+    "frank"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Choose the word nearest in meaning to \"resilient\".",
+   "options": [
+    "stubborn",
+    "hostile",
+    "enthusiastic",
+    "tough"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Choose the word nearest in meaning to \"trivial\".",
+   "options": [
+    "consider",
+    "impending",
+    "enthusiastic",
+    "unimportant"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Choose the word opposite in meaning to \"generous\".",
+   "options": [
+    "retreat",
+    "treacherous",
+    "scarcity",
+    "mean"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Choose the word opposite in meaning to \"optimistic\".",
+   "options": [
+    "fragile",
+    "pessimistic",
+    "literate",
+    "acquit"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Choose the word opposite in meaning to \"ancient\".",
+   "options": [
+    "reckless",
+    "modern",
+    "acquit",
+    "fake"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 46,
+   "text": "Choose the word opposite in meaning to \"artificial\".",
+   "options": [
+    "import",
+    "natural",
+    "temporary",
+    "arrogant"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 47,
+   "text": "Choose the word opposite in meaning to \"temporary\".",
+   "options": [
+    "permanent",
+    "defeat",
+    "acquit",
+    "lenient"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 48,
+   "text": "Choose the word opposite in meaning to \"victory\".",
+   "options": [
+    "mean",
+    "voluntary",
+    "defeat",
+    "permanent"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 49,
+   "text": "Choose the word opposite in meaning to \"guilty\".",
+   "options": [
+    "innocent",
+    "internal",
+    "praise",
+    "exclude"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 50,
+   "text": "Choose the word opposite in meaning to \"praise\".",
+   "options": [
+    "criticise",
+    "mean",
+    "cautious",
+    "contract"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 51,
+   "text": "Choose the word opposite in meaning to \"expand\".",
+   "options": [
+    "affirm",
+    "genuine",
+    "contract",
+    "barren"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 52,
+   "text": "Choose the word opposite in meaning to \"maximum\".",
+   "options": [
+    "modern",
+    "minimum",
+    "rural",
+    "acquit"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 53,
+   "text": "Choose the word opposite in meaning to \"ascend\".",
+   "options": [
+    "arrogant",
+    "literate",
+    "descend",
+    "maximum"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 54,
+   "text": "Choose the word opposite in meaning to \"voluntary\".",
+   "options": [
+    "compulsory",
+    "exclude",
+    "loyal",
+    "reject"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 55,
+   "text": "Choose the word opposite in meaning to \"import\".",
+   "options": [
+    "export",
+    "forbid",
+    "reveal",
+    "ignorance"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 56,
+   "text": "Choose the word opposite in meaning to \"rural\".",
+   "options": [
+    "reveal",
+    "urban",
+    "optional",
+    "victory"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 57,
+   "text": "Choose the word opposite in meaning to \"transparent\".",
+   "options": [
+    "temporary",
+    "fake",
+    "innocent",
+    "opaque"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 58,
+   "text": "Choose the word opposite in meaning to \"superior\".",
+   "options": [
+    "criticise",
+    "inferior",
+    "illiterate",
+    "lenient"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 59,
+   "text": "Choose the word opposite in meaning to \"humble\".",
+   "options": [
+    "arrogant",
+    "vertical",
+    "innocent",
+    "rare"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 60,
+   "text": "Choose the word opposite in meaning to \"reveal\".",
+   "options": [
+    "illiterate",
+    "acquit",
+    "treacherous",
+    "conceal"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 61,
+   "text": "Choose the word opposite in meaning to \"frequent\".",
+   "options": [
+    "include",
+    "optional",
+    "rare",
+    "strict"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 62,
+   "text": "Choose the word opposite in meaning to \"vertical\".",
+   "options": [
+    "innocent",
+    "attract",
+    "maximum",
+    "horizontal"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 63,
+   "text": "Choose the word opposite in meaning to \"include\".",
+   "options": [
+    "descend",
+    "exclude",
+    "strict",
+    "opaque"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 64,
+   "text": "Choose the word opposite in meaning to \"majority\".",
+   "options": [
+    "ancient",
+    "minority",
+    "reveal",
+    "vertical"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 65,
+   "text": "Choose the word opposite in meaning to \"profit\".",
+   "options": [
+    "criticise",
+    "external",
+    "modern",
+    "loss"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 66,
+   "text": "Choose the word opposite in meaning to \"attract\".",
+   "options": [
+    "repel",
+    "loyal",
+    "compulsory",
+    "ascend"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 67,
+   "text": "Choose the word opposite in meaning to \"external\".",
+   "options": [
+    "internal",
+    "treacherous",
+    "import",
+    "loss"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 68,
+   "text": "Choose the word opposite in meaning to \"genuine\".",
+   "options": [
+    "strict",
+    "fake",
+    "treacherous",
+    "frequent"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 69,
+   "text": "Choose the word opposite in meaning to \"approve\".",
+   "options": [
+    "pessimistic",
+    "reject",
+    "cautious",
+    "affirm"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 70,
+   "text": "Choose the word opposite in meaning to \"cautious\".",
+   "options": [
+    "abundance",
+    "include",
+    "reckless",
+    "rare"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 71,
+   "text": "Choose the word opposite in meaning to \"scarcity\".",
+   "options": [
+    "guilty",
+    "fertile",
+    "abundance",
+    "cautious"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 72,
+   "text": "Choose the word opposite in meaning to \"allow\".",
+   "options": [
+    "fake",
+    "internal",
+    "forbid",
+    "rural"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 73,
+   "text": "Choose the word opposite in meaning to \"advance\".",
+   "options": [
+    "retreat",
+    "treacherous",
+    "modern",
+    "attract"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 74,
+   "text": "Choose the word opposite in meaning to \"barren\".",
+   "options": [
+    "loss",
+    "loyal",
+    "fertile",
+    "fake"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 75,
+   "text": "Choose the word opposite in meaning to \"acquit\".",
+   "options": [
+    "forbid",
+    "genuine",
+    "convict",
+    "defeat"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 76,
+   "text": "Choose the word opposite in meaning to \"lenient\".",
+   "options": [
+    "acquit",
+    "strict",
+    "profit",
+    "pessimistic"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 77,
+   "text": "Choose the word opposite in meaning to \"fragile\".",
+   "options": [
+    "include",
+    "advance",
+    "acquit",
+    "sturdy"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 78,
+   "text": "Choose the word opposite in meaning to \"ignorance\".",
+   "options": [
+    "reckless",
+    "majority",
+    "ascend",
+    "knowledge"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 79,
+   "text": "Choose the word opposite in meaning to \"literate\".",
+   "options": [
+    "vertical",
+    "illiterate",
+    "pessimistic",
+    "optional"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 80,
+   "text": "Choose the word opposite in meaning to \"optional\".",
+   "options": [
+    "barren",
+    "mandatory",
+    "contract",
+    "arrogant"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 81,
+   "text": "Choose the word opposite in meaning to \"affirm\".",
+   "options": [
+    "treacherous",
+    "compulsory",
+    "strict",
+    "deny"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 82,
+   "text": "Choose the word opposite in meaning to \"loyal\".",
+   "options": [
+    "include",
+    "abundance",
+    "compulsory",
+    "treacherous"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 83,
+   "text": "Which is the past participle of \"go\"? (They have ___.)",
+   "options": [
+    "went",
+    "gone",
+    "goed",
+    "going"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 84,
+   "text": "Which is the past participle of \"see\"? (They have ___.)",
+   "options": [
+    "saw",
+    "seeing",
+    "seen",
+    "seeed"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 85,
+   "text": "Which is the past participle of \"eat\"? (They have ___.)",
+   "options": [
+    "ate",
+    "eaten",
+    "eating",
+    "eated"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 86,
+   "text": "Which is the past participle of \"write\"? (They have ___.)",
+   "options": [
+    "written",
+    "writing",
+    "wrote",
+    "writeed"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 87,
+   "text": "Which is the past participle of \"take\"? (They have ___.)",
+   "options": [
+    "taken",
+    "taking",
+    "took",
+    "takeed"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 88,
+   "text": "Which is the past participle of \"give\"? (They have ___.)",
+   "options": [
+    "giveed",
+    "given",
+    "giving",
+    "gave"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 89,
+   "text": "Which is the past participle of \"run\"? (They have ___.)",
+   "options": [
+    "running",
+    "ran",
+    "runed",
+    "run"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 90,
+   "text": "Which is the past participle of \"swim\"? (They have ___.)",
+   "options": [
+    "swimming",
+    "swum",
+    "swimed",
+    "swam"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 91,
+   "text": "Which is the past participle of \"sing\"? (They have ___.)",
+   "options": [
+    "sung",
+    "singing",
+    "sang",
+    "singed"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 92,
+   "text": "Which is the past participle of \"drink\"? (They have ___.)",
+   "options": [
+    "drinking",
+    "drunk",
+    "drinked",
+    "drank"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 93,
+   "text": "Which is the past participle of \"begin\"? (They have ___.)",
+   "options": [
+    "begined",
+    "began",
+    "begun",
+    "beginning"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 94,
+   "text": "Which is the past participle of \"break\"? (They have ___.)",
+   "options": [
+    "breaking",
+    "broken",
+    "broke",
+    "breaked"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 95,
+   "text": "Which is the past participle of \"bring\"? (They have ___.)",
+   "options": [
+    "bringing",
+    "bring",
+    "brought",
+    "bringed"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 96,
+   "text": "Which is the past participle of \"buy\"? (They have ___.)",
+   "options": [
+    "buying",
+    "bought",
+    "buyed",
+    "buy"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 97,
+   "text": "Which is the past participle of \"catch\"? (They have ___.)",
+   "options": [
+    "catching",
+    "catched",
+    "caught",
+    "catch"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 98,
+   "text": "Which is the past participle of \"teach\"? (They have ___.)",
+   "options": [
+    "teaching",
+    "teached",
+    "taught",
+    "teach"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 99,
+   "text": "Which is the past participle of \"think\"? (They have ___.)",
+   "options": [
+    "thinking",
+    "thinked",
+    "think",
+    "thought"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 100,
+   "text": "Which is the past participle of \"fly\"? (They have ___.)",
+   "options": [
+    "flyed",
+    "flying",
+    "flew",
+    "flown"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 101,
+   "text": "Which is the past participle of \"grow\"? (They have ___.)",
+   "options": [
+    "growing",
+    "grew",
+    "grown",
+    "growed"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 102,
+   "text": "Which is the past participle of \"know\"? (They have ___.)",
+   "options": [
+    "knowing",
+    "knew",
+    "known",
+    "knowed"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 103,
+   "text": "Which is the past participle of \"throw\"? (They have ___.)",
+   "options": [
+    "throwing",
+    "throwed",
+    "thrown",
+    "threw"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 104,
+   "text": "Which is the past participle of \"draw\"? (They have ___.)",
+   "options": [
+    "drawed",
+    "drawn",
+    "drawing",
+    "drew"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 105,
+   "text": "Which is the past participle of \"drive\"? (They have ___.)",
+   "options": [
+    "driveed",
+    "driven",
+    "driving",
+    "drove"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 106,
+   "text": "Which is the past participle of \"ride\"? (They have ___.)",
+   "options": [
+    "riding",
+    "rideed",
+    "rode",
+    "ridden"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 107,
+   "text": "Which is the past participle of \"speak\"? (They have ___.)",
+   "options": [
+    "speaked",
+    "spoken",
+    "spoke",
+    "speaking"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 108,
+   "text": "Which is the past participle of \"steal\"? (They have ___.)",
+   "options": [
+    "stolen",
+    "stealed",
+    "stole",
+    "stealing"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 109,
+   "text": "Which is the past participle of \"choose\"? (They have ___.)",
+   "options": [
+    "chose",
+    "choosing",
+    "chooseed",
+    "chosen"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 110,
+   "text": "Which is the past participle of \"freeze\"? (They have ___.)",
+   "options": [
+    "froze",
+    "freezeed",
+    "frozen",
+    "freezing"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 111,
+   "text": "Which is the past participle of \"forget\"? (They have ___.)",
+   "options": [
+    "forgot",
+    "forgetting",
+    "forgotten",
+    "forgeted"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 112,
+   "text": "Which is the past participle of \"sit\"? (They have ___.)",
+   "options": [
+    "sitting",
+    "sited",
+    "sat",
+    "sit"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 113,
+   "text": "Which is the past participle of \"stand\"? (They have ___.)",
+   "options": [
+    "standing",
+    "stood",
+    "stand",
+    "standed"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 114,
+   "text": "Which is the past participle of \"sleep\"? (They have ___.)",
+   "options": [
+    "sleeping",
+    "sleeped",
+    "sleep",
+    "slept"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 115,
+   "text": "Which is the past participle of \"keep\"? (They have ___.)",
+   "options": [
+    "keep",
+    "kept",
+    "keeping",
+    "keeped"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 116,
+   "text": "Which is the past participle of \"feel\"? (They have ___.)",
+   "options": [
+    "felt",
+    "feel",
+    "feeling",
+    "feeled"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 117,
+   "text": "Which is the past participle of \"leave\"? (They have ___.)",
+   "options": [
+    "leaveed",
+    "leaving",
+    "left",
+    "leave"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 118,
+   "text": "Which is the past participle of \"lose\"? (They have ___.)",
+   "options": [
+    "loseed",
+    "losing",
+    "lose",
+    "lost"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 119,
+   "text": "Which is the past participle of \"meet\"? (They have ___.)",
+   "options": [
+    "meeting",
+    "meeted",
+    "meet",
+    "met"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 120,
+   "text": "Which is the past participle of \"send\"? (They have ___.)",
+   "options": [
+    "sent",
+    "send",
+    "sended",
+    "sending"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 121,
+   "text": "Which is the past participle of \"spend\"? (They have ___.)",
+   "options": [
+    "spending",
+    "spend",
+    "spent",
+    "spended"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 122,
+   "text": "Which is the past participle of \"build\"? (They have ___.)",
+   "options": [
+    "built",
+    "building",
+    "build",
+    "builded"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 123,
+   "text": "Which is the past participle of \"hold\"? (They have ___.)",
+   "options": [
+    "held",
+    "holding",
+    "hold",
+    "holded"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 124,
+   "text": "Which is the past participle of \"tell\"? (They have ___.)",
+   "options": [
+    "tell",
+    "telled",
+    "told",
+    "telling"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 125,
+   "text": "Which is the past participle of \"sell\"? (They have ___.)",
+   "options": [
+    "sold",
+    "selled",
+    "sell",
+    "selling"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 126,
+   "text": "Which is the past participle of \"find\"? (They have ___.)",
+   "options": [
+    "finding",
+    "found",
+    "finded",
+    "find"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 127,
+   "text": "Which is the past participle of \"fight\"? (They have ___.)",
+   "options": [
+    "fought",
+    "fighted",
+    "fighting",
+    "fight"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 128,
+   "text": "Which is the past participle of \"wear\"? (They have ___.)",
+   "options": [
+    "weared",
+    "worn",
+    "wearing",
+    "wore"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 129,
+   "text": "Which is the past participle of \"tear\"? (They have ___.)",
+   "options": [
+    "teared",
+    "tearing",
+    "tore",
+    "torn"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 130,
+   "text": "Which is the past participle of \"hide\"? (They have ___.)",
+   "options": [
+    "hideed",
+    "hiding",
+    "hidden",
+    "hid"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 131,
+   "text": "Which is the past participle of \"shake\"? (They have ___.)",
+   "options": [
+    "shaking",
+    "shakeed",
+    "shook",
+    "shaken"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 132,
+   "text": "Which is the past participle of \"rise\"? (They have ___.)",
+   "options": [
+    "risen",
+    "riseed",
+    "rising",
+    "rose"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 133,
+   "text": "Which is the past participle of \"fall\"? (They have ___.)",
+   "options": [
+    "falled",
+    "falling",
+    "fallen",
+    "fell"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 134,
+   "text": "Which is the past participle of \"blow\"? (They have ___.)",
+   "options": [
+    "blew",
+    "blown",
+    "blowed",
+    "blowing"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 135,
+   "text": "Which is the past participle of \"bite\"? (They have ___.)",
+   "options": [
+    "biting",
+    "bit",
+    "biteed",
+    "bitten"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 136,
+   "text": "Which is the past participle of \"weep\"? (They have ___.)",
+   "options": [
+    "wept",
+    "weeping",
+    "weep",
+    "weeped"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 137,
+   "text": "What is the plural of \"crisis\"?",
+   "options": [
+    "crisess",
+    "crisises",
+    "crisiss",
+    "crises"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 138,
+   "text": "What is the plural of \"analysis\"?",
+   "options": [
+    "analysises",
+    "analysess",
+    "analyses",
+    "analysiss"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 139,
+   "text": "What is the plural of \"criterion\"?",
+   "options": [
+    "criterions",
+    "criteria",
+    "criteriones",
+    "criterias"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 140,
+   "text": "What is the plural of \"phenomenon\"?",
+   "options": [
+    "phenomena",
+    "phenomenons",
+    "phenomenones",
+    "phenomenas"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 141,
+   "text": "What is the plural of \"stimulus\"?",
+   "options": [
+    "stimuli",
+    "stimulis",
+    "stimuluses",
+    "stimuluss"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 142,
+   "text": "What is the plural of \"thesis\"?",
+   "options": [
+    "thesess",
+    "theses",
+    "thesiss",
+    "thesises"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 143,
+   "text": "What is the plural of \"oasis\"?",
+   "options": [
+    "oases",
+    "oasess",
+    "oasiss",
+    "oasises"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 144,
+   "text": "What is the plural of \"axis\"?",
+   "options": [
+    "axess",
+    "axiss",
+    "axises",
+    "axes"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 145,
+   "text": "What is the plural of \"basis\"?",
+   "options": [
+    "basises",
+    "basess",
+    "basiss",
+    "bases"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 146,
+   "text": "What is the plural of \"mother-in-law\"?",
+   "options": [
+    "mother-in-laws",
+    "mother-in-lawes",
+    "mothers-in-laws",
+    "mothers-in-law"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 147,
+   "text": "What is the plural of \"passer-by\"?",
+   "options": [
+    "passers-by",
+    "passer-byes",
+    "passers-bys",
+    "passer-bys"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 148,
+   "text": "What is the plural of \"commander-in-chief\"?",
+   "options": [
+    "commanders-in-chiefs",
+    "commanders-in-chief",
+    "commander-in-chiefs",
+    "commander-in-chiefes"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 149,
+   "text": "What is the plural of \"nucleus\"?",
+   "options": [
+    "nucleuss",
+    "nuclei",
+    "nucleuses",
+    "nucleis"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 150,
+   "text": "What is the plural of \"bacterium\"?",
+   "options": [
+    "bacterias",
+    "bacteriumes",
+    "bacteriums",
+    "bacteria"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 151,
+   "text": "What is the plural of \"diagnosis\"?",
+   "options": [
+    "diagnosises",
+    "diagnosiss",
+    "diagnosess",
+    "diagnoses"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 152,
+   "text": "What is the plural of \"hypothesis\"?",
+   "options": [
+    "hypotheses",
+    "hypothesess",
+    "hypothesises",
+    "hypothesiss"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 153,
+   "text": "What is the plural of \"parenthesis\"?",
+   "options": [
+    "parenthesiss",
+    "parenthesess",
+    "parenthesises",
+    "parentheses"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 154,
+   "text": "What is the plural of \"alumnus\"?",
+   "options": [
+    "alumnuss",
+    "alumnuses",
+    "alumnis",
+    "alumni"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 155,
+   "text": "What is the plural of \"son-in-law\"?",
+   "options": [
+    "son-in-lawes",
+    "sons-in-laws",
+    "son-in-laws",
+    "sons-in-law"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 156,
+   "text": "What does the idiom \"let the cat out of the bag\" mean?",
+   "options": [
+    "to reveal a secret",
+    "to take on more than one can manage",
+    "a friend only in good times",
+    "at the last moment"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 157,
+   "text": "What does the idiom \"bury the hatchet\" mean?",
+   "options": [
+    "to face a difficulty boldly",
+    "to boast",
+    "to make peace",
+    "to start a conversation in an awkward situation"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 158,
+   "text": "What does the idiom \"a storm in a teacup\" mean?",
+   "options": [
+    "to be in trouble",
+    "a lot of fuss about something small",
+    "to accept the consequences of one's actions",
+    "to avoid taking sides"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 159,
+   "text": "What does the idiom \"burn the midnight oil\" mean?",
+   "options": [
+    "to agree with someone",
+    "to work or study late into the night",
+    "to take on more than one can manage",
+    "to speak plainly"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 160,
+   "text": "What does the idiom \"beat about the bush\" mean?",
+   "options": [
+    "to tease someone",
+    "to boast",
+    "a weak point",
+    "to avoid saying something directly"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 161,
+   "text": "What does the idiom \"a wet blanket\" mean?",
+   "options": [
+    "to avoid taking sides",
+    "something good that seemed bad at first",
+    "a person who spoils other people's fun",
+    "to face a difficulty boldly"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 162,
+   "text": "What does the idiom \"once in a blue moon\" mean?",
+   "options": [
+    "to avoid taking sides",
+    "very rarely",
+    "to tease someone",
+    "slightly unwell"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 163,
+   "text": "What does the idiom \"hit the nail on the head\" mean?",
+   "options": [
+    "a friend only in good times",
+    "to describe something exactly right",
+    "to reveal a secret",
+    "to avoid taking sides"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 164,
+   "text": "What does the idiom \"take the bull by the horns\" mean?",
+   "options": [
+    "to boast",
+    "a weak point",
+    "to face a difficulty boldly",
+    "only just; narrowly"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 165,
+   "text": "What does the idiom \"a piece of cake\" mean?",
+   "options": [
+    "a weak point",
+    "a person who is greatly loved",
+    "something very easy",
+    "to achieve two things with one action"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 166,
+   "text": "What does the idiom \"cry wolf\" mean?",
+   "options": [
+    "something very easy",
+    "to raise a false alarm",
+    "to achieve two things with one action",
+    "to avoid saying something directly"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 167,
+   "text": "What does the idiom \"turn over a new leaf\" mean?",
+   "options": [
+    "to avoid taking sides",
+    "to tease someone",
+    "to change one's behaviour for the better",
+    "a friend only in good times"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 168,
+   "text": "What does the idiom \"be in hot water\" mean?",
+   "options": [
+    "to agree with someone",
+    "at the last moment",
+    "to raise a false alarm",
+    "to be in trouble"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 169,
+   "text": "What does the idiom \"see eye to eye\" mean?",
+   "options": [
+    "to agree with someone",
+    "to be in trouble",
+    "something good that seemed bad at first",
+    "to change one's behaviour for the better"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 170,
+   "text": "What does the idiom \"pull someone's leg\" mean?",
+   "options": [
+    "slightly unwell",
+    "to tease someone",
+    "to be in trouble",
+    "something very easy"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 171,
+   "text": "What does the idiom \"a white elephant\" mean?",
+   "options": [
+    "to make peace",
+    "a person who spoils other people's fun",
+    "only just; narrowly",
+    "a costly possession that is of little use"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 172,
+   "text": "What does the idiom \"face the music\" mean?",
+   "options": [
+    "to speak plainly",
+    "to accept the consequences of one's actions",
+    "to become nervous about something planned",
+    "to reveal a secret"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 173,
+   "text": "What does the idiom \"the apple of one's eye\" mean?",
+   "options": [
+    "to describe something exactly right",
+    "something very easy",
+    "to make peace",
+    "a person who is greatly loved"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 174,
+   "text": "What does the idiom \"add fuel to the fire\" mean?",
+   "options": [
+    "to make a bad situation worse",
+    "a friend only in good times",
+    "to work or study late into the night",
+    "to avoid taking sides"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 175,
+   "text": "What does the idiom \"bite off more than one can chew\" mean?",
+   "options": [
+    "a weak point",
+    "very rarely",
+    "to start a conversation in an awkward situation",
+    "to take on more than one can manage"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 176,
+   "text": "What does the idiom \"call a spade a spade\" mean?",
+   "options": [
+    "to speak plainly",
+    "to boast",
+    "to accept the consequences of one's actions",
+    "a person who spoils other people's fun"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 177,
+   "text": "What does the idiom \"Achilles' heel\" mean?",
+   "options": [
+    "to start a conversation in an awkward situation",
+    "to make peace",
+    "a person who spoils other people's fun",
+    "a weak point"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 178,
+   "text": "What does the idiom \"at the eleventh hour\" mean?",
+   "options": [
+    "to achieve two things with one action",
+    "very rarely",
+    "at the last moment",
+    "a person who spoils other people's fun"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 179,
+   "text": "What does the idiom \"blow one's own trumpet\" mean?",
+   "options": [
+    "something good that seemed bad at first",
+    "slightly unwell",
+    "to boast",
+    "to change one's behaviour for the better"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 180,
+   "text": "What does the idiom \"break the ice\" mean?",
+   "options": [
+    "to start a conversation in an awkward situation",
+    "to face a difficulty boldly",
+    "to change one's behaviour for the better",
+    "only just; narrowly"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 181,
+   "text": "What does the idiom \"under the weather\" mean?",
+   "options": [
+    "to avoid saying something directly",
+    "a person who is greatly loved",
+    "to avoid taking sides",
+    "slightly unwell"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 182,
+   "text": "What does the idiom \"sit on the fence\" mean?",
+   "options": [
+    "a friend only in good times",
+    "slightly unwell",
+    "to avoid taking sides",
+    "very rarely"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 183,
+   "text": "What does the idiom \"a blessing in disguise\" mean?",
+   "options": [
+    "something good that seemed bad at first",
+    "at the last moment",
+    "to avoid saying something directly",
+    "to take on more than one can manage"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 184,
+   "text": "What does the idiom \"by the skin of one's teeth\" mean?",
+   "options": [
+    "to be in trouble",
+    "only just; narrowly",
+    "to boast",
+    "to start a conversation in an awkward situation"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 185,
+   "text": "What does the idiom \"kill two birds with one stone\" mean?",
+   "options": [
+    "to achieve two things with one action",
+    "to face a difficulty boldly",
+    "to be in trouble",
+    "to start a conversation in an awkward situation"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 186,
+   "text": "What does the idiom \"get cold feet\" mean?",
+   "options": [
+    "slightly unwell",
+    "to describe something exactly right",
+    "something very easy",
+    "to become nervous about something planned"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 187,
+   "text": "What does the idiom \"a fair-weather friend\" mean?",
+   "options": [
+    "at the last moment",
+    "a friend only in good times",
+    "a weak point",
+    "to accept the consequences of one's actions"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 188,
+   "text": "Name the figure of speech: \"The boy is as brave as a lion.\"",
+   "options": [
+    "Euphemism",
+    "Onomatopoeia",
+    "Simile",
+    "Hyperbole"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 189,
+   "text": "Name the figure of speech: \"Life is a journey.\"",
+   "options": [
+    "Personification",
+    "Alliteration",
+    "Metaphor",
+    "Euphemism"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 190,
+   "text": "Name the figure of speech: \"The wind whispered through the trees.\"",
+   "options": [
+    "Simile",
+    "Euphemism",
+    "Personification",
+    "Hyperbole"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 191,
+   "text": "Name the figure of speech: \"I have told you a million times.\"",
+   "options": [
+    "Hyperbole",
+    "Metaphor",
+    "Oxymoron",
+    "Simile"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 192,
+   "text": "Name the figure of speech: \"Peter Piper picked a peck of pickled peppers.\"",
+   "options": [
+    "Oxymoron",
+    "Metaphor",
+    "Alliteration",
+    "Hyperbole"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 193,
+   "text": "Name the figure of speech: \"The snake hissed at us.\"",
+   "options": [
+    "Euphemism",
+    "Oxymoron",
+    "Onomatopoeia",
+    "Hyperbole"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 194,
+   "text": "Name the figure of speech: \"It was an open secret.\"",
+   "options": [
+    "Personification",
+    "Hyperbole",
+    "Oxymoron",
+    "Metaphor"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 195,
+   "text": "Name the figure of speech: \"Her grandfather passed away last year.\"",
+   "options": [
+    "Onomatopoeia",
+    "Simile",
+    "Euphemism",
+    "Oxymoron"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 196,
+   "text": "Name the figure of speech: \"She sings like a nightingale.\"",
+   "options": [
+    "Onomatopoeia",
+    "Simile",
+    "Euphemism",
+    "Oxymoron"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 197,
+   "text": "Name the figure of speech: \"The classroom was a zoo.\"",
+   "options": [
+    "Onomatopoeia",
+    "Alliteration",
+    "Metaphor",
+    "Personification"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 198,
+   "text": "Name the figure of speech: \"The sun smiled down on us.\"",
+   "options": [
+    "Personification",
+    "Metaphor",
+    "Alliteration",
+    "Onomatopoeia"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 199,
+   "text": "Name the figure of speech: \"This bag weighs a ton.\"",
+   "options": [
+    "Personification",
+    "Alliteration",
+    "Hyperbole",
+    "Onomatopoeia"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 200,
+   "text": "Name the figure of speech: \"The clock went tick-tock.\"",
+   "options": [
+    "Personification",
+    "Euphemism",
+    "Hyperbole",
+    "Onomatopoeia"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 201,
+   "text": "Name the figure of speech: \"A deafening silence filled the room.\"",
+   "options": [
+    "Simile",
+    "Alliteration",
+    "Oxymoron",
+    "Hyperbole"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 202,
+   "text": "Name the figure of speech: \"His heart is made of stone.\"",
+   "options": [
+    "Metaphor",
+    "Oxymoron",
+    "Onomatopoeia",
+    "Alliteration"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 203,
+   "text": "Name the figure of speech: \"The leaves danced in the wind.\"",
+   "options": [
+    "Euphemism",
+    "Hyperbole",
+    "Onomatopoeia",
+    "Personification"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 204,
+   "text": "Name the figure of speech: \"He ran like the wind.\"",
+   "options": [
+    "Alliteration",
+    "Simile",
+    "Hyperbole",
+    "Oxymoron"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 205,
+   "text": "Name the figure of speech: \"Sally sells sea shells.\"",
+   "options": [
+    "Alliteration",
+    "Euphemism",
+    "Oxymoron",
+    "Metaphor"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 206,
+   "text": "Name the figure of speech: \"The door creaked open.\"",
+   "options": [
+    "Hyperbole",
+    "Onomatopoeia",
+    "Alliteration",
+    "Simile"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 207,
+   "text": "Name the figure of speech: \"I am so hungry I could eat a horse.\"",
+   "options": [
+    "Personification",
+    "Onomatopoeia",
+    "Hyperbole",
+    "Metaphor"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 208,
+   "text": "Choose the correct question tag: She is your sister, ___?",
+   "options": [
+    "is she",
+    "doesn't she",
+    "wasn't she",
+    "isn't she"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 209,
+   "text": "Choose the correct question tag: You can swim, ___?",
+   "options": [
+    "can't you",
+    "couldn't you",
+    "can you",
+    "don't you"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 210,
+   "text": "Choose the correct question tag: They didn't come, ___?",
+   "options": [
+    "do they",
+    "didn't they",
+    "were they",
+    "did they"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 211,
+   "text": "Choose the correct question tag: Let's go home, ___?",
+   "options": [
+    "don't we",
+    "will we",
+    "let we",
+    "shall we"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 212,
+   "text": "Choose the correct question tag: I am right, ___?",
+   "options": [
+    "am I",
+    "amn't I",
+    "isn't it",
+    "aren't I"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 213,
+   "text": "Choose the correct question tag: He has finished his work, ___?",
+   "options": [
+    "didn't he",
+    "isn't he",
+    "hasn't he",
+    "has he"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 214,
+   "text": "Choose the correct question tag: Nobody called me, ___?",
+   "options": [
+    "did they",
+    "didn't they",
+    "didn't he",
+    "did he"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 215,
+   "text": "Choose the correct question tag: Open the door, ___?",
+   "options": [
+    "do you",
+    "will you",
+    "won't it",
+    "shall you"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 216,
+   "text": "Choose the correct question tag: There is a problem, ___?",
+   "options": [
+    "wasn't there",
+    "is there",
+    "isn't there",
+    "isn't it"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 217,
+   "text": "Choose the correct question tag: She rarely sings, ___?",
+   "options": [
+    "doesn't she",
+    "did she",
+    "is she",
+    "does she"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 218,
+   "text": "Choose the correct question tag: You will come, ___?",
+   "options": [
+    "don't you",
+    "shan't you",
+    "will you",
+    "won't you"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 219,
+   "text": "Choose the correct question tag: We must leave now, ___?",
+   "options": [
+    "must we",
+    "mustn't we",
+    "don't we",
+    "shouldn't we"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 220,
+   "text": "Choose the correct question tag: He used to live here, ___?",
+   "options": [
+    "didn't he",
+    "usedn't he",
+    "doesn't he",
+    "did he"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 221,
+   "text": "Choose the correct question tag: Everyone was happy, ___?",
+   "options": [
+    "were they",
+    "wasn't he",
+    "wasn't it",
+    "weren't they"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 222,
+   "text": "Choose the correct question tag: It rained yesterday, ___?",
+   "options": [
+    "doesn't it",
+    "wasn't it",
+    "did it",
+    "didn't it"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 223,
+   "text": "Choose the correct question tag: They have never been here, ___?",
+   "options": [
+    "have they",
+    "are they",
+    "haven't they",
+    "did they"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 224,
+   "text": "Which is the correct spelling? (N…, 9 letters)",
+   "options": [
+    "neccesary",
+    "necessary",
+    "neccessary",
+    "necesary"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 225,
+   "text": "Which is the correct spelling? (R…, 7 letters)",
+   "options": [
+    "recieve",
+    "riceive",
+    "receeve",
+    "receive"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 226,
+   "text": "Which is the correct spelling? (S…, 8 letters)",
+   "options": [
+    "seperate",
+    "seprate",
+    "separate",
+    "separete"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 227,
+   "text": "Which is the correct spelling? (A…, 13 letters)",
+   "options": [
+    "accommodation",
+    "accommadation",
+    "accomodation",
+    "acommodation"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 228,
+   "text": "Which is the correct spelling? (E…, 9 letters)",
+   "options": [
+    "embbarrass",
+    "embarrass",
+    "embarras",
+    "embarass"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 229,
+   "text": "Which is the correct spelling? (O…, 10 letters)",
+   "options": [
+    "occurrance",
+    "ocurrence",
+    "occurence",
+    "occurrence"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 230,
+   "text": "Which is the correct spelling? (D…, 10 letters)",
+   "options": [
+    "definitely",
+    "definitly",
+    "defenitely",
+    "definately"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 231,
+   "text": "Which is the correct spelling? (G…, 10 letters)",
+   "options": [
+    "govermant",
+    "goverment",
+    "governmant",
+    "government"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 232,
+   "text": "Which is the correct spelling? (E…, 11 letters)",
+   "options": [
+    "enviroment",
+    "environmant",
+    "envirnoment",
+    "environment"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 233,
+   "text": "Which is the correct spelling? (F…, 8 letters)",
+   "options": [
+    "Febrary",
+    "Febuary",
+    "Feburary",
+    "February"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 234,
+   "text": "Which is the correct spelling? (W…, 9 letters)",
+   "options": [
+    "Wedensday",
+    "Wensday",
+    "Wednesday",
+    "Wednsday"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 235,
+   "text": "Which is the correct spelling? (L…, 7 letters)",
+   "options": [
+    "librery",
+    "libary",
+    "liberary",
+    "library"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 236,
+   "text": "Which is the correct spelling? (B…, 9 letters)",
+   "options": [
+    "beutiful",
+    "beautiful",
+    "beautifull",
+    "beautyful"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 237,
+   "text": "Which is the correct spelling? (B…, 8 letters)",
+   "options": [
+    "bussiness",
+    "busness",
+    "buisness",
+    "business"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 238,
+   "text": "Which is the correct spelling? (B…, 7 letters)",
+   "options": [
+    "beleive",
+    "believe",
+    "belive",
+    "beleave"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 239,
+   "text": "Which is the correct spelling? (C…, 8 letters)",
+   "options": [
+    "callendar",
+    "calendar",
+    "calendre",
+    "calandar"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 240,
+   "text": "Which is the correct spelling? (C…, 9 letters)",
+   "options": [
+    "commitee",
+    "comittee",
+    "committe",
+    "committee"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 241,
+   "text": "Which is the correct spelling? (C…, 10 letters)",
+   "options": [
+    "concience",
+    "conscience",
+    "consciense",
+    "conscence"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 242,
+   "text": "Which is the correct spelling? (G…, 9 letters)",
+   "options": [
+    "guarentee",
+    "guarrantee",
+    "garantee",
+    "guarantee"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 243,
+   "text": "Which is the correct spelling? (I…, 11 letters)",
+   "options": [
+    "independint",
+    "independant",
+    "indipendent",
+    "independent"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 244,
+   "text": "Which is the correct spelling? (K…, 9 letters)",
+   "options": [
+    "knowlege",
+    "knowledge",
+    "nowledge",
+    "knowladge"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 245,
+   "text": "Which is the correct spelling? (M…, 11 letters)",
+   "options": [
+    "maintanance",
+    "maintenance",
+    "maintenence",
+    "maintainance"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 246,
+   "text": "Which is the correct spelling? (M…, 10 letters)",
+   "options": [
+    "millenium",
+    "millenniun",
+    "milennium",
+    "millennium"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 247,
+   "text": "Which is the correct spelling? (O…, 8 letters)",
+   "options": [
+    "ocassion",
+    "occassion",
+    "occasion",
+    "ocasion"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 248,
+   "text": "Which is the correct spelling? (P…, 10 letters)",
+   "options": [
+    "parliament",
+    "parlament",
+    "parliamant",
+    "parliment"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 249,
+   "text": "Which is the correct spelling? (P…, 9 letters)",
+   "options": [
+    "privilege",
+    "priviledge",
+    "privilage",
+    "privelege"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 250,
+   "text": "Which is the correct spelling? (P…, 13 letters)",
+   "options": [
+    "prononciation",
+    "pronunciation",
+    "pronounciation",
+    "pronunciaton"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 251,
+   "text": "Which is the correct spelling? (R…, 9 letters)",
+   "options": [
+    "reccommend",
+    "reccomend",
+    "recomend",
+    "recommend"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 252,
+   "text": "Which is the correct spelling? (R…, 6 letters)",
+   "options": [
+    "rhythem",
+    "rhythm",
+    "rythem",
+    "rythm"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 253,
+   "text": "Which is the correct spelling? (T…, 8 letters)",
+   "options": [
+    "tomorow",
+    "tommorow",
+    "tomorrow",
+    "tommorrow"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 254,
+   "text": "Which is the correct spelling? (V…, 6 letters)",
+   "options": [
+    "vacum",
+    "vaccum",
+    "vacuum",
+    "vaccuum"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 255,
+   "text": "Which is the correct spelling? (A…, 7 letters)",
+   "options": [
+    "adres",
+    "address",
+    "adress",
+    "addres"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 256,
+   "text": "Which is the correct spelling? (A…, 6 letters)",
+   "options": [
+    "acrross",
+    "acros",
+    "accross",
+    "across"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 257,
+   "text": "Which is the correct spelling? (U…, 5 letters)",
+   "options": [
+    "untill",
+    "untl",
+    "until",
+    "unttil"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 258,
+   "text": "Which is the correct spelling? (F…, 6 letters)",
+   "options": [
+    "friendd",
+    "frend",
+    "freind",
+    "friend"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 259,
+   "text": "Which is the correct spelling? (G…, 7 letters)",
+   "options": [
+    "grammer",
+    "gramar",
+    "grammmar",
+    "grammar"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 260,
+   "text": "Choose the right word: Neither the teacher nor the students ___ aware of the change.",
+   "options": [
+    "were",
+    "is",
+    "was",
+    "has been"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 261,
+   "text": "Choose the right word: The committee ___ reached its decision.",
+   "options": [
+    "has",
+    "have",
+    "were",
+    "are"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 262,
+   "text": "Choose the right word: A number of students ___ absent today.",
+   "options": [
+    "has been",
+    "is",
+    "are",
+    "was"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 263,
+   "text": "Choose the right word: The number of students ___ increasing.",
+   "options": [
+    "is",
+    "were",
+    "have been",
+    "are"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 264,
+   "text": "Choose the right word: Bread and butter ___ my favourite breakfast.",
+   "options": [
+    "are",
+    "is",
+    "were",
+    "have been"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 265,
+   "text": "Choose the right word: Every boy and girl ___ a uniform.",
+   "options": [
+    "has",
+    "are having",
+    "were having",
+    "have"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 266,
+   "text": "Choose the right word: Physics ___ a difficult subject.",
+   "options": [
+    "are",
+    "have been",
+    "were",
+    "is"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 267,
+   "text": "Choose the right word: The scissors ___ on the table.",
+   "options": [
+    "is",
+    "has been",
+    "are",
+    "was"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 268,
+   "text": "Choose the right word: Not only the principal but also the teachers ___ present.",
+   "options": [
+    "is",
+    "was",
+    "has been",
+    "were"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 269,
+   "text": "Choose the right word: Many a man ___ tried and failed.",
+   "options": [
+    "are",
+    "were",
+    "have",
+    "has"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 270,
+   "text": "Choose the right word: The cattle ___ grazing in the field.",
+   "options": [
+    "was",
+    "is",
+    "are",
+    "has been"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 271,
+   "text": "Choose the right word: Five hundred naira ___ too much for that pen.",
+   "options": [
+    "were",
+    "is",
+    "have been",
+    "are"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 272,
+   "text": "Choose the right word: He is one of those men who ___ always late.",
+   "options": [
+    "has been",
+    "was",
+    "are",
+    "is"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 273,
+   "text": "Choose the right word: The furniture in the house ___ new.",
+   "options": [
+    "are",
+    "is",
+    "were",
+    "have been"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 274,
+   "text": "Choose the right word: There ___ many reasons for his failure.",
+   "options": [
+    "are",
+    "is",
+    "was",
+    "has been"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 275,
+   "text": "Choose the right word: Either of the two answers ___ correct.",
+   "options": [
+    "is",
+    "were",
+    "are",
+    "have been"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 276,
+   "text": "Choose the right word: Politics ___ not my interest.",
+   "options": [
+    "were",
+    "are",
+    "have been",
+    "is"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 277,
+   "text": "Choose the right word: The police ___ arrested the thief.",
+   "options": [
+    "was",
+    "is",
+    "have",
+    "has"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 278,
+   "text": "Choose the right word: None of the food ___ eaten.",
+   "options": [
+    "have been",
+    "are",
+    "were",
+    "was"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 279,
+   "text": "Choose the right word: The poor ___ helped by the government.",
+   "options": [
+    "has been",
+    "are",
+    "is",
+    "was"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 280,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (good).",
+   "options": [
+    "good",
+    "better",
+    "goodest",
+    "best"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 281,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (bad).",
+   "options": [
+    "worse",
+    "bad",
+    "worst",
+    "badest"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 282,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (tall).",
+   "options": [
+    "taller",
+    "tallest",
+    "tall",
+    "most tall"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 283,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (happy).",
+   "options": [
+    "happiest",
+    "happier",
+    "happyest",
+    "happy"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 284,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (beautiful).",
+   "options": [
+    "beautifulest",
+    "beautiful",
+    "most beautiful",
+    "more beautiful"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 285,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (careful).",
+   "options": [
+    "careful",
+    "more careful",
+    "most careful",
+    "carefulest"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 286,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (thin).",
+   "options": [
+    "thinest",
+    "thinnest",
+    "thinner",
+    "thin"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 287,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (busy).",
+   "options": [
+    "busyest",
+    "busier",
+    "busiest",
+    "busy"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 288,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (famous).",
+   "options": [
+    "famous",
+    "famousest",
+    "more famous",
+    "most famous"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 289,
+   "text": "Choose the right form: Of all the pupils, Ngozi is the ___ (important).",
+   "options": [
+    "importantest",
+    "important",
+    "most important",
+    "more important"
+   ],
+   "answer": 2,
+   "points": 1
+  }
+ ]
+}

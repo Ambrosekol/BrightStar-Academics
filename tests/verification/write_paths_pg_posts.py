@@ -1175,7 +1175,24 @@ picked = visitor.session().get("entrance_practice", {}).get("ids", [])
 r = visitor.post("/entrance-practice/year7/mathematics", {f"q_{qid}": "1" for qid in picked})
 check("entrance practice: last session's paper was served, taken without signing in, and marked",
       len(picked) == 2 and r.status == 200 and "NOT RECORDED" in r.body)
-check("entrance practice: the current session's own bank is never offered", visitor.get("/entrance-practice/year7/english").status_code == 404)
+from core.entrance import _practice_key, builtin_practice_bank  # noqa: E402
+
+
+def builtin_keys(group, subject):
+    found = builtin_practice_bank(group, subject)
+    return {_practice_key(found["id"], q["id"]) for q in found["questions"]}
+
+
+r = visitor.get("/entrance-practice/year7/english")
+served = visitor.session().get("entrance_practice", {}).get("ids", [])
+check("entrance practice: the current session's own bank is never offered (English is served from the ready-made questions alone)",
+      r.status_code == 200 and len(served) == 20 and set(served) <= builtin_keys("year7", "english"), str(served))
+r = visitor.get("/entrance-practice/year10/general_knowledge")
+served = visitor.session().get("entrance_practice", {}).get("ids", [])
+check("entrance practice: a subject with no papers of the school's own still has the ready-made questions",
+      r.status_code == 200 and len(served) == 20 and len(set(served)) == 20 and set(served) <= builtin_keys("year10", "general_knowledge"))
+check("entrance practice: every ready-made bank is there, with hundreds of questions",
+      all(len(builtin_keys(g, sub)) >= 200 for g in ("year7", "year10") for sub in ("mathematics", "english", "general_knowledge")))
 op.text("/admin/practice-tests")
 page = op.text("/admin/practice-tests")
 check("entrance practice: the administrator sees where each subject's questions come from", "Where each subject" in page)
@@ -1187,7 +1204,24 @@ op.post("/admin/practice-tests/save", {"entry_group": "year7", "subject": "engli
 check("entrance practice: a custom bank was chosen for a subject",
       count("entrance_practice_settings", "entry_group = 'year7' AND subject = 'english' AND source = 'custom'") == 1)
 visitor.get("/entrance-practice/year7/english")
-check("entrance practice: the custom questions were served, three at random", len(visitor.session().get("entrance_practice", {}).get("ids", [])) == 3)
+served = visitor.session().get("entrance_practice", {}).get("ids", [])
+check("entrance practice: the custom questions were served, three at random, and no ready-made ones",
+      len(served) == 3 and not set(served) & builtin_keys("year7", "english"))
+check("entrance practice: a subject with no choice made serves its question pool, and the page shows its size",
+      count("entrance_practice_settings", "entry_group = 'year7' AND subject = 'mathematics'") == 0
+      and "from a pool of" in op.text("/admin/practice-tests") and "Question pool" in op.text("/admin/practice-tests"))
+op.post("/admin/practice-tests/save", {"entry_group": "year7", "subject": "english", "source": "pool",
+                                       "bank_id": "posts_english_import", "questions_to_serve": "3"})
+visitor.get("/entrance-practice/year7/english")
+served = visitor.session().get("entrance_practice", {}).get("ids", [])
+check("entrance practice: the pool takes the practice bank and the ready-made questions (never the current paper)",
+      count("entrance_practice_settings", "entry_group = 'year7' AND subject = 'english' AND source = 'pool'") == 1
+      and len(served) == 3 and len(set(served)) == 3
+      and "the school&#39;s practice questions and ready-made practice questions" in visitor.get("/entrance-practice?group=year7").get_data(as_text=True)
+      and "ready-made" in op.text("/admin/practice-tests"), str(served))
+check("entrance practice: too many questions an attempt is refused",
+      op.post("/admin/practice-tests/save", {"entry_group": "year7", "subject": "english", "source": "pool",
+                                             "questions_to_serve": "500"}, valid=False).said("1 to 100"))
 check("entrance practice leaves nothing recorded", count("attempts") == attempts_before)
 
 # a candidate: register, sign in, sit a paper, be marked; then the administrator's controls over the result

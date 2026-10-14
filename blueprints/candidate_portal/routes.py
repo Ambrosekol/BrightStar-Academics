@@ -38,16 +38,30 @@ def entrance_practice():
     core.entrance.entrance_practice_paper): the last session's paper, or questions set for practice.
     """
     group=request.args.get('group','')
-    if group not in ENTRY_GROUP_LABELS: group=''
-    subjects=[]
-    if group:
+    if group not in ENTRY_GROUP_LABELS: group=next(iter(ENTRY_GROUP_LABELS))
+    return render_template('entrance_practice.html',**_practice_page(group))
+
+def _practice_page(group,error=None):
+    """Everything the practice page shows: every class with its subjects (so the class can be switched on the page
+    without loading it again), the one chosen, and the school's two colours, checked, for its style."""
+    from core.theme import normalise_hex
+    from core.branding import school_brand
+    brand=school_brand()
+    catalogue=[]
+    for gkey,glabel in ENTRY_GROUP_LABELS.items():
+        rows=[]
         for key,label in ENTRANCE_SUBJECT_LABELS.items():
-            paper=entrance_practice_paper(group,key)
-            subjects.append({'key':key,'label':label,'available':bool(paper),
-                             'count':paper['count'] if paper else 0,
-                             'source':paper['label'] if paper else ''})
-    return render_template('entrance_practice.html',groups=list(ENTRY_GROUP_LABELS.items()),
-                           group=group,group_label=ENTRY_GROUP_LABELS.get(group,''),subjects=subjects)
+            paper=entrance_practice_paper(gkey,key)
+            seconds=int((paper['bank'].get('duration_seconds') or 0)) if paper else 0
+            rows.append({'key':key,'label':label,'available':bool(paper),'count':paper['count'] if paper else 0,
+                         'pool':paper['pool'] if paper else 0,
+                         'minutes':(seconds+59)//60 if seconds else 0,'source':paper['label'] if paper else ''})
+        catalogue.append({'key':gkey,'label':glabel,'subjects':rows,'ready':sum(1 for r in rows if r['available'])})
+    def colour(value,default):
+        try: return normalise_hex(value) or default
+        except ValueError: return default
+    return {'catalogue':catalogue,'group':group,'error':error,
+            'primary':colour(brand.get('primary'),'#0d2b52'),'accent':colour(brand.get('accent'),'#1d6fd8')}
 
 @app.route('/entrance-practice/<group>/<subject>',methods=['GET','POST'])
 @csrf_protect
@@ -55,16 +69,15 @@ def entrance_practice_take(group,subject):
     if group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS: abort(404)
     paper=entrance_practice_paper(group,subject)
     if not paper:
-        return render_template('entrance_practice.html',groups=list(ENTRY_GROUP_LABELS.items()),
-            group=group,group_label=ENTRY_GROUP_LABELS[group],subjects=[],
-            error='Practice questions for this subject are not available yet.'),404
+        return render_template('entrance_practice.html',
+            **_practice_page(group,'Practice questions for this subject are not available yet.')),404
     questions=paper['bank']['questions']
     subject_label=ENTRANCE_SUBJECT_LABELS[subject]; group_label=ENTRY_GROUP_LABELS[group]
     if request.method=='GET':
         # A fresh random draw, in a fresh random order, every time.
         chosen=random.sample(list(questions),paper['count'])
-        session['entrance_practice']={'group':group,'subject':subject,'ids':[int(q['id']) for q in chosen]}
-        public=[{'id':int(q['id']),'text':q.get('text',''),'options':q.get('options',[]),
+        session['entrance_practice']={'group':group,'subject':subject,'ids':[q['key'] for q in chosen]}
+        public=[{'id':q['key'],'text':q.get('text',''),'options':q.get('options',[]),
                  'instruction':q.get('instruction'),'image_path':q.get('image_path')} for q in chosen]
         return render_template('entrance_practice_take.html',group=group,group_label=group_label,
             subject=subject,
@@ -73,10 +86,10 @@ def entrance_practice_take(group,subject):
     state=session.get('entrance_practice') or {}
     if state.get('group')!=group or state.get('subject')!=subject or not state.get('ids'):
         return redirect(url_for('entrance_practice_take',group=group,subject=subject))
-    by_id={int(q['id']):q for q in questions}
+    by_id={q['key']:q for q in questions}
     results=[]; score=0
     for qid in state['ids']:
-        q=by_id.get(int(qid))
+        q=by_id.get(str(qid))
         if not q: continue
         options=q.get('options',[])
         try: picked=int(request.form.get(f'q_{qid}'))

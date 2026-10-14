@@ -1,0 +1,2941 @@
+{
+ "id": "practice_year10_general_knowledge",
+ "name": "General Knowledge - entrance practice into Year 10",
+ "level": "Year 10",
+ "entry_group": "year10",
+ "subject": "General Knowledge",
+ "duration_seconds": 3000,
+ "questions_to_serve": 25,
+ "version": "1.0",
+ "source_status": "platform_practice",
+ "questions": [
+  {
+   "id": 1,
+   "text": "In which geopolitical zone is Abia State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "In which geopolitical zone is Adamawa State?",
+   "options": [
+    "South East",
+    "North Central",
+    "North West",
+    "North East"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "In which geopolitical zone is Akwa Ibom State?",
+   "options": [
+    "North West",
+    "South South",
+    "North Central",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "In which geopolitical zone is Anambra State?",
+   "options": [
+    "North Central",
+    "North West",
+    "North East",
+    "South East"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "In which geopolitical zone is Bauchi State?",
+   "options": [
+    "South East",
+    "North West",
+    "North East",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "In which geopolitical zone is Bayelsa State?",
+   "options": [
+    "North East",
+    "North West",
+    "South South",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "In which geopolitical zone is Benue State?",
+   "options": [
+    "North East",
+    "South East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "In which geopolitical zone is Borno State?",
+   "options": [
+    "North West",
+    "North East",
+    "South East",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "In which geopolitical zone is Cross River State?",
+   "options": [
+    "North East",
+    "North West",
+    "South South",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "In which geopolitical zone is Delta State?",
+   "options": [
+    "North Central",
+    "South South",
+    "North West",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "In which geopolitical zone is Ebonyi State?",
+   "options": [
+    "South East",
+    "North Central",
+    "North West",
+    "North East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "In which geopolitical zone is Edo State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South South",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "In which geopolitical zone is Ekiti State?",
+   "options": [
+    "North East",
+    "North Central",
+    "North West",
+    "South West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "In which geopolitical zone is Enugu State?",
+   "options": [
+    "North East",
+    "South East",
+    "North Central",
+    "North West"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "In which geopolitical zone is Gombe State?",
+   "options": [
+    "South East",
+    "North East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "In which geopolitical zone is Imo State?",
+   "options": [
+    "South East",
+    "North Central",
+    "North West",
+    "North East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "In which geopolitical zone is Jigawa State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South East",
+    "North West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "In which geopolitical zone is Kaduna State?",
+   "options": [
+    "North East",
+    "North West",
+    "North Central",
+    "South East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "In which geopolitical zone is Kano State?",
+   "options": [
+    "North Central",
+    "South East",
+    "North East",
+    "North West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "In which geopolitical zone is Katsina State?",
+   "options": [
+    "North Central",
+    "South East",
+    "North West",
+    "North East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "In which geopolitical zone is Kebbi State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "In which geopolitical zone is Kogi State?",
+   "options": [
+    "North Central",
+    "South East",
+    "North West",
+    "North East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "In which geopolitical zone is Kwara State?",
+   "options": [
+    "North East",
+    "South East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "In which geopolitical zone is Lagos State?",
+   "options": [
+    "South West",
+    "North West",
+    "North East",
+    "North Central"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "In which geopolitical zone is Nasarawa State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "In which geopolitical zone is Niger State?",
+   "options": [
+    "North East",
+    "South East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "In which geopolitical zone is Ogun State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South West",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "In which geopolitical zone is Ondo State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South West",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "In which geopolitical zone is Osun State?",
+   "options": [
+    "North West",
+    "South West",
+    "North Central",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "In which geopolitical zone is Oyo State?",
+   "options": [
+    "North Central",
+    "North West",
+    "North East",
+    "South West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "In which geopolitical zone is Plateau State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "In which geopolitical zone is Rivers State?",
+   "options": [
+    "North Central",
+    "North West",
+    "North East",
+    "South South"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "In which geopolitical zone is Sokoto State?",
+   "options": [
+    "North West",
+    "North Central",
+    "South East",
+    "North East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "In which geopolitical zone is Taraba State?",
+   "options": [
+    "North West",
+    "North Central",
+    "North East",
+    "South East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "In which geopolitical zone is Yobe State?",
+   "options": [
+    "North Central",
+    "South East",
+    "North East",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "In which geopolitical zone is Zamfara State?",
+   "options": [
+    "South East",
+    "North East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Which town is the capital of Abia State?",
+   "options": [
+    "Makurdi",
+    "Umuahia",
+    "Asaba",
+    "Damaturu"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Which town is the capital of Adamawa State?",
+   "options": [
+    "Dutse",
+    "Sokoto",
+    "Yola",
+    "Uyo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Which town is the capital of Akwa Ibom State?",
+   "options": [
+    "Asaba",
+    "Lafia",
+    "Uyo",
+    "Kano"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Which town is the capital of Anambra State?",
+   "options": [
+    "Osogbo",
+    "Owerri",
+    "Awka",
+    "Jos"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Which town is the capital of Bayelsa State?",
+   "options": [
+    "Katsina",
+    "Ikeja",
+    "Abeokuta",
+    "Yenagoa"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Which town is the capital of Benue State?",
+   "options": [
+    "Yenagoa",
+    "Abeokuta",
+    "Makurdi",
+    "Jalingo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Which town is the capital of Borno State?",
+   "options": [
+    "Asaba",
+    "Birnin Kebbi",
+    "Owerri",
+    "Maiduguri"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Which town is the capital of Cross River State?",
+   "options": [
+    "Lafia",
+    "Calabar",
+    "Minna",
+    "Maiduguri"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Which town is the capital of Delta State?",
+   "options": [
+    "Asaba",
+    "Kano",
+    "Akure",
+    "Abeokuta"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 46,
+   "text": "Which town is the capital of Ebonyi State?",
+   "options": [
+    "Kano",
+    "Bauchi",
+    "Abakaliki",
+    "Dutse"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 47,
+   "text": "Which town is the capital of Edo State?",
+   "options": [
+    "Abakaliki",
+    "Yenagoa",
+    "Benin City",
+    "Maiduguri"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 48,
+   "text": "Which town is the capital of Ekiti State?",
+   "options": [
+    "Minna",
+    "Damaturu",
+    "Yenagoa",
+    "Ado-Ekiti"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 49,
+   "text": "Which town is the capital of Imo State?",
+   "options": [
+    "Dutse",
+    "Makurdi",
+    "Owerri",
+    "Ado-Ekiti"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 50,
+   "text": "Which town is the capital of Jigawa State?",
+   "options": [
+    "Jos",
+    "Katsina",
+    "Dutse",
+    "Kaduna"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 51,
+   "text": "Which town is the capital of Kebbi State?",
+   "options": [
+    "Birnin Kebbi",
+    "Benin City",
+    "Jalingo",
+    "Ilorin"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 52,
+   "text": "Which town is the capital of Kogi State?",
+   "options": [
+    "Gombe",
+    "Lokoja",
+    "Ado-Ekiti",
+    "Lafia"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 53,
+   "text": "Which town is the capital of Kwara State?",
+   "options": [
+    "Ilorin",
+    "Ikeja",
+    "Benin City",
+    "Gombe"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 54,
+   "text": "Which town is the capital of Lagos State?",
+   "options": [
+    "Owerri",
+    "Ikeja",
+    "Port Harcourt",
+    "Asaba"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 55,
+   "text": "Which town is the capital of Nasarawa State?",
+   "options": [
+    "Calabar",
+    "Lokoja",
+    "Ilorin",
+    "Lafia"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 56,
+   "text": "Which town is the capital of Niger State?",
+   "options": [
+    "Makurdi",
+    "Minna",
+    "Umuahia",
+    "Gusau"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 57,
+   "text": "Which town is the capital of Ogun State?",
+   "options": [
+    "Uyo",
+    "Abeokuta",
+    "Kaduna",
+    "Bauchi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 58,
+   "text": "Which town is the capital of Ondo State?",
+   "options": [
+    "Gusau",
+    "Dutse",
+    "Akure",
+    "Ilorin"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 59,
+   "text": "Which town is the capital of Osun State?",
+   "options": [
+    "Abakaliki",
+    "Benin City",
+    "Jalingo",
+    "Osogbo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 60,
+   "text": "Which town is the capital of Oyo State?",
+   "options": [
+    "Calabar",
+    "Ikeja",
+    "Lokoja",
+    "Ibadan"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 61,
+   "text": "Which town is the capital of Plateau State?",
+   "options": [
+    "Enugu",
+    "Kaduna",
+    "Jos",
+    "Abakaliki"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 62,
+   "text": "Which town is the capital of Rivers State?",
+   "options": [
+    "Ilorin",
+    "Port Harcourt",
+    "Katsina",
+    "Ado-Ekiti"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 63,
+   "text": "Which town is the capital of Taraba State?",
+   "options": [
+    "Abakaliki",
+    "Ado-Ekiti",
+    "Bauchi",
+    "Jalingo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 64,
+   "text": "Which town is the capital of Yobe State?",
+   "options": [
+    "Lafia",
+    "Damaturu",
+    "Gusau",
+    "Ikeja"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 65,
+   "text": "Which town is the capital of Zamfara State?",
+   "options": [
+    "Gusau",
+    "Calabar",
+    "Dutse",
+    "Owerri"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 66,
+   "text": "Which element has the chemical symbol H?",
+   "options": [
+    "Sodium",
+    "Hydrogen",
+    "Tin",
+    "Potassium"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 67,
+   "text": "What is the chemical symbol for Hydrogen?",
+   "options": [
+    "Hd",
+    "H",
+    "S",
+    "F"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 68,
+   "text": "Which element has the chemical symbol He?",
+   "options": [
+    "Fluorine",
+    "Sodium",
+    "Helium",
+    "Carbon"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 69,
+   "text": "What is the chemical symbol for Helium?",
+   "options": [
+    "O",
+    "Sn",
+    "He",
+    "Ar"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 70,
+   "text": "Which element has the chemical symbol Li?",
+   "options": [
+    "Zinc",
+    "Calcium",
+    "Fluorine",
+    "Lithium"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 71,
+   "text": "What is the chemical symbol for Lithium?",
+   "options": [
+    "Cl",
+    "Li",
+    "Ni",
+    "P"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 72,
+   "text": "Which element has the chemical symbol C?",
+   "options": [
+    "Carbon",
+    "Helium",
+    "Iodine",
+    "Chlorine"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 73,
+   "text": "What is the chemical symbol for Carbon?",
+   "options": [
+    "Ca",
+    "H",
+    "C",
+    "Na"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 74,
+   "text": "Which element has the chemical symbol N?",
+   "options": [
+    "Nitrogen",
+    "Sodium",
+    "Fluorine",
+    "Carbon"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 75,
+   "text": "What is the chemical symbol for Nitrogen?",
+   "options": [
+    "Si",
+    "Sn",
+    "H",
+    "N"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 76,
+   "text": "Which element has the chemical symbol O?",
+   "options": [
+    "Nitrogen",
+    "Sodium",
+    "Iron",
+    "Oxygen"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 77,
+   "text": "What is the chemical symbol for Oxygen?",
+   "options": [
+    "Li",
+    "K",
+    "Br",
+    "O"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 78,
+   "text": "Which element has the chemical symbol F?",
+   "options": [
+    "Lithium",
+    "Iron",
+    "Oxygen",
+    "Fluorine"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 79,
+   "text": "What is the chemical symbol for Fluorine?",
+   "options": [
+    "Na",
+    "Ca",
+    "F",
+    "H"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 80,
+   "text": "Which element has the chemical symbol Ne?",
+   "options": [
+    "Neon",
+    "Carbon",
+    "Oxygen",
+    "Iron"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 81,
+   "text": "What is the chemical symbol for Neon?",
+   "options": [
+    "K",
+    "N",
+    "Cl",
+    "Ne"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 82,
+   "text": "Which element has the chemical symbol Na?",
+   "options": [
+    "Sodium",
+    "Carbon",
+    "Aluminium",
+    "Magnesium"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 83,
+   "text": "What is the chemical symbol for Sodium?",
+   "options": [
+    "Cu",
+    "F",
+    "Mn",
+    "Na"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 84,
+   "text": "Which element has the chemical symbol Mg?",
+   "options": [
+    "Magnesium",
+    "Silver",
+    "Bromine",
+    "Manganese"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 85,
+   "text": "What is the chemical symbol for Magnesium?",
+   "options": [
+    "I",
+    "Mg",
+    "Ni",
+    "P"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 86,
+   "text": "Which element has the chemical symbol Al?",
+   "options": [
+    "Zinc",
+    "Aluminium",
+    "Sulphur",
+    "Nitrogen"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 87,
+   "text": "What is the chemical symbol for Aluminium?",
+   "options": [
+    "Al",
+    "Fe",
+    "Ca",
+    "He"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 88,
+   "text": "Which element has the chemical symbol Si?",
+   "options": [
+    "Fluorine",
+    "Silicon",
+    "Nitrogen",
+    "Argon"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 89,
+   "text": "What is the chemical symbol for Silicon?",
+   "options": [
+    "Cu",
+    "H",
+    "Mg",
+    "Si"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 90,
+   "text": "Which element has the chemical symbol P?",
+   "options": [
+    "Nickel",
+    "Bromine",
+    "Fluorine",
+    "Phosphorus"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 91,
+   "text": "What is the chemical symbol for Phosphorus?",
+   "options": [
+    "P",
+    "Ne",
+    "Li",
+    "Fe"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 92,
+   "text": "Which element has the chemical symbol S?",
+   "options": [
+    "Manganese",
+    "Copper",
+    "Calcium",
+    "Sulphur"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 93,
+   "text": "What is the chemical symbol for Sulphur?",
+   "options": [
+    "I",
+    "S",
+    "Si",
+    "Sl"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 94,
+   "text": "Which element has the chemical symbol Cl?",
+   "options": [
+    "Bromine",
+    "Hydrogen",
+    "Chlorine",
+    "Calcium"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 95,
+   "text": "What is the chemical symbol for Chlorine?",
+   "options": [
+    "Fe",
+    "P",
+    "Cl",
+    "Si"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 96,
+   "text": "Which element has the chemical symbol Ar?",
+   "options": [
+    "Nickel",
+    "Argon",
+    "Tin",
+    "Carbon"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 97,
+   "text": "What is the chemical symbol for Argon?",
+   "options": [
+    "He",
+    "Ar",
+    "Mg",
+    "Ca"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 98,
+   "text": "Which element has the chemical symbol K?",
+   "options": [
+    "Potassium",
+    "Silver",
+    "Iron",
+    "Lithium"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 99,
+   "text": "What is the chemical symbol for Potassium?",
+   "options": [
+    "Br",
+    "Ag",
+    "K",
+    "N"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 100,
+   "text": "Which element has the chemical symbol Ca?",
+   "options": [
+    "Sulphur",
+    "Calcium",
+    "Fluorine",
+    "Carbon"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 101,
+   "text": "What is the chemical symbol for Calcium?",
+   "options": [
+    "H",
+    "Ni",
+    "Ca",
+    "Ne"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 102,
+   "text": "Which element has the chemical symbol Fe?",
+   "options": [
+    "Iron",
+    "Tin",
+    "Copper",
+    "Iodine"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 103,
+   "text": "What is the chemical symbol for Iron?",
+   "options": [
+    "O",
+    "Fe",
+    "Ne",
+    "I"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 104,
+   "text": "Which element has the chemical symbol Cu?",
+   "options": [
+    "Nickel",
+    "Mercury",
+    "Copper",
+    "Helium"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 105,
+   "text": "What is the chemical symbol for Copper?",
+   "options": [
+    "Ag",
+    "Cu",
+    "I",
+    "Pb"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 106,
+   "text": "Which element has the chemical symbol Zn?",
+   "options": [
+    "Tin",
+    "Zinc",
+    "Lithium",
+    "Silver"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 107,
+   "text": "What is the chemical symbol for Zinc?",
+   "options": [
+    "Br",
+    "N",
+    "Hg",
+    "Zn"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 108,
+   "text": "Which element has the chemical symbol Ag?",
+   "options": [
+    "Silver",
+    "Potassium",
+    "Carbon",
+    "Hydrogen"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 109,
+   "text": "What is the chemical symbol for Silver?",
+   "options": [
+    "Ne",
+    "Ag",
+    "K",
+    "Cu"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 110,
+   "text": "Which element has the chemical symbol Au?",
+   "options": [
+    "Iodine",
+    "Silicon",
+    "Chlorine",
+    "Gold"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 111,
+   "text": "What is the chemical symbol for Gold?",
+   "options": [
+    "O",
+    "Au",
+    "I",
+    "Hg"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 112,
+   "text": "Which element has the chemical symbol Hg?",
+   "options": [
+    "Mercury",
+    "Lithium",
+    "Potassium",
+    "Manganese"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 113,
+   "text": "What is the chemical symbol for Mercury?",
+   "options": [
+    "H",
+    "Me",
+    "Hg",
+    "Sn"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 114,
+   "text": "Which element has the chemical symbol Pb?",
+   "options": [
+    "Calcium",
+    "Lead",
+    "Tin",
+    "Oxygen"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 115,
+   "text": "What is the chemical symbol for Lead?",
+   "options": [
+    "Pb",
+    "He",
+    "K",
+    "Si"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 116,
+   "text": "Which element has the chemical symbol Sn?",
+   "options": [
+    "Nitrogen",
+    "Silicon",
+    "Tin",
+    "Sulphur"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 117,
+   "text": "What is the chemical symbol for Tin?",
+   "options": [
+    "Ne",
+    "Au",
+    "Sn",
+    "Ni"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 118,
+   "text": "Which element has the chemical symbol I?",
+   "options": [
+    "Hydrogen",
+    "Mercury",
+    "Iodine",
+    "Sulphur"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 119,
+   "text": "What is the chemical symbol for Iodine?",
+   "options": [
+    "N",
+    "I",
+    "F",
+    "O"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 120,
+   "text": "Which element has the chemical symbol Mn?",
+   "options": [
+    "Manganese",
+    "Bromine",
+    "Hydrogen",
+    "Mercury"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 121,
+   "text": "What is the chemical symbol for Manganese?",
+   "options": [
+    "Mn",
+    "Mg",
+    "Si",
+    "Li"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 122,
+   "text": "Which element has the chemical symbol Ni?",
+   "options": [
+    "Zinc",
+    "Nickel",
+    "Neon",
+    "Bromine"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 123,
+   "text": "What is the chemical symbol for Nickel?",
+   "options": [
+    "Li",
+    "Ni",
+    "F",
+    "Si"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 124,
+   "text": "Which element has the chemical symbol Br?",
+   "options": [
+    "Chlorine",
+    "Zinc",
+    "Iodine",
+    "Bromine"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 125,
+   "text": "What is the chemical symbol for Bromine?",
+   "options": [
+    "Br",
+    "Zn",
+    "Ne",
+    "I"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 126,
+   "text": "What is the capital of Ghana?",
+   "options": [
+    "Niamey",
+    "Seoul",
+    "Accra",
+    "Lilongwe"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 127,
+   "text": "What is the capital of Kenya?",
+   "options": [
+    "Yaoundé",
+    "Nairobi",
+    "Vienna",
+    "Tokyo"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 128,
+   "text": "What is the capital of Egypt?",
+   "options": [
+    "Nairobi",
+    "Cairo",
+    "Accra",
+    "Brasília"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 129,
+   "text": "What is the capital of Cameroon?",
+   "options": [
+    "Yaoundé",
+    "Dakar",
+    "Mexico City",
+    "Tokyo"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 130,
+   "text": "What is the capital of Togo?",
+   "options": [
+    "N'Djamena",
+    "Beijing",
+    "Lomé",
+    "Luanda"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 131,
+   "text": "What is the capital of Niger Republic?",
+   "options": [
+    "London",
+    "Freetown",
+    "Niamey",
+    "Beijing"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 132,
+   "text": "What is the capital of Chad?",
+   "options": [
+    "N'Djamena",
+    "Rabat",
+    "Havana",
+    "Niamey"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 133,
+   "text": "What is the capital of Senegal?",
+   "options": [
+    "Rome",
+    "Havana",
+    "Monrovia",
+    "Dakar"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 134,
+   "text": "What is the capital of Liberia?",
+   "options": [
+    "Monrovia",
+    "Oslo",
+    "Freetown",
+    "Bamako"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 135,
+   "text": "What is the capital of Sierra Leone?",
+   "options": [
+    "Ankara",
+    "Riyadh",
+    "Freetown",
+    "Stockholm"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 136,
+   "text": "What is the capital of The Gambia?",
+   "options": [
+    "Ouagadougou",
+    "Lomé",
+    "Banjul",
+    "Kinshasa"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 137,
+   "text": "What is the capital of Mali?",
+   "options": [
+    "Bamako",
+    "Lusaka",
+    "Vienna",
+    "Addis Ababa"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 138,
+   "text": "What is the capital of Burkina Faso?",
+   "options": [
+    "Kampala",
+    "Berlin",
+    "Ouagadougou",
+    "Rabat"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 139,
+   "text": "What is the capital of Ethiopia?",
+   "options": [
+    "Addis Ababa",
+    "Seoul",
+    "N'Djamena",
+    "Kingston"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 140,
+   "text": "What is the capital of Uganda?",
+   "options": [
+    "Niamey",
+    "Kampala",
+    "Gaborone",
+    "Brussels"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 141,
+   "text": "What is the capital of Rwanda?",
+   "options": [
+    "Harare",
+    "Kigali",
+    "Madrid",
+    "Addis Ababa"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 142,
+   "text": "What is the capital of Zambia?",
+   "options": [
+    "Algiers",
+    "Lusaka",
+    "Warsaw",
+    "Yaoundé"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 143,
+   "text": "What is the capital of Zimbabwe?",
+   "options": [
+    "London",
+    "Kinshasa",
+    "Harare",
+    "Algiers"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 144,
+   "text": "What is the capital of Angola?",
+   "options": [
+    "Warsaw",
+    "Ouagadougou",
+    "Dublin",
+    "Luanda"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 145,
+   "text": "What is the capital of Morocco?",
+   "options": [
+    "Berlin",
+    "Tokyo",
+    "Addis Ababa",
+    "Rabat"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 146,
+   "text": "What is the capital of Algeria?",
+   "options": [
+    "Havana",
+    "Bamako",
+    "Algiers",
+    "Nairobi"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 147,
+   "text": "What is the capital of Tunisia?",
+   "options": [
+    "Freetown",
+    "Tunis",
+    "Dublin",
+    "Monrovia"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 148,
+   "text": "What is the capital of Sudan?",
+   "options": [
+    "Freetown",
+    "Riyadh",
+    "Ottawa",
+    "Khartoum"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 149,
+   "text": "What is the capital of Gabon?",
+   "options": [
+    "Kampala",
+    "Islamabad",
+    "Kingston",
+    "Libreville"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 150,
+   "text": "What is the capital of Botswana?",
+   "options": [
+    "Gaborone",
+    "Ouagadougou",
+    "New Delhi",
+    "Nairobi"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 151,
+   "text": "What is the capital of Namibia?",
+   "options": [
+    "Mexico City",
+    "Windhoek",
+    "Monrovia",
+    "Maputo"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 152,
+   "text": "What is the capital of Malawi?",
+   "options": [
+    "Addis Ababa",
+    "Lilongwe",
+    "Oslo",
+    "Tokyo"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 153,
+   "text": "What is the capital of Mozambique?",
+   "options": [
+    "New Delhi",
+    "Maputo",
+    "Rabat",
+    "Canberra"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 154,
+   "text": "What is the capital of United Kingdom?",
+   "options": [
+    "Algiers",
+    "London",
+    "Washington, D.C.",
+    "Vienna"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 155,
+   "text": "What is the capital of France?",
+   "options": [
+    "Luanda",
+    "Riyadh",
+    "Paris",
+    "Yaoundé"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 156,
+   "text": "What is the capital of Germany?",
+   "options": [
+    "Islamabad",
+    "Stockholm",
+    "Maputo",
+    "Berlin"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 157,
+   "text": "What is the capital of Italy?",
+   "options": [
+    "Ouagadougou",
+    "Rome",
+    "Maputo",
+    "Moscow"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 158,
+   "text": "What is the capital of Spain?",
+   "options": [
+    "Canberra",
+    "Madrid",
+    "Luanda",
+    "London"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 159,
+   "text": "What is the capital of Portugal?",
+   "options": [
+    "Windhoek",
+    "Lisbon",
+    "Bern",
+    "Warsaw"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 160,
+   "text": "What is the capital of Russia?",
+   "options": [
+    "Oslo",
+    "Warsaw",
+    "Seoul",
+    "Moscow"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 161,
+   "text": "What is the capital of China?",
+   "options": [
+    "Beijing",
+    "Paris",
+    "Accra",
+    "London"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 162,
+   "text": "What is the capital of Japan?",
+   "options": [
+    "Lomé",
+    "Brasília",
+    "Cairo",
+    "Tokyo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 163,
+   "text": "What is the capital of India?",
+   "options": [
+    "Brasília",
+    "Bamako",
+    "Ankara",
+    "New Delhi"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 164,
+   "text": "What is the capital of United States of America?",
+   "options": [
+    "London",
+    "Cairo",
+    "Washington, D.C.",
+    "Addis Ababa"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 165,
+   "text": "What is the capital of Canada?",
+   "options": [
+    "Yaoundé",
+    "Ottawa",
+    "Moscow",
+    "Brasília"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 166,
+   "text": "What is the capital of Brazil?",
+   "options": [
+    "Washington, D.C.",
+    "Brasília",
+    "Freetown",
+    "Banjul"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 167,
+   "text": "What is the capital of Argentina?",
+   "options": [
+    "Ottawa",
+    "Buenos Aires",
+    "Windhoek",
+    "Dakar"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 168,
+   "text": "What is the capital of Australia?",
+   "options": [
+    "Khartoum",
+    "Canberra",
+    "Kingston",
+    "Paris"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 169,
+   "text": "What is the capital of Saudi Arabia?",
+   "options": [
+    "Riyadh",
+    "Harare",
+    "Gaborone",
+    "Kingston"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 170,
+   "text": "What is the capital of Turkey?",
+   "options": [
+    "Algiers",
+    "Ankara",
+    "Madrid",
+    "Libreville"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 171,
+   "text": "What is the capital of Greece?",
+   "options": [
+    "Accra",
+    "Lusaka",
+    "Athens",
+    "Stockholm"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 172,
+   "text": "What is the capital of Belgium?",
+   "options": [
+    "Algiers",
+    "Berlin",
+    "Brussels",
+    "Dublin"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 173,
+   "text": "What is the capital of Sweden?",
+   "options": [
+    "Rome",
+    "Islamabad",
+    "Stockholm",
+    "Maputo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 174,
+   "text": "What is the capital of Norway?",
+   "options": [
+    "Bamako",
+    "Oslo",
+    "N'Djamena",
+    "Islamabad"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 175,
+   "text": "What is the capital of Mexico?",
+   "options": [
+    "Mexico City",
+    "Warsaw",
+    "Kinshasa",
+    "Rabat"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 176,
+   "text": "What is the capital of South Korea?",
+   "options": [
+    "Seoul",
+    "Washington, D.C.",
+    "Oslo",
+    "Monrovia"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 177,
+   "text": "What is the capital of Pakistan?",
+   "options": [
+    "Berlin",
+    "Brasília",
+    "Islamabad",
+    "Freetown"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 178,
+   "text": "What is the capital of Ireland?",
+   "options": [
+    "Monrovia",
+    "Havana",
+    "Dublin",
+    "Yaoundé"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 179,
+   "text": "What is the capital of Poland?",
+   "options": [
+    "Dakar",
+    "Stockholm",
+    "Dublin",
+    "Warsaw"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 180,
+   "text": "What is the capital of Austria?",
+   "options": [
+    "Algiers",
+    "Vienna",
+    "Riyadh",
+    "Seoul"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 181,
+   "text": "What is the capital of Switzerland?",
+   "options": [
+    "Seoul",
+    "Bern",
+    "Bamako",
+    "Canberra"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 182,
+   "text": "What is the capital of Cuba?",
+   "options": [
+    "Kinshasa",
+    "Bamako",
+    "Harare",
+    "Havana"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 183,
+   "text": "What is the capital of Jamaica?",
+   "options": [
+    "Kingston",
+    "Rabat",
+    "Mexico City",
+    "Islamabad"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 184,
+   "text": "What is the capital of Democratic Republic of the Congo?",
+   "options": [
+    "Kinshasa",
+    "Beijing",
+    "Ouagadougou",
+    "Mexico City"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 185,
+   "text": "Which arm of government interprets the law?",
+   "options": [
+    "The police",
+    "The executive",
+    "The judiciary",
+    "The legislature"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 186,
+   "text": "Which arm of government carries out the law?",
+   "options": [
+    "The judiciary",
+    "The executive",
+    "The legislature",
+    "The civil service"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 187,
+   "text": "Nigeria's National Assembly is made up of the Senate and the …",
+   "options": [
+    "House of Representatives",
+    "House of Assembly",
+    "Council of State",
+    "House of Lords"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 188,
+   "text": "How many senators represent each state in the Senate?",
+   "options": [
+    "Two",
+    "Four",
+    "Five",
+    "Three"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 189,
+   "text": "Nigeria became a republic in which year?",
+   "options": [
+    "1966",
+    "1963",
+    "1960",
+    "1979"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 190,
+   "text": "Nigeria's national anthem begins with the words …",
+   "options": [
+    "Nigeria, we hail thee",
+    "O God of creation",
+    "I pledge to Nigeria",
+    "Arise, O compatriots"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 191,
+   "text": "In which state is Nigeria's highest point, Chappal Waddi?",
+   "options": [
+    "Adamawa",
+    "Plateau",
+    "Bauchi",
+    "Taraba"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 192,
+   "text": "The Kainji Dam is on which river?",
+   "options": [
+    "River Niger",
+    "River Kaduna",
+    "River Benue",
+    "River Ogun"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 193,
+   "text": "In which year did the Federal Government officially move from Lagos to Abuja?",
+   "options": [
+    "1976",
+    "1991",
+    "1999",
+    "1983"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 194,
+   "text": "The Amalgamation of the Northern and Southern Protectorates of Nigeria took place in …",
+   "options": [
+    "1922",
+    "1914",
+    "1960",
+    "1900"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 195,
+   "text": "What does CPU stand for?",
+   "options": [
+    "Computer Personal Unit",
+    "Central Program Utility",
+    "Central Processing Unit",
+    "Control Processing Unit"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 196,
+   "text": "What does RAM stand for?",
+   "options": [
+    "Read Access Memory",
+    "Read And Memorise",
+    "Rapid Access Machine",
+    "Random Access Memory"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 197,
+   "text": "Which of these is an input device?",
+   "options": [
+    "Keyboard",
+    "Monitor",
+    "Speaker",
+    "Printer"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 198,
+   "text": "Which of these is an output device?",
+   "options": [
+    "Keyboard",
+    "Scanner",
+    "Printer",
+    "Mouse"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 199,
+   "text": "How many bits make one byte?",
+   "options": [
+    "4",
+    "8",
+    "16",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 200,
+   "text": "Who is called the father of the computer?",
+   "options": [
+    "Bill Gates",
+    "Charles Babbage",
+    "Alan Turing",
+    "Thomas Edison"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 201,
+   "text": "What does WWW stand for?",
+   "options": [
+    "Web World Wide",
+    "Wide World Web",
+    "World Wide Web",
+    "World Web Wide"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 202,
+   "text": "Which memory keeps its contents when the computer is switched off?",
+   "options": [
+    "ROM",
+    "RAM",
+    "Register",
+    "Cache"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 203,
+   "text": "The basic unit of life is the …",
+   "options": [
+    "Tissue",
+    "Atom",
+    "Cell",
+    "Organ"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 204,
+   "text": "Which part of the cell controls its activities?",
+   "options": [
+    "Nucleus",
+    "Vacuole",
+    "Cell membrane",
+    "Cytoplasm"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 205,
+   "text": "Which blood cells fight infection?",
+   "options": [
+    "White blood cells",
+    "Red blood cells",
+    "Plasma",
+    "Platelets"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 206,
+   "text": "Which blood cells carry oxygen?",
+   "options": [
+    "Platelets",
+    "White blood cells",
+    "Red blood cells",
+    "Lymph"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 207,
+   "text": "The process by which green plants make food is called …",
+   "options": [
+    "Transpiration",
+    "Photosynthesis",
+    "Respiration",
+    "Digestion"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 208,
+   "text": "The loss of water from the leaves of plants is called …",
+   "options": [
+    "Respiration",
+    "Transpiration",
+    "Photosynthesis",
+    "Excretion"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 209,
+   "text": "What is the chemical formula for water?",
+   "options": [
+    "H₂O₂",
+    "H₂O",
+    "CO₂",
+    "O₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 210,
+   "text": "What is the chemical formula for carbon dioxide?",
+   "options": [
+    "CO₂",
+    "O₂",
+    "CO",
+    "C₂O"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 211,
+   "text": "Common salt is the chemical called …",
+   "options": [
+    "Calcium carbonate",
+    "Sodium chloride",
+    "Sodium hydroxide",
+    "Potassium chloride"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 212,
+   "text": "What is the SI unit of force?",
+   "options": [
+    "Pascal",
+    "Watt",
+    "Newton",
+    "Joule"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 213,
+   "text": "What is the SI unit of energy?",
+   "options": [
+    "Newton",
+    "Joule",
+    "Watt",
+    "Volt"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 214,
+   "text": "What is the SI unit of power?",
+   "options": [
+    "Ampere",
+    "Newton",
+    "Watt",
+    "Joule"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 215,
+   "text": "What is the SI unit of electric current?",
+   "options": [
+    "Watt",
+    "Ohm",
+    "Ampere",
+    "Volt"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 216,
+   "text": "What is the SI unit of length?",
+   "options": [
+    "Kilometre",
+    "Foot",
+    "Metre",
+    "Centimetre"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 217,
+   "text": "What is the SI unit of mass?",
+   "options": [
+    "Newton",
+    "Tonne",
+    "Kilogram",
+    "Gram"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 218,
+   "text": "Which gas makes up most of the air?",
+   "options": [
+    "Carbon dioxide",
+    "Nitrogen",
+    "Argon",
+    "Oxygen"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 219,
+   "text": "Which organ removes urea from the blood?",
+   "options": [
+    "The liver",
+    "The heart",
+    "The kidneys",
+    "The lungs"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 220,
+   "text": "Insulin is made by which organ?",
+   "options": [
+    "The liver",
+    "The pancreas",
+    "The kidneys",
+    "The stomach"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 221,
+   "text": "Which planet is known for its rings?",
+   "options": [
+    "Venus",
+    "Mercury",
+    "Mars",
+    "Saturn"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 222,
+   "text": "What is the closest star to the Earth?",
+   "options": [
+    "Polaris",
+    "Sirius",
+    "The Moon",
+    "The Sun"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 223,
+   "text": "An instrument used to measure atmospheric pressure is the …",
+   "options": [
+    "Barometer",
+    "Anemometer",
+    "Thermometer",
+    "Hygrometer"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 224,
+   "text": "An instrument used to measure wind speed is the …",
+   "options": [
+    "Barometer",
+    "Thermometer",
+    "Anemometer",
+    "Rain gauge"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 225,
+   "text": "The study of living things is called …",
+   "options": [
+    "Physics",
+    "Geology",
+    "Biology",
+    "Chemistry"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 226,
+   "text": "The study of the Earth's rocks is called …",
+   "options": [
+    "Biology",
+    "Geology",
+    "Astronomy",
+    "Botany"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 227,
+   "text": "The study of plants is called …",
+   "options": [
+    "Botany",
+    "Geology",
+    "Ecology",
+    "Zoology"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 228,
+   "text": "The study of animals is called …",
+   "options": [
+    "Ecology",
+    "Zoology",
+    "Geology",
+    "Botany"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 229,
+   "text": "The headquarters of the African Union is in …",
+   "options": [
+    "Abuja",
+    "Addis Ababa",
+    "Accra",
+    "Nairobi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 230,
+   "text": "The headquarters of ECOWAS is in …",
+   "options": [
+    "Abuja",
+    "Lagos",
+    "Dakar",
+    "Accra"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 231,
+   "text": "The headquarters of the United Nations is in …",
+   "options": [
+    "New York",
+    "Geneva",
+    "Paris",
+    "London"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 232,
+   "text": "Which is the longest river in Africa?",
+   "options": [
+    "The Niger",
+    "The Zambezi",
+    "The Nile",
+    "The Congo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 233,
+   "text": "Which is the largest desert in Africa?",
+   "options": [
+    "The Sahel",
+    "The Kalahari",
+    "The Sahara",
+    "The Namib"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 234,
+   "text": "Which is the highest mountain in Africa?",
+   "options": [
+    "Mount Kenya",
+    "Mount Cameroon",
+    "Mount Everest",
+    "Mount Kilimanjaro"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 235,
+   "text": "Nigeria became independent in which year?",
+   "options": [
+    "1914",
+    "1960",
+    "1970",
+    "1963"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 236,
+   "text": "On what date does Nigeria celebrate its Independence Day?",
+   "options": [
+    "27 May",
+    "29 May",
+    "12 June",
+    "1 October"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 237,
+   "text": "What is the capital of Nigeria?",
+   "options": [
+    "Kaduna",
+    "Abuja",
+    "Lagos",
+    "Ibadan"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 238,
+   "text": "What is the name of Nigeria's currency?",
+   "options": [
+    "Rand",
+    "Naira",
+    "Shilling",
+    "Cedi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 239,
+   "text": "What are the colours of the Nigerian flag?",
+   "options": [
+    "Red, white, red",
+    "Green, white, red",
+    "Green, yellow, green",
+    "Green, white, green"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 240,
+   "text": "How many states are there in Nigeria?",
+   "options": [
+    "30",
+    "36",
+    "19",
+    "37"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 241,
+   "text": "Which is the longest river in Nigeria?",
+   "options": [
+    "River Niger",
+    "River Kaduna",
+    "River Benue",
+    "River Ogun"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 242,
+   "text": "The Rivers Niger and Benue meet at which town?",
+   "options": [
+    "Jebba",
+    "Makurdi",
+    "Onitsha",
+    "Lokoja"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 243,
+   "text": "What is the national motto of Nigeria?",
+   "options": [
+    "One Nation, One Destiny",
+    "Unity and Faith, Peace and Progress",
+    "Faith and Hope",
+    "Peace and Unity"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 244,
+   "text": "Who designed the Nigerian flag?",
+   "options": [
+    "Nnamdi Azikiwe",
+    "Ahmadu Bello",
+    "Herbert Macaulay",
+    "Taiwo Akinkunmi"
+   ],
+   "answer": 3,
+   "points": 1
+  }
+ ]
+}

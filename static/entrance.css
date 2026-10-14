@@ -101,6 +101,7 @@
 .en-row-forms form { display: inline-flex; gap: 4px; align-items: center; margin: 0; }
 .en-row-forms[hidden] { display: none; }
 .ac .en-row-forms input[type="text"] { width: 130px !important; }
+.ac .en-row-forms input.en-per-attempt { width: 118px !important; }
 @media (max-width: 760px) { .ac .en-decide form { grid-template-columns: minmax(0, 1fr); min-width: 0; } .en-row-forms { justify-content: flex-start; } }
 
 /* SSS departments (templates/includes/_department_fit.html): the fit table, with the recommended row marked, and the

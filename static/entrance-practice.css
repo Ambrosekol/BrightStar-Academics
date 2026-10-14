@@ -1,0 +1,119 @@
+/* Entrance practice, the public page (templates/entrance_practice.html). Compact and plain, like the staff dashboard:
+   small type, hairlines, one panel. Every colour is mixed from the school's own two, --ep-brand (its primary, the
+   buttons and headings) and --ep-accent (highlights), set on the page from the school's settings. */
+.ep {
+  --ep-ink: #17212c;
+  --ep-ink-2: #46525f;
+  --ep-muted: #6b7684;
+  --ep-line: #e2e6eb;
+  --ep-surface: #fff;
+  --ep-wash: color-mix(in srgb, var(--ep-brand) 4%, #f7f8fa);
+  --ep-tint: color-mix(in srgb, var(--ep-accent) 10%, #fff);
+  margin: 0; min-height: 100vh; background: var(--ep-wash); color: var(--ep-ink);
+  font: 14px/1.5 "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.ep *, .ep *::before, .ep *::after { box-sizing: border-box; }
+.ep a { color: inherit; }
+
+/* The bar along the top: the school, and the way into the portal */
+.ep-bar { background: var(--ep-surface); border-top: 3px solid var(--ep-brand); border-bottom: 1px solid var(--ep-line); }
+.ep-bar__in { max-width: 880px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ep-school { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; }
+.ep-school img, .ep-school__mark { flex: none; width: 34px; height: 34px; border-radius: 8px; object-fit: contain; }
+.ep-school__mark { display: grid; place-items: center; background: var(--ep-brand); color: #fff; font-weight: 700; }
+.ep-school span { display: flex; flex-direction: column; min-width: 0; }
+.ep-school strong { font: 600 16px/1.2 "Newsreader", Georgia, serif; color: var(--ep-brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-school small { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ep-muted); }
+
+/* Buttons */
+.ep-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 14px; border: 1px solid var(--ep-brand);
+  border-radius: 8px; background: var(--ep-brand); color: #fff !important; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none;
+  white-space: nowrap; cursor: pointer; transition: background .12s ease, border-color .12s ease; }
+.ep-btn:hover { background: color-mix(in srgb, var(--ep-brand) 86%, #000); border-color: color-mix(in srgb, var(--ep-brand) 86%, #000); }
+.ep-btn:focus-visible { outline: 2px solid var(--ep-accent); outline-offset: 2px; }
+.ep-btn--ghost { background: var(--ep-surface); border-color: var(--ep-line); color: var(--ep-ink) !important; }
+.ep-btn--ghost:hover { background: var(--ep-wash); border-color: color-mix(in srgb, var(--ep-line) 60%, var(--ep-ink)); }
+
+/* The page */
+.ep-main { max-width: 880px; margin: 0 auto; padding: 28px 16px 40px; }
+.ep-intro { margin-bottom: 18px; }
+.ep-kicker { margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ep-accent); }
+.ep-intro h1 { margin: 0 0 6px; font: 600 28px/1.15 "Newsreader", Georgia, serif; color: var(--ep-brand); letter-spacing: -.005em; }
+.ep-lede { margin: 0 0 12px; max-width: 62ch; color: var(--ep-ink-2); }
+.ep-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--ep-ink-2); }
+.ep-facts li { display: flex; align-items: center; gap: 7px; }
+.ep-facts li::before { content: ""; width: 14px; height: 14px; border-radius: 50%; flex: none;
+  background: var(--ep-tint) no-repeat center / 9px 9px
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2 4 7.5 8.5 2.5' fill='none' stroke='%2317212c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ep-accent) 35%, transparent); }
+.ep-alert { margin: 0 0 14px; padding: 10px 14px; border: 1px solid color-mix(in srgb, #b3261e 30%, #fff); border-left: 3px solid #b3261e;
+  border-radius: 8px; background: color-mix(in srgb, #b3261e 6%, #fff); color: #7d1a15; font-size: 13px; }
+
+/* The panel: the class switch, the subjects, how it works */
+.ep-panel { background: var(--ep-surface); border: 1px solid var(--ep-line); border-radius: 12px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); overflow: hidden; }
+.ep-panel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 14px 16px;
+  border-bottom: 1px solid var(--ep-line); }
+.ep-panel__head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.ep-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--ep-line); border-radius: 8px; background: var(--ep-wash); }
+.ep-seg a { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--ep-ink-2); text-decoration: none; white-space: nowrap; }
+.ep-seg a:hover { color: var(--ep-ink); background: var(--ep-surface); }
+.ep-seg a.is-on { background: var(--ep-surface); color: var(--ep-brand); box-shadow: 0 1px 2px rgba(16, 24, 40, .08), inset 0 -2px 0 var(--ep-accent); }
+
+.ep-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 96px 112px; align-items: center; gap: 12px; padding: 12px 16px; }
+.ep-row + .ep-row { border-top: 1px solid var(--ep-line); }
+.ep-row--head { padding-top: 9px; padding-bottom: 9px; background: var(--ep-wash); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ep-muted); }
+.ep-row:not(.ep-row--head):hover { background: color-mix(in srgb, var(--ep-wash) 60%, #fff); }
+.ep-row.is-off { color: var(--ep-muted); }
+.ep-sub { display: flex; flex-direction: column; min-width: 0; }
+.ep-sub strong { font-size: 14.5px; font-weight: 600; }
+.ep-row.is-off .ep-sub strong { font-weight: 500; }
+.ep-sub small { font-size: 12px; color: var(--ep-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ep-row.is-off .ep-num { font-weight: 400; }
+.ep-go { display: flex; justify-content: flex-end; }
+.ep-tag { padding: 3px 9px; border-radius: 999px; background: var(--ep-wash); border: 1px solid var(--ep-line); font-size: 11.5px; font-weight: 600; color: var(--ep-muted); }
+.ep-empty { margin: 0; padding: 12px 16px; border-top: 1px solid var(--ep-line); font-size: 13px; color: var(--ep-muted); }
+
+.ep-how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; border-top: 1px solid var(--ep-line); background: var(--ep-wash); }
+.ep-how > div { padding: 12px 16px; }
+.ep-how > div + div { border-left: 1px solid var(--ep-line); }
+.ep-how dt { margin-bottom: 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ep-muted); }
+.ep-how dd { margin: 0; font-size: 12.5px; color: var(--ep-ink-2); }
+
+/* Before starting: a small window with the paper's facts and its rules */
+.ep-dialog { width: min(420px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--ep-line); border-radius: 14px; background: var(--ep-surface);
+  color: var(--ep-ink); box-shadow: 0 24px 60px rgba(10, 20, 35, .25); }
+.ep-dialog::backdrop { background: rgba(10, 20, 35, .45); }
+.ep-dialog__in { padding: 20px; }
+.ep-dialog h2 { margin: 0 0 14px; font: 600 22px/1.2 "Newsreader", Georgia, serif; color: var(--ep-brand); }
+.ep-dl { margin: 0 0 14px; border: 1px solid var(--ep-line); border-radius: 8px; overflow: hidden; }
+.ep-dl > div { display: flex; justify-content: space-between; gap: 14px; padding: 8px 12px; font-size: 13px; }
+.ep-dl > div + div { border-top: 1px solid var(--ep-line); }
+.ep-dl dt { flex: none; color: var(--ep-muted); }
+.ep-dl dd { margin: 0; font-weight: 600; text-align: right; }
+.ep-rules { margin: 0 0 18px; padding-left: 18px; font-size: 13px; color: var(--ep-ink-2); }
+.ep-rules li { margin: 3px 0; }
+.ep-rules li::marker { color: var(--ep-accent); }
+.ep-dialog__acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* A phone: each subject stacks, the numbers under its name */
+@media (max-width: 640px) {
+  .ep-main { padding-top: 20px; }
+  .ep-intro h1 { font-size: 24px; }
+  .ep-panel__head { flex-direction: column; align-items: stretch; }
+  .ep-seg { display: flex; }
+  .ep-seg a { flex: 1; text-align: center; }
+  .ep-row--head { display: none; }
+  .ep-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "sub go" "q t"; row-gap: 4px; }
+  .ep-sub { grid-area: sub; }
+  .ep-go { grid-area: go; }
+  .ep-row > .ep-num:nth-of-type(1) { grid-area: q; }
+  .ep-row > .ep-num:nth-of-type(2) { grid-area: t; text-align: right; }
+  .ep-num { font-size: 12.5px; font-weight: 500; color: var(--ep-ink-2); }
+  .ep-num::before { content: attr(data-label) ": "; color: var(--ep-muted); font-weight: 400; }
+  .ep-how { grid-template-columns: 1fr; }
+  .ep-how > div + div { border-left: 0; border-top: 1px solid var(--ep-line); }
+  .ep-dialog__acts .ep-btn { flex: 1; }
+}

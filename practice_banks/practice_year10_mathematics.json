@@ -1,0 +1,5113 @@
+{
+ "id": "practice_year10_mathematics",
+ "name": "Mathematics - entrance practice into Year 10",
+ "level": "Year 10",
+ "entry_group": "year10",
+ "subject": "Mathematics",
+ "duration_seconds": 3600,
+ "questions_to_serve": 25,
+ "version": "1.0",
+ "source_status": "platform_practice",
+ "questions": [
+  {
+   "id": 1,
+   "text": "Simplify: 5n + 11n − 5n",
+   "options": [
+    "21n",
+    "11n",
+    "11n²",
+    "50n"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "Simplify: 4n + 10n − 3n",
+   "options": [
+    "17n",
+    "11n",
+    "37n",
+    "11n²"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "Simplify: 6m + 4m − 7m",
+   "options": [
+    "4m",
+    "3m²",
+    "3m",
+    "17m"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "Simplify: 6n + 10n − 5n",
+   "options": [
+    "21n",
+    "55n",
+    "11n²",
+    "11n"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "Simplify: 3x + 9x − 3x",
+   "options": [
+    "15x",
+    "9x",
+    "24x",
+    "9x²"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "Simplify: 10a + 9a − 1a",
+   "options": [
+    "20a",
+    "18a",
+    "18a²",
+    "89a"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "Simplify: 9m + 11m − 8m",
+   "options": [
+    "91m",
+    "12m²",
+    "12m",
+    "28m"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "Simplify: 6b + 5b − 9b",
+   "options": [
+    "21b",
+    "2b²",
+    "20b",
+    "2b"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "Simplify: 6n + 3n − 2n",
+   "options": [
+    "7n",
+    "11n",
+    "16n",
+    "7n²"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "Simplify: 3n + 10n − 7n",
+   "options": [
+    "6n²",
+    "23n",
+    "6n",
+    "20n"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "Simplify: 7m + 10m − 2m",
+   "options": [
+    "68m",
+    "19m",
+    "15m²",
+    "15m"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "Simplify: 4m + 6m − 1m",
+   "options": [
+    "9m",
+    "11m",
+    "23m",
+    "9m²"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "Simplify: 8a + 10a − 4a",
+   "options": [
+    "14a",
+    "76a",
+    "22a",
+    "14a²"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "Simplify: 5a + 4a − 5a",
+   "options": [
+    "14a",
+    "4a",
+    "15a",
+    "4a²"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "Simplify: 11y + 3y − 4y",
+   "options": [
+    "10y",
+    "29y",
+    "10y²",
+    "18y"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "Simplify: 11y + 6y − 8y",
+   "options": [
+    "9y²",
+    "25y",
+    "9y",
+    "58y"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "Simplify: 8x + 5x − 5x",
+   "options": [
+    "18x",
+    "8x",
+    "35x",
+    "8x²"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Simplify: 3x + 11x − 7x",
+   "options": [
+    "7x²",
+    "7x",
+    "26x",
+    "21x"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "Simplify: 3n + 7n − 7n",
+   "options": [
+    "17n",
+    "14n",
+    "3n²",
+    "3n"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "Simplify: 10y + 7y − 3y",
+   "options": [
+    "14y²",
+    "20y",
+    "14y",
+    "67y"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "Simplify: 12n + 5n − 5n",
+   "options": [
+    "55n",
+    "12n²",
+    "12n",
+    "22n"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "Simplify: 7y + 2y − 4y",
+   "options": [
+    "5y²",
+    "10y",
+    "5y",
+    "13y"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "Solve for x: 7x − 20 = -48",
+   "options": [
+    "4",
+    "-3",
+    "-4",
+    "-6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "Solve for x: 6x − 19 = -43",
+   "options": [
+    "-6",
+    "4",
+    "-3",
+    "-4"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "Solve for x: 9x − 8 = -89",
+   "options": [
+    "-9",
+    "-8",
+    "9",
+    "-11"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "Solve for x: 3x + 18 = 51",
+   "options": [
+    "9",
+    "12",
+    "11",
+    "-11"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Solve for x: 8x + 8 = -24",
+   "options": [
+    "-4",
+    "4",
+    "-6",
+    "-3"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "Solve for x: 6x + 1 = 1",
+   "options": [
+    "0",
+    "1",
+    "-2",
+    "2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "Solve for x: 2x − 3 = 19",
+   "options": [
+    "9",
+    "-11",
+    "11",
+    "12"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "Solve for x: 3x − 7 = 11",
+   "options": [
+    "4",
+    "7",
+    "6",
+    "-6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Solve for x: 3x + 10 = 19",
+   "options": [
+    "-3",
+    "4",
+    "3",
+    "1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "Solve for x: 7x + 7 = 70",
+   "options": [
+    "10",
+    "7",
+    "-9",
+    "9"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Solve for x: 6x − 19 = -19",
+   "options": [
+    "-2",
+    "1",
+    "2",
+    "0"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "Solve for x: 5x − 3 = -8",
+   "options": [
+    "-1",
+    "-3",
+    "1",
+    "0"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Solve for x: 6x + 17 = 59",
+   "options": [
+    "5",
+    "7",
+    "-7",
+    "8"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "Solve for x: 9x − 12 = 24",
+   "options": [
+    "5",
+    "2",
+    "4",
+    "-4"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Solve for x: 6x + 7 = 79",
+   "options": [
+    "10",
+    "13",
+    "-12",
+    "12"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Solve for x: 6x + 4 = -2",
+   "options": [
+    "-1",
+    "1",
+    "-3",
+    "0"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Solve for x: 3x + 9 = 15",
+   "options": [
+    "2",
+    "0",
+    "3",
+    "-2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Solve for x: 5x + 19 = -26",
+   "options": [
+    "-11",
+    "9",
+    "-9",
+    "-8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Solve for x: 3x − 18 = 3",
+   "options": [
+    "8",
+    "-7",
+    "7",
+    "5"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Solve for x: 5x − 13 = 62",
+   "options": [
+    "-15",
+    "15",
+    "16",
+    "13"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Solve for x: 8x − 17 = -33",
+   "options": [
+    "2",
+    "-4",
+    "-2",
+    "-1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Solve for x: 5x − 7 = 23",
+   "options": [
+    "6",
+    "-6",
+    "4",
+    "7"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Solve for x: 9x − 10 = -28",
+   "options": [
+    "-4",
+    "-2",
+    "2",
+    "-1"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 46,
+   "text": "Solve for x: 3x + 14 = -13",
+   "options": [
+    "9",
+    "-9",
+    "-8",
+    "-11"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 47,
+   "text": "Solve for x: 3x + 12 = 9",
+   "options": [
+    "-1",
+    "-3",
+    "1",
+    "0"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 48,
+   "text": "Solve for x: 3x + 6 = 39",
+   "options": [
+    "11",
+    "-11",
+    "9",
+    "12"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 49,
+   "text": "Solve for x: 7x − 8 = -22",
+   "options": [
+    "-1",
+    "-4",
+    "2",
+    "-2"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 50,
+   "text": "Solve for x: 6x − 17 = -11",
+   "options": [
+    "6",
+    "2",
+    "1",
+    "-1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 51,
+   "text": "Solve for x: 7x + 2 = 16",
+   "options": [
+    "0",
+    "-2",
+    "3",
+    "2"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 52,
+   "text": "Solve for x: 7x + 6 = 104",
+   "options": [
+    "15",
+    "14",
+    "12",
+    "-14"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 53,
+   "text": "If x = -5 and y = 3, find the value of 5x + 6y.",
+   "options": [
+    "-6",
+    "-43",
+    "-7",
+    "-15"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 54,
+   "text": "If x = 4 and y = -4, find the value of 2x + 4y.",
+   "options": [
+    "-8",
+    "24",
+    "8",
+    "-7"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 55,
+   "text": "If x = -4 and y = -5, find the value of 3x + 3y.",
+   "options": [
+    "3",
+    "-27",
+    "-9",
+    "-26"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 56,
+   "text": "If x = -5 and y = 6, find the value of 4x + 5y.",
+   "options": [
+    "10",
+    "-50",
+    "11",
+    "-1"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 57,
+   "text": "If x = 1 and y = -3, find the value of 6x + 2y.",
+   "options": [
+    "0",
+    "12",
+    "-16",
+    "1"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 58,
+   "text": "If x = 1 and y = 7, find the value of 4x + 3y.",
+   "options": [
+    "25",
+    "31",
+    "-17",
+    "26"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 59,
+   "text": "If x = 1 and y = 2, find the value of 5x + 3y.",
+   "options": [
+    "12",
+    "13",
+    "11",
+    "-1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 60,
+   "text": "If x = 8 and y = 9, find the value of 5x + 4y.",
+   "options": [
+    "4",
+    "77",
+    "17",
+    "76"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 61,
+   "text": "If x = 6 and y = -3, find the value of 5x + 5y.",
+   "options": [
+    "15",
+    "3",
+    "16",
+    "45"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 62,
+   "text": "If x = 1 and y = 4, find the value of 2x + 4y.",
+   "options": [
+    "19",
+    "18",
+    "12",
+    "-14"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 63,
+   "text": "If x = -3 and y = -4, find the value of 3x + 3y.",
+   "options": [
+    "-21",
+    "3",
+    "-20",
+    "-7"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 64,
+   "text": "If x = 9 and y = -4, find the value of 6x + 6y.",
+   "options": [
+    "30",
+    "31",
+    "5",
+    "78"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 65,
+   "text": "If x = 0 and y = 4, find the value of 3x + 4y.",
+   "options": [
+    "-16",
+    "17",
+    "12",
+    "16"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 66,
+   "text": "If x = 3 and y = -1, find the value of 5x + 4y.",
+   "options": [
+    "7",
+    "19",
+    "11",
+    "12"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 67,
+   "text": "If x = 6 and y = -4, find the value of 6x + 5y.",
+   "options": [
+    "17",
+    "6",
+    "16",
+    "56"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 68,
+   "text": "If x = 3 and y = -3, find the value of 5x + 4y.",
+   "options": [
+    "3",
+    "-3",
+    "4",
+    "27"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 69,
+   "text": "If x = -2 and y = -2, find the value of 3x + 5y.",
+   "options": [
+    "-16",
+    "4",
+    "-15",
+    "-4"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 70,
+   "text": "If x = -1 and y = 7, find the value of 5x + 4y.",
+   "options": [
+    "-33",
+    "31",
+    "23",
+    "24"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 71,
+   "text": "If x = 4 and y = -3, find the value of 6x + 6y.",
+   "options": [
+    "6",
+    "7",
+    "42",
+    "1"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 72,
+   "text": "If x = 7 and y = 3, find the value of 6x + 6y.",
+   "options": [
+    "61",
+    "60",
+    "24",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 73,
+   "text": "If x = -4 and y = -1, find the value of 3x + 3y.",
+   "options": [
+    "-15",
+    "-5",
+    "-14",
+    "-9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 74,
+   "text": "If x = 2 and y = 4, find the value of 6x + 6y.",
+   "options": [
+    "36",
+    "37",
+    "-12",
+    "6"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 75,
+   "text": "Expand: 4(x − 9)",
+   "options": [
+    "4x − 36",
+    "x − 36",
+    "4x − 9",
+    "4x + 36"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 76,
+   "text": "Expand: 8(b + 1)",
+   "options": [
+    "b + 8",
+    "8b − 8",
+    "8b + 8",
+    "8b + 1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 77,
+   "text": "Expand: 2(b − 9)",
+   "options": [
+    "b − 18",
+    "2b − 18",
+    "2b − 9",
+    "2b + 18"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 78,
+   "text": "Expand: 3(a − 8)",
+   "options": [
+    "3a − 8",
+    "a − 24",
+    "3a + 24",
+    "3a − 24"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 79,
+   "text": "Expand: 8(y − 7)",
+   "options": [
+    "y − 56",
+    "8y − 56",
+    "8y + 56",
+    "8y − 7"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 80,
+   "text": "Expand: 8(a + 3)",
+   "options": [
+    "8a − 24",
+    "8a + 3",
+    "a + 24",
+    "8a + 24"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 81,
+   "text": "Expand: 8(x − 1)",
+   "options": [
+    "8x − 1",
+    "8x + 8",
+    "8x − 8",
+    "x − 8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 82,
+   "text": "Expand: 7(b − 4)",
+   "options": [
+    "7b − 4",
+    "b − 28",
+    "7b − 28",
+    "7b + 28"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 83,
+   "text": "Expand: 2(b − 7)",
+   "options": [
+    "2b + 14",
+    "2b − 7",
+    "2b − 14",
+    "b − 14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 84,
+   "text": "Expand: 2(x + 2)",
+   "options": [
+    "2x + 4",
+    "x + 4",
+    "2x − 4",
+    "2x + 2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 85,
+   "text": "Expand: 7(x + 11)",
+   "options": [
+    "x + 77",
+    "7x + 77",
+    "7x − 77",
+    "7x + 11"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 86,
+   "text": "Expand: 7(a + 7)",
+   "options": [
+    "a + 49",
+    "7a + 49",
+    "7a + 7",
+    "7a − 49"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 87,
+   "text": "Expand: 4(y + 6)",
+   "options": [
+    "y + 24",
+    "4y + 24",
+    "4y − 24",
+    "4y + 6"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 88,
+   "text": "Expand: 4(x − 3)",
+   "options": [
+    "x − 12",
+    "4x − 3",
+    "4x + 12",
+    "4x − 12"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 89,
+   "text": "Expand: 4(b − 3)",
+   "options": [
+    "4b − 3",
+    "4b + 12",
+    "4b − 12",
+    "b − 12"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 90,
+   "text": "Expand: 4(y + 1)",
+   "options": [
+    "y + 4",
+    "4y + 1",
+    "4y + 4",
+    "4y − 4"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 91,
+   "text": "Expand: 9(b + 4)",
+   "options": [
+    "9b − 36",
+    "9b + 36",
+    "b + 36",
+    "9b + 4"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 92,
+   "text": "Expand: 8(b + 6)",
+   "options": [
+    "8b + 6",
+    "b + 48",
+    "8b + 48",
+    "8b − 48"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 93,
+   "text": "Expand: 5(x − 8)",
+   "options": [
+    "5x − 8",
+    "5x + 40",
+    "x − 40",
+    "5x − 40"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 94,
+   "text": "Expand: 3(b − 2)",
+   "options": [
+    "b − 6",
+    "3b − 2",
+    "3b + 6",
+    "3b − 6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 95,
+   "text": "Simplify: 2² × 2³",
+   "options": [
+    "4⁵",
+    "2⁵",
+    "2⁶",
+    "2¹"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 96,
+   "text": "Simplify: 2³ × 2⁴",
+   "options": [
+    "4⁷",
+    "2¹²",
+    "2¹",
+    "2⁷"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 97,
+   "text": "Simplify: 2⁴ × 2⁵",
+   "options": [
+    "2²⁰",
+    "4⁹",
+    "2¹",
+    "2⁹"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 98,
+   "text": "Simplify: 2² × 2⁶",
+   "options": [
+    "2⁴",
+    "2¹²",
+    "4⁸",
+    "2⁸"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 99,
+   "text": "Simplify: 2⁵ × 2³",
+   "options": [
+    "2¹⁵",
+    "4⁸",
+    "2⁸",
+    "2²"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 100,
+   "text": "Simplify: 3² × 3³",
+   "options": [
+    "3⁵",
+    "3¹",
+    "9⁵",
+    "3⁶"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 101,
+   "text": "Simplify: 3³ × 3⁴",
+   "options": [
+    "9⁷",
+    "3¹",
+    "3¹²",
+    "3⁷"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 102,
+   "text": "Simplify: 3⁴ × 3⁵",
+   "options": [
+    "9⁹",
+    "3²⁰",
+    "3¹",
+    "3⁹"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 103,
+   "text": "Simplify: 3² × 3⁶",
+   "options": [
+    "3¹²",
+    "3⁸",
+    "3⁴",
+    "9⁸"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 104,
+   "text": "Simplify: 3⁵ × 3³",
+   "options": [
+    "3⁸",
+    "9⁸",
+    "3¹⁵",
+    "3²"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 105,
+   "text": "Simplify: 5² × 5³",
+   "options": [
+    "5¹",
+    "5⁶",
+    "5⁵",
+    "25⁵"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 106,
+   "text": "Simplify: 5³ × 5⁴",
+   "options": [
+    "5⁷",
+    "5¹²",
+    "25⁷",
+    "5¹"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 107,
+   "text": "Simplify: 5⁴ × 5⁵",
+   "options": [
+    "5²⁰",
+    "25⁹",
+    "5¹",
+    "5⁹"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 108,
+   "text": "Simplify: 5² × 5⁶",
+   "options": [
+    "5⁴",
+    "5¹²",
+    "25⁸",
+    "5⁸"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 109,
+   "text": "Simplify: 5⁵ × 5³",
+   "options": [
+    "5¹⁵",
+    "5²",
+    "25⁸",
+    "5⁸"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 110,
+   "text": "Simplify: 10² × 10³",
+   "options": [
+    "10⁶",
+    "10¹",
+    "10⁵",
+    "100⁵"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 111,
+   "text": "Simplify: 10³ × 10⁴",
+   "options": [
+    "10⁷",
+    "10¹",
+    "10¹²",
+    "100⁷"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 112,
+   "text": "Simplify: 10⁴ × 10⁵",
+   "options": [
+    "10⁹",
+    "100⁹",
+    "10¹",
+    "10²⁰"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 113,
+   "text": "Simplify: 10² × 10⁶",
+   "options": [
+    "100⁸",
+    "10⁴",
+    "10¹²",
+    "10⁸"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 114,
+   "text": "Simplify: 10⁵ × 10³",
+   "options": [
+    "10²",
+    "10⁸",
+    "10¹⁵",
+    "100⁸"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 115,
+   "text": "Evaluate 2⁵.",
+   "options": [
+    "16",
+    "32",
+    "25",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 116,
+   "text": "Evaluate 2⁶.",
+   "options": [
+    "12",
+    "36",
+    "32",
+    "64"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 117,
+   "text": "Evaluate 2⁷.",
+   "options": [
+    "64",
+    "128",
+    "14",
+    "49"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 118,
+   "text": "Evaluate 3³.",
+   "options": [
+    "27",
+    "28",
+    "9",
+    "26"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 119,
+   "text": "Evaluate 3⁴.",
+   "options": [
+    "64",
+    "27",
+    "12",
+    "81"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 120,
+   "text": "Evaluate 5³.",
+   "options": [
+    "243",
+    "15",
+    "125",
+    "25"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 121,
+   "text": "Evaluate 4³.",
+   "options": [
+    "64",
+    "12",
+    "81",
+    "16"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 122,
+   "text": "Evaluate 10⁴.",
+   "options": [
+    "1,048,576",
+    "40",
+    "10,000",
+    "1,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 123,
+   "text": "Evaluate 2⁸.",
+   "options": [
+    "256",
+    "64",
+    "128",
+    "16"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 124,
+   "text": "Evaluate 6².",
+   "options": [
+    "64",
+    "36",
+    "6",
+    "12"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 125,
+   "text": "Evaluate 7².",
+   "options": [
+    "128",
+    "7",
+    "49",
+    "14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 126,
+   "text": "Evaluate 9².",
+   "options": [
+    "512",
+    "18",
+    "81",
+    "9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 127,
+   "text": "Write 2,500 in standard form.",
+   "options": [
+    "25 × 10²",
+    "2.5 × 10²",
+    "2.5 × 10⁴",
+    "2.5 × 10³"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 128,
+   "text": "Write 76,000,000 in standard form.",
+   "options": [
+    "7.6 × 10⁷",
+    "7.6 × 10⁸",
+    "7.6 × 10⁶",
+    "76 × 10⁶"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 129,
+   "text": "Write 73,000 in standard form.",
+   "options": [
+    "73 × 10³",
+    "7.3 × 10⁵",
+    "7.3 × 10⁴",
+    "7.3 × 10³"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 130,
+   "text": "Write 58,000 in standard form.",
+   "options": [
+    "5.8 × 10⁴",
+    "58 × 10³",
+    "5.8 × 10⁵",
+    "5.8 × 10³"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 131,
+   "text": "Write 57,000,000 in standard form.",
+   "options": [
+    "5.7 × 10⁷",
+    "5.7 × 10⁶",
+    "5.7 × 10⁸",
+    "57 × 10⁶"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 132,
+   "text": "Write 33,000,000 in standard form.",
+   "options": [
+    "3.3 × 10⁷",
+    "33 × 10⁶",
+    "3.3 × 10⁶",
+    "3.3 × 10⁸"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 133,
+   "text": "Write 18,000,000 in standard form.",
+   "options": [
+    "18 × 10⁶",
+    "1.8 × 10⁸",
+    "1.8 × 10⁶",
+    "1.8 × 10⁷"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 134,
+   "text": "Write 580,000 in standard form.",
+   "options": [
+    "5.8 × 10⁵",
+    "5.8 × 10⁴",
+    "5.8 × 10⁶",
+    "58 × 10⁴"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 135,
+   "text": "Write 1,400,000 in standard form.",
+   "options": [
+    "14 × 10⁵",
+    "1.4 × 10⁶",
+    "1.4 × 10⁵",
+    "1.4 × 10⁷"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 136,
+   "text": "Write 7,200 in standard form.",
+   "options": [
+    "72 × 10²",
+    "7.2 × 10²",
+    "7.2 × 10³",
+    "7.2 × 10⁴"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 137,
+   "text": "Write 8,500 in standard form.",
+   "options": [
+    "8.5 × 10²",
+    "85 × 10²",
+    "8.5 × 10⁴",
+    "8.5 × 10³"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 138,
+   "text": "Write 640,000 in standard form.",
+   "options": [
+    "64 × 10⁴",
+    "6.4 × 10⁵",
+    "6.4 × 10⁴",
+    "6.4 × 10⁶"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 139,
+   "text": "Write 54,000,000 in standard form.",
+   "options": [
+    "5.4 × 10⁷",
+    "5.4 × 10⁶",
+    "54 × 10⁶",
+    "5.4 × 10⁸"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 140,
+   "text": "Write 8,400,000 in standard form.",
+   "options": [
+    "8.4 × 10⁷",
+    "84 × 10⁵",
+    "8.4 × 10⁵",
+    "8.4 × 10⁶"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 141,
+   "text": "Write 68,000 in standard form.",
+   "options": [
+    "6.8 × 10⁴",
+    "68 × 10³",
+    "6.8 × 10³",
+    "6.8 × 10⁵"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 142,
+   "text": "Write 5,400 in standard form.",
+   "options": [
+    "5.4 × 10³",
+    "5.4 × 10²",
+    "54 × 10²",
+    "5.4 × 10⁴"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 143,
+   "text": "Write 9,700,000 in standard form.",
+   "options": [
+    "97 × 10⁵",
+    "9.7 × 10⁷",
+    "9.7 × 10⁵",
+    "9.7 × 10⁶"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 144,
+   "text": "Write 29,000 in standard form.",
+   "options": [
+    "2.9 × 10⁴",
+    "2.9 × 10³",
+    "29 × 10³",
+    "2.9 × 10⁵"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 145,
+   "text": "Write 160,000 in standard form.",
+   "options": [
+    "1.6 × 10⁵",
+    "1.6 × 10⁴",
+    "1.6 × 10⁶",
+    "16 × 10⁴"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 146,
+   "text": "Write 710,000 in standard form.",
+   "options": [
+    "7.1 × 10⁶",
+    "7.1 × 10⁵",
+    "71 × 10⁴",
+    "7.1 × 10⁴"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 147,
+   "text": "Find the simple interest on ₦75,000 for 3 years at 15% per annum.",
+   "options": [
+    "33,750",
+    "108,750",
+    "67,500",
+    "11,250"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 148,
+   "text": "Find the simple interest on ₦130,000 for 3 years at 12% per annum.",
+   "options": [
+    "46,800",
+    "93,600",
+    "15,600",
+    "176,800"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 149,
+   "text": "Find the simple interest on ₦125,000 for 2 years at 2% per annum.",
+   "options": [
+    "2,500",
+    "130,000",
+    "10,000",
+    "5,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 150,
+   "text": "Find the simple interest on ₦195,000 for 4 years at 15% per annum.",
+   "options": [
+    "312,000",
+    "117,000",
+    "234,000",
+    "29,250"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 151,
+   "text": "Find the simple interest on ₦70,000 for 4 years at 8% per annum.",
+   "options": [
+    "5,600",
+    "22,400",
+    "44,800",
+    "92,400"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 152,
+   "text": "Find the simple interest on ₦195,000 for 4 years at 4% per annum.",
+   "options": [
+    "62,400",
+    "7,800",
+    "226,200",
+    "31,200"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 153,
+   "text": "Find the simple interest on ₦55,000 for 4 years at 15% per annum.",
+   "options": [
+    "88,000",
+    "33,000",
+    "8,250",
+    "66,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 154,
+   "text": "Find the simple interest on ₦90,000 for 3 years at 15% per annum.",
+   "options": [
+    "81,000",
+    "40,500",
+    "13,500",
+    "130,500"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 155,
+   "text": "Find the simple interest on ₦5,000 for 2 years at 15% per annum.",
+   "options": [
+    "6,500",
+    "1,500",
+    "3,000",
+    "750"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 156,
+   "text": "Find the simple interest on ₦45,000 for 2 years at 10% per annum.",
+   "options": [
+    "54,000",
+    "9,000",
+    "4,500",
+    "18,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 157,
+   "text": "Find the simple interest on ₦5,000 for 4 years at 8% per annum.",
+   "options": [
+    "3,200",
+    "400",
+    "1,600",
+    "6,600"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 158,
+   "text": "Find the simple interest on ₦50,000 for 2 years at 4% per annum.",
+   "options": [
+    "8,000",
+    "4,000",
+    "54,000",
+    "2,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 159,
+   "text": "Find the simple interest on ₦140,000 for 2 years at 10% per annum.",
+   "options": [
+    "28,000",
+    "168,000",
+    "56,000",
+    "14,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 160,
+   "text": "Find the simple interest on ₦170,000 for 3 years at 5% per annum.",
+   "options": [
+    "25,500",
+    "195,500",
+    "8,500",
+    "51,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 161,
+   "text": "Find the simple interest on ₦110,000 for 2 years at 12% per annum.",
+   "options": [
+    "136,400",
+    "52,800",
+    "13,200",
+    "26,400"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 162,
+   "text": "Find the simple interest on ₦150,000 for 5 years at 4% per annum.",
+   "options": [
+    "30,000",
+    "6,000",
+    "180,000",
+    "60,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 163,
+   "text": "Find the simple interest on ₦125,000 for 2 years at 4% per annum.",
+   "options": [
+    "135,000",
+    "20,000",
+    "5,000",
+    "10,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 164,
+   "text": "Find the simple interest on ₦140,000 for 4 years at 8% per annum.",
+   "options": [
+    "184,800",
+    "11,200",
+    "44,800",
+    "89,600"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 165,
+   "text": "Find the simple interest on ₦55,000 for 3 years at 8% per annum.",
+   "options": [
+    "26,400",
+    "13,200",
+    "4,400",
+    "68,200"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 166,
+   "text": "Find the simple interest on ₦140,000 for 4 years at 12% per annum.",
+   "options": [
+    "67,200",
+    "207,200",
+    "16,800",
+    "134,400"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 167,
+   "text": "A trader buys an item for ₦44,000 and sells it for ₦66,000. What is the profit per cent?",
+   "options": [
+    "50%",
+    "33.3%",
+    "55%",
+    "100%"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 168,
+   "text": "A trader buys an item for ₦12,000 and sells it for ₦12,600. What is the profit per cent?",
+   "options": [
+    "10%",
+    "95%",
+    "4.8%",
+    "5%"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 169,
+   "text": "A trader buys an item for ₦34,000 and sells it for ₦37,400. What is the profit per cent?",
+   "options": [
+    "9.1%",
+    "10%",
+    "90%",
+    "20%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 170,
+   "text": "A trader buys an item for ₦42,000 and sells it for ₦52,500. What is the profit per cent?",
+   "options": [
+    "75%",
+    "25%",
+    "50%",
+    "20.0%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 171,
+   "text": "A trader buys an item for ₦41,000 and sells it for ₦51,250. What is the profit per cent?",
+   "options": [
+    "75%",
+    "20.0%",
+    "25%",
+    "50%"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 172,
+   "text": "A trader buys an item for ₦46,000 and sells it for ₦64,400. What is the profit per cent?",
+   "options": [
+    "60%",
+    "80%",
+    "40%",
+    "28.6%"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 173,
+   "text": "A trader buys an item for ₦10,000 and sells it for ₦10,500. What is the profit per cent?",
+   "options": [
+    "4.8%",
+    "10%",
+    "95%",
+    "5%"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 174,
+   "text": "A trader buys an item for ₦2,000 and sells it for ₦2,200. What is the profit per cent?",
+   "options": [
+    "90%",
+    "10%",
+    "20%",
+    "9.1%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 175,
+   "text": "A trader buys an item for ₦3,000 and sells it for ₦4,200. What is the profit per cent?",
+   "options": [
+    "60%",
+    "28.6%",
+    "40%",
+    "80%"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 176,
+   "text": "A trader buys an item for ₦50,000 and sells it for ₦75,000. What is the profit per cent?",
+   "options": [
+    "55%",
+    "100%",
+    "50%",
+    "33.3%"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 177,
+   "text": "A trader buys an item for ₦15,000 and sells it for ₦15,750. What is the profit per cent?",
+   "options": [
+    "5%",
+    "4.8%",
+    "95%",
+    "10%"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 178,
+   "text": "A trader buys an item for ₦4,000 and sells it for ₦4,200. What is the profit per cent?",
+   "options": [
+    "95%",
+    "4.8%",
+    "10%",
+    "5%"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 179,
+   "text": "A trader buys an item for ₦7,000 and sells it for ₦8,750. What is the profit per cent?",
+   "options": [
+    "50%",
+    "75%",
+    "25%",
+    "20.0%"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 180,
+   "text": "A trader buys an item for ₦31,000 and sells it for ₦34,100. What is the profit per cent?",
+   "options": [
+    "90%",
+    "20%",
+    "9.1%",
+    "10%"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 181,
+   "text": "A trader buys an item for ₦34,000 and sells it for ₦47,600. What is the profit per cent?",
+   "options": [
+    "60%",
+    "40%",
+    "28.6%",
+    "80%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 182,
+   "text": "A trader buys an item for ₦46,000 and sells it for ₦48,300. What is the profit per cent?",
+   "options": [
+    "95%",
+    "5%",
+    "10%",
+    "4.8%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 183,
+   "text": "A trader buys an item for ₦36,000 and sells it for ₦43,200. What is the profit per cent?",
+   "options": [
+    "80%",
+    "40%",
+    "16.7%",
+    "20%"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 184,
+   "text": "A trader buys an item for ₦8,000 and sells it for ₦8,400. What is the profit per cent?",
+   "options": [
+    "10%",
+    "5%",
+    "95%",
+    "4.8%"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 185,
+   "text": "What is the sum of the interior angles of a polygon with 5 sides?",
+   "options": [
+    "360",
+    "720",
+    "900",
+    "540"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 186,
+   "text": "What is the sum of the interior angles of a polygon with 6 sides?",
+   "options": [
+    "360",
+    "1,080",
+    "720",
+    "900"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 187,
+   "text": "What is the sum of the interior angles of a polygon with 7 sides?",
+   "options": [
+    "1,080",
+    "1,260",
+    "360",
+    "900"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 188,
+   "text": "What is the sum of the interior angles of a polygon with 8 sides?",
+   "options": [
+    "1,260",
+    "1,440",
+    "1,080",
+    "360"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 189,
+   "text": "What is the sum of the interior angles of a polygon with 9 sides?",
+   "options": [
+    "360",
+    "1,260",
+    "1,620",
+    "1,440"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 190,
+   "text": "What is the sum of the interior angles of a polygon with 10 sides?",
+   "options": [
+    "1,440",
+    "360",
+    "1,620",
+    "1,800"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 191,
+   "text": "What is the sum of the interior angles of a polygon with 11 sides?",
+   "options": [
+    "360",
+    "1,620",
+    "1,980",
+    "1,800"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 192,
+   "text": "What is the sum of the interior angles of a polygon with 12 sides?",
+   "options": [
+    "2,160",
+    "1,800",
+    "1,980",
+    "360"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 193,
+   "text": "What is the size of each interior angle of a regular polygon with 5 sides?",
+   "options": [
+    "540°",
+    "108°",
+    "72°",
+    "118°"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 194,
+   "text": "What is the size of each interior angle of a regular polygon with 6 sides?",
+   "options": [
+    "120°",
+    "130°",
+    "720°",
+    "60°"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 195,
+   "text": "What is the size of each interior angle of a regular polygon with 8 sides?",
+   "options": [
+    "135°",
+    "145°",
+    "45°",
+    "1080°"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 196,
+   "text": "What is the size of each interior angle of a regular polygon with 9 sides?",
+   "options": [
+    "1260°",
+    "150°",
+    "140°",
+    "40°"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 197,
+   "text": "What is the size of each interior angle of a regular polygon with 10 sides?",
+   "options": [
+    "36°",
+    "144°",
+    "154°",
+    "1440°"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 198,
+   "text": "What is the size of each interior angle of a regular polygon with 12 sides?",
+   "options": [
+    "150°",
+    "30°",
+    "1800°",
+    "160°"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 199,
+   "text": "What is the size of each interior angle of a regular polygon with 15 sides?",
+   "options": [
+    "2340°",
+    "24°",
+    "156°",
+    "166°"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 200,
+   "text": "What is the size of each interior angle of a regular polygon with 18 sides?",
+   "options": [
+    "20°",
+    "2880°",
+    "170°",
+    "160°"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 201,
+   "text": "What is the size of each interior angle of a regular polygon with 20 sides?",
+   "options": [
+    "162°",
+    "18°",
+    "3240°",
+    "172°"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 202,
+   "text": "The two shorter sides of a right-angled triangle are 3 cm and 4 cm. How long is the hypotenuse?",
+   "options": [
+    "3",
+    "6",
+    "5",
+    "7"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 203,
+   "text": "The two shorter sides of a right-angled triangle are 6 cm and 8 cm. How long is the hypotenuse?",
+   "options": [
+    "10",
+    "14",
+    "7",
+    "11"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 204,
+   "text": "The two shorter sides of a right-angled triangle are 9 cm and 12 cm. How long is the hypotenuse?",
+   "options": [
+    "21",
+    "10",
+    "15",
+    "16"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 205,
+   "text": "The two shorter sides of a right-angled triangle are 12 cm and 16 cm. How long is the hypotenuse?",
+   "options": [
+    "28",
+    "14",
+    "21",
+    "20"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 206,
+   "text": "The two shorter sides of a right-angled triangle are 5 cm and 12 cm. How long is the hypotenuse?",
+   "options": [
+    "13",
+    "8",
+    "14",
+    "17"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 207,
+   "text": "The two shorter sides of a right-angled triangle are 10 cm and 24 cm. How long is the hypotenuse?",
+   "options": [
+    "17",
+    "34",
+    "27",
+    "26"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 208,
+   "text": "The two shorter sides of a right-angled triangle are 15 cm and 36 cm. How long is the hypotenuse?",
+   "options": [
+    "39",
+    "25",
+    "51",
+    "40"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 209,
+   "text": "The two shorter sides of a right-angled triangle are 20 cm and 48 cm. How long is the hypotenuse?",
+   "options": [
+    "52",
+    "34",
+    "53",
+    "68"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 210,
+   "text": "The two shorter sides of a right-angled triangle are 8 cm and 15 cm. How long is the hypotenuse?",
+   "options": [
+    "18",
+    "23",
+    "17",
+    "11"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 211,
+   "text": "The two shorter sides of a right-angled triangle are 16 cm and 30 cm. How long is the hypotenuse?",
+   "options": [
+    "34",
+    "35",
+    "46",
+    "23"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 212,
+   "text": "The two shorter sides of a right-angled triangle are 24 cm and 45 cm. How long is the hypotenuse?",
+   "options": [
+    "69",
+    "51",
+    "34",
+    "52"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 213,
+   "text": "The two shorter sides of a right-angled triangle are 32 cm and 60 cm. How long is the hypotenuse?",
+   "options": [
+    "68",
+    "46",
+    "92",
+    "69"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 214,
+   "text": "The two shorter sides of a right-angled triangle are 7 cm and 24 cm. How long is the hypotenuse?",
+   "options": [
+    "31",
+    "26",
+    "25",
+    "15"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 215,
+   "text": "The two shorter sides of a right-angled triangle are 14 cm and 48 cm. How long is the hypotenuse?",
+   "options": [
+    "62",
+    "31",
+    "51",
+    "50"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 216,
+   "text": "The two shorter sides of a right-angled triangle are 21 cm and 72 cm. How long is the hypotenuse?",
+   "options": [
+    "46",
+    "75",
+    "76",
+    "93"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 217,
+   "text": "The two shorter sides of a right-angled triangle are 28 cm and 96 cm. How long is the hypotenuse?",
+   "options": [
+    "124",
+    "62",
+    "100",
+    "101"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 218,
+   "text": "Find the area of a circle of radius 7 cm. (Take π = 22/7)",
+   "options": [
+    "77 cm²",
+    "154 cm²",
+    "308 cm²",
+    "44 cm²"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 219,
+   "text": "Find the circumference of a circle of radius 7 cm. (Take π = 22/7)",
+   "options": [
+    "22 cm",
+    "88 cm",
+    "44 cm",
+    "154 cm"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 220,
+   "text": "Find the area of a circle of radius 14 cm. (Take π = 22/7)",
+   "options": [
+    "1,232 cm²",
+    "616 cm²",
+    "88 cm²",
+    "308 cm²"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 221,
+   "text": "Find the circumference of a circle of radius 14 cm. (Take π = 22/7)",
+   "options": [
+    "616 cm",
+    "176 cm",
+    "88 cm",
+    "44 cm"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 222,
+   "text": "Find the area of a circle of radius 21 cm. (Take π = 22/7)",
+   "options": [
+    "2,772 cm²",
+    "132 cm²",
+    "693 cm²",
+    "1,386 cm²"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 223,
+   "text": "Find the circumference of a circle of radius 21 cm. (Take π = 22/7)",
+   "options": [
+    "264 cm",
+    "1,386 cm",
+    "66 cm",
+    "132 cm"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 224,
+   "text": "Find the area of a circle of radius 28 cm. (Take π = 22/7)",
+   "options": [
+    "1,232 cm²",
+    "4,928 cm²",
+    "2,464 cm²",
+    "176 cm²"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 225,
+   "text": "Find the circumference of a circle of radius 28 cm. (Take π = 22/7)",
+   "options": [
+    "2,464 cm",
+    "88 cm",
+    "352 cm",
+    "176 cm"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 226,
+   "text": "Find the area of a circle of radius 35 cm. (Take π = 22/7)",
+   "options": [
+    "220 cm²",
+    "7,700 cm²",
+    "3,850 cm²",
+    "1,925 cm²"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 227,
+   "text": "Find the circumference of a circle of radius 35 cm. (Take π = 22/7)",
+   "options": [
+    "110 cm",
+    "440 cm",
+    "3,850 cm",
+    "220 cm"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 228,
+   "text": "Find the area of a circle of radius 3.5 cm. (Take π = 22/7)",
+   "options": [
+    "77 cm²",
+    "19.25 cm²",
+    "38.5 cm²",
+    "22 cm²"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 229,
+   "text": "Find the circumference of a circle of radius 3.5 cm. (Take π = 22/7)",
+   "options": [
+    "22 cm",
+    "11 cm",
+    "44 cm",
+    "38.5 cm"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 230,
+   "text": "Find the mean of: 15, 29, 3, 22, 27, 22, 29",
+   "options": [
+    "21",
+    "147",
+    "29",
+    "22"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 231,
+   "text": "Find the mean of: 3, 4, 9, 20, 9, 3",
+   "options": [
+    "8",
+    "9",
+    "48",
+    "20"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 232,
+   "text": "Find the mean of: 24, 15, 22, 26, 27, 11, 8",
+   "options": [
+    "19",
+    "133",
+    "27",
+    "22"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 233,
+   "text": "Find the mean of: 23, 9, 17, 3, 29, 9",
+   "options": [
+    "17",
+    "29",
+    "15",
+    "90"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 234,
+   "text": "Find the mean of: 12, 6, 14, 8, 17, 15, 12",
+   "options": [
+    "84",
+    "17",
+    "12",
+    "13"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 235,
+   "text": "Find the mean of: 14, 5, 5, 11, 5",
+   "options": [
+    "8",
+    "40",
+    "5",
+    "14"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 236,
+   "text": "Find the mean of: 19, 7, 15, 9, 5",
+   "options": [
+    "55",
+    "19",
+    "11",
+    "9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 237,
+   "text": "Find the mean of: 23, 22, 10, 22, 28",
+   "options": [
+    "105",
+    "28",
+    "22",
+    "21"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 238,
+   "text": "Find the mean of: 14, 27, 21, 26, 7, 25",
+   "options": [
+    "27",
+    "20",
+    "120",
+    "25"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 239,
+   "text": "Find the mean of: 25, 7, 17, 22, 29",
+   "options": [
+    "100",
+    "20",
+    "22",
+    "29"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 240,
+   "text": "Find the mean of: 12, 26, 10, 20, 2",
+   "options": [
+    "14",
+    "70",
+    "12",
+    "26"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 241,
+   "text": "Find the mean of: 5, 4, 28, 30, 25, 10",
+   "options": [
+    "25",
+    "17",
+    "102",
+    "30"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 242,
+   "text": "Find the mean of: 15, 11, 28, 7, 24",
+   "options": [
+    "15",
+    "28",
+    "85",
+    "17"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 243,
+   "text": "Find the mean of: 6, 19, 12, 14, 24, 20, 17",
+   "options": [
+    "112",
+    "24",
+    "17",
+    "16"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 244,
+   "text": "Find the mean of: 30, 16, 22, 2, 3, 30, 30",
+   "options": [
+    "19",
+    "133",
+    "22",
+    "30"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 245,
+   "text": "Find the mean of: 8, 30, 6, 19, 25, 14",
+   "options": [
+    "102",
+    "17",
+    "19",
+    "30"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 246,
+   "text": "Find the median of: 28, 52, 3, 2, 56, 31, 10",
+   "options": [
+    "2",
+    "31",
+    "28",
+    "26"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 247,
+   "text": "Find the median of: 45, 22, 23, 54, 9, 16, 46",
+   "options": [
+    "23",
+    "54",
+    "30",
+    "45"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 248,
+   "text": "Find the median of: 19, 59, 41, 27, 43, 48, 6",
+   "options": [
+    "34",
+    "43",
+    "27",
+    "41"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 249,
+   "text": "Find the median of: 30, 56, 58, 57, 31, 13, 35",
+   "options": [
+    "35",
+    "57",
+    "56",
+    "40"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 250,
+   "text": "Find the median of: 49, 40, 53, 20, 45, 16, 4",
+   "options": [
+    "20",
+    "45",
+    "32",
+    "40"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 251,
+   "text": "Find the median of: 11, 45, 21, 41, 54, 39, 43",
+   "options": [
+    "39",
+    "36",
+    "41",
+    "43"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 252,
+   "text": "Find the median of: 31, 3, 41, 10, 22, 19, 4",
+   "options": [
+    "18",
+    "19",
+    "22",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 253,
+   "text": "Find the median of: 8, 19, 27, 48, 37, 29, 28",
+   "options": [
+    "27",
+    "29",
+    "28",
+    "48"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 254,
+   "text": "Find the median of: 49, 10, 46, 2, 47, 21, 57",
+   "options": [
+    "33",
+    "47",
+    "46",
+    "2"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 255,
+   "text": "Find the median of: 6, 53, 56, 35, 20, 52, 49",
+   "options": [
+    "49",
+    "38",
+    "52",
+    "35"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 256,
+   "text": "Find the median of: 30, 13, 29, 35, 11, 22, 6",
+   "options": [
+    "35",
+    "20",
+    "22",
+    "29"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 257,
+   "text": "Find the median of: 5, 38, 32, 17, 20, 6, 51",
+   "options": [
+    "32",
+    "17",
+    "20",
+    "24"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 258,
+   "text": "Find the median of: 28, 39, 46, 29, 37, 55, 5",
+   "options": [
+    "34",
+    "29",
+    "37",
+    "39"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 259,
+   "text": "Find the median of: 3, 41, 31, 16, 24, 59, 42",
+   "options": [
+    "16",
+    "31",
+    "30",
+    "41"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 260,
+   "text": "Find the median of: 8, 4, 32, 17, 45, 57, 2",
+   "options": [
+    "32",
+    "17",
+    "23",
+    "8"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 261,
+   "text": "Find the median of: 14, 45, 51, 59, 22, 3, 36",
+   "options": [
+    "45",
+    "36",
+    "59",
+    "32"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 262,
+   "text": "Convert 12 (base ten) to base two.",
+   "options": [
+    "1011₂",
+    "1100₂",
+    "11000₂",
+    "1101₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 263,
+   "text": "Convert 39 (base ten) to base two.",
+   "options": [
+    "101000₂",
+    "1001110₂",
+    "100111₂",
+    "100110₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 264,
+   "text": "Convert 54 (base ten) to base two.",
+   "options": [
+    "1101100₂",
+    "110111₂",
+    "110110₂",
+    "110101₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 265,
+   "text": "Convert 58 (base ten) to base two.",
+   "options": [
+    "111001₂",
+    "1110100₂",
+    "111011₂",
+    "111010₂"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 266,
+   "text": "Convert 62 (base ten) to base two.",
+   "options": [
+    "111101₂",
+    "111111₂",
+    "1111100₂",
+    "111110₂"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 267,
+   "text": "Convert 41 (base ten) to base two.",
+   "options": [
+    "1010010₂",
+    "101010₂",
+    "101001₂",
+    "101000₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 268,
+   "text": "Convert 51 (base ten) to base two.",
+   "options": [
+    "110011₂",
+    "110010₂",
+    "1100110₂",
+    "110100₂"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 269,
+   "text": "Convert 45 (base ten) to base two.",
+   "options": [
+    "101100₂",
+    "101110₂",
+    "101101₂",
+    "1011010₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 270,
+   "text": "Convert 55 (base ten) to base two.",
+   "options": [
+    "110111₂",
+    "110110₂",
+    "111000₂",
+    "1101110₂"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 271,
+   "text": "Convert 7 (base ten) to base two.",
+   "options": [
+    "1110₂",
+    "1000₂",
+    "111₂",
+    "110₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 272,
+   "text": "Convert 6 (base ten) to base two.",
+   "options": [
+    "1100₂",
+    "101₂",
+    "110₂",
+    "111₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 273,
+   "text": "Convert 10 (base ten) to base two.",
+   "options": [
+    "1001₂",
+    "1010₂",
+    "10100₂",
+    "1011₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 274,
+   "text": "Convert 43 (base ten) to base two.",
+   "options": [
+    "101100₂",
+    "101011₂",
+    "101010₂",
+    "1010110₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 275,
+   "text": "Convert 29 (base ten) to base two.",
+   "options": [
+    "11100₂",
+    "11110₂",
+    "11101₂",
+    "111010₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 276,
+   "text": "Convert 37 (base ten) to base two.",
+   "options": [
+    "100110₂",
+    "100101₂",
+    "100100₂",
+    "1001010₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 277,
+   "text": "Convert 31 (base ten) to base two.",
+   "options": [
+    "11111₂",
+    "100000₂",
+    "11110₂",
+    "111110₂"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 278,
+   "text": "Convert 36 (base ten) to base two.",
+   "options": [
+    "100101₂",
+    "1001000₂",
+    "100011₂",
+    "100100₂"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 279,
+   "text": "Convert 53 (base ten) to base two.",
+   "options": [
+    "1101010₂",
+    "110101₂",
+    "110110₂",
+    "110100₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 280,
+   "text": "Convert 28 (base ten) to base two.",
+   "options": [
+    "11100₂",
+    "111000₂",
+    "11101₂",
+    "11011₂"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 281,
+   "text": "Convert 33 (base ten) to base two.",
+   "options": [
+    "1000010₂",
+    "100000₂",
+    "100001₂",
+    "100010₂"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 282,
+   "text": "Convert 30 (base ten) to base two.",
+   "options": [
+    "111100₂",
+    "11111₂",
+    "11101₂",
+    "11110₂"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 283,
+   "text": "Convert 26 (base ten) to base two.",
+   "options": [
+    "110100₂",
+    "11010₂",
+    "11011₂",
+    "11001₂"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 284,
+   "text": "Convert 1100₂ to base ten.",
+   "options": [
+    "12",
+    "24",
+    "3",
+    "13"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 285,
+   "text": "Convert 110011₂ to base ten.",
+   "options": [
+    "102",
+    "51",
+    "50",
+    "52"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 286,
+   "text": "Convert 101010₂ to base ten.",
+   "options": [
+    "43",
+    "21",
+    "84",
+    "42"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 287,
+   "text": "Convert 11001₂ to base ten.",
+   "options": [
+    "19",
+    "25",
+    "26",
+    "50"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 288,
+   "text": "Convert 1110₂ to base ten.",
+   "options": [
+    "7",
+    "14",
+    "28",
+    "15"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 289,
+   "text": "Convert 101110₂ to base ten.",
+   "options": [
+    "47",
+    "92",
+    "46",
+    "29"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 290,
+   "text": "Convert 101100₂ to base ten.",
+   "options": [
+    "13",
+    "44",
+    "88",
+    "45"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 291,
+   "text": "Convert 110000₂ to base ten.",
+   "options": [
+    "3",
+    "96",
+    "49",
+    "48"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 292,
+   "text": "Convert 11100₂ to base ten.",
+   "options": [
+    "7",
+    "56",
+    "29",
+    "28"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 293,
+   "text": "Convert 10100₂ to base ten.",
+   "options": [
+    "5",
+    "20",
+    "40",
+    "21"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 294,
+   "text": "Convert 1111₂ to base ten.",
+   "options": [
+    "30",
+    "16",
+    "14",
+    "15"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 295,
+   "text": "Convert 111101₂ to base ten.",
+   "options": [
+    "47",
+    "122",
+    "61",
+    "62"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 296,
+   "text": "Convert 101111₂ to base ten.",
+   "options": [
+    "94",
+    "47",
+    "61",
+    "48"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 297,
+   "text": "Convert 100100₂ to base ten.",
+   "options": [
+    "36",
+    "37",
+    "72",
+    "9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 298,
+   "text": "Convert 10111₂ to base ten.",
+   "options": [
+    "29",
+    "46",
+    "23",
+    "24"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 299,
+   "text": "Convert 110₂ to base ten.",
+   "options": [
+    "12",
+    "3",
+    "6",
+    "7"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 300,
+   "text": "Convert 101₂ to base ten.",
+   "options": [
+    "10",
+    "6",
+    "4",
+    "5"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 301,
+   "text": "Convert 101101₂ to base ten.",
+   "options": [
+    "45",
+    "90",
+    "44",
+    "46"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 302,
+   "text": "Convert 1101₂ to base ten.",
+   "options": [
+    "14",
+    "13",
+    "11",
+    "26"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 303,
+   "text": "Convert 111111₂ to base ten.",
+   "options": [
+    "62",
+    "63",
+    "64",
+    "126"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 304,
+   "text": "Convert 111110₂ to base ten.",
+   "options": [
+    "63",
+    "62",
+    "31",
+    "124"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 305,
+   "text": "Convert 11111₂ to base ten.",
+   "options": [
+    "32",
+    "62",
+    "31",
+    "30"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 306,
+   "text": "n(A) = 34, n(B) = 10 and n(A ∩ B) = 8. Find n(A ∪ B).",
+   "options": [
+    "28",
+    "44",
+    "42",
+    "36"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 307,
+   "text": "n(A) = 16, n(B) = 10 and n(A ∩ B) = 2. Find n(A ∪ B).",
+   "options": [
+    "24",
+    "22",
+    "26",
+    "18"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 308,
+   "text": "n(A) = 36, n(B) = 34 and n(A ∩ B) = 7. Find n(A ∪ B).",
+   "options": [
+    "63",
+    "43",
+    "70",
+    "56"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 309,
+   "text": "n(A) = 21, n(B) = 28 and n(A ∩ B) = 14. Find n(A ∪ B).",
+   "options": [
+    "49",
+    "21",
+    "35",
+    "36"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 310,
+   "text": "n(A) = 19, n(B) = 21 and n(A ∩ B) = 10. Find n(A ∪ B).",
+   "options": [
+    "40",
+    "30",
+    "29",
+    "20"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 311,
+   "text": "n(A) = 29, n(B) = 32 and n(A ∩ B) = 21. Find n(A ∪ B).",
+   "options": [
+    "50",
+    "61",
+    "19",
+    "40"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 312,
+   "text": "n(A) = 12, n(B) = 23 and n(A ∩ B) = 5. Find n(A ∪ B).",
+   "options": [
+    "35",
+    "25",
+    "30",
+    "17"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 313,
+   "text": "n(A) = 40, n(B) = 20 and n(A ∩ B) = 13. Find n(A ∪ B).",
+   "options": [
+    "60",
+    "47",
+    "53",
+    "34"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 314,
+   "text": "n(A) = 32, n(B) = 12 and n(A ∩ B) = 4. Find n(A ∪ B).",
+   "options": [
+    "40",
+    "44",
+    "41",
+    "36"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 315,
+   "text": "n(A) = 25, n(B) = 23 and n(A ∩ B) = 5. Find n(A ∪ B).",
+   "options": [
+    "30",
+    "43",
+    "38",
+    "48"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 316,
+   "text": "n(A) = 16, n(B) = 33 and n(A ∩ B) = 10. Find n(A ∪ B).",
+   "options": [
+    "26",
+    "29",
+    "39",
+    "49"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 317,
+   "text": "n(A) = 16, n(B) = 39 and n(A ∩ B) = 6. Find n(A ∪ B).",
+   "options": [
+    "55",
+    "22",
+    "43",
+    "49"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 318,
+   "text": "n(A) = 37, n(B) = 19 and n(A ∩ B) = 13. Find n(A ∪ B).",
+   "options": [
+    "30",
+    "43",
+    "56",
+    "50"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 319,
+   "text": "n(A) = 15, n(B) = 37 and n(A ∩ B) = 8. Find n(A ∪ B).",
+   "options": [
+    "23",
+    "52",
+    "44",
+    "36"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 320,
+   "text": "n(A) = 12, n(B) = 35 and n(A ∩ B) = 2. Find n(A ∪ B).",
+   "options": [
+    "45",
+    "43",
+    "47",
+    "14"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 321,
+   "text": "n(A) = 38, n(B) = 10 and n(A ∩ B) = 6. Find n(A ∪ B).",
+   "options": [
+    "44",
+    "36",
+    "42",
+    "48"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 322,
+   "text": "n(A) = 15, n(B) = 23 and n(A ∩ B) = 8. Find n(A ∪ B).",
+   "options": [
+    "30",
+    "38",
+    "22",
+    "23"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 323,
+   "text": "n(A) = 13, n(B) = 15 and n(A ∩ B) = 3. Find n(A ∪ B).",
+   "options": [
+    "28",
+    "22",
+    "25",
+    "16"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 324,
+   "text": "n(A) = 23, n(B) = 10 and n(A ∩ B) = 7. Find n(A ∪ B).",
+   "options": [
+    "30",
+    "26",
+    "33",
+    "19"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 325,
+   "text": "n(A) = 15, n(B) = 36 and n(A ∩ B) = 5. Find n(A ∪ B).",
+   "options": [
+    "51",
+    "20",
+    "41",
+    "46"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 326,
+   "text": "A bag has 2 red, 9 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/6",
+    "2/9",
+    "9/12",
+    "1/2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 327,
+   "text": "A bag has 2 red, 8 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "2/8",
+    "1/2",
+    "2/11",
+    "8/11"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 328,
+   "text": "A bag has 8 red, 7 blue and 2 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/8",
+    "7/17",
+    "8/7",
+    "8/17"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 329,
+   "text": "A bag has 3 red, 4 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "4/8",
+    "3/4",
+    "3/8",
+    "1/3"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 330,
+   "text": "A bag has 2 red, 4 blue and 3 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "2/9",
+    "1/2",
+    "4/9",
+    "2/4"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 331,
+   "text": "A bag has 7 red, 4 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/7",
+    "7/12",
+    "7/4",
+    "4/12"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 332,
+   "text": "A bag has 9 red, 4 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "9/14",
+    "1/9",
+    "9/4",
+    "4/14"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 333,
+   "text": "A bag has 7 red, 9 blue and 4 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "7/20",
+    "9/20",
+    "1/7",
+    "7/9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 334,
+   "text": "A bag has 2 red, 3 blue and 4 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "2/3",
+    "2/9",
+    "1/2",
+    "3/9"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 335,
+   "text": "A bag has 9 red, 5 blue and 4 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/9",
+    "5/18",
+    "1/2",
+    "9/5"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 336,
+   "text": "A bag has 4 red, 9 blue and 3 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/4",
+    "4/9",
+    "5/16",
+    "9/16"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 337,
+   "text": "A bag has 3 red, 9 blue and 3 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "9/15",
+    "1/3",
+    "1/5",
+    "3/9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 338,
+   "text": "A bag has 7 red, 3 blue and 2 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "1/7",
+    "3/12",
+    "7/3",
+    "7/12"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 339,
+   "text": "A bag has 4 red, 8 blue and 2 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "4/8",
+    "1/4",
+    "8/14",
+    "2/7"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 340,
+   "text": "A bag has 8 red, 8 blue and 2 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "4/9",
+    "1/8",
+    "8/8",
+    "9/18"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 341,
+   "text": "A bag has 9 red, 6 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "9/16",
+    "6/16",
+    "9/6",
+    "1/9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 342,
+   "text": "A bag has 9 red, 3 blue and 4 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "9/3",
+    "1/9",
+    "3/16",
+    "9/16"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 343,
+   "text": "A bag has 7 red, 7 blue and 4 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "7/18",
+    "7/7",
+    "8/18",
+    "1/7"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 344,
+   "text": "A bag has 8 red, 3 blue and 5 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "3/16",
+    "1/8",
+    "1/2",
+    "8/3"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 345,
+   "text": "A bag has 4 red, 9 blue and 1 green balls. A ball is picked at random. What is the probability that it is red?",
+   "options": [
+    "4/9",
+    "2/7",
+    "9/14",
+    "1/4"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 346,
+   "text": "Factorise: x² + 9x + 18",
+   "options": [
+    "(x + 9)(x + 18)",
+    "(x + 6)(x + 3)",
+    "(x − 6)(x − 3)",
+    "(x + 6)(x − 3)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 347,
+   "text": "Factorise: x² + 10x + 21",
+   "options": [
+    "(x + 3)(x + 7)",
+    "(x + 10)(x + 21)",
+    "(x + 3)(x − 7)",
+    "(x − 3)(x − 7)"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 348,
+   "text": "Factorise: x² + 4x + 3",
+   "options": [
+    "(x + 4)(x + 3)",
+    "(x + 3)(x − 1)",
+    "(x − 3)(x − 1)",
+    "(x + 3)(x + 1)"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 349,
+   "text": "Factorise: x² + 5x + 4",
+   "options": [
+    "(x + 5)(x + 4)",
+    "(x + 1)(x + 4)",
+    "(x + 1)(x − 4)",
+    "(x − 1)(x − 4)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 350,
+   "text": "Factorise: x² + 10x + 16",
+   "options": [
+    "(x − 8)(x − 2)",
+    "(x + 8)(x − 2)",
+    "(x + 8)(x + 2)",
+    "(x + 10)(x + 16)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 351,
+   "text": "Factorise: x² + 9x + 14",
+   "options": [
+    "(x + 7)(x − 2)",
+    "(x + 7)(x + 2)",
+    "(x + 9)(x + 14)",
+    "(x − 7)(x − 2)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 352,
+   "text": "Factorise: x² + 7x + 6",
+   "options": [
+    "(x + 1)(x − 6)",
+    "(x + 1)(x + 6)",
+    "(x − 1)(x − 6)",
+    "(x + 7)(x + 6)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 353,
+   "text": "Factorise: x² + 11x + 30",
+   "options": [
+    "(x − 6)(x − 5)",
+    "(x + 6)(x − 5)",
+    "(x + 6)(x + 5)",
+    "(x + 11)(x + 30)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 354,
+   "text": "Factorise: x² + 10x + 24",
+   "options": [
+    "(x + 10)(x + 24)",
+    "(x + 6)(x + 4)",
+    "(x − 6)(x − 4)",
+    "(x + 6)(x − 4)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 355,
+   "text": "Factorise: x² + 13x + 36",
+   "options": [
+    "(x + 4)(x − 9)",
+    "(x + 13)(x + 36)",
+    "(x − 4)(x − 9)",
+    "(x + 4)(x + 9)"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 356,
+   "text": "Factorise: x² + 8x + 7",
+   "options": [
+    "(x + 8)(x + 7)",
+    "(x + 1)(x − 7)",
+    "(x − 1)(x − 7)",
+    "(x + 1)(x + 7)"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 357,
+   "text": "Factorise: x² + 14x + 45",
+   "options": [
+    "(x + 14)(x + 45)",
+    "(x − 9)(x − 5)",
+    "(x + 9)(x + 5)",
+    "(x + 9)(x − 5)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 358,
+   "text": "Factorise: x² + 17x + 72",
+   "options": [
+    "(x − 9)(x − 8)",
+    "(x + 9)(x + 8)",
+    "(x + 9)(x − 8)",
+    "(x + 17)(x + 72)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 359,
+   "text": "Factorise: x² + 8x + 15",
+   "options": [
+    "(x − 5)(x − 3)",
+    "(x + 8)(x + 15)",
+    "(x + 5)(x + 3)",
+    "(x + 5)(x − 3)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 360,
+   "text": "Factorise: x² + 6x + 5",
+   "options": [
+    "(x − 1)(x − 5)",
+    "(x + 1)(x + 5)",
+    "(x + 1)(x − 5)",
+    "(x + 6)(x + 5)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 361,
+   "text": "Factorise: x² + 12x + 32",
+   "options": [
+    "(x + 8)(x + 4)",
+    "(x + 12)(x + 32)",
+    "(x − 8)(x − 4)",
+    "(x + 8)(x − 4)"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 362,
+   "text": "Factorise: x² + 9x + 8",
+   "options": [
+    "(x + 9)(x + 8)",
+    "(x − 8)(x − 1)",
+    "(x + 8)(x − 1)",
+    "(x + 8)(x + 1)"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 363,
+   "text": "Factorise: x² + 11x + 28",
+   "options": [
+    "(x − 4)(x − 7)",
+    "(x + 4)(x − 7)",
+    "(x + 4)(x + 7)",
+    "(x + 11)(x + 28)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 364,
+   "text": "Factorise: x² + 15x + 56",
+   "options": [
+    "(x + 15)(x + 56)",
+    "(x + 7)(x + 8)",
+    "(x − 7)(x − 8)",
+    "(x + 7)(x − 8)"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 365,
+   "text": "Factorise: x² + 14x + 48",
+   "options": [
+    "(x − 6)(x − 8)",
+    "(x + 14)(x + 48)",
+    "(x + 6)(x + 8)",
+    "(x + 6)(x − 8)"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 366,
+   "text": "Increase 200 by 25%.",
+   "options": [
+    "150",
+    "250",
+    "225",
+    "50"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 367,
+   "text": "Increase 7,800 by 50%.",
+   "options": [
+    "11,700",
+    "3,900",
+    "7,850",
+    "11,701"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 368,
+   "text": "Increase 18,200 by 10%.",
+   "options": [
+    "18,210",
+    "1,820",
+    "20,020",
+    "16,380"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 369,
+   "text": "Increase 3,800 by 50%.",
+   "options": [
+    "1,900",
+    "5,701",
+    "3,850",
+    "5,700"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 370,
+   "text": "Increase 15,400 by 50%.",
+   "options": [
+    "23,100",
+    "15,450",
+    "7,700",
+    "23,101"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 371,
+   "text": "Increase 12,400 by 15%.",
+   "options": [
+    "12,415",
+    "14,260",
+    "10,540",
+    "1,860"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 372,
+   "text": "Increase 2,600 by 50%.",
+   "options": [
+    "3,900",
+    "3,901",
+    "1,300",
+    "2,650"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 373,
+   "text": "Increase 8,600 by 20%.",
+   "options": [
+    "1,720",
+    "10,320",
+    "6,880",
+    "8,620"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 374,
+   "text": "Increase 8,600 by 5%.",
+   "options": [
+    "8,605",
+    "430",
+    "9,030",
+    "8,170"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 375,
+   "text": "Increase 9,800 by 50%.",
+   "options": [
+    "4,900",
+    "14,701",
+    "14,700",
+    "9,850"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 376,
+   "text": "Increase 12,000 by 15%.",
+   "options": [
+    "1,800",
+    "10,200",
+    "13,800",
+    "12,015"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 377,
+   "text": "Increase 13,200 by 15%.",
+   "options": [
+    "1,980",
+    "15,180",
+    "11,220",
+    "13,215"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 378,
+   "text": "Increase 17,000 by 20%.",
+   "options": [
+    "20,400",
+    "13,600",
+    "3,400",
+    "17,020"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 379,
+   "text": "Increase 3,600 by 5%.",
+   "options": [
+    "3,605",
+    "3,420",
+    "180",
+    "3,780"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 380,
+   "text": "Increase 15,000 by 15%.",
+   "options": [
+    "17,250",
+    "2,250",
+    "12,750",
+    "15,015"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 381,
+   "text": "Increase 6,600 by 15%.",
+   "options": [
+    "6,615",
+    "990",
+    "7,590",
+    "5,610"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 382,
+   "text": "12 men can finish a job in 6 days. How many days will 18 men take, working at the same rate?",
+   "options": [
+    "4",
+    "5",
+    "12",
+    "9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 383,
+   "text": "5 men can finish a job in 8 days. How many days will 8 men take, working at the same rate?",
+   "options": [
+    "6",
+    "11",
+    "5",
+    "9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 384,
+   "text": "12 men can finish a job in 8 days. How many days will 16 men take, working at the same rate?",
+   "options": [
+    "12",
+    "9",
+    "7",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 385,
+   "text": "5 men can finish a job in 6 days. How many days will 10 men take, working at the same rate?",
+   "options": [
+    "12",
+    "3",
+    "11",
+    "4"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 386,
+   "text": "8 men can finish a job in 15 days. How many days will 10 men take, working at the same rate?",
+   "options": [
+    "16",
+    "12",
+    "17",
+    "13"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 387,
+   "text": "4 men can finish a job in 9 days. How many days will 6 men take, working at the same rate?",
+   "options": [
+    "10",
+    "6",
+    "11",
+    "7"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 388,
+   "text": "12 men can finish a job in 15 days. How many days will 18 men take, working at the same rate?",
+   "options": [
+    "16",
+    "11",
+    "21",
+    "10"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 389,
+   "text": "6 men can finish a job in 10 days. How many days will 10 men take, working at the same rate?",
+   "options": [
+    "11",
+    "7",
+    "6",
+    "14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 390,
+   "text": "8 men can finish a job in 6 days. How many days will 12 men take, working at the same rate?",
+   "options": [
+    "5",
+    "4",
+    "10",
+    "9"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 391,
+   "text": "6 men can finish a job in 10 days. How many days will 12 men take, working at the same rate?",
+   "options": [
+    "6",
+    "20",
+    "5",
+    "16"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 392,
+   "text": "4 men can finish a job in 12 days. How many days will 6 men take, working at the same rate?",
+   "options": [
+    "8",
+    "18",
+    "9",
+    "14"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 393,
+   "text": "12 men can finish a job in 9 days. How many days will 18 men take, working at the same rate?",
+   "options": [
+    "15",
+    "10",
+    "7",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 394,
+   "text": "Write 101,434 correct to 2 significant figures.",
+   "options": [
+    "100,001",
+    "100,000",
+    "10",
+    "101,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 395,
+   "text": "Write 537,707 correct to 2 significant figures.",
+   "options": [
+    "540,000",
+    "500,000",
+    "538,000",
+    "53"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 396,
+   "text": "Write 27,192 correct to 2 significant figures.",
+   "options": [
+    "30,000",
+    "27",
+    "27,000",
+    "27,200"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 397,
+   "text": "Write 22,378 correct to 2 significant figures.",
+   "options": [
+    "22,400",
+    "22",
+    "20,000",
+    "22,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 398,
+   "text": "Write 919,690 correct to 2 significant figures.",
+   "options": [
+    "91",
+    "920,001",
+    "920,000",
+    "900,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 399,
+   "text": "Write 55,757 correct to 2 significant figures.",
+   "options": [
+    "55,800",
+    "60,000",
+    "55",
+    "56,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 400,
+   "text": "Write 191,997 correct to 2 significant figures.",
+   "options": [
+    "190,000",
+    "19",
+    "200,000",
+    "192,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 401,
+   "text": "Write 98,631 correct to 2 significant figures.",
+   "options": [
+    "98,600",
+    "98",
+    "100,000",
+    "99,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 402,
+   "text": "Write 838,062 correct to 2 significant figures.",
+   "options": [
+    "800,000",
+    "840,000",
+    "83",
+    "838,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 403,
+   "text": "Write 187,701 correct to 2 significant figures.",
+   "options": [
+    "200,000",
+    "18",
+    "190,000",
+    "188,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 404,
+   "text": "Write 345,120 correct to 2 significant figures.",
+   "options": [
+    "345,000",
+    "350,000",
+    "34",
+    "300,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 405,
+   "text": "Write 621,895 correct to 2 significant figures.",
+   "options": [
+    "620,000",
+    "62",
+    "600,000",
+    "622,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 406,
+   "text": "Write 940,529 correct to 2 significant figures.",
+   "options": [
+    "94",
+    "941,000",
+    "940,000",
+    "900,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 407,
+   "text": "Write 136,717 correct to 2 significant figures.",
+   "options": [
+    "13",
+    "140,000",
+    "100,000",
+    "137,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 408,
+   "text": "Write 277,385 correct to 2 significant figures.",
+   "options": [
+    "300,000",
+    "27",
+    "277,000",
+    "280,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 409,
+   "text": "Write 390,607 correct to 2 significant figures.",
+   "options": [
+    "391,000",
+    "390,000",
+    "39",
+    "400,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 410,
+   "text": "Solve: x + y = 10 and x − y = 8. Find x.",
+   "options": [
+    "10",
+    "1",
+    "9",
+    "8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 411,
+   "text": "Solve: x + y = 20 and x − y = 10. Find x.",
+   "options": [
+    "10",
+    "15",
+    "5",
+    "20"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 412,
+   "text": "Solve: x + y = 13 and x − y = -11. Find x.",
+   "options": [
+    "12",
+    "1",
+    "-11",
+    "13"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 413,
+   "text": "Solve: x + y = 24 and x − y = -6. Find x.",
+   "options": [
+    "-6",
+    "9",
+    "15",
+    "24"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 414,
+   "text": "Solve: x + y = 13 and x − y = 11. Find x.",
+   "options": [
+    "1",
+    "11",
+    "13",
+    "12"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 415,
+   "text": "Solve: x + y = 29 and x − y = -1. Find x.",
+   "options": [
+    "15",
+    "-1",
+    "29",
+    "14"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 416,
+   "text": "Solve: x + y = 16 and x − y = -14. Find x.",
+   "options": [
+    "15",
+    "16",
+    "1",
+    "-14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 417,
+   "text": "Solve: x + y = 7 and x − y = 1. Find x.",
+   "options": [
+    "1",
+    "7",
+    "4",
+    "3"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 418,
+   "text": "Solve: x + y = 13 and x − y = 1. Find x.",
+   "options": [
+    "1",
+    "7",
+    "6",
+    "13"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 419,
+   "text": "Solve: x + y = 25 and x − y = -3. Find x.",
+   "options": [
+    "-3",
+    "25",
+    "14",
+    "11"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 420,
+   "text": "Solve: x + y = 18 and x − y = 6. Find x.",
+   "options": [
+    "13",
+    "12",
+    "18",
+    "6"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 421,
+   "text": "Solve: x + y = 22 and x − y = 8. Find x.",
+   "options": [
+    "7",
+    "22",
+    "15",
+    "8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 422,
+   "text": "Solve: x + y = 15 and x − y = -9. Find x.",
+   "options": [
+    "-9",
+    "15",
+    "12",
+    "3"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 423,
+   "text": "Solve: x + y = 22 and x − y = -2. Find x.",
+   "options": [
+    "12",
+    "22",
+    "-2",
+    "10"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 424,
+   "text": "Solve: x + y = 11 and x − y = 1. Find x.",
+   "options": [
+    "11",
+    "5",
+    "1",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 425,
+   "text": "Solve: x + y = 8 and x − y = 6. Find x.",
+   "options": [
+    "1",
+    "7",
+    "6",
+    "8"
+   ],
+   "answer": 1,
+   "points": 1
+  }
+ ]
+}

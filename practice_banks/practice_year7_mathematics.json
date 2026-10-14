@@ -1,0 +1,5713 @@
+{
+ "id": "practice_year7_mathematics",
+ "name": "Mathematics - entrance practice into Year 7",
+ "level": "Year 7",
+ "entry_group": "year7",
+ "subject": "Mathematics",
+ "duration_seconds": 3600,
+ "questions_to_serve": 25,
+ "version": "1.0",
+ "source_status": "platform_practice",
+ "questions": [
+  {
+   "id": 1,
+   "text": "Add: 3,614 + 1,390",
+   "options": [
+    "6,004",
+    "4,904",
+    "5,005",
+    "5,004"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "Add: 5,861 + 1,696",
+   "options": [
+    "8,557",
+    "7,558",
+    "7,457",
+    "7,557"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "Add: 4,979 + 7,152",
+   "options": [
+    "13,131",
+    "12,031",
+    "12,131",
+    "12,132"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "Add: 2,526 + 7,944",
+   "options": [
+    "10,471",
+    "10,470",
+    "10,370",
+    "11,470"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "Add: 7,919 + 2,808",
+   "options": [
+    "10,627",
+    "10,727",
+    "10,728",
+    "11,727"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "Add: 6,499 + 8,574",
+   "options": [
+    "14,973",
+    "15,073",
+    "15,074",
+    "16,073"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "Add: 4,677 + 5,843",
+   "options": [
+    "10,521",
+    "11,520",
+    "10,520",
+    "10,420"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "Add: 6,478 + 8,302",
+   "options": [
+    "14,680",
+    "14,780",
+    "15,780",
+    "14,781"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "Add: 4,680 + 8,999",
+   "options": [
+    "14,679",
+    "13,680",
+    "13,679",
+    "13,579"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "Add: 2,499 + 8,520",
+   "options": [
+    "11,020",
+    "12,019",
+    "10,919",
+    "11,019"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "Add: 3,781 + 7,648",
+   "options": [
+    "11,430",
+    "11,329",
+    "12,429",
+    "11,429"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "Add: 6,945 + 3,539",
+   "options": [
+    "11,484",
+    "10,484",
+    "10,485",
+    "10,384"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "Add: 7,488 + 2,478",
+   "options": [
+    "10,966",
+    "9,967",
+    "9,866",
+    "9,966"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "Add: 1,814 + 6,853",
+   "options": [
+    "8,667",
+    "8,567",
+    "9,667",
+    "8,668"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "Add: 5,091 + 6,650",
+   "options": [
+    "11,641",
+    "11,742",
+    "11,741",
+    "12,741"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "Add: 1,665 + 2,122",
+   "options": [
+    "3,788",
+    "3,687",
+    "3,787",
+    "4,787"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "Add: 1,443 + 8,687",
+   "options": [
+    "10,030",
+    "10,130",
+    "11,130",
+    "10,131"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "Add: 4,360 + 2,007",
+   "options": [
+    "6,267",
+    "7,367",
+    "6,368",
+    "6,367"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "Add: 5,374 + 7,348",
+   "options": [
+    "13,722",
+    "12,722",
+    "12,622",
+    "12,723"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "Add: 1,587 + 4,076",
+   "options": [
+    "5,563",
+    "6,663",
+    "5,664",
+    "5,663"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "Add: 3,870 + 4,656",
+   "options": [
+    "9,526",
+    "8,426",
+    "8,526",
+    "8,527"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "Add: 2,910 + 7,619",
+   "options": [
+    "10,529",
+    "10,530",
+    "10,429",
+    "11,529"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "Add: 4,115 + 8,909",
+   "options": [
+    "14,024",
+    "12,924",
+    "13,025",
+    "13,024"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "Add: 5,715 + 6,662",
+   "options": [
+    "12,377",
+    "12,378",
+    "13,377",
+    "12,277"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "Add: 8,315 + 6,291",
+   "options": [
+    "14,606",
+    "14,607",
+    "15,606",
+    "14,506"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "Add: 4,371 + 3,173",
+   "options": [
+    "7,544",
+    "7,444",
+    "7,545",
+    "8,544"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "Add: 3,002 + 8,727",
+   "options": [
+    "11,729",
+    "11,629",
+    "12,729",
+    "11,730"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "Add: 7,123 + 8,266",
+   "options": [
+    "16,389",
+    "15,390",
+    "15,289",
+    "15,389"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "Subtract: 8,377 − 3,202",
+   "options": [
+    "5,165",
+    "5,275",
+    "5,176",
+    "5,175"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "Subtract: 6,310 − 2,008",
+   "options": [
+    "4,303",
+    "4,292",
+    "4,402",
+    "4,302"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Subtract: 4,784 − 2,554",
+   "options": [
+    "2,220",
+    "2,330",
+    "2,231",
+    "2,230"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "Subtract: 4,753 − 2,332",
+   "options": [
+    "2,421",
+    "2,422",
+    "2,411",
+    "2,521"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Subtract: 5,538 − 3,352",
+   "options": [
+    "2,286",
+    "2,176",
+    "2,187",
+    "2,186"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "Subtract: 7,573 − 5,850",
+   "options": [
+    "1,713",
+    "1,823",
+    "1,723",
+    "1,724"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Subtract: 3,139 − 2,720",
+   "options": [
+    "409",
+    "419",
+    "519",
+    "420"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "Subtract: 7,889 − 3,506",
+   "options": [
+    "4,373",
+    "4,384",
+    "4,383",
+    "4,483"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Subtract: 9,636 − 6,401",
+   "options": [
+    "3,235",
+    "3,236",
+    "3,225",
+    "3,335"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Subtract: 4,160 − 1,033",
+   "options": [
+    "3,127",
+    "3,128",
+    "3,117",
+    "3,227"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Subtract: 6,556 − 2,683",
+   "options": [
+    "3,973",
+    "3,873",
+    "3,874",
+    "3,863"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Subtract: 9,747 − 5,229",
+   "options": [
+    "4,508",
+    "4,518",
+    "4,519",
+    "4,618"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Subtract: 5,356 − 2,612",
+   "options": [
+    "2,744",
+    "2,745",
+    "2,734",
+    "2,844"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Subtract: 8,711 − 5,507",
+   "options": [
+    "3,304",
+    "3,205",
+    "3,204",
+    "3,194"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Subtract: 7,615 − 5,780",
+   "options": [
+    "1,835",
+    "1,836",
+    "1,825",
+    "1,935"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Subtract: 9,092 − 6,338",
+   "options": [
+    "2,744",
+    "2,754",
+    "2,854",
+    "2,755"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Subtract: 8,819 − 5,343",
+   "options": [
+    "3,466",
+    "3,477",
+    "3,576",
+    "3,476"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 46,
+   "text": "Subtract: 5,551 − 2,012",
+   "options": [
+    "3,639",
+    "3,539",
+    "3,540",
+    "3,529"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 47,
+   "text": "Subtract: 6,702 − 5,979",
+   "options": [
+    "713",
+    "724",
+    "823",
+    "723"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 48,
+   "text": "Subtract: 6,969 − 5,151",
+   "options": [
+    "1,819",
+    "1,808",
+    "1,918",
+    "1,818"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 49,
+   "text": "Subtract: 4,504 − 4,043",
+   "options": [
+    "451",
+    "462",
+    "561",
+    "461"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 50,
+   "text": "Subtract: 9,895 − 2,602",
+   "options": [
+    "7,283",
+    "7,293",
+    "7,294",
+    "7,393"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 51,
+   "text": "Subtract: 7,076 − 3,339",
+   "options": [
+    "3,738",
+    "3,727",
+    "3,837",
+    "3,737"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 52,
+   "text": "Subtract: 9,651 − 7,013",
+   "options": [
+    "2,628",
+    "2,639",
+    "2,738",
+    "2,638"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 53,
+   "text": "Subtract: 2,497 − 2,385",
+   "options": [
+    "113",
+    "102",
+    "212",
+    "112"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 54,
+   "text": "Subtract: 7,085 − 6,724",
+   "options": [
+    "362",
+    "351",
+    "461",
+    "361"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 55,
+   "text": "Subtract: 4,294 − 1,384",
+   "options": [
+    "3,010",
+    "2,900",
+    "2,910",
+    "2,911"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 56,
+   "text": "Subtract: 3,891 − 1,778",
+   "options": [
+    "2,113",
+    "2,103",
+    "2,213",
+    "2,114"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 57,
+   "text": "Multiply: 61 × 31",
+   "options": [
+    "1,952",
+    "1,860",
+    "1,892",
+    "1,891"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 58,
+   "text": "Multiply: 46 × 30",
+   "options": [
+    "1,380",
+    "1,426",
+    "1,350",
+    "1,381"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 59,
+   "text": "Multiply: 82 × 45",
+   "options": [
+    "3,690",
+    "3,691",
+    "3,772",
+    "3,645"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 60,
+   "text": "Multiply: 21 × 30",
+   "options": [
+    "600",
+    "651",
+    "630",
+    "631"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 61,
+   "text": "Multiply: 22 × 39",
+   "options": [
+    "819",
+    "880",
+    "858",
+    "859"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 62,
+   "text": "Multiply: 31 × 26",
+   "options": [
+    "807",
+    "806",
+    "780",
+    "837"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 63,
+   "text": "Multiply: 19 × 40",
+   "options": [
+    "760",
+    "761",
+    "779",
+    "720"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 64,
+   "text": "Multiply: 48 × 26",
+   "options": [
+    "1,222",
+    "1,248",
+    "1,249",
+    "1,296"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 65,
+   "text": "Multiply: 84 × 17",
+   "options": [
+    "1,512",
+    "1,429",
+    "1,411",
+    "1,428"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 66,
+   "text": "Multiply: 14 × 17",
+   "options": [
+    "238",
+    "252",
+    "239",
+    "221"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 67,
+   "text": "Multiply: 57 × 22",
+   "options": [
+    "1,254",
+    "1,255",
+    "1,232",
+    "1,311"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 68,
+   "text": "Multiply: 20 × 14",
+   "options": [
+    "280",
+    "266",
+    "300",
+    "281"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 69,
+   "text": "Multiply: 70 × 43",
+   "options": [
+    "3,010",
+    "2,967",
+    "3,080",
+    "3,011"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 70,
+   "text": "Multiply: 77 × 49",
+   "options": [
+    "3,774",
+    "3,850",
+    "3,724",
+    "3,773"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 71,
+   "text": "Multiply: 30 × 36",
+   "options": [
+    "1,044",
+    "1,110",
+    "1,081",
+    "1,080"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 72,
+   "text": "Multiply: 42 × 30",
+   "options": [
+    "1,260",
+    "1,261",
+    "1,230",
+    "1,302"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 73,
+   "text": "Multiply: 86 × 31",
+   "options": [
+    "2,667",
+    "2,635",
+    "2,752",
+    "2,666"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 74,
+   "text": "Multiply: 88 × 11",
+   "options": [
+    "957",
+    "968",
+    "1,056",
+    "969"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 75,
+   "text": "Multiply: 23 × 37",
+   "options": [
+    "851",
+    "814",
+    "874",
+    "852"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 76,
+   "text": "Multiply: 68 × 37",
+   "options": [
+    "2,479",
+    "2,517",
+    "2,584",
+    "2,516"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 77,
+   "text": "Multiply: 96 × 29",
+   "options": [
+    "2,785",
+    "2,784",
+    "2,755",
+    "2,880"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 78,
+   "text": "Multiply: 34 × 11",
+   "options": [
+    "374",
+    "408",
+    "375",
+    "363"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 79,
+   "text": "Multiply: 44 × 20",
+   "options": [
+    "881",
+    "924",
+    "880",
+    "860"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 80,
+   "text": "Multiply: 18 × 38",
+   "options": [
+    "702",
+    "646",
+    "684",
+    "685"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 81,
+   "text": "Multiply: 59 × 30",
+   "options": [
+    "1,829",
+    "1,740",
+    "1,771",
+    "1,770"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 82,
+   "text": "Multiply: 42 × 33",
+   "options": [
+    "1,386",
+    "1,428",
+    "1,387",
+    "1,353"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 83,
+   "text": "Multiply: 90 × 14",
+   "options": [
+    "1,261",
+    "1,260",
+    "1,350",
+    "1,246"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 84,
+   "text": "Multiply: 60 × 44",
+   "options": [
+    "2,640",
+    "2,641",
+    "2,700",
+    "2,596"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 85,
+   "text": "Divide: 111 ÷ 3",
+   "options": [
+    "37",
+    "74",
+    "40",
+    "38"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 86,
+   "text": "Divide: 1,024 ÷ 8",
+   "options": [
+    "129",
+    "256",
+    "136",
+    "128"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 87,
+   "text": "Divide: 414 ÷ 3",
+   "options": [
+    "276",
+    "138",
+    "139",
+    "141"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 88,
+   "text": "Divide: 280 ÷ 7",
+   "options": [
+    "41",
+    "80",
+    "40",
+    "47"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 89,
+   "text": "Divide: 819 ÷ 7",
+   "options": [
+    "234",
+    "124",
+    "118",
+    "117"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 90,
+   "text": "Divide: 735 ÷ 7",
+   "options": [
+    "112",
+    "106",
+    "105",
+    "210"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 91,
+   "text": "Divide: 715 ÷ 5",
+   "options": [
+    "144",
+    "143",
+    "148",
+    "286"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 92,
+   "text": "Divide: 945 ÷ 5",
+   "options": [
+    "189",
+    "378",
+    "190",
+    "194"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 93,
+   "text": "Divide: 266 ÷ 7",
+   "options": [
+    "39",
+    "76",
+    "45",
+    "38"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 94,
+   "text": "Divide: 385 ÷ 7",
+   "options": [
+    "56",
+    "55",
+    "110",
+    "62"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 95,
+   "text": "Divide: 651 ÷ 7",
+   "options": [
+    "100",
+    "93",
+    "186",
+    "94"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 96,
+   "text": "Divide: 426 ÷ 3",
+   "options": [
+    "284",
+    "143",
+    "142",
+    "145"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 97,
+   "text": "Divide: 318 ÷ 6",
+   "options": [
+    "54",
+    "59",
+    "106",
+    "53"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 98,
+   "text": "Divide: 1,330 ÷ 7",
+   "options": [
+    "197",
+    "190",
+    "380",
+    "191"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 99,
+   "text": "Divide: 896 ÷ 7",
+   "options": [
+    "256",
+    "129",
+    "128",
+    "135"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 100,
+   "text": "Divide: 776 ÷ 8",
+   "options": [
+    "97",
+    "98",
+    "105",
+    "194"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 101,
+   "text": "Divide: 249 ÷ 3",
+   "options": [
+    "166",
+    "84",
+    "83",
+    "86"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 102,
+   "text": "Divide: 1,112 ÷ 8",
+   "options": [
+    "147",
+    "278",
+    "139",
+    "140"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 103,
+   "text": "Divide: 1,336 ÷ 8",
+   "options": [
+    "175",
+    "168",
+    "334",
+    "167"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 104,
+   "text": "Divide: 335 ÷ 5",
+   "options": [
+    "134",
+    "72",
+    "68",
+    "67"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 105,
+   "text": "Divide: 1,647 ÷ 9",
+   "options": [
+    "366",
+    "183",
+    "184",
+    "192"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 106,
+   "text": "Divide: 356 ÷ 4",
+   "options": [
+    "93",
+    "178",
+    "90",
+    "89"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 107,
+   "text": "Divide: 1,314 ÷ 9",
+   "options": [
+    "292",
+    "147",
+    "155",
+    "146"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 108,
+   "text": "Divide: 975 ÷ 5",
+   "options": [
+    "200",
+    "196",
+    "390",
+    "195"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 109,
+   "text": "What is 3/5 of 25?",
+   "options": [
+    "10",
+    "5",
+    "15",
+    "41"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 110,
+   "text": "What is 7/8 of 136?",
+   "options": [
+    "120",
+    "119",
+    "17",
+    "155"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 111,
+   "text": "What is 1/3 of 90?",
+   "options": [
+    "270",
+    "31",
+    "30",
+    "60"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 112,
+   "text": "What is 3/5 of 30?",
+   "options": [
+    "6",
+    "50",
+    "12",
+    "18"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 113,
+   "text": "What is 5/6 of 150?",
+   "options": [
+    "25",
+    "126",
+    "180",
+    "125"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 114,
+   "text": "What is 5/6 of 54?",
+   "options": [
+    "9",
+    "45",
+    "64",
+    "46"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 115,
+   "text": "What is 2/3 of 90?",
+   "options": [
+    "30",
+    "60",
+    "61",
+    "135"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 116,
+   "text": "What is 3/4 of 40?",
+   "options": [
+    "31",
+    "10",
+    "30",
+    "53"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 117,
+   "text": "What is 1/2 of 52?",
+   "options": [
+    "26",
+    "25",
+    "104",
+    "27"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 118,
+   "text": "What is 7/8 of 80?",
+   "options": [
+    "70",
+    "71",
+    "91",
+    "10"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 119,
+   "text": "What is 1/10 of 130?",
+   "options": [
+    "1,300",
+    "14",
+    "117",
+    "13"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 120,
+   "text": "What is 3/4 of 48?",
+   "options": [
+    "36",
+    "64",
+    "37",
+    "12"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 121,
+   "text": "What is 7/8 of 72?",
+   "options": [
+    "82",
+    "63",
+    "9",
+    "64"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 122,
+   "text": "What is 2/3 of 69?",
+   "options": [
+    "23",
+    "103",
+    "47",
+    "46"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 123,
+   "text": "What is 1/2 of 12?",
+   "options": [
+    "7",
+    "24",
+    "6",
+    "5"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 124,
+   "text": "What is 1/3 of 30?",
+   "options": [
+    "20",
+    "90",
+    "11",
+    "10"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 125,
+   "text": "What is 1/3 of 87?",
+   "options": [
+    "30",
+    "29",
+    "261",
+    "58"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 126,
+   "text": "What is 2/5 of 50?",
+   "options": [
+    "10",
+    "20",
+    "125",
+    "30"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 127,
+   "text": "What is 1/8 of 136?",
+   "options": [
+    "119",
+    "18",
+    "1,088",
+    "17"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 128,
+   "text": "What is 1/2 of 22?",
+   "options": [
+    "12",
+    "10",
+    "44",
+    "11"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 129,
+   "text": "What is 3/4 of 64?",
+   "options": [
+    "16",
+    "85",
+    "49",
+    "48"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 130,
+   "text": "What is 4/5 of 20?",
+   "options": [
+    "25",
+    "17",
+    "16",
+    "4"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 131,
+   "text": "What is 1/2 of 56?",
+   "options": [
+    "112",
+    "29",
+    "28",
+    "27"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 132,
+   "text": "What is 1/3 of 15?",
+   "options": [
+    "5",
+    "45",
+    "10",
+    "6"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 133,
+   "text": "What is 2/5 of 95?",
+   "options": [
+    "57",
+    "19",
+    "38",
+    "237"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 134,
+   "text": "What is 5/6 of 18?",
+   "options": [
+    "16",
+    "3",
+    "15",
+    "21"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 135,
+   "text": "Write 12/40 in its lowest terms.",
+   "options": [
+    "3/10",
+    "10/3",
+    "3/11",
+    "6/20"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 136,
+   "text": "Write 4/44 in its lowest terms.",
+   "options": [
+    "11/1",
+    "1/11",
+    "1/12",
+    "2/22"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 137,
+   "text": "Write 10/16 in its lowest terms.",
+   "options": [
+    "5/8",
+    "5/9",
+    "8/5",
+    "10/8"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 138,
+   "text": "Write 8/40 in its lowest terms.",
+   "options": [
+    "5/1",
+    "1/6",
+    "1/5",
+    "4/20"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 139,
+   "text": "Write 9/72 in its lowest terms.",
+   "options": [
+    "1/9",
+    "2/8",
+    "1/8",
+    "8/1"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 140,
+   "text": "Write 10/25 in its lowest terms.",
+   "options": [
+    "3/5",
+    "5/2",
+    "2/5",
+    "2/6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 141,
+   "text": "Write 54/60 in its lowest terms.",
+   "options": [
+    "10/9",
+    "27/30",
+    "9/10",
+    "9/11"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 142,
+   "text": "Write 35/42 in its lowest terms.",
+   "options": [
+    "6/5",
+    "5/7",
+    "5/6",
+    "6/6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 143,
+   "text": "Write 21/30 in its lowest terms.",
+   "options": [
+    "10/7",
+    "7/10",
+    "8/10",
+    "7/11"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 144,
+   "text": "Write 30/54 in its lowest terms.",
+   "options": [
+    "5/9",
+    "5/10",
+    "9/5",
+    "15/27"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 145,
+   "text": "Write 8/36 in its lowest terms.",
+   "options": [
+    "9/2",
+    "4/18",
+    "2/9",
+    "2/10"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 146,
+   "text": "Write 4/28 in its lowest terms.",
+   "options": [
+    "7/1",
+    "1/8",
+    "2/14",
+    "1/7"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 147,
+   "text": "Write 27/36 in its lowest terms.",
+   "options": [
+    "3/5",
+    "4/4",
+    "3/4",
+    "4/3"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 148,
+   "text": "Write 24/56 in its lowest terms.",
+   "options": [
+    "12/28",
+    "7/3",
+    "3/7",
+    "3/8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 149,
+   "text": "Write 63/99 in its lowest terms.",
+   "options": [
+    "7/12",
+    "8/11",
+    "11/7",
+    "7/11"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 150,
+   "text": "Write 14/77 in its lowest terms.",
+   "options": [
+    "2/12",
+    "3/11",
+    "11/2",
+    "2/11"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 151,
+   "text": "Write 9/27 in its lowest terms.",
+   "options": [
+    "1/4",
+    "1/3",
+    "2/3",
+    "3/1"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 152,
+   "text": "Write 10/12 in its lowest terms.",
+   "options": [
+    "10/6",
+    "5/6",
+    "6/5",
+    "5/7"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 153,
+   "text": "Write 20/25 in its lowest terms.",
+   "options": [
+    "5/5",
+    "4/6",
+    "4/5",
+    "5/4"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 154,
+   "text": "Write 45/108 in its lowest terms.",
+   "options": [
+    "5/12",
+    "12/5",
+    "5/13",
+    "6/12"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 155,
+   "text": "Write 21/27 in its lowest terms.",
+   "options": [
+    "9/7",
+    "7/10",
+    "7/9",
+    "8/9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 156,
+   "text": "Write 12/32 in its lowest terms.",
+   "options": [
+    "3/8",
+    "6/16",
+    "8/3",
+    "3/9"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 157,
+   "text": "Add: 1/10 + 1/10",
+   "options": [
+    "2/11",
+    "1/5",
+    "1/10",
+    "2/20"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 158,
+   "text": "Add: 3/5 + 1/5",
+   "options": [
+    "4/5",
+    "5/5",
+    "4/10",
+    "3/5"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 159,
+   "text": "Add: 2/12 + 3/12",
+   "options": [
+    "4/12",
+    "6/12",
+    "5/12",
+    "5/24"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 160,
+   "text": "Add: 3/12 + 3/12",
+   "options": [
+    "1/2",
+    "6/13",
+    "9/12",
+    "6/24"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 161,
+   "text": "Add: 3/7 + 3/7",
+   "options": [
+    "7/7",
+    "9/7",
+    "6/7",
+    "6/14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 162,
+   "text": "Add: 2/6 + 1/6",
+   "options": [
+    "3/7",
+    "3/12",
+    "2/6",
+    "1/2"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 163,
+   "text": "Add: 3/9 + 3/9",
+   "options": [
+    "6/10",
+    "6/18",
+    "2/3",
+    "9/9"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 164,
+   "text": "Add: 1/7 + 2/7",
+   "options": [
+    "3/7",
+    "3/14",
+    "4/7",
+    "2/7"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 165,
+   "text": "Add: 3/9 + 2/9",
+   "options": [
+    "5/9",
+    "4/9",
+    "6/9",
+    "5/18"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 166,
+   "text": "Add: 2/5 + 2/5",
+   "options": [
+    "5/5",
+    "3/5",
+    "4/10",
+    "4/5"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 167,
+   "text": "Add: 4/10 + 5/10",
+   "options": [
+    "9/10",
+    "9/20",
+    "10/10",
+    "20/10"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 168,
+   "text": "Add: 1/9 + 7/9",
+   "options": [
+    "8/9",
+    "7/9",
+    "9/9",
+    "8/18"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 169,
+   "text": "Add: 2/7 + 4/7",
+   "options": [
+    "7/7",
+    "6/7",
+    "8/7",
+    "6/14"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 170,
+   "text": "Add: 1/8 + 4/8",
+   "options": [
+    "4/8",
+    "5/16",
+    "6/8",
+    "5/8"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 171,
+   "text": "Add: 1/7 + 1/7",
+   "options": [
+    "1/7",
+    "3/7",
+    "2/14",
+    "2/7"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 172,
+   "text": "Add: 8/12 + 3/12",
+   "options": [
+    "24/12",
+    "12/12",
+    "11/24",
+    "11/12"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 173,
+   "text": "Add: 3/7 + 1/7",
+   "options": [
+    "3/7",
+    "5/7",
+    "4/7",
+    "4/14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 174,
+   "text": "Add: 6/8 + 1/8",
+   "options": [
+    "8/8",
+    "6/8",
+    "7/8",
+    "7/16"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 175,
+   "text": "What is 5% of 1,760?",
+   "options": [
+    "1,672",
+    "5",
+    "88",
+    "880"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 176,
+   "text": "What is 20% of 320?",
+   "options": [
+    "256",
+    "20",
+    "64",
+    "640"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 177,
+   "text": "What is 15% of 680?",
+   "options": [
+    "15",
+    "578",
+    "1,020",
+    "102"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 178,
+   "text": "What is 30% of 160?",
+   "options": [
+    "30",
+    "480",
+    "112",
+    "48"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 179,
+   "text": "What is 25% of 1,360?",
+   "options": [
+    "340",
+    "3,400",
+    "1,020",
+    "25"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 180,
+   "text": "What is 20% of 1,080?",
+   "options": [
+    "2,160",
+    "216",
+    "20",
+    "864"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 181,
+   "text": "What is 60% of 1,520?",
+   "options": [
+    "60",
+    "9,120",
+    "912",
+    "608"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 182,
+   "text": "What is 75% of 740?",
+   "options": [
+    "5,550",
+    "555",
+    "75",
+    "185"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 183,
+   "text": "What is 10% of 1,520?",
+   "options": [
+    "1,520",
+    "10",
+    "152",
+    "1,368"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 184,
+   "text": "What is 25% of 780?",
+   "options": [
+    "195",
+    "25",
+    "1,950",
+    "585"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 185,
+   "text": "What is 5% of 1,900?",
+   "options": [
+    "5",
+    "950",
+    "95",
+    "1,805"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 186,
+   "text": "What is 75% of 1,680?",
+   "options": [
+    "420",
+    "12,600",
+    "1,260",
+    "75"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 187,
+   "text": "What is 20% of 1,300?",
+   "options": [
+    "260",
+    "1,040",
+    "20",
+    "2,600"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 188,
+   "text": "What is 60% of 1,320?",
+   "options": [
+    "528",
+    "792",
+    "7,920",
+    "60"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 189,
+   "text": "What is 30% of 1,220?",
+   "options": [
+    "854",
+    "366",
+    "30",
+    "3,660"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 190,
+   "text": "What is 20% of 940?",
+   "options": [
+    "752",
+    "188",
+    "20",
+    "1,880"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 191,
+   "text": "What is 75% of 1,860?",
+   "options": [
+    "75",
+    "13,950",
+    "465",
+    "1,395"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 192,
+   "text": "What is 30% of 1,040?",
+   "options": [
+    "30",
+    "312",
+    "3,120",
+    "728"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 193,
+   "text": "What is 75% of 920?",
+   "options": [
+    "75",
+    "6,900",
+    "230",
+    "690"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 194,
+   "text": "What is 10% of 80?",
+   "options": [
+    "8",
+    "10",
+    "80",
+    "72"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 195,
+   "text": "What is 10% of 1,160?",
+   "options": [
+    "1,044",
+    "116",
+    "10",
+    "1,160"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 196,
+   "text": "What is 15% of 1,600?",
+   "options": [
+    "1,360",
+    "15",
+    "2,400",
+    "240"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 197,
+   "text": "What is 60% of 1,220?",
+   "options": [
+    "60",
+    "7,320",
+    "488",
+    "732"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 198,
+   "text": "What is 20% of 300?",
+   "options": [
+    "60",
+    "600",
+    "240",
+    "20"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 199,
+   "text": "What is 10% of 1,700?",
+   "options": [
+    "170",
+    "1,530",
+    "10",
+    "1,700"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 200,
+   "text": "What is 10% of 920?",
+   "options": [
+    "828",
+    "92",
+    "920",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 201,
+   "text": "Find the L.C.M. of 7 and 8.",
+   "options": [
+    "15",
+    "57",
+    "2",
+    "56"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 202,
+   "text": "Find the L.C.M. of 8 and 13.",
+   "options": [
+    "21",
+    "104",
+    "2",
+    "105"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 203,
+   "text": "Find the L.C.M. of 15 and 3.",
+   "options": [
+    "45",
+    "4",
+    "15",
+    "16"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 204,
+   "text": "Find the L.C.M. of 13 and 12.",
+   "options": [
+    "25",
+    "156",
+    "157",
+    "2"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 205,
+   "text": "Find the L.C.M. of 14 and 11.",
+   "options": [
+    "154",
+    "25",
+    "2",
+    "155"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 206,
+   "text": "Find the L.C.M. of 9 and 5.",
+   "options": [
+    "2",
+    "45",
+    "46",
+    "14"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 207,
+   "text": "Find the L.C.M. of 13 and 2.",
+   "options": [
+    "26",
+    "27",
+    "2",
+    "15"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 208,
+   "text": "Find the L.C.M. of 14 and 7.",
+   "options": [
+    "14",
+    "15",
+    "8",
+    "98"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 209,
+   "text": "Find the L.C.M. of 3 and 11.",
+   "options": [
+    "34",
+    "14",
+    "2",
+    "33"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 210,
+   "text": "Find the L.C.M. of 15 and 10.",
+   "options": [
+    "6",
+    "30",
+    "150",
+    "31"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 211,
+   "text": "Find the L.C.M. of 12 and 7.",
+   "options": [
+    "2",
+    "19",
+    "85",
+    "84"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 212,
+   "text": "Find the L.C.M. of 3 and 5.",
+   "options": [
+    "15",
+    "16",
+    "2",
+    "8"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 213,
+   "text": "Find the L.C.M. of 8 and 12.",
+   "options": [
+    "24",
+    "25",
+    "5",
+    "96"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 214,
+   "text": "Find the L.C.M. of 13 and 7.",
+   "options": [
+    "91",
+    "20",
+    "2",
+    "92"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 215,
+   "text": "Find the L.C.M. of 8 and 3.",
+   "options": [
+    "24",
+    "11",
+    "25",
+    "2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 216,
+   "text": "Find the L.C.M. of 14 and 3.",
+   "options": [
+    "17",
+    "43",
+    "2",
+    "42"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 217,
+   "text": "Find the L.C.M. of 5 and 12.",
+   "options": [
+    "2",
+    "17",
+    "60",
+    "61"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 218,
+   "text": "Find the L.C.M. of 11 and 5.",
+   "options": [
+    "55",
+    "56",
+    "2",
+    "16"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 219,
+   "text": "Find the L.C.M. of 11 and 4.",
+   "options": [
+    "44",
+    "2",
+    "45",
+    "15"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 220,
+   "text": "Find the L.C.M. of 4 and 5.",
+   "options": [
+    "20",
+    "21",
+    "9",
+    "2"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 221,
+   "text": "Find the H.C.F. of 12 and 18.",
+   "options": [
+    "7",
+    "36",
+    "6",
+    "12"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 222,
+   "text": "Find the H.C.F. of 21 and 9.",
+   "options": [
+    "4",
+    "63",
+    "3",
+    "6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 223,
+   "text": "Find the H.C.F. of 80 and 90.",
+   "options": [
+    "720",
+    "20",
+    "11",
+    "10"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 224,
+   "text": "Find the H.C.F. of 20 and 30.",
+   "options": [
+    "60",
+    "20",
+    "11",
+    "10"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 225,
+   "text": "Find the H.C.F. of 32 and 20.",
+   "options": [
+    "8",
+    "4",
+    "160",
+    "5"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 226,
+   "text": "Find the H.C.F. of 21 and 18.",
+   "options": [
+    "3",
+    "6",
+    "4",
+    "126"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 227,
+   "text": "Find the H.C.F. of 25 and 40.",
+   "options": [
+    "200",
+    "10",
+    "6",
+    "5"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 228,
+   "text": "Find the H.C.F. of 48 and 18.",
+   "options": [
+    "144",
+    "7",
+    "12",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 229,
+   "text": "Find the H.C.F. of 49 and 63.",
+   "options": [
+    "441",
+    "8",
+    "7",
+    "14"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 230,
+   "text": "Find the H.C.F. of 54 and 48.",
+   "options": [
+    "6",
+    "7",
+    "12",
+    "432"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 231,
+   "text": "Find the H.C.F. of 6 and 9.",
+   "options": [
+    "3",
+    "4",
+    "6",
+    "18"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 232,
+   "text": "Find the H.C.F. of 6 and 14.",
+   "options": [
+    "4",
+    "2",
+    "3",
+    "42"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 233,
+   "text": "Find the H.C.F. of 20 and 35.",
+   "options": [
+    "140",
+    "5",
+    "6",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 234,
+   "text": "Find the H.C.F. of 36 and 24.",
+   "options": [
+    "72",
+    "24",
+    "12",
+    "13"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 235,
+   "text": "Find the H.C.F. of 18 and 24.",
+   "options": [
+    "12",
+    "6",
+    "7",
+    "72"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 236,
+   "text": "Find the H.C.F. of 12 and 20.",
+   "options": [
+    "8",
+    "5",
+    "60",
+    "4"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 237,
+   "text": "Find the H.C.F. of 18 and 12.",
+   "options": [
+    "36",
+    "12",
+    "7",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 238,
+   "text": "Find the H.C.F. of 50 and 40.",
+   "options": [
+    "20",
+    "200",
+    "10",
+    "11"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 239,
+   "text": "Find the H.C.F. of 55 and 44.",
+   "options": [
+    "12",
+    "11",
+    "22",
+    "220"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 240,
+   "text": "Find the H.C.F. of 36 and 63.",
+   "options": [
+    "252",
+    "9",
+    "18",
+    "10"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 241,
+   "text": "What is 4²?",
+   "options": [
+    "8",
+    "25",
+    "16",
+    "20"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 242,
+   "text": "What is 5²?",
+   "options": [
+    "30",
+    "36",
+    "10",
+    "25"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 243,
+   "text": "What is 6²?",
+   "options": [
+    "42",
+    "12",
+    "36",
+    "49"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 244,
+   "text": "What is 7²?",
+   "options": [
+    "64",
+    "49",
+    "14",
+    "56"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 245,
+   "text": "What is 8²?",
+   "options": [
+    "64",
+    "16",
+    "81",
+    "72"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 246,
+   "text": "What is 9²?",
+   "options": [
+    "100",
+    "81",
+    "18",
+    "90"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 247,
+   "text": "What is 10²?",
+   "options": [
+    "110",
+    "100",
+    "121",
+    "20"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 248,
+   "text": "What is 11²?",
+   "options": [
+    "144",
+    "121",
+    "22",
+    "132"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 249,
+   "text": "What is 12²?",
+   "options": [
+    "144",
+    "169",
+    "24",
+    "156"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 250,
+   "text": "What is 13²?",
+   "options": [
+    "26",
+    "182",
+    "169",
+    "196"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 251,
+   "text": "What is 14²?",
+   "options": [
+    "225",
+    "196",
+    "28",
+    "210"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 252,
+   "text": "What is 15²?",
+   "options": [
+    "240",
+    "256",
+    "30",
+    "225"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 253,
+   "text": "What is 16²?",
+   "options": [
+    "272",
+    "289",
+    "32",
+    "256"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 254,
+   "text": "What is 17²?",
+   "options": [
+    "289",
+    "306",
+    "324",
+    "34"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 255,
+   "text": "What is 18²?",
+   "options": [
+    "361",
+    "324",
+    "342",
+    "36"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 256,
+   "text": "What is 19²?",
+   "options": [
+    "361",
+    "38",
+    "400",
+    "380"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 257,
+   "text": "What is 20²?",
+   "options": [
+    "420",
+    "400",
+    "441",
+    "40"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 258,
+   "text": "What is 21²?",
+   "options": [
+    "484",
+    "462",
+    "441",
+    "42"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 259,
+   "text": "What is 22²?",
+   "options": [
+    "529",
+    "506",
+    "44",
+    "484"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 260,
+   "text": "What is 23²?",
+   "options": [
+    "46",
+    "576",
+    "552",
+    "529"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 261,
+   "text": "What is 24²?",
+   "options": [
+    "625",
+    "600",
+    "48",
+    "576"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 262,
+   "text": "What is 25²?",
+   "options": [
+    "650",
+    "625",
+    "676",
+    "50"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 263,
+   "text": "What is the square root of 16?",
+   "options": [
+    "3",
+    "8",
+    "4",
+    "5"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 264,
+   "text": "What is the square root of 25?",
+   "options": [
+    "6",
+    "10",
+    "12",
+    "5"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 265,
+   "text": "What is the square root of 36?",
+   "options": [
+    "12",
+    "7",
+    "18",
+    "6"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 266,
+   "text": "What is the square root of 49?",
+   "options": [
+    "24",
+    "8",
+    "14",
+    "7"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 267,
+   "text": "What is the square root of 64?",
+   "options": [
+    "8",
+    "16",
+    "9",
+    "32"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 268,
+   "text": "What is the square root of 81?",
+   "options": [
+    "18",
+    "9",
+    "10",
+    "40"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 269,
+   "text": "What is the square root of 100?",
+   "options": [
+    "10",
+    "50",
+    "11",
+    "20"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 270,
+   "text": "What is the square root of 121?",
+   "options": [
+    "11",
+    "22",
+    "60",
+    "12"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 271,
+   "text": "What is the square root of 144?",
+   "options": [
+    "72",
+    "12",
+    "13",
+    "24"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 272,
+   "text": "What is the square root of 169?",
+   "options": [
+    "14",
+    "13",
+    "84",
+    "26"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 273,
+   "text": "What is the square root of 196?",
+   "options": [
+    "28",
+    "15",
+    "14",
+    "98"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 274,
+   "text": "What is the square root of 225?",
+   "options": [
+    "16",
+    "30",
+    "112",
+    "15"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 275,
+   "text": "What is the square root of 256?",
+   "options": [
+    "32",
+    "128",
+    "17",
+    "16"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 276,
+   "text": "What is the square root of 289?",
+   "options": [
+    "34",
+    "17",
+    "18",
+    "144"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 277,
+   "text": "What is the square root of 324?",
+   "options": [
+    "19",
+    "162",
+    "18",
+    "36"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 278,
+   "text": "What is the square root of 361?",
+   "options": [
+    "20",
+    "180",
+    "19",
+    "38"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 279,
+   "text": "What is the square root of 400?",
+   "options": [
+    "21",
+    "40",
+    "200",
+    "20"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 280,
+   "text": "A rectangle is 17 m long and 7 m wide. What is its area?",
+   "options": [
+    "120",
+    "119",
+    "48",
+    "24"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 281,
+   "text": "A rectangle is 20 m long and 9 m wide. What is its area?",
+   "options": [
+    "29",
+    "180",
+    "58",
+    "181"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 282,
+   "text": "A rectangle is 19 cm long and 13 cm wide. What is its perimeter?",
+   "options": [
+    "64",
+    "247",
+    "32",
+    "65"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 283,
+   "text": "A rectangle is 25 cm long and 12 cm wide. What is its perimeter?",
+   "options": [
+    "74",
+    "300",
+    "37",
+    "75"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 284,
+   "text": "A rectangle is 11 m long and 5 m wide. What is its area?",
+   "options": [
+    "32",
+    "55",
+    "56",
+    "16"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 285,
+   "text": "A rectangle is 6 m long and 11 m wide. What is its area?",
+   "options": [
+    "67",
+    "17",
+    "66",
+    "34"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 286,
+   "text": "A rectangle is 11 cm long and 7 cm wide. What is its perimeter?",
+   "options": [
+    "77",
+    "37",
+    "36",
+    "18"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 287,
+   "text": "A rectangle is 21 cm long and 7 cm wide. What is its perimeter?",
+   "options": [
+    "28",
+    "56",
+    "147",
+    "57"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 288,
+   "text": "A rectangle is 27 m long and 5 m wide. What is its area?",
+   "options": [
+    "64",
+    "32",
+    "136",
+    "135"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 289,
+   "text": "A rectangle is 4 cm long and 8 cm wide. What is its perimeter?",
+   "options": [
+    "12",
+    "25",
+    "32",
+    "24"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 290,
+   "text": "A rectangle is 25 cm long and 20 cm wide. What is its perimeter?",
+   "options": [
+    "45",
+    "90",
+    "500",
+    "91"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 291,
+   "text": "A rectangle is 21 cm long and 17 cm wide. What is its perimeter?",
+   "options": [
+    "357",
+    "77",
+    "38",
+    "76"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 292,
+   "text": "A rectangle is 30 m long and 13 m wide. What is its area?",
+   "options": [
+    "391",
+    "43",
+    "86",
+    "390"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 293,
+   "text": "A rectangle is 5 m long and 9 m wide. What is its area?",
+   "options": [
+    "14",
+    "28",
+    "46",
+    "45"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 294,
+   "text": "A rectangle is 22 m long and 17 m wide. What is its area?",
+   "options": [
+    "78",
+    "39",
+    "375",
+    "374"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 295,
+   "text": "A rectangle is 29 cm long and 7 cm wide. What is its perimeter?",
+   "options": [
+    "203",
+    "73",
+    "36",
+    "72"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 296,
+   "text": "A rectangle is 28 cm long and 6 cm wide. What is its perimeter?",
+   "options": [
+    "168",
+    "34",
+    "69",
+    "68"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 297,
+   "text": "A rectangle is 10 m long and 19 m wide. What is its area?",
+   "options": [
+    "190",
+    "191",
+    "29",
+    "58"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 298,
+   "text": "A rectangle is 18 cm long and 2 cm wide. What is its perimeter?",
+   "options": [
+    "36",
+    "41",
+    "20",
+    "40"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 299,
+   "text": "A rectangle is 28 cm long and 7 cm wide. What is its perimeter?",
+   "options": [
+    "70",
+    "71",
+    "35",
+    "196"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 300,
+   "text": "A rectangle is 5 cm long and 2 cm wide. What is its perimeter?",
+   "options": [
+    "7",
+    "15",
+    "14",
+    "10"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 301,
+   "text": "A rectangle is 17 m long and 8 m wide. What is its area?",
+   "options": [
+    "25",
+    "136",
+    "137",
+    "50"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 302,
+   "text": "A rectangle is 26 m long and 9 m wide. What is its area?",
+   "options": [
+    "35",
+    "234",
+    "70",
+    "235"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 303,
+   "text": "A rectangle is 29 cm long and 6 cm wide. What is its perimeter?",
+   "options": [
+    "70",
+    "174",
+    "71",
+    "35"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 304,
+   "text": "A rectangle is 9 cm long and 13 cm wide. What is its perimeter?",
+   "options": [
+    "44",
+    "45",
+    "22",
+    "117"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 305,
+   "text": "A rectangle is 27 cm long and 15 cm wide. What is its perimeter?",
+   "options": [
+    "42",
+    "85",
+    "84",
+    "405"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 306,
+   "text": "Find the average of 50, 16, 12 and 50.",
+   "options": [
+    "32",
+    "128",
+    "50",
+    "33"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 307,
+   "text": "Find the average of 47, 53, 5 and 55.",
+   "options": [
+    "55",
+    "160",
+    "40",
+    "41"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 308,
+   "text": "Find the average of 14, 27, 9 and 58.",
+   "options": [
+    "28",
+    "108",
+    "27",
+    "58"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 309,
+   "text": "Find the average of 31, 32, 47, 50 and 55.",
+   "options": [
+    "215",
+    "55",
+    "43",
+    "44"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 310,
+   "text": "Find the average of 58, 46, 22 and 46.",
+   "options": [
+    "44",
+    "43",
+    "58",
+    "172"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 311,
+   "text": "Find the average of 13, 32 and 60.",
+   "options": [
+    "60",
+    "36",
+    "35",
+    "105"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 312,
+   "text": "Find the average of 56, 32 and 35.",
+   "options": [
+    "41",
+    "42",
+    "123",
+    "56"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 313,
+   "text": "Find the average of 47, 60, 60, 53 and 30.",
+   "options": [
+    "50",
+    "250",
+    "60",
+    "51"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 314,
+   "text": "Find the average of 29, 26 and 35.",
+   "options": [
+    "35",
+    "31",
+    "90",
+    "30"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 315,
+   "text": "Find the average of 26, 32 and 38.",
+   "options": [
+    "32",
+    "96",
+    "33",
+    "38"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 316,
+   "text": "Find the average of 51, 27 and 18.",
+   "options": [
+    "32",
+    "33",
+    "96",
+    "51"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 317,
+   "text": "Find the average of 16, 6 and 20.",
+   "options": [
+    "15",
+    "14",
+    "20",
+    "42"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 318,
+   "text": "Find the average of 11, 11 and 35.",
+   "options": [
+    "19",
+    "57",
+    "35",
+    "20"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 319,
+   "text": "Find the average of 20, 37, 37 and 6.",
+   "options": [
+    "37",
+    "100",
+    "26",
+    "25"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 320,
+   "text": "Find the average of 59, 34, 8 and 15.",
+   "options": [
+    "59",
+    "30",
+    "116",
+    "29"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 321,
+   "text": "Find the average of 18, 39 and 39.",
+   "options": [
+    "33",
+    "32",
+    "96",
+    "39"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 322,
+   "text": "Find the average of 60, 56 and 34.",
+   "options": [
+    "50",
+    "150",
+    "60",
+    "51"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 323,
+   "text": "Find the average of 36, 41, 37 and 6.",
+   "options": [
+    "30",
+    "31",
+    "41",
+    "120"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 324,
+   "text": "Find the average of 46, 52 and 46.",
+   "options": [
+    "144",
+    "52",
+    "49",
+    "48"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 325,
+   "text": "Find the average of 24, 31, 39 and 58.",
+   "options": [
+    "39",
+    "58",
+    "38",
+    "152"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 326,
+   "text": "Round 24,582 to the nearest 100.",
+   "options": [
+    "24,600",
+    "24,500",
+    "24,700",
+    "24,601"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 327,
+   "text": "Round 9,176 to the nearest 10.",
+   "options": [
+    "9,190",
+    "9,181",
+    "9,170",
+    "9,180"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 328,
+   "text": "Round 38,721 to the nearest 1,000.",
+   "options": [
+    "40,000",
+    "39,000",
+    "39,001",
+    "38,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 329,
+   "text": "Round 26,645 to the nearest 100.",
+   "options": [
+    "26,500",
+    "26,900",
+    "26,700",
+    "26,600"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 330,
+   "text": "Round 63,063 to the nearest 1,000.",
+   "options": [
+    "62,000",
+    "63,000",
+    "66,000",
+    "64,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 331,
+   "text": "Round 90,773 to the nearest 1,000.",
+   "options": [
+    "91,000",
+    "90,000",
+    "91,001",
+    "92,000"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 332,
+   "text": "Round 55,230 to the nearest 1,000.",
+   "options": [
+    "54,000",
+    "55,000",
+    "56,000",
+    "58,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 333,
+   "text": "Round 25,978 to the nearest 10.",
+   "options": [
+    "25,970",
+    "25,990",
+    "25,981",
+    "25,980"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 334,
+   "text": "Round 65,011 to the nearest 1,000.",
+   "options": [
+    "68,000",
+    "65,000",
+    "66,000",
+    "64,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 335,
+   "text": "Round 21,279 to the nearest 100.",
+   "options": [
+    "21,200",
+    "21,400",
+    "21,301",
+    "21,300"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 336,
+   "text": "Round 38,629 to the nearest 10.",
+   "options": [
+    "38,630",
+    "38,640",
+    "38,631",
+    "38,620"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 337,
+   "text": "Round 43,246 to the nearest 10.",
+   "options": [
+    "43,260",
+    "43,240",
+    "43,251",
+    "43,250"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 338,
+   "text": "Round 10,940 to the nearest 100.",
+   "options": [
+    "11,000",
+    "11,200",
+    "10,800",
+    "10,900"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 339,
+   "text": "Round 91,674 to the nearest 100.",
+   "options": [
+    "91,600",
+    "91,800",
+    "91,700",
+    "91,701"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 340,
+   "text": "Round 99,259 to the nearest 1,000.",
+   "options": [
+    "100,000",
+    "99,000",
+    "98,000",
+    "102,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 341,
+   "text": "Round 31,008 to the nearest 100.",
+   "options": [
+    "31,000",
+    "31,100",
+    "30,900",
+    "31,300"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 342,
+   "text": "Round 25,709 to the nearest 1,000.",
+   "options": [
+    "26,001",
+    "26,000",
+    "27,000",
+    "25,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 343,
+   "text": "Round 18,337 to the nearest 10.",
+   "options": [
+    "18,330",
+    "18,350",
+    "18,340",
+    "18,341"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 344,
+   "text": "Round 93,537 to the nearest 100.",
+   "options": [
+    "93,600",
+    "93,800",
+    "93,500",
+    "93,400"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 345,
+   "text": "Round 59,051 to the nearest 1,000.",
+   "options": [
+    "60,000",
+    "59,000",
+    "62,000",
+    "58,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 346,
+   "text": "One exercise book costs ₦550. How much do 9 exercise books cost, in naira?",
+   "options": [
+    "4,950",
+    "559",
+    "5,500",
+    "4,400"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 347,
+   "text": "One tin of milk costs ₦350. How much do 7 tins of milk cost, in naira?",
+   "options": [
+    "2,100",
+    "357",
+    "2,800",
+    "2,450"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 348,
+   "text": "One mango costs ₦550. How much do 9 mangoes cost, in naira?",
+   "options": [
+    "4,950",
+    "5,500",
+    "4,400",
+    "559"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 349,
+   "text": "One loaf of bread costs ₦350. How much do 15 loaves of bread cost, in naira?",
+   "options": [
+    "4,900",
+    "5,600",
+    "5,250",
+    "365"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 350,
+   "text": "One orange costs ₦1,750. How much do 4 oranges cost, in naira?",
+   "options": [
+    "7,000",
+    "1,754",
+    "8,750",
+    "5,250"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 351,
+   "text": "One tin of milk costs ₦600. How much do 8 tins of milk cost, in naira?",
+   "options": [
+    "5,400",
+    "4,200",
+    "608",
+    "4,800"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 352,
+   "text": "One pen costs ₦350. How much do 14 pens cost, in naira?",
+   "options": [
+    "4,550",
+    "4,900",
+    "364",
+    "5,250"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 353,
+   "text": "One orange costs ₦1,850. How much do 4 oranges cost, in naira?",
+   "options": [
+    "7,400",
+    "9,250",
+    "5,550",
+    "1,854"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 354,
+   "text": "One tin of milk costs ₦1,800. How much do 3 tins of milk cost, in naira?",
+   "options": [
+    "1,803",
+    "7,200",
+    "5,400",
+    "3,600"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 355,
+   "text": "One loaf of bread costs ₦1,350. How much do 12 loaves of bread cost, in naira?",
+   "options": [
+    "1,362",
+    "16,200",
+    "14,850",
+    "17,550"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 356,
+   "text": "One orange costs ₦1,200. How much do 15 oranges cost, in naira?",
+   "options": [
+    "1,215",
+    "18,000",
+    "19,200",
+    "16,800"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 357,
+   "text": "One orange costs ₦950. How much do 10 oranges cost, in naira?",
+   "options": [
+    "8,550",
+    "960",
+    "9,500",
+    "10,450"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 358,
+   "text": "One pen costs ₦600. How much do 3 pens cost, in naira?",
+   "options": [
+    "603",
+    "2,400",
+    "1,800",
+    "1,200"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 359,
+   "text": "One tin of milk costs ₦1,300. How much do 10 tins of milk cost, in naira?",
+   "options": [
+    "11,700",
+    "1,310",
+    "14,300",
+    "13,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 360,
+   "text": "One exercise book costs ₦1,850. How much do 9 exercise books cost, in naira?",
+   "options": [
+    "18,500",
+    "1,859",
+    "16,650",
+    "14,800"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 361,
+   "text": "One exercise book costs ₦900. How much do 13 exercise books cost, in naira?",
+   "options": [
+    "12,600",
+    "10,800",
+    "11,700",
+    "913"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 362,
+   "text": "One loaf of bread costs ₦400. How much do 15 loaves of bread cost, in naira?",
+   "options": [
+    "6,400",
+    "5,600",
+    "415",
+    "6,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 363,
+   "text": "One mango costs ₦1,800. How much do 10 mangoes cost, in naira?",
+   "options": [
+    "18,000",
+    "19,800",
+    "1,810",
+    "16,200"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 364,
+   "text": "One pen costs ₦450. How much do 11 pens cost, in naira?",
+   "options": [
+    "5,400",
+    "461",
+    "4,500",
+    "4,950"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 365,
+   "text": "One orange costs ₦1,900. How much do 6 oranges cost, in naira?",
+   "options": [
+    "11,400",
+    "9,500",
+    "13,300",
+    "1,906"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 366,
+   "text": "A book costs ₦650. How much change is given from ₦5,000?",
+   "options": [
+    "4,350",
+    "650",
+    "4,351",
+    "5,650"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 367,
+   "text": "A book costs ₦500. How much change is given from ₦2,000?",
+   "options": [
+    "1,501",
+    "500",
+    "1,500",
+    "2,500"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 368,
+   "text": "A book costs ₦3,450. How much change is given from ₦5,000?",
+   "options": [
+    "8,450",
+    "1,551",
+    "1,550",
+    "3,450"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 369,
+   "text": "A book costs ₦1,200. How much change is given from ₦10,000?",
+   "options": [
+    "8,800",
+    "1,200",
+    "8,801",
+    "11,200"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 370,
+   "text": "A book costs ₦1,350. How much change is given from ₦2,000?",
+   "options": [
+    "3,350",
+    "1,350",
+    "651",
+    "650"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 371,
+   "text": "A book costs ₦1,500. How much change is given from ₦10,000?",
+   "options": [
+    "8,500",
+    "1,500",
+    "11,500",
+    "8,501"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 372,
+   "text": "A book costs ₦1,600. How much change is given from ₦2,000?",
+   "options": [
+    "400",
+    "3,600",
+    "401",
+    "1,600"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 373,
+   "text": "A book costs ₦400. How much change is given from ₦2,000?",
+   "options": [
+    "1,600",
+    "1,601",
+    "2,400",
+    "400"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 374,
+   "text": "A book costs ₦1,050. How much change is given from ₦2,000?",
+   "options": [
+    "3,050",
+    "951",
+    "1,050",
+    "950"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 375,
+   "text": "A book costs ₦1,250. How much change is given from ₦2,000?",
+   "options": [
+    "3,250",
+    "751",
+    "1,250",
+    "750"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 376,
+   "text": "A book costs ₦2,750. How much change is given from ₦10,000?",
+   "options": [
+    "7,251",
+    "2,750",
+    "12,750",
+    "7,250"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 377,
+   "text": "A book costs ₦700. How much change is given from ₦1,000?",
+   "options": [
+    "1,700",
+    "700",
+    "300",
+    "301"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 378,
+   "text": "A book costs ₦2,000. How much change is given from ₦5,000?",
+   "options": [
+    "2,000",
+    "3,000",
+    "7,000",
+    "3,001"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 379,
+   "text": "A book costs ₦150. How much change is given from ₦5,000?",
+   "options": [
+    "4,851",
+    "4,850",
+    "5,150",
+    "150"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 380,
+   "text": "Two angles of a triangle are 72° and 63°. What is the third angle?",
+   "options": [
+    "135",
+    "45",
+    "18",
+    "225"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 381,
+   "text": "Two angles of a triangle are 95° and 49°. What is the third angle?",
+   "options": [
+    "216",
+    "100",
+    "144",
+    "36"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 382,
+   "text": "Two angles of a triangle are 35° and 38°. What is the third angle?",
+   "options": [
+    "287",
+    "73",
+    "55",
+    "107"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 383,
+   "text": "Two angles of a triangle are 68° and 40°. What is the third angle?",
+   "options": [
+    "72",
+    "108",
+    "22",
+    "252"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 384,
+   "text": "Two angles of a triangle are 85° and 34°. What is the third angle?",
+   "options": [
+    "241",
+    "5",
+    "61",
+    "119"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 385,
+   "text": "Two angles of a triangle are 57° and 74°. What is the third angle?",
+   "options": [
+    "33",
+    "49",
+    "131",
+    "229"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 386,
+   "text": "Two angles of a triangle are 33° and 95°. What is the third angle?",
+   "options": [
+    "128",
+    "232",
+    "52",
+    "57"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 387,
+   "text": "Two angles of a triangle are 33° and 87°. What is the third angle?",
+   "options": [
+    "120",
+    "57",
+    "60",
+    "240"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 388,
+   "text": "Two angles of a triangle are 46° and 54°. What is the third angle?",
+   "options": [
+    "260",
+    "100",
+    "80",
+    "44"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 389,
+   "text": "Two angles of a triangle are 32° and 45°. What is the third angle?",
+   "options": [
+    "58",
+    "283",
+    "103",
+    "77"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 390,
+   "text": "Two angles of a triangle are 44° and 54°. What is the third angle?",
+   "options": [
+    "98",
+    "262",
+    "46",
+    "82"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 391,
+   "text": "Two angles of a triangle are 45° and 49°. What is the third angle?",
+   "options": [
+    "94",
+    "266",
+    "86",
+    "45"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 392,
+   "text": "Two angles of a triangle are 93° and 70°. What is the third angle?",
+   "options": [
+    "100",
+    "17",
+    "163",
+    "197"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 393,
+   "text": "Two angles of a triangle are 74° and 40°. What is the third angle?",
+   "options": [
+    "66",
+    "246",
+    "16",
+    "114"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 394,
+   "text": "Two angles of a triangle are 32° and 73°. What is the third angle?",
+   "options": [
+    "255",
+    "58",
+    "105",
+    "75"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 395,
+   "text": "Two angles of a triangle are 52° and 77°. What is the third angle?",
+   "options": [
+    "38",
+    "129",
+    "51",
+    "231"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 396,
+   "text": "Two angles of a triangle are 69° and 26°. What is the third angle?",
+   "options": [
+    "21",
+    "265",
+    "85",
+    "95"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 397,
+   "text": "Two angles of a triangle are 86° and 52°. What is the third angle?",
+   "options": [
+    "42",
+    "222",
+    "138",
+    "4"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 398,
+   "text": "Two angles of a triangle are 29° and 95°. What is the third angle?",
+   "options": [
+    "56",
+    "61",
+    "124",
+    "236"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 399,
+   "text": "Two angles of a triangle are 71° and 42°. What is the third angle?",
+   "options": [
+    "67",
+    "19",
+    "113",
+    "247"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 400,
+   "text": "Add: 58.27 + 39.51",
+   "options": [
+    "98.78",
+    "97.88",
+    "97.78",
+    "97.77"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 401,
+   "text": "Add: 57.68 + 7.9",
+   "options": [
+    "66.58",
+    "65.57",
+    "65.68",
+    "65.58"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 402,
+   "text": "Add: 15.85 + 24.07",
+   "options": [
+    "40.92",
+    "39.91",
+    "40.02",
+    "39.92"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 403,
+   "text": "Add: 28.28 + 36.93",
+   "options": [
+    "65.31",
+    "65.21",
+    "66.21",
+    "65.2"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 404,
+   "text": "Add: 33.46 + 36.37",
+   "options": [
+    "69.83",
+    "69.93",
+    "69.82",
+    "70.83"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 405,
+   "text": "Add: 44.82 + 12.54",
+   "options": [
+    "57.36",
+    "58.36",
+    "57.46",
+    "57.35"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 406,
+   "text": "Add: 30.86 + 3.41",
+   "options": [
+    "35.27",
+    "34.37",
+    "34.27",
+    "34.26"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 407,
+   "text": "Add: 38.76 + 8.03",
+   "options": [
+    "46.78",
+    "46.89",
+    "46.79",
+    "47.79"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 408,
+   "text": "Add: 13.06 + 14.75",
+   "options": [
+    "28.81",
+    "27.91",
+    "27.81",
+    "27.8"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 409,
+   "text": "Add: 46.99 + 23.19",
+   "options": [
+    "70.17",
+    "70.28",
+    "70.18",
+    "71.18"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 410,
+   "text": "Add: 19.72 + 35.63",
+   "options": [
+    "55.34",
+    "56.35",
+    "55.35",
+    "55.45"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 411,
+   "text": "Add: 40.34 + 16.9",
+   "options": [
+    "57.24",
+    "57.34",
+    "57.23",
+    "58.24"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 412,
+   "text": "Add: 46.95 + 13.5",
+   "options": [
+    "60.44",
+    "61.45",
+    "60.45",
+    "60.55"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 413,
+   "text": "Add: 42.0 + 3.06",
+   "options": [
+    "45.05",
+    "46.06",
+    "45.16",
+    "45.06"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 414,
+   "text": "Add: 17.3 + 4.16",
+   "options": [
+    "21.56",
+    "21.45",
+    "21.46",
+    "22.46"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 415,
+   "text": "Add: 6.54 + 11.53",
+   "options": [
+    "19.07",
+    "18.17",
+    "18.06",
+    "18.07"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 416,
+   "text": "Add: 5.78 + 22.93",
+   "options": [
+    "29.71",
+    "28.81",
+    "28.71",
+    "28.7"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 417,
+   "text": "Add: 32.43 + 32.13",
+   "options": [
+    "64.56",
+    "64.55",
+    "65.56",
+    "64.66"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 418,
+   "text": "Share ₦484 between Ada and Bayo in the ratio 5 : 6. How much does Bayo get?",
+   "options": [
+    "264",
+    "220",
+    "308",
+    "242"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 419,
+   "text": "Share ₦371 between Ada and Bayo in the ratio 5 : 2. How much does Bayo get?",
+   "options": [
+    "106",
+    "265",
+    "185",
+    "159"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 420,
+   "text": "Share ₦114 between Ada and Bayo in the ratio 1 : 2. How much does Bayo get?",
+   "options": [
+    "114",
+    "76",
+    "38",
+    "57"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 421,
+   "text": "Share ₦451 between Ada and Bayo in the ratio 5 : 6. How much does Bayo get?",
+   "options": [
+    "246",
+    "225",
+    "205",
+    "287"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 422,
+   "text": "Share ₦75 between Ada and Bayo in the ratio 1 : 2. How much does Bayo get?",
+   "options": [
+    "50",
+    "25",
+    "37",
+    "75"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 423,
+   "text": "Share ₦135 between Ada and Bayo in the ratio 4 : 5. How much does Bayo get?",
+   "options": [
+    "67",
+    "75",
+    "60",
+    "90"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 424,
+   "text": "Share ₦468 between Ada and Bayo in the ratio 2 : 7. How much does Bayo get?",
+   "options": [
+    "416",
+    "364",
+    "234",
+    "104"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 425,
+   "text": "Share ₦112 between Ada and Bayo in the ratio 1 : 3. How much does Bayo get?",
+   "options": [
+    "28",
+    "56",
+    "112",
+    "84"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 426,
+   "text": "Share ₦364 between Ada and Bayo in the ratio 4 : 3. How much does Bayo get?",
+   "options": [
+    "182",
+    "208",
+    "157",
+    "156"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 427,
+   "text": "Share ₦152 between Ada and Bayo in the ratio 1 : 3. How much does Bayo get?",
+   "options": [
+    "38",
+    "114",
+    "152",
+    "76"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 428,
+   "text": "Share ₦110 between Ada and Bayo in the ratio 3 : 2. How much does Bayo get?",
+   "options": [
+    "44",
+    "45",
+    "66",
+    "55"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 429,
+   "text": "Share ₦522 between Ada and Bayo in the ratio 4 : 5. How much does Bayo get?",
+   "options": [
+    "348",
+    "232",
+    "261",
+    "290"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 430,
+   "text": "Share ₦176 between Ada and Bayo in the ratio 5 : 6. How much does Bayo get?",
+   "options": [
+    "112",
+    "88",
+    "96",
+    "80"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 431,
+   "text": "Share ₦208 between Ada and Bayo in the ratio 5 : 3. How much does Bayo get?",
+   "options": [
+    "104",
+    "78",
+    "79",
+    "130"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 432,
+   "text": "Share ₦328 between Ada and Bayo in the ratio 3 : 5. How much does Bayo get?",
+   "options": [
+    "123",
+    "205",
+    "164",
+    "246"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 433,
+   "text": "Share ₦594 between Ada and Bayo in the ratio 5 : 6. How much does Bayo get?",
+   "options": [
+    "324",
+    "378",
+    "270",
+    "297"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 434,
+   "text": "Share ₦561 between Ada and Bayo in the ratio 4 : 7. How much does Bayo get?",
+   "options": [
+    "357",
+    "408",
+    "280",
+    "204"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 435,
+   "text": "Share ₦416 between Ada and Bayo in the ratio 5 : 3. How much does Bayo get?",
+   "options": [
+    "156",
+    "260",
+    "157",
+    "208"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 436,
+   "text": "What is the value of the digit 6 in 796,287?",
+   "options": [
+    "6",
+    "600",
+    "6,000",
+    "60,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 437,
+   "text": "What is the value of the digit 5 in 935,831?",
+   "options": [
+    "50,000",
+    "500",
+    "5,000",
+    "5"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 438,
+   "text": "What is the value of the digit 6 in 177,611?",
+   "options": [
+    "60",
+    "6",
+    "6,000",
+    "600"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 439,
+   "text": "What is the value of the digit 6 in 630,941?",
+   "options": [
+    "6,000,000",
+    "6",
+    "600,000",
+    "60,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 440,
+   "text": "What is the value of the digit 7 in 56,878?",
+   "options": [
+    "71",
+    "70",
+    "7",
+    "700"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 441,
+   "text": "What is the value of the digit 8 in 795,486?",
+   "options": [
+    "81",
+    "80",
+    "8",
+    "800"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 442,
+   "text": "What is the value of the digit 3 in 837,192?",
+   "options": [
+    "3,000",
+    "300,000",
+    "3",
+    "30,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 443,
+   "text": "What is the value of the digit 8 in 983,773?",
+   "options": [
+    "8",
+    "80,000",
+    "8,000",
+    "800,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 444,
+   "text": "What is the value of the digit 5 in 516,770?",
+   "options": [
+    "50,000",
+    "5",
+    "5,000,000",
+    "500,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 445,
+   "text": "What is the value of the digit 6 in 369,278?",
+   "options": [
+    "6",
+    "60,000",
+    "600,000",
+    "6,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 446,
+   "text": "What is the value of the digit 4 in 789,743?",
+   "options": [
+    "400",
+    "4",
+    "40",
+    "41"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 447,
+   "text": "What is the value of the digit 6 in 767,842?",
+   "options": [
+    "600,000",
+    "6,000",
+    "60,000",
+    "6"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 448,
+   "text": "What is the value of the digit 3 in 283,261?",
+   "options": [
+    "300",
+    "30,000",
+    "3,000",
+    "3"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 449,
+   "text": "What is the value of the digit 2 in 992,444?",
+   "options": [
+    "200",
+    "20,000",
+    "2",
+    "2,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 450,
+   "text": "What is the value of the digit 6 in 356,838?",
+   "options": [
+    "6",
+    "600",
+    "60,000",
+    "6,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 451,
+   "text": "What is the value of the digit 7 in 327,280?",
+   "options": [
+    "7",
+    "70,000",
+    "7,000",
+    "700"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 452,
+   "text": "What is the value of the digit 4 in 453,709?",
+   "options": [
+    "40,000",
+    "4,000,000",
+    "400,000",
+    "4"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 453,
+   "text": "What is the value of the digit 9 in 209,024?",
+   "options": [
+    "900",
+    "9",
+    "90,000",
+    "9,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 454,
+   "text": "What is the value of the digit 1 in 147,942?",
+   "options": [
+    "1,000,000",
+    "1",
+    "100,000",
+    "10,000"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 455,
+   "text": "What is the value of the digit 4 in 296,342?",
+   "options": [
+    "40",
+    "4",
+    "41",
+    "400"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 456,
+   "text": "How many minutes are there in 2 hours?",
+   "options": [
+    "48",
+    "120",
+    "200",
+    "180"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 457,
+   "text": "How many minutes are there in 3 hours?",
+   "options": [
+    "180",
+    "300",
+    "72",
+    "240"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 458,
+   "text": "How many minutes are there in 4 hours?",
+   "options": [
+    "400",
+    "300",
+    "240",
+    "96"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 459,
+   "text": "How many minutes are there in 5 hours?",
+   "options": [
+    "120",
+    "360",
+    "500",
+    "300"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 460,
+   "text": "How many minutes are there in 6 hours?",
+   "options": [
+    "600",
+    "360",
+    "420",
+    "144"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 461,
+   "text": "How many minutes are there in 7 hours?",
+   "options": [
+    "420",
+    "168",
+    "480",
+    "700"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 462,
+   "text": "How many minutes are there in 8 hours?",
+   "options": [
+    "800",
+    "192",
+    "540",
+    "480"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 463,
+   "text": "How many minutes are there in 9 hours?",
+   "options": [
+    "216",
+    "600",
+    "900",
+    "540"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 464,
+   "text": "How many minutes are there in 10 hours?",
+   "options": [
+    "240",
+    "1,000",
+    "600",
+    "660"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 465,
+   "text": "How many minutes are there in 11 hours?",
+   "options": [
+    "660",
+    "720",
+    "1,100",
+    "264"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 466,
+   "text": "How many hours are there in 2 days?",
+   "options": [
+    "24",
+    "120",
+    "72",
+    "48"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 467,
+   "text": "How many hours are there in 3 days?",
+   "options": [
+    "96",
+    "72",
+    "36",
+    "180"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 468,
+   "text": "How many hours are there in 4 days?",
+   "options": [
+    "48",
+    "96",
+    "120",
+    "240"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 469,
+   "text": "How many hours are there in 5 days?",
+   "options": [
+    "144",
+    "300",
+    "60",
+    "120"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 470,
+   "text": "How many hours are there in 6 days?",
+   "options": [
+    "144",
+    "360",
+    "168",
+    "72"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 471,
+   "text": "How many hours are there in 7 days?",
+   "options": [
+    "84",
+    "420",
+    "192",
+    "168"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 472,
+   "text": "How many hours are there in 8 days?",
+   "options": [
+    "192",
+    "480",
+    "216",
+    "96"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 473,
+   "text": "How many hours are there in 9 days?",
+   "options": [
+    "540",
+    "108",
+    "216",
+    "240"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 474,
+   "text": "How many hours are there in 10 days?",
+   "options": [
+    "600",
+    "120",
+    "264",
+    "240"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 475,
+   "text": "How many hours are there in 11 days?",
+   "options": [
+    "660",
+    "264",
+    "132",
+    "288"
+   ],
+   "answer": 1,
+   "points": 1
+  }
+ ]
+}

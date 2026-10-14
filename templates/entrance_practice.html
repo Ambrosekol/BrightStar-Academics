@@ -1,51 +1,141 @@
+{#- Entrance practice, the public page (blueprints/candidate_portal/routes.py, entrance_practice; no sign-in): choose the
+    class, then a subject, then confirm in a small window and begin. Every class's subjects are in the page, so the
+    class switch changes the list in place; without scripting each class is its own address. In the school's own two
+    colours (checked in the route), compact and plain. Styles: static/entrance-practice.css. -#}
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">{% include 'includes/_pwa_head.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Entrance Practice — {{ school_brand.name }}</title>
-<link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
+<title>Entrance practice — {{ school_brand.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='entrance-practice.css') }}">
+<style>:root{--ep-brand:{{ primary }};--ep-accent:{{ accent }}}</style>
 </head>
-<body class="student-portal-page">{{ connectivity_banner() }}
-<header class="student-topbar">
-  <div class="student-brand"><img src="{{school_brand.logo_url}}" alt="{{ school_brand.name }} logo"><div><strong>{{ school_brand.name|upper }}</strong><span>Entrance Practice</span></div></div>
-  <div class="student-top-actions"><a href="{{url_for('login')}}">Portal sign-in</a></div>
+<body class="ep">{{ connectivity_banner() }}
+<header class="ep-bar">
+  <div class="ep-bar__in">
+    <a class="ep-school" href="{{ url_for('entrance_practice') }}">
+      {% if school_brand.logo_url %}<img src="{{ school_brand.logo_url }}" alt="">{% else %}<span class="ep-school__mark" aria-hidden="true">{{ school_brand.name[:1] }}</span>{% endif %}
+      <span><strong>{{ school_brand.name }}</strong><small>Entrance examination</small></span>
+    </a>
+    <a class="ep-btn ep-btn--ghost" href="{{ url_for('login') }}">Portal sign-in</a>
+  </div>
 </header>
-<main class="student-dashboard-shell">
-  <section class="student-hero">
-    <div>
-      <p class="student-eyebrow">ENTRANCE EXAMINATION PRACTICE</p>
-      <h1>Practise before the real thing</h1>
-      <p>Open to everyone: no registration and no sign-in. Choose the class you are hoping to join, pick a subject, and answer questions in the style of the entrance examination. Your score is only for you and is not saved. Every attempt mixes the questions into a new order.</p>
-    </div>
-  </section>
-  {% if error %}<div class="login-error" style="margin-top:18px">{{error}}</div>{% endif %}
 
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head"><div><p class="student-eyebrow">STEP 1</p><h2>Which class are you aiming for?</h2></div></div>
-    <div class="student-feature-grid" style="grid-template-columns:repeat(2,1fr)">
-      {% for key,label in groups %}
-      <a class="student-feature-card {{ 'green' if key==group else 'blue' }}" href="{{url_for('entrance_practice',group=key)}}">
-        <span class="feature-icon">🎓</span>
-        <div><strong>{{label}}</strong><small>{% if key==group %}Selected{% else %}Practise for entry into {{label}}{% endif %}</small></div><b>→</b>
-      </a>
-      {% endfor %}
-    </div>
+<main class="ep-main">
+  <section class="ep-intro">
+    <p class="ep-kicker">Practice</p>
+    <h1>Prepare for the entrance examination</h1>
+    <p class="ep-lede">Answer questions in the same format as the examination, timed the same way. Choose the class you are applying for, then a subject.</p>
+    <ul class="ep-facts">
+      <li>No sign-in needed</li>
+      <li>A new order every attempt</li>
+      <li>Your score is not kept</li>
+    </ul>
   </section>
 
-  {% if group %}
-  <section class="student-panel" style="margin-top:20px">
-    <div class="student-panel-head"><div><p class="student-eyebrow">STEP 2</p><h2>Choose a subject for {{group_label}}</h2></div></div>
-    <div class="student-assessment-grid">
-      {% for s in subjects %}
-      <article class="student-assessment-card">
-        <div class="assessment-card-icon">📘</div>
-        <div><span class="student-assessment-subject">{{group_label}}</span><h2>{{s.label}}</h2>
-          <p>{% if s.available %}{{s.count}} questions per attempt · {{s.source}}{% else %}Not available yet{% endif %}</p></div>
-        {% if s.available %}<a class="student-start-btn" href="{{url_for('entrance_practice_take',group=group,subject=s.key)}}">Start →</a>{% endif %}
-      </article>
-      {% endfor %}
+  {% if error %}<p class="ep-alert" role="alert">{{ error }}</p>{% endif %}
+
+  <section class="ep-panel" aria-labelledby="epPick">
+    <div class="ep-panel__head">
+      <h2 id="epPick">Class applying for</h2>
+      <nav class="ep-seg" aria-label="Class applying for" data-ep-seg>
+        {% for g in catalogue %}
+        <a href="{{ url_for('entrance_practice', group=g.key) }}" data-ep-group="{{ g.key }}"
+           class="{{ 'is-on' if g.key == group }}"{% if g.key == group %} aria-current="true"{% endif %}>{{ g.label }}</a>
+        {% endfor %}
+      </nav>
     </div>
+
+    {% for g in catalogue %}
+    <div class="ep-list" data-ep-list="{{ g.key }}"{% if g.key != group %} hidden{% endif %}>
+      <div class="ep-row ep-row--head" aria-hidden="true">
+        <span>Subject</span><span>Questions</span><span>Time</span><span></span>
+      </div>
+      {% for s in g.subjects %}
+      <div class="ep-row{{ ' is-off' if not s.available }}">
+        <div class="ep-sub">
+          <strong>{{ s.label }}</strong>
+          <small>{{ s.source if s.available else 'Not set up by the school yet' }}</small>
+        </div>
+        <span class="ep-num" data-label="Questions">{{ s.count if s.available else '—' }}</span>
+        <span class="ep-num" data-label="Time">{% if s.available %}{{ s.minutes ~ ' min' if s.minutes else 'Untimed' }}{% else %}—{% endif %}</span>
+        <span class="ep-go">
+          {% if s.available %}
+          <a class="ep-btn" href="{{ url_for('entrance_practice_take', group=g.key, subject=s.key) }}"
+             data-ep-start data-subject="{{ s.label }}" data-class="{{ g.label }}" data-count="{{ s.count }}"
+             data-minutes="{{ s.minutes }}" data-source="{{ s.source }}">Start</a>
+          {% else %}<span class="ep-tag">Unavailable</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+      {% if not g.ready %}<p class="ep-empty">No practice is available for {{ g.label }} yet. Please check back later.</p>{% endif %}
+    </div>
+    {% endfor %}
+
+    <dl class="ep-how">
+      <div><dt>Format</dt><dd>One question at a time, with a question map to move between them.</dd></div>
+      <div><dt>Timing</dt><dd>The paper submits itself when the time runs out.</dd></div>
+      <div><dt>Marking</dt><dd>Marked when you submit, with each answer shown.</dd></div>
+    </dl>
   </section>
-  {% endif %}
 </main>
-</body></html>
+
+<dialog class="ep-dialog" data-ep-dialog aria-labelledby="epDlgTitle">
+  <form method="dialog" class="ep-dialog__in">
+    <p class="ep-kicker" data-ep-d-class></p>
+    <h2 id="epDlgTitle" data-ep-d-subject></h2>
+    <dl class="ep-dl">
+      <div><dt>Questions</dt><dd data-ep-d-count></dd></div>
+      <div><dt>Time allowed</dt><dd data-ep-d-time></dd></div>
+      <div><dt>Source</dt><dd data-ep-d-source></dd></div>
+    </dl>
+    <ul class="ep-rules">
+      <li>Work through the questions in any order; you may leave one blank.</li>
+      <li>As in the examination, stay on the page and in full screen; copying and pasting are turned off.</li>
+      <li>When the time is up, your answers are submitted as they are.</li>
+    </ul>
+    <div class="ep-dialog__acts">
+      <button class="ep-btn ep-btn--ghost" value="cancel">Not now</button>
+      <a class="ep-btn" data-ep-d-go href="#">Begin practice</a>
+    </div>
+  </form>
+</dialog>
+
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  // The class switch: show that class's subjects in place and keep the address in step (each is its own address).
+  var seg = document.querySelector('[data-ep-seg]');
+  if (seg) seg.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-ep-group]'); if (!a) return;
+    e.preventDefault();
+    var key = a.getAttribute('data-ep-group');
+    seg.querySelectorAll('[data-ep-group]').forEach(function (x) {
+      var on = x === a; x.classList.toggle('is-on', on);
+      if (on) x.setAttribute('aria-current', 'true'); else x.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('[data-ep-list]').forEach(function (l) { l.hidden = l.getAttribute('data-ep-list') !== key; });
+    try { history.replaceState(null, '', a.href); } catch (err) { /* fine */ }
+  });
+  // Start: a short summary to confirm, then the paper. Without a dialog, the link opens the paper directly.
+  var dlg = document.querySelector('[data-ep-dialog]');
+  if (!dlg || !dlg.showModal) return;
+  function put(sel, text) { dlg.querySelector(sel).textContent = text; }
+  document.querySelectorAll('[data-ep-start]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var m = Number(a.getAttribute('data-minutes'));
+      put('[data-ep-d-class]', a.getAttribute('data-class'));
+      put('[data-ep-d-subject]', a.getAttribute('data-subject'));
+      put('[data-ep-d-count]', a.getAttribute('data-count'));
+      put('[data-ep-d-time]', m ? m + ' minutes' : 'No time limit');
+      put('[data-ep-d-source]', a.getAttribute('data-source'));
+      dlg.querySelector('[data-ep-d-go]').setAttribute('href', a.getAttribute('href'));
+      dlg.showModal();
+    });
+  });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>
+</body>
+</html>

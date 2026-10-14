@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import page with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>Results and the five kinds of work (Assignments, Projects, Tests, Practice Tests and Examinations) share one
 page: <strong>Academics</strong> in the menu. Every kind except Practice feeds the same term result once marked
@@ -124,6 +124,7 @@ tests are objective only.</p>
 </ul>
 
 <h2 id="exam-mode">Exam mode: how students sit a test or examination</h2>
+{{ shot('test-paper', 'A student opening a test: their card, the questions and time allowed, the paper\'s instructions and the exam mode rules. The timer starts only when they press Start.') }}
 <p>A test or examination taken on the computer opens as one page: the student's card (photo, name, admission number,
 class), a palette of question numbers, and one question at a time. Answers are saved the moment they are chosen (or as
 they are typed), so moving between questions, a power cut or a lost connection loses nothing. Students can mark a
@@ -175,6 +176,50 @@ it.</p>
 student does there is ever written to the database — no attempt, no answers, no score — so it can
 never reach a term result or hold back a report card. Students can take and retake it as often as they
 like, and every run serves the questions in a fresh order.</p>
+<ul>
+  <li><strong>Building one.</strong> The same as a test (class, subject, term, questions), but objective questions only.
+  Open it to students when it has its questions.</li>
+  <li><strong>Where students find it.</strong> <em>Practice</em> in the student portal's menu, for their own class (and
+  in SSS, their department's subjects).</li>
+  <li><strong>After the session.</strong> Practice tests of earlier sessions are also offered on the school's public
+  practice page, with no sign-in; the current session's stay for the school's own students.</li>
+  <li><strong>The marks.</strong> Shown to the student at the end, with each answer; never kept.</li>
+</ul>
+<p>Practice for the entrance examination is separate: see {{ page('entrance', 'Entrance examinations') }}.</p>
+
+<h2 id="troubleshooting">Troubleshooting: tests, examinations and practice</h2>
+<dl class="guide-faq">
+  <dt>A student cannot see a test.</dt>
+  <dd>Check that it is <em>Open to students</em> (not Draft), that the student is in that class this session (and, in
+  SSS, takes that subject in their department), and, if the work was issued to chosen students, that they are one of
+  them. A paper set <em>On paper</em> is never shown online.</dd>
+  <dt>"Open to students" is refused.</dt>
+  <dd>A test needs at least one question first. Add them on the <em>Add a question</em> tab.</dd>
+  <dt>"My paper submitted itself" or "it says I left the page".</dt>
+  <dd>Exam mode counts leaving the page or full screen; a notification, switching apps, a power cut or a lost connection
+  all count. With <em>End the paper after N times</em> set, going past it submits the paper. Read the paper's <em>Exam mode
+  record</em> tab. If it was unfair (a power cut), the answers up to then were kept: correct the result through the usual
+  correction, or set the paper again for that student. If the limit is too strict, clear it in the paper's Settings.</dd>
+  <dt>The paper does not go full screen.</dt>
+  <dd>iPhones do not let a web page go full screen. The paper still works, and the record says so.</dd>
+  <dt>The power or the connection went in the middle of a paper.</dt>
+  <dd>Answers are saved as they are given. The student signs in again (on the same or another computer) and carries on
+  where they were. The clock keeps running meanwhile.</dd>
+  <dt>A result says "Awaiting marking" and will not move on.</dt>
+  <dd>A written (theory) answer still has no mark. The subject teacher opens <a href="{{ url_for('admin_school_marking') }}">To
+  mark</a>, the paper and the student, and marks every written answer.</dd>
+  <dt>A paper or a student is missing from To mark.</dt>
+  <dd>The teacher needs the right to edit that kind of paper (tests or examinations) and a teaching duty for that subject in
+  that class (in SSS, that student's department).</dd>
+  <dt>"This result has been released, so its marks are locked".</dt>
+  <dd>A released result is part of the student's record. Correct it through the result correction process. The split
+  between objective and theory marks is fixed once any result of the paper is released, so decide it before releasing.</dd>
+  <dt>A student is missing from the printed answer booklets.</dt>
+  <dd>Booklets are printed for students active and enrolled in the paper's class for its session, taking the subject (in
+  SSS, by department), whom the printing teacher teaches. Check those, then print again.</dd>
+  <dt>A practice test is not in a student's Practice list.</dt>
+  <dd>It must be open to students and set for the student's class this session.</dd>
+</dl>
 
 <h2 id="notices">Telling parents</h2>
 <p>New work and graded work notify the student and every linked parent in-app automatically; a

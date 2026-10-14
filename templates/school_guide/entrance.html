@@ -1,5 +1,5 @@
 {% extends 'school_guide/_layout.html' %}
-{% from 'school_guide/_macros.html' import page with context %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
 <p>The Entrance workspace runs the exam a candidate sits <em>before</em> they are ever a student here —
 kept deliberately apart from the School workspace (see
@@ -29,6 +29,22 @@ no undo, and it is meant for a genuine mistake (a duplicate registration, say), 
 simply did not get in; declining them from the admissions waitlist keeps their record intact
 instead.</div>
 
+<h2 id="sitting">Sitting the entrance examination</h2>
+<p>A candidate signs in on the school's sign-in page with the code and password printed for them on
+<a href="{{ url_for('admin_candidates') }}">Candidates</a>. Their dashboard lists their papers (one for each subject of
+their entry class) as <em>Not started</em>, <em>In progress</em> or <em>Completed</em>.</p>
+<ul>
+  <li><strong>One paper at a time.</strong> <em>Start</em> begins that paper's timer, kept by the server. The paper looks
+  like a school test in exam mode: one question at a time, a question map, the time left, and full screen.</li>
+  <li><strong>Answers are saved as they go.</strong> If the power or the connection goes, the candidate signs in again
+  (here or on another computer) and continues with their answers. The clock keeps running.</li>
+  <li><strong>When the time is up</strong>, the paper is submitted with the answers given.</li>
+  <li><strong>Scores are not shown to candidates.</strong> The school sees them on Results; a candidate learns the outcome
+  when the school releases it with their admission.</li>
+  <li><strong>A second attempt</strong> (a power cut ruined the first) is given on the candidate's page with
+  <em>Grant retake</em>, once the first attempt is finished.</li>
+</ul>
+
 <h2 id="results">Results and rankings</h2>
 <p><a href="{{ url_for('admin_results') }}">Results</a> has four tabs, each filtered by entry level and searchable
 by name or candidate code. <strong>By subject</strong> shows every candidate's outcome one subject at a time,
@@ -49,10 +65,79 @@ started which paper, when, and what became of it. It is the page to check when s
 have gone wrong with one particular sitting, rather than with a whole subject's results.</p>
 
 <h2 id="practice">Entrance practice</h2>
-<p><a href="{{ url_for('admin_practice_tests') }}">Practice Tests</a> lets anyone, with no registration,
-try a practice paper for the class they are aiming for — from either the last session's own entrance
-exam, or a custom bank the school sets up for practice. The current session's own live bank is never
-offered for practice, so it cannot reveal an exam that has not been sat yet.</p>
+<p>Anyone, with no registration and no sign-in, can practise for the entrance examination on the school's public practice
+page (its address is on <a href="{{ url_for('admin_practice_tests') }}">Practice Tests</a>, ready to share with parents
+and on the school's website). They choose the class they are applying for, then a subject.</p>
+{{ shot('entrance-practice', 'The public practice page, in the school\'s colours: the class switch, then each subject with its questions, time and where its questions come from.') }}
+<p><em>Start</em> shows a short summary (questions, time allowed, where the questions come from and the rules) before
+the paper opens. The paper is the examination's own layout, with exam mode; the score is shown at the end, with each
+answer, and never kept.</p>
+{{ shot('entrance-practice-start', 'Before a practice paper: what it holds and its rules, then Begin practice.') }}
+{{ shot('entrance-practice-paper', 'A practice paper: the examination\'s own layout, one question at a time, with the question map and the time left.') }}
+<h3 id="practice-pool">Where practice questions come from</h3>
+<p>On <a href="{{ url_for('admin_practice_tests') }}">Practice Tests</a>, each class and subject has its source:</p>
+<ul>
+  <li><strong>Question pool</strong> (recommended, and the starting choice): every earlier session's entrance paper for that
+  class and subject, a practice bank if you choose one, and the platform's <strong>ready-made practice questions</strong>,
+  each question once. Every attempt draws its questions at random from the whole pool, so the bigger the pool, the less a
+  retake repeats. The page shows each subject's pool ("25 questions an attempt, from a pool of 480").</li>
+  <li><strong>Last session's examination only</strong>: just the most recent earlier paper.</li>
+  <li><strong>Practice bank only</strong>: a bank the school writes for practice (in Question Banks).</li>
+  <li><strong>Per attempt</strong>: how many questions one attempt draws (blank: the examination's own number). The time
+  allowed keeps the examination's time for each question.</li>
+</ul>
+{{ shot('entrance-practice-settings', 'Practice Tests: the address to share, and each subject\'s source, its pool and how many questions an attempt draws.') }}
+<h3 id="ready-made">Ready-made practice questions</h3>
+<p>Every school has, from its first day, between 200 and 475 ready-made practice questions for each class and subject:</p>
+<ul>
+  <li><strong>Mathematics</strong>: arithmetic, fractions, percentages, money, measures and angles for Year 7 / JSS 1;
+  algebra, indices, standard form, interest, geometry, statistics, sets, number bases and probability for Year 10 / SSS 1.</li>
+  <li><strong>English</strong>: meanings and opposites, verb forms, plurals, concord, prepositions and spelling; idioms,
+  figures of speech and question tags for Year 10 / SSS 1.</li>
+  <li><strong>General Knowledge</strong>: Nigeria's states, capitals and zones, civics, science, the world's capitals, and
+  computing for Year 10 / SSS 1.</li>
+</ul>
+<p>They are only added to the <em>Question pool</em>, alongside your own past papers and practice bank; they are never an
+examination paper and are not in Question Banks. To serve only your own questions, choose <em>Last session's examination
+only</em> or <em>Practice bank only</em>.</p>
+<div class="guide-note">The ready-made questions mean practice works from day one. Keep each year's entrance papers (they
+join the pool once their session is over) and add a practice bank of your own: the pool grows, and a retake repeats less.
+The current session's papers are never used for practice, so practising can never reveal an examination that has not been
+sat yet.</div>
+
+<h2 id="troubleshooting">Troubleshooting: the entrance examination and its practice</h2>
+<dl class="guide-faq">
+  <dt>A practice subject says "Unavailable".</dt>
+  <dd>It has nothing to serve. With the <em>Question pool</em> this does not happen (the ready-made questions are always
+  there), so the subject is set to <em>Last session's examination only</em> with no earlier paper, or to <em>Practice bank
+  only</em> with no bank. Switch it back to the Question pool, or choose a practice bank.</dd>
+  <dt>Practisers see the same questions every time.</dt>
+  <dd>The pool is no bigger than one attempt (the page says "every attempt sees the same questions"). Use the
+  <em>Question pool</em> (it brings the ready-made questions), add a practice bank with more questions, or lower
+  <em>Per attempt</em>.</dd>
+  <dt>A ready-made question looks wrong.</dt>
+  <dd>Tell the platform operator who set up your school which one (its words, class and subject). Meanwhile, choose
+  <em>Practice bank only</em> for that subject to serve only your own questions.</dd>
+  <dt>"That bank is used by the current entrance examination".</dt>
+  <dd>A bank the current session's papers use cannot also be practice. Make a separate bank for practice.</dd>
+  <dt>A candidate cannot start a paper: "This paper is not ready…".</dt>
+  <dd>The paper's bank has no questions, or no paper is set up for the current session. On Exam Configuration, set up the
+  standard papers, or configure and activate the school's own bank.</dd>
+  <dt>"…not valid for a 100-point examination".</dt>
+  <dd>A paper is always out of 100, so the number of questions served must divide 100 evenly in hundredths: 20, 25, 40, 50
+  and so on. Choose such a number, or leave it blank.</dd>
+  <dt>"You have already taken this paper".</dt>
+  <dd>One attempt per paper. For a genuine second attempt, grant a retake on the candidate's page once the first is
+  finished.</dd>
+  <dt>The power went off during the examination.</dt>
+  <dd>Answers were saved as given. Candidates reload (or sign in again on another computer) and continue. Time lost is not
+  given back automatically: grant a retake to anyone who lost a lot.</dd>
+  <dt>"This question bank is locked…".</dt>
+  <dd>A bank is locked during a live examination so it cannot change mid-paper. The School Admin unlocks it under Settings,
+  Controls and alerts, once the examination is over.</dd>
+  <dt>A candidate is not on the admissions waitlist.</dt>
+  <dd>A candidate joins it once they have sat at least one paper.</dd>
+</dl>
 
 <h2 id="admissions">From candidate to student</h2>
 <p>Once a candidate has sat at least one paper, they move onto the {{ page('admissions', 'admissions waitlist') }} — where an admissions officer decides to admit them into a real, enrolled student account, or decline them.</p>

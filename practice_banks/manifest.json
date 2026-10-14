@@ -1,0 +1,50 @@
+{
+ "format": 1,
+ "name": "Built-in entrance practice questions",
+ "version": "1.0",
+ "description": "Added to every school's entrance practice pool, on top of its own earlier papers and practice bank (core/entrance.py). Platform content, read-only, never an examination paper. Built by tools/build_practice_banks.py.",
+ "banks": [
+  {
+   "file": "practice_year7_mathematics.json",
+   "id": "practice_year7_mathematics",
+   "entry_group": "year7",
+   "subject": "Mathematics",
+   "question_count": 475
+  },
+  {
+   "file": "practice_year7_english.json",
+   "id": "practice_year7_english",
+   "entry_group": "year7",
+   "subject": "English Language",
+   "question_count": 307
+  },
+  {
+   "file": "practice_year7_general_knowledge.json",
+   "id": "practice_year7_general_knowledge",
+   "entry_group": "year7",
+   "subject": "General Knowledge",
+   "question_count": 203
+  },
+  {
+   "file": "practice_year10_mathematics.json",
+   "id": "practice_year10_mathematics",
+   "entry_group": "year10",
+   "subject": "Mathematics",
+   "question_count": 425
+  },
+  {
+   "file": "practice_year10_english.json",
+   "id": "practice_year10_english",
+   "entry_group": "year10",
+   "subject": "English Language",
+   "question_count": 289
+  },
+  {
+   "file": "practice_year10_general_knowledge.json",
+   "id": "practice_year10_general_knowledge",
+   "entry_group": "year10",
+   "subject": "General Knowledge",
+   "question_count": 244
+  }
+ ]
+}

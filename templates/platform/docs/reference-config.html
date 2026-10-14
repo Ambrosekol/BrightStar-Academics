@@ -56,6 +56,7 @@
 <tr><td><code>FINANCE_FEE_CATEGORIES</code>, <code>FINANCE_FEE_APPLICABILITY</code></td><td>{{ file('app.py') }}</td><td>The fee categories offered; applicability is Full Session, a term or One-time.</td></tr>
 <tr><td><code>PRACTICE_MAX_QUESTIONS</code></td><td>{{ file('blueprints/student_portal/routes.py') }}</td><td>40: the most questions one student practice run draws.</td></tr>
 <tr><td><code>PRACTICE_DEFAULT_QUESTIONS</code></td><td>{{ file('core/entrance.py') }}</td><td>20: entrance practice questions per attempt when a custom bank does not say.</td></tr>
+<tr><td><code>PRACTICE_MAX_QUESTIONS</code>, <code>PRACTICE_BANKS_DIR</code></td><td>{{ file('core/entrance.py') }}</td><td>100: the most questions one entrance practice attempt draws (its keys ride in the session cookie). <code>practice_banks/</code> holds the built-in practice questions added to every school's pool; rebuild them with <code>tools/build_practice_banks.py</code>.</td></tr>
 <tr><td><code>GRADE_SCALE</code></td><td>{{ file('blueprints/school/report_card_data.py') }}</td><td>A 70+, B 60, C 50, D 45, E 40, F below; one scale for every school.</td></tr>
 <tr><td><code>ALLOWED_SMTP_PORTS</code></td><td>{{ file('core/delivery.py') }}</td><td>25, 465, 587, 2525: a school cannot aim the server at another port.</td></tr>
 </table></div>

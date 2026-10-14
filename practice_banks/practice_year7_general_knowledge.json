@@ -1,0 +1,2449 @@
+{
+ "id": "practice_year7_general_knowledge",
+ "name": "General Knowledge - entrance practice into Year 7",
+ "level": "Year 7",
+ "entry_group": "year7",
+ "subject": "General Knowledge",
+ "duration_seconds": 3000,
+ "questions_to_serve": 25,
+ "version": "1.0",
+ "source_status": "platform_practice",
+ "questions": [
+  {
+   "id": 1,
+   "text": "What is the capital of Abia State?",
+   "options": [
+    "Owerri",
+    "Maiduguri",
+    "Abakaliki",
+    "Umuahia"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 2,
+   "text": "What is the capital of Adamawa State?",
+   "options": [
+    "Maiduguri",
+    "Yola",
+    "Calabar",
+    "Asaba"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 3,
+   "text": "What is the capital of Akwa Ibom State?",
+   "options": [
+    "Asaba",
+    "Gombe",
+    "Jos",
+    "Uyo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 4,
+   "text": "What is the capital of Anambra State?",
+   "options": [
+    "Lokoja",
+    "Abeokuta",
+    "Kano",
+    "Awka"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 5,
+   "text": "What is the capital of Bayelsa State?",
+   "options": [
+    "Damaturu",
+    "Jos",
+    "Yenagoa",
+    "Yola"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 6,
+   "text": "What is the capital of Benue State?",
+   "options": [
+    "Gombe",
+    "Birnin Kebbi",
+    "Makurdi",
+    "Uyo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 7,
+   "text": "What is the capital of Borno State?",
+   "options": [
+    "Maiduguri",
+    "Akure",
+    "Bauchi",
+    "Dutse"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 8,
+   "text": "What is the capital of Cross River State?",
+   "options": [
+    "Jalingo",
+    "Ibadan",
+    "Jos",
+    "Calabar"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 9,
+   "text": "What is the capital of Delta State?",
+   "options": [
+    "Owerri",
+    "Enugu",
+    "Abakaliki",
+    "Asaba"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 10,
+   "text": "What is the capital of Ebonyi State?",
+   "options": [
+    "Uyo",
+    "Abakaliki",
+    "Bauchi",
+    "Port Harcourt"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 11,
+   "text": "What is the capital of Edo State?",
+   "options": [
+    "Abakaliki",
+    "Umuahia",
+    "Benin City",
+    "Ilorin"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 12,
+   "text": "What is the capital of Ekiti State?",
+   "options": [
+    "Osogbo",
+    "Asaba",
+    "Bauchi",
+    "Ado-Ekiti"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 13,
+   "text": "What is the capital of Imo State?",
+   "options": [
+    "Benin City",
+    "Sokoto",
+    "Abeokuta",
+    "Owerri"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 14,
+   "text": "What is the capital of Jigawa State?",
+   "options": [
+    "Abakaliki",
+    "Gusau",
+    "Dutse",
+    "Gombe"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 15,
+   "text": "What is the capital of Kebbi State?",
+   "options": [
+    "Birnin Kebbi",
+    "Kano",
+    "Jalingo",
+    "Lokoja"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 16,
+   "text": "What is the capital of Kogi State?",
+   "options": [
+    "Damaturu",
+    "Kaduna",
+    "Bauchi",
+    "Lokoja"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 17,
+   "text": "What is the capital of Kwara State?",
+   "options": [
+    "Ado-Ekiti",
+    "Ilorin",
+    "Owerri",
+    "Abeokuta"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 18,
+   "text": "What is the capital of Lagos State?",
+   "options": [
+    "Ikeja",
+    "Abeokuta",
+    "Uyo",
+    "Kano"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 19,
+   "text": "What is the capital of Nasarawa State?",
+   "options": [
+    "Sokoto",
+    "Ibadan",
+    "Lafia",
+    "Damaturu"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 20,
+   "text": "What is the capital of Niger State?",
+   "options": [
+    "Ibadan",
+    "Abakaliki",
+    "Uyo",
+    "Minna"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 21,
+   "text": "What is the capital of Ogun State?",
+   "options": [
+    "Jalingo",
+    "Lokoja",
+    "Lafia",
+    "Abeokuta"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 22,
+   "text": "What is the capital of Ondo State?",
+   "options": [
+    "Port Harcourt",
+    "Akure",
+    "Jalingo",
+    "Benin City"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 23,
+   "text": "What is the capital of Osun State?",
+   "options": [
+    "Osogbo",
+    "Minna",
+    "Abeokuta",
+    "Ilorin"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 24,
+   "text": "What is the capital of Oyo State?",
+   "options": [
+    "Ibadan",
+    "Damaturu",
+    "Bauchi",
+    "Kaduna"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 25,
+   "text": "What is the capital of Plateau State?",
+   "options": [
+    "Ilorin",
+    "Maiduguri",
+    "Makurdi",
+    "Jos"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 26,
+   "text": "What is the capital of Rivers State?",
+   "options": [
+    "Yenagoa",
+    "Sokoto",
+    "Port Harcourt",
+    "Ado-Ekiti"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 27,
+   "text": "What is the capital of Taraba State?",
+   "options": [
+    "Uyo",
+    "Awka",
+    "Minna",
+    "Jalingo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 28,
+   "text": "What is the capital of Yobe State?",
+   "options": [
+    "Yenagoa",
+    "Uyo",
+    "Enugu",
+    "Damaturu"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 29,
+   "text": "What is the capital of Zamfara State?",
+   "options": [
+    "Gusau",
+    "Kaduna",
+    "Yenagoa",
+    "Kano"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 30,
+   "text": "Umuahia is the capital of which state?",
+   "options": [
+    "Zamfara State",
+    "Abia State",
+    "Enugu State",
+    "Osun State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 31,
+   "text": "Yola is the capital of which state?",
+   "options": [
+    "Cross River State",
+    "Yobe State",
+    "Adamawa State",
+    "Kogi State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 32,
+   "text": "Uyo is the capital of which state?",
+   "options": [
+    "Akwa Ibom State",
+    "Bauchi State",
+    "Delta State",
+    "Gombe State"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 33,
+   "text": "Awka is the capital of which state?",
+   "options": [
+    "Kebbi State",
+    "Anambra State",
+    "Kogi State",
+    "Edo State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 34,
+   "text": "Yenagoa is the capital of which state?",
+   "options": [
+    "Bayelsa State",
+    "Rivers State",
+    "Edo State",
+    "Enugu State"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 35,
+   "text": "Makurdi is the capital of which state?",
+   "options": [
+    "Ogun State",
+    "Anambra State",
+    "Benue State",
+    "Imo State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 36,
+   "text": "Maiduguri is the capital of which state?",
+   "options": [
+    "Imo State",
+    "Cross River State",
+    "Borno State",
+    "Jigawa State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 37,
+   "text": "Calabar is the capital of which state?",
+   "options": [
+    "Rivers State",
+    "Niger State",
+    "Lagos State",
+    "Cross River State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 38,
+   "text": "Asaba is the capital of which state?",
+   "options": [
+    "Ondo State",
+    "Kaduna State",
+    "Delta State",
+    "Sokoto State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 39,
+   "text": "Abakaliki is the capital of which state?",
+   "options": [
+    "Enugu State",
+    "Ebonyi State",
+    "Kaduna State",
+    "Ekiti State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 40,
+   "text": "Benin City is the capital of which state?",
+   "options": [
+    "Imo State",
+    "Edo State",
+    "Taraba State",
+    "Plateau State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 41,
+   "text": "Ado-Ekiti is the capital of which state?",
+   "options": [
+    "Ekiti State",
+    "Delta State",
+    "Kwara State",
+    "Ogun State"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 42,
+   "text": "Owerri is the capital of which state?",
+   "options": [
+    "Bauchi State",
+    "Imo State",
+    "Bayelsa State",
+    "Kwara State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 43,
+   "text": "Dutse is the capital of which state?",
+   "options": [
+    "Cross River State",
+    "Kwara State",
+    "Jigawa State",
+    "Rivers State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 44,
+   "text": "Birnin Kebbi is the capital of which state?",
+   "options": [
+    "Ebonyi State",
+    "Niger State",
+    "Ekiti State",
+    "Kebbi State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 45,
+   "text": "Lokoja is the capital of which state?",
+   "options": [
+    "Benue State",
+    "Kogi State",
+    "Kwara State",
+    "Bayelsa State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 46,
+   "text": "Ilorin is the capital of which state?",
+   "options": [
+    "Bayelsa State",
+    "Bauchi State",
+    "Osun State",
+    "Kwara State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 47,
+   "text": "Ikeja is the capital of which state?",
+   "options": [
+    "Gombe State",
+    "Taraba State",
+    "Niger State",
+    "Lagos State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 48,
+   "text": "Lafia is the capital of which state?",
+   "options": [
+    "Nasarawa State",
+    "Niger State",
+    "Jigawa State",
+    "Yobe State"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 49,
+   "text": "Minna is the capital of which state?",
+   "options": [
+    "Borno State",
+    "Benue State",
+    "Katsina State",
+    "Niger State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 50,
+   "text": "Abeokuta is the capital of which state?",
+   "options": [
+    "Edo State",
+    "Osun State",
+    "Ogun State",
+    "Ebonyi State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 51,
+   "text": "Akure is the capital of which state?",
+   "options": [
+    "Abia State",
+    "Sokoto State",
+    "Ondo State",
+    "Katsina State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 52,
+   "text": "Osogbo is the capital of which state?",
+   "options": [
+    "Adamawa State",
+    "Osun State",
+    "Rivers State",
+    "Benue State"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 53,
+   "text": "Ibadan is the capital of which state?",
+   "options": [
+    "Adamawa State",
+    "Katsina State",
+    "Yobe State",
+    "Oyo State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 54,
+   "text": "Jos is the capital of which state?",
+   "options": [
+    "Plateau State",
+    "Edo State",
+    "Oyo State",
+    "Kebbi State"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 55,
+   "text": "Port Harcourt is the capital of which state?",
+   "options": [
+    "Gombe State",
+    "Ebonyi State",
+    "Nasarawa State",
+    "Rivers State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 56,
+   "text": "Jalingo is the capital of which state?",
+   "options": [
+    "Anambra State",
+    "Ekiti State",
+    "Plateau State",
+    "Taraba State"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 57,
+   "text": "Damaturu is the capital of which state?",
+   "options": [
+    "Abia State",
+    "Osun State",
+    "Yobe State",
+    "Borno State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 58,
+   "text": "Gusau is the capital of which state?",
+   "options": [
+    "Kogi State",
+    "Katsina State",
+    "Zamfara State",
+    "Ekiti State"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 59,
+   "text": "In which geopolitical zone is Abia State?",
+   "options": [
+    "North East",
+    "North West",
+    "South East",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 60,
+   "text": "In which geopolitical zone is Adamawa State?",
+   "options": [
+    "North Central",
+    "North West",
+    "North East",
+    "South East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 61,
+   "text": "In which geopolitical zone is Akwa Ibom State?",
+   "options": [
+    "North Central",
+    "North East",
+    "North West",
+    "South South"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 62,
+   "text": "In which geopolitical zone is Anambra State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 63,
+   "text": "In which geopolitical zone is Bauchi State?",
+   "options": [
+    "South East",
+    "North East",
+    "North Central",
+    "North West"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 64,
+   "text": "In which geopolitical zone is Bayelsa State?",
+   "options": [
+    "North West",
+    "North Central",
+    "South South",
+    "North East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 65,
+   "text": "In which geopolitical zone is Benue State?",
+   "options": [
+    "North West",
+    "South East",
+    "North East",
+    "North Central"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 66,
+   "text": "In which geopolitical zone is Borno State?",
+   "options": [
+    "North West",
+    "North East",
+    "North Central",
+    "South East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 67,
+   "text": "In which geopolitical zone is Cross River State?",
+   "options": [
+    "North West",
+    "South South",
+    "North Central",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 68,
+   "text": "In which geopolitical zone is Delta State?",
+   "options": [
+    "North East",
+    "South South",
+    "North Central",
+    "North West"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 69,
+   "text": "In which geopolitical zone is Ebonyi State?",
+   "options": [
+    "North East",
+    "North Central",
+    "North West",
+    "South East"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 70,
+   "text": "In which geopolitical zone is Edo State?",
+   "options": [
+    "South South",
+    "North Central",
+    "North East",
+    "North West"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 71,
+   "text": "In which geopolitical zone is Ekiti State?",
+   "options": [
+    "North East",
+    "North Central",
+    "North West",
+    "South West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 72,
+   "text": "In which geopolitical zone is Enugu State?",
+   "options": [
+    "North East",
+    "North Central",
+    "South East",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 73,
+   "text": "In which geopolitical zone is Gombe State?",
+   "options": [
+    "South East",
+    "North West",
+    "North Central",
+    "North East"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 74,
+   "text": "In which geopolitical zone is Imo State?",
+   "options": [
+    "North East",
+    "South East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 75,
+   "text": "In which geopolitical zone is Jigawa State?",
+   "options": [
+    "North West",
+    "North Central",
+    "North East",
+    "South East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 76,
+   "text": "In which geopolitical zone is Kaduna State?",
+   "options": [
+    "North West",
+    "South East",
+    "North East",
+    "North Central"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 77,
+   "text": "In which geopolitical zone is Kano State?",
+   "options": [
+    "North East",
+    "North West",
+    "South East",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 78,
+   "text": "In which geopolitical zone is Katsina State?",
+   "options": [
+    "North West",
+    "North East",
+    "North Central",
+    "South East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 79,
+   "text": "In which geopolitical zone is Kebbi State?",
+   "options": [
+    "South East",
+    "North East",
+    "North Central",
+    "North West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 80,
+   "text": "In which geopolitical zone is Kogi State?",
+   "options": [
+    "North West",
+    "North East",
+    "North Central",
+    "South East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 81,
+   "text": "In which geopolitical zone is Kwara State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South East",
+    "North West"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 82,
+   "text": "In which geopolitical zone is Lagos State?",
+   "options": [
+    "North Central",
+    "North East",
+    "North West",
+    "South West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 83,
+   "text": "In which geopolitical zone is Nasarawa State?",
+   "options": [
+    "North Central",
+    "North East",
+    "South East",
+    "North West"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 84,
+   "text": "In which geopolitical zone is Niger State?",
+   "options": [
+    "South East",
+    "North West",
+    "North Central",
+    "North East"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 85,
+   "text": "In which geopolitical zone is Ogun State?",
+   "options": [
+    "North West",
+    "North Central",
+    "North East",
+    "South West"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 86,
+   "text": "In which geopolitical zone is Ondo State?",
+   "options": [
+    "South West",
+    "North East",
+    "North West",
+    "North Central"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 87,
+   "text": "In which geopolitical zone is Osun State?",
+   "options": [
+    "North West",
+    "North East",
+    "South West",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 88,
+   "text": "In which geopolitical zone is Oyo State?",
+   "options": [
+    "North West",
+    "South West",
+    "North Central",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 89,
+   "text": "In which geopolitical zone is Plateau State?",
+   "options": [
+    "North Central",
+    "North West",
+    "South East",
+    "North East"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 90,
+   "text": "In which geopolitical zone is Rivers State?",
+   "options": [
+    "North West",
+    "South South",
+    "North East",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 91,
+   "text": "In which geopolitical zone is Sokoto State?",
+   "options": [
+    "South East",
+    "North West",
+    "North East",
+    "North Central"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 92,
+   "text": "In which geopolitical zone is Taraba State?",
+   "options": [
+    "South East",
+    "North West",
+    "North East",
+    "North Central"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 93,
+   "text": "In which geopolitical zone is Yobe State?",
+   "options": [
+    "North Central",
+    "South East",
+    "North East",
+    "North West"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 94,
+   "text": "In which geopolitical zone is Zamfara State?",
+   "options": [
+    "North Central",
+    "North West",
+    "South East",
+    "North East"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 95,
+   "text": "What is the capital of Ghana?",
+   "options": [
+    "Berlin",
+    "Accra",
+    "Oslo",
+    "Kingston"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 96,
+   "text": "What is the capital of Kenya?",
+   "options": [
+    "Nairobi",
+    "Paris",
+    "Lomé",
+    "Beijing"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 97,
+   "text": "What is the capital of Egypt?",
+   "options": [
+    "Paris",
+    "Niamey",
+    "Lomé",
+    "Cairo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 98,
+   "text": "What is the capital of Cameroon?",
+   "options": [
+    "Yaoundé",
+    "Washington, D.C.",
+    "N'Djamena",
+    "Athens"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 99,
+   "text": "What is the capital of Togo?",
+   "options": [
+    "Maputo",
+    "Warsaw",
+    "Lomé",
+    "Seoul"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 100,
+   "text": "What is the capital of Niger Republic?",
+   "options": [
+    "Kinshasa",
+    "Niamey",
+    "Madrid",
+    "Rabat"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 101,
+   "text": "What is the capital of Chad?",
+   "options": [
+    "Bern",
+    "Dublin",
+    "N'Djamena",
+    "Ouagadougou"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 102,
+   "text": "What is the capital of Senegal?",
+   "options": [
+    "Stockholm",
+    "Algiers",
+    "Dakar",
+    "Seoul"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 103,
+   "text": "What is the capital of Liberia?",
+   "options": [
+    "Beijing",
+    "Monrovia",
+    "Stockholm",
+    "Nairobi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 104,
+   "text": "What is the capital of Sierra Leone?",
+   "options": [
+    "Freetown",
+    "Cairo",
+    "Nairobi",
+    "Bamako"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 105,
+   "text": "What is the capital of The Gambia?",
+   "options": [
+    "Addis Ababa",
+    "Beijing",
+    "Kingston",
+    "Banjul"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 106,
+   "text": "What is the capital of Mali?",
+   "options": [
+    "Bamako",
+    "Kinshasa",
+    "Maputo",
+    "Kigali"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 107,
+   "text": "What is the capital of Burkina Faso?",
+   "options": [
+    "Lilongwe",
+    "Ouagadougou",
+    "Vienna",
+    "Cairo"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 108,
+   "text": "What is the capital of Ethiopia?",
+   "options": [
+    "Addis Ababa",
+    "Madrid",
+    "Kigali",
+    "Washington, D.C."
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 109,
+   "text": "What is the capital of Uganda?",
+   "options": [
+    "Mexico City",
+    "Kampala",
+    "Vienna",
+    "Berlin"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 110,
+   "text": "What is the capital of Rwanda?",
+   "options": [
+    "Islamabad",
+    "Brasília",
+    "Kigali",
+    "Monrovia"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 111,
+   "text": "What is the capital of Zambia?",
+   "options": [
+    "Beijing",
+    "Lusaka",
+    "Tokyo",
+    "New Delhi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 112,
+   "text": "What is the capital of Zimbabwe?",
+   "options": [
+    "Buenos Aires",
+    "New Delhi",
+    "Lomé",
+    "Harare"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 113,
+   "text": "What is the capital of Angola?",
+   "options": [
+    "Riyadh",
+    "Luanda",
+    "Harare",
+    "Lusaka"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 114,
+   "text": "What is the capital of Morocco?",
+   "options": [
+    "Rabat",
+    "Nairobi",
+    "Rome",
+    "Windhoek"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 115,
+   "text": "What is the capital of Algeria?",
+   "options": [
+    "Moscow",
+    "Dakar",
+    "Kigali",
+    "Algiers"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 116,
+   "text": "What is the capital of Tunisia?",
+   "options": [
+    "Brasília",
+    "Brussels",
+    "Yaoundé",
+    "Tunis"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 117,
+   "text": "What is the capital of Sudan?",
+   "options": [
+    "Kampala",
+    "Moscow",
+    "Khartoum",
+    "Bern"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 118,
+   "text": "What is the capital of Gabon?",
+   "options": [
+    "Islamabad",
+    "Madrid",
+    "Oslo",
+    "Libreville"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 119,
+   "text": "What is the capital of Botswana?",
+   "options": [
+    "Kampala",
+    "Oslo",
+    "Gaborone",
+    "New Delhi"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 120,
+   "text": "What is the capital of Namibia?",
+   "options": [
+    "Banjul",
+    "Mexico City",
+    "Kampala",
+    "Windhoek"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 121,
+   "text": "What is the capital of Malawi?",
+   "options": [
+    "Windhoek",
+    "Riyadh",
+    "Lilongwe",
+    "Paris"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 122,
+   "text": "What is the capital of Mozambique?",
+   "options": [
+    "Rabat",
+    "Maputo",
+    "Addis Ababa",
+    "Nairobi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 123,
+   "text": "What is the capital of United Kingdom?",
+   "options": [
+    "London",
+    "Bamako",
+    "Harare",
+    "Ouagadougou"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 124,
+   "text": "What is the capital of France?",
+   "options": [
+    "Paris",
+    "Algiers",
+    "Bamako",
+    "Lilongwe"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 125,
+   "text": "What is the capital of Germany?",
+   "options": [
+    "Brasília",
+    "Yaoundé",
+    "Berlin",
+    "Brussels"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 126,
+   "text": "What is the capital of Italy?",
+   "options": [
+    "Rome",
+    "Accra",
+    "Ouagadougou",
+    "Lilongwe"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 127,
+   "text": "What is the capital of Spain?",
+   "options": [
+    "Madrid",
+    "Islamabad",
+    "Accra",
+    "Washington, D.C."
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 128,
+   "text": "What is the capital of Portugal?",
+   "options": [
+    "Paris",
+    "Lisbon",
+    "Moscow",
+    "Kigali"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 129,
+   "text": "What is the capital of Russia?",
+   "options": [
+    "Moscow",
+    "Niamey",
+    "Monrovia",
+    "Dakar"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 130,
+   "text": "What is the capital of China?",
+   "options": [
+    "Beijing",
+    "Stockholm",
+    "Buenos Aires",
+    "Cairo"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 131,
+   "text": "What is the capital of Japan?",
+   "options": [
+    "Tokyo",
+    "New Delhi",
+    "Madrid",
+    "Kampala"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 132,
+   "text": "What is the capital of India?",
+   "options": [
+    "Ottawa",
+    "Algiers",
+    "New Delhi",
+    "Gaborone"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 133,
+   "text": "What is the capital of United States of America?",
+   "options": [
+    "Madrid",
+    "Rabat",
+    "Washington, D.C.",
+    "Oslo"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 134,
+   "text": "What is the capital of Canada?",
+   "options": [
+    "Monrovia",
+    "Lisbon",
+    "Tokyo",
+    "Ottawa"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 135,
+   "text": "What is the capital of Brazil?",
+   "options": [
+    "Accra",
+    "Brasília",
+    "Windhoek",
+    "New Delhi"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 136,
+   "text": "What is the capital of Argentina?",
+   "options": [
+    "Ottawa",
+    "Buenos Aires",
+    "Gaborone",
+    "Islamabad"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 137,
+   "text": "What is the capital of Australia?",
+   "options": [
+    "Gaborone",
+    "Khartoum",
+    "Canberra",
+    "New Delhi"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 138,
+   "text": "What is the capital of Saudi Arabia?",
+   "options": [
+    "Monrovia",
+    "Riyadh",
+    "Warsaw",
+    "Paris"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 139,
+   "text": "What is the capital of Turkey?",
+   "options": [
+    "Berlin",
+    "Luanda",
+    "Ankara",
+    "London"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 140,
+   "text": "What is the capital of Greece?",
+   "options": [
+    "Brasília",
+    "Moscow",
+    "Dublin",
+    "Athens"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 141,
+   "text": "What is the capital of Belgium?",
+   "options": [
+    "Cairo",
+    "Stockholm",
+    "Rabat",
+    "Brussels"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 142,
+   "text": "What is the capital of Sweden?",
+   "options": [
+    "Stockholm",
+    "Khartoum",
+    "Accra",
+    "Ouagadougou"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 143,
+   "text": "What is the capital of Norway?",
+   "options": [
+    "Libreville",
+    "Rabat",
+    "Ouagadougou",
+    "Oslo"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 144,
+   "text": "What is the capital of Mexico?",
+   "options": [
+    "Beijing",
+    "Luanda",
+    "Mexico City",
+    "Ottawa"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 145,
+   "text": "What is the capital of South Korea?",
+   "options": [
+    "Tokyo",
+    "Algiers",
+    "Seoul",
+    "Canberra"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 146,
+   "text": "What is the capital of Pakistan?",
+   "options": [
+    "Lilongwe",
+    "Islamabad",
+    "Yaoundé",
+    "Luanda"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 147,
+   "text": "What is the capital of Ireland?",
+   "options": [
+    "Berlin",
+    "Dublin",
+    "Kinshasa",
+    "Lilongwe"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 148,
+   "text": "What is the capital of Poland?",
+   "options": [
+    "Warsaw",
+    "Madrid",
+    "Nairobi",
+    "Tunis"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 149,
+   "text": "What is the capital of Austria?",
+   "options": [
+    "Vienna",
+    "Canberra",
+    "Niamey",
+    "Lomé"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 150,
+   "text": "What is the capital of Switzerland?",
+   "options": [
+    "Windhoek",
+    "Bern",
+    "Dublin",
+    "Brasília"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 151,
+   "text": "What is the capital of Cuba?",
+   "options": [
+    "Havana",
+    "Washington, D.C.",
+    "Tokyo",
+    "Islamabad"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 152,
+   "text": "What is the capital of Jamaica?",
+   "options": [
+    "London",
+    "Vienna",
+    "Kingston",
+    "N'Djamena"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 153,
+   "text": "What is the capital of Democratic Republic of the Congo?",
+   "options": [
+    "Yaoundé",
+    "Islamabad",
+    "Kinshasa",
+    "Athens"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 154,
+   "text": "Nigeria became independent in which year?",
+   "options": [
+    "1970",
+    "1960",
+    "1914",
+    "1963"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 155,
+   "text": "On what date does Nigeria celebrate its Independence Day?",
+   "options": [
+    "1 October",
+    "27 May",
+    "29 May",
+    "12 June"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 156,
+   "text": "What is the capital of Nigeria?",
+   "options": [
+    "Ibadan",
+    "Kaduna",
+    "Lagos",
+    "Abuja"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 157,
+   "text": "What is the name of Nigeria's currency?",
+   "options": [
+    "Shilling",
+    "Cedi",
+    "Rand",
+    "Naira"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 158,
+   "text": "What are the colours of the Nigerian flag?",
+   "options": [
+    "Green, yellow, green",
+    "Green, white, red",
+    "Green, white, green",
+    "Red, white, red"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 159,
+   "text": "How many states are there in Nigeria?",
+   "options": [
+    "19",
+    "30",
+    "36",
+    "37"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 160,
+   "text": "Which is the longest river in Nigeria?",
+   "options": [
+    "River Ogun",
+    "River Niger",
+    "River Benue",
+    "River Kaduna"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 161,
+   "text": "The Rivers Niger and Benue meet at which town?",
+   "options": [
+    "Onitsha",
+    "Lokoja",
+    "Makurdi",
+    "Jebba"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 162,
+   "text": "What is the national motto of Nigeria?",
+   "options": [
+    "Faith and Hope",
+    "Peace and Unity",
+    "Unity and Faith, Peace and Progress",
+    "One Nation, One Destiny"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 163,
+   "text": "Who designed the Nigerian flag?",
+   "options": [
+    "Taiwo Akinkunmi",
+    "Herbert Macaulay",
+    "Nnamdi Azikiwe",
+    "Ahmadu Bello"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 164,
+   "text": "Water boils at what temperature at sea level?",
+   "options": [
+    "212 °C",
+    "0 °C",
+    "50 °C",
+    "100 °C"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 165,
+   "text": "Water freezes at what temperature?",
+   "options": [
+    "−10 °C",
+    "100 °C",
+    "0 °C",
+    "10 °C"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 166,
+   "text": "Which planet is nearest to the Sun?",
+   "options": [
+    "Mars",
+    "Earth",
+    "Mercury",
+    "Venus"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 167,
+   "text": "Which is the largest planet in our solar system?",
+   "options": [
+    "Jupiter",
+    "Saturn",
+    "Earth",
+    "Neptune"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 168,
+   "text": "Which planet is known as the Red Planet?",
+   "options": [
+    "Venus",
+    "Mercury",
+    "Jupiter",
+    "Mars"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 169,
+   "text": "How many planets are in our solar system?",
+   "options": [
+    "8",
+    "7",
+    "9",
+    "10"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 170,
+   "text": "What do plants take in from the air to make their food?",
+   "options": [
+    "Nitrogen",
+    "Oxygen",
+    "Carbon dioxide",
+    "Hydrogen"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 171,
+   "text": "Which gas do we need to breathe in to live?",
+   "options": [
+    "Helium",
+    "Carbon dioxide",
+    "Oxygen",
+    "Nitrogen"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 172,
+   "text": "Which organ pumps blood round the body?",
+   "options": [
+    "The heart",
+    "The lungs",
+    "The liver",
+    "The kidneys"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 173,
+   "text": "Which organ do we use to breathe?",
+   "options": [
+    "The kidneys",
+    "The heart",
+    "The lungs",
+    "The stomach"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 174,
+   "text": "How many bones does an adult human have?",
+   "options": [
+    "300",
+    "106",
+    "206",
+    "212"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 175,
+   "text": "How many legs does an insect have?",
+   "options": [
+    "Eight",
+    "Six",
+    "Ten",
+    "Four"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 176,
+   "text": "How many legs does a spider have?",
+   "options": [
+    "Ten",
+    "Four",
+    "Six",
+    "Eight"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 177,
+   "text": "Which is the largest ocean in the world?",
+   "options": [
+    "The Indian Ocean",
+    "The Pacific Ocean",
+    "The Arctic Ocean",
+    "The Atlantic Ocean"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 178,
+   "text": "Which is the largest continent?",
+   "options": [
+    "Europe",
+    "Australia",
+    "Asia",
+    "Africa"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 179,
+   "text": "How many continents are there?",
+   "options": [
+    "Eight",
+    "Seven",
+    "Five",
+    "Six"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 180,
+   "text": "Which animal is called the \"ship of the desert\"?",
+   "options": [
+    "The donkey",
+    "The horse",
+    "The elephant",
+    "The camel"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 181,
+   "text": "Which is the largest land animal?",
+   "options": [
+    "The African elephant",
+    "The hippopotamus",
+    "The giraffe",
+    "The rhinoceros"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 182,
+   "text": "Which is the tallest animal?",
+   "options": [
+    "The ostrich",
+    "The giraffe",
+    "The elephant",
+    "The camel"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 183,
+   "text": "What do we call a baby cat?",
+   "options": [
+    "A kitten",
+    "A calf",
+    "A cub",
+    "A puppy"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 184,
+   "text": "What do we call a baby dog?",
+   "options": [
+    "A puppy",
+    "A kitten",
+    "A foal",
+    "A kid"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 185,
+   "text": "What do we call a baby goat?",
+   "options": [
+    "A lamb",
+    "A kid",
+    "A calf",
+    "A cub"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 186,
+   "text": "How many days are in a leap year?",
+   "options": [
+    "366",
+    "360",
+    "364",
+    "365"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 187,
+   "text": "How many months have 30 days?",
+   "options": [
+    "Seven",
+    "Six",
+    "Five",
+    "Four"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 188,
+   "text": "Which month is the shortest?",
+   "options": [
+    "November",
+    "April",
+    "June",
+    "February"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 189,
+   "text": "How many centimetres make one metre?",
+   "options": [
+    "12",
+    "100",
+    "10",
+    "1,000"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 190,
+   "text": "How many grams make one kilogram?",
+   "options": [
+    "10",
+    "100",
+    "10,000",
+    "1,000"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 191,
+   "text": "How many minutes make one hour?",
+   "options": [
+    "60",
+    "30",
+    "100",
+    "24"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 192,
+   "text": "Which instrument is used to measure temperature?",
+   "options": [
+    "Speedometer",
+    "Barometer",
+    "Thermometer",
+    "Ruler"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 193,
+   "text": "Which of these is a source of light?",
+   "options": [
+    "A mirror",
+    "The Sun",
+    "A window",
+    "The Moon"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 194,
+   "text": "What is the main colour of chlorophyll in leaves?",
+   "options": [
+    "Yellow",
+    "Green",
+    "Blue",
+    "Red"
+   ],
+   "answer": 1,
+   "points": 1
+  },
+  {
+   "id": 195,
+   "text": "What part of the plant takes in water from the soil?",
+   "options": [
+    "The flowers",
+    "The leaves",
+    "The roots",
+    "The fruits"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 196,
+   "text": "Which vitamin do we get from sunlight?",
+   "options": [
+    "Vitamin A",
+    "Vitamin C",
+    "Vitamin D",
+    "Vitamin K"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 197,
+   "text": "Oranges are a good source of which vitamin?",
+   "options": [
+    "Vitamin D",
+    "Vitamin K",
+    "Vitamin C",
+    "Vitamin B"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 198,
+   "text": "Which disease is spread by mosquitoes?",
+   "options": [
+    "Malaria",
+    "Measles",
+    "Typhoid",
+    "Cholera"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 199,
+   "text": "Which arm of government makes laws?",
+   "options": [
+    "The legislature",
+    "The executive",
+    "The police",
+    "The judiciary"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 200,
+   "text": "Who heads a state government in Nigeria?",
+   "options": [
+    "The senator",
+    "The president",
+    "The governor",
+    "The chairman"
+   ],
+   "answer": 2,
+   "points": 1
+  },
+  {
+   "id": 201,
+   "text": "How many local government areas are there in Nigeria?",
+   "options": [
+    "768",
+    "700",
+    "36",
+    "774"
+   ],
+   "answer": 3,
+   "points": 1
+  },
+  {
+   "id": 202,
+   "text": "What is the colour of the eagle on Nigeria's coat of arms?",
+   "options": [
+    "Red",
+    "White",
+    "Black",
+    "Green"
+   ],
+   "answer": 0,
+   "points": 1
+  },
+  {
+   "id": 203,
+   "text": "What do the two horses on Nigeria's coat of arms stand for?",
+   "options": [
+    "Wealth",
+    "Strength",
+    "Peace",
+    "Dignity"
+   ],
+   "answer": 3,
+   "points": 1
+  }
+ ]
+}

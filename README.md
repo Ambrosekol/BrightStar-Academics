@@ -366,6 +366,11 @@ numbering policy, e.g. `ABC/2026/0001`).
 - **A school's own bank**: *Question Banks › Import from file* (checked strictly: size, safe id, 1–500 questions, four
   options each, an answer; replacing needs a tick and the edit permission).
 - **Live papers**: *Exam Configuration › Set up the standard entrance papers*, or by hand.
+- **Entrance practice pool** (`practice_banks/`, built by `tools/build_practice_banks.py`): 200–475 ready-made practice
+  questions per class and subject, shipped with the app and read-only. They are added to every school's practice pool
+  with its earlier papers and its own practice bank, never copied into a school or used as an examination. Mathematics
+  answers are computed by the generator; English and General Knowledge come from its reviewed lists. Edit the script and
+  rerun it rather than editing the JSON.
 - **Marks** are always out of 100 and kept as decimals (40 questions → 2.5 marks each).
 
 ### Email and SMS
@@ -542,6 +547,8 @@ BrightStar-Academics/
 │   └── admin_dock.py · family_notices.py · pwa.py · portal_shell.py · platform_version.py
 ├── services/              # Small dependency-free utilities (the student number generator)
 ├── starter_banks/         # The standard entrance question banks
+├── practice_banks/        # Ready-made entrance practice questions (built by tools/build_practice_banks.py)
+├── tools/                 # Maintenance scripts run by hand
 ├── templates/             # Jinja templates: school_guide/ (the staff guide), platform/ (console and /docs)
 ├── static/                # Shared CSS/JS/fonts/images; school-ui.css is the design system
 ├── tenants/               # Per school, with local storage: data/, uploads/, numbering.json (gitignored)

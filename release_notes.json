@@ -18,6 +18,32 @@
   ],
   "releases": [
     {
+      "version": "2.34.0",
+      "date": "2026-10-14",
+      "title": "Entrance practice with hundreds of questions",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Entrance practice now draws every attempt at random from a question pool: all your earlier entrance papers for that class and subject, your practice bank if you choose one, and hundreds of new ready-made practice questions for Mathematics, English and General Knowledge, for Year 7 / JSS 1 and Year 10 / SSS 1. Practice works from day one, and a retake rarely repeats. Practice Tests shows each subject's pool and lets you set how many questions an attempt draws.",
+          "help": "entrance"
+        },
+        {
+          "audience": "staff",
+          "text": "The public entrance practice page has a new compact design in your school's colours: choose the class, see each subject's questions and time, and confirm before the paper opens.",
+          "help": "entrance"
+        },
+        {
+          "audience": "staff",
+          "text": "The staff guide now explains how students sit tests and examinations, practice tests, and how candidates sit the entrance examination and its practice, with pictures and troubleshooting for each.",
+          "help": "work"
+        },
+        {
+          "audience": "family",
+          "text": "Children preparing for our entrance examination can practise on the school's entrance practice page, with no sign-in: choose the class, then Mathematics, English or General Knowledge. Every attempt brings a new set of questions, marked at the end."
+        }
+      ]
+    },
+    {
       "version": "2.33.0",
       "date": "2026-10-14",
       "title": "The receipt studio",

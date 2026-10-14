@@ -35,7 +35,7 @@ from core.entrance import (
     _result_file_data_uri, _school_logo_data_uri,
     _valid_question_configuration, bank, bank_entry_group, bank_subject,
     candidate_cumulative, entrance_paper_label, entrance_subject_label,
-    ENTRY_GROUP_LABELS, _current_exam_bank_ids, _last_session_bank,
+    ENTRY_GROUP_LABELS, PRACTICE_MAX_QUESTIONS, builtin_practice_bank, _current_exam_bank_ids, _earlier_session_banks, _last_session_bank,
     entrance_practice_paper, entrance_practice_setting,
     entry_group_label, get_attempt, grade, load_banks, normalize_entry_group,
     premium_result_metrics, required_papers_for_target, sync_examinations,
@@ -128,11 +128,13 @@ def admin_practice_tests():
                 'group':group,'group_label':group_label,'subject':subject,'subject_label':subject_label,
                 'setting':entrance_practice_setting(group,subject),
                 'last_session':last[1] if last else None,
-                'live':bool(paper),'count':paper['count'] if paper else 0,
+                'live':bool(paper),'count':paper['count'] if paper else 0,'pool':paper['pool'] if paper else 0,
+                'earlier':len(_earlier_session_banks(group,subject,protected)),
+                'builtin':len((builtin_practice_bank(group,subject) or {}).get('questions') or []),
                 'banks':[b for b in banks if b['id'] not in protected and bank_subject(b)==subject
                          and (subject=='general_knowledge' or bank_entry_group(b) in (group,None))]})
     return render_template('admin_entrance_practice.html',rows=rows,current_session=_school_current_session(),
-                           practice_url=url_for('entrance_practice',_external=True))
+                           practice_url=url_for('entrance_practice',_external=True),max_questions=PRACTICE_MAX_QUESTIONS)
 
 @app.post('/admin/practice-tests/save')
 @admin_required
@@ -147,9 +149,12 @@ def admin_practice_tests_save():
     bank_id=request.form.get('bank_id','').strip()
     try: count=int(request.form.get('questions_to_serve','') or 0)
     except ValueError: count=-1
-    if group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS or source not in ('last_session','custom'):
+    if group not in ENTRY_GROUP_LABELS or subject not in ENTRANCE_SUBJECT_LABELS or source not in ('pool','last_session','custom'):
         abort(400)
-    if source=='custom':
+    if count<0 or count>PRACTICE_MAX_QUESTIONS:
+        flash(f'Choose how many questions each attempt draws (1 to {PRACTICE_MAX_QUESTIONS}), or leave it blank for the default.','error')
+        return redirect(url_for('admin_practice_tests'))
+    if source=='custom' or (source=='pool' and bank_id):
         b=bank(bank_id)
         if not b or not admin_scope_allows(me['id'],'bank',bank_id):
             flash('Choose one of your question banks for the custom practice questions.','error')
@@ -159,11 +164,11 @@ def admin_practice_tests_save():
         if bank_id in _current_exam_bank_ids():
             flash('That bank is used by the current entrance examination, so it cannot also be offered as practice. Create a separate bank for practice.','error')
             return redirect(url_for('admin_practice_tests'))
-        if count<0 or count>len(b.get('questions',[])):
+        if source=='custom' and count>len(b.get('questions',[])):
             flash(f'Choose how many questions each attempt draws (1 to {len(b.get("questions",[]))}), or leave it blank for the default.','error')
             return redirect(url_for('admin_practice_tests'))
     else:
-        bank_id=None; count=0
+        bank_id=None
     now=datetime.now(timezone.utc).isoformat()
     row=db.session.scalars(select(EntrancePracticeSetting).where(
         EntrancePracticeSetting.entry_group==group,EntrancePracticeSetting.subject==subject)).first()
