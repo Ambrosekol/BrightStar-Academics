@@ -115,6 +115,7 @@ and why, and the student owes the rest. Receipts, balances and reminders all use
   off on its own. A discount ended on purpose is never brought back this way.</li>
   <li>A student's own discounts are also on their fee account, where they can be given and ended.</li>
 </ul>
+{{ shot('fee-discounts', 'Discounts: what was taken off this session, the sibling rule in one line, and every discount in force, each with End.') }}
 
 <h2 id="instalments">Instalment plans</h2>
 <p><a href="{{ url_for('admin_finance_instalments') }}">Instalments</a> lets families pay a billing period's fees in
@@ -126,6 +127,8 @@ can also be put on a plan from their fee account.</p>
 the fee reminders and the report card hold all follow the plan, so a family paying on time is never chased or held back.
 A student on no plan is overdue by each fee's own due date, as before. <em>Stop using</em> a plan and its students go back to
 the fees' own dates.</p>
+{{ shot('fee-instalments', 'Instalments: each plan with its parts and dates, how many students are on it, and what is overdue now.') }}
+{{ shot('fee-account', 'A student\'s fee account: what is overdue, whether their report cards are held, their discounts (here the sibling 10%) and their instalment plan, with each fee showing what was taken off.') }}
 
 <h2 id="reminders">Fee reminders</h2>
 <p><a href="{{ url_for('admin_finance_reminders') }}">Fee reminders</a> (Settings, Fees &amp; payments) texts and emails
@@ -140,6 +143,7 @@ and a preview as you type; the text is kept to one text message.</p>
   <li>A balance left from an earlier session counts as overdue in full. Every message is in the
   <a href="{{ url_for('admin_audit_logs') }}">notice log</a> as <em>Fee reminder</em>, and parents also see it in the parent portal.</li>
 </ul>
+{{ shot('fee-reminders', 'Fee reminders: how often and from what amount, who is due a reminder now, and the words of the text and the email, with the parts in curly brackets.') }}
 
 <h2 id="report-hold">Holding report cards for unpaid fees</h2>
 <p><a href="{{ url_for('admin_finance_report_hold') }}">Report card hold</a> (Settings, Fees &amp; payments; the School Admin
@@ -149,6 +153,8 @@ and print every card; only the family's copy waits. A parent sees the cards mark
 link to pay; a student is asked to speak to their parent. The cards open the moment the balance is paid.</p>
 <p>To let one student's cards through (a promise to pay, a hardship case), open their fee account and press
 <strong>Let through…</strong> with a reason. Everyone let through is listed on the settings page, with <em>Hold again</em>.</p>
+{{ shot('fee-report-hold', 'Report card hold: switched on for what is overdue, the students held now, and those let through.') }}
+{{ shot('fee-held-card', 'What a parent sees instead of a held report card: what is still owed, and a way to pay.') }}
 
 <h2 id="expenses">Expenses</h2>
 <p><a href="{{ url_for('admin_finance_expenses') }}">Expenses</a> (the <em>Record expenses</em> permission, which the
@@ -157,6 +163,7 @@ Finance Manager has) is what the school spends, other than staff pay: diesel, re
 receipt if there is one (only finance staff can open it). The page shows one month at a time (‹ and ›), with its total
 against the month before and each category's total; press a category to see only those. A mistake is voided with a reason,
 never deleted, and stays under <em>Voided</em>.</p>
+{{ shot('fee-expenses', 'Expenses for one month: the total, the count, where most went, and each expense with its receipt and Void.') }}
 
 <h2 id="profit-loss">Profit and loss</h2>
 <p><a href="{{ url_for('admin_finance_profit_loss') }}">Profit &amp; loss</a> (the School Admin, or anyone given <em>See profit
@@ -165,6 +172,40 @@ set under Academic sessions) or any dates: <em>money in</em> (fee payments, by t
 <em>money out</em> (staff pay from every payroll marked paid, with the school's pension contribution, and expenses by
 category), and the surplus or shortfall. A longer period also shows month by month. It counts money when it moved: fees still
 owed are not income until they are paid. <strong>Print</strong> gives a clean copy for the proprietor or the accountant.</p>
+{{ shot('fee-profit-loss', 'Profit and loss for a month: money in by fee and store sales, money out as staff pay (with the school\'s pension) and expenses, and the surplus or shortfall.') }}
+
+<h3 id="fees-troubleshooting">Troubleshooting: discounts, instalments, reminders, the hold and profit and loss</h3>
+<dl class="guide-faq">
+  <dt>A discount does not show on a student's bill.</dt>
+  <dd>A discount is taken off as a student is billed. For fees billed before it was given, tick <em>Also take it off fees
+  already charged</em> when giving it (or give it again with the tick).</dd>
+  <dt>A discount says "waiting on a payment".</dt>
+  <dd>Part of the fee was already paid, and a fee is never set below what was paid. The rest of the discount waits; it
+  comes off on its own if that payment is voided or refunded.</dd>
+  <dt>The sibling discount is not given to a family.</dt>
+  <dd>Children count as one family only when one parent account is linked to each of them. The first child is the one who
+  joined the school first; the discount starts from the 2nd (or 3rd) child, as set.</dd>
+  <dt>A family on an instalment plan shows as overdue.</dt>
+  <dd>A part is overdue from the day after its date. A balance left from an earlier session counts as overdue in full,
+  whatever the plan.</dd>
+  <dt>Reminders are not going out.</dt>
+  <dd>Look for the red notice on Fee reminders: texts need SMS set up, and emails need email set up, under Email &amp; SMS.
+  Reminders go only between 9:00 and 18:00, only to families owing at least the amount set, and never twice in one day to
+  the same family.</dd>
+  <dt>A family paid, but their report card is still held.</dt>
+  <dd>The hold looks at what is still owed on the student's fees. Check the payment was applied to the fees (Payments lists
+  any payment not yet applied first). The card opens as soon as the balance is cleared; to let it through before then,
+  use <strong>Let through…</strong> on the student's fee account.</dd>
+  <dt>An expense was entered wrongly.</dt>
+  <dd>Void it with a reason (it stays under <em>Voided</em> and stops counting) and record it again.</dd>
+  <dt>Staff pay is missing from profit and loss.</dt>
+  <dd>Staff pay is counted when a payroll is marked paid, on that day. A payroll not yet marked paid is not counted.</dd>
+  <dt>"Session" in profit and loss shows nothing, or the wrong months.</dt>
+  <dd>A session uses its start and end dates: set them under Academic sessions. Or choose <em>Dates</em> and pick them.</dd>
+  <dt>Someone cannot open Profit &amp; loss.</dt>
+  <dd>It shows what the school pays in salaries, so only the School Admin, or someone given <em>See profit and loss</em>
+  under Staff roles, can open it.</dd>
+</dl>
 
 <h2 id="payments">Recording a payment</h2>
 <p><strong>+ Record payment</strong> opens a short form in a pop-up: <em>who paid</em> (type part of the student's name or

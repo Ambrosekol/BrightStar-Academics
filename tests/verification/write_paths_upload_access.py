@@ -399,7 +399,7 @@ check("a school whose logo predates the branding folder still shows it on its si
 
 # ================================================================ the rule table itself
 check("every folder the application writes to has a rule (nothing falls into 'staff only' by accident)",
-      set(upload_access.FOLDER_RULES) == {"branding", "messages", "admins", "signatures", "candidates", "students",
+      set(upload_access.FOLDER_RULES) == {"branding", "messages", "hr", "expenses", "idcards", "admins", "signatures", "candidates", "students",
                                           "questions", "assignments", "store"})
 check("store pictures are open to staff and parents (what the school store sells), and to nobody signed out",
       upload_access.rule_for("store") == frozenset({"admin", "parent"}))

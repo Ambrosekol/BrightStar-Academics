@@ -20,7 +20,7 @@
 </style>
 <div class="ac">
 <header class="ac-top"><h1>Design studios</h1></header>
-<p class="ac-hint" style="margin:-4px 0 12px">Design how the school's ID cards, report cards and receipts look. Pick a studio to start.</p>
+<p class="ac-hint" style="margin:-4px 0 12px">Design how the school's ID cards, report cards, receipts, testimonials, transcripts and leaving certificates look. Pick a studio to start.</p>
 <div class="dst-grid">
   {% if id_cards %}
   <section class="ac-panel dst" aria-labelledby="dstId">
@@ -58,6 +58,20 @@
     </div>
     <div class="dst__go">
       <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_receipt_studio') }}">Open the receipt studio</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if documents %}
+  <section class="ac-panel dst" aria-labelledby="dstDoc">
+    <div class="dst__head"><span class="dst__ico">{{ icon('nav-reportcard') }}</span><h2 id="dstDoc">Documents studio</h2></div>
+    <p>The testimonial, the transcript and the leaving certificate: your own wording with each student's details put in, the transcript table, the head's signature and a serial number.</p>
+    <div class="dst__state">
+      {% for key, name in document_kinds.items() %}{% set d = document_designs.get(key) %}
+      <span class="ac-chip">{{ name }} <small>{{ 'locked' if d and d[0] else ('saved' if d else 'starting design') }}</small></span>
+      {% endfor %}
+    </div>
+    <div class="dst__go">
+      {% for key, name in document_kinds.items() %}<a class="ac-btn{{ ' ac-btn--primary' if loop.first }}" href="{{ url_for('admin_document_studio', kind=key) }}">{{ name }}</a>{% endfor %}
     </div>
   </section>
   {% endif %}

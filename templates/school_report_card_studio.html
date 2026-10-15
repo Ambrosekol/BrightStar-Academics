@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='3') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='5') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='6') }}">
 {% set locked = design and design.locked %}
 {% set in_use = design and design.in_use %}
 {% set flashed = get_flashed_messages() %}
@@ -78,6 +78,7 @@
       <h2>Report blocks</h2>
       <div class="idd-add">
         <button type="button" data-add="results"><span class="idd-i idd-i-field">▦</span>Results table</button>
+        <button type="button" data-add="cumulative" title="Third Term cards: each subject's three terms and average"><span class="idd-i idd-i-field">∑</span>Session so far</button>
         <button type="button" data-add="summary"><span class="idd-i idd-i-field">Σ</span>Summary</button>
         <button type="button" data-add="summary" data-items="opened,present,absent,attendance" data-size="120x16"><span class="idd-i idd-i-field">✓</span>Attendance</button>
         <button type="button" data-add="traits"><span class="idd-i idd-i-field">★</span>Trait ratings</button>
@@ -187,6 +188,6 @@
 </dialog>
 <script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ data|tojson }}</script>
 <script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
-<script src="{{ url_for('static', filename='id-card-designer.js', v='5') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='5') }}"></script>
+<script src="{{ url_for('static', filename='id-card-designer.js', v='6') }}"></script>
 {% endblock %}

@@ -1,15 +1,15 @@
 {% extends 'school_guide/_layout.html' %}
 {% from 'school_guide/_macros.html' import page, shot with context %}
 {% block guide %}
-<p>The design studios let the school design its own ID cards, report cards and receipts: the layout, the colours, the
-pictures and exactly which details appear, from a ready-made template or from a blank page. All three work the same way,
-so once you know one, you know them all.</p>
+<p>The design studios let the school design its own ID cards, report cards, receipts, testimonials, transcripts and
+leaving certificates: the layout, the colours, the pictures and exactly which details appear, from a ready-made template
+or from a blank page. All four studios work the same way, so once you know one, you know them all.</p>
 
 <h2 id="open">Opening a studio</h2>
 <p><a href="{{ url_for('admin_design_studios') }}">Design studios</a> is in the menu under <strong>Management, Design &amp;
 print</strong>. It shows a card for each studio you are allowed to open, with how things stand (for example, whether
 report cards already use the school's design).</p>
-{{ shot('design-studios', 'Design studios: one card for each studio you may open, with its state. The menu on the left is in two parts, Teaching and Management.') }}
+{{ shot('design-studios', 'Design studios: one card for each studio you may open, with its state; the Documents studio shows which of its three documents have been designed.') }}
 <p>The studios decide what the whole school's documents look like, so they are for the <strong>School Admin</strong> (the
 proprietor or proprietress) and the <strong>head teacher</strong>. Nobody else opens one, whatever their role (class and
 subject teachers, the bursar, office staff), unless the School Admin gives them that studio's permission personally.</p>
@@ -19,6 +19,7 @@ subject teachers, the bursar, office staff), unless the School Admin gives them 
     <tr><td>ID card studio</td><td>Design and manage ID cards</td><td><a href="{{ url_for('admin_id_cards') }}">ID cards</a> → <em>Design the student card</em></td></tr>
     <tr><td>Report card studio</td><td>Manage report card settings</td><td><a href="{{ url_for('admin_school_report_cards') }}">Report cards</a> → <em>Design the report card</em>, and Report card settings</td></tr>
     <tr><td>Receipt studio</td><td>Manage finance</td><td><a href="{{ url_for('admin_finance_receipt_settings') }}">Receipt settings</a> → <em>Design the receipt</em></td></tr>
+    <tr><td>Documents studio</td><td>Design testimonials and certificates</td><td><a href="{{ url_for('admin_school_documents') }}">Documents</a> → <em>Design them</em></td></tr>
   </tbody>
 </table>
 <div class="guide-note"><strong>Letting someone else design.</strong> On <a href="{{ url_for('admin_accounts') }}">Staff</a>,
@@ -159,6 +160,19 @@ details. See {{ page('results-report-cards', 'Results and report cards') }}.</p>
 PDF and the copy emailed to parents all follow it. See {{ page('finance', 'Fees, payments and receipts') }}.</p>
 {{ shot('receipt-designed', 'A payment\'s own page with its receipt in the school\'s design.') }}
 {{ shot('receipt-void', 'A voided receipt is always marked VOID across the page, whatever the design, and never shows the Paid stamp.') }}
+<h3>The documents studio</h3>
+<p>The testimonial, the transcript and the leaving certificate, each on an A4 page with its own design, lock and versions
+(the tabs at the top switch between them). Its blocks are the <strong>paragraph</strong>, your own words with the
+student's details put in (type a detail in curly brackets, such as <code>{student_name}</code>, or click one under the
+words to put it in; a detail the document has not got is left empty), and the <strong>transcript</strong> table, one
+row per subject and one column per session. Details include the serial number, the dates the student joined and left,
+their classes, conduct, the head's words on their character and the reason for leaving; a barcode of the serial number
+and the head's signature finish it. A kind never designed prints from its starting design. Issuing documents: see
+{{ page('results-report-cards', 'Results and report cards') }}, Testimonials, transcripts and leaving certificates.</p>
+{{ shot('studio-documents', 'The documents studio on the transcript: the three documents switch at the top, the paragraph and transcript blocks on the left, and the starting transcript with a made-up student.') }}
+<p>Unlike report cards and receipts there is no <em>Use this design</em>: every document issued or printed from then on
+follows the saved design of its kind. A document already issued keeps its words and details, but prints in the current
+design.</p>
 
 <h2 id="troubleshooting">Troubleshooting</h2>
 <dl class="guide-faq">
@@ -202,6 +216,15 @@ PDF and the copy emailed to parents all follow it. See {{ page('finance', 'Fees,
   <dt>A detail is empty on a printout.</dt>
   <dd>It is empty in the record itself (for example, no date of birth was entered). Fill it in on the student's or staff
   member's page, or the payment; the next copy shows it.</dd>
+
+  <dt>A document prints <code>{something}</code> as written, or leaves a gap.</dt>
+  <dd>Only the details listed under the paragraph's words are filled in; anything else in curly brackets is printed as
+  typed, so check the spelling (click the detail to put it in instead of typing it). A detail the student's record has
+  not got, such as positions held, is left empty.</dd>
+
+  <dt>The transcript table in the studio shows made-up subjects.</dt>
+  <dd>The studio always shows a made-up student. Each issued transcript shows that student's own subjects and sessions,
+  as many as they have; the table shares its height between them.</dd>
 
   <dt>I cannot remove one of the school's images.</dt>
   <dd>A locked design uses it. Unlock that design (the message says which), then remove the image.</dd>

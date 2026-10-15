@@ -29,7 +29,9 @@ MAX_ELEMENTS = 80
 # Only fonts the PDF can draw exactly as the studio shows them: DejaVu Sans ships with the app (and covers the Naira
 # sign and accented names); Helvetica, Times and Courier are built into every PDF reader.
 FONTS = {'dejavu': 'DejaVu Sans', 'helvetica': 'Helvetica', 'times': 'Times', 'mono': 'Courier'}
-BLOCKS = ('results', 'summary', 'traits', 'grading', 'comment')
+BLOCKS = ('results', 'summary', 'traits', 'grading', 'comment', 'cumulative')
+# The "session so far" table on a Third Term card: each subject's three terms, its average and grade.
+CUMULATIVE_COLUMNS = ['subject', 'first', 'second', 'third', 'avg', 'grade']
 TYPES = ('text', 'field', 'shape', 'photo', 'logo', 'image', 'signature', 'barcode') + BLOCKS
 WHO = ('head', 'teacher')
 FIELDS = {
@@ -45,13 +47,17 @@ FIELDS = {
     'date_of_birth': 'Date of birth', 'age': 'Age', 'guardian_name': "Parent/guardian's name",
     'guardian_phone': "Parent/guardian's phone", 'guardian_email': "Parent/guardian's email", 'blood_group': 'Blood group',
     'genotype': 'Genotype', 'state_of_origin': 'State of origin', 'religion': 'Religion',
+    'session_average': 'Session average (Third Term)', 'session_grade': 'Session grade (Third Term)',
+    'session_position': 'Position for the session (Third Term)',
     'teacher_name': "Class teacher's name", 'head_name': "Head's name", 'head_title': "Head's title",
     'school_name': 'School name', 'school_motto': 'Motto', 'school_address': 'Address', 'school_phone': 'School phone',
     'school_email': 'School email',
 }
 BARCODE_FIELDS = {'admission_no': 'Admission number'}
-RESULT_COLUMNS = {'subject': 'Subject', 'test': 'Test', 'assignment': 'Assignment', 'project': 'Project', 'ca': 'CA',
+RESULT_COLUMNS = {'subject': 'Subject', 'part1': 'CA part 1', 'part2': 'CA part 2', 'part3': 'CA part 3',
+                  'part4': 'CA part 4', 'test': 'Test', 'assignment': 'Assignment', 'project': 'Project', 'ca': 'CA',
                   'exam': 'Exam', 'total': 'Total', 'average': 'Class avg', 'grade': 'Grade', 'remark': 'Remark'}
+PART_COLUMNS = ('part1', 'part2', 'part3', 'part4')    # each headed with its own name from the grading scheme
 SUMMARY_ITEMS = {'total': 'Total obtained', 'percentage': 'Percentage', 'grade': 'Overall grade',
                  'average': 'Class average', 'size': 'Class size', 'subjects': 'Subjects', 'position': 'Position',
                  'highest': 'Highest in class', 'lowest': 'Lowest in class', 'opened': 'School opened',
@@ -76,7 +82,11 @@ def _block_style(raw):
 def _clean_block(raw, base):
     el = dict(base, **_block_style(raw))
     t = el['type']
-    if t == 'results':
+    if t == 'cumulative':
+        el['columns'] = list(CUMULATIVE_COLUMNS)
+        el['numbers'] = _choice(raw.get('numbers'), ('center', 'right'), 'center')
+        el['head_size'] = _number(raw.get('head_size'), 5, 16, el['size'])
+    elif t == 'results':
         asked = raw.get('columns') if isinstance(raw.get('columns'), list) else list(RESULT_COLUMNS)
         el['columns'] = [c for c in RESULT_COLUMNS if c in asked] or ['subject', 'total', 'grade']
         if 'subject' not in el['columns']:
@@ -185,6 +195,7 @@ def card_fields(card):
     school, student = card.get('school') or {}, card.get('student') or {}
     attendance = card.get('attendance') or {}
     summary, comment, head = card.get('summary') or {}, card.get('comment') or {}, card.get('head') or {}
+    cumulative = card.get('cumulative') or {}
     percentage = summary.get('percentage')
     average = summary.get('class_average_percentage')
     return {
@@ -218,18 +229,26 @@ def card_fields(card):
         'guardian_email': student.get('guardian_email') or '', 'blood_group': student.get('blood_group') or '',
         'genotype': student.get('genotype') or '', 'state_of_origin': student.get('state_of_origin') or '',
         'religion': student.get('religion') or '',
+        'session_average': _pct(cumulative.get('average')),
+        'session_grade': ' - '.join(p for p in (cumulative.get('grade'), cumulative.get('remark')) if p),
+        'session_position': (_ordinal(cumulative['position']) + (f" of {cumulative['class_size']}" if cumulative.get('class_size') else ''))
+                            if cumulative.get('position') else '',
     }
 
 
 def view_data(card):
     """What static/report-card-render.js draws one card from: the details, the results, the summary, the traits, the
     grading key and the comment, as plain values (pictures are added by the caller as addresses)."""
-    subjects = []
+    subjects, heads = [], {}
     for s in card.get('subjects') or []:
-        subjects.append({'subject': s.get('name') or '', 'test': _fmt(s.get('test')), 'assignment': _fmt(s.get('assignment')),
-                         'project': _fmt(s.get('project')), 'ca': _fmt(s.get('ca')), 'exam': _fmt(s.get('exam')),
-                         'total': _fmt(s.get('total')), 'average': _fmt(s.get('class_average')), 'grade': s.get('grade') or '',
-                         'remark': s.get('remark') or ''})
+        row = {'subject': s.get('name') or '', 'test': _fmt(s.get('test')), 'assignment': _fmt(s.get('assignment')),
+               'project': _fmt(s.get('project')), 'ca': _fmt(s.get('ca')), 'exam': _fmt(s.get('exam')),
+               'total': _fmt(s.get('total')), 'average': _fmt(s.get('class_average')), 'grade': s.get('grade') or '',
+               'remark': s.get('remark') or ''}
+        for column, part in zip(PART_COLUMNS, s.get('parts') or []):
+            row[column] = _fmt(part.get('score'))
+            heads.setdefault(column, part.get('label') or '')
+        subjects.append(row)
     data = card_fields(card)
     summary = {'total': f"{data['total']} / {data['total_max']}" if data['total_max'] else data['total'],
                'percentage': data['percentage'], 'grade': ' - '.join(p for p in (data['grade'], data['remark']) if p),
@@ -248,9 +267,19 @@ def view_data(card):
         seen = {_fmt(s.get(key)) for s in card.get('subjects') or [] if s.get(key) not in (None, '')}
         if len(seen) == 1:
             maxes[column] = seen.pop()
+    for i, column in enumerate(PART_COLUMNS):
+        seen = {_fmt(s['parts'][i].get('max')) for s in card.get('subjects') or [] if len(s.get('parts') or []) > i}
+        if len(seen) == 1:
+            maxes[column] = seen.pop()
+    cumulative = [{'subject': s.get('name') or '', 'first': _fmt(s.get('first')) if s.get('first') is not None else '-',
+                   'second': _fmt(s.get('second')) if s.get('second') is not None else '-',
+                   'third': _fmt(s.get('third')) if s.get('third') is not None else '-',
+                   'avg': _fmt(s.get('average')), 'grade': s.get('grade') or ''}
+                  for s in (card.get('cumulative') or {}).get('subjects') or []]
     code = barcode_path(data['admission_no'])
     return {'data': data, 'report': {'subjects': subjects, 'summary': summary, 'comment': comment, 'traits': traits,
-                                     'grading': grading, 'maxes': maxes}, 'barcodes': {'admission_no': code} if code else {}}
+                                     'grading': grading, 'maxes': maxes, 'heads': heads, 'cumulative': cumulative},
+            'barcodes': {'admission_no': code} if code else {}}
 
 
 def sample_card(school, head, grading):
@@ -265,10 +294,15 @@ def sample_card(school, head, grading):
         grade = next((g['grade'] for g in grading if _within(total, g.get('range'))), '')
         remark = next((g['remark'] for g in grading if g.get('grade') == grade), '')
         subjects.append({'name': name, 'test': test, 'assignment': ass, 'project': None, 'ca': test + ass, 'ca_max': 40,
+                         'parts': [{'label': 'CA1', 'score': test, 'max': 20}, {'label': 'CA2', 'score': ass, 'max': 20}],
                          'exam': exam, 'exam_max': 60, 'total': total, 'total_max': 100, 'grade': grade, 'remark': remark,
                          'class_average': round(total * 0.88, 1)})
     total = sum(s['total'] for s in subjects)
     pct = round(total / (len(subjects) * 100) * 100, 1)
+    session = [{'name': s['name'], 'first': s['total'] - 4, 'second': s['total'] + 3, 'third': s['total'],
+                'average': round((3 * s['total'] - 1) / 3, 1), 'grade': s['grade'], 'remark': s['remark']} for s in subjects]
+    cumulative = {'subjects': session, 'average': round(pct - 0.3, 1), 'grade': 'B', 'remark': 'Very good', 'position': 4,
+                  'class_size': 34}
     return {'school': school, 'title': 'First Term Report', 'term': 'First Term', 'session': '2026/2027',
             'student': {'name': 'Adaeze Chukwuemeka Okafor', 'admission_no': 'BSA/2024/0117', 'class_name': 'JSS 2A',
                         'gender': 'Female', 'department': '', 'photo_path': None, 'date_of_birth': '14 March 2014',
@@ -276,7 +310,7 @@ def sample_card(school, head, grading):
                         'guardian_email': 'emeka.okafor@example.com', 'blood_group': 'O+', 'genotype': 'AA',
                         'state_of_origin': 'Anambra', 'religion': 'Christianity'},
             'attendance': {'opened': 62, 'present': 59, 'late': 3, 'absent': 3, 'excused': 0, 'percentage': 95.2},
-            'subjects': subjects,
+            'subjects': subjects, 'cumulative': cumulative,
             'summary': {'total': total, 'total_max': len(subjects) * 100, 'percentage': pct, 'grade': 'B', 'remark': 'Very good',
                         'class_average_percentage': 61.4, 'class_size': 34, 'subjects_count': len(subjects),
                         'position': 3, 'class_highest': 88.6, 'class_lowest': 41.2},

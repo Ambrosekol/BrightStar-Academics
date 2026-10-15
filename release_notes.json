@@ -18,6 +18,56 @@
   ],
   "releases": [
     {
+      "version": "2.40.0",
+      "date": "2026-10-15",
+      "title": "Term-end paperwork: grading, broadsheets, testimonials, exam registration",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Settings has a new Grading and scores page. Each level (Nursery, Primary, JSS, SSS) gets its own score split, such as CA1 10, CA2 10, Test 20 and Exam 60, and its own grade scale: WAEC's A1 to F9, A to F, or words such as Excellent for nursery. It applies to the session you choose. Earlier sessions keep their grading, so old report cards never change.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "The score sheet now has a box for each typed-in CA part your grading has (CA1, CA2...). A box left empty means that part has not been taken yet. A computer test can be set to count as one of those parts (\"Counts as\" on the test's page).",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "Third Term report cards now show the session so far: each subject's mark in all three terms, its average, the session average and the position in class for the session. The report card studio has a \"Session so far\" block for your own design.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "Report cards has a Broadsheet button: the whole class on one sheet, with every subject, totals, averages and positions for a term or for the session. It can be printed or downloaded as a spreadsheet, and it shows how many results are still waiting for release.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "New Documents page: issue a testimonial, a transcript (every released result, session by session) or a leaving certificate, including for students who have left. Each one gets its own serial number and keeps exactly what it said. One issued by mistake is revoked with a reason and prints marked REVOKED.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "staff",
+          "text": "Design studios has a fourth studio, Documents: design the school's testimonial, transcript and leaving certificate with your own words. Details such as the student's name and class are filled in for you.",
+          "help": "design-studios"
+        },
+        {
+          "audience": "staff",
+          "text": "New Exam registration page for WAEC, NECO and BECE. It lists a class's candidates with their sex, date of birth, state of origin and subjects, and points out anything missing. Download the list as a spreadsheet and the passport photographs as a ZIP, ready for the exam body's portal.",
+          "help": "results-report-cards"
+        },
+        {
+          "audience": "family",
+          "text": "Third Term report cards now show the whole session: each subject's mark in all three terms, its average, and your child's position in class for the session."
+        },
+        {
+          "audience": "student",
+          "text": "Your Third Term report card now shows the whole session: each subject's mark in all three terms, its average, and your position in class for the session."
+        }
+      ]
+    },
+    {
       "version": "2.39.1",
       "date": "2026-10-15",
       "title": "A discount waiting on a payment comes off by itself",

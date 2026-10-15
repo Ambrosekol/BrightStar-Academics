@@ -163,6 +163,11 @@
     <div class="ac-fields ac-fields--3">
       <div class="ac-field ac-field--wide"><label for="acqTitle">Title</label><input id="acqTitle" name="title" value="{{ assessment.title }}" required></div>
       <div class="ac-field"><label for="acqMinutes">Time allowed (minutes)</label><input id="acqMinutes" type="number" min="1" name="duration_minutes" value="{{ assessment.duration_minutes }}" required></div>
+      {% if ca_parts %}
+      <div class="ac-field"><label for="acqCaPart">Counts as <span class="ac-hint">in the term result</span></label>
+        <select id="acqCaPart" name="ca_part"><option value="">The Test part, as usual</option>
+          {% for key, name in ca_parts %}<option value="{{ key }}" {% if assessment.ca_part == key %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+      {% endif %}
       <div class="ac-field"><label for="acqSession">Academic session</label><select id="acqSession" name="session_id">{% for s in sessions %}<option value="{{ s.id }}" {% if s.id == assessment.session_id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></div>
       <div class="ac-field"><label for="acqTerm">Term</label><select id="acqTerm" name="term">{% if assessment.assessment_type == 'practice' %}<option value="">No term (practice)</option>{% endif %}{% for t in terms %}<option value="{{ t }}" {% if assessment.term == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
       {% if assessment.assessment_type != 'practice' %}

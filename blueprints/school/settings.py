@@ -55,6 +55,16 @@ def _payments_status():
     return ('Connected', GOOD) if payments.payment_settings() is not None else ('Not connected', WARN)
 
 
+def _grading_status():
+    from core import grading
+    current = _school_current_session()
+    if not current:
+        return ('No current session', WARN)
+    if grading.schemes_for(current['id'])[1]:
+        return (f"Set for {current['name']}", GOOD)
+    return ('Carried on', GOOD) if grading.inherited_from(current['id']) else ('Original A to F', NEUTRAL)
+
+
 def _reminders_status():
     from blueprints.finance.reminders import settings
     s = settings()
@@ -148,6 +158,9 @@ def _groups(me, workspace, statuses=True):
               'clock in gps location late phone screen qr code holiday closed'),
         ]),
         ('results', 'Results & report cards', 'What is printed on a report card.', [
+            E('Grading and scores', "Each level's score split (Exam and CA1, CA2, CA3...) and grade scale (A to F, WAEC A1 to F9, or words for nursery), per session.",
+              'admin_school_grading', 'nav-results', can('school.grading.manage'), _grading_status,
+              'grade scale waec a1 f9 ca1 ca2 ca3 continuous assessment exam score split weighting nursery'),
             E('Report card settings', "The head's title, name and signature, and the date the next term begins.",
               'admin_school_report_card_settings', 'nav-reportcard', can('report_cards.manage'), _report_status, 'head teacher signature next term'),
         ]),

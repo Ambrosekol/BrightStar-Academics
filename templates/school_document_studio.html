@@ -1,0 +1,176 @@
+{% extends 'admin_base.html' %}
+{% block title %}Documents studio — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The documents studio (blueprints/school/document_studio.py, static/id-card-designer.js in document mode): design the
+    school's testimonial, transcript and leaving certificate on an A4 page - the school's own words with the student's
+    details put in (the paragraph block), the transcript table, the photograph, the logo, the head's signature, a barcode
+    of the serial number - with layers, alignment, snapping, undo, zoom and earlier versions. Drawn by
+    static/id-card-render.js, static/report-card-render.js and static/document-render.js; the PDF follows the same rules
+    (core/document_design_pdf.py). Each kind has its own design, lock and versions. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='6') }}">
+<style>
+  /* the switch between the three documents, in the studio's own bar */
+  .dst-kinds{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--idd-line,#d8dde6);border-radius:8px;background:#f4f6f9;margin-left:6px}
+  .dst-kinds a{padding:4px 10px;border-radius:6px;font-size:.82rem;color:#3a4558;text-decoration:none;white-space:nowrap}
+  .dst-kinds a:hover{background:#fff}
+  .dst-kinds a.is-active{background:#fff;color:#0f2a4a;font-weight:600;box-shadow:0 1px 2px rgba(15,42,74,.12)}
+</style>
+{% set locked = design and design.locked %}
+{% set flashed = get_flashed_messages() %}
+{% macro chip(field, label, text=none) -%}<button type="button" class="ac-chip" data-add="field" data-field="{{ field }}"{% if label %} data-label="{{ label }}"{% endif %}>{{ text or label or field }}</button>{%- endmacro %}
+<div class="ac idd idd--report idd--app" data-idd role="application" aria-label="Documents studio">
+
+<header class="rcs-bar">
+  <a class="rcs-exit" href="{{ url_for('admin_design_studios') }}" title="Leave the studio">← Exit</a>
+  <strong class="rcs-title">Documents studio</strong>
+  <nav class="dst-kinds" aria-label="Which document">
+    {% for key, name in kinds.items() %}<a href="{{ url_for('admin_document_studio', kind=key) }}" class="{{ 'is-active' if key == kind }}" {% if key == kind %}aria-current="page"{% endif %}>{{ name }}</a>{% endfor %}
+  </nav>
+  <span class="idd-sep"></span>
+  <div class="idd-toolbar" role="toolbar" aria-label="Tools">
+    <button type="button" class="idd-tool" data-tool="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button type="button" class="idd-tool" data-tool="redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool" data-tool="zoomout" title="Zoom out" aria-label="Zoom out">−</button>
+    <span class="idd-zoom" data-zoom-label>100%</span>
+    <button type="button" class="idd-tool" data-tool="zoomin" title="Zoom in (Ctrl + mouse wheel)" aria-label="Zoom in">+</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="fit" title="Show the whole page">Fit</button>
+    <span class="idd-sep"></span>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="grid" title="Show a 5 mm grid (and snap to 0.5 mm)">Grid</button>
+    <button type="button" class="idd-tool idd-tool--wide" data-tool="snap" title="Snap to the page and to other items">Snap</button>
+  </div>
+  <span class="idd-grow"></span>
+  <button class="ac-btn ac-btn--sm" type="button" data-preview title="The design as it prints, with a made-up student">Preview PDF</button>
+  {% if locked %}
+  <form method="post" action="{{ url_for('admin_document_studio_lock', kind=kind) }}" data-confirm="Unlock this design? It can then be changed by anyone allowed to design documents." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="0">
+    <button class="ac-btn ac-btn--sm" type="submit">Unlock</button></form>
+  {% else %}
+  <button class="ac-btn ac-btn--sm" type="button" data-templates>Start again</button>
+  <form method="post" action="{{ url_for('admin_document_studio_lock', kind=kind) }}" data-idd-lock data-confirm="Save and lock this design? Nobody can change it until it is unlocked." data-confirm-danger="0">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lock" value="1">
+    <button class="ac-btn ac-btn--sm" type="submit">Lock</button></form>
+  <button class="ac-btn ac-btn--sm ac-btn--primary" type="button" data-idd-save title="Save (Ctrl+S)">Save</button>
+  {% endif %}
+  <button class="idd-tool rcs-fs" type="button" data-fullscreen title="Full screen (hide the browser's bars)" aria-label="Full screen">⛶</button>
+</header>
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<div class="rcs-body">
+  <aside class="rcs-left" aria-label="Add to the page" data-tabs="left">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="insert">Insert</button>
+      <button type="button" role="tab" data-tab="details">Details</button>
+      <button type="button" role="tab" data-tab="images">Images</button>
+      <button type="button" role="tab" data-tab="page">Page</button>
+    </div>
+    <section class="rcs-pane" data-tab-pane="insert" role="tabpanel">
+      <h2>Document blocks</h2>
+      <div class="idd-add">
+        <button type="button" data-add="paragraph"><span class="idd-i idd-i-text">¶</span>Paragraph</button>
+        <button type="button" data-add="transcript"><span class="idd-i idd-i-field">▦</span>Transcript</button>
+      </div>
+      <p class="ac-hint">A paragraph is your own words; put a detail in curly brackets, such as {student_name}, and it is filled in for each student. Choose it to edit the words.</p>
+      <h2>Elements</h2>
+      <div class="idd-add">
+        <button type="button" data-add="text"><span class="idd-i idd-i-text">T</span>Text</button>
+        <button type="button" data-add="field"><span class="idd-i idd-i-field">≡</span>Detail</button>
+        <button type="button" data-add="photo"><span class="idd-i idd-i-photo"></span>Photo</button>
+        <button type="button" data-add="logo"><span class="idd-i idd-i-logo"></span>Logo</button>
+        <button type="button" data-add="barcode"><span class="idd-i idd-i-bar"></span>Barcode</button>
+        <button type="button" data-add="signature" data-who="head"><span class="idd-i idd-i-sign">✍</span>Signature</button>
+      </div>
+      <h2>Shapes</h2>
+      <div class="idd-shapes">
+        {% for key, path in [('rect', 'M10 20H90V80H10Z'), ('ellipse', ''), ('triangle', 'M50 10L90 90H10Z'), ('diamond', 'M50 8L92 50L50 92L8 50Z'),
+                             ('hexagon', 'M28 12H72L92 50L72 88H28L8 50Z'), ('star', 'M50 6L61 38H95L68 58L78 92L50 72L22 92L32 58L5 38H39Z'),
+                             ('chevron', 'M8 15H68L92 50L68 85H8L32 50Z'), ('wave', 'M6 50C26 20 44 20 56 44S80 72 94 40V90H6Z'),
+                             ('corner', 'M8 8H92C66 18 30 46 8 92Z'), ('line', 'M8 50H92')] %}
+        <button type="button" data-add="shape" data-shape="{{ key }}" title="{{ key|capitalize }}" aria-label="{{ key|capitalize }}">
+          <svg viewBox="0 0 100 100" aria-hidden="true">{% if key == 'ellipse' %}<ellipse cx="50" cy="50" rx="42" ry="30"/>{% elif key == 'line' %}<path d="{{ path }}" class="is-line"/>{% else %}<path d="{{ path }}"/>{% endif %}</svg></button>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="details" role="tabpanel" hidden>
+      <p class="ac-hint">Click one to put it on the page. In a paragraph, use the same details in curly brackets instead.</p>
+      <h2>The document</h2>
+      <div class="idd-fields">{{ chip('document_title', '', 'Title') }}{{ chip('serial_no', 'Serial no.') }}{{ chip('date_issued', 'Date issued') }}</div>
+      <h2 class="rcs-h2-gap">Student</h2>
+      <div class="idd-fields">
+        {{ chip('student_name', 'Name') }}{{ chip('admission_no', 'Admission no.') }}{{ chip('gender', 'Gender') }}
+        {{ chip('date_of_birth', 'Born') }}{{ chip('state_of_origin', 'State of origin') }}{{ chip('religion', 'Religion') }}
+        {{ chip('guardian_name', 'Parent/guardian') }}{{ chip('department', 'Department') }}
+      </div>
+      <h2 class="rcs-h2-gap">Time at the school</h2>
+      <div class="idd-fields">
+        {{ chip('date_admitted', 'Admitted') }}{{ chip('date_left', 'Left') }}{{ chip('first_class', 'Class on joining') }}
+        {{ chip('last_class', 'Last class') }}{{ chip('sessions_attended', 'Attended') }}{{ chip('reason_for_leaving', 'Reason for leaving') }}
+      </div>
+      <h2 class="rcs-h2-gap">Conduct and record</h2>
+      <div class="idd-fields">
+        {{ chip('conduct', 'Conduct') }}{{ chip('character', '', 'Character') }}{{ chip('positions_held', 'Positions held') }}
+        {{ chip('final_average', 'Overall average') }}{{ chip('final_grade', 'Grade') }}
+      </div>
+      <h2 class="rcs-h2-gap">School</h2>
+      <div class="idd-fields">
+        {{ chip('school_name', '', 'School name') }}{{ chip('school_motto', '', 'Motto') }}{{ chip('school_address', '', 'Address') }}
+        {{ chip('school_phone', 'Phone') }}{{ chip('school_email', 'Email') }}{{ chip('head_name', '', "Head's name") }}{{ chip('head_title', '', "Head's title") }}
+      </div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="images" role="tabpanel" hidden>
+      <h2>The school's images</h2>
+      <p class="ac-hint">Watermarks, borders, the school's seal: PNG or JPG. Shared with the other studios. Click one to put it on the page.</p>
+      <label class="ac-btn ac-btn--sm idd-upload">Upload an image<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-upload {{ upload_attrs('image') }} hidden></label>
+      {{ upload_hint() }}
+      <div class="idd-library" data-library></div>
+    </section>
+    <section class="rcs-pane" data-tab-pane="page" role="tabpanel" hidden>
+      <h2>The page</h2>
+      <div data-cardpanel></div>
+    </section>
+  </aside>
+
+  <section class="rcs-centre">
+    <div class="idd-stage" data-stage tabindex="0" aria-label="The document. Click to choose, drag to move, arrow keys to nudge.">
+      <div class="idd-holder" data-holder>
+        <div class="idd-card-host" data-card-host></div>
+        <div class="idd-overlay" data-overlay></div>
+      </div>
+    </div>
+    <p class="idd-status{{ ' is-locked' if locked }}{{ ' is-saved' if flashed and not locked }}" data-idd-status role="status">
+      {% if flashed %}{{ flashed[-1] }}
+      {% elif locked %}Locked{% if design.locked_at %} since {{ design.locked_at[:10] }}{% endif %}: the design cannot change until it is unlocked.
+      {% elif design %}Saved {{ design.updated_at[:16]|replace('T', ' ') }}. Every copy issued from now on prints from what you save.
+      {% else %}This is the starting {{ kinds[kind]|lower }}, shown with a made-up student{% if not has_signature %} (set the head's signature under Report card settings to see it){% endif %}. Change anything, then press Save.{% endif %}</p>
+  </section>
+
+  <aside class="rcs-right" aria-label="The chosen item" data-tabs="right">
+    <div class="rcs-tabs" role="tablist">
+      <button type="button" role="tab" class="is-active" data-tab="props">Properties</button>
+      <button type="button" role="tab" data-tab="layers">Layers</button>
+      <button type="button" role="tab" data-tab="versions">Versions</button>
+    </div>
+    <section class="rcs-pane idd-props" data-tab-pane="props" data-props role="tabpanel"></section>
+    <section class="rcs-pane" data-tab-pane="layers" role="tabpanel" hidden><div class="idd-layers" data-layers></div></section>
+    <section class="rcs-pane" data-tab-pane="versions" role="tabpanel" hidden><div class="idd-versions" data-versions></div></section>
+  </aside>
+</div>
+</div>
+{% include 'includes/_studio_small.html' %}
+<dialog class="idd-tpl idd-tpl--document" data-template-dialog aria-labelledby="iddTplTitle">
+  <div class="idd-tpl__head">
+    <h2 id="iddTplTitle">Start again</h2>
+    <button type="button" class="idd-tpl__close" data-template-close aria-label="Close">×</button>
+  </div>
+  <p class="ac-hint">Put the starting design back on the page. Undo (Ctrl+Z) brings yours back, and nothing is kept until you press Save.</p>
+  <div class="idd-tpl__grid" data-template-grid></div>
+</dialog>
+<script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ data|tojson }}</script>
+<script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='5') }}"></script>
+<script src="{{ url_for('static', filename='document-render.js', v='1') }}"></script>
+<script src="{{ url_for('static', filename='id-card-designer.js', v='6') }}"></script>
+{% endblock %}

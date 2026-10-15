@@ -1,0 +1,88 @@
+{% extends 'admin_base.html' %}
+{% block title %}Issue a document — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Issuing a testimonial, transcript or leaving certificate (blueprints/school/documents.py). Opens in a pop-up from
+    Documents or a student's page; a mistake keeps it open with the form as typed. Only the questions the chosen kind
+    needs are shown. -#}
+{% set modal = request.values.get('modal') == '1' or request.headers.get('X-Modal') == '1' %}
+{% set f = form or {} %}
+<div class="ac fi" data-doc-issue>
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}"><link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  /* .ac-fields is a grid, which would otherwise outrank the hidden attribute the kind switch sets */
+  [data-doc-issue] [hidden]{display:none!important}
+  {% if not modal %}[data-doc-issue]{max-width:760px}{% endif %}
+</style>
+<div class="ac-modal-head"><h2>Issue a document</h2><p>It is numbered, kept in the register, and prints in the school's own design.</p></div>
+
+<form method="post" action="{{ url_for('admin_school_document_issue') }}" class="fi-form" data-doc-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+  {% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <div class="fi-methods" role="radiogroup" aria-label="Which document">
+    {% for key, name in kinds.items() %}<label><input type="radio" name="kind" value="{{ key }}" {% if kind == key %}checked{% endif %} data-doc-kind><span>{{ name }}</span></label>{% endfor %}
+  </div>
+
+  <div class="ac-field ac-field--wide"><label for="docStudent">Student <span class="ac-hint">current or left</span></label>
+    <input type="search" class="fi-find" placeholder="Type to narrow the list: name or admission no." aria-label="Find a student" data-fi-find>
+    <select name="student_id" id="docStudent" required>
+      <option value="">Choose the student</option>
+      {% for s in students %}<option value="{{ s.id }}" {% if chosen|string == s.id|string %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+    </select></div>
+
+  <div class="ac-fields" data-show="testimonial leaving">
+    <div class="ac-field"><label for="docConduct">Conduct</label>
+      <select id="docConduct" name="conduct"><option value="">Choose</option>
+        {% for c in conduct %}<option {% if f.get('conduct') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="docAdmitted">Date admitted <span class="ac-hint">blank: from the student's record</span></label>
+      <input id="docAdmitted" type="date" name="date_admitted" value="{{ f.get('date_admitted', '') }}"></div>
+    <div class="ac-field"><label for="docLeft">Date of leaving <span class="ac-hint">blank: when they left, or today</span></label>
+      <input id="docLeft" type="date" name="date_left" value="{{ f.get('date_left', '') }}"></div>
+  </div>
+  <div class="ac-fields" data-show="testimonial">
+    <div class="ac-field ac-field--wide"><label for="docCharacter">Character <span class="ac-hint">the head's own words, printed as written</span></label>
+      <textarea id="docCharacter" name="character" rows="3" maxlength="600" placeholder="e.g. Ada is diligent, honest and well-mannered, and got on well with others.">{{ f.get('character', '') }}</textarea></div>
+    <div class="ac-field ac-field--wide"><label for="docPositions">Positions held <span class="ac-hint">optional</span></label>
+      <input id="docPositions" name="positions_held" maxlength="200" value="{{ f.get('positions_held', '') }}" placeholder="e.g. Head Girl; Captain, Debate Club"></div>
+  </div>
+  <div class="ac-fields" data-show="leaving">
+    <div class="ac-field"><label for="docReason">Reason for leaving</label>
+      <select id="docReason" name="reason_for_leaving" data-doc-reason><option value="">Choose</option>
+        {% for r in reasons %}<option {% if f.get('reason_for_leaving') == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
+    <div class="ac-field" data-doc-other {% if f.get('reason_for_leaving') != 'Other' %}hidden{% endif %}><label for="docOther">The reason</label>
+      <input id="docOther" name="reason_other" maxlength="120" value="{{ f.get('reason_other', '') }}"></div>
+  </div>
+  <p class="ac-hint" data-show="transcript">The transcript lists every subject in every session the student has released results in, each the average of that session's terms.</p>
+
+  <div class="ac-form-foot">
+    <span class="ac-grow"></span>
+    {% if modal %}<button type="button" class="ac-btn" data-modal-dismiss>Cancel</button>{% else %}<a class="ac-link" href="{{ url_for('admin_school_documents') }}">Cancel</a>{% endif %}
+    <button class="ac-btn ac-btn--primary" type="submit">Issue it</button>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-doc-issue]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var form=root.querySelector('[data-doc-form]');
+  function kind(){ var k=form.querySelector('[data-doc-kind]:checked'); return k?k.value:'testimonial'; }
+  function show(){
+    var k=kind();
+    root.querySelectorAll('[data-show]').forEach(function(el){
+      var on=el.dataset.show.split(' ').indexOf(k)>=0; el.hidden=!on;
+      el.querySelectorAll('input,select,textarea').forEach(function(i){ i.disabled=!on; });
+    });
+  }
+  root.querySelectorAll('[data-doc-kind]').forEach(function(r){ r.addEventListener('change',show); }); show();
+  var reason=root.querySelector('[data-doc-reason]'), other=root.querySelector('[data-doc-other]');
+  reason.addEventListener('change',function(){ other.hidden=reason.value!=='Other'; });
+  var sel=form.elements.student_id, find=root.querySelector('[data-fi-find]');
+  find.addEventListener('input',function(){
+    var q=find.value.trim().toLowerCase(), first=null;
+    [].forEach.call(sel.options,function(o){ if(!o.value) return; var hit=!q||o.textContent.toLowerCase().indexOf(q)!==-1; o.hidden=!hit; if(hit&&!first) first=o; });
+    if(q&&first&&(!sel.value||sel.selectedOptions[0].hidden)) sel.value=first.value;
+  });
+})();
+</script>
+{% endblock %}

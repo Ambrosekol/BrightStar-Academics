@@ -1,0 +1,94 @@
+{% extends 'admin_base.html' %}
+{% block title %}Broadsheet — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The broadsheet (blueprints/school/broadsheet.py): a class's master score sheet for a term or the session. Counts every
+    mark recorded, released or not; prints in landscape; downloads as CSV. -#}
+{% macro n(v) -%}{{ ('%g'|format(v)) if v is not none else '—' }}{%- endmacro %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<style>
+  .bs-wrap { overflow: auto; max-height: 72vh; border: 1px solid var(--ac-line); border-radius: 8px; background: var(--ac-surface); }
+  .bs { border-collapse: separate; border-spacing: 0; font-size: 11.5px; font-variant-numeric: tabular-nums; min-width: 100%; }
+  .bs th, .bs td { padding: 3px 6px; border-bottom: 1px solid var(--ac-grid); border-right: 1px solid var(--ac-grid); white-space: nowrap; text-align: right; }
+  .bs thead th { position: sticky; top: 0; z-index: 2; background: var(--ac-wash); font-weight: 700; color: var(--ac-ink-2); }
+  .bs thead tr + tr th { top: 23px; font-weight: 600; font-size: 10.5px; }
+  .bs .bs-name { position: sticky; left: 0; z-index: 1; background: var(--ac-surface); text-align: left; min-width: 170px; }
+  .bs thead .bs-name { z-index: 3; background: var(--ac-wash); }
+  .bs .bs-name small { display: block; color: var(--ac-muted); font-size: 10px; }
+  .bs .bs-sum { background: color-mix(in srgb, var(--ac-accent) 6%, var(--ac-surface)); font-weight: 700; }
+  .bs tfoot td { background: var(--ac-wash); font-weight: 600; }
+  .bs tbody tr:hover td { background: color-mix(in srgb, var(--ac-accent) 8%, var(--ac-surface)); }
+  .bs .bs-subj { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; max-height: 120px; }
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    .bs-tools, .admin-shell > nav, header, .no-print { display: none !important; }
+    .bs-wrap { max-height: none; overflow: visible; border: 0; }
+    .bs { font-size: 8.5px; } .bs th, .bs td { padding: 2px 3px; }
+    .bs .bs-name { position: static; }
+  }
+</style>
+<div class="ac">
+<header class="ac-top">
+  <h1>Broadsheet{% if class_row %} <small class="ac-hint">{{ class_row.name }} · {{ period }}{% if period != 'Session' %} · {{ session_row.name }}{% else %} {{ session_row.name }}{% endif %}</small>{% endif %}</h1>
+  <div class="ac-top__act no-print">
+    {% if data %}
+    <a class="ac-btn" href="{{ url_for('admin_school_broadsheet', class_id=class_row.id, session_id=session_row.id, period=period, detail='1' if detail else none, format='csv') }}" data-no-loader>Download CSV</a>
+    <button class="ac-btn ac-btn--primary" type="button" data-print>Print</button>
+    {% endif %}
+  </div>
+</header>
+
+<form method="get" class="ac-bar bs-tools" action="{{ url_for('admin_school_broadsheet') }}">
+  <span class="ac-bar__label">Class</span>
+  <select class="ac-select" name="class_id" data-autosubmit aria-label="Class"><option value="">Choose</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if class_row and c.id == class_row.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <span class="ac-bar__label">Session</span>
+  <select class="ac-select" name="session_id" data-autosubmit aria-label="Session">{% for s in sessions %}<option value="{{ s.id }}" {% if session_row and s.id == session_row.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+  <select class="ac-select" name="period" data-autosubmit aria-label="Term">{% for p in periods %}<option value="{{ p }}" {% if p == period %}selected{% endif %}>{{ 'Whole session (average of the terms)' if p == 'Session' else p }}</option>{% endfor %}</select>
+  {% if period != 'Session' %}<label class="ac-hint"><input type="checkbox" name="detail" value="1" {% if detail %}checked{% endif %} data-autosubmit> CA and Exam</label>{% endif %}
+</form>
+
+{% if not classes %}
+<div class="ac-empty"><strong>No class to show</strong>The broadsheet is for the class teacher of a class, the head teacher and the School Admin.</div>
+{% elif not data %}
+<div class="ac-empty"><strong>Choose a class</strong>Its students' results in every subject appear here, with totals, averages and positions.</div>
+{% elif not data.subjects %}
+<div class="ac-empty"><strong>No results yet</strong>Nothing has been recorded for {{ class_row.name }} in {{ 'the session' if period == 'Session' else period }}.</div>
+{% else %}
+<p class="ac-note no-print">{{ data.rows|length }} students · class average {{ ('%.1f'|format(data.class_average) ~ '%') if data.class_average is not none else '—' }}
+  · graded on the {{ class_row.name }} scale ({{ data.scheme.scale|map(attribute=1)|join(', ') }})
+  {% if data.waiting %}· <b>{{ data.waiting }} result{{ '' if data.waiting == 1 else 's' }} not released yet</b>, counted here but not on report cards{% endif %}</p>
+<div class="bs-wrap">
+<table class="bs">
+  <thead>
+    <tr><th class="bs-name" {% if data.detail %}rowspan="2"{% endif %}>Student</th>
+      {% for s in data.subjects %}<th {% if data.detail %}colspan="3"{% endif %} title="{{ s.name }}">{{ s.name }}</th>{% endfor %}
+      <th class="bs-sum" {% if data.detail %}rowspan="2"{% endif %}>Total</th><th class="bs-sum" {% if data.detail %}rowspan="2"{% endif %}>Average %</th>
+      <th class="bs-sum" {% if data.detail %}rowspan="2"{% endif %}>Position</th><th class="bs-sum" {% if data.detail %}rowspan="2"{% endif %}>Grade</th></tr>
+    {% if data.detail %}<tr>{% for s in data.subjects %}<th>CA</th><th>Exam</th><th>Total</th>{% endfor %}</tr>{% endif %}
+  </thead>
+  <tbody>
+    {% for r in data.rows %}<tr>
+      <td class="bs-name">{{ r.name }}<small>{{ r.number }}{% if r.waiting %} · {{ r.waiting }} waiting{% endif %}</small></td>
+      {% for s in data.subjects %}{% set c = r.cells.get(s.id) %}
+        {% if data.detail %}<td>{{ n(c.ca) if c else '' }}</td><td>{{ n(c.exam) if c else '' }}</td>{% endif %}
+        <td>{{ n(c.total) if c else '' }}</td>{% endfor %}
+      <td class="bs-sum">{{ n(r.total) }}</td><td class="bs-sum">{{ ('%.1f'|format(r.average)) if r.average is not none else '—' }}</td>
+      <td class="bs-sum">{{ r.position or '—' }}</td><td class="bs-sum">{{ r.grade }}</td>
+    </tr>{% endfor %}
+  </tbody>
+  <tfoot>
+    {% for label, key in (('Subject average', 'average'), ('Highest', 'highest'), ('Lowest', 'lowest')) %}<tr>
+      <td class="bs-name">{{ label }}</td>
+      {% for f in data.footer %}{% if data.detail %}<td></td><td></td>{% endif %}<td>{{ n(f[key]) }}</td>{% endfor %}
+      <td colspan="4">{% if key == 'average' and data.class_average is not none %}Class {{ '%.1f'|format(data.class_average) }}%{% endif %}</td>
+    </tr>{% endfor %}
+  </tfoot>
+</table>
+</div>
+{% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){ var b=document.querySelector('[data-print]:not([data-ready])'); if(!b) return; b.setAttribute('data-ready','1');
+  b.addEventListener('click',function(){ window.print(); }); })();
+</script>
+{% endblock %}

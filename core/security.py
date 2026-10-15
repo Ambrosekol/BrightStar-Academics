@@ -137,6 +137,10 @@ ADMIN_PERMISSION_DEFS = [
     ('branding.manage','Manage school profile and branding','school','Change the school name, contact details, colours, logo and sign-in photographs.'),
     ('report_cards.view','View report cards','school','See and download students\' report cards for the classes you may access.'),
     ('report_cards.comment','Write report card comments','school','Write the class teacher\'s comment on report cards, and keep your own signature for them.'),
+    ('school.exam_registration','Prepare exam registration','school','See which candidates are ready for WAEC, NECO or BECE registration, and download their details and passport photographs.'),
+    ('documents.issue','Issue testimonials and certificates','school','Issue testimonials, transcripts and leaving certificates to current and former students, print them, and revoke one issued by mistake.'),
+    ('documents.manage','Design testimonials and certificates','school','Design the testimonial, the transcript and the leaving certificate in the documents studio.'),
+    ('school.grading.manage','Set grading and scores','school','Set each level\'s score split (the Exam and the parts of continuous assessment, such as CA1 and CA2) and its grade scale, for a session.'),
     ('report_cards.manage','Manage report card settings','school','Set the head teacher\'s or proprietor\'s title, name and signature, and when the next term begins; design the school\'s own report card in the report card studio.'),
     ('id_cards.print','Print ID cards','school','Print student and staff ID cards from the school\'s design; issues a card (with its QR code) to anyone printed for the first time.'),
     ('hr.view','View staff records','school','See the staff list and each staff record: profile, qualifications, documents, career and leave.'),
@@ -188,13 +192,13 @@ ADMIN_ROLE_PRESETS = {
     },
     'School Records Officer': {
         'description': 'Manages enrolled student records and class information within assigned school scopes.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.attendance.view','parent.feedback.view','id_cards.print','id_cards.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.classes.view','school.attendance.view','parent.feedback.view','id_cards.print','id_cards.manage','documents.issue','school.exam_registration']
     },
     # The teaching chain: Head Teacher -> Class Teacher -> Subject Teacher (see core/school_structure.py).
     # Which classes and subjects a teacher reaches comes from their teaching duties, not from the role.
     'Head Teacher': {
         'description': 'Head teacher or principal: oversees every class and subject, assigns class and subject teachers, and checks, approves and releases any result.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.results.submit','school.staff.assign','id_cards.print','id_cards.manage','hr.leave.approve','staff_attendance.view']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.grading.manage','documents.issue','documents.manage','school.exam_registration','school.results.submit','school.staff.assign','id_cards.print','id_cards.manage','hr.leave.approve','staff_attendance.view']
     },
     'Class Teacher': {
         'description': "In charge of the classes they are class teacher of: students, the register, report card comments, every subject's scores, and releasing the class's results once subject teachers send them.",
@@ -206,7 +210,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'School Academic Administrator': {
         'description': 'Full school-portal academic administration without access to entrance-examination operations.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','id_cards.print','id_cards.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','school.students.delete','school.classes.view','school.classes.manage','school.subjects.view','school.subjects.create','school.subjects.edit','school.subjects.delete','school.subjects.lock','school.assignments.view','school.assignments.create','school.assignments.edit','school.assignments.delete','school.projects.view','school.projects.create','school.projects.edit','school.projects.delete','school.tests.view','school.tests.create','school.tests.edit','school.tests.delete','school.practice.view','school.practice.create','school.practice.edit','school.practice.delete','school.examinations.view','school.examinations.create','school.examinations.edit','school.examinations.delete','school.results.view','school.results.enter','school.results.verify','school.results.approve','school.results.release','school.attendance.view','school.attendance.mark','school.timetable.view','school.timetable.manage','school.timetable.release','parent.view','parent.manage','parent.feedback.view','parent.feedback.manage','presence.view','report_cards.view','report_cards.comment','report_cards.manage','school.grading.manage','documents.issue','documents.manage','school.exam_registration','id_cards.print','id_cards.manage']
     },
     'Finance Records Officer': {
         'description': 'Records student payments, issues receipts and sees only collections recorded by the officer.',
@@ -218,7 +222,7 @@ ADMIN_ROLE_PRESETS = {
     },
     'Secretary / Records Officer': {
         'description': 'Handles school records, student registration history and library operations without school-wide finance visibility.',
-        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage']
+        'permissions': ['school.view','school.students.view','school.students.create','school.students.edit','student.history.manage','library.view','library.manage','documents.issue','school.exam_registration']
     },
     'Store Keeper': {
         'description': 'Runs the school store: items and stock, payments taken in person, and handing over what parents have bought.',
@@ -361,6 +365,16 @@ ADMIN_ENDPOINT_PERMISSIONS = {
     'admin_finance_expenses':'finance.expenses','admin_finance_expense_new':'finance.expenses',
     'admin_finance_expense_void':'finance.expenses','admin_finance_expense_receipt':'finance.expenses',
     'admin_finance_profit_loss':'finance.profit_loss',
+    # Results and term-end paperwork: grading schemes.
+    'admin_school_grading':'school.grading.manage',
+    'admin_school_broadsheet':'report_cards.view',
+    'admin_school_exam_registration':'school.exam_registration',
+    'admin_school_documents':'documents.issue','admin_school_document_issue':'documents.issue',
+    'admin_school_document_pdf':'documents.issue','admin_school_document_revoke':'documents.issue',
+    'admin_document_studio':'documents.manage','admin_document_studio_save':'documents.manage',
+    'admin_document_studio_lock':'documents.manage','admin_document_studio_version':'documents.manage',
+    'admin_document_studio_preview':'documents.manage','admin_document_asset_upload':'documents.manage',
+    'admin_document_asset_delete':'documents.manage',
     'admin_library':'library.view',
     'admin_store':'store.view','admin_store_claims':'store.view','admin_store_purchase':'store.view',
     'admin_store_item_new':'store.manage','admin_store_item_edit':'store.manage','admin_store_item_toggle':'store.manage',
@@ -530,9 +544,11 @@ PRESET_ROLE_LEVELS = {'Head Teacher': 'head_teacher', 'School Academic Administr
 # for the School Admin (the proprietor or proprietress) and the head teacher; anyone else - a class or subject teacher,
 # the bursar, an office role - only with the studio's permission given to them personally, as an override on their
 # staff record (may_use_studios). A permission that merely comes with a role does not open a studio.
-STUDIO_PERMISSIONS = ('id_cards.manage', 'report_cards.manage', 'finance.manage')
+STUDIO_PERMISSIONS = ('id_cards.manage', 'report_cards.manage', 'finance.manage', 'documents.manage')
 STUDIO_ENDPOINTS = frozenset({
     'admin_design_studios',
+    'admin_document_studio', 'admin_document_studio_save', 'admin_document_studio_lock', 'admin_document_studio_version',
+    'admin_document_studio_preview', 'admin_document_asset_upload', 'admin_document_asset_delete',
     'admin_id_card_designer', 'admin_id_card_design_save', 'admin_id_card_design_lock', 'admin_id_card_design_reset',
     'admin_id_card_design_version', 'admin_id_card_asset_upload', 'admin_id_card_asset_delete',
     'admin_report_card_studio', 'admin_report_card_studio_save', 'admin_report_card_studio_lock',

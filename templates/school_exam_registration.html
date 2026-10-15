@@ -1,0 +1,56 @@
+{% extends 'admin_base.html' %}
+{% block title %}Exam registration — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Exam registration (blueprints/school/exam_registration.py): a class's candidates for WAEC, NECO or BECE, what is
+    missing on each record, and the candidates' details (CSV) and passport photographs (ZIP) to carry into the exam
+    body's own portal. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<div class="ac fi">
+<header class="ac-top">
+  <h1>Exam registration</h1>
+  <nav class="fi-seg" aria-label="Exam body">
+    {% for key, (name, _level) in bodies.items() %}<a href="{{ url_for('admin_school_exam_registration', body=key) }}" class="{{ 'is-active' if key == body }}">{{ name }}</a>{% endfor %}
+  </nav>
+  <div class="ac-top__act">
+    {% if rows %}
+    <a class="ac-btn" href="{{ url_for('admin_school_exam_registration', body=body, class_id=class_row[0], session_id=session_row.id, format='photos') }}" data-no-loader>Photographs (ZIP)</a>
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_exam_registration', body=body, class_id=class_row[0], session_id=session_row.id, format='csv') }}" data-no-loader>Candidates (CSV)</a>
+    {% endif %}
+  </div>
+</header>
+
+<form method="get" class="ac-bar" action="{{ url_for('admin_school_exam_registration') }}">
+  <input type="hidden" name="body" value="{{ body }}">
+  <span class="ac-bar__label">Class</span>
+  <select class="ac-select" name="class_id" data-autosubmit aria-label="Class">{% for cid, name in classes %}<option value="{{ cid }}" {% if class_row and cid == class_row[0] %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+  <span class="ac-bar__label">Session</span>
+  <select class="ac-select" name="session_id" data-autosubmit aria-label="Session">{% for s in sessions %}<option value="{{ s.id }}" {% if session_row and s.id == session_row.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+</form>
+
+{% if not classes %}
+<div class="fi-p"><div class="ac-empty"><strong>No {{ 'junior' if body == 'bece' else 'senior' }} secondary class</strong>The school has no class this exam is for.</div></div>
+{% elif not rows %}
+<div class="fi-p"><div class="ac-empty"><strong>No candidates</strong>No student is enrolled in {{ class_row[1] }} for {{ session_row.name if session_row else 'this session' }}.</div></div>
+{% else %}
+<dl class="fi-k">
+  <div class="is-lead"><dt>Candidates</dt><dd>{{ rows|length }}</dd><small>{{ class_row[1] }}, {{ session_row.name }}</small></div>
+  <div class="{{ 'is-alert' if ready < rows|length }}"><dt>Ready</dt><dd>{{ ready }}</dd><small>{% if ready < rows|length %}{{ rows|length - ready }} with something missing{% else %}Every record is complete{% endif %}</small></div>
+  <div><dt>With a photograph</dt><dd>{{ rows|selectattr('photo')|list|length }}</dd><small>Converted to {{ 'JPEG' }}, 300 × 400</small></div>
+</dl>
+<p class="ac-note">Check each candidate's details against their birth certificate before registering. What is missing can be put right on the student's record (the name opens it); the lists here update at once.</p>
+<section class="fi-p">
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th class="n">S/N</th><th>Candidate</th><th>Sex</th><th>Born</th><th>State of origin</th><th>Subjects</th><th></th></tr></thead>
+    <tbody>{% for c in rows %}<tr>
+      <td class="n">{{ c.n }}</td>
+      <td><a class="ac-title" href="{{ url_for('admin_school_student_detail', sid=c.id) }}">{{ c.surname|upper }}, {{ c.first }} {{ c.middle }}</a><small>{{ c.number }}{% if c.department %} · {{ c.department }}{% endif %}</small></td>
+      <td>{{ c.sex or '—' }}</td><td>{{ c.dob or '—' }}</td><td>{{ c.state or '—' }}</td>
+      <td><span title="{{ c.subjects|join(', ') }}">{{ c.subjects|length }}</span></td>
+      <td>{% if c.missing %}<span class="ac-tag ac-tag--attn">Missing: {{ c.missing|join(', ') }}</span>{% else %}<span class="ac-tag ac-tag--good">Ready</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+</div>
+{% endblock %}

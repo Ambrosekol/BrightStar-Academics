@@ -7,7 +7,7 @@
 <div class="rcd-receipt" data-rcd-receipt{% if fit %} data-fit{% endif %}><div class="rcd-receipt__page" data-rcd-receipt-page></div></div>
 <script type="application/json" id="rcdReceipt" nonce="{{ csp_nonce() }}">{{ designed|tojson }}</script>
 <script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='5') }}"></script>
 <script src="{{ url_for('static', filename='receipt-render.js', v='1') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {

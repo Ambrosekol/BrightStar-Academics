@@ -37,7 +37,8 @@
     var layout = cfg.layout;
     var locked = !!cfg.locked;
     var RECEIPT = cfg.mode === "receipt";
-    var REPORT = cfg.mode === "report" || RECEIPT;            // a page (A4 or A5), not a card
+    var DOCUMENT = cfg.mode === "document";                     // a testimonial, transcript or leaving certificate
+    var REPORT = cfg.mode === "report" || RECEIPT || DOCUMENT;  // a page (A4 or A5), not a card
     var SIDES = cfg.sides || ["front", "back"];
     var NOUN = REPORT ? "page" : "card";
     // The whole-window layout (the report card studio): tabbed panels, a page fitted to the space, folding settings.
@@ -58,7 +59,8 @@
     var TYPE_NAMES = { text: "Text", field: "Detail", shape: "Shape", photo: "Photo", logo: "Logo", image: "Image",
                        signature: "Signature", qr: "QR code", barcode: "Barcode", results: "Results table", summary: "Summary",
                        traits: "Trait ratings", grading: "Grading key", comment: "Teacher's comment",
-                       amount: "Amount paid", stamp: "Paid stamp" };
+                       cumulative: "Session so far", amount: "Amount paid", stamp: "Paid stamp",
+                       paragraph: "Paragraph", transcript: "Transcript" };
     if (RECEIPT) TYPE_NAMES.summary = "Balance";
     var WHO_NAMES = { head: "Head's signature", holder: "Their signature", teacher: "Class teacher's signature", authorised: "Authorised signature" };
     var SHAPE_NAMES = { rect: "Rectangle", ellipse: "Ellipse", triangle: "Triangle", diamond: "Diamond", hexagon: "Hexagon",
@@ -479,6 +481,7 @@
         DEFAULTS.traits = Object.assign({ w: 186, h: 40, layout: "side" }, BLOCK);
         DEFAULTS.grading = Object.assign({ w: 186, h: 14, per_row: 3, title: "Grading key" }, BLOCK);
         DEFAULTS.comment = Object.assign({ w: 186, h: 24, label: "Class teacher's comment", lines: true, comment_size: 9.5 }, BLOCK);
+        DEFAULTS.cumulative = Object.assign({ w: 186, h: 70, numbers: "center", head_size: 8.5, zebra: "#f3f6fa" }, BLOCK);
         if (RECEIPT) {
             // A receipt is smaller than a report card: smaller starting sizes, and its own details and blocks.
             Object.assign(DEFAULTS.text, { w: 60, h: 7, size: 9 });
@@ -491,6 +494,15 @@
             DEFAULTS.amount = Object.assign({}, BLOCK, { w: 60, h: 34, label: "Amount paid", words: false, value_size: 16, fill: "#eef3f9", radius: 3, line: "brand", line_w: 0.4 });
             DEFAULTS.summary = Object.assign({}, BLOCK, { w: 120, h: 15, items: ["charged", "paid", "balance"], layout: "row", value_size: 10, size: 7, radius: 2 });
             DEFAULTS.stamp = Object.assign({}, BLOCK, { w: 30, h: 30, text: "PAID", shape: "round", show_date: true, accent: "#19734a", color: "#19734a", rotate: -12, opacity: 85 });
+        }
+        if (DOCUMENT) {
+            // A school document: its own details, the head's signature, and the paragraph and transcript blocks.
+            Object.assign(DEFAULTS.signature, { w: 52, h: 14, who: "head" });
+            Object.assign(DEFAULTS.barcode, { w: 60, h: 12, field: "serial_no" });
+            DEFAULTS.paragraph = Object.assign({}, BLOCK, { w: 166, h: 60, size: 12, line: "none", line_w: 0, align: "justify",
+                                                            valign: "top", leading: 150, italic: false, pad: 0,
+                                                            text: "This is to certify that {student_name} was a student of this school." });
+            DEFAULTS.transcript = Object.assign({}, BLOCK, { w: 170, h: 110, numbers: "center", head_size: 8, zebra: "#f3f6fa", show_grade: true });
         }
     }
     Object.keys(DEFAULTS).forEach(function (t) { if (DEFAULTS[t].font === "sans") DEFAULTS[t].font = FONT; });
@@ -719,7 +731,7 @@
         }
         if (["photo", "logo", "image", "signature"].indexOf(el.type) >= 0) {
             var p = section("Picture");
-            if (el.type === "signature") p.appendChild(row("Whose", choice("who", el.who, RECEIPT ? { authorised: "The authorised signature" } : REPORT ? { head: "The head's", teacher: "The class teacher's" } : cfg.kind === "staff" ? { head: "The head's", holder: "The card holder's" } : { head: "The head's" })));
+            if (el.type === "signature") p.appendChild(row("Whose", choice("who", el.who, RECEIPT ? { authorised: "The authorised signature" } : DOCUMENT ? { head: "The head's" } : REPORT ? { head: "The head's", teacher: "The class teacher's" } : cfg.kind === "staff" ? { head: "The head's", holder: "The card holder's" } : { head: "The head's" })));
             if (el.type === "image") p.appendChild(row("Image", choice("asset", String(el.asset), assetOptions())));
             p.appendChild(row("Fit", choice("fit", el.fit, { cover: "Fill the box (crop)", contain: "Show it all", fill: "Stretch" })));
             p.appendChild(row("Clip to", choice("clip", el.clip, CLIP_NAMES)));
@@ -767,6 +779,43 @@
     }
     function blockProps(el) {
         var t = el.type, b = section(TYPE_NAMES[t]);
+        if (t === "paragraph") {
+            // The school's own words; a detail in curly brackets is filled in for each document.
+            var ta = document.createElement("textarea"); ta.rows = 7; ta.maxLength = 1500; ta.value = el.text || ""; ta.disabled = locked;
+            ta.className = "idd-para";
+            ta.addEventListener("change", function () { set("text", ta.value.slice(0, 1500)); });
+            b.appendChild(row("Words", ta, "idd-prop--wrap"));
+            var chips = el$("div", "idd-chips");
+            (cfg.fields || []).forEach(function (pair) {
+                var c = el$("button", "idd-chip", pair[1]); c.type = "button"; c.title = "Put in {" + pair[0] + "}"; c.disabled = locked;
+                c.addEventListener("click", function () {
+                    var s = ta.selectionStart || ta.value.length, e2 = ta.selectionEnd || s, v = "{" + pair[0] + "}";
+                    ta.value = (ta.value.slice(0, s) + v + ta.value.slice(e2)).slice(0, 1500); set("text", ta.value); ta.focus();
+                });
+                chips.appendChild(c);
+            });
+            b.appendChild(row("Put in", chips, "idd-prop--wrap"));
+            b.appendChild(row("Align", toggles([["left", "Left"], ["center", "Centre"], ["justify", "Justify"]].map(function (a) {
+                return { label: a[1], title: a[1], on: el.align === a[0], click: function () { set("align", a[0]); } };
+            }))));
+            b.appendChild(row("Line spacing", number("leading", el.leading, 100, 250, 5, "%")));
+            b.appendChild(row("Italic", toggles([{ label: el.italic ? "On" : "Off", title: "Italic", on: el.italic, click: function () { set("italic", !el.italic); } }])));
+        }
+        if (t === "transcript") {
+            b.appendChild(el$("p", "ac-hint", "One row per subject, one column per session the student has results in (headed with the class), each the average of that session's terms, then the overall average."));
+            b.appendChild(row("Grade", toggles([{ label: el.show_grade === false ? "Hidden" : "Shown", title: "The grade column", on: el.show_grade !== false, click: function () { set("show_grade", el.show_grade === false); } }])));
+            b.appendChild(row("Numbers", toggles([["center", "Centre"], ["right", "Right"]].map(function (a) {
+                return { label: a[1], title: a[1], on: el.numbers === a[0], click: function () { set("numbers", a[0]); } };
+            }))));
+            b.appendChild(row("Heading size", number("head_size", el.head_size, 5, 16, 0.5, "pt")));
+        }
+        if (t === "cumulative") {
+            b.appendChild(el$("p", "ac-hint", "Each subject's First, Second and Third Term marks, their average and grade. Shown on Third Term cards only; on the others this space stays empty."));
+            b.appendChild(row("Numbers", toggles([["center", "Centre"], ["right", "Right"]].map(function (a) {
+                return { label: a[1], title: a[1], on: el.numbers === a[0], click: function () { set("numbers", a[0]); } };
+            }))));
+            b.appendChild(row("Heading size", number("head_size", el.head_size, 5, 16, 0.5, "pt")));
+        }
         if (t === "results") {
             b.appendChild(row("Columns", picks("columns", el.columns || [], cfg.result_columns, "subject"), "idd-prop--wrap"));
             b.appendChild(row("Numbers", toggles([["center", "Centre"], ["right", "Right"]].map(function (a) {
@@ -816,7 +865,7 @@
         s2.appendChild(row("Font", choice("font", el.font, cfg.fonts)));
         s2.appendChild(row("Size", number("size", el.size, 5, 16, 0.5, "pt")));
         s2.appendChild(row("Text", colourControl(el.color, false, function (v, live) { set("color", v, live); })));
-        if (["results", "traits", "grading", "comment"].indexOf(t) >= 0) {
+        if (["results", "traits", "grading", "comment", "cumulative", "transcript"].indexOf(t) >= 0) {
             s2.appendChild(row("Heading band", colourControl(el.head_fill || "none", true, function (v, live) { set("head_fill", v, live); })));
             s2.appendChild(row("Heading text", colourControl(el.head_color, false, function (v, live) { set("head_color", v, live); })));
         }
@@ -824,7 +873,7 @@
         if (t === "stamp") return;
         var s3 = section("Box and lines");
         s3.appendChild(row("Fill", colourControl(el.fill || "none", true, function (v, live) { set("fill", v, live); })));
-        if (t === "results" || t === "traits") s3.appendChild(row("Stripes", colourControl(el.zebra || "none", true, function (v, live) { set("zebra", v, live); })));
+        if (t === "results" || t === "traits" || t === "cumulative" || t === "transcript") s3.appendChild(row("Stripes", colourControl(el.zebra || "none", true, function (v, live) { set("zebra", v, live); })));
         s3.appendChild(row("Lines", colourControl(el.line || "none", true, function (v, live) { set("line", v, live); })));
         var two = el$("div", "idd-two");
         two.appendChild(row("Line width", number("line_w", el.line_w, 0, 2, 0.1, "mm")));
@@ -880,7 +929,7 @@
                 var li = el$("div", "idd-layer" + (selection.indexOf(i) >= 0 ? " is-on" : "") + (el.hidden ? " is-hidden" : ""));
                 var name = el$("button", "idd-layer-name"); name.type = "button";
                 name.appendChild(el$("span", "idd-layer-type", { text: "T", field: "D", shape: "\u25c6", photo: "P", logo: "L", image: "I", signature: "\u270d", qr: "Q", barcode: "B",
-                                                                results: "\u25a6", summary: "\u03a3", traits: "\u2605", grading: "G", comment: "\u201c",
+                                                                results: "\u25a6", summary: "\u03a3", traits: "\u2605", grading: "G", comment: "\u201c", cumulative: "\u2211", paragraph: "\u00b6", transcript: "\u25a6",
                                                                 amount: "\u20a6", stamp: "\u2713" }[el.type] || "?"));
                 name.appendChild(el$("span", "", label(el)));
                 name.addEventListener("click", function (e) { select([i], e.shiftKey); stage.focus({ preventScroll: true }); });

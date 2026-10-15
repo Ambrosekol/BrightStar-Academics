@@ -30,9 +30,12 @@ from core.report_card_pdf import _Pictures, _clean, _fonts
 
 PT = mm                                   # points in a millimetre
 WIDTHS = {'subject': 30, 'test': 9, 'assignment': 13, 'project': 11, 'ca': 11, 'exam': 12, 'total': 12, 'average': 12,
-          'grade': 9, 'remark': 26}
+          'grade': 9, 'remark': 26, 'part1': 10, 'part2': 10, 'part3': 10, 'part4': 10,
+          'first': 12, 'second': 12, 'third': 12, 'avg': 12}
 HEADS = {'subject': 'Subject', 'test': 'Test', 'assignment': 'Assignment', 'project': 'Project', 'ca': 'CA', 'exam': 'Exam',
-         'total': 'Total', 'average': 'Class avg', 'grade': 'Grade', 'remark': 'Remark'}
+         'total': 'Total', 'average': 'Class avg', 'grade': 'Grade', 'remark': 'Remark',
+         'part1': 'CA1', 'part2': 'CA2', 'part3': 'CA3', 'part4': 'CA4',
+         'first': '1st Term', 'second': '2nd Term', 'third': '3rd Term', 'avg': 'Average'}
 LABELS = {'position': 'Position', 'highest': 'Highest in class', 'lowest': 'Lowest in class',
           'opened': 'School opened', 'present': 'Days present', 'absent': 'Days absent', 'late': 'Days late',
           'attendance': 'Attendance', 'total': 'Total obtained', 'percentage': 'Percentage', 'grade': 'Overall grade', 'average': 'Class average',
@@ -487,7 +490,9 @@ def _results(c, box, el, rep, paint):
     head_fill = paint(el.get('head_fill'))
     if head_fill is not None:
         _band(c, box, 0, 0, w_mm, row_h, head_fill)
-    heads = [HEADS[k] + (f" ({rep['maxes'][k]})" if rep.get('maxes', {}).get(k) else '') for k in cols]
+    # A CA part is headed with its own name from the grading scheme (CA1, Mid-term test...).
+    heads = [((rep.get('heads') or {}).get(k) or HEADS[k]) + (f" ({rep['maxes'][k]})" if rep.get('maxes', {}).get(k) else '')
+             for k in cols]
     # Every heading the same size: the largest at which the longest one fits its column (to six tenths of the size).
     head_font = _font(el['font'], True)[0]
     for text_, (_, cw) in zip(heads, xs):
@@ -639,7 +644,18 @@ class _Inner:
         self.c, self.W, self.H, self.alpha = c, W, H, alpha
 
 
-BLOCKS = {'results': _results, 'summary': _summary, 'traits': _traits, 'grading': _grading, 'comment': _comment}
+def _cumulative(c, box, el, rep, paint):
+    """The "session so far" table (a Third Term card): the results table's drawing, with the three terms' rows. On a
+    First or Second Term card it draws nothing, so one design serves every term."""
+    from core.report_card_design import CUMULATIVE_COLUMNS
+    if not rep.get('cumulative'):
+        return
+    _results(c, box, dict(el, columns=list(CUMULATIVE_COLUMNS)),
+             {'subjects': rep.get('cumulative') or [], 'maxes': {}, 'heads': {}}, paint)
+
+
+BLOCKS = {'results': _results, 'summary': _summary, 'traits': _traits, 'grading': _grading, 'comment': _comment,
+          'cumulative': _cumulative}
 
 
 # ---------------------------------------------------------------- the barcode

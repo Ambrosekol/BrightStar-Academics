@@ -195,8 +195,12 @@ check("…and its CA weights are the defaults, 20 / 10 / 10, adding up to the 40
       in_school(INFO, SCH._ca_weights) == {"test": 20, "assignment": 10, "project": 10}
       and A.EXAM_MAX_SCORE == 60 and A.CA_MAX_SCORE == 40 and sum(A.CA_DEFAULT_WEIGHTS.values()) == A.CA_MAX_SCORE)
 page = admin.text("/admin/school/sessions")
-check("the sessions page shows the weighting form with the defaults",
-      "Continuous assessment weighting" in page and 'name="ca_weight_test"' in page and 'name="ca_weight_test" min="0" step="0.5" value="20"' in page)
+check("the sessions page points to Grading and scores, where the split is set",
+      "Open Grading and scores" in page and "/admin/school/grading" in page)
+page = admin.text("/admin/school/grading")
+check("…which shows the defaults: Test 20, Assignment 10, Project 10",
+      re.findall(r'name="jss-part-max"[^>]*value="([0-9.]+)"', page) in (["20.0", "10.0", "10.0"], ["20", "10", "10"]),
+      str(re.findall(r'name="jss-part-max"[^>]*value="([0-9.]+)"', page)))
 
 # ================================================================ the subjects and students, through the real forms
 r = admin.post("/admin/school/subjects/new", {"name": "Mathematics", "code": "MTH", "class_ids": [JSS1]})
@@ -290,22 +294,19 @@ def student_in(login, temp):
 
 
 def take(b, aid, right):
-    """A student takes an assessment in the portal, getting the first `right` questions right and the rest wrong."""
+    """A student takes an assessment in the portal, getting the first `right` questions right and the rest wrong. The
+    paper is one page (exam mode): each answer is saved as it is chosen, then the paper is submitted."""
     page = f"/student/assessments/{aid}"
     b.post(f"{page}/start", {}, page=page)
-    total = one("SELECT question_count FROM school_assessments WHERE id = :a", a=aid)
-    for q in range(1, total + 1):
-        body = b.get(f"{page}?q={q}").get_data(as_text=True)
-        attempt = re.search(r'name="attempt_id" value="(\d+)"', body).group(1)
-        qid = int(re.search(r'name="question_id" value="(\d+)"', body).group(1))
-        token = TOKEN.search(body).group(1)
-        correct = one("SELECT correct_option FROM school_assessment_attempt_questions WHERE attempt_id = :t AND question_id = :q",
-                      t=int(attempt), q=qid)
-        data = {"attempt_id": attempt, "question_id": qid, "option_index": correct if q <= right else (correct + 1) % 4,
-                "next_q": q + 1}
-        if q == total:
-            data["submit_assessment"] = "1"
-        b.post(f"{page}/answer", data, token=token)
+    body = b.get(page).get_data(as_text=True)
+    attempt = int(re.search(r'data-paper-key="school-(\d+)"', body).group(1))
+    token = TOKEN.search(body).group(1)
+    rows = sql("SELECT question_id, correct_option FROM school_assessment_attempt_questions WHERE attempt_id = :t "
+               "ORDER BY question_order", t=attempt)
+    for n, (qid, correct) in enumerate(rows, 1):
+        b.post(f"{page}/answer", {"attempt_id": attempt, "question_id": qid, "autosave": "1",
+                                  "option_index": correct if n <= right else (correct + 1) % 4}, token=token)
+    b.post(f"{page}/submit", {}, token=token)
     return one("SELECT status FROM school_assessment_attempts WHERE assessment_id = :a ORDER BY id DESC LIMIT 1", a=aid)
 
 
@@ -819,9 +820,9 @@ r = weights(test="15", assignment="15", project="10")
 check("weights that add up to exactly 40 are accepted", r.status_code in (302, 303) and admin.said(r, "weighting updated") or current_weights() == {"test": 15, "assignment": 15, "project": 10})
 check("…they are stored, one row per component", sorted(sql("SELECT setting_key, setting_value FROM school_settings WHERE setting_key LIKE 'ca_weight_%'"))
       == [("ca_weight_assignment", "15.0"), ("ca_weight_project", "10.0"), ("ca_weight_test", "15.0")])
-sessions_page = admin.text("/admin/school/sessions")
-check("…and the sessions page shows them", re.search(r'name="ca_weight_assignment"[^>]*value="15(\.0)?"', sessions_page) is not None,
-      re.findall(r'name="ca_weight_assignment"[^>]*>', sessions_page)[0] if 'ca_weight_assignment' in sessions_page else "no field")
+grading_page = admin.text("/admin/school/grading")
+check("…and Grading and scores shows them", [float(v) for v in re.findall(r'name="jss-part-max"[^>]*value="([0-9.]+)"', grading_page)]
+      == [15, 15, 10], str(re.findall(r'name="jss-part-max"[^>]*value="([0-9.]+)"', grading_page)))
 r = report(ADA)
 check("…every result is recalculated with them: Ada's test 8/10 is 12, assignment 9/10 is 13.5, project 7; CA 32.5, total 86.5",
       close(r["test_score"], 12) and close(r["assignment_score"], 13.5) and close(r["project_score"], 7) and close(r["ca_score"], 32.5)

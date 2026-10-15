@@ -85,6 +85,14 @@
                 {'label':'Report cards','endpoint':'admin_school_report_cards','icon':'nav-reportcard',
                  'show': signed and admin_has_permission(aid,'report_cards.view'),
                  'active': path.startswith('/admin/school/report-cards') and not path.startswith('/admin/school/report-cards/settings')},
+                {'label':'Documents','endpoint':'admin_school_documents','icon':'nav-certificate',
+                 'show': signed and admin_has_permission(aid,'documents.issue'),
+                 'title': 'Testimonials, transcripts and leaving certificates',
+                 'active': path.startswith('/admin/school/documents')},
+                {'label':'Exam registration','endpoint':'admin_school_exam_registration','icon':'nav-examreg',
+                 'show': signed and admin_has_permission(aid,'school.exam_registration'),
+                 'title': 'WAEC, NECO and BECE candidates',
+                 'active': path.startswith('/admin/school/exam-registration')},
             ]},
             {'label':'Students & parents', 'part':'Management', 'items':[
                 {'label':'Students','endpoint':'admin_school_students','icon':'nav-students',
@@ -254,7 +262,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css', v='6K-message-notification-sender-school-ui') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='school-ui.css', v='7') }}">
 </head>
-<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/finance/new-students,/admin/finance/discounts,/admin/finance/instalments,/admin/finance/expenses,/admin/finance/profit-loss,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
+<body class="school-ui" data-current-admin-id="{{ current_admin.id if current_admin else '' }}" data-inplace-scope="{% if has_rail %}{{ settings_scope()|join(',') }},{% endif %}/admin/store,=/admin/school/notice-log,/admin/school/students,/admin/school/parents,/admin/school/teaching,/admin/school/transfers,/admin/school/subjects,/admin/school/attendance,/admin/school/report-cards,/admin/school/promotion,/admin/library,/admin/school/results,/admin/school/assignments,/admin/school/projects,/admin/school/tests,/admin/school/practice-tests,/admin/school/examinations,/admin/school/assessments,=/admin/finance,/admin/finance/accounts,/admin/finance/students,/admin/finance/payments,/admin/finance/receipts,/admin/finance/fee-items,/admin/finance/new-students,/admin/finance/discounts,/admin/finance/instalments,/admin/finance/expenses,/admin/finance/profit-loss,/admin/school/documents,/admin/school/exam-registration,/admin/school/timetable,=/admin/examination,/admin/candidates,/admin/banks,/admin/results,=/admin/rankings,=/admin/attempts,/admin/entrance-config,/admin/practice-tests">
 {{ connectivity_banner() }}
 {% if finance_unallocated and finance_unallocated.count %}
 <div class="finance-unallocated-banner" role="status">

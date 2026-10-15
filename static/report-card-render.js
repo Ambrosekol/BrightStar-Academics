@@ -11,9 +11,12 @@
     var R = window.IdCardRender;
     if (!R) return;
     var PT = 2.8346;                                   // points a millimetre
-    var WIDTHS = { subject: 30, test: 9, assignment: 13, project: 11, ca: 11, exam: 12, total: 12, average: 12, grade: 9, remark: 26 };
+    var WIDTHS = { subject: 30, test: 9, assignment: 13, project: 11, ca: 11, exam: 12, total: 12, average: 12, grade: 9, remark: 26,
+                   part1: 10, part2: 10, part3: 10, part4: 10, first: 12, second: 12, third: 12, avg: 12 };
     var HEADS = { subject: "Subject", test: "Test", assignment: "Assignment", project: "Project", ca: "CA", exam: "Exam",
-                  total: "Total", average: "Class avg", grade: "Grade", remark: "Remark" };
+                  total: "Total", average: "Class avg", grade: "Grade", remark: "Remark",
+                  part1: "CA1", part2: "CA2", part3: "CA3", part4: "CA4",
+                  first: "1st Term", second: "2nd Term", third: "3rd Term", avg: "Average" };
     var LABELS = { charged: "Fees for the session", paid: "Paid so far", balance: "Balance due", position: "Position", highest: "Highest in class", lowest: "Lowest in class",
                    opened: "School opened", present: "Days present", absent: "Days absent", late: "Days late",
                    attendance: "Attendance", total: "Total obtained", percentage: "Percentage", grade: "Overall grade", average: "Class average",
@@ -68,7 +71,8 @@
         var line = el.line && el.line !== "none" && el.line_w ? colour(el.line) : null, pad = Math.min(1.4, el.pad);
         var x = 0, xs = cols.map(function (c) { var w = el.w * (WIDTHS[c] || 10) / weights, at = x; x += w; return [at, w]; });
         if (el.head_fill && el.head_fill !== "none") rect(f, 0, 0, el.w, rowH, colour(el.head_fill));
-        var heads = cols.map(function (c) { return HEADS[c] + ((rep.maxes || {})[c] ? " (" + rep.maxes[c] + ")" : ""); });
+        // A CA part is headed with its own name from the grading scheme (CA1, Mid-term test...).
+        var heads = cols.map(function (c) { return ((rep.heads || {})[c] || HEADS[c]) + ((rep.maxes || {})[c] ? " (" + rep.maxes[c] + ")" : ""); });
         var family = R.FONTS[el.font] || R.FONTS.dejavu;
         // Every heading the same size: the largest at which the longest one fits its column.
         heads.forEach(function (h, i) { headSize = Math.max(Math.min(headSize, fitted(h, headSize, true, family, xs[i][1] - 2 * pad)), (el.head_size || el.size) * 0.6); });
@@ -95,6 +99,16 @@
             var o = div("rc-outline", { height: mm(total), bottom: "auto", border: mm(w) + " solid " + line, borderRadius: el.radius ? mm(el.radius) : "" });
             f.appendChild(o);
         }
+    };
+
+    /* ------------------------------------------------ the session so far (a Third Term card) */
+    // The results table's drawing with the three terms' rows; on a First or Second Term card nothing is drawn, so one
+    // design serves every term (as core/report_card_design_pdf.py).
+    R.blocks.cumulative = function (box, el, view, opts, colour) {
+        var rows = report(view).cumulative || [];
+        if (!rows.length && !opts.editor) return;
+        R.blocks.results(box, Object.assign({}, el, { columns: ["subject", "first", "second", "third", "avg", "grade"] }),
+                         { report: { subjects: rows, maxes: {}, heads: {} } }, opts, colour);
     };
 
     /* ------------------------------------------------ the summary */

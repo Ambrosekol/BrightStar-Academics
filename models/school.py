@@ -236,6 +236,9 @@ class SchoolAssessment(db.Model):
     shuffle = db.Column(Integer, nullable=False, default=1, server_default=text('1'))
     # End the paper (submit it) once the student has left the page more than this many times; blank never does.
     exam_leave_limit = db.Column(Integer)
+    # A test that counts as one of the grading scheme's typed-in CA parts ('ca1'..'ca4', core/grading.py) instead of
+    # its Test part. Blank: the Test part.
+    ca_part = db.Column(Text)
 
 
 class SchoolQuestion(db.Model):

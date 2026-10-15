@@ -1,0 +1,57 @@
+{% extends 'admin_base.html' %}
+{% block title %}Documents — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- The register of testimonials, transcripts and leaving certificates (blueprints/school/documents.py): every one
+    issued, with its serial number, who it was for and who issued it; its PDF; revoking one with a reason. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<div class="ac fi">
+<header class="ac-top">
+  <h1>Documents</h1>
+  <span class="ac-hint">Testimonials, transcripts and leaving certificates, each with its own serial number.</span>
+  <div class="ac-top__act">
+    {% if studio_allowed('documents.manage') %}<a class="ac-btn" href="{{ url_for('admin_document_studio', kind=kind or 'testimonial') }}">Design them</a>{% endif %}
+    <a class="ac-btn ac-btn--primary" href="{{ url_for('admin_school_document_issue', kind=kind or 'testimonial') }}" data-modal>+ Issue a document</a>
+  </div>
+</header>
+
+<div class="fi-tools">
+  <nav class="fi-seg" aria-label="Which documents">
+    <a href="{{ url_for('admin_school_documents', q=q or none) }}" class="{{ 'is-active' if not kind }}">All <small>{{ counts.values()|sum }}</small></a>
+    {% for key, name in kinds.items() %}<a href="{{ url_for('admin_school_documents', kind=key, q=q or none) }}" class="{{ 'is-active' if kind == key }}">{{ name }}s <small>{{ counts.get(key, 0) }}</small></a>{% endfor %}
+  </nav>
+  <form method="get" class="ac-search" action="{{ url_for('admin_school_documents') }}" role="search">
+    {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Student, admission or serial no." aria-label="Find a document"><button class="ac-btn" type="submit">Find</button>
+  </form>
+</div>
+
+<section class="fi-p">
+  {% if rows %}
+  <div class="ac-scroll"><table class="ac-t">
+    <thead><tr><th>Serial no.</th><th>Document</th><th>Student</th><th>Issued</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}{% set d = r.doc %}<tr{% if d.revoked_at %} class="is-muted"{% endif %}{% if request.args.get('opened')|int == d.id %} style="background:var(--ac-accent-tint)"{% endif %}>
+      <td><b>{{ d.serial_no }}</b>{% if d.revoked_at %}<small class="fi-owe">Revoked {{ d.revoked_at[:10] }}: {{ d.revoke_reason }}</small>{% endif %}</td>
+      <td>{{ kinds[d.kind] }}</td>
+      <td>{{ r.name }}<small>{{ r.admission_no }}</small></td>
+      <td>{{ d.issued_at[:10] }}<small>{{ r.by }}</small></td>
+      <td class="ac-actions">
+        <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_document_pdf', doc_id=d.id) }}" target="_blank" rel="noopener" data-no-loader>PDF</a>
+        {% if not d.revoked_at %}
+        <details class="fi-void"><summary class="ac-link">Revoke</summary>
+          <form method="post" action="{{ url_for('admin_school_document_revoke', doc_id=d.id) }}" class="fi-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input class="ac-input" name="reason" maxlength="300" required placeholder="Why, e.g. issued with the wrong date" aria-label="Why it is revoked">
+            <button class="ac-btn ac-btn--sm ac-btn--danger" type="submit">Revoke</button>
+          </form></details>
+        {% endif %}
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ac-empty">{% if q %}<strong>No document matches</strong><a class="ac-link" href="{{ url_for('admin_school_documents', kind=kind or none) }}">Clear the search</a>
+    {% else %}<strong>None issued yet</strong>Issue a testimonial, a transcript or a leaving certificate with <b>+ Issue a document</b>. Each prints in the school's own design, with a serial number.{% endif %}</div>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

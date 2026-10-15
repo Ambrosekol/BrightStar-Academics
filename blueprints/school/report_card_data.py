@@ -43,7 +43,8 @@ from models import (
 )
 
 # ---------------------------------------------------------------------------------------------
-# Grades. One scale for every school, shown on the card so nobody has to guess what a grade means.
+# Grades: the original A-F scale. Each level's own scale, per session, is its grading scheme (core/grading.py); this is
+# the scale a school uses until it sets one, and what the card prints so nobody has to guess what a grade means.
 GRADE_SCALE = (
     (70, 'A', 'Excellent'),
     (60, 'B', 'Very Good'),
@@ -117,21 +118,17 @@ def _parse_ratings(raw):
     return out
 
 
-def grade_for(percentage):
-    """``(letter, remark)`` for a percentage."""
-    for low, letter, remark in GRADE_SCALE:
-        if percentage >= low:
-            return letter, remark
-    return GRADE_SCALE[-1][1], GRADE_SCALE[-1][2]
+def grade_for(percentage, scheme=None):
+    """``(grade, remark)`` for a percentage, in a grading scheme's scale (core/grading.py); without one, the school's
+    original A-F scale."""
+    from core import grading
+    return grading.grade(percentage, scheme or grading.legacy())
 
 
-def grading_key():
+def grading_key(scheme=None):
     """The scale as it is printed on the card: ``[{'range': '70 - 100', 'grade': 'A', 'remark': ...}]``."""
-    key, upper = [], 100
-    for low, letter, remark in GRADE_SCALE:
-        key.append({'range': f'{low} - {upper}', 'grade': letter, 'remark': remark})
-        upper = low - 1
-    return key
+    from core import grading
+    return grading.key_of(scheme or grading.legacy())
 
 
 def term_slug(term):
@@ -306,6 +303,53 @@ def class_term_stats(class_id, session_id, term):
 
 
 # ---------------------------------------------------------------------------------------------
+# The session so far, on a Third Term card: each subject's First, Second and Third Term marks and their average, and
+# the session average and position. Worked out for the whole class at once (two more class_term_stats), not per card.
+def _cumulative_class(class_id, session_id, third):
+    """``{student_id: {'subjects': {subject_id: [first, second, third]}, 'average', 'position'}}`` for the students of a
+    class with a ready Third Term card. A term a student has no ready card for is left out of their averages (a student
+    who joined in the Second Term is averaged over two terms)."""
+    terms = [class_term_stats(class_id, session_id, t) for t in ACADEMIC_TERMS[:2]] + [third]
+    out = {}
+    for sid in (third or {}).get('students', {}):
+        per_subject, overall = {}, []
+        for i, stats in enumerate(terms):
+            entry = (stats or {}).get('students', {}).get(sid)
+            if not entry:
+                continue
+            if entry.get('total_max'):
+                overall.append(entry['percentage'])
+            for subject_id, report in entry['subjects'].items():
+                pct = round(report['total_score'] / report['total_max'] * 100, 2) if report['total_max'] else None
+                per_subject.setdefault(subject_id, [None, None, None])[i] = pct
+        out[sid] = {'subjects': per_subject,
+                    'average': round(sum(overall) / len(overall), 2) if overall else None}
+    ranked = sorted(((v['average'], sid) for sid, v in out.items() if v['average'] is not None), reverse=True)
+    last, place = None, 0
+    for i, (avg, sid) in enumerate(ranked, 1):
+        if avg != last:
+            place, last = i, avg
+        out[sid]['position'] = place
+    return out
+
+
+def _cumulative_card(mine, subject_names, scheme, class_size):
+    """The cumulative block of one card from its student's entry in _cumulative_class, graded by their scheme."""
+    from core import grading
+    rows = []
+    for subject_id, marks in mine['subjects'].items():
+        got = [m for m in marks if m is not None]
+        average = round(sum(got) / len(got), 2) if got else None
+        letter, remark = grading.grade(average, scheme) if average is not None else ('', '')
+        rows.append({'name': subject_names.get(subject_id, '—'), 'first': marks[0], 'second': marks[1], 'third': marks[2],
+                     'average': average, 'grade': letter, 'remark': remark})
+    rows.sort(key=lambda r: r['name'])
+    letter, remark = grading.grade(mine['average'], scheme) if mine['average'] is not None else ('', '')
+    return {'subjects': rows, 'average': mine['average'], 'grade': letter, 'remark': remark,
+            'position': mine.get('position'), 'class_size': class_size}
+
+
+# ---------------------------------------------------------------------------------------------
 # The card itself.
 def _issued_on(latest_release):
     try:
@@ -406,11 +450,14 @@ def build_cards(student_ids, session_id, term):
               'accent': brand.get('accent') or ''}
     settings = report_settings()
     head = {'title': settings['head_title'], 'name': settings['head_name'], 'signature_path': _file(settings['head_signature'])}
-    key = grading_key()
+    # Each card is graded by the scheme of the student's level that session (core/grading.py).
+    from core import grading
+    levels = grading.student_levels(ready_ids, session_id)
     attendance = _attendance(ready_ids, session_id, term)
 
     stats_by_class = {}
     positions_by_class = {}
+    cumulative_by_class = {}
     cards = []
     for student_id in ready_ids:
         person = people.get(student_id)
@@ -434,19 +481,28 @@ def build_cards(student_ids, session_id, term):
             mine = {'subjects': subjects_reports, 'total': total, 'total_max': total_max,
                     'percentage': round(total / total_max * 100, 2) if total_max else 0.0}
         subject_average = (stats or {}).get('subject_average', {})
+        scheme = grading.scheme_for(session_id, levels.get(student_id))
 
         rows = []
         for subject_id, report in mine['subjects'].items():
             pct = report['total_score'] / report['total_max'] * 100 if report['total_max'] else 0
-            letter, remark = grade_for(pct)
+            letter, remark = grading.grade(pct, scheme)
             rows.append({'name': subject_names.get(subject_id, '—'),
                          'test': report['test_score'], 'assignment': report['assignment_score'],
                          'project': report['project_score'], 'ca': report['ca_score'], 'ca_max': report['ca_max'],
+                         'parts': [{'label': p['label'], 'score': p['score'], 'max': p['max']} for p in report.get('parts', [])],
                          'exam': report['exam_score'], 'exam_max': report['exam_max'],
                          'total': report['total_score'], 'total_max': report['total_max'],
                          'grade': letter, 'remark': remark, 'class_average': subject_average.get(subject_id)})
         rows.sort(key=lambda r: r['name'])
-        letter, remark = grade_for(mine['percentage'])
+        letter, remark = grading.grade(mine['percentage'], scheme)
+        cumulative = None
+        if term == ACADEMIC_TERMS[-1] and class_id:
+            if class_id not in cumulative_by_class:
+                cumulative_by_class[class_id] = _cumulative_class(class_id, session_id, stats)
+            entry = cumulative_by_class[class_id].get(student_id)
+            if entry:
+                cumulative = _cumulative_card(entry, subject_names, scheme, len(cumulative_by_class[class_id]))
 
         comment = comments.get(student_id)
         comment_block = None
@@ -494,7 +550,8 @@ def build_cards(student_ids, session_id, term):
             'comment': comment_block,
             'traits': traits_block,
             'head': head,
-            'grading_key': key,
+            'cumulative': cumulative,
+            'grading_key': grading.key_of(scheme),
             'issued_on': _issued_on(counts[(student_id, session_id, term)]['released_at']),
             'next_term_begins': settings['next_term_begins'],
         })

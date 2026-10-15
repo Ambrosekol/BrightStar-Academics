@@ -16,6 +16,17 @@ must equal EXERCISED, so this list cannot claim more than the script really does
 # Rules the script cannot submit, each with the reason. Empty is the goal. A rule here is
 # reported in the coverage summary on every run.
 EXEMPT = {
+    # Results and term-end paperwork: grading schemes, the documents studio and issuing and revoking documents, valid
+    # and hostile (a scheme not adding to 100, a teacher, a hostile design, a revoked document), in
+    # write_paths_term_end.py.
+    "/admin/school/grading": "see write_paths_term_end.py",
+    "/admin/documents/studio/<kind>": "see write_paths_term_end.py",
+    "/admin/documents/studio/<kind>/lock": "see write_paths_term_end.py",
+    "/admin/documents/studio/<kind>/preview": "see write_paths_term_end.py",
+    "/admin/documents/studio/assets": "see write_paths_term_end.py",
+    "/admin/documents/studio/assets/<int:asset_id>/delete": "see write_paths_term_end.py",
+    "/admin/school/documents/issue": "see write_paths_term_end.py",
+    "/admin/school/documents/<int:doc_id>/revoke": "see write_paths_term_end.py",
     # Fee collection: discounts and the sibling rule, instalment plans and who is on them, fee reminders and their
     # words, the report card hold and letting a student through, expenses (with a receipt photo) and voiding them,
     # valid and hostile (a cashier, a bursar on the School Admin's page, bad amounts, plans not adding to 100%), in

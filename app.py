@@ -1296,6 +1296,11 @@ import blueprints.school.delivery  # noqa: F401,E402
 import blueprints.school.birthdays  # noqa: F401,E402  (registers the 'birthday_texts' background job)
 import blueprints.school.message_wording  # noqa: F401,E402
 import blueprints.school.report_cards  # noqa: F401,E402
+import blueprints.school.grading  # noqa: F401,E402
+import blueprints.school.broadsheet  # noqa: F401,E402
+import blueprints.school.document_studio  # noqa: F401,E402
+import blueprints.school.documents  # noqa: F401,E402
+import blueprints.school.exam_registration  # noqa: F401,E402
 import blueprints.school.results_records  # noqa: F401,E402
 import blueprints.school.onboarding  # noqa: F401,E402
 import blueprints.school.settings  # noqa: F401,E402

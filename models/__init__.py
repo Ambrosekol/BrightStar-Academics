@@ -122,6 +122,7 @@ from .subdivisions import ClassSubdivision, ClassTransfer
 from .id_cards import IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion
 from .report_card_design import ReportCardDesign, ReportCardDesignVersion
 from .receipt_design import ReceiptDesign, ReceiptDesignVersion
+from .documents import DocumentDesign, DocumentDesignVersion, IssuedDocument
 from .payroll import (
     PayItem, PayrollAdjustment, PayrollRun, PayrollSettings, Payslip, StaffPay, StaffPayItem,
 )
@@ -189,6 +190,7 @@ __all__ = [
     # ID cards
     'IdCard', 'IdCardAsset', 'IdCardDesign', 'IdCardDesignVersion',
     'ReportCardDesign', 'ReportCardDesignVersion', 'ReceiptDesign', 'ReceiptDesignVersion',
+    'DocumentDesign', 'DocumentDesignVersion', 'IssuedDocument',
     # payroll
     'PayItem', 'PayrollAdjustment', 'PayrollRun', 'PayrollSettings', 'Payslip', 'StaffPay', 'StaffPayItem',
     # staff attendance

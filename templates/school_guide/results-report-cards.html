@@ -37,16 +37,142 @@ still waiting — before releasing everyone who actually has something approved,
 page</a>) is for marks from paper tests and exams, and is made for working down a whole class. Choose the session, term
 and subject at the top and a class below; the class's students are listed on the left with the score each already has
 in that subject (only the students who take it, in SSS), and a bar shows how many are done. Choose a student, say
-whether they took the Test (or why they missed it), and type the Test and Exam scores; the percentage shows as you type.
+whether they took the Test (or why they missed it), and type the scores the class's grading asks for (the Test, any
+typed-in CA parts and the Exam; each box starts at its share, such as out of 20); the percentage shows as you type.
 <strong>Save and next</strong> moves straight to the next student without a score and keeps the same maxima. A subject
 the class does not have yet can be created from the same bar. When the class is done, send the marks to the class
 teacher from Results.</p>
 
+<p>When the class's grading scheme has typed-in CA parts (CA1, CA2...), the page shows a box for each, beside the Test
+and the Exam; each is optional (leave it empty if not taken yet) and has its own maximum.</p>
+{{ shot('score-sheet-parts', 'Entering offline scores for a JSS class whose grading has CA1, CA2, a Test and the Exam: a box for each, with what is already recorded above.') }}
+
 <h2 id="term-result">How a term result is worked out</h2>
-<p>Each subject's term result is Continuous Assessment (test, assignment and project, out of 40
-between them, in shares your school sets once) plus an exam out of 60. Work that has been removed
-stops counting; the arithmetic is worked out fresh every time it is needed, from the results
-themselves, so it can never disagree with what is actually on record.</p>
+<p>Each subject's term result is its continuous assessment (CA) plus its exam, out of 100, in the shares the level's
+<strong>grading scheme</strong> sets. Several items in one part (two tests, say) are added together before they are
+scaled to the part's share, so an extra test never pushes a subject past its share. Work that has been removed stops
+counting; the arithmetic is worked out fresh every time it is needed, from the results themselves, so it can never
+disagree with what is actually on record.</p>
+
+<h2 id="grading">Grading and scores</h2>
+<p><a href="{{ url_for('admin_school_grading') }}">Grading and scores</a> (Settings, Results &amp; report cards; the head
+teacher and the academic administrator) sets, for each level (Nursery, Primary, JSS, SSS) and for each session:</p>
+<ul>
+  <li><strong>The score split</strong>: the Exam's share and up to four CA parts, each with a name, a share and where its
+  marks come from: the class's <em>tests</em>, its <em>assignments</em>, its <em>projects</em>, or <em>typed in by the
+  teacher</em> (CA1, CA2, CA3...). They must add up to 100; the total shows as you type. A test can be set to
+  <em>count as</em> one of the typed-in parts (on the test's own page), so a CA2 sat on the computer counts as CA2.</li>
+  <li><strong>The grade scale</strong>: bands from the top down, each with its lowest percentage, grade and remark. Start
+  from A to F, WAEC's A1 to F9, or words for nursery (Excellent, Very good...), and change any band.</li>
+</ul>
+{{ shot('grading', 'Grading and scores: the session at the top, a tab for each level, the score split on the left (adding up to 100, with a tick) and the grade scale on the right.') }}
+<p>Each session keeps its own: saving changes the report cards of that session only, never an earlier one.
+A new session carries on the latest grading the school saved, until you save one of its own.
+<strong>Copy this level to every level</strong> fills the others with what is on screen. Until a school saves, every
+level uses the original split (its CA weights) and A to F.</p>
+
+<h2 id="cumulative">The Third Term report: the session so far</h2>
+<p>A Third Term report card also shows <strong>the session so far</strong>: each subject's First, Second and Third Term
+marks, their average and grade, and the session average and position in the class. A term the student has no report
+card for is left out of their averages (a student who joined in the Second Term is averaged over two terms). In the
+report card studio, the <em>Session so far</em> block and the <em>Session average</em>, <em>Session grade</em> and
+<em>Position for the session</em> details show it on the school's own design; on First and Second Term cards they stay
+empty, so one design serves every term.</p>
+{{ shot('third-term-card', 'A Third Term card: each CA part and the Exam per subject, then the session so far, with the session average, grade and position.') }}
+
+<h2 id="broadsheet">The broadsheet</h2>
+<p><a href="{{ url_for('admin_school_broadsheet') }}">The broadsheet</a> (<strong>Broadsheet</strong> on Report cards)
+is a class's master score sheet: one row per student, one column per subject, then the total, the average, the
+position and the grade; under it each subject's average, highest and lowest. Choose a term, or <em>Whole session</em>
+for each subject's average over the terms; tick <em>CA and Exam</em> to see both under each subject. Unlike report
+cards it counts every mark recorded, released or not, so it can be checked before release; each student shows how many
+of their results are still waiting. <strong>Print</strong> prints it in landscape and <strong>Download CSV</strong>
+opens it in a spreadsheet. It is the class teacher's, like the report cards.</p>
+{{ shot('broadsheet', 'The broadsheet for First Term with CA and Exam ticked: each subject\'s CA, Exam and total, then the total, average, position and grade, and each subject\'s average, highest and lowest.') }}
+
+<h2 id="documents">Testimonials, transcripts and leaving certificates</h2>
+<p><a href="{{ url_for('admin_school_documents') }}">Documents</a> (in the menu under Academics) is the register of
+every testimonial, transcript and leaving certificate issued, each with its own serial number, such as
+BSA/TST/2026/00001. <strong>+ Issue a document</strong> asks only what the kind needs:</p>
+<ul>
+  <li><strong>Testimonial</strong>: the student's conduct, the head's words on their character and any positions held.</li>
+  <li><strong>Leaving certificate</strong>: the conduct and the reason for leaving.</li>
+  <li><strong>Transcript</strong>: nothing more: one row per subject and one column per session the student has
+  released results in, each the average of that session's terms, and the overall average.</li>
+</ul>
+<p>The student's name, date of birth, classes, sessions and the dates they joined and left come from their record
+(the dates can be changed on the form). Students who have left are offered too. A document keeps exactly what it said
+when it was issued, so a copy printed later is the same; <strong>PDF</strong> prints it in the school's design (the
+documents studio, under Design studios). One issued by mistake is <strong>revoked</strong> with a reason: it stays in
+the register and prints marked REVOKED.</p>
+{{ shot('documents-register', 'Documents: the register of everything issued, by kind, with a PDF of each; a revoked one shows when and why.') }}
+{{ shot('document-issue', 'Issuing a testimonial: choose the kind, the student (type to narrow the list), then only what that kind asks for.') }}
+<p>A document's serial number starts with the same prefix as the school's receipt numbers, then the kind (TST, TRN or
+LVC) and the year, and counts up from 00001 each year for each kind.</p>
+
+<h2 id="exam-registration">Exam registration: WAEC, NECO and BECE</h2>
+<p><a href="{{ url_for('admin_school_exam_registration') }}">Exam registration</a> lists a class's candidates for
+WAEC or NECO (SSS) or BECE (JSS) with their surname, names, sex, date of birth, state of origin and the subjects they
+take, and says what is missing on each record (a photograph, a date of birth that cannot be read...). Put it right on
+the student's record, then download <strong>Candidates (CSV)</strong> and <strong>Photographs (ZIP)</strong>, each
+photograph a passport-size JPEG named to match its row, to carry into the exam body's own portal. Check the details
+against each candidate's birth certificate first.</p>
+{{ shot('exam-registration', 'Exam registration for WAEC: each candidate with sex, date of birth, state of origin and number of subjects; one is marked ready, the other says what is missing.') }}
+
+<h3 id="term-end-troubleshooting">Troubleshooting: grading, broadsheets, documents and exam registration</h3>
+<dl class="guide-faq">
+  <dt>Grading and scores will not save: "They must add up to 100".</dt>
+  <dd>The Exam and every CA part of each level must add up to exactly 100 (the total beside <em>Score split</em> shows a
+  tick when they do). Every level is checked when you save, so look at each tab: the message names the level.</dd>
+  <dt>I changed the grading, but last session's report cards did not change.</dt>
+  <dd>That is on purpose: grading is kept per session, so cards already given out never change. To change an earlier
+  session, choose it in <em>Session</em> at the top of Grading and scores and save it there.</dd>
+  <dt>A new session is graded differently from what we set.</dt>
+  <dd>A new session uses the grading the school saved most recently, until it has its own; the line beside
+  <em>Session</em> says which. Choose the new session and save it to give it its own.</dd>
+  <dt>The score sheet has no box for CA1 (or CA2...).</dt>
+  <dd>Only parts whose marks are <em>typed in by the teacher</em> get a box. Check the grading of the class's level (a JSS
+  class follows the JSS tab) for the session you are entering. A part that comes from tests, assignments or projects is
+  filled in from that work instead.</dd>
+  <dt>A test done on the computer counts as the Test, not as CA2.</dt>
+  <dd>Open the test and set <em>Counts as</em> to CA2. A test with no choice counts towards the Test part.</dd>
+  <dt>A student's grade looks wrong.</dt>
+  <dd>A mark gets the first band, from the top down, whose <em>From %</em> it reaches: with WAEC's scale 74 is B2 (70 to
+  74) and 75 is A1. The lowest band always starts at 0. Check you are looking at the right level and session.</dd>
+  <dt>The Third Term card has no "session so far" table.</dt>
+  <dd>It is only on Third Term cards. A First or Second Term is counted only if the student's card for that term was
+  ready (all its results released). On the school's own design, add the <em>Session so far</em> block in the report card
+  studio.</dd>
+  <dt>The broadsheet does not match the report cards.</dt>
+  <dd>The broadsheet counts every mark recorded, released or not, so it can be checked before release; a report card
+  counts only released results. The <em>waiting</em> figure beside a student says how many of their results are not yet
+  released.</dd>
+  <dt>I cannot see my class's broadsheet.</dt>
+  <dd>It follows the report card rule: a class teacher sees their own class; the head teacher, the academic
+  administrator and the School Admin see every class.</dd>
+  <dt>A transcript is refused: "no released results yet".</dt>
+  <dd>A transcript lists only terms whose report card is ready. Release the term's results first.</dd>
+  <dt>A document says something wrong (a name, a date, a class).</dt>
+  <dd>A document keeps what it said when it was issued. Put the student's record right, <strong>Revoke</strong> the wrong
+  document with a reason, and issue a new one; it gets the next serial number.</dd>
+  <dt>Documents print in the starting design, not ours.</dt>
+  <dd>They print from the saved design of their kind in the documents studio: press <strong>Save</strong> there. A change
+  can take up to a minute to reach every copy.</dd>
+  <dt>Exam registration does not list a class.</dt>
+  <dd>WAEC and NECO list SSS classes and BECE lists JSS classes, going by each class's stage (set on Classes).</dd>
+  <dt>A candidate is marked "date of birth (age 6?)" or similar.</dt>
+  <dd>The date of birth on their record could not be read, or gives an age outside 9 to 30. Correct it on the student's
+  record.</dd>
+  <dt>A candidate's photograph is not in the ZIP.</dt>
+  <dd>Add a photograph on the student's record. A file that is not a real picture is left out (the others still
+  come).</dd>
+  <dt>An SSS candidate shows no subjects.</dt>
+  <dd>In SSS the subjects follow the student's department: set the department on their record, and check the class's
+  subjects are given to that department.</dd>
+  <dt>A cell in the CSV starts with an apostrophe.</dt>
+  <dd>A cell that begins like a spreadsheet formula (=, +, -, @) gets an apostrophe in front, so a spreadsheet does not
+  run it. Remove it in the spreadsheet if it really is part of the value.</dd>
+</dl>
 
 <h2 id="cards">Report cards</h2>
 <p>Report cards opens with the class chips across the top and the session and term beside them; choosing a class loads its students in place. Each student's comment and trait ratings are written in a small pop-up without leaving the page. <strong>View</strong> and <strong>PDF</strong> open the card in a new tab, ready to print, and a student's name opens their own pop-up.</p>
@@ -82,8 +208,8 @@ announce it.</div>
 <p>Two small pages decide what appears at the bottom of every report card in the school:
 <a href="{{ url_for('admin_school_report_card_settings') }}">Report card settings</a> sets the head of
 school's title (Principal, Headmistress, and so on) and their signature image, once for the whole
-school, plus how much of a subject's mark comes from Continuous Assessment versus the exam (see
-above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is different: it is where any
+school. How a subject's mark is made up, and graded, is set under
+<a href="{{ url_for('admin_school_grading') }}">Grading and scores</a> (see above). <a href="{{ url_for('admin_my_signature') }}">My signature</a> is different: it is where any
 member of staff draws or uploads <em>their own</em> signature image, for use wherever their own name
 appears signed on a document. It opens as a window on the Report cards page.</p>
 

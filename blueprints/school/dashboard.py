@@ -274,11 +274,14 @@ def _top_students(session_id, term, class_ids, limit=1, lowest=False):
     for cid, sid, g, o in rows:
         by_class[cid].append((sid, _pct(float(g or 0), float(o or 0))))
     names = _student_names({sid for v in by_class.values() for sid, _ in v})
-    from blueprints.school.report_card_data import grade_for
+    from core import grading
+    levels = grading.class_levels(by_class)
     out = {}
     for cid, items in by_class.items():
         items.sort(key=lambda x: x[1], reverse=not lowest)
-        out[cid] = [{'name': names.get(sid, ''), 'percentage': pct, 'grade': grade_for(pct)[0], 'id': sid} for sid, pct in items[:limit]]
+        scheme = grading.scheme_for(session_id, levels.get(cid))     # each class by its own level's scale
+        out[cid] = [{'name': names.get(sid, ''), 'percentage': pct, 'grade': grading.grade(pct, scheme)[0], 'id': sid}
+                    for sid, pct in items[:limit]]
     return out
 
 
@@ -558,13 +561,18 @@ def _my_teaching(me, session, term, prev, duties):
     marked = sum(r['marked'] for r in rows)
     places = sum(r['students'] for r in rows)
     scored = [r['score'] for r in rows if r['score'] is not None]
-    from blueprints.school.report_card_data import GRADE_SCALE, grade_for
+    from core import grading
     from models import AssignmentStudent
     every = [(key, stid, pct) for key, items in spread.items() for stid, pct in items]
-    bands = Counter(grade_for(pct)[0] for _k, _s, pct in every)
+    # One chart needs one scale: that of the level most of these marks are in (a teacher's classes are mostly one).
+    levels = grading.class_levels({key[0] for key in spread})
+    common = Counter(levels.get(key[0]) for key, _s, _p in every).most_common(1)
+    scheme = grading.scheme_for(sid, common[0][0] if common else None) if sid else grading.legacy()
+    bands = Counter(grading.grade(pct, scheme)[0] for _k, _s, pct in every)
     upper = 100
     grades = []
-    for low, letter, remark in GRADE_SCALE:
+    for low, letter, remark in scheme['scale']:
+        low = int(low) if float(low).is_integer() else low
         grades.append({'label': f'{letter} · {low}–{upper}', 'value': bands.get(letter, 0), 'compare': None,
                        'tip': f'{letter} ({remark}, {low}–{upper}%): {bands.get(letter, 0)} of {len(every)} student marks'})
         upper = low - 1

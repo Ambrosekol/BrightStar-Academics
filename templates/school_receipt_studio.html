@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='id-card.css', v='1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='report-card.css', v='3') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='5') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='id-card-designer.css', v='6') }}">
 {% set locked = design and design.locked %}
 {% set in_use = design and design.in_use %}
 {% set flashed = get_flashed_messages() %}
@@ -185,7 +185,7 @@
 </dialog>
 <script type="application/json" id="iddData" nonce="{{ csp_nonce() }}">{{ data|tojson }}</script>
 <script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='5') }}"></script>
 <script src="{{ url_for('static', filename='receipt-render.js', v='1') }}"></script>
-<script src="{{ url_for('static', filename='id-card-designer.js', v='5') }}"></script>
+<script src="{{ url_for('static', filename='id-card-designer.js', v='6') }}"></script>
 {% endblock %}

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from flask import flash, redirect, render_template, request, url_for
-from sqlalchemy import and_, or_, func, select, update as sa_update
+from sqlalchemy import and_, case, or_, func, select, update as sa_update
 
 from models import (
     Admin, AcademicPromotionItem, AcademicPromotionRun, AcademicSession,
@@ -162,8 +162,8 @@ def _school_student_visible(sid):
         .join(SchoolClass,SchoolClass.id==StudentEnrolment.class_id)
         .where(StudentEnrolment.student_id==sid,StudentEnrolment.active==1)
         .order_by(StudentEnrolment.id.desc()).limit(1))
-    if not row or not admin_scope_allows(admin['id'],'class',row[0]): return False
-    return subdivision_reach.reaches(admin['id'],row[1],row[2])
+    if not row or not admin_scope_allows(admin['id'],'class',row['name']): return False
+    return subdivision_reach.reaches(admin['id'],row['class_id'],row['subdivision_id'])
 
 def _assignment_students(assignment_id):
     return [_flatten(r,'AssignmentStudent','first_name','middle_name','last_name','admission_no')
@@ -336,12 +336,13 @@ def _result_term(raw):
         aliases[name.casefold()]=name
     return aliases.get(text.casefold())
 
-def _term_raw_sums(student_ids, session_id, term, subject_id=None):
+def _term_raw_sums(student_ids, session_id, term, subject_id=None, by_period=False):
     """The raw marks, added up, for each student and subject in one term and one session.
 
-    Returns ``{'exam': {...}, 'test': {...}, 'assignment': {...}, 'project': {...}}`` where each
-    inner dict maps ``(student_id, subject_id)`` to ``(marks scored, marks available)``. A pair
-    with nothing of that kind recorded is simply absent. This is the ONE place the rules for what
+    Returns ``{(student_id, subject_id): {bucket: (marks scored, marks available)}}``. The buckets are 'exam', 'test'
+    (tests, and marks typed in as Test), 'ca1'..'ca4' (a test set to count as that CA part, or marks typed in for it),
+    'assignment' and 'project'; a bucket with nothing recorded is simply absent. Which buckets make up a result, and
+    with what share, is the level's grading scheme (core/grading.py). This is the ONE place the rules for what
     counts are written:
 
     * practice tests never contribute (a self-study tool, not part of the official record);
@@ -350,107 +351,130 @@ def _term_raw_sums(student_ids, session_id, term, subject_id=None):
       adding to the bottom would inflate the whole share;
     * a mark that was never entered (blank) does not count.
 
-    One query for each kind of work, for however many students are asked about: a class of forty
-    costs the same handful of queries as one student.
+    Three queries (results, assignments, projects) for however many students are asked about: a class of forty
+    costs the same as one student. With ``by_period`` every session and term is read at once (``session_id`` and
+    ``term`` are not used) and each key is ``(student_id, subject_id, session_id, term)``: a whole school career in the
+    same three queries (a transcript).
     """
+    from core.grading import ENTERED_KEYS
     student_ids=list(student_ids)
-    if not student_ids: return {'exam':{},'test':{},'assignment':{},'project':{}}
+    out={}
+    if not student_ids: return out
 
-    def result_sums(kind, component_prefix):
-        stmt=(select(SchoolStudentResult.student_id,SchoolStudentResult.subject_id,
-                     func.coalesce(func.sum(SchoolStudentResult.score),0),
-                     func.coalesce(func.sum(SchoolStudentResult.max_score),0))
-            .select_from(SchoolStudentResult)
-            .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
-            .where(SchoolStudentResult.student_id.in_(student_ids),
-                   SchoolStudentResult.session_id==session_id,
-                   func.coalesce(SchoolStudentResult.term,'Full Session')==term,
-                   SchoolStudentResult.score.is_not(None),
-                   or_(SchoolAssessment.assessment_type==kind,
-                       and_(SchoolStudentResult.assessment_id.is_(None),
-                            SchoolStudentResult.component_name.startswith(component_prefix))))
-            .group_by(SchoolStudentResult.student_id,SchoolStudentResult.subject_id))
-        if subject_id is not None: stmt=stmt.where(SchoolStudentResult.subject_id==subject_id)
-        return {(sid,subj):(score,available) for sid,subj,score,available in tuples(stmt)}
+    def add(key, bucket, score, available):
+        out.setdefault(tuple(key),{})[bucket]=(float(score or 0),float(available or 0))
 
-    assignment_stmt=(select(AssignmentStudent.student_id,SchoolAssignment.subject_id,
+    r_term=func.coalesce(SchoolStudentResult.term,'Full Session')
+    typed=SchoolStudentResult.assessment_id.is_(None)
+    named=func.lower(SchoolStudentResult.component_name)
+    bucket=case(
+        (SchoolAssessment.assessment_type=='examination','exam'),
+        (and_(SchoolAssessment.assessment_type=='test',SchoolAssessment.ca_part.in_(ENTERED_KEYS)),SchoolAssessment.ca_part),
+        (SchoolAssessment.assessment_type=='test','test'),
+        (and_(typed,SchoolStudentResult.component_name.startswith('Exam')),'exam'),
+        (and_(typed,named.in_(ENTERED_KEYS)),named),
+        (and_(typed,SchoolStudentResult.component_name.startswith('Test')),'test'),
+        else_=None)
+    keys=[SchoolStudentResult.student_id,SchoolStudentResult.subject_id]+([SchoolStudentResult.session_id,r_term] if by_period else [])
+    stmt=(select(*keys,bucket,func.coalesce(func.sum(SchoolStudentResult.score),0),
+                 func.coalesce(func.sum(SchoolStudentResult.max_score),0))
+        .select_from(SchoolStudentResult)
+        .outerjoin(SchoolAssessment,SchoolAssessment.id==SchoolStudentResult.assessment_id)
+        .where(SchoolStudentResult.student_id.in_(student_ids),SchoolStudentResult.score.is_not(None))
+        .group_by(*keys,bucket))
+    if not by_period: stmt=stmt.where(SchoolStudentResult.session_id==session_id,r_term==term)
+    if subject_id is not None: stmt=stmt.where(SchoolStudentResult.subject_id==subject_id)
+    width=len(keys)
+    for row in tuples(stmt):
+        if row[width]: add(row[:width],row[width],row[width+1],row[width+2])
+
+    a_keys=[AssignmentStudent.student_id,SchoolAssignment.subject_id]+([SchoolAssignment.session_id,SchoolAssignment.term] if by_period else [])
+    assignment_stmt=(select(*a_keys,
                             func.coalesce(func.sum(AssignmentStudent.score),0),
                             func.coalesce(func.sum(func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)),0))
         .select_from(AssignmentStudent)
         .join(SchoolAssignment,SchoolAssignment.id==AssignmentStudent.assignment_id)
         .where(AssignmentStudent.student_id.in_(student_ids),
-               SchoolAssignment.session_id==session_id,SchoolAssignment.term==term,
                SchoolAssignment.active==1,
                func.coalesce(AssignmentStudent.max_score,SchoolAssignment.max_score)>0,
                AssignmentStudent.score.is_not(None))
-        .group_by(AssignmentStudent.student_id,SchoolAssignment.subject_id))
-    project_stmt=(select(ProjectStudent.student_id,SchoolProject.subject_id,
+        .group_by(*a_keys))
+    p_keys=[ProjectStudent.student_id,SchoolProject.subject_id]+([SchoolProject.session_id,SchoolProject.term] if by_period else [])
+    project_stmt=(select(*p_keys,
                          func.coalesce(func.sum(ProjectStudent.score),0),
                          func.coalesce(func.sum(SchoolProject.max_score),0))
         .select_from(ProjectStudent)
         .join(SchoolProject,SchoolProject.id==ProjectStudent.project_id)
         .where(ProjectStudent.student_id.in_(student_ids),
-               SchoolProject.session_id==session_id,SchoolProject.term==term,
                SchoolProject.active==1,SchoolProject.max_score>0,
                ProjectStudent.score.is_not(None))
-        .group_by(ProjectStudent.student_id,SchoolProject.subject_id))
+        .group_by(*p_keys))
+    if not by_period:
+        assignment_stmt=assignment_stmt.where(SchoolAssignment.session_id==session_id,SchoolAssignment.term==term)
+        project_stmt=project_stmt.where(SchoolProject.session_id==session_id,SchoolProject.term==term)
     if subject_id is not None:
         assignment_stmt=assignment_stmt.where(SchoolAssignment.subject_id==subject_id)
         project_stmt=project_stmt.where(SchoolProject.subject_id==subject_id)
-    return {
-        'exam':result_sums('examination','Exam'),
-        'test':result_sums('test','Test'),
-        'assignment':{(sid,subj):(score,available) for sid,subj,score,available in tuples(assignment_stmt)},
-        'project':{(sid,subj):(score,available) for sid,subj,score,available in tuples(project_stmt)},
-    }
+    for row in tuples(assignment_stmt): add(row[:width],'assignment',row[width],row[width+1])
+    for row in tuples(project_stmt): add(row[:width],'project',row[width],row[width+1])
+    return out
 
-def _assemble_term_report(weights, exam_raw, test_raw, assignment_raw, project_raw):
-    """Turn the four raw (scored, available) pairs of one student's subject into Exam(60) + CA(40)."""
-    def scaled(raw_score, raw_max, cap):
-        if not raw_max: return 0.0
-        return min(cap,round(raw_score/raw_max*cap,2))
+def _assemble_term_report(scheme, raw):
+    """Turn one student's raw marks in one subject (``{bucket: (scored, available)}``) into the term result their level's
+    grading scheme describes: the Exam and each CA part scaled to its share, adding up to 100.
 
-    exam_score=scaled(exam_raw[0],exam_raw[1],EXAM_MAX_SCORE)
-    test_score=scaled(test_raw[0],test_raw[1],weights['test'])
-    assignment_score=scaled(assignment_raw[0],assignment_raw[1],weights['assignment'])
-    project_score=scaled(project_raw[0],project_raw[1],weights['project'])
-    ca_score=round(test_score+assignment_score+project_score,2)
+    Marks for a CA part the scheme does not have (a test set to count as CA3 where the level has only two typed-in
+    parts, say) are not lost: they count with the scheme's Test part, or else its first typed-in part. Several items in
+    one part are combined by adding their raw marks and maximums before scaling, so an extra test never lets a part,
+    or the subject, go past its share."""
+    from core.grading import ENTERED_KEYS
+    none=(0.0,0.0)
+    def scaled(r, cap): return min(cap,round(r[0]/r[1]*cap,2)) if r[1] else 0.0
+    parts=scheme['parts']
+    have={p['key'] for p in parts}
+    pool={k:raw.get(k,none) for k in ('exam','test','assignment','project',*ENTERED_KEYS)}
+    home=(next((p['key'] for p in parts if p['from']=='test'),None)
+          or next((p['key'] for p in parts if p['from']=='entered'),None))
+    if home:
+        for key in ('test',*ENTERED_KEYS):
+            if key not in have and key!=home and pool[key][1]:
+                s,m=pool[home]; pool[home]=(s+pool[key][0],m+pool[key][1])
+    shown=[{'key':p['key'],'label':p['label'],'max':p['max'],'score':scaled(pool[p['key']],p['max'])} for p in parts]
+    by_key={p['key']:p for p in shown}
+    exam_max=scheme['exam_max']; exam=scaled(pool['exam'],exam_max)
+    ca=round(sum(p['score'] for p in shown),2); ca_max=round(sum(p['max'] for p in shown),2)
+    def part(k, field): return by_key[k][field] if k in by_key else 0.0
     return {
-        'exam_score':exam_score,'exam_max':EXAM_MAX_SCORE,
-        'test_score':test_score,'test_max':weights['test'],
-        'assignment_score':assignment_score,'assignment_max':weights['assignment'],
-        'project_score':project_score,'project_max':weights['project'],
-        'ca_score':ca_score,'ca_max':CA_MAX_SCORE,
-        'total_score':round(exam_score+ca_score,2),'total_max':EXAM_MAX_SCORE+CA_MAX_SCORE,
-        'has_data':bool(exam_raw[1] or test_raw[1] or assignment_raw[1] or project_raw[1]),
+        'exam_score':exam,'exam_max':exam_max,
+        'test_score':part('test','score'),'test_max':part('test','max'),
+        'assignment_score':part('assignment','score'),'assignment_max':part('assignment','max'),
+        'project_score':part('project','score'),'project_max':part('project','max'),
+        'parts':shown,'ca_score':ca,'ca_max':ca_max,
+        'total_score':round(exam+ca,2),'total_max':round(exam_max+ca_max,2),
+        'has_data':any(v[1] for v in raw.values()),
     }
 
 def _term_reports_bulk(student_ids, session_id, term, subject_id=None):
-    """Exam(60) + CA(40) = 100 for every student and subject that has anything recorded.
-
-    ``{(student_id, subject_id): report}``. Multiple items in the same category (two tests, say)
-    are combined by summing their raw score and raw maximum together, then scaling the combined
-    total to that category's share of CA_MAX_SCORE - never simply added on top of each other, so
-    one extra test never lets a subject exceed its 100-mark ceiling.
-    """
-    weights=_ca_weights()
+    """The term result of every student and subject that has anything recorded, each by the grading scheme of the
+    student's level that session (core/grading.py): ``{(student_id, subject_id): report}``. Four queries for however
+    many students: their marks (three) and their classes' levels (one); the schemes themselves are cached."""
+    from core import grading
     sums=_term_raw_sums(student_ids,session_id,term,subject_id)
-    none=(0,0)
-    keys=set().union(*(set(v) for v in sums.values()))
-    return {key:_assemble_term_report(weights,sums['exam'].get(key,none),sums['test'].get(key,none),
-                                      sums['assignment'].get(key,none),sums['project'].get(key,none))
-            for key in keys}
+    if not sums: return {}
+    levels=grading.student_levels({k[0] for k in sums},session_id)
+    return {key:_assemble_term_report(grading.scheme_for(session_id,levels.get(key[0])),raw) for key,raw in sums.items()}
 
 def _term_subject_report(student_id, session_id, term, subject_id):
-    """A student's Exam(60) + CA(40) = 100 breakdown for one subject in one term.
+    """A student's term result for one subject, by their level's grading scheme.
 
     The same arithmetic as ``_term_reports_bulk``, for one student and one subject. A subject with
     nothing recorded gives all zeros and ``has_data`` False.
     """
     found=_term_reports_bulk([student_id],session_id,term,subject_id).get((student_id,subject_id))
     if found is not None: return found
-    none=(0,0)
-    return _assemble_term_report(_ca_weights(),none,none,none,none)
+    from core import grading
+    level=grading.student_levels([student_id],session_id).get(student_id)
+    return _assemble_term_report(grading.scheme_for(session_id,level),{})
 
 def _student_term_subjects(student_id, session_id, term):
     """Every subject this student has any exam/test/assignment/project record
@@ -511,6 +535,24 @@ def _student_term_periods(student_id):
     out.sort(key=lambda p:(-p['session_id'],-term_order.get(p['term'],-1)))
     return out
 
+def _ca_part_choices():
+    """For a test's "counts as" choice: ``[(key, name)]`` of the typed-in CA parts the current session's grading schemes
+    have (core/grading.py), each with the names the levels give it. Empty when no level has one."""
+    from core import grading
+    current=_school_current_session()
+    if not current: return []
+    names={}
+    for scheme in grading.schemes_for(current['id'])[0].values():
+        for p in scheme['parts']:
+            if p['from']=='entered': names.setdefault(p['key'],[]).append(p['label'])
+    return [(k,' / '.join(dict.fromkeys(names[k]))) for k in grading.ENTERED_KEYS if k in names]
+
+def _ca_part_from_form(kind):
+    """The "counts as" a test form sent: a typed-in part's key, or None (the Test part). Anything else is None."""
+    from core.grading import ENTERED_KEYS
+    wanted=request.form.get('ca_part','').strip()
+    return wanted if kind=='test' and wanted in ENTERED_KEYS else None
+
 def _school_assessment_new(kind):
     classes,subjects,_,session_row=_school_form_context()
     classes=_without_early_years(classes)
@@ -529,16 +571,16 @@ def _school_assessment_new(kind):
         # Practice is always taken online; a test or examination is sat on the computer or on paper.
         delivery=request.form.get('delivery','cbt') if kind!='practice' else 'cbt'
         if delivery not in ('cbt','printed'): errors.append('Choose how students sit it.')
-        if errors: return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=request.form,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=errors)
+        if errors: return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=request.form,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=errors,ca_parts=_ca_part_choices())
         now=datetime.now(timezone.utc).isoformat()
         assessment=SchoolAssessment(assessment_type=kind,title=title,instructions=instructions,
                                     class_id=cid,subject_id=sid,session_id=session_id,
                                     duration_minutes=duration,question_count=0,active=0,
                                     created_by=current_admin()['id'],created_at=now,
-                                    term=term or 'Full Session',delivery=delivery)
+                                    term=term or 'Full Session',delivery=delivery,ca_part=_ca_part_from_form(kind))
         db.session.add(assessment); db.session.flush(); aid=assessment.id
         db.session.commit(); audit_log('school_assessment_created','school',kind,aid,{'class_id':cid,'subject_id':sid,'term':term,'delivery':delivery}); flash(f'{_school_assessment_title(kind)} item created. Add questions next.','success'); return redirect(url_for('admin_school_assessment_detail',assessment_id=aid))
-    return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=None,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=[])
+    return render_template('school_assessment_form.html',mode='new',assessment_type=kind,assessment=None,classes=classes,subjects=subjects,sessions=_school_sessions(),terms=ACADEMIC_TERMS,errors=[],ca_parts=_ca_part_choices())
 
 def _result_with_context(result_id, with_subject=True):
     """A result row plus the student, class and (optionally) subject names."""

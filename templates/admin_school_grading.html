@@ -1,0 +1,178 @@
+{% extends "admin_base.html" %}
+{% block title %}Grading and scores — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Results & report cards > Grading and scores (blueprints/school/grading.py, core/grading.py): for one
+    session, each level's score split (the Exam and up to four CA parts, adding up to 100) and its grade scale. One form
+    for all four levels; the tabs only choose which is shown. Rows are laid out with CSS grid, not tables, so they always
+    fit their card. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  .gr-level { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+  .gr-level[hidden] { display: none; }
+  .gr-level > .fi-p { grid-column: auto; margin: 0; }
+  @media (max-width: 1080px) { .gr-level { grid-template-columns: 1fr; } }
+  .gr-row { display: grid; gap: 6px; align-items: center; padding: 2px 0; }
+  .gr-parts .gr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 72px 22px; }
+  .gr-bands .gr-row { grid-template-columns: 72px minmax(0, .7fr) minmax(0, 1.5fr) 22px; }
+  .gr-head { font-size: 11px; font-weight: 600; color: var(--ac-muted); padding-bottom: 0; }
+  .gr-head .n, .gr-row .n input { text-align: right; }
+  .ac .gr-row input, .ac .gr-row select { width: 100%; min-width: 0; box-sizing: border-box; }
+  .gr-exam { border-top: 1px solid var(--ac-grid); margin-top: 4px; padding-top: 6px; font-size: 12px; }
+  .gr-exam .ac-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gr-x { border: 0; background: none; padding: 0; font-size: 16px; line-height: 1; color: var(--ac-muted); cursor: pointer; }
+  .gr-x:hover { color: var(--ac-attn); }
+  .gr-total { font-size: 12px; white-space: nowrap; }
+  .gr-presets { font-size: 11px; color: var(--ac-muted); }
+  .gr-presets .ac-link { font-size: 11px; }
+</style>
+<div class="ac fi gr" data-gr data-max-parts="{{ max_parts }}" data-max-bands="{{ max_bands }}">
+
+<form method="get" action="{{ url_for('admin_school_grading') }}" class="fi-inline" style="margin-bottom:8px">
+  <label>Session <select class="ac-select" name="session_id" data-autosubmit aria-label="Session">
+    {% for s in sessions %}<option value="{{ s.id }}" {% if s.id == chosen.id %}selected{% endif %}>{{ s.name }}{% if s.is_current %} · current{% endif %}</option>{% endfor %}</select></label>
+  <span class="ac-hint">{% if own %}{{ chosen.name }} has its own grading.{% elif inherited %}{{ chosen.name }} carries on the grading of {{ inherited }} until you save.{% else %}{{ chosen.name }} uses the school's original grading until you save.{% endif %}
+    Saving changes this session's report cards only.</span>
+</form>
+
+{% if errors %}<div class="ac-errors" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form method="post" action="{{ url_for('admin_school_grading', session_id=chosen.id) }}" data-gr-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="level" value="{{ tab }}" data-gr-level>
+  <nav class="fi-seg" aria-label="Level" style="margin-bottom:8px">
+    {% for key, name in levels %}<a href="#gr-{{ key }}" data-gr-tab="{{ key }}" class="{{ 'is-active' if key == tab }}">{{ name }}</a>{% endfor %}
+  </nav>
+
+  {% for key, name in levels %}{% set s = schemes[key] %}
+  <div class="gr-level" id="gr-{{ key }}" data-gr-panel="{{ key }}" data-key="{{ key }}" {% if key != tab %}hidden{% endif %}>
+    <section class="fi-p gr-parts" aria-label="{{ name }} score split">
+      <div class="fi-h"><h2>Score split <small>{{ name }}: each subject's term result, out of 100</small></h2><b class="gr-total" data-gr-total></b></div>
+      <div class="gr-row gr-head"><span>Part</span><span>Marks come from</span><span class="n">Out of</span><span></span></div>
+      <div data-gr-parts>
+        {% for p in s.parts %}
+        <div class="gr-row" data-gr-part>
+          <input class="ac-input" name="{{ key }}-part-label" maxlength="20" value="{{ p.label }}" aria-label="Name of the part" required>
+          <select class="ac-select" name="{{ key }}-part-from" aria-label="Where its marks come from">
+            {% for sk, sn in sources.items() %}<option value="{{ sk }}" {% if (p['from'] or 'entered') == sk %}selected{% endif %}>{{ sn }}</option>{% endfor %}</select>
+          <span class="n"><input class="ac-input" type="number" name="{{ key }}-part-max" min="0" max="100" step="0.5" value="{{ p.max }}" aria-label="Out of" data-gr-mark required></span>
+          <button type="button" class="gr-x" data-gr-drop aria-label="Remove this part" title="Remove this part">×</button>
+        </div>{% endfor %}
+      </div>
+      <div class="gr-row gr-exam"><b>Exam</b><span class="ac-hint" title="Examinations, and marks typed in as Exam">Examinations, and marks typed in as Exam</span>
+        <span class="n"><input class="ac-input" type="number" name="{{ key }}-exam" min="0" max="100" step="0.5" value="{{ s.exam_max }}" required aria-label="Exam out of" data-gr-mark></span><span></span></div>
+      <div class="fi-row"><button type="button" class="ac-btn ac-btn--sm" data-gr-addpart>+ Add a CA part</button>
+        <span class="ac-hint">Up to {{ max_parts }}. "Typed in by the teacher" gives a box on the score sheet (CA1, CA2...).</span></div>
+    </section>
+    <section class="fi-p gr-bands" aria-label="{{ name }} grade scale">
+      <div class="fi-h"><h2>Grade scale <small>{{ name }}</small></h2>
+        <span class="gr-presets">Start from: {% for pk, preset in presets.items() %}<button type="button" class="ac-link" data-gr-preset="{{ pk }}">{{ preset.name }}</button>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+      <div class="gr-row gr-head"><span class="n">From %</span><span>Grade</span><span>Remark</span><span></span></div>
+      <div data-gr-bands>
+        {% for b in s.scale %}<div class="gr-row" data-gr-band>
+          <span class="n"><input class="ac-input" type="number" name="{{ key }}-band-min" min="0" max="100" step="0.5" value="{{ b[0] }}" aria-label="Lowest percentage"></span>
+          <input class="ac-input" name="{{ key }}-band-grade" maxlength="20" value="{{ b[1] }}" aria-label="Grade">
+          <input class="ac-input" name="{{ key }}-band-remark" maxlength="30" value="{{ b[2] }}" aria-label="Remark">
+          <button type="button" class="gr-x" data-gr-remove aria-label="Remove this band" title="Remove this band">×</button>
+        </div>{% endfor %}
+      </div>
+      <div class="fi-row"><button type="button" class="ac-btn ac-btn--sm" data-gr-add>+ Add a band</button>
+        <span class="ac-hint">Highest first. The lowest band always starts at 0.</span></div>
+    </section>
+  </div>
+  {% endfor %}
+  {#- A new CA part's row, copied in by "+ Add a CA part" (its field names take the level's prefix). -#}
+  <template data-gr-part-template>
+    <div class="gr-row" data-gr-part>
+      <input class="ac-input" data-name="part-label" maxlength="20" aria-label="Name of the part" required>
+      <select class="ac-select" data-name="part-from" aria-label="Where its marks come from">
+        {% for sk, sn in sources.items() %}<option value="{{ sk }}" {% if sk == 'entered' %}selected{% endif %}>{{ sn }}</option>{% endfor %}</select>
+      <span class="n"><input class="ac-input" type="number" data-name="part-max" min="0" max="100" step="0.5" aria-label="Out of" data-gr-mark required></span>
+      <button type="button" class="gr-x" data-gr-drop aria-label="Remove this part" title="Remove this part">×</button>
+    </div>
+  </template>
+
+  <div class="ac-form-foot">
+    <button type="button" class="ac-btn" data-gr-copy>Copy this level to every level</button>
+    <span class="ac-grow"></span>
+    <button class="ac-btn ac-btn--primary" type="submit">Save grading for {{ chosen.name }}</button>
+  </div>
+</form>
+</div>
+<script nonce="{{ csp_nonce() }}">
+(function(){
+  var root=document.querySelector('[data-gr]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
+  var presets={{ presets|tojson }}, MAXB=Number(root.dataset.maxBands), MAXP=Number(root.dataset.maxParts);
+  var levelInput=root.querySelector('[data-gr-level]'), partTpl=root.querySelector('[data-gr-part-template]');
+  function panels(){ return root.querySelectorAll('[data-gr-panel]'); }
+  function show(key){
+    panels().forEach(function(p){ p.hidden=p.dataset.grPanel!==key; });
+    root.querySelectorAll('[data-gr-tab]').forEach(function(a){ a.classList.toggle('is-active',a.dataset.grTab===key); });
+    levelInput.value=key;
+  }
+  root.querySelectorAll('[data-gr-tab]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); show(a.dataset.grTab); }); });
+  function total(panel){
+    var sum=0; panel.querySelectorAll('[data-gr-mark]').forEach(function(i){ sum+=Number(i.value||0); });
+    sum=Math.round(sum*100)/100;
+    var t=panel.querySelector('[data-gr-total]'); t.textContent=sum===100?'100 ✓':sum+' of 100';
+    t.classList.toggle('fi-owe',sum!==100);
+  }
+  function newPart(panel){
+    var row=partTpl.content.firstElementChild.cloneNode(true), key=panel.dataset.key;
+    row.querySelectorAll('[data-name]').forEach(function(el){ el.name=key+'-'+el.dataset.name; });
+    panel.querySelector('[data-gr-parts]').appendChild(row); return row;
+  }
+  function newBand(panel,b){
+    var list=panel.querySelector('[data-gr-bands]'), row=list.querySelector('[data-gr-band]').cloneNode(true);
+    var ins=row.querySelectorAll('input'); ins[0].value=b?b[0]:''; ins[1].value=b?b[1]:''; ins[2].value=b?b[2]:'';
+    list.appendChild(row); return row;
+  }
+  function partsLeft(panel){ panel.querySelector('[data-gr-addpart]').disabled=panel.querySelectorAll('[data-gr-part]').length>=MAXP; }
+  function setScale(panel,scale){
+    var rows=panel.querySelectorAll('[data-gr-band]');
+    for(var i=1;i<rows.length;i++) rows[i].remove();
+    var ins=panel.querySelector('[data-gr-band]').querySelectorAll('input');
+    ins[0].value=scale[0][0]; ins[1].value=scale[0][1]; ins[2].value=scale[0][2];
+    scale.slice(1).forEach(function(b){ newBand(panel,b); });
+  }
+  panels().forEach(function(panel){
+    total(panel); partsLeft(panel);
+    panel.addEventListener('input',function(e){ if(e.target.matches('[data-gr-mark]')) total(panel); });
+    panel.querySelector('[data-gr-addpart]').addEventListener('click',function(){
+      if(panel.querySelectorAll('[data-gr-part]').length>=MAXP) return;
+      var row=newPart(panel); row.querySelector('input').value='CA'+panel.querySelectorAll('[data-gr-part]').length;
+      row.querySelector('[data-gr-mark]').focus(); partsLeft(panel);
+    });
+    panel.querySelector('[data-gr-add]').addEventListener('click',function(){
+      if(panel.querySelectorAll('[data-gr-band]').length>=MAXB) return;
+      newBand(panel,null).querySelector('input').focus();
+    });
+    panel.addEventListener('click',function(e){
+      var drop=e.target.closest('[data-gr-drop]');
+      if(drop){ drop.closest('[data-gr-part]').remove(); total(panel); partsLeft(panel); return; }
+      var rm=e.target.closest('[data-gr-remove]');
+      if(rm && panel.querySelectorAll('[data-gr-band]').length>2) rm.closest('[data-gr-band]').remove();
+    });
+    panel.querySelectorAll('[data-gr-preset]').forEach(function(btn){
+      btn.addEventListener('click',function(){ setScale(panel,presets[btn.dataset.grPreset].scale); });
+    });
+  });
+  root.querySelector('[data-gr-copy]').addEventListener('click',function(){
+    var from=root.querySelector('[data-gr-panel]:not([hidden])');
+    var scale=Array.prototype.map.call(from.querySelectorAll('[data-gr-band]'),function(r){
+      return Array.prototype.map.call(r.querySelectorAll('input'),function(x){ return x.value; }); });
+    panels().forEach(function(to){
+      if(to===from) return;
+      to.querySelectorAll('[data-gr-part]').forEach(function(r){ r.remove(); });
+      from.querySelectorAll('[data-gr-part]').forEach(function(r){
+        var src=r.querySelectorAll('input, select'), dst=newPart(to).querySelectorAll('input, select');
+        src.forEach(function(el,i){ dst[i].value=el.value; });
+      });
+      to.querySelector('[name$="-exam"]').value=from.querySelector('[name$="-exam"]').value;
+      setScale(to,scale); total(to); partsLeft(to);
+    });
+    root.querySelector('[data-gr-copy]').textContent='Copied to every level: save to keep it';
+  });
+})();
+</script>
+{% endblock %}

@@ -51,7 +51,7 @@ from blueprints.school.results_records import results_return_url
 from blueprints.parents.helpers import _new_parent_password
 from blueprints.school.helpers import (
     ACADEMIC_HISTORY_LEVELS, PROMOTION_ACTIONS, PROMOTION_DECISIONS,
-    _assignment_form_data, _assignment_students, _ca_weights, _finite, _result_term,
+    _assignment_form_data, _assignment_students, _ca_part_choices, _ca_part_from_form, _ca_weights, _finite, _result_term,
     _mark_latest_history_current, _notify_school_work, _promotion_audit,
     _promotion_classes, _promotion_current_enrolments,
     _promotion_existing_target_enrolment, _promotion_next_class,
@@ -1520,7 +1520,8 @@ def admin_school_assessment_detail(assessment_id):
     return render_template('school_assessment_detail.html',assessment=a,questions=questions,sessions=_school_sessions(),terms=ACADEMIC_TERMS,
                            record=record,record_kinds=exam_integrity.KINDS,
                            split=split,limits={'guide':theory_marking.MARKING_GUIDE_LIMIT,'marks':theory_marking.MAX_QUESTION_MARKS},
-                           delivery_locked=not printed_papers.can_change_delivery(assessment_id))
+                           delivery_locked=not printed_papers.can_change_delivery(assessment_id),
+                           ca_parts=_ca_part_choices() if a['assessment_type']=='test' else [])
 
 def _exam_mode_record(assessment_id,a):
     """Every student who has started the paper (and whom this teacher teaches), with what exam mode recorded."""
@@ -1566,6 +1567,8 @@ def admin_school_assessment_edit(assessment_id):
         flash('Students have already sat this, so whether it is on the computer or on paper can no longer change.','error'); return redirect(url_for('admin_school_assessment_detail',assessment_id=assessment_id))
     values={'title':title,'instructions':instructions,'class_id':cid,'subject_id':sid,'session_id':session_id,
             'duration_minutes':duration,'term':term or 'Full Session','delivery':wanted}
+    if 'ca_part' in request.form and a['assessment_type']=='test':
+        values['ca_part']=_ca_part_from_form('test')    # which part of the term result it counts as (core/grading.py)
     if request.form.get('exam_settings')=='1' and a['assessment_type']!='practice':
         # Exam mode (core/exam_integrity.py), shuffling, and ending the paper after leaving it too often.
         raw_limit=(request.form.get('exam_leave_limit') or '').strip()
@@ -1769,6 +1772,11 @@ def admin_school_assessment_delete(assessment_id):
     db.session.commit()
     audit_log('school_assessment_deleted','school',assessment_type,assessment_id); flash('Assessment deleted.','success'); return redirect(url_for('admin_school_home'))
 
+def _class_scheme(class_id, session_id):
+    """The grading scheme of a class's level in a session (core/grading.py)."""
+    from core import grading
+    return grading.scheme_for(session_id,grading.class_levels([class_id]).get(class_id) if class_id else None)
+
 @app.route('/admin/school/results/manual/new',methods=['GET','POST'])
 @admin_required
 @csrf_protect
@@ -1839,12 +1847,16 @@ def admin_school_result_manual_new():
         ids=[x['id'] for x in listed]
         after=ids[ids.index(student_id)+1:] if student_id in ids else ids
         next_id=next((i for i in after if i not in marks),None)
+        scheme=_class_scheme(class_id,session_id)
         return render_template('school_result_manual_form.html',sessions=sessions,classes=classes,subjects=subjects,
             students=listed,existing=existing_rows(),errors=errors,form=form,class_row=class_row,student_row=student_row,
             subject_row=next((x for x in subjects if x['id']==subject_id),None),session_id=session_id,term=term,
             marks=marks,done=sum(1 for i in ids if i in marks),next_id=next_id,
-            test_max=request.values.get('tmax') or (form.get('test_max') if form else '') or CA_MAX_SCORE,
-            exam_max=request.values.get('emax') or (form.get('exam_max') if form else '') or EXAM_MAX_SCORE)
+            has_test=any(p['from']=='test' for p in scheme['parts']),
+            typed_parts=[p for p in scheme['parts'] if p['from']=='entered'],
+            test_max=request.values.get('tmax') or (form.get('test_max') if form else '')
+                or f"{next((p['max'] for p in scheme['parts'] if p['from']=='test'),CA_MAX_SCORE):g}",
+            exam_max=request.values.get('emax') or (form.get('exam_max') if form else '') or f"{scheme['exam_max']:g}")
 
     errors=[]
     if request.method=='POST':
@@ -1861,17 +1873,30 @@ def admin_school_result_manual_new():
         if not subject: errors.append('Select a subject that has been created for the selected class.')
         if not _school_class_allowed(me['id'],class_id): errors.append('The selected class is outside your authorised scope.')
         elif student and subject and not _student_subject_allowed(me['id'],student_id,class_id,subject_id): errors.append('You do not teach this subject to the selected student (check the class, subject and, in SSS, the department).')
-        if not took:
-            if not absence: errors.append('State why the student did not take the test.')
-        else:
-            if test_score is None or test_max is None or test_max<=0 or test_score<0 or test_score>test_max: errors.append('Enter a valid Test score and maximum score.')
+        # What is typed in follows the class's grading scheme (core/grading.py): the Test (when the scheme has a Test
+        # part), each typed-in CA part (CA1, CA2... each optional: blank is not taken yet), and the Exam.
+        scheme=_class_scheme(class_id,session_id)
+        has_test=any(p['from']=='test' for p in scheme['parts'])
+        typed=[]
+        for p in (x for x in scheme['parts'] if x['from']=='entered'):
+            try: ps=num(f"part_{p['key']}_score"); pm=num(f"part_{p['key']}_max")
+            except (TypeError,ValueError): ps=pm=-1
+            if ps is None: continue
+            if pm is None or pm<=0 or ps<0 or ps>pm: errors.append(f"Enter a valid {p['label']} score and maximum score, or leave it empty.")
+            else: typed.append((p['key'].upper(),ps,pm,None))
+        if has_test:
+            if not took:
+                if not absence: errors.append('State why the student did not take the test.')
+            else:
+                if test_score is None or test_max is None or test_max<=0 or test_score<0 or test_score>test_max: errors.append('Enter a valid Test score and maximum score.')
         if exam_score is None or exam_max is None or exam_max<=0 or exam_score<0: errors.append('Enter a valid Exam score and maximum score.')
         exam_reason=request.form.get('exam_override_reason','').strip()
         if exam_score is not None and exam_max is not None and exam_score>exam_max and not exam_reason: errors.append('An Exam score above its selected maximum requires an approved exception reason.')
         if errors:
             return page(errors,request.form)
         now=datetime.now(timezone.utc).isoformat(); actor=me['id']
-        components=[('Test',test_score,test_max,None)] if took else [('Test — Absent',None,None,absence)]
+        components=([('Test',test_score,test_max,None)] if took else [('Test — Absent',None,None,absence)]) if has_test else []
+        components+=typed
         components.append(('Exam',exam_score,exam_max,exam_reason or None))
         for component,score,max_score,reason in components:
             row=db.session.scalars(select(SchoolStudentResult).where(

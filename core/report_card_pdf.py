@@ -652,22 +652,35 @@ def _results_table(card, theme, styles):
             text += '/' + _num(subject.get(max_key))
         return _p(text, styles['td_r'])
 
-    # (heading, width in mm before scaling) for each column.
-    columns = [('subject', 34), ('test', 12), ('assignment', 19), ('project', 13), ('ca', 13), ('exam', 13),
-               ('total', 14)] + ([('average', 14)] if has_average else []) + [('grade', 12), ('remark', 41)]
+    # The CA parts of the level's grading scheme (core/grading.py), each its own column under its own name; a card made
+    # before schemes had parts has the original Test, Assignment and Project.
+    first = next((s for s in subjects if isinstance(s.get('parts'), list)), None)
+    if first is not None:
+        labels = [_line(p.get('label'), 20) for p in first['parts'] if isinstance(p, dict)]
+    else:
+        labels = ['Test', 'Assignment', 'Project']
+    part_keys = [f'part{i}' for i in range(len(labels))]
+
+    def part_value(subject, i):
+        parts = subject.get('parts')
+        if isinstance(parts, list):
+            return parts[i].get('score') if i < len(parts) and isinstance(parts[i], dict) else None
+        return subject.get(('test', 'assignment', 'project')[i])
+
+    # (heading, width in mm before scaling) for each column. With one CA part, its own column is the CA.
+    columns = ([('subject', 34)] + [(k, max(11, min(19, len(lbl) * 2.2))) for k, lbl in zip(part_keys, labels)]
+               + ([('ca', 13)] if len(labels) != 1 else []) + [('exam', 13), ('total', 14)]
+               + ([('average', 14)] if has_average else []) + [('grade', 12), ('remark', 41)])
     scale = CONTENT_W / (sum(width for _, width in columns) * mm)
     widths = [width * mm * scale for _, width in columns]
 
-    heads = {'subject': _p('Subject', styles['th_left']), 'test': head('Test'), 'assignment': head('Assignment'),
-             'project': head('Project'), 'ca': head('CA', 'ca_max'), 'exam': head('Exam', 'exam_max'),
+    heads = {'subject': _p('Subject', styles['th_left']), 'ca': head('CA', 'ca_max'), 'exam': head('Exam', 'exam_max'),
              'total': head('Total', 'total_max'), 'average': head('Class avg'), 'grade': head('Grade'),
              'remark': _p('Remark', styles['th_left'])}
+    heads.update({k: head(lbl or 'CA') for k, lbl in zip(part_keys, labels)})
     rows = [[heads[key] for key, _ in columns]]
     for subject in subjects:
         cells = {'subject': _p(_line(subject.get('name'), 120) or '-', styles['td']),
-                 'test': _p(_num(subject.get('test')), styles['td_r']),
-                 'assignment': _p(_num(subject.get('assignment')), styles['td_r']),
-                 'project': _p(_num(subject.get('project')), styles['td_r']),
                  'ca': scored(subject, 'ca', 'ca_max'), 'exam': scored(subject, 'exam', 'exam_max'),
                  'total': _p(_num(subject.get('total')) + ('' if shared.get('total_max') or
                                                            _to_float(subject.get('total_max')) is None
@@ -675,6 +688,7 @@ def _results_table(card, theme, styles):
                  'average': _p(_num(subject.get('class_average')), styles['td_r']),
                  'grade': _p(_line(subject.get('grade'), 12) or '-', styles['td_c']),
                  'remark': _p(_line(subject.get('remark'), 160), styles['td'])}
+        cells.update({k: _p(_num(part_value(subject, i)), styles['td_r']) for i, k in enumerate(part_keys)})
         rows.append([cells[key] for key, _ in columns])
 
     style = [('BACKGROUND', (0, 0), (-1, 0), theme.primary), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -860,6 +874,43 @@ def _grading_key(card, theme, styles):
     return [KeepTogether(parts)] if parts else []
 
 
+def _cumulative_table(card, theme, styles):
+    """On a Third Term card: each subject's marks in the three terms and their average, and the session average,
+    grade and position (blueprints/school/report_card_data._cumulative_card)."""
+    cum = _dict(card, 'cumulative')
+    subjects = [s for s in (cum.get('subjects') or []) if isinstance(s, dict)] if cum else []
+    if not subjects:
+        return []
+    columns = [('name', 46), ('first', 18), ('second', 18), ('third', 18), ('average', 18), ('grade', 14), ('remark', 34)]
+    scale = CONTENT_W / (sum(w for _, w in columns) * mm)
+    heads = {'name': _p('Subject', styles['th_left']), 'first': _p('1st Term', styles['th']),
+             'second': _p('2nd Term', styles['th']), 'third': _p('3rd Term', styles['th']),
+             'average': _p('Average', styles['th']), 'grade': _p('Grade', styles['th']), 'remark': _p('Remark', styles['th_left'])}
+    rows = [[heads[k] for k, _ in columns]]
+    for s in subjects:
+        cell = {'name': _p(_line(s.get('name'), 120) or '-', styles['td']), 'grade': _p(_line(s.get('grade'), 20), styles['td_c']),
+                'remark': _p(_line(s.get('remark'), 60), styles['td'])}
+        for k in ('first', 'second', 'third'):
+            cell[k] = _p(_num(s.get(k)) if _to_float(s.get(k)) is not None else '-', styles['td_r'])
+        cell['average'] = _p(_num(s.get('average')), styles['td_rb'])
+        rows.append([cell[k] for k, _ in columns])
+    table = Table(rows, colWidths=[w * mm * scale for _, w in columns], repeatRows=1)
+    table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), theme.primary), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                               ('GRID', (0, 0), (-1, -1), 0.4, theme.line), ('BOX', (0, 0), (-1, -1), 0.8, theme.primary),
+                               ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, theme.tint]),
+                               ('TOPPADDING', (0, 0), (-1, -1), 2.2), ('BOTTOMPADDING', (0, 0), (-1, -1), 2.2),
+                               ('LEFTPADDING', (0, 0), (-1, -1), 3), ('RIGHTPADDING', (0, 0), (-1, -1), 3)]))
+    line = ['Session average: ' + _percent(cum.get('average'))]
+    if cum.get('grade'):
+        line.append(' - '.join(p for p in (_line(cum.get('grade'), 20), _line(cum.get('remark'), 40)) if p))
+    if cum.get('position'):
+        n = int(cum['position'])
+        suffix = 'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+        line.append(f'Position for the session: {n}{suffix}' + (f" of {cum['class_size']}" if cum.get('class_size') else ''))
+    return [_p('The session so far', styles['head']), table, Spacer(1, 1.5 * mm),
+            _p(' · '.join(line), styles['td']), Spacer(1, 4 * mm)]
+
+
 def _card_story(card, number, state, pictures):
     """Everything on one card, as a list of reportlab flowables."""
     school = _dict(card, 'school')
@@ -873,6 +924,7 @@ def _card_story(card, number, state, pictures):
     story += table
     if has_subjects:
         story += _summary_strip(card, theme, styles)
+    story += _cumulative_table(card, theme, styles)
     story += _traits_block(card, theme, styles)
     story += _comment_and_signatures(card, theme, styles, pictures)
     story += _grading_key(card, theme, styles)

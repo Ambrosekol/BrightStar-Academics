@@ -238,11 +238,21 @@ Each area is explained for staff in the **staff guide** (`/admin/guide` on any s
 
 - **Work**: assignments and projects (written or quiz), tests, examinations and practice, sharing one attempt and
   grading model; issued to a whole class at once; work with marks cannot be deleted, other work can be restored.
-- **Results**: Exam 60 + CA 40, a workflow recorded → sent to the class teacher → released, and a school-wide release
-  date.
+- **Results**: a workflow recorded → sent to the class teacher → released, and a school-wide release date.
+- **Grading and scores** (`core/grading.py`, `blueprints/school/grading.py`): per level (nursery, primary, JSS, SSS) and
+  per session, the score split (the Exam and up to four CA parts, typed in or from tests, assignments and projects,
+  adding up to 100) and the grade scale (A to F, WAEC's A1 to F9, or words). Saving one session first writes down what
+  every other session uses, so old cards never change; a later session carries the latest grading on.
 - **Report cards** are worked out from the released results (never stored), as a page and a PDF: the school's identity,
-  CA and exam per subject with grade and remark, class averages, trait ratings, the class teacher's comment and
-  signature, the head's signature. A card appears only when every result of the term is released.
+  each CA part and the exam per subject with grade and remark, class averages, trait ratings, the class teacher's
+  comment and signature, the head's signature. A card appears only when every result of the term is released. A Third
+  Term card adds the session so far (each term, the average, the session position).
+- **Broadsheet** (`blueprints/school/broadsheet.py`): a class's every subject, totals, averages and positions for a term
+  or the session; printable and as a CSV.
+- **Documents** (`blueprints/school/documents.py`): testimonials, transcripts and leaving certificates, numbered, kept
+  as issued, revocable with a reason, designed in the documents studio (`core/document_design.py`).
+- **Exam registration** (`blueprints/school/exam_registration.py`): WAEC, NECO and BECE candidates checked for missing
+  details, as a CSV and a ZIP of passport photographs.
 - **Promotion** between sessions, in drafts the School Admin approves.
 
 ### Attendance and timetables

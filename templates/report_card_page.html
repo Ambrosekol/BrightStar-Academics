@@ -34,6 +34,7 @@
   .rc-results tr:nth-child(even) td { background: #f6f9fc; }
   .rc-results td.subject { font-weight: 600; }
   .rc-results th small { display: block; font-weight: 400; opacity: .85; }
+  .rc-subhead { margin: 4px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--rc-primary); }
   .rc-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 14px; }
   .rc-summary div { border: 1px solid var(--rc-line); border-top: 3px solid var(--rc-accent); border-radius: 6px; padding: 7px 9px; }
   .rc-summary span { display: block; font-size: 11px; color: #4d5b69; text-transform: uppercase; letter-spacing: .4px; }
@@ -101,7 +102,7 @@
 </main>
 <script type="application/json" id="rcdData" nonce="{{ csp_nonce() }}">{{ {'layout': card.design.layout, 'view': card.design.view}|tojson }}</script>
 <script src="{{ url_for('static', filename='id-card-render.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='report-card-render.js', v='4') }}"></script>
+<script src="{{ url_for('static', filename='report-card-render.js', v='5') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var data = JSON.parse(document.getElementById('rcdData').textContent), R = window.IdCardRender;
@@ -150,11 +151,15 @@
   </section>
 
   {% set has_avg = card.subjects | selectattr('class_average') | list | length > 0 %}
+  {#- The CA parts of the level's grading scheme, each under its own name (core/grading.py). -#}
+  {% set parts = card.subjects[0].parts if card.subjects and card.subjects[0].parts is defined else none %}
   <table class="rc-results">
     <thead>
       <tr>
-        <th class="left">Subject</th><th>Test</th><th>Assignment</th><th>Project</th>
-        <th>CA<small>out of {{ card.subjects[0].ca_max if card.subjects else 40 }}</small></th>
+        <th class="left">Subject</th>
+        {% if parts is not none %}{% for p in parts %}<th>{{ p.label }}<small>out of {{ '%g'|format(p.max) }}</small></th>{% endfor %}
+        {% else %}<th>Test</th><th>Assignment</th><th>Project</th>{% endif %}
+        {% if parts is none or parts|length != 1 %}<th>CA<small>out of {{ card.subjects[0].ca_max if card.subjects else 40 }}</small></th>{% endif %}
         <th>Exam<small>out of {{ card.subjects[0].exam_max if card.subjects else 60 }}</small></th>
         <th>Total<small>out of {{ card.subjects[0].total_max if card.subjects else 100 }}</small></th>
         {% if has_avg %}<th>Class avg</th>{% endif %}
@@ -164,13 +169,15 @@
     <tbody>
       {% for s in card.subjects %}
       <tr>
-        <td class="left subject">{{ s.name }}</td><td>{{ s.test }}</td><td>{{ s.assignment }}</td><td>{{ s.project }}</td>
-        <td>{{ s.ca }}</td><td>{{ s.exam }}</td><td><strong>{{ s.total }}</strong></td>
+        <td class="left subject">{{ s.name }}</td>
+        {% if parts is not none %}{% for p in s.parts %}<td>{{ '%g'|format(p.score) }}</td>{% endfor %}
+        {% else %}<td>{{ s.test }}</td><td>{{ s.assignment }}</td><td>{{ s.project }}</td>{% endif %}
+        {% if parts is none or parts|length != 1 %}<td>{{ s.ca }}</td>{% endif %}<td>{{ s.exam }}</td><td><strong>{{ s.total }}</strong></td>
         {% if has_avg %}<td>{{ s.class_average if s.class_average is not none else '—' }}</td>{% endif %}
         <td><strong>{{ s.grade }}</strong></td><td class="left">{{ s.remark }}</td>
       </tr>
       {% else %}
-      <tr><td class="left" colspan="10">No results recorded.</td></tr>
+      <tr><td class="left" colspan="12">No results recorded.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -184,6 +191,24 @@
     {% endif %}
     <div><span>Subjects</span><strong>{{ card.summary.subjects_count }}</strong></div>
   </section>
+
+  {% if card.cumulative and card.cumulative.subjects %}{% set cum = card.cumulative %}
+  {#- On a Third Term card: the three terms of each subject and their average, and the session average and position. -#}
+  <h3 class="rc-subhead">The session so far</h3>
+  <table class="rc-results">
+    <thead><tr><th class="left">Subject</th><th>1st Term</th><th>2nd Term</th><th>3rd Term</th><th>Average</th><th>Grade</th><th class="left">Remark</th></tr></thead>
+    <tbody>{% for s in cum.subjects %}<tr>
+      <td class="left subject">{{ s.name }}</td>
+      {% for v in (s.first, s.second, s.third) %}<td>{{ '%g'|format(v) if v is not none else '—' }}</td>{% endfor %}
+      <td><strong>{{ '%g'|format(s.average) if s.average is not none else '—' }}</strong></td><td><strong>{{ s.grade }}</strong></td><td class="left">{{ s.remark }}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  <section class="rc-summary">
+    <div><span>Session average</span><strong>{{ '%.1f'|format(cum.average) ~ '%' if cum.average is not none else '—' }}</strong></div>
+    {% if cum.grade %}<div><span>Session grade</span><strong>{{ cum.grade }}{% if cum.remark %} — {{ cum.remark }}{% endif %}</strong></div>{% endif %}
+    {% if cum.position %}<div><span>Position for the session</span><strong>{{ cum.position }}{{ 'th' if 10 <= cum.position % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(cum.position % 10, 'th') }}{% if cum.class_size %} of {{ cum.class_size }}{% endif %}</strong></div>{% endif %}
+  </section>
+  {% endif %}
 
   {% if card.traits %}
   <section class="rc-traits">

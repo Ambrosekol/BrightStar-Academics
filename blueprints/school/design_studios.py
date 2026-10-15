@@ -30,19 +30,19 @@ def phone_notice():
 
 
 def _may():
-    """(ID cards, report cards, receipts): which studios the person signed in may open."""
+    """(ID cards, report cards, receipts, documents): which studios the person signed in may open."""
     admin = current_admin()
     if not admin:
-        return False, False, False
+        return False, False, False, False
     return (may_use_studios(admin['id'], 'id_cards.manage'), may_use_studios(admin['id'], 'report_cards.manage'),
-            may_use_studios(admin['id'], 'finance.manage'))
+            may_use_studios(admin['id'], 'finance.manage'), may_use_studios(admin['id'], 'documents.manage'))
 
 
 @app.route('/admin/design-studios')
 @admin_required
 def admin_design_studios():
-    id_cards, report_cards, receipts = _may()
-    if not (id_cards or report_cards or receipts):
+    id_cards, report_cards, receipts, documents = _may()
+    if not (id_cards or report_cards or receipts or documents):
         return admin_access_error('design studios')
     notice = phone_notice()
     if notice:
@@ -53,8 +53,13 @@ def admin_design_studios():
                                 .order_by(ReportCardDesign.id).limit(1)).first() if report_cards else None
     receipt = db.session.execute(select(ReceiptDesign.in_use, ReceiptDesign.locked)
                                  .order_by(ReceiptDesign.id).limit(1)).first() if receipts else None
+    from core.document_design import KINDS
+    from models import DocumentDesign
+    document_designs = {kind: (locked, True) for kind, locked in
+                        db.session.execute(select(DocumentDesign.kind, DocumentDesign.locked)).all()} if documents else {}
     return render_template('school_design_studios.html', id_cards=id_cards, report_cards=report_cards, receipts=receipts,
-                           cards=cards, report=report, receipt=receipt)
+                           cards=cards, report=report, receipt=receipt, documents=documents, document_kinds=KINDS,
+                           document_designs=document_designs)
 
 
 def design_studios_shown():

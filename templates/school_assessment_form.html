@@ -32,6 +32,11 @@
     <div class="ac-fields ac-fields--3">
       <div class="ac-field ac-field--wide"><label for="asTitle">Title</label><input id="asTitle" name="title" value="{{ a.get('title', '') }}" required placeholder="e.g. Mid-term test"></div>
       <div class="ac-field"><label for="asMinutes">Time allowed (minutes)</label><input id="asMinutes" type="number" min="1" name="duration_minutes" value="{{ a.get('duration_minutes') or 30 }}" required></div>
+      {% if assessment_type == 'test' and ca_parts %}
+      <div class="ac-field"><label for="asCaPart">Counts as <span class="ac-hint">in the term result</span></label>
+        <select id="asCaPart" name="ca_part"><option value="">The Test part, as usual</option>
+          {% for key, name in ca_parts %}<option value="{{ key }}" {% if a.get('ca_part') == key %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+      {% endif %}
       {% if assessment_type != 'practice' %}
       <fieldset class="ac-field ac-field--wide acq-kindpick">
         <legend>How students sit it</legend>
