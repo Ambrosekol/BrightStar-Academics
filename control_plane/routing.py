@@ -59,9 +59,24 @@ def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, m
     """
     url = make_url(resolve_db_url(db_url))
     options = {}
+    pooled_outside = url.get_backend_name() == 'postgresql' and config.db_pooler() == 'pgbouncer'
     if url.get_backend_name() == 'sqlite':
         # Same options app.py applies to the single-school database.
         options['connect_args'] = {'timeout': 10, 'check_same_thread': False}
+    elif pooled_outside:
+        # PgBouncer (transaction mode) pools for every worker and school together, under its own
+        # cap: a connection here is handed back the moment the request is done with it, so a quiet
+        # school holds nothing and the server never sees more than PgBouncer allows. psycopg's
+        # automatic prepared statements are named on one server connection and would be looked for
+        # on another, so they are off.
+        options['poolclass'] = sa.pool.NullPool
+        options['connect_args'] = {'prepare_threshold': None}
+        if db_schema:
+            # The search_path below is a connection start-up option, which transaction pooling does
+            # not carry from one transaction to the next: the school's queries could land in another
+            # schema. Refused outright rather than risked.
+            raise ValueError(f'The school in schema {db_schema!r} cannot be reached through PgBouncer in '
+                             'transaction mode: use a database per school (the default) with PgBouncer.')
     else:
         options['pool_pre_ping'] = True
         options['pool_size'] = pool_size if pool_size is not None else int(
@@ -73,8 +88,8 @@ def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, m
                 raise ValueError(f'Invalid database schema name: {db_schema!r}')
             if url.get_backend_name() == 'postgresql':
                 options['connect_args'] = {'options': f'-csearch_path={db_schema}'}
-        if connect_timeout and url.get_backend_name() == 'postgresql':
-            options.setdefault('connect_args', {})['connect_timeout'] = int(connect_timeout)
+    if connect_timeout and url.get_backend_name() == 'postgresql':
+        options.setdefault('connect_args', {})['connect_timeout'] = int(connect_timeout)
     return sa.create_engine(url, **options)
 
 
@@ -159,6 +174,21 @@ def evict_idle_engines(now=None):
                 _engine_last_used.pop(key, None)
                 if engine is not None:
                     engine.dispose()
+
+
+def release_engine(tenant):
+    """Close one school's engine now, instead of when it has been idle long enough.
+
+    For work that opens a school once and moves on - provisioning it, upgrading every school at a
+    deploy - so a run through hundreds of schools never holds a connection to each of them at once.
+    Safe while the school is in use: the next query builds the engine again.
+    """
+    key = (tenant.db_url, tenant.db_schema)
+    with _engines_lock:
+        engine = _engines.pop(key, None)
+        _engine_last_used.pop(key, None)
+    if engine is not None:
+        engine.dispose()
 
 
 def dispose_engines():

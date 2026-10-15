@@ -329,11 +329,14 @@ its column, which the form-submission suite provokes on every route.
 
 ### Operating notes
 
-* Each school has its own connection pool. Total connections ≈ schools × pool
-  size × worker processes — size PostgreSQL `max_connections` (or put a pooler in
-  front) accordingly. With PgBouncer in *transaction* mode, `search_path` set via
-  connection options is not preserved: use database-per-school, or session
-  pooling, with schema-per-school.
+* Each school has its own connection pool, closed after a minute of quiet and
+  as soon as provisioning or an upgrade is done with the school. Total
+  connections ≈ busy schools × pool size × worker processes. For hundreds of
+  schools, run PgBouncer in *transaction* mode and set
+  `BRIGHTSTARS_DB_POOLER=pgbouncer` (no application pools, no prepared
+  statements; `move-db-address` repoints existing schools). `search_path` set via
+  connection options is not preserved by transaction pooling, so a
+  schema-per-school tenant is refused in that mode: use database-per-school.
 * Startup upgrades every school sequentially; with many schools, move to
   upgrade-on-deploy (`python -m control_plane upgrade`) and skip it at start.
 * Backups are per database (or per schema) — one school can be restored without

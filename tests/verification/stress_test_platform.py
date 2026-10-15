@@ -63,6 +63,8 @@ p.add_argument("--seed-workers", type=int, default=12, help="schools seeded in p
 p.add_argument("--max-minutes", type=float, default=30.0, help="hard wall-clock cap for the whole run")
 p.add_argument("--keep", action="store_true", help="skip teardown, leave the throwaway databases in place")
 p.add_argument("--seed-only", action="store_true", help="provision and seed, then stop before the ramp")
+p.add_argument("--tag", default="stress", help="names this run's throwaway databases (bs_test_<tag>_...), "
+                                               "to tell two runs apart")
 args = p.parse_args()
 
 RAMP = [int(x) for x in args.ramp.split(",") if x.strip()]
@@ -70,7 +72,7 @@ DEADLINE = time.monotonic() + args.max_minutes * 60
 
 import _pg  # noqa: E402  (same folder)
 
-PREFIX, teardown = _pg.setup("stress")
+PREFIX, teardown = _pg.setup(args.tag)
 os.environ.update({
     "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
     "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
@@ -85,6 +87,7 @@ import app as A  # noqa: E402
 from control_plane import provisioning as pv  # noqa: E402
 from control_plane.context import tenant_context  # noqa: E402
 from control_plane.registry import platform_engine  # noqa: E402
+from control_plane.routing import release_engine  # noqa: E402
 from control_plane.ratelimit import allow as rate_limit_allow  # noqa: E402
 from blueprints.auth.routes import _authenticate_unified  # noqa: E402
 from core.db_helpers import insert_stmt  # noqa: E402
@@ -188,6 +191,7 @@ def seed_one(info):
             db.session.execute(sa.insert(ParentStudentLink), batch)
 
         db.session.commit()
+    release_engine(info)        # set-up, not load: like provisioning, it does not keep the school's connections
     return n_staff, n_students, n_parents
 
 

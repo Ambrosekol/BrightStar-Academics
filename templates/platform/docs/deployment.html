@@ -24,9 +24,54 @@
   <li>PostgreSQL 14 or newer (tested on 18). One server can hold the registry and every school's database.</li>
   <li>A role that can <code>CREATE DATABASE</code>. Schools' databases are created on demand. A separate, less privileged role for schools is possible with <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code> when the databases are created elsewhere.</li>
   <li>Creating a database that does not exist yet needs a connection to one that already does, first (<code>CREATE DATABASE</code> cannot run inside a transaction). A stock install always has one called <code>postgres</code>, the default; a managed provider that does not ship one under that name (Aiven's default database is <code>defaultdb</code>, for instance) needs <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> set to whichever one is guaranteed to exist. This only matters the first time — the registry's own database and an already-created school's database are tried directly first.</li>
-  <li><strong>Connections multiply.</strong> Each school has its own connection pool, so total connections are roughly <em>schools &times; pool size &times; workers</em>. Size <code>max_connections</code> accordingly, or put a pooler in front. With PgBouncer in transaction mode use a <em>database per school</em>, not a schema per school.</li>
+  <li><strong>Connections multiply.</strong> Each school has its own connection pool in each worker, so without a pooler the connections open at once are roughly <em>workers &times; schools used in the last minute &times; up to 5</em>. A school's connections close after a minute of quiet (<code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code>, 60), and creating or upgrading a school closes its connections as soon as it is done. Beyond a few dozen busy schools, put PgBouncer in front (below).</li>
   <li>Back up the registry and every school's database. Restoring one school never touches another.</li>
 </ul>
+
+<h3 id="pgbouncer">Hundreds of schools on one server: PgBouncer</h3>
+<p>Every school is its own database, and a PostgreSQL connection belongs to one database, so connections cannot be shared between schools. PgBouncer sits between the application and PostgreSQL: the application opens and closes connections freely, and PgBouncer keeps only a few real ones, hands them out a transaction at a time, closes those that go quiet within seconds, and makes a request wait briefly instead of failing when the server is busy. The application's own pools are then switched off.</p>
+<ol>
+  <li><strong>Install it</strong> on the database server (or beside the application): <code>apt install pgbouncer</code>. Version 1.21 or newer.</li>
+  <li><strong>Configure it</strong> (<code>/etc/pgbouncer/pgbouncer.ini</code>). The wildcard line means a school created later needs no change here:
+<pre><code>[databases]
+* = host=127.0.0.1 port=5432
+
+[pgbouncer]
+listen_addr = 127.0.0.1
+listen_port = 6432
+pool_mode = transaction
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+max_client_conn = 5000
+default_pool_size = 2           ; real connections per school database, at most
+max_db_connections = 2
+max_user_connections = 80       ; all schools together, when they share one role (the default)
+server_idle_timeout = 15        ; a quiet school's real connections close after 15 seconds
+ignore_startup_parameters = extra_float_digits</code></pre>
+  <code>userlist.txt</code> holds the application's role and its password, one line: <code>"brightstars" "SCRAM-SHA-256$..."</code> (copy the value from <code>SELECT passwd FROM pg_shadow WHERE usename = 'brightstars';</code>). Make it readable by PgBouncer only.</li>
+  <li><strong>Size PostgreSQL</strong> so <code>max_connections</code> is above <code>max_user_connections</code> plus room for backups and your own sessions (for example 80 and 120). The 80 are shared by whichever schools are busy at that moment; a school busy for a few seconds holds one or two of them for those seconds only.</li>
+  <li><strong>Point the application at it</strong> and tell it so, on every worker:
+<pre><code>BRIGHTSTARS_PLATFORM_DB=postgresql+psycopg://brightstars:...@127.0.0.1:6432/brightstars_platform
+BRIGHTSTARS_DB_POOLER=pgbouncer
+BRIGHTSTARS_DB_DIRECT_PORT=5432     # PostgreSQL itself, for exporting a school with pg_dump</code></pre>
+  New schools are created at the same address as the registry. A <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code>, if you use one, must name port 6432 too.</li>
+  <li><strong>Move the schools that already exist.</strong> Each school's address was written down when it was created, so they still name port 5432. Check first, then apply:
+<pre><code>python -m control_plane move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432
+python -m control_plane move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432 --apply</code></pre>
+  A school whose address is an <code>env:</code> reference is listed and left alone: change that variable instead.</li>
+  <li><strong>Restart the workers</strong>, then check: <code>psql -p 6432 -U brightstars pgbouncer -c "SHOW POOLS;"</code> lists the schools in use and their real connections.</li>
+</ol>
+<div class="warn"><p><strong>A school kept as a schema inside a shared database cannot go through PgBouncer in transaction mode</strong>: its schema is chosen when a connection starts, which transaction pooling does not keep. The application refuses to open such a school with <code>BRIGHTSTARS_DB_POOLER=pgbouncer</code> rather than risk its queries reaching another schema. Use a database per school (the default).</p></div>
+<p><strong>Schools with their own database role</strong> (<code>create-db-role</code>): PgBouncer must be able to check each role's password. Instead of listing every role in <code>userlist.txt</code>, let it look them up, with a role that can do only that. Run as a superuser in the <code>postgres</code> database:</p>
+<pre><code>CREATE ROLE pgbouncer_auth LOGIN PASSWORD '&lt;a long random password&gt;';
+CREATE SCHEMA pgbouncer AUTHORIZATION pgbouncer_auth;
+CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(usename name, passwd text)
+  LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog AS
+  $$ SELECT usename, passwd FROM pg_shadow WHERE usename = p_usename AND NOT usesuper $$;
+REVOKE ALL ON FUNCTION pgbouncer.get_auth(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(text) TO pgbouncer_auth;</code></pre>
+<p>then add to <code>[pgbouncer]</code>: <code>auth_user = pgbouncer_auth</code>, <code>auth_dbname = postgres</code> and <code>auth_query = SELECT usename, passwd FROM pgbouncer.get_auth($1)</code>, and put only <code>pgbouncer_auth</code> in <code>userlist.txt</code>. A superuser can never sign in through PgBouncer this way, which is as it should be: the application's role does not need to be one. With a role per school, <code>max_user_connections</code> is per school, so the total is set by <code>max_db_connections</code> &times; the schools busy at once; keep <code>max_connections</code> above what you expect at your busiest.</p>
+<p>Nothing else changes: the application uses no session features that transaction pooling breaks (no advisory locks, <code>LISTEN</code>, session <code>SET</code>s or temporary tables), and turns off psycopg's prepared statements itself. Creating and deleting schools go through PgBouncer like everything else; exporting one with <code>pg_dump</code> goes straight to PostgreSQL on <code>BRIGHTSTARS_DB_DIRECT_PORT</code>.</p>
 
 <h2 id="env">3. Environment</h2>
 <p>Everything is read from environment variables (loaded from <code>.env</code> if present; a real environment variable always wins). Minimum for production:</p>
@@ -85,7 +130,7 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <tr><td><code>upgrade</code> runs before workers start, on every release</td><td>Schema and launch id.</td></tr>
 <tr><td>Tenants folder on shared storage, or <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (if more than one server)</td><td>Every server sees every school's files.</td></tr>
 <tr><td>Backups of the registry, each school database and <code>tenants/</code></td><td>A school is a database plus a folder.</td></tr>
-<tr><td>PostgreSQL <code>max_connections</code> sized for schools &times; pool &times; workers</td><td>Otherwise new connections fail as schools are added.</td></tr>
+<tr><td>More than a few dozen schools: PgBouncer in transaction mode, <code>BRIGHTSTARS_DB_POOLER=pgbouncer</code>, existing schools moved with <code>move-db-address</code> (<a href="#pgbouncer">above</a>)</td><td>Otherwise connections run out as schools are added, long before the server is busy.</td></tr>
 <tr><td>Shared mail and SMS accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>
 <tr><td>Chrome or Chromium installed, if candidates' result <em>images</em> are wanted</td><td>The one feature that shells out to a browser.</td></tr>
 <tr><td>Contract suite and the end-to-end scripts pass against a copy of production settings</td><td>See {{ page('testing', 'Testing') }}.</td></tr>

@@ -283,12 +283,49 @@ def school_engine_idle_seconds():
     connections open indefinitely, so a school that is quiet for a day still holds its connections
     on the database server; across many schools and worker processes that, not the queries, is what
     exhausts PostgreSQL's max_connections. A school's engine is closed and rebuilt on its next use.
-    Zero disables this.
+    A minute by default: an office using the portal keeps its connections, and reconnecting after a
+    quiet minute costs a few milliseconds, against a connection held for ten minutes by every school
+    that was opened once. Zero disables this. Behind PgBouncer (``db_pooler``) it hardly matters:
+    there is no pool to keep.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', '600')))
+        return max(0.0, float(os.environ.get('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', '60')))
     except ValueError:
-        return 600.0
+        return 60.0
+
+
+POOLERS = ('pgbouncer',)
+
+
+def db_pooler():
+    """``'pgbouncer'`` when PostgreSQL is reached through PgBouncer in transaction mode, else ``''``.
+
+    ``BRIGHTSTARS_DB_POOLER=pgbouncer``. PgBouncer then does the pooling for every worker and every
+    school together, under one cap, so the application keeps no pool of its own (each connection is
+    handed back the moment a request is done with it) and turns off psycopg's prepared statements,
+    which a transaction-mode pooler cannot follow from one server connection to the next. A school
+    kept as a schema inside a shared database is refused in this mode: its ``search_path`` is set when
+    the connection starts, which transaction pooling does not carry over (see routing.build_engine).
+    An unknown value is an error rather than a silent default, so a typo is noticed at start-up.
+    """
+    value = os.environ.get('BRIGHTSTARS_DB_POOLER', '').strip().lower()
+    if value in ('', 'none', 'off'):
+        return ''
+    if value not in POOLERS:
+        raise RuntimeError(f'BRIGHTSTARS_DB_POOLER must be one of {", ".join(POOLERS)} (or unset), not {value!r}.')
+    return value
+
+
+def db_direct_port():
+    """The port PostgreSQL itself listens on, behind PgBouncer (``BRIGHTSTARS_DB_DIRECT_PORT``, 5432).
+
+    ``pg_dump`` (exporting a school) sets things for its whole session before it starts reading, which a
+    transaction-mode pooler does not keep together, so with ``db_pooler`` set it goes to PostgreSQL
+    directly: the same host as the school's address, on this port."""
+    try:
+        return int(os.environ.get('BRIGHTSTARS_DB_DIRECT_PORT', '5432'))
+    except ValueError:
+        return 5432
 
 
 def registry_cache_seconds():

@@ -109,6 +109,12 @@ def _parser():
     s.add_argument('code')
     s.add_argument('url')
 
+    s = sub.add_parser('move-db-address', help='Point every school on one PostgreSQL address at another '
+                                               '(e.g. through PgBouncer). Shows what would change unless --apply.')
+    s.add_argument('--from', dest='from_address', required=True, help='host:port the schools use now')
+    s.add_argument('--to', dest='to_address', required=True, help='host:port to use instead')
+    s.add_argument('--apply', action='store_true', help='make the change (without it, nothing is changed)')
+
     s = sub.add_parser('rotate-delivery-key')
     s.add_argument('old')
     s.add_argument('new')
@@ -257,6 +263,20 @@ def main(argv=None):
         elif args.command == 'set-db-url':
             pv.set_db_url(args.code, args.url)
             print(f'{args.code} now uses this connection string on its next resolution.')
+        elif args.command == 'move-db-address':
+            def address(text):
+                host, _, port = text.rpartition(':')
+                if not host or not port.isdigit():
+                    raise SystemExit(f'Give an address as host:port, not {text!r}.')
+                return host, int(port)
+            (fh, fp), (th, tp) = address(args.from_address), address(args.to_address)
+            moved, skipped = pv.move_db_address(fh, fp, th, tp, apply=args.apply)
+            for slug, what in moved:
+                print(f'  {"moved" if args.apply else "would move"}  {slug}: {what}')
+            for slug, why in skipped:
+                print(f'  left alone   {slug}: {why}')
+            print(f'{len(moved)} school(s) {"moved" if args.apply else "would move"}, {len(skipped)} left alone.'
+                  + ('' if args.apply else ' Nothing changed: add --apply to make the change.'))
         elif args.command == 'rotate-delivery-key':
             from .context import tenant_context
             from core.secrets_rotation import rotate_one_tenant

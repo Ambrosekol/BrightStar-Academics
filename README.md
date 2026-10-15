@@ -512,7 +512,9 @@ Still to do: a second sign-in step for platform operators and School Admins (see
 7. A timer running `python -m control_plane sweep-jobs`, for schools quiet enough that nothing else retries their jobs.
    Run it at least hourly in the daytime: it also sends a school's birthday texts on a day nobody opens the portal
    (a weekend or holiday).
-8. Many schools: a connection pooler (PgBouncer in transaction mode) in front of PostgreSQL. See below.
+8. More than a few dozen schools: PgBouncer in transaction mode in front of PostgreSQL, `BRIGHTSTARS_DB_POOLER=pgbouncer`,
+   and existing schools moved with `python -m control_plane move-db-address`. Step by step: the operator manual,
+   Deployment, "Hundreds of schools on one server".
 
 ### Operating
 
@@ -520,12 +522,17 @@ Still to do: a second sign-in step for platform operators and School Admins (see
   never touches another. `export-tenant` gives a school everything it is owed.
 - **Suspending** takes a school's portal offline for everyone within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS`; its data
   returns on reactivation.
-- **Database connections.** Each school has its own connection pool in each running instance, plus the registry's.
-  They multiply with schools × instances; when new connections are refused while others sit idle, check
-  `SELECT datname, state, count(*) FROM pg_stat_activity GROUP BY 1,2;` against `SHOW max_connections;`. Keep per-school
-  pools small (`BRIGHTSTARS_DB_POOL_SIZE=1`, `BRIGHTSTARS_DB_MAX_OVERFLOW=1` for many schools), lower the registry pool,
-  and put a pooler in front. With PgBouncer in transaction mode, use a database per school rather than a schema per
-  school.
+- **Database connections.** Each school is its own database, and a connection belongs to one database, so without a
+  pooler each school has its own small pool in each running instance (plus the registry's). A school's connections
+  close after a minute of quiet (`BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS`), and creating or upgrading schools closes
+  each one's as soon as it is done, so provisioning or upgrading hundreds of schools holds one at a time. What is left
+  multiplies with instances × schools busy in the same minute; when new connections are refused while others sit idle,
+  check `SELECT datname, state, count(*) FROM pg_stat_activity GROUP BY 1,2;` against `SHOW max_connections;`.
+  For hundreds of schools, put **PgBouncer** in transaction mode in front and set `BRIGHTSTARS_DB_POOLER=pgbouncer`:
+  the application then keeps no pools and turns off psycopg's prepared statements, PgBouncer caps the real
+  connections for every school and worker together, and `pg_dump` (exporting a school) goes straight to PostgreSQL on
+  `BRIGHTSTARS_DB_DIRECT_PORT`. `move-db-address --from host:5432 --to host:6432 [--apply]` moves the schools that
+  already exist. A school kept as a schema in a shared database is refused in this mode: use a database per school.
 - **Behind a reverse proxy.** Leave `BRIGHTSTARS_TRUSTED_PROXIES=0` unless you run one: then forwarded headers are
   ignored, because anyone can write them. With proxies, set it to how many (1 for nginx or Caddy, 2 with a load
   balancer in front). Only the address and the scheme are believed, never the host.

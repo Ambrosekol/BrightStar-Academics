@@ -34,7 +34,7 @@ from .registry import (
     clear_cache, get_tenant, init_platform_db, now_iso, platform_session, to_info,
     validate_hostname, validate_slug,
 )
-from .routing import build_engine, dispose_engines, engine_for, ensure_database_exists, resolve_db_url
+from .routing import build_engine, dispose_engines, engine_for, ensure_database_exists, release_engine, resolve_db_url
 
 
 class ProvisioningError(Exception):
@@ -182,10 +182,16 @@ def list_tenant_infos():
 
 
 def upgrade_all_tenants():
-    """Bring every school's schema up to date (run at start-up)."""
+    """Bring every school's schema up to date (run at start-up, and as a deploy step).
+
+    Each school's connections are closed as soon as it is done, so going through hundreds of schools
+    holds one school's connection at a time, not one for every school until each goes quiet."""
     infos = list_tenant_infos()
     for info in infos:
-        upgrade_tenant(info)
+        try:
+            upgrade_tenant(info)
+        finally:
+            release_engine(info)
     return infos
 
 
@@ -274,7 +280,9 @@ def create_tenant(slug, name, hostnames=(), db_url=None, db_schema=None, admin_u
             add_starter_banks(info)  # the standard entrance banks, copied into the school's own folder
         password = (create_school_admin(info, admin_username, admin_display_name, admin_password)
                     if admin_username else None)
+        release_engine(info)       # set up and done: its connections are not kept open until it goes quiet
     except Exception:
+        release_engine(info)
         # Do not leave a registered school that has no usable database.
         with platform_session() as session:
             tenant = get_tenant(session, slug)
@@ -652,6 +660,43 @@ def set_db_url(slug, db_url, actor='cli'):
     clear_cache()
 
 
+def move_db_address(from_host, from_port, to_host, to_port, apply=False, actor='cli'):
+    """Point every school whose database is at ``from_host:from_port`` at ``to_host:to_port`` instead,
+    keeping the rest of each address (user, password, database name, options) as it is.
+
+    For putting PgBouncer in front of a server that already has schools: each school's full address
+    was written down when it was created, so changing the platform's own address moves only schools
+    created afterwards. A school whose address is an ``env:NAME`` reference, or is on another server,
+    is left alone and listed, since its address is not stored here to rewrite. Without ``apply``
+    nothing changes: it returns what would. Returns ``(moved, skipped)``: lists of ``(slug, why)``.
+    """
+    moved, skipped = [], []
+    with platform_session() as session:
+        tenants = list(session.scalars(sa.select(Tenant).order_by(Tenant.slug)))
+        for tenant in tenants:
+            raw = (tenant.db_url or '').strip()
+            if raw.lower().startswith('env:'):
+                skipped.append((tenant.slug, f'its address is read from {raw[4:]}: change it there'))
+                continue
+            url = make_url(raw)
+            if url.get_backend_name() != 'postgresql':
+                skipped.append((tenant.slug, 'not on PostgreSQL'))
+                continue
+            if (url.host or 'localhost') != from_host or (url.port or 5432) != int(from_port):
+                skipped.append((tenant.slug, f'on {url.host}:{url.port or 5432}'))
+                continue
+            moved.append((tenant.slug, f'{from_host}:{from_port} -> {to_host}:{to_port}'))
+            if apply:
+                tenant.db_url = url.set(host=to_host, port=int(to_port)).render_as_string(hide_password=False)
+                tenant.updated_at = now_iso()
+                audit(session, 'tenant.db_url_changed', f'moved to {to_host}:{to_port}', tenant.id, actor)
+        if apply:
+            session.commit()
+    if apply:
+        clear_cache()
+    return moved, skipped
+
+
 def _installs_newest_first(root, program):
     """``root``'s version folders (``18``, ``9.6``...) newest first, each joined to ``program``."""
     if not root.is_dir():
@@ -720,8 +765,9 @@ def export_tenant_data(slug, output_dir):
 
     dump_path = export_dir / 'database.sql'
     env = {**os.environ, 'PGPASSWORD': url.password or ''}
+    port = config.db_direct_port() if config.db_pooler() else (url.port or 5432)   # never through PgBouncer
     args = [str(pg_dump), '--no-owner', '--no-privileges',
-            '-h', url.host or 'localhost', '-p', str(url.port or 5432),
+            '-h', url.host or 'localhost', '-p', str(port),
             '-U', url.username or '', '-d', url.database, '-f', str(dump_path)]
     if info.db_schema:
         args[-2:-2] = ['-n', info.db_schema]
