@@ -42,6 +42,8 @@ def _announce(periods, admin_id):
             view_url = url_for('parent_report_card_view', student_id=student_id, session_id=session_id,
                                slug=term_slug(term), _external=True)
             _notify_parents_report_card_ready(student_id, session_name, term, view_url, admin_id)
+            from core.webhooks import emit
+            emit('report_card.ready', {'student_id': student_id, 'session_id': session_id, 'term': term})
         except Exception:
             db.session.rollback()
             from flask import current_app

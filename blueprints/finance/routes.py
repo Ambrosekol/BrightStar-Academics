@@ -436,6 +436,8 @@ def admin_finance_record():
             app.logger.exception('Parent payment-recorded notification failed for student %s',student_id)
         # The parents get the receipt itself by email and SMS, without anyone having to send it.
         enqueue('send_payment_receipt',payment_id=payment.id,actor_id=me['id'])
+        from core.webhooks import emit, payment_data
+        emit('payment.recorded',payment_data(payment))
         return redirect(url_for('admin_finance_receipt',payment_id=payment.id))
     students,sessions=pick_lists()
     current=_school_current_session()
@@ -1168,6 +1170,8 @@ def admin_finance_payment_void(payment_id):
     db.session.commit()
     audit_log('finance_payment_voided','finance','payment',payment_id,{'receipt_no':receipt_no,'amount':amount,'reason':reason,
               'discount_released':released},True,me)
+    from core.webhooks import emit, payment_data
+    emit('payment.voided',payment_data(row))
     flash('Payment voided. The original receipt remains in the audit history.'
           +(f' ₦{released:,.2f} of discount that was waiting on it has now been taken off.' if changed else ''),'success')
     return redirect(url_for('admin_finance_receipt',payment_id=payment_id))

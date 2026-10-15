@@ -193,6 +193,8 @@ def admin_candidate_admit(cid):
         candidate.admission_decided_by = me['id']
         candidate.admission_note = None
         db.session.commit()
+        from core.webhooks import emit
+        emit('student.created', {'student_id': student.id, 'admission_no': student.admission_no, 'from': 'admission'})
     except Exception as exc:
         db.session.rollback()
         from core.failures import plain_failure

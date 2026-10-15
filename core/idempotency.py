@@ -19,7 +19,7 @@ import secrets
 from datetime import datetime, timezone
 from functools import wraps
 
-from flask import flash, redirect, request, session
+from flask import flash, make_response, redirect, request, session
 from sqlalchemy import select
 
 from models import IdempotencyKey, db
@@ -82,7 +82,9 @@ def idempotent_write(scope):
                 flash(RESUBMITTED_WHILE_PENDING, 'error')
                 return redirect(request.referrer or request.path)
 
-            response = fn(*args, **kwargs)
+            # A view may return a page (a form shown again with what to correct) rather than a Response; the
+            # status code below needs a Response either way.
+            response = make_response(fn(*args, **kwargs))
 
             row = db.session.scalars(
                 select(IdempotencyKey).where(IdempotencyKey.key_hash == key_hash)).first()

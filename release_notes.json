@@ -18,6 +18,42 @@
   ],
   "releases": [
     {
+      "version": "2.41.0",
+      "date": "2026-10-15",
+      "title": "Data protection, a full export of the school's data, and an API",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Parents now choose, child by child, whether the school may use their child's photo in publicity, whether optional messages such as birthday texts are sent, and whether their child's details may be shared with WAEC, NECO or BECE. A student's page has a Consents tab showing what is allowed, where you can also record a signed paper form. Settings, Privacy & data requests counts what families allow and downloads the list.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "staff",
+          "text": "Families can now ask for a copy of a child's data, or for it to be erased, and the request waits under Settings, Privacy & data requests with the date it must be answered by (30 days). A copy is prepared for the parent to download. Erasing is the School Admin's alone: the child's personal details go, while results and fees stay under a placeholder name.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "staff",
+          "text": "Exam registration now leaves out a candidate whose family has not allowed their details to be shared, and lets you record signed consent forms for several candidates at once.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "staff",
+          "text": "School Admin: Settings, Export all the school's data gives you every record and uploaded file the school keeps, as spreadsheets in one ZIP, for a backup or to take elsewhere.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "staff",
+          "text": "School Admin: Settings, API & webhooks lets the school's own developers or a partner (an accounting system, the school website) read its data with a key you create, read-only and limited to the areas you choose, and be told the moment a payment, a student or a report card changes. Documentation for developers is linked from the page.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "family",
+          "text": "New: Privacy & my data, in your menu. Choose whether the school may use your child's photo in its publicity, send optional messages such as birthday greetings, and share your child's details with WAEC, NECO or BECE for exam registration. You can change your mind at any time, and ask the school for a copy of your child's data or for it to be erased."
+        }
+      ]
+    },
+    {
       "version": "2.40.0",
       "date": "2026-10-15",
       "title": "Term-end paperwork: grading, broadsheets, testimonials, exam registration",

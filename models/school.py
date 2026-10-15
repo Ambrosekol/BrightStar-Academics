@@ -104,6 +104,9 @@ class Student(db.Model):
     archived_at = db.Column(Text)
     archived_by_admin_id = db.Column(Integer, ForeignKey('admins.id'))
     archive_reason = db.Column(Text)
+    # When the student's personal data was erased at the family's request (core/privacy.py): the record stays, under a
+    # placeholder name, for the results and fee records the school must keep. Never undone.
+    erased_at = db.Column(Text)
 
     # Senior secondary (SSS 1-3) only: 'Science', 'Art' or 'Commercial'. It decides which
     # department-specific subjects the student takes and which subject teachers reach them.

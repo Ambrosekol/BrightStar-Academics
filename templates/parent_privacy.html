@@ -1,0 +1,114 @@
+{% extends 'parent_base.html' %}
+{% block title %}Privacy & my data{% endblock %}
+{#- Privacy & my data (blueprints/parents/privacy.py): the privacy notice, each child's consents with a switch each, and
+    requests to the school for a copy of a child's data or for it to be erased. -#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  .pv-child{border-top:1px solid var(--line,#e3e7ee);padding:12px 0 4px}
+  .pv-child:first-of-type{border-top:0;padding-top:4px}
+  .pv-child h3{margin:0 0 8px;font-size:1rem}
+  .pv-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:8px 0;border-top:1px dashed var(--line,#e3e7ee)}
+  .pv-row:first-of-type{border-top:0}
+  .pv-row strong{display:block;font-size:.92rem}
+  .pv-row p{margin:2px 0 0;font-size:.84rem;color:var(--ink-3,#5b6577);line-height:1.4}
+  .pv-row small{display:block;font-size:.76rem;color:var(--ink-3,#5b6577);margin-top:3px}
+  .pv-state{font-size:.8rem;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .pv-yes{background:#e3f4ea;color:#1d6b3e}.pv-no{background:#f6e8e8;color:#8e2b2b}
+  .pv-act{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+  .pv-notice{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .pv-req{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end}
+  .pv-req label{display:flex;flex-direction:column;gap:4px;font-size:.84rem;font-weight:600}
+  .pv-req .pv-tick{flex-direction:row;font-weight:400;align-items:flex-start;gap:6px;grid-column:1/-1}
+  .pv-list{width:100%;border-collapse:collapse;font-size:.88rem}
+  .pv-list th,.pv-list td{text-align:left;padding:7px 8px;border-top:1px solid var(--line,#e3e7ee);vertical-align:top}
+  .pv-list th{font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,#5b6577);border-top:0}
+  @media (max-width:640px){.pv-row{grid-template-columns:1fr}.pv-act{justify-content:flex-start}}
+</style>
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <h1>Privacy &amp; my data</h1>
+    <p>What you allow {{ school_brand.name }} to do with your children's information, and your right to a copy of it or
+      to have it erased. The school looks after your information and answers any request within {{ due_days }} days.</p>
+  </div></div>
+</header>
+
+<section class="ac-panel" aria-labelledby="pvNotice">
+  <h2 id="pvNotice">Privacy notice</h2>
+  <div class="pv-notice">
+    <p style="margin:0">{% if confirmed %}You have read the current privacy notice ({{ version }}).{% else %}Please read how the
+      school and the platform use your family's information{% if version %}; it was updated on {{ version }}{% endif %}.{% endif %}
+      <a href="{{ url_for('privacy') }}" target="_blank" rel="noopener">Read the privacy notice</a></p>
+    {% if not confirmed %}
+    <form method="post" action="{{ url_for('parent_privacy_notice') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="ac-btn ac-btn--primary ac-btn--sm" type="submit">I have read it</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="ac-panel" aria-labelledby="pvConsents">
+  <h2 id="pvConsents">What you allow</h2>
+  {% if not children %}<p class="ac-hint">No child is linked to your account.</p>{% endif %}
+  {% for c in children %}
+  <div class="pv-child" id="child-{{ c.id }}">
+    <h3>{{ c.first_name }} {{ c.last_name }}{% if c.class_name %} <small class="ac-hint">{{ c.class_name }}</small>{% endif %}</h3>
+    {% for p in child_purposes %}{% set st = consents[c.id][p] %}
+    <div class="pv-row">
+      <div><strong>{{ purposes[p].title }}</strong><p>{{ purposes[p].text }}</p>
+        <small>{% if st.decided %}{{ 'Given' if st.granted else 'Withdrawn' }} {{ st.at[:10] }}{% if st.source == 'staff' %}, recorded by the school from a signed form{% endif %}{% else %}Not decided yet: {{ 'allowed until you say no' if st.granted else 'not allowed until you say yes' }}{% endif %}</small></div>
+      <div class="pv-act">
+        <span class="pv-state {{ 'pv-yes' if st.granted else 'pv-no' }}">{{ 'Allowed' if st.granted else 'Not allowed' }}</span>
+        <form method="post" action="{{ url_for('parent_privacy_consent') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="student_id" value="{{ c.id }}"><input type="hidden" name="purpose" value="{{ p }}">
+          <input type="hidden" name="granted" value="{{ '0' if st.granted else '1' }}">
+          <button class="ac-btn ac-btn--sm" type="submit">{{ 'Withdraw' if st.granted else 'Allow' }}</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+
+<section class="ac-panel" aria-labelledby="pvReq" id="requests">
+  <h2 id="pvReq">Your data</h2>
+  <p class="ac-hint" style="margin-top:0">Ask for a copy of everything the school holds about a child in this portal (their record,
+    classes, attendance, results, fees, payments, documents, consents and your messages), or for it to be erased.
+    <strong>Erasing</strong> removes the child's name, contact and health details, photograph, sign-in and messages. Results and fee
+    records the school must keep by law stay, under a placeholder name, so a transcript cannot be issued afterwards. It cannot be undone.</p>
+  {% if children %}
+  <form method="post" action="{{ url_for('parent_privacy_request') }}" class="pv-req">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label>Child<select class="ac-select" name="student_id" required>
+      {% for c in children %}<option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name }}</option>{% endfor %}</select></label>
+    <label>I am asking for<select class="ac-select" name="kind" required>
+      {% for k, label in kinds.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Anything the school should know <span class="ac-hint">optional</span><input class="ac-input" name="reason" maxlength="500"></label>
+    <label class="pv-tick"><input type="checkbox" name="understood" value="1"> I understand that erasing cannot be undone (only needed when asking to erase).</label>
+    <div><button class="ac-btn ac-btn--primary" type="submit">Send to the school</button></div>
+  </form>
+  {% endif %}
+  {% if requests %}
+  <table class="pv-list" aria-label="Your requests">
+    <thead><tr><th>Asked</th><th>Child</th><th>For</th><th>Where it is</th></tr></thead>
+    <tbody>
+    {% for r in requests %}{% set ex = exports.get(r.export_id) %}
+      <tr><td>{{ r.requested_at[:10] }}</td><td>{{ names.get(r.student_id, 'A child') }}</td><td>{{ kinds[r.kind] }}</td>
+        <td>{% if r.status == 'pending' %}With the school: answer due by {{ r.due_at[:10] }}
+          {% elif r.status == 'declined' %}Declined{% if r.decision_note %}: {{ r.decision_note }}{% endif %}
+          {% elif r.kind == 'export' and ex and ex.status == 'ready' and ex.expires_at > now %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_privacy_download', request_id=r.id) }}">Download your copy</a> <span class="ac-hint">until {{ ex.expires_at[:10] }}</span>
+          {% elif r.kind == 'export' and r.status == 'approved' %}Approved: your copy is being prepared
+          {% elif r.kind == 'export' %}The copy has expired. Ask again if you need it.
+          {% else %}Done {{ (r.completed_at or '')[:10] }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

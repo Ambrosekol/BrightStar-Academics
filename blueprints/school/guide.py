@@ -33,6 +33,7 @@ GUIDE_GROUPS = (
     ('Students and families', (
         ('students', 'Students', 'Registering, importing, archiving'),
         ('families', 'Parents and messages', 'Parent accounts, feedback and notices'),
+        ('privacy-data', 'Privacy, data and the API', 'Consents, data requests from families, exporting all data, API keys and webhooks'),
         ('attendance', 'Attendance', 'The daily register and the term summary'),
     )),
     ('Academics', (

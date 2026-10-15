@@ -18,6 +18,9 @@ TEMPLATES = ROOT / "templates"
 # whatever page links to it instead - named here so the check still knows where to look.
 FORM_ELSEWHERE = {
     "parent.pay_online": "parent_child_finance.html",
+    # both forms are on Settings > API & webhooks, drawn by privacy_admin._api_page
+    "school.api_key": "admin_school_api.html",
+    "school.webhook": "admin_school_api.html",
 }
 
 

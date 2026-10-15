@@ -1,0 +1,127 @@
+{% extends 'school_guide/_layout.html' %}
+{% from 'school_guide/_macros.html' import page, shot with context %}
+{% block guide %}
+<p>Nigeria's Data Protection Act 2023 makes the school responsible for its families' information: what it may do with it,
+and a family's right to a copy of it or to have it erased. This page covers what families allow (consents), their
+requests, a full copy of the school's own data, and the API that lets the school's own systems read its data.</p>
+
+<h2 id="consents">What families allow</h2>
+<p>For each child, a parent decides three things in their portal, under <strong>Privacy &amp; my data</strong>, and can
+change their mind at any time:</p>
+<ul>
+  <li><strong>Photos in publicity</strong>: whether the school may use the child's photograph on its website, social
+  media, brochures and banners. Not allowed until the parent says yes. ID cards and report cards use the photograph
+  regardless; this is about publicity. The school uses the list (below) to know whose pictures it may publish.</li>
+  <li><strong>Optional messages</strong>: birthday greetings and any other optional text or email. Sent until the parent
+  says no. Messages about fees, results, attendance and safety always go.</li>
+  <li><strong>Exam registration</strong>: whether the child's details and photograph may be shared with WAEC, NECO or the
+  BECE examining body. Not allowed until the parent (or a signed form) says yes; see
+  <a href="#exam">Exam registration</a> below.</li>
+</ul>
+<p>A parent is also asked, on their home page, to read the privacy notice and confirm it; they are asked again whenever it
+changes.</p>
+{{ shot('parent-privacy', "A parent's Privacy & my data: the privacy notice, and for each child a switch for each purpose, with when it was decided.") }}
+
+<h3 id="paper">A family that does not use the portal</h3>
+<p>Open the student's page and its <strong>Consents</strong> tab. It shows what is in force for each purpose and how it
+was decided. Under <em>Record from a signed form</em> choose the purpose and what the family decided, and say what the
+school holds (for example <em>Signed by the mother, 12 September</em>); keep the form. Every decision, from a parent
+or from a form, stays in the history with who recorded it and when. This needs the right to answer data requests (the
+head teacher, the academic administrator and the records officers have it; the School Admin always).</p>
+{{ shot('student-consents', "A student's Consents tab: what is allowed now, how it was decided, and recording a signed form.") }}
+
+<h3 id="list">Whose photos may be used</h3>
+<p><a href="{{ url_for('admin_school_privacy') }}">Privacy &amp; data requests</a> (Settings, Your school) counts, for
+each purpose, how many students it is allowed for. <strong>Download, child by child</strong> gives a spreadsheet of every
+student with each answer, marked <em>(default)</em> where nobody has decided yet: check it before a photograph goes on
+the website or a banner.</p>
+
+<h2 id="requests">A family's requests</h2>
+<p>From <strong>Privacy &amp; my data</strong> a parent can ask for <strong>a copy of the data</strong> held about a child,
+or for it to be <strong>erased</strong>. The School Admin is told, and the request waits on
+<a href="{{ url_for('admin_school_privacy') }}">Privacy &amp; data requests</a> with the date it must be answered by:
+thirty days, as the law requires. Check that it really comes from the child's parent before you approve it.</p>
+<ul>
+  <li><strong>A copy</strong>: <em>Approve and prepare the copy</em> builds a ZIP: the child's record and admission form,
+  classes, attendance, released results, fees, payments, documents issued, consents, and the parent's own messages and
+  account details. The parent downloads it from their portal for seven days. Nothing about another parent is included,
+  and no password ever is.</li>
+  <li><strong>Erasure</strong> is the School Admin's alone, confirmed by typing the child's admission number. The child's
+  name becomes a placeholder (<em>Former student #42</em>), and their contact, health and religious details, photograph,
+  sign-in, messages, alerts, admission form and entrance record are removed. Results, attendance, fees and payments stay,
+  under the placeholder name, because the school must keep them; a transcript or testimonial can no longer be issued, and
+  any issued before are marked revoked. A parent with no other child at the school is anonymised too and can no longer
+  sign in. <strong>It cannot be undone.</strong></li>
+  <li><strong>Declining</strong> needs a reason, which the family sees.</li>
+</ul>
+{{ shot('privacy-requests', 'Privacy & data requests: each request with the date it must be answered by. Erasing asks for the admission number.') }}
+
+<h2 id="exam">Exam registration</h2>
+<p>On <a href="{{ url_for('admin_school_exam_registration') }}">Exam registration</a> a candidate whose family has not
+allowed sharing shows <em>Missing: consent to share</em>, and is left out of both downloads (the candidates' spreadsheet
+and the photographs ZIP). Under <strong>Consent to share</strong>, tick the candidates whose families signed a form,
+say what the school holds (<em>Signed forms collected 14 October</em>), and record it; they are included at once.</p>
+{{ shot('exam-consent', 'A candidate without consent to share is marked, left out of the downloads, and can be recorded from a signed form.') }}
+
+<h2 id="export">Export all the school's data</h2>
+<p><a href="{{ url_for('admin_school_data_export') }}">Export all the school's data</a> (Settings, Your school; the School
+Admin's alone) prepares one ZIP: a spreadsheet for every kind of record the school keeps, from students, parents and staff
+to results, attendance, fees, payments and messages, and every uploaded file (photographs, signatures, attachments),
+with a README that says what each is. Use it as a backup, or to take the school's data to another system. It is prepared
+in the background (a large school takes a few minutes; refresh the page), kept for seven days, then removed.</p>
+<p>Left out on purpose: passwords and other sign-in secrets, and the school's stored keys for email, SMS and Paystack.
+The file holds every family's personal data: keep it as carefully as the school's paper records.</p>
+{{ shot('data-export', "Export all the school's data: prepare an export, then download it while it is kept.") }}
+
+<h2 id="api">The API, for the school's own systems</h2>
+<p><a href="{{ url_for('admin_school_api') }}">API &amp; webhooks</a> (Settings, Your school; the School Admin's alone)
+lets the school's own developers, or a partner it hires (an accounting system, the school website), read its data
+automatically.</p>
+<ul>
+  <li><strong>A key</strong>: name it after who will use it and tick only the areas it needs (students, parents, classes,
+  attendance, released results, fees, payments). The key is shown <strong>once</strong>: copy it and hand it over
+  safely. A key can only read; nothing can be changed through it. <strong>Revoke</strong> stops it at once.</li>
+  <li><strong>Webhooks</strong>: an address on the school's (or partner's) system that is told the moment something
+  happens: a payment recorded or voided, a student registered or archived, a report card ready. Each notice carries ids,
+  never names or contact details, and is signed with a secret shown once when the address is added.
+  <strong>Send a test</strong> checks it works; the latest deliveries show under each address, and a failed one can be
+  sent again. An address that keeps failing is switched off, with the reason shown.</li>
+  <li><strong>Documentation for developers</strong> opens a page on the school's own address explaining everything a
+  developer needs, including how to check a notice's signature.</li>
+</ul>
+{{ shot('api-keys', 'API & webhooks: a new key is shown once, in green. Below, the keys in use and the webhook addresses.') }}
+{{ shot('api-docs', "The developers' documentation, on the school's own address.") }}
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<dl class="guide-faq">
+  <dt>A parent says they cannot find Privacy &amp; my data.</dt>
+  <dd>It is in the parent portal's menu, under <em>The school</em>. On a phone, open the menu (it is not in the bottom bar).</dd>
+  <dt>A child's photograph shows "Not allowed" but the family agreed.</dt>
+  <dd>Nobody has recorded it yet. Ask the parent to allow it in their portal, or record the signed form on the student's
+  Consents tab.</dd>
+  <dt>A family stopped getting birthday texts.</dt>
+  <dd>A parent withdrew <em>Optional messages</em>. Only they (or a new signed form) can turn it back on.</dd>
+  <dt>A candidate is missing from the exam registration download.</dt>
+  <dd>Their family has not allowed sharing. Record the signed form under <em>Consent to share</em> on Exam registration.</dd>
+  <dt>I cannot erase a child's data.</dt>
+  <dd>Only the School Admin can, and the admission number must be typed exactly as shown. A head teacher can see and
+  decline requests, and approve copies.</dd>
+  <dt>We erased a child by mistake.</dt>
+  <dd>It cannot be undone. The results and fees are still there under the placeholder name; the details can be entered
+  again on the student's record if the family agrees.</dd>
+  <dt>The family's copy says it has expired.</dt>
+  <dd>Copies are kept for seven days. Ask the parent to request again, and approve it.</dd>
+  <dt>The export says it could not be prepared.</dt>
+  <dd>Press <em>Prepare an export</em> again. If it fails a second time, tell support: the reason is recorded.</dd>
+  <dt>I lost an API key or a webhook secret.</dt>
+  <dd>They are never shown again. Revoke the key and make a new one; remove the webhook address and add it again.</dd>
+  <dt>The developer gets "401" or "403".</dt>
+  <dd>401: the key is wrong or revoked. 403: the key was not given that area; make a new key with it ticked.</dd>
+  <dt>A webhook address was switched off.</dt>
+  <dd>It failed too many times in a row; the reason shows under it. Once the receiving system is fixed, press
+  <em>Switch on</em>, then <em>Send a test</em>.</dd>
+  <dt>Adding a webhook address says it is not allowed.</dt>
+  <dd>It must start with https://, and it must be on the public internet: an address inside the school's own network
+  cannot be used.</dd>
+</dl>
+{% endblock %}

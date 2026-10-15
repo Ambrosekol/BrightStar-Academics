@@ -123,6 +123,7 @@ from .id_cards import IdCard, IdCardAsset, IdCardDesign, IdCardDesignVersion
 from .report_card_design import ReportCardDesign, ReportCardDesignVersion
 from .receipt_design import ReceiptDesign, ReceiptDesignVersion
 from .documents import DocumentDesign, DocumentDesignVersion, IssuedDocument
+from .privacy import ApiKey, ConsentRecord, DataExport, DataRequest, WebhookDelivery, WebhookEndpoint
 from .payroll import (
     PayItem, PayrollAdjustment, PayrollRun, PayrollSettings, Payslip, StaffPay, StaffPayItem,
 )
@@ -191,6 +192,7 @@ __all__ = [
     'IdCard', 'IdCardAsset', 'IdCardDesign', 'IdCardDesignVersion',
     'ReportCardDesign', 'ReportCardDesignVersion', 'ReceiptDesign', 'ReceiptDesignVersion',
     'DocumentDesign', 'DocumentDesignVersion', 'IssuedDocument',
+    'ApiKey', 'ConsentRecord', 'DataExport', 'DataRequest', 'WebhookDelivery', 'WebhookEndpoint',
     # payroll
     'PayItem', 'PayrollAdjustment', 'PayrollRun', 'PayrollSettings', 'Payslip', 'StaffPay', 'StaffPayItem',
     # staff attendance

@@ -51,6 +51,25 @@
     </tr>{% endfor %}</tbody>
   </table></div>
 </section>
+{% if without_consent %}
+<section class="fi-p" aria-labelledby="erConsent">
+  <h2 id="erConsent" style="font-size:1rem;margin:0 0 4px">Consent to share <small class="ac-hint">{{ without_consent|length }} without it</small></h2>
+  <p class="ac-hint" style="margin:0 0 8px">Sharing a candidate's details with {{ bodies[body][0] }} needs their family's consent.
+    {{ without_consent|length }} candidate{{ '' if without_consent|length == 1 else 's' }} without it {{ 'is' if without_consent|length == 1 else 'are' }}
+    left out of both downloads until it is given: by a parent in their portal, or from a signed form the school keeps, recorded here.</p>
+  <form method="post" action="{{ url_for('admin_school_exam_registration_consent') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="back" value="{{ request.full_path }}">
+    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:8px">
+      {% for c in without_consent %}<label style="font-size:.86rem"><input type="checkbox" name="student_id" value="{{ c.id }}"> {{ c.surname|upper }}, {{ c.first }}</label>{% endfor %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input class="ac-input" name="note" maxlength="200" required placeholder='What the school holds, e.g. "Signed forms collected 14 October"' style="flex:1;min-width:240px" aria-label="What the school holds">
+      <button class="ac-btn ac-btn--sm" type="submit">Record signed consent for the ticked candidates</button>
+    </div>
+  </form>
+</section>
+{% endif %}
 {% endif %}
 </div>
 {% endblock %}

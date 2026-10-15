@@ -215,7 +215,8 @@ def admin_school_student_detail(sid):
                   for period in _student_term_periods(sid)]
     term_reports=[t for t in term_reports if t['subjects']]
     archived_by=_archived_by_name(student)
-    return render_template('admin_school_student_detail.html',student=student,enrolments=enrol,enrollment_history=history,sessions=sessions,classes_for_history=classes_for_history,current_enrol=current_enrol,results=results,assignments=assignments,projects=projects,total_score=total_score,total_max=total_max,pct=pct,completed=len(completed),assignment_avg=assignment_avg,term_reports=term_reports,archived_by=archived_by,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
+    from core import privacy as _privacy
+    return render_template('admin_school_student_detail.html',consents=_privacy.consents_for([sid])[sid],consent_history=_privacy.history(sid),consent_purposes=_privacy.PURPOSES,can_record_consent=is_school_admin() or admin_has_permission(current_admin()['id'],'privacy.manage'),student=student,enrolments=enrol,enrollment_history=history,sessions=sessions,classes_for_history=classes_for_history,current_enrol=current_enrol,results=results,assignments=assignments,projects=projects,total_score=total_score,total_max=total_max,pct=pct,completed=len(completed),assignment_avg=assignment_avg,term_reports=term_reports,archived_by=archived_by,is_school_admin=is_school_admin(),can_archive=_can_archive_students())
 
 def _department_from_form(class_id):
     """The SSS department posted with a student, or None outside senior secondary. Returns
@@ -540,6 +541,8 @@ def admin_school_student_new():
             db.session.rollback()
             raise
 
+        from core.webhooks import emit
+        emit('student.created',{'student_id':sid,'admission_no':generated_number,'from':'registration'})
         audit_log(
             'school_student_created',
             'school',
@@ -761,8 +764,10 @@ def admin_school_students_archive():
     to_archive=archive_students(visible,reason,me['id'])
     if to_archive:
         db.session.commit()
+        from core.webhooks import emit
         for sid in to_archive:
             audit_log('school_student_archived','school','student',sid,{'reason':reason})
+            emit('student.archived',{'student_id':sid,'reason':'archived'})
     archived=len(to_archive); already=len(visible)-archived
     parts=[f'{archived} student{"" if archived==1 else "s"} archived.' if archived else 'Nothing was archived.']
     if already: parts.append(f'{already} already archived.')

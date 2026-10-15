@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API documentation{% if school %} — {{ school }}{% endif %}</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--ink:#16233a;--ink-3:#5b6577;--line:#e3e7ee;--bg:#f6f7f9;--card:#fff;--brand:#0f2a4a}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  main{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+  h1{font-size:1.6rem;margin:0 0 4px}h2{font-size:1.15rem;margin:30px 0 8px}h3{font-size:1rem;margin:18px 0 4px}
+  p,li{max-width:72ch}
+  .lead{color:var(--ink-3);margin:0 0 18px}
+  code,pre{font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+  code{background:#eef1f5;padding:1px 5px;border-radius:4px}
+  pre{background:#0f1b2d;color:#e6edf7;padding:12px 14px;border-radius:8px;overflow-x:auto}
+  pre code{background:none;padding:0;color:inherit}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.9rem}
+  th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{background:#f0f3f7;border-top:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)}
+  .ep{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+  .ep h3{margin:0 0 4px}
+  .ep .m{font-weight:700;color:#1d6b3e;margin-right:6px}
+  .ep p{margin:2px 0 6px;color:var(--ink-3)}
+  .scope{font-size:.78rem;padding:2px 8px;border-radius:999px;background:#e8eef7;color:var(--brand);margin-left:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>API documentation</h1>
+<p class="lead">{% if school %}{{ school }}'s{% else %}A school's{% endif %} read-only API, and its webhooks. For the school's own developers,
+  or a partner the school has engaged. Machine-readable: <a href="{{ base }}/openapi.json"><code>openapi.json</code></a> (OpenAPI 3).</p>
+
+<h2>Signing in: a key</h2>
+<p>The School Admin creates a key under <em>Settings, API &amp; webhooks</em>, choosing the areas it may read. Send it with every call:</p>
+<pre><code>curl -H "Authorization: Bearer bsa_xxxxxxxxxxxx_xxxxxxxx…" {{ base }}/students</code></pre>
+<p>Keep the key secret, on a server, never in a web page or an app people can download. Every call is over HTTPS to the school's own address.</p>
+<table>
+<tr><th>Area</th><th>What it reads</th></tr>
+{% for k, label in scopes.items() %}<tr><td><code>{{ k }}</code></td><td>{{ label }}</td></tr>{% endfor %}
+</table>
+
+<h2>Answers, pages and errors</h2>
+<p>Every answer is JSON. A list is <code>{"data": [...], "next_after": 123}</code>, ordered by <code>id</code>. Ask for the next page
+  with <code>?after=123</code> until <code>next_after</code> is <code>null</code>. <code>?limit=</code> sets how many per page (1 to {{ max_limit }},
+  {{ default_limit }} by default). Amounts are in naira (<code>"currency": "NGN"</code>); times are ISO 8601, in UTC.</p>
+<p>An error is <code>{"error": {"code": "...", "message": "..."}}</code> with the status: <code>401</code> no valid key,
+  <code>403</code> the key may not read that area, <code>404</code> not found, <code>400</code> a filter is wrong, and <code>429</code> more
+  than {{ rate }} calls a minute with one key (wait for <code>Retry-After</code> seconds).</p>
+
+<h2>Endpoints</h2>
+{% for path, scope, summary, params in endpoints %}
+<div class="ep">
+  <h3><span class="m">GET</span><code>{{ base }}{{ path }}</code><span class="scope">{{ scope }}</span></h3>
+  <p>{{ summary }}.</p>
+  {% if params %}<ul>{% for n, d in params %}<li><code>{{ n }}</code>: {{ d }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endfor %}
+<p>Never available through the API: health details, religion, passwords, staff pay, messages between families and the school, and
+  results not yet released. A student whose data was erased at the family's request appears with a placeholder name and
+  <code>"erased": true</code>.</p>
+
+<h2>Webhooks</h2>
+<p>The School Admin adds an address and chooses the events it is told about. Each is a <code>POST</code> of JSON:</p>
+<pre><code>{"id": "evt_…", "type": "payment.recorded", "created_at": "2026-10-15T09:12:44+00:00", "school": "…",
+ "data": {"payment_id": 81, "student_id": 1204, "receipt_no": "…", "amount": 45000.0, "currency": "NGN", …}}</code></pre>
+<table>
+<tr><th>Event</th><th>When</th></tr>
+{% for k, label in events.items() %}<tr><td><code>{{ k }}</code></td><td>{{ label }}</td></tr>{% endfor %}
+<tr><td><code>ping</code></td><td>The School Admin pressed <em>Send a test</em></td></tr>
+</table>
+<p>A notice carries ids, not names or contact details: read anything more through the API. Answer with any <code>2xx</code> within 8
+  seconds; anything else (or no answer) is tried again, up to five times. An address that keeps failing is switched off, and the School
+  Admin sees why. The same <code>id</code> may arrive twice; treat a repeat as already handled.</p>
+<h3>Checking a notice really came from the school</h3>
+<p>Every notice has <code>BrightStars-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>. <code>v1</code> is the HMAC-SHA256, with the
+  address's signing secret (shown once, when it was added), of <code>t</code>, a full stop, and the raw body. Check it, and refuse a
+  <code>t</code> more than five minutes old:</p>
+<pre><code>import hashlib, hmac, time
+
+def is_genuine(secret, header, body):          # body: the raw bytes received
+    parts = dict(p.split("=", 1) for p in header.split(","))
+    if abs(time.time() - int(parts["t"])) > 300:
+        return False
+    expected = hmac.new(secret.encode(), parts["t"].encode() + b"." + body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, parts["v1"])</code></pre>
+</main>
+</body>
+</html>

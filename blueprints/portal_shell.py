@@ -86,6 +86,7 @@ def _parent():
         {'label': 'The school', 'items': [
             I('Messages', url_for('parent_feedback'), 'nav-messages', _active('/parent/feedback')),
             I('Store', url_for('parent_store'), 'nav-store', _active('/parent/store')),
+            I('Privacy & my data', url_for('parent_privacy'), 'nav-privacy', _active('/parent/privacy')),
         ]},
     ]
     first_child = kids[0] if kids else None
@@ -93,7 +94,7 @@ def _parent():
     if first_child:
         tabs.append(dict(first_child, label='Children' if len(kids) > 1 else first_child['label'].split()[0], icon='nav-students',
                          active=_active('/parent/children')))
-    tabs += sections[2]['items']
+    tabs += sections[2]['items'][:2]          # Messages and Store; Privacy is in the menu, not the phone's tab bar
     return {
         'kind': 'parent', 'label': 'Parent Portal', 'home_url': url_for('parent_dashboard'),
         'person': {'name': name, 'sub': row['email'] or row['phone'] or 'Parent account', 'initials': _initials(name), 'photo': None},

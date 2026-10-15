@@ -301,6 +301,27 @@ Each area is explained for staff in the **staff guide** (`/admin/guide` on any s
   purchases over with a text to the parent.
 - **Library**: books, members and loans.
 
+### Data protection, exports and the API
+
+- **Consents** (`core/privacy.py`): per child, photos in publicity (opt-in), optional messages such as birthday texts
+  (opt-out), sharing with WAEC/NECO/BECE (opt-in; exam registration leaves out candidates without it). Given by a parent in
+  the portal (Privacy & my data) or recorded from a signed form on the student's Consents tab; every decision is kept. The
+  privacy notice's version is the date on `templates/privacy.html` (`NOTICE_VERSION`); parents confirm each new one.
+- **Families' requests**: a copy of a child's data (a ZIP built in the background, downloaded from the portal for seven
+  days) or erasure, answered within thirty days under Settings, Privacy & data requests. Erasure (School Admin only,
+  confirmed by the admission number) anonymises: personal details, photo, sign-in, messages and the admission form go;
+  results, attendance, fees and payments stay under a placeholder name; a parent with no other child is anonymised.
+- **The school's export** (`core/data_export.py`, School Admin): every table as CSV plus every upload, in one ZIP built in
+  the background and streamed to storage; no password, secret or token columns and no stored credentials. Kept seven days,
+  outside the public uploads (the `exports` folder is never served).
+- **API** (`blueprints/api_v1.py`, `core/api_keys.py`): read-only, `/api/v1/...` on the school's own address, `Bearer`
+  keys made by the School Admin with scopes (only a SHA-256 hash is kept), paged by id, 120 calls a minute per key, no
+  session cookie. Docs at `/api/v1/docs`, OpenAPI at `/api/v1/openapi.json`.
+- **Webhooks** (`core/webhooks.py`): `student.created`, `student.archived`, `payment.recorded`, `payment.voided`,
+  `report_card.ready`, signed HMAC-SHA256 (`BrightStars-Signature: t=..,v1=..`), ids only, retried by the job runner,
+  switched off after repeated failures. Each delivery resolves the host once, refuses non-public addresses in production
+  and connects to exactly the checked address.
+
 ### The student and parent portals
 
 - **Students**: their work, tests and practice, released results, report cards, attendance, timetable.

@@ -375,6 +375,8 @@ def _finalize(settings, row):
     except Exception:
         current_app.logger.exception('Parent payment-recorded notification failed for student %s', row.student_id)
     enqueue('send_payment_receipt', payment_id=payment.id, actor_id=admin_id)
+    from core.webhooks import emit, payment_data
+    emit('payment.recorded', payment_data(payment))
 
 
 def _row_items(row):
@@ -450,7 +452,8 @@ def _finalize_refund(event_type, data):
 
     row.status = 'processed'
     payment = obj(FinancePayment, row.payment_id)
-    if payment and payment.status == 'posted':
+    refunded = bool(payment and payment.status == 'posted')
+    if refunded:
         payment.status = 'voided'
         payment.voided_at = now
         payment.voided_by = row.requested_by
@@ -461,6 +464,9 @@ def _finalize_refund(event_type, data):
     db.session.commit()
     audit_log('finance_payment_refunded', 'finance', 'payment', row.payment_id,
               {'refund_id': row.id, 'paystack_refund_id': refund_id, 'amount': row.amount})
+    if refunded:
+        from core.webhooks import emit, payment_data
+        emit('payment.voided', payment_data(payment))
 
 
 def reconcile_pending_refunds(max_age_seconds=120, limit=5):

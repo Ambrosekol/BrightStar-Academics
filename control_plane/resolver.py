@@ -140,6 +140,9 @@ def resolve_tenant():
     # issued for a different one, so an admin/parent/student cookie copied from
     # school A can never authenticate against school B's differently-numbered
     # accounts.
+    # The API (blueprints/api_v1.py) is called with a key, never a sign-in, so it is given no session at all.
+    if request.path.startswith('/api/'):
+        return None
     if not request.path.startswith('/static/') and session.get('tenant_id') != tenant.id:
         session.clear()
         session['tenant_id'] = tenant.id

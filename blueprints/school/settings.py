@@ -65,6 +65,22 @@ def _grading_status():
     return ('Carried on', GOOD) if grading.inherited_from(current['id']) else ('Original A to F', NEUTRAL)
 
 
+def _privacy_status():
+    from core import privacy
+    waiting = len(privacy.open_requests())
+    return (f"{waiting} waiting", WARN) if waiting else ('No requests waiting', GOOD)
+
+
+def _api_status():
+    from sqlalchemy import func, select
+    from models import ApiKey, WebhookEndpoint, db
+    keys = db.session.scalar(select(func.count()).select_from(ApiKey).where(ApiKey.revoked_at.is_(None))) or 0
+    hooks = db.session.scalar(select(func.count()).select_from(WebhookEndpoint).where(WebhookEndpoint.active == 1)) or 0
+    if not keys and not hooks:
+        return ('Not in use', NEUTRAL)
+    return (f"{keys} key{'' if keys == 1 else 's'}, {hooks} webhook{'' if hooks == 1 else 's'}", GOOD)
+
+
 def _reminders_status():
     from blueprints.finance.reminders import settings
     s = settings()
@@ -143,6 +159,14 @@ def _groups(me, workspace, statuses=True):
             E('Entrance examination', 'Set up the entrance examination: its papers, timing and scoring.',
               'admin_entrance_config', 'nav-examconfig', can('entrance.config.view'), keywords='exam admission candidates',
               inplace=False),
+            E('Privacy & data requests', "Families' requests for a copy of their data or to have it erased, and what families allow: photos in publicity, optional messages, exam registration.",
+              'admin_school_privacy', 'nav-privacy', admin or can('privacy.manage'), _privacy_status,
+              'ndpa data protection consent gdpr erase delete export copy request photos privacy'),
+            E("Export all the school's data", 'Every record and uploaded file the school keeps, as spreadsheets in one ZIP: a backup, or to take elsewhere.',
+              'admin_school_data_export', 'set-history', admin, keywords='export backup download data zip csv move'),
+            E('API & webhooks', "Read-only keys for the school's own developers or a partner, and addresses told when a payment, a student or a report card changes.",
+              'admin_school_api', 'nav-api', admin, _api_status,
+              'api key developer integration webhook partner accounting'),
             E('Class subdivisions', 'Split a JSS or SSS class into subdivisions (JSS 1A, JSS 2 Gold, SS 1A Science), each with its own class teacher, then lock them.',
               'admin_school_subdivisions', 'set-subdivisions', admin, _subdivisions_status, 'subdivision arm stream jss sss split class teacher lock'),
         ]),

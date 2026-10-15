@@ -26,6 +26,8 @@ EXEMPT = {
     # the ID card print sheet (print-only) and the public card check a QR code opens (one read, no state to lose)
     "school_id_card_sheet.html", "id_card_verify.html", "staff_attendance_display.html", "payroll_payslip.html",
     "error_4xx.html", "error_5xx.html", "marketing.html", "privacy.html",
+    # the API documentation: public, read-only, for developers, nothing to save
+    "api_docs.html",
 }
 
 

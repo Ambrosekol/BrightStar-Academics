@@ -279,9 +279,13 @@ def send_birthday_texts(day):
     done = {sid for (sid,) in tuples(select(NotificationDeliveryLog.student_id).where(
         NotificationDeliveryLog.kind == NOTICE_KIND, NotificationDeliveryLog.created_at >= _day_start_utc(when)))}
     from core.notifications import _notify_parents_sms
+    from core.privacy import allowed
     greeted = 0
-    for r in birthdays_on(when):
-        if r['id'] in done:
+    today = birthdays_on(when)
+    # A birthday greeting is an optional message: a family that has said no to those is not sent one (core/privacy.py).
+    wanted = allowed([r['id'] for r in today], 'optional_messages')
+    for r in today:
+        if r['id'] in done or r['id'] not in wanted:
             continue
         try:
             first_name = ' '.join(str(r['first_name'] or '').split()) or 'there'

@@ -1301,6 +1301,11 @@ import blueprints.school.broadsheet  # noqa: F401,E402
 import blueprints.school.document_studio  # noqa: F401,E402
 import blueprints.school.documents  # noqa: F401,E402
 import blueprints.school.exam_registration  # noqa: F401,E402
+import blueprints.school.privacy_admin  # noqa: F401,E402
+import blueprints.parents.privacy  # noqa: F401,E402
+import blueprints.api_v1  # noqa: F401,E402
+import core.data_export  # noqa: F401,E402  (registers its background job)
+import core.webhooks  # noqa: F401,E402  (registers its background job)
 import blueprints.school.results_records  # noqa: F401,E402
 import blueprints.school.onboarding  # noqa: F401,E402
 import blueprints.school.settings  # noqa: F401,E402

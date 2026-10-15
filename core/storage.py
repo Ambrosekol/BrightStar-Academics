@@ -221,6 +221,82 @@ def save_upload_bytes(subdir, filename, data, content_type=None):
     return f'uploads/{subdir}/{filename}'
 
 
+def save_upload_file(subdir, filename, path, content_type=None):
+    """Store the file at ``path`` (which is moved, not copied, on the local backend) under ``uploads/<subdir>/<filename>``,
+    streamed rather than read into memory. For large generated files: data exports."""
+    if config.storage_backend() == 's3':
+        from core import object_store
+        object_store.put_file(f'{_tenant_key("uploads")}{subdir}/{filename}', path, content_type)
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    else:
+        import shutil
+        folder = os.path.join(uploads_dir(), subdir)
+        os.makedirs(folder, exist_ok=True)
+        shutil.move(path, os.path.join(folder, filename))
+    return f'uploads/{subdir}/{filename}'
+
+
+def download_upload(relative, filename):
+    """A response that downloads a stored upload as ``filename``, or None if it is not there. Streamed from disk on the
+    local backend; on S3, a redirect to a link valid for five minutes. The caller checks who may have it first."""
+    from flask import redirect, send_file
+    if config.storage_backend() == 's3':
+        sanitized = _sanitize_upload_relative(relative)
+        if sanitized is None or not upload_exists(relative):
+            return None
+        from core import object_store
+        response = redirect(object_store.download_url(_tenant_key('uploads') + sanitized, 300, filename))
+    else:
+        path = stored_upload_path(relative)
+        if not path or not os.path.isfile(path):
+            return None
+        response = send_file(path, as_attachment=True, download_name=filename, max_age=0)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+def iter_uploads(skip_folders=()):
+    """``(stored value, size)`` for every file in the current school's uploads, except in ``skip_folders``."""
+    if config.storage_backend() == 's3':
+        from core import object_store
+        for relative, size in object_store.list_all(_tenant_key('uploads')):
+            if relative.split('/', 1)[0] not in skip_folders:
+                yield f'uploads/{relative}', size
+        return
+    root = uploads_dir()
+    for folder, dirs, names in os.walk(root):
+        rel_folder = os.path.relpath(folder, root).replace('\\', '/')
+        if rel_folder == '.':
+            dirs[:] = [d for d in dirs if d not in skip_folders]
+            rel_folder = ''
+        for name in names:
+            path = os.path.join(folder, name)
+            if os.path.islink(path):
+                continue
+            relative = f'{rel_folder}/{name}' if rel_folder else name
+            yield f'uploads/{relative}', os.path.getsize(path)
+
+
+def copy_upload_to(relative, fileobj):
+    """Write a stored upload's bytes into an open binary file, streamed. False if it is not there."""
+    if config.storage_backend() == 's3':
+        sanitized = _sanitize_upload_relative(relative)
+        if sanitized is None:
+            return False
+        from core import object_store
+        return object_store.get_to_file(_tenant_key('uploads') + sanitized, fileobj)
+    path = stored_upload_path(relative)
+    if not path or not os.path.isfile(path):
+        return False
+    import shutil
+    with open(path, 'rb') as src:
+        shutil.copyfileobj(src, fileobj, 1024 * 1024)
+    return True
+
+
 # --------------------------------------------------------------------------------------------
 # Question bank data: backend-aware directory-like access, used by core/banks.py and
 # core/entrance.py so neither has to know which backend is configured.

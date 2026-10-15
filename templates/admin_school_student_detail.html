@@ -54,6 +54,7 @@
   <button type="button" role="tab" data-sp-tab="assignments">Assignments <small>{{ assignments|length }}</small></button>
   <button type="button" role="tab" data-sp-tab="projects">Projects <small>{{ projects|length }}</small></button>
   <button type="button" role="tab" data-sp-tab="journey">School journey <small>{{ enrollment_history|length }}</small></button>
+  <button type="button" role="tab" data-sp-tab="consents">Consents</button>
 </div>
 
 <section class="sp-panel" data-sp-panel="profile" role="tabpanel">
@@ -167,11 +168,42 @@
       <span class="sp-items__end"><span class="ac-tag{{ ' ac-tag--good' if e.active }}">{{ 'Current' if e.active else 'Past' }}</span>{% if can_history %}<a class="ac-link" href="{{ url_for('admin_school_student_history_edit', sid=student.id, history_id=e.id) }}" data-modal>Correct</a>{% endif %}</span></li>{% endfor %}</ul>
   {% else %}<div class="ac-empty"><strong>No school journey recorded</strong>Classes from before this school, or movements recorded by hand, show here.</div>{% endif %}
 </section>
+<section class="sp-panel" data-sp-panel="consents" role="tabpanel" hidden>
+  {% if student.erased_at %}<p class="ac-hint">This student's personal data was erased at the family's request on {{ student.erased_at[:10] }}. The record is kept, under a placeholder name, for results and fees.</p>
+  {% else %}
+  <table class="ac-t" aria-label="Consents">
+    <thead><tr><th>For</th><th>Now</th><th>How it was decided</th></tr></thead>
+    <tbody>{% for p, st in consents.items() %}<tr>
+      <td><strong>{{ consent_purposes[p].title }}</strong><small>{{ consent_purposes[p].text }}</small></td>
+      <td>{% if st.granted %}<span class="ac-tag ac-tag--good">Allowed</span>{% else %}<span class="ac-tag ac-tag--attn">Not allowed</span>{% endif %}</td>
+      <td>{% if st.decided %}{{ 'By a parent in the portal' if st.source == 'parent' else 'From a signed form' }}, {{ st.at[:10] }}{% else %}Nobody has decided: {{ 'allowed until the family says no' if st.granted else 'not allowed until the family says yes' }}{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  {% if can_record_consent %}
+  <form method="post" action="{{ url_for('admin_school_student_consent', student_id=student.id) }}" class="ac-form" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-field"><label for="cnP{{ student.id }}">Record from a signed form</label>
+      <select id="cnP{{ student.id }}" name="purpose">{% for p in consents %}<option value="{{ p }}">{{ consent_purposes[p].title }}</option>{% endfor %}</select></div>
+    <div class="ac-field"><label for="cnG{{ student.id }}">The family</label>
+      <select id="cnG{{ student.id }}" name="granted"><option value="1">allows it</option><option value="0">does not allow it</option></select></div>
+    <div class="ac-field" style="flex:1;min-width:220px"><label for="cnN{{ student.id }}">The form</label>
+      <input id="cnN{{ student.id }}" name="note" maxlength="300" required placeholder='e.g. "Signed by the mother, 12 September"'></div>
+    <button class="ac-btn ac-btn--sm" type="submit">Record</button>
+  </form>
+  {% endif %}
+  {% if consent_history %}
+  <details style="margin-top:10px"><summary class="ac-hint">History ({{ consent_history|length }})</summary>
+    <ul style="margin:6px 0 0;padding-left:18px;font-size:.86rem">{% for h in consent_history %}
+      <li>{{ h.at[:16]|replace('T', ' ') }}: {{ h.title }} {{ 'given' if h.granted else 'withdrawn' }}{% if h.by %}, by {{ h.by }}{% endif %} ({{ 'parent portal' if h.source == 'parent' else 'signed form' }}){% if h.note %}: {{ h.note }}{% endif %}</li>
+    {% endfor %}</ul></details>
+  {% endif %}
+  {% endif %}
+</section>
 </div>
 <script nonce="{{ csp_nonce() }}">
 (function(){
   var root=document.querySelector('[data-sp="{{ student.id }}"]:not([data-ready])'); if(!root) return; root.setAttribute('data-ready','1');
-  var key='sp-tab', map={'#enrolment-history':'journey','#academic-record':'marks','#term-results':'terms'};
+  var key='sp-tab', map={'#consents':'consents','#enrolment-history':'journey','#academic-record':'marks','#term-results':'terms'};
   function show(name){
     root.querySelectorAll('[data-sp-tab]').forEach(function(b){ var on=b.dataset.spTab===name; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
     root.querySelectorAll('[data-sp-panel]').forEach(function(p){ p.hidden=p.dataset.spPanel!==name; });

@@ -1,0 +1,95 @@
+{% extends "admin_base.html" %}
+{% block title %}Privacy & data requests — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Your school > Privacy & data requests (blueprints/school/privacy_admin.py): families' requests, oldest
+    due first, and what families have allowed. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  .pr-req{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px 18px;padding:12px 0;border-top:1px solid var(--line,#e3e7ee)}
+  .pr-req:first-of-type{border-top:0}
+  .pr-req h3{margin:0;font-size:.95rem}
+  .pr-req p{margin:3px 0 0;font-size:.85rem;color:var(--ink-3,#5b6577)}
+  .pr-due{font-weight:600}.pr-late{color:#a12a2a}
+  .pr-act{display:flex;flex-direction:column;gap:6px}
+  .pr-act form{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .pr-act .ac-input{min-width:0;flex:1}
+  .pr-warn{font-size:.82rem;color:#8e2b2b;margin:0}
+  .pr-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .pr-sum div{border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px 12px}
+  .pr-sum strong{display:block;font-size:.88rem}
+  .pr-sum span{font-size:1.25rem;font-weight:700}
+  .pr-sum small{display:block;color:var(--ink-3,#5b6577);font-size:.78rem}
+  .pr-closed{width:100%;border-collapse:collapse;font-size:.86rem}
+  .pr-closed td,.pr-closed th{padding:6px 8px;border-top:1px solid var(--line,#e3e7ee);text-align:left}
+  .pr-closed th{border-top:0;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,#5b6577)}
+  @media (max-width:760px){.pr-req{grid-template-columns:1fr}}
+</style>
+<div class="ac fi">
+
+<section class="ac-panel" aria-labelledby="prOpen">
+  <h2 id="prOpen">Requests waiting <small>{{ open_rows|length }}</small></h2>
+  <p class="ac-hint" style="margin-top:0">A family can ask for a copy of a child's data, or for it to be erased. The law gives the school
+    {{ due_days }} days to answer. Check the request really comes from the child's parent before you approve it.</p>
+  {% if not open_rows %}<p class="ac-hint">Nothing is waiting.</p>{% endif %}
+  {% for r in open_rows %}{% set who = names.get(r.student_id) %}
+  <div class="pr-req">
+    <div>
+      <h3>{{ kinds[r.kind] }}: {{ who[0] if who else 'a child' }} <small class="ac-hint">{{ who[1] if who else '' }}</small></h3>
+      <p>Asked by {{ parents.get(r.parent_id, 'a parent') }} on {{ r.requested_at[:10] }}.
+        <span class="pr-due {{ 'pr-late' if r.due_at < now }}">{{ 'Overdue' if r.due_at < now else 'Answer by' }} {{ r.due_at[:10] }}</span></p>
+      {% if r.reason %}<p>“{{ r.reason }}”</p>{% endif %}
+      {% if r.status == 'approved' %}<p>Approved: {% set ex = exports.get(r.export_id) %}{{ 'the copy is ready for the family to download' if ex and ex.status == 'ready' else ('preparing failed: approve again after checking' if ex and ex.status == 'failed' else 'the copy is being prepared') }}.</p>{% endif %}
+    </div>
+    {% if r.status == 'pending' %}
+    <div class="pr-act">
+      <form method="post" action="{{ url_for('admin_school_privacy_decide', request_id=r.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="approve">
+        {% if r.kind == 'erasure' %}
+          {% if school_admin %}
+          <input class="ac-input" name="confirm" placeholder="Type {{ who[1] if who else 'the admission no' }} to confirm" aria-label="Admission number to confirm" autocomplete="off" required>
+          <button class="ac-btn ac-btn--sm ac-btn--danger" type="submit">Erase</button>
+          {% else %}<p class="pr-warn">Only the School Admin can erase a child's data.</p>{% endif %}
+        {% else %}
+          <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Approve and prepare the copy</button>
+        {% endif %}
+      </form>
+      {% if r.kind == 'erasure' and school_admin %}<p class="pr-warn">Erasing removes the name, contact and health details, photograph,
+        sign-in and messages, and cannot be undone. Results and fees stay under a placeholder name.</p>{% endif %}
+      <form method="post" action="{{ url_for('admin_school_privacy_decide', request_id=r.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="decline">
+        <input class="ac-input" name="note" maxlength="300" placeholder="Why it is declined (the family sees this)" aria-label="Reason">
+        <button class="ac-btn ac-btn--sm" type="submit">Decline</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section class="ac-panel" aria-labelledby="prSum">
+  <h2 id="prSum">What families allow <small>{{ total }} students</small>
+    <a class="ac-btn ac-btn--sm" href="{{ url_for('admin_school_privacy_consents_csv') }}" style="float:right">Download, child by child</a></h2>
+  <div class="pr-sum">
+    {% for p in child_purposes %}
+    <div><strong>{{ purposes[p].title }}</strong><span>{{ summary[p].allowed }}</span><small>allowed, of {{ total }};
+      {{ summary[p].decided }} decided by a parent or a signed form, the rest {{ 'allowed until they say no' if purposes[p].default else 'not allowed until they say yes' }}</small></div>
+    {% endfor %}
+  </div>
+  <p class="ac-hint" style="margin-bottom:0">Parents choose in their portal (Privacy &amp; my data). For a family that does not use the portal,
+    record what they signed on the student's own page. Exam registration leaves out any candidate whose family has not allowed it.</p>
+</section>
+
+{% if closed %}
+<section class="ac-panel" aria-labelledby="prClosed">
+  <h2 id="prClosed">Answered</h2>
+  <table class="pr-closed"><thead><tr><th>Asked</th><th>Child</th><th>For</th><th>Answer</th></tr></thead><tbody>
+  {% for r in closed %}{% set who = names.get(r.student_id) %}
+    <tr><td>{{ r.requested_at[:10] }}</td><td>{{ who[0] if who else '—' }}</td><td>{{ kinds[r.kind] }}</td>
+      <td>{{ {'declined': 'Declined', 'done': 'Done'}.get(r.status, r.status) }} {{ (r.decided_at or '')[:10] }}{% if r.decision_note %}: {{ r.decision_note }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</section>
+{% endif %}
+</div>
+{% endblock %}

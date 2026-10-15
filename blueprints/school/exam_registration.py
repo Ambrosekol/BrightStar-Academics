@@ -12,6 +12,10 @@ pointed out, so it can be put right on the student's record before registration.
 The exam bodies' own portals change their formats from year to year; this gives the details they all ask for, clean
 and checked, rather than imitating one portal's file.
 
+Sharing a child's details with an exam body needs the family's consent (core/privacy.py, 'exam_sharing'): a candidate
+without it is listed with that missing and left out of both downloads. Consent comes from the parent portal, or from
+signed forms recorded here for several candidates at once.
+
 Who: school.exam_registration (the head teacher, the academic administrator and the records officers; the School Admin
 always). It is personal data: every download is in the activity log.
 """
@@ -22,7 +26,7 @@ import re
 import zipfile
 from datetime import date, datetime
 
-from flask import Response, render_template, request
+from flask import Response, flash, redirect, render_template, request, url_for
 from sqlalchemy import and_, select
 
 from app import _active_sessions, _school_current_session, app
@@ -30,7 +34,8 @@ from blueprints.entrance.helpers import csv_safe
 from core import grading
 from core.db_helpers import tuples
 from core.school_structure import takes_subject
-from core.security import admin_required, audit_log
+from core import privacy
+from core.security import admin_required, audit_log, csrf_protect, current_admin
 from core.storage import read_upload_bytes
 from models import ClassSubject, SchoolClass, SchoolSubject, Student, StudentEnrolment, db
 
@@ -65,6 +70,7 @@ def candidates(class_id, session_id):
                       .join(ClassSubject, ClassSubject.subject_id == SchoolSubject.id)
                       .where(ClassSubject.class_id == class_id, SchoolSubject.active == 1).order_by(SchoolSubject.name))
     today = date.today()
+    consented = privacy.allowed([s.id for s in students], 'exam_sharing')
     out = []
     for i, s in enumerate(students, 1):
         born = _dob(s.date_of_birth)
@@ -84,11 +90,13 @@ def candidates(class_id, session_id):
             missing.append('photograph')
         if not taken:
             missing.append('subjects')
+        if s.id not in consented:
+            missing.append('consent to share')
         out.append({'n': i, 'id': s.id, 'surname': (s.last_name or '').strip(), 'first': (s.first_name or '').strip(),
                     'middle': (s.middle_name or '').strip(), 'sex': sex if sex in ('M', 'F') else '',
                     'dob': born.strftime('%d/%m/%Y') if born else '', 'state': (s.state_of_origin or '').strip(),
                     'number': s.student_number or s.admission_no or '', 'department': s.department or '',
-                    'subjects': taken, 'photo': s.photo_path, 'missing': missing})
+                    'subjects': taken, 'photo': s.photo_path, 'missing': missing, 'consent': s.id in consented})
     return out
 
 
@@ -152,11 +160,43 @@ def admin_school_exam_registration():
     class_row = next((c for c in classes if c[0] == wanted), None) or (classes[-1] if classes else None)
     rows = candidates(class_row[0], session_row.id) if class_row and session_row else []
     fmt = request.args.get('format')
+    shared = [c for c in rows if c['consent']]
     if rows and fmt in ('csv', 'photos'):
+        if not shared:
+            flash('No candidate in this class has consent to share their details yet, so there is nothing to download.',
+                  'error')
+            return redirect(url_for('admin_school_exam_registration', body=body, class_id=class_row[0],
+                                    session_id=session_row.id))
         audit_log('exam_registration_downloaded', 'school', 'class', class_row[0],
-                  {'body': body, 'what': fmt, 'session_id': session_row.id, 'candidates': len(rows)})
-        args = (rows, body, class_row[1], session_row.name)
+                  {'body': body, 'what': fmt, 'session_id': session_row.id, 'candidates': len(shared),
+                   'left_out_without_consent': len(rows) - len(shared)})
+        args = (shared, body, class_row[1], session_row.name)
         return _csv(*args) if fmt == 'csv' else _photos(*args)
     return render_template('school_exam_registration.html', bodies=BODIES, body=body, classes=classes, class_row=class_row,
                            sessions=sessions, session_row=session_row, rows=rows,
-                           ready=sum(1 for c in rows if not c['missing']))
+                           ready=sum(1 for c in rows if not c['missing']), without_consent=[c for c in rows if not c['consent']])
+
+
+@app.post('/admin/school/exam-registration/consent')
+@admin_required
+@csrf_protect
+def admin_school_exam_registration_consent():
+    """Record signed consent forms for several candidates at once: the forms are kept by the school."""
+    me = current_admin()
+    note = ' '.join(request.form.get('note', '').split())[:200]
+    ids = [int(v) for v in request.form.getlist('student_id') if v.isdigit()][:500]
+    back = redirect(request.form.get('back') if (request.form.get('back') or '').startswith('/admin/school/exam-registration')
+                    else url_for('admin_school_exam_registration'))
+    if not note:
+        flash('Say what the school holds, for example "Signed forms collected 14 October".', 'error')
+        return back
+    known = {sid for (sid,) in tuples(select(Student.id).where(Student.id.in_(ids or [0]), Student.active == 1))}
+    recorded = 0
+    for sid in sorted(known):
+        if privacy.record('exam_sharing', True, student_id=sid, source='staff', admin_id=me['id'], note=note,
+                          ip=request.remote_addr):
+            recorded += 1
+    audit_log('exam_consent_recorded', 'privacy', 'school', None, {'students': sorted(known), 'note': note}, commit=False)
+    db.session.commit()
+    flash(f'Consent to share recorded for {recorded} candidate{"" if recorded == 1 else "s"}.', 'success')
+    return back

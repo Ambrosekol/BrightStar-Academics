@@ -58,6 +58,7 @@ NEVER = 'never'
 FOLDER_RULES = {
     'branding': PUBLIC,
     'messages': NEVER,
+    'exports': NEVER,           # data exports: downloaded only through their own checked routes
     'hr': NEVER,
     'expenses': NEVER,
     'idcards': frozenset({'admin'}),

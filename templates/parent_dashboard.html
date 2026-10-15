@@ -46,6 +46,13 @@
     <a class="ac-btn ac-btn--primary" href="{{ url_for('parent_feedback') }}" data-full>{{ 'Open messages' if open_threads else 'Message the school' }}</a>
   </div>
 </header>
+{% if parent_privacy_prompt() %}
+<p class="ac-note" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap" data-privacy-prompt>
+  <span><strong>Please read the privacy notice</strong> and choose what the school may do with your children's information
+    (photos in publicity, optional messages, exam registration).</span>
+  <a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('parent_privacy') }}">Privacy &amp; my data</a>
+</p>
+{% endif %}
 
 <dl class="fi-k">
   <div class="pp-owing {{ 'is-owing is-alert' if owing else 'is-lead' }}"><dt>{{ 'Total Outstanding fees' if owing else 'Fees' }}</dt><dd class="pp-owing__amount">{% if owing %}₦{{ '{:,.2f}'.format(total_outstanding_all) }}{% else %}All paid{% endif %}</dd><small>{{ 'Across every session and child' if owing else 'Nothing owing in any session' }}</small></div>

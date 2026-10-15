@@ -198,6 +198,8 @@ def admin_school_students_import_run():
             db.session.add(StudentEnrolment(student_id=student.id, class_id=class_row.id, session_id=session_row['id'],
                                             enrolled_at=datetime.now(timezone.utc).isoformat(), active=1))
             db.session.commit()
+            from core.webhooks import emit
+            emit('student.created', {'student_id': student.id, 'admission_no': student.admission_no, 'from': 'import'})
         except Exception as exc:
             db.session.rollback()
             outcomes.append({'line': line_no, 'ok': False, 'name': name, 'reason': f'could not be saved ({plain_failure(exc, "Student import row")})'})

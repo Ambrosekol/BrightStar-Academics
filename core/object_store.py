@@ -42,6 +42,33 @@ def put_bytes(key, data, content_type=None):
     _client().put_object(Bucket=_bucket(), Key=key, Body=data, **extra)
 
 
+def put_file(key, path, content_type=None):
+    """Upload the file at ``path`` to ``key``, streamed from disk (in parts when it is large), never whole in memory."""
+    extra = {'ExtraArgs': {'ContentType': content_type}} if content_type else {}
+    _client().upload_file(path, _bucket(), key, **extra)
+
+
+def download_url(key, seconds, filename):
+    """A link that downloads ``key`` as ``filename`` for the next ``seconds`` only. For a large file a person is
+    already allowed to have (checked before this is called), so it never passes through the application."""
+    return _client().generate_presigned_url(
+        'get_object', Params={'Bucket': _bucket(), 'Key': key,
+                              'ResponseContentDisposition': f'attachment; filename="{filename}"'},
+        ExpiresIn=int(seconds))
+
+
+def get_to_file(key, fileobj):
+    """Write ``key``'s bytes into an open binary file, streamed. False if there is nothing at ``key``."""
+    from botocore.exceptions import ClientError
+    try:
+        _client().download_fileobj(_bucket(), key, fileobj)
+        return True
+    except ClientError as exc:
+        if _error_code(exc) in ('NoSuchKey', '404', 'NotFound'):
+            return False
+        raise
+
+
 def put_if_absent(key, data, content_type=None):
     """Write ``data`` to ``key`` only if nothing is there yet.
 

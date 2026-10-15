@@ -227,6 +227,9 @@ def admin_school_students_import_history_run():
             if outcome == 'graduated':
                 archived = archive_students([student.id], f'Graduated ({session_row.name})', me['id'])
             db.session.commit()
+            if outcome == 'graduated' and archived:
+                from core.webhooks import emit
+                emit('student.archived', {'student_id': student.id, 'reason': 'graduated'})
         except Exception as exc:
             db.session.rollback()
             if new_session is not None:

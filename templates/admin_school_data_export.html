@@ -1,0 +1,43 @@
+{% extends "admin_base.html" %}
+{% block title %}Export all the school's data — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Your school > Export all the school's data (blueprints/school/privacy_admin.py, core/data_export.py),
+    the School Admin's alone. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  .dx-list{width:100%;border-collapse:collapse;font-size:.88rem}
+  .dx-list td,.dx-list th{padding:7px 8px;border-top:1px solid var(--line,#e3e7ee);text-align:left;vertical-align:middle}
+  .dx-list th{border-top:0;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,#5b6577)}
+</style>
+<div class="ac fi">
+<section class="ac-panel" aria-labelledby="dxNew">
+  <h2 id="dxNew">Export all the school's data</h2>
+  <p style="margin-top:0">One ZIP file with a spreadsheet for every kind of record the school keeps (students, parents, staff, classes,
+    results, attendance, fees, payments, messages and the rest) and every uploaded file (photographs, signatures, attachments).
+    Open the spreadsheets in Excel, keep the file as a backup, or take it to another system.</p>
+  <p class="ac-hint">Left out: passwords and other sign-in secrets, and the school's stored keys for email, SMS and Paystack. It is
+    prepared in the background (a large school takes a few minutes), kept for {{ keep_days }} days, then removed. It holds every
+    family's personal data: keep it safe.</p>
+  <form method="post" action="{{ url_for('admin_school_data_export') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button class="ac-btn ac-btn--primary" type="submit">Prepare an export</button>
+  </form>
+</section>
+{% if rows %}
+<section class="ac-panel" aria-labelledby="dxList">
+  <h2 id="dxList">Exports</h2>
+  <table class="dx-list"><thead><tr><th>Asked for</th><th>By</th><th>What is in it</th><th></th></tr></thead><tbody>
+  {% for e, by in rows %}{% set s = loads(e.summary_json) if e.summary_json else {} %}
+    <tr><td>{{ e.created_at[:16]|replace('T', ' ') }}</td><td>{{ by or '' }}</td>
+      <td>{% if e.status == 'ready' %}{% set nfiles = s.files or 0 %}{{ (s.tables or {})|length }} spreadsheets, {{ '{:,}'.format((s.tables or {}).values()|sum) }} rows, {{ nfiles }} file{{ '' if nfiles == 1 else 's' }} · {% if (e.size_bytes or 0) < 1048576 %}{{ ((e.size_bytes or 0) / 1024)|round|int }} KB{% else %}{{ '%.1f'|format(e.size_bytes / 1048576) }} MB{% endif %}
+        {% elif e.status in ('queued', 'building') %}Being prepared…
+        {% elif e.status == 'failed' %}It could not be prepared. Try again; if it fails again, tell support.
+        {% else %}Removed after {{ keep_days }} days{% endif %}</td>
+      <td>{% if e.status == 'ready' and e.expires_at > now %}<a class="ac-btn ac-btn--sm ac-btn--primary" href="{{ url_for('admin_school_data_export_download', export_id=e.id) }}">Download</a> <span class="ac-hint">until {{ e.expires_at[:10] }}</span>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</section>
+{% endif %}
+</div>
+{% endblock %}

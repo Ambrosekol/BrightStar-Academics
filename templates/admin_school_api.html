@@ -1,0 +1,107 @@
+{% extends "admin_base.html" %}
+{% block title %}API & webhooks — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Your school > API & webhooks (blueprints/school/privacy_admin.py), the School Admin's alone: read-only
+    keys for the school's own developers or a partner, and the addresses told when something happens. A key or a
+    secret is shown once, on the page that creates it. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<style>
+  .ap-once{border:2px solid #1d6b3e;background:#eef8f2;border-radius:10px;padding:12px 14px;margin:0 0 12px}
+  .ap-once code{display:block;margin:6px 0;padding:8px 10px;background:#fff;border:1px solid #cfe5d8;border-radius:6px;
+    font-size:.9rem;word-break:break-all;user-select:all}
+  .ap-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;align-items:start}
+  .ap-form label{display:flex;flex-direction:column;gap:4px;font-size:.84rem;font-weight:600}
+  .ap-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 14px;grid-column:1/-1;
+    font-size:.85rem;border:1px solid var(--line,#e3e7ee);border-radius:8px;padding:8px 10px}
+  .ap-checks legend{font-size:.8rem;font-weight:600;padding:0 4px}
+  .ap-checks label{flex-direction:row;font-weight:400;gap:6px;align-items:flex-start}
+  .ap-tbl{width:100%;border-collapse:collapse;font-size:.86rem}
+  .ap-tbl td,.ap-tbl th{padding:7px 8px;border-top:1px solid var(--line,#e3e7ee);text-align:left;vertical-align:top}
+  .ap-tbl th{border-top:0;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,#5b6577)}
+  .ap-off{color:var(--ink-3,#5b6577)}
+  .ap-hook{border-top:1px solid var(--line,#e3e7ee);padding:10px 0}
+  .ap-hook:first-of-type{border-top:0}
+  .ap-hook__top{display:flex;gap:8px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+  .ap-hook__top form{display:inline}
+  .ap-dl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .ap-pill{font-size:.76rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line,#e3e7ee)}
+  .ap-ok{background:#e3f4ea;border-color:#c3e3cf}.ap-bad{background:#f6e8e8;border-color:#ecc9c9}
+</style>
+<div class="ac fi">
+
+{% if new_key %}
+<div class="ap-once" role="status"><strong>The key for “{{ new_key.name }}”. Copy it now: it is not shown again.</strong>
+  <code>{{ new_key.key }}</code><span class="ac-hint">Give it only to the person or system that needs it. If it is lost or leaks, revoke it and make another.</span></div>
+{% endif %}
+{% if new_secret %}
+<div class="ap-once" role="status"><strong>The signing secret for {{ new_secret.url }}. Copy it now: it is not shown again.</strong>
+  <code>{{ new_secret.secret }}</code><span class="ac-hint">The receiving system uses it to check each notice really came from the school (see the documentation).</span></div>
+{% endif %}
+
+<section class="ac-panel" aria-labelledby="apKeys">
+  <h2 id="apKeys">API keys <a class="ac-btn ac-btn--sm" href="{{ docs_url }}" target="_blank" rel="noopener" style="float:right">Documentation for developers</a></h2>
+  <p class="ac-hint" style="margin-top:0">A key lets the school's own developers, or a partner it hires (an accounting system, a
+    website), read the school's data. Keys only read: nothing can be changed through them. Give each key only the areas it needs.</p>
+  <form method="post" action="{{ url_for('admin_school_api_key_new') }}" class="ap-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+    <label>Who will use it<input class="ac-input" name="name" maxlength="80" required placeholder="e.g. Accounting system"></label>
+    <fieldset class="ap-checks"><legend>What it may read</legend>
+      {% for k, label in scopes.items() %}<label><input type="checkbox" name="scopes" value="{{ k }}"> {{ label }}</label>{% endfor %}
+    </fieldset>
+    <div><button class="ac-btn ac-btn--primary" type="submit">Create the key</button></div>
+  </form>
+  {% if keys %}
+  <table class="ap-tbl" style="margin-top:12px"><thead><tr><th>Key</th><th>May read</th><th>Last used</th><th></th></tr></thead><tbody>
+  {% for k, by in keys %}
+    <tr class="{{ 'ap-off' if k.revoked_at }}"><td><strong>{{ k.name }}</strong><br><span class="ac-hint">bsa_{{ k.prefix }}_… · made {{ k.created_at[:10] }}{% if by %} by {{ by }}{% endif %}</span></td>
+      <td>{{ loads(k.scopes)|join(', ') }}</td>
+      <td>{{ (k.last_used_at or 'never')[:16]|replace('T', ' ') }}</td>
+      <td>{% if k.revoked_at %}Revoked {{ k.revoked_at[:10] }}{% else %}
+        <form method="post" action="{{ url_for('admin_school_api_key_revoke', key_id=k.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="ac-btn ac-btn--sm" type="submit">Revoke</button></form>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody></table>
+  {% endif %}
+</section>
+
+<section class="ac-panel" aria-labelledby="apHooks">
+  <h2 id="apHooks">Webhooks</h2>
+  <p class="ac-hint" style="margin-top:0">An address on the school's own system (or a partner's) that is told the moment something
+    happens, such as a payment recorded, so it does not have to keep asking. Each notice says what happened and the ids involved,
+    never names or contact details, and is signed with the address's secret.</p>
+  {% if endpoints|length < max_endpoints %}
+  <form method="post" action="{{ url_for('admin_school_webhook_new') }}" class="ap-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="_idempotency_key" value="{{ idempotency_key() }}">
+    <label>Address<input class="ac-input" name="url" type="url" maxlength="500" required placeholder="https://"></label>
+    <label>What it is <span class="ac-hint">optional</span><input class="ac-input" name="description" maxlength="120" placeholder="e.g. Accounting system"></label>
+    <fieldset class="ap-checks"><legend>Tell it when</legend>
+      {% for k, label in events.items() %}<label><input type="checkbox" name="events" value="{{ k }}"> {{ label }} <code>{{ k }}</code></label>{% endfor %}
+    </fieldset>
+    <div><button class="ac-btn ac-btn--primary" type="submit">Add the address</button></div>
+  </form>
+  {% endif %}
+  {% for e in endpoints %}
+  <div class="ap-hook">
+    <div class="ap-hook__top">
+      <div><strong>{{ e.url }}</strong>{% if e.description %} <span class="ac-hint">{{ e.description }}</span>{% endif %}<br>
+        <span class="ac-hint">{{ loads(e.events)|join(', ') }}</span>
+        {% if not e.active %}<br><span class="ac-hint" style="color:#8e2b2b">Switched off{% if e.disabled_reason %}: {{ e.disabled_reason }}{% endif %}</span>{% endif %}</div>
+      <div>
+        {% for action, label in (('test', 'Send a test'), ('off' if e.active else 'on', 'Switch off' if e.active else 'Switch on'), ('delete', 'Remove')) %}
+        <form method="post" action="{{ url_for('admin_school_webhook_action', endpoint_id=e.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="{{ action }}"><button class="ac-btn ac-btn--sm" type="submit">{{ label }}</button></form>
+        {% endfor %}
+      </div>
+    </div>
+    {% if recent.get(e.id) %}
+    <div class="ap-dl">{% for d in recent[e.id] %}
+      <span class="ap-pill {{ 'ap-ok' if d.status == 'delivered' else ('ap-bad' if d.status == 'failed' else '') }}" title="{{ d.error or '' }}">{{ d.event }} · {{ d.created_at[5:16]|replace('T', ' ') }} · {{ {'delivered': 'delivered', 'failed': 'failed', 'retrying': 'trying again', 'pending': 'sending', 'skipped': 'not sent'}.get(d.status, d.status) }}{% if d.response_code %} ({{ d.response_code }}){% endif %}</span>
+      {% if d.status == 'failed' %}<form method="post" action="{{ url_for('admin_school_webhook_resend', delivery_id=d.id) }}" style="display:inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="ac-btn ac-btn--sm" type="submit">Send again</button></form>{% endif %}
+    {% endfor %}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+</div>
+{% endblock %}
