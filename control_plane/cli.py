@@ -1,42 +1,11 @@
 """Command-line management of the platform: ``python -m control_plane <command>``.
 
-    init                          create the platform registry tables
-    create-platform-admin USER [--super]   add a platform admin (password prompted)
-    create-tenant CODE "Name" [--domain HOST ...]   (the portal address is issued automatically)
-    upgrade [CODE]                bring school database(s) up to the current schema (with no CODE it also
-                                  records a new launch, like starting the server does)
-    new-launch                    record a new launch of the server: everyone signed in must sign in
-                                  again, except people in the middle of an exam
-    drop-retired-tables [CODE] [--yes]   show (or with --yes drop) the removed website editor's leftover tables
-    sweep-jobs [CODE]              give every school's stuck background jobs another try (run this on a
-                                  cron/systemd timer; ordinary traffic already does it opportunistically,
-                                  this is only needed for a school quiet enough that nothing else would).
-                                  It also sends the day's birthday texts to parents when they are due, so
-                                  a weekend or holiday birthday is not missed
-    add-domain CODE HOST [--primary] / remove-domain HOST
-    suspend CODE [--reason TEXT] / activate CODE
-    create-db-role CODE [--rotate] [--password PW]  create (or, with --rotate, give a new password to)
-                                  a PostgreSQL role that owns exactly this school's own database -
-                                  prints the new connection URL, but changes nothing in the registry
-                                  (see set-db-url). --password sets it yourself; left out, one is
-                                  generated.
-    set-db-url CODE URL            point a school at a different connection string (a literal URL, or
-                                  env:VARIABLE_NAME to read one from the environment instead)
-    rotate-delivery-key OLD NEW [CODE]   re-encrypt every school's own mail/SMS/Paystack secret
-                                  from OLD to NEW - run this, then set BRIGHTSTARS_DELIVERY_KEY=NEW
-                                  everywhere and restart; never change the environment variable first
-    export-tenant CODE [--output DIR]   a school's whole database (pg_dump) plus its own uploads
-                                  folder, in one new directory - what a school leaving is owed
-    delete-tenant CODE [--output DIR]   permanently remove a school - its database, its files, and
-                                  its place in the registry - after exporting it first (see
-                                  export-tenant). Cannot be undone; the export is the way back.
-    force-delete-tenant CODE      the same permanent removal, with no export taken first. For a
-                                  school already exported, or one that was never real to begin with.
-    list
-
-Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the
-registry and, per school, ``--db-url`` (a PostgreSQL URL; when omitted the school gets a database
-of its own on the platform's server). See docs/architecture/MULTI_TENANCY.md.
+Each command is described in ``COMMANDS`` below: its group, a one-line summary (the list shown by
+``python -m control_plane`` or ``--help``), a longer description and examples (shown by
+``python -m control_plane <command> --help``). The parser is built from that table, so the help can
+never fall out of step with the commands. Database locations come from the environment:
+BRIGHTSTARS_PLATFORM_DB for the registry and, per school, ``--db-url``. See
+docs/architecture/MULTI_TENANCY.md.
 """
 
 import argparse
@@ -44,98 +13,238 @@ import getpass
 import os
 import sys
 
+PROG = 'python -m control_plane'
+
+# (group, name, summary, description, examples, arguments)
+# Each argument: (flags, kwargs) for add_argument.
+GROUPS = (
+    ('setup', 'First-time setup'),
+    ('schools', 'Schools'),
+    ('maintenance', 'Upgrades and upkeep'),
+    ('database', 'Databases'),
+    ('security', 'Keys and secrets'),
+    ('leaving', 'Exporting and removing a school'),
+)
+
+COMMANDS = [
+    ('setup', 'init', 'Create the platform registry tables (once, on a new server)',
+     """Creates the platform's own tables in the registry database (BRIGHTSTARS_PLATFORM_DB): the list
+of schools, their addresses, the platform admins and the audit log. Safe to run again: anything already
+there is left as it is. Every other command does this for itself, so it is only needed on its own when
+you want to check the registry database can be reached.""",
+     [f'{PROG} init'], []),
+
+    ('setup', 'create-platform-admin', 'Add someone who can sign in to the platform console',
+     """Adds a platform admin: someone who signs in to the platform console to create and manage schools.
+The password is asked for on screen (never typed on the command line, where it would be kept in the
+shell's history). The first admin ever created is a super admin automatically.""",
+     [f'{PROG} create-platform-admin ambrose --display-name "Ambrose"',
+      f'{PROG} create-platform-admin ada --super'],
+     [(('username',), dict(help='the name they sign in with')),
+      (('--display-name',), dict(help='the name shown in the console (default: the username)')),
+      (('--super',), dict(dest='superadmin', action='store_true',
+                          help='make them a super admin, who can also manage other platform admins'))]),
+
+    ('schools', 'list', 'List every school: its code, status, addresses and database',
+     """Shows every school on the platform with its code, whether it is active or suspended, and its
+addresses (the portal address and any domain of its own) and where its database is (passwords hidden).""",
+     [f'{PROG} list'], []),
+
+    ('schools', 'create-tenant', 'Create a new school: its database, its folder and its portal address',
+     """Registers a new school and builds everything it needs: its own database (with every table and the
+standard classes and roles), its own folder of files, the standard entrance question banks, and its portal
+address (CODE.<BRIGHTSTARS_PORTAL_DOMAIN>), which works at once. With --admin-username it also creates the
+school's first School Admin and prints their one-time password, shown once.
+
+CODE is the school's short code (letters, numbers and dashes, such as "greenfield" or "unity"): it becomes
+part of the portal address and cannot be changed later.""",
+     [f'{PROG} create-tenant greenfield "Greenfield College" --admin-username admin',
+      f'{PROG} create-tenant unity "Unity Secondary School" --domain portal.unityschool.edu.ng --admin-username principal'],
+     [(('code',), dict(help='the school\'s short code: part of its portal address, never changed later')),
+      (('name',), dict(help='the school\'s full name, in quotes')),
+      (('--domain',), dict(action='append', default=[], metavar='HOST',
+                           help="a domain of the school's own (repeat for more). It reaches the portal once its DNS "
+                                "points a CNAME at the portal address")),
+      (('--db-url',), dict(help="where its database lives: a PostgreSQL URL, or env:VARIABLE_NAME. "
+                                "Default: a database of its own on the platform's server")),
+      (('--db-schema',), dict(help='keep the school as a schema inside a shared database (not with PgBouncer)')),
+      (('--admin-username',), dict(help="create the school's first School Admin; their one-time password is printed once")),
+      (('--admin-display-name',), dict(help="that admin's name as shown (default: the username)")),
+      (('--no-starter-banks',), dict(action='store_true',
+                                     help="do not copy the platform's standard entrance question banks into the school"))]),
+
+    ('schools', 'add-domain', "Give a school a domain of its own",
+     """Adds an address that reaches a school's portal. Point the domain's DNS at the portal address with a
+CNAME record first. --primary marks it as the school's main address in the platform console.""",
+     [f'{PROG} add-domain greenfield portal.greenfield.edu.ng --primary'],
+     [(('code',), dict(help="the school's code")),
+      (('hostname',), dict(help='the domain, such as portal.school.edu.ng (no https://)')),
+      (('--primary',), dict(action='store_true', help="mark it as the school's main address in the console"))]),
+
+    ('schools', 'remove-domain', "Remove one of a school's own domains",
+     """Stops a domain reaching its school. The school's portal address (CODE.<portal domain>) cannot be
+removed: it always works.""",
+     [f'{PROG} remove-domain portal.greenfield.edu.ng'],
+     [(('hostname',), dict(help='the domain to remove'))]),
+
+    ('schools', 'suspend', "Take a school's portal offline (its data is kept)",
+     """Takes a school's portal offline for everyone: staff, parents and students see a notice instead.
+Nothing is deleted; activate brings it back exactly as it was. Takes effect within
+BRIGHTSTARS_REGISTRY_CACHE_SECONDS on every server.""",
+     [f'{PROG} suspend greenfield --reason "Subscription unpaid"'],
+     [(('code',), dict(help="the school's code")),
+      (('--reason',), dict(help='why, kept in the platform audit log'))]),
+
+    ('schools', 'activate', 'Bring a suspended school back online',
+     """Reopens a suspended school's portal, with all its data as it was.""",
+     [f'{PROG} activate greenfield'],
+     [(('code',), dict(help="the school's code"))]),
+
+    ('maintenance', 'upgrade', "Bring school databases up to date after a deploy (run on every release)",
+     """Adds any new tables and columns the new version of the application needs, to one school (CODE) or
+to every school. Run it as a deploy step, before the new version starts serving. With no CODE it also
+records a new launch, so everyone signed in signs in again (people in the middle of an exam are left alone).
+Safe to run more than once.""",
+     [f'{PROG} upgrade', f'{PROG} upgrade greenfield'],
+     [(('code',), dict(nargs='?', help='one school only (default: every school)'))]),
+
+    ('maintenance', 'new-launch', 'Sign everyone out (except people sitting an exam)',
+     """Records a new launch of the server: everyone signed in to any school must sign in again, except
+students and candidates in the middle of an exam. upgrade (with no CODE) does this too; use this on its
+own after a security change, such as a changed secret.""",
+     [f'{PROG} new-launch'], []),
+
+    ('maintenance', 'sweep-jobs', "Retry stuck background jobs and send due birthday texts (run on a timer)",
+     """Gives every school's stuck background work another try: emails and texts that failed, exports
+that stopped, webhooks to resend. Ordinary traffic already does this; a school quiet enough for nothing
+else to happen needs this. It also sends the day's birthday texts to parents, so a weekend or holiday
+birthday is not missed. Run it at least hourly in the daytime from cron or a systemd timer.""",
+     [f'{PROG} sweep-jobs', f'{PROG} sweep-jobs greenfield',
+      '# crontab, every 30 minutes:  */30 * * * *  cd /srv/brightstars && venv/bin/python -m control_plane sweep-jobs'],
+     [(('code',), dict(nargs='?', help='one school only (default: every school)'))]),
+
+    ('maintenance', 'drop-retired-tables', "Show (or remove) tables left behind by removed features",
+     """Lists tables in each school's database that the application no longer uses (from features that
+were removed), with how many rows each holds. Empty ones are already dropped by upgrade. Nothing changes
+unless you add --yes.""",
+     [f'{PROG} drop-retired-tables', f'{PROG} drop-retired-tables greenfield --yes'],
+     [(('code',), dict(nargs='?', help='one school only (default: every school)')),
+      (('--yes',), dict(action='store_true',
+                        help='really drop them, including any that still hold rows. Without it nothing changes'))]),
+
+    ('database', 'create-db-role', "Give a school its own database login, owning only its database",
+     """Creates a PostgreSQL role that owns exactly one school's database and nothing else, so a leak
+reaches only that school. Prints the new connection URL once, but changes nothing yet: put the URL in an
+environment variable on every server, then point the school at it with set-db-url. --rotate gives an
+existing role a new password the same way.""",
+     [f'{PROG} create-db-role greenfield',
+      f'{PROG} set-db-url greenfield env:GREENFIELD_DB_URL      # after setting GREENFIELD_DB_URL on every server',
+      f'{PROG} create-db-role greenfield --rotate'],
+     [(('code',), dict(help="the school's code")),
+      (('--rotate',), dict(action='store_true', help='give the existing role a new password')),
+      (('--password',), dict(help='choose the password yourself (at least 10 characters); default: generated'))]),
+
+    ('database', 'set-db-url', "Point one school at a different database address",
+     """Changes where one school's database is. URL is a full PostgreSQL URL, or env:VARIABLE_NAME to read
+it from an environment variable (so the password is not stored in the registry). Takes effect on each
+server once its registry cache expires.""",
+     [f'{PROG} set-db-url greenfield env:GREENFIELD_DB_URL',
+      f'{PROG} set-db-url greenfield "postgresql+psycopg://school_greenfield:...@db2:5432/brightstars_greenfield"'],
+     [(('code',), dict(help="the school's code")),
+      (('url',), dict(help='a PostgreSQL URL, or env:VARIABLE_NAME'))]),
+
+    ('database', 'move-db-address', "Move every school from one database address to another (PgBouncer)",
+     """Points every school whose database is at one host:port at another, keeping each school's database
+name and login. For putting PgBouncer in front of a server that already has schools (5432 to 6432), or
+moving to a new server. Without --apply it only shows what would change. Schools whose address is an
+env: variable, or on another server, are listed and left alone.""",
+     [f'{PROG} move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432',
+      f'{PROG} move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432 --apply'],
+     [(('--from',), dict(dest='from_address', required=True, metavar='HOST:PORT', help='the address the schools use now')),
+      (('--to',), dict(dest='to_address', required=True, metavar='HOST:PORT', help='the address to use instead')),
+      (('--apply',), dict(action='store_true', help='make the change (without it, nothing is changed)'))]),
+
+    ('security', 'rotate-delivery-key', "Change the key that encrypts schools' email, SMS and Paystack secrets",
+     """Re-encrypts every school's stored mail password, SMS token and Paystack keys from the OLD key to
+the NEW one. Order matters: run this first, THEN set BRIGHTSTARS_DELIVERY_KEY=NEW on every server and
+restart. Never change the environment variable first, or the stored secrets can no longer be read.""",
+     [f'{PROG} rotate-delivery-key "$OLD_KEY" "$NEW_KEY"'],
+     [(('old',), dict(help='the key in use now')),
+      (('new',), dict(help='the new key')),
+      (('code',), dict(nargs='?', help='one school only (default: every school)'))]),
+
+    ('leaving', 'export-tenant', "Save a school's whole database and files into a folder",
+     """Writes everything one school owns into a new folder: its whole database (database.sql, made with
+pg_dump) and its uploaded files, with a README on how to bring it back. What a school leaving the
+platform is owed. Needs pg_dump on this machine (or BRIGHTSTARS_PG_DUMP).""",
+     [f'{PROG} export-tenant greenfield --output /backups'],
+     [(('code',), dict(help="the school's code")),
+      (('--output',), dict(default='.', metavar='DIR', help='where to create the export folder (default: here)'))]),
+
+    ('leaving', 'delete-tenant', "Export a school, then remove it permanently",
+     """Permanently removes a school: its database, its files and its place in the registry, after first
+exporting it into DIR (see export-tenant). Cannot be undone; the export is the only way back.""",
+     [f'{PROG} delete-tenant oldschool --output /backups'],
+     [(('code',), dict(help="the school's code")),
+      (('--output',), dict(default='.', metavar='DIR', help='where to create the backup export folder (default: here)'))]),
+
+    ('leaving', 'force-delete-tenant', "Remove a school permanently, with NO export first",
+     """The same permanent removal as delete-tenant, with no export taken first. Only for a school already
+exported, or a test school that was never real. Cannot be undone.""",
+     [f'{PROG} force-delete-tenant test-school'],
+     [(('code',), dict(help="the school's code"))]),
+]
+
+
+def overview():
+    """The grouped list of commands shown by ``python -m control_plane`` and ``--help``."""
+    width = max(len(name) for _, name, *_ in COMMANDS) + 2
+    lines = ['Manage the Brightstars Academics platform from the server.', '',
+             f'Usage:  {PROG} <command> [options]',
+             f'        {PROG} <command> --help      what a command does, with examples', '']
+    for key, title in GROUPS:
+        lines.append(title.upper())
+        for group, name, summary, *_ in COMMANDS:
+            if group == key:
+                lines.append(f'  {name:<{width}}{summary}')
+        lines.append('')
+    lines += ['Common jobs:',
+              f'  New server:      {PROG} init  then  {PROG} create-platform-admin <you>',
+              f'  New school:      {PROG} create-tenant <code> "<Name>" --admin-username admin',
+              f'  Each release:    {PROG} upgrade',
+              f'  On a timer:      {PROG} sweep-jobs', '',
+              'Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the registry; each',
+              "school's own database is created beside it unless create-tenant is given --db-url."]
+    return '\n'.join(lines)
+
+
+class _Formatter(argparse.RawDescriptionHelpFormatter):
+    def __init__(self, prog):
+        super().__init__(prog, max_help_position=30, width=100)
+
 
 def _parser():
-    p = argparse.ArgumentParser(prog='python -m control_plane', description=__doc__,
-                                formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = p.add_subparsers(dest='command', required=True)
-
-    sub.add_parser('init')
-
-    s = sub.add_parser('create-platform-admin')
-    s.add_argument('username')
-    s.add_argument('--display-name')
-    s.add_argument('--super', dest='superadmin', action='store_true',
-                   help='make this the (or another) super admin; the first admin is one automatically')
-
-    s = sub.add_parser('create-tenant')
-    s.add_argument('code')
-    s.add_argument('name')
-    s.add_argument('--domain', action='append', default=[],
-                   help="A domain of the school's own, which reaches the portal once its DNS "
-                        "points a CNAME at the portal address. The portal address itself is "
-                        "always issued automatically.")
-    s.add_argument('--db-url', help="PostgreSQL URL, or env:VARIABLE_NAME. Default: a database of the school's own on the platform's server.")
-    s.add_argument('--db-schema', help='PostgreSQL schema for this school inside a shared database.')
-    s.add_argument('--admin-username', help="Create the school's first admin; a temporary password is printed once.")
-    s.add_argument('--admin-display-name')
-    s.add_argument('--no-starter-banks', action='store_true',
-                   help="Do not copy the platform's standard entrance question banks into the school.")
-
-    s = sub.add_parser('upgrade')
-    s.add_argument('code', nargs='?')
-
-    sub.add_parser('new-launch')
-
-    s = sub.add_parser('drop-retired-tables')
-    s.add_argument('code', nargs='?')
-    s.add_argument('--yes', action='store_true',
-                   help='really drop them, including any that still hold rows. Without it nothing changes.')
-
-    s = sub.add_parser('sweep-jobs')
-    s.add_argument('code', nargs='?')
-
-    s = sub.add_parser('add-domain')
-    s.add_argument('code')
-    s.add_argument('hostname')
-    s.add_argument('--primary', action='store_true')
-
-    s = sub.add_parser('remove-domain')
-    s.add_argument('hostname')
-
-    s = sub.add_parser('suspend')
-    s.add_argument('code')
-    s.add_argument('--reason')
-
-    s = sub.add_parser('activate')
-    s.add_argument('code')
-
-    s = sub.add_parser('create-db-role')
-    s.add_argument('code')
-    s.add_argument('--rotate', action='store_true')
-    s.add_argument('--password', help='Set it yourself (at least 10 characters) instead of generating one.')
-
-    s = sub.add_parser('set-db-url')
-    s.add_argument('code')
-    s.add_argument('url')
-
-    s = sub.add_parser('move-db-address', help='Point every school on one PostgreSQL address at another '
-                                               '(e.g. through PgBouncer). Shows what would change unless --apply.')
-    s.add_argument('--from', dest='from_address', required=True, help='host:port the schools use now')
-    s.add_argument('--to', dest='to_address', required=True, help='host:port to use instead')
-    s.add_argument('--apply', action='store_true', help='make the change (without it, nothing is changed)')
-
-    s = sub.add_parser('rotate-delivery-key')
-    s.add_argument('old')
-    s.add_argument('new')
-    s.add_argument('code', nargs='?')
-
-    s = sub.add_parser('export-tenant')
-    s.add_argument('code')
-    s.add_argument('--output', default='.', help='directory to create the export folder in (default: here)')
-
-    s = sub.add_parser('delete-tenant')
-    s.add_argument('code')
-    s.add_argument('--output', default='.', help='directory to create the backup export folder in (default: here)')
-
-    s = sub.add_parser('force-delete-tenant')
-    s.add_argument('code')
-
-    sub.add_parser('list')
+    options = dict(prog=PROG, usage=f'{PROG} <command> [options]', description=overview(), formatter_class=_Formatter)
+    try:
+        p = argparse.ArgumentParser(suggest_on_error=True, **options)     # "did you mean 'upgrade'?" (Python 3.14)
+    except TypeError:
+        p = argparse.ArgumentParser(**options)
+    # The commands are already listed, grouped, in the description: argparse's own list is not shown again.
+    sub = p.add_subparsers(dest='command', required=True, metavar='<command>', help=argparse.SUPPRESS)
+    for group, name, summary, description, examples, arguments in COMMANDS:
+        epilog = 'Examples:\n' + '\n'.join(f'  {e}' for e in examples) if examples else None
+        s = sub.add_parser(name, description=f'{summary}.\n\n{description}', epilog=epilog,
+                           formatter_class=_Formatter)
+        for flags, kwargs in arguments:
+            s.add_argument(*flags, **kwargs)
     return p
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if not argv:
+        print(overview())          # no command: the list of commands, not an error
+        return 0
     args = _parser().parse_args(argv)
     from . import provisioning as pv
     from .registry import get_tenant, init_platform_db, platform_session, to_info
