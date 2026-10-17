@@ -33,6 +33,13 @@
 <pre><code>default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';
 script-src 'self' 'nonce-&lt;random per request&gt;'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'</code></pre>
 <div class="note"><p><strong>Consequences you will hit.</strong> No external fonts, scripts, images or stylesheets: everything is self-hosted, which is why fonts live in <code>static/fonts/</code>. <code>script-src</code> allows no inline script at all except one carrying that request's own nonce (<code>csp_nonce()</code>, {{ file('app.py') }}): every <code>onclick</code>/<code>onchange</code>/<code>onsubmit</code> attribute a template used to carry was moved to delegated, <code>data-*</code>-driven listeners in {{ file('static/interactions.js') }}, since an inline event-handler attribute is exactly as dangerous to CSP as an inline <code>&lt;script&gt;</code> block. <code>style-src</code> keeps <code>'unsafe-inline'</code> deliberately: a school's own brand colours are already restricted to <code>#rrggbb</code> before they reach a <code>&lt;style&gt;</code> block, where a nonce would buy nothing. Password-reset pages are never cached and send no referrer.</p></div>
+<p><strong>The one exception: learning simulations.</strong> The two student pages that show PhET's simulations
+({{ route('student_simulations') }} and {{ route('student_simulation') }}) set their own policy before
+<code>apply_security_headers</code> runs (it only sets the header when none is there). It is the same policy plus
+<code>https://phet.colorado.edu</code> in <code>img-src</code> and a <code>frame-src</code> of that one address: no other site, and the
+nonce and <code>frame-ancestors 'none'</code> are kept. It is built by <code>csp()</code> in {{ file('core/simulations.py') }}; the
+frame itself is sandboxed (<code>allow-scripts allow-same-origin allow-popups allow-downloads</code>) and sends no referrer. See
+{{ page('families', 'Students and parents') }}.</p>
 
 <h2 id="roles">Who is trusted with what</h2>
 <div class="table-scroll"><table>

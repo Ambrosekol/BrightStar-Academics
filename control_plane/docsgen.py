@@ -256,6 +256,23 @@ def static_files():
     return out
 
 
+@functools.lru_cache(maxsize=1)
+def simulations():
+    """The learning simulations every school starts with (core/simulations_catalogue.py, data only), by topic: each
+    with its PhET name, title, suggested classes and SSS departments."""
+    from core.simulations_catalogue import CATALOGUE, TOPICS
+    levels = {**{n: f'Primary {n}' for n in range(1, 7)}, **{n: f'JSS {n - 6}' for n in range(7, 10)},
+              **{n: f'SSS {n - 9}' for n in range(10, 13)}}
+    out = []
+    for key, label in TOPICS.items():
+        rows = [{'slug': slug, 'title': title, 'url': f'https://phet.colorado.edu/en/simulations/{slug}',
+                 'classes': levels[lo] if lo == hi else f'{levels[lo]} to {levels[hi]}',
+                 'departments': ('' if hi < 10 else 'All' if len(departments) == 3 else ', '.join(departments))}
+                for slug, title, topic, lo, hi, departments in CATALOGUE if topic == key]
+        out.append({'topic': label, 'rows': rows})
+    return out
+
+
 def known_paths():
     """Every source path the reference lists, for the test that keeps the narrative honest."""
     files = {m['path'] for group in modules() for m in group['files']}

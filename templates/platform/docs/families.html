@@ -11,9 +11,50 @@
   <li><strong>Tests and examinations</strong> for their class and current session; one attempt each, timed, with answers saved as they go.</li>
   <li><strong>Practice</strong>, always open and retakeable; see {{ page('academics', 'Academics') }}.</li>
   <li><strong>Results</strong>, only once <em>released</em>, and their <strong>report cards</strong> once a term is complete ({{ file('blueprints/student_portal/report_cards.py') }}).</li>
+  <li><strong>Simulations</strong>: hands-on science and maths simulations from PhET, for their class (see <a href="#simulations">Learning simulations</a>).</li>
   <li>Notifications, and a password change. A student on a temporary password is forced to change it first (<code>student_required</code>).</li>
 </ul>
 <p>Every route that takes a student id from the address checks it against the signed-in session; there is no way to open another student's page by editing a number.</p>
+
+<h3 id="simulations">Learning simulations</h3>
+<p>PhET Interactive Simulations (University of Colorado Boulder) embedded in the student portal, Primary 1 to SSS 3. Nothing
+is copied: each one is an <code>&lt;iframe&gt;</code> of <code>https://phet.colorado.edu/sims/html/&lt;name&gt;/latest/&lt;name&gt;_en.html</code>,
+so a student needs the internet while using one. PhET's licence is CC BY 4.0, so every page that shows one credits PhET
+and links to the licence.</p>
+<ul>
+  <li><strong>The list</strong> is data only, in {{ file('core/simulations_catalogue.py') }}: per simulation its PhET name, title,
+  topic, first and last class (a class's <code>level_order</code>: 1-6 Primary, 7-9 JSS, 10-12 SSS) and the SSS departments it
+  is for. The classes follow PhET's grade bands laid over the Nigerian curriculum (Primary 1-6 as Grades 1-6, JSS as 7-9, SSS
+  as 10-12). Adding a simulation is adding a row; the contract test checks the rows are well formed.</li>
+  <li><strong>Who sees what</strong> is <code>for_student</code> in {{ file('core/simulations.py') }}: the class's level, then the
+  school's choices, then, in SSS, the student's department. A senior student whose department has not been set yet sees
+  every SSS one for their class, as with <code>takes_subject</code> for subjects; Crèche and Nursery have none.</li>
+  <li><strong>The school's choices</strong> are one JSON row in {{ table('school_settings') }} (key <code>learning_simulations</code>):
+  on or off, classes switched off, simulations hidden, and changed classes and departments. A school that never saved reads as on,
+  with every simulation as suggested. The School Admin or a head teacher changes it at {{ route('admin_school_simulations') }}
+  ({{ file('blueprints/school/simulations.py') }}), from Settings; anyone else is refused in the route, and each save is in the
+  activity log as <code>learning_simulations_saved</code>.</li>
+  <li><strong>The pages</strong> are {{ route('student_simulations') }} (topic filter and search) and {{ route('student_simulation') }}
+  (one simulation; 404 if it is not for this student), in {{ file('blueprints/student_portal/simulations.py') }}. The menu entry
+  appears only while the student's class has them on ({{ file('blueprints/portal_shell.py') }}). Both pages send their own
+  Content-Security-Policy that lets PhET in (see {{ page('security', 'Security') }}), so they are deliberately left out of the
+  portal's in-place list: a page loaded in place keeps the policy of the page it was loaded into, and the frame would be refused.</li>
+</ul>
+<h3 id="simulations-list">Every simulation, and who it is suggested for</h3>
+<p>Read from {{ file('core/simulations_catalogue.py') }} each time this page opens, so it is always the current list
+({{ ref.simulations()|sum(attribute='rows', start=[])|length }} in all). These are the suggestions every school starts with;
+a school can hide any of them or change its classes and departments. <em>SSS departments</em> is blank for one that stops
+before SSS.</p>
+{% for group in ref.simulations() %}
+<h4 id="simulations-{{ group.topic|docs_slug }}">{{ group.topic }} <small>({{ group.rows|length }})</small></h4>
+<table>
+  <thead><tr><th>Simulation</th><th>PhET name</th><th>Classes</th><th>SSS departments</th></tr></thead>
+  <tbody>{% for s in group.rows %}<tr><td><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.title }}</a></td><td><code>{{ s.slug }}</code></td><td>{{ s.classes }}</td><td>{{ s.departments }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endfor %}
+
+<p>When a simulation will not show: check the browser's console for a CSP refusal (the page must carry <code>csp()</code> from
+{{ file('core/simulations.py') }}), then whether phet.colorado.edu is reachable from the school's network.</p>
 
 <h2 id="parents">The parent portal</h2>
 <p>Code: {{ file('blueprints/parents/routes.py') }}, helpers in {{ file('blueprints/parents/helpers.py') }}, report cards in {{ file('blueprints/parents/report_cards.py') }}. A parent account ({{ table('parent_accounts') }}) is linked to one or more children through {{ table('parent_student_links') }}; a link can be switched off. The <em>link</em>, not the account, authorises everything: a parent can open a child, the child's finances and receipts, and the child's report cards only through an active link ({{ route('parent_dashboard') }}, {{ route('parent_child_detail') }}, {{ route('parent_child_finance') }}).</p>
