@@ -2,8 +2,8 @@
 {% from "platform/docs/_macros.html" import file, tpl, route, table, perm, page with context %}
 {% block content %}
 
-<p>The console is where Brightstars operators run the platform: create and suspend schools, manage their addresses and look, and (for the super admin) manage the team.
-It is served only on the platform hostnames (<code>BRIGHTSTARS_PLATFORM_HOSTS</code>) and is invisible from a school's own address: the guard {{ file('control_plane/console.py') }}
+<p>The console is where Beacon operators run the platform: create and suspend schools, manage their addresses and look, and (for the super admin) manage the team.
+It is served only on the platform hostnames (<code>BEACON_PLATFORM_HOSTS</code>) and is invisible from a school's own address: the guard {{ file('control_plane/console.py') }}
 calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider cannot even tell the routes exist.</p>
 
 <h2 id="pages">What is on the platform address</h2>
@@ -64,7 +64,7 @@ calls <code>platform_host_only</code> returns 404 anywhere else, so an outsider 
 <p>Every school gets a <strong>portal address</strong> the platform owns. It works at once and can never be removed. A school may add its own domain as well: the school creates one DNS record, <code>portal.theschool.example. CNAME theschool.&lt;portal domain&gt;.</code>, and the console (or <code>add-domain</code>) registers the hostname ({{ route('platform_school_domains') }}). Your reverse proxy needs a certificate for every hostname it serves (a wildcard for the portal domain, plus one per school domain) and must pass the original <code>Host</code> header through unchanged, because that is what selects the school.</p>
 
 <h3 id="suspend">Suspending</h3>
-<p>{{ route('platform_school_status') }} takes a school offline for everyone (staff, parents, students, candidates) within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code> on each worker, because host lookups are cached. Data is untouched and returns on reactivation. A reason is recorded.</p>
+<p>{{ route('platform_school_status') }} takes a school offline for everyone (staff, parents, students, candidates) within <code>BEACON_REGISTRY_CACHE_SECONDS</code> on each worker, because host lookups are cached. Data is untouched and returns on reactivation. A reason is recorded.</p>
 
 <h3 id="look">Look of the portal</h3>
 <p>Colours, logo and photographs can be changed afterwards from the school's page ({{ route('platform_school_branding') }}) and, if the school's <code>branding.manage</code> permission is granted, by the school's own administrators. Both use the same rules in {{ file('core/branding.py') }} and {{ file('core/theme.py') }}, so they cannot disagree about what is allowed.</p>

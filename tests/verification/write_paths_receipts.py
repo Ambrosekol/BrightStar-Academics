@@ -55,7 +55,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # a failure may quot
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_receipts_")
+TMP = tempfile.mkdtemp(prefix="beacon_receipts_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -63,12 +63,12 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('receipts')
 atexit.register(DROP_TEST_DATABASES)  # even if this script stops half way, its databases go
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -91,9 +91,9 @@ from werkzeug.security import generate_password_hash  # noqa: E402
 
 # app.py has just read the developer's .env, which may hold real mail and SMS credentials. A test
 # must never be able to reach them: start from a platform with no shared account at all.
-PLATFORM_ENV = ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-                "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
-                "BRIGHTSTARS_DELIVERY_KEY", "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS")
+PLATFORM_ENV = ("BEACON_SMTP_HOST", "BEACON_SMTP_USER", "BEACON_SMTP_FROM", "BEACON_SMTP_PASSWORD",
+                "BEACON_SMS_API_TOKEN", "BEACON_SMS_SENDER_ID", "BEACON_SMS_GATEWAY", "BEACON_SMS_PAYER",
+                "BEACON_DELIVERY_KEY", "BEACON_SMTP_PORT", "BEACON_SMTP_SSL", "BEACON_SMTP_STARTTLS")
 for name in PLATFORM_ENV:
     os.environ.pop(name, None)
 
@@ -766,8 +766,8 @@ Outbox.mode = None
 r, said = send(op_gamma, "email", PG)
 check("a school with no mail account of its own and no platform account says email is not set up, and sends nothing",
       "not set up for this school" in said and not Outbox.mail and logs(gamma, PG, "email")[0][0] == "failed")
-os.environ.update({"BRIGHTSTARS_SMTP_HOST": "mail.platform.test", "BRIGHTSTARS_SMTP_PORT": "587", "BRIGHTSTARS_SMTP_USER": "platform-user",
-                   "BRIGHTSTARS_SMTP_PASSWORD": "platform-pw", "BRIGHTSTARS_SMTP_FROM": "noreply@platform.example"})
+os.environ.update({"BEACON_SMTP_HOST": "mail.platform.test", "BEACON_SMTP_PORT": "587", "BEACON_SMTP_USER": "platform-user",
+                   "BEACON_SMTP_PASSWORD": "platform-pw", "BEACON_SMTP_FROM": "noreply@platform.example"})
 try:
     clear_outbox()
     r, said = send(op_gamma, "email", PG)
@@ -864,14 +864,14 @@ check("Beta's text uses Beta's token and sender name, names Beta's receipt, and 
       and Outbox.sms[0]["json"]["to"] == "+2348055550000" and NO_B in Outbox.sms[0]["json"]["body"]
       and "Alpha" not in Outbox.sms[0]["json"]["body"] and NO_A not in Outbox.sms[0]["json"]["body"], str(Outbox.sms))
 # who pays: the platform's account for a school with none of its own ('either'), then for every school ('platform')
-os.environ.update({"BRIGHTSTARS_SMS_API_TOKEN": "platform-token", "BRIGHTSTARS_SMS_SENDER_ID": "PLATFORM", "BRIGHTSTARS_SMS_PAYER": "either"})
+os.environ.update({"BEACON_SMS_API_TOKEN": "platform-token", "BEACON_SMS_SENDER_ID": "PLATFORM", "BEACON_SMS_PAYER": "either"})
 try:
     clear_outbox()
     r, said = send(op_gamma, "sms", PG)
     check("payer 'either': a school with none of its own can send, through the platform's token and sender name (to the guardian phone, there being no parent account)",
           said == "payment text sent successfully." and Outbox.sms and all(c["token"] == "Bearer platform-token" and c["json"]["from"] == "PLATFORM" for c in Outbox.sms)
           and Outbox.sms[0]["json"]["to"] == "+2348035550010", str(Outbox.sms))
-    os.environ["BRIGHTSTARS_SMS_PAYER"] = "platform"
+    os.environ["BEACON_SMS_PAYER"] = "platform"
     clear_outbox()
     r, said = send(op_alpha, "sms", PA)
     check("payer 'platform': even a school with its own account sends through the platform's",

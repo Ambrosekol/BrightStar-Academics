@@ -44,7 +44,7 @@
 {#- The version and the privacy link sit on the school's side, on its glass strip. -#}
 {% block plate_extra %}
         <div class="auth-plate__extra">
-          <p class="auth-version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
+          <p class="auth-version">Beacon Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
           <p class="auth-legal"><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
         </div>
 {% endblock %}
@@ -52,7 +52,7 @@
     foot of the page instead, centred (static/school-ui.css, .auth-foot); on a wider screen they stay on the school's side. -#}
 {% block legal %}
       <footer class="auth-foot">
-        <p class="auth-foot__version">Brightstars Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
+        <p class="auth-foot__version">Beacon Academics &middot; version {{ platform_version.version }}{% if platform_version.released %} &middot; released {{ platform_version.released }}{% endif %}</p>
         <p><a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a></p>
       </footer>
 {% endblock %}

@@ -15,7 +15,7 @@ compressed.
   change under the same name, so they are kept for thirty days.
 * **Compression.** Pages, fragments loaded in place, JSON and the static text files are gzipped for a browser that
   accepts it (every current one does): a page of a few hundred kilobytes travels as a few dozen. A static file is
-  compressed once per version and kept. Set ``BRIGHTSTARS_GZIP=0`` where a proxy in front already compresses.
+  compressed once per version and kept. Set ``BEACON_GZIP=0`` where a proxy in front already compresses.
 """
 
 import gzip
@@ -34,7 +34,7 @@ _STATIC_GZ_MAX = 512
 
 
 def _enabled():
-    return os.environ.get('BRIGHTSTARS_GZIP', '1').strip().lower() not in ('0', 'false', 'no', 'off')
+    return os.environ.get('BEACON_GZIP', '1').strip().lower() not in ('0', 'false', 'no', 'off')
 
 
 def _mtime(static_folder, filename):

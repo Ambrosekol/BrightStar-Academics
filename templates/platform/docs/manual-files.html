@@ -4,7 +4,7 @@
 
 <p>A school's files are its uploads (logo and sign-in photographs, staff and student photographs, signatures, question
 and assignment pictures, store pictures, message attachments), its question banks, and its numbering rules. They live
-either in a folder per school (<code>BRIGHTSTARS_STORAGE_BACKEND=local</code>, under <code>BRIGHTSTARS_TENANTS_DIR</code>,
+either in a folder per school (<code>BEACON_STORAGE_BACKEND=local</code>, under <code>BEACON_TENANTS_DIR</code>,
 <code>tenants/&lt;code&gt;/</code> by default) or in an S3-compatible bucket (<code>s3</code>). All reading and
 writing goes through {{ file('core/storage.py') }}, so the rest of the code works the same either way.</p>
 
@@ -40,8 +40,8 @@ writing goes through {{ file('core/storage.py') }}, so the rest of the code work
   <div class="see"><b>You see</b><div>Broken pictures everywhere; the log says "Could not read uploads/… from object storage" with the provider's error.</div></div>
   <div><b>Why</b><div><p>The bucket refused or failed the read: keys without read permission, the wrong region or endpoint, a renamed bucket, or a network fault ({{ file('core/object_store.py') }}).</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Check <code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ENDPOINT_URL</code> (needed for anything that is not AWS) and <code>BRIGHTSTARS_S3_REGION</code> (often <code>auto</code> for R2).</li>
-    <li>The key needs read, write, list and delete on the bucket (and the prefix, if <code>BRIGHTSTARS_S3_PREFIX</code> is set).</li>
+    <li>Check <code>BEACON_S3_BUCKET</code>, <code>BEACON_S3_ENDPOINT_URL</code> (needed for anything that is not AWS) and <code>BEACON_S3_REGION</code> (often <code>auto</code> for R2).</li>
+    <li>The key needs read, write, list and delete on the bucket (and the prefix, if <code>BEACON_S3_PREFIX</code> is set).</li>
     <li>Test from the server: <code>aws s3 ls s3://BUCKET/ --endpoint-url URL</code> with the same keys.</li>
   </ol></div></div>
   <div><b>Check</b><div>A school's logo shows on its sign-in page; uploading a new photograph works.</div></div>
@@ -51,7 +51,7 @@ writing goes through {{ file('core/storage.py') }}, so the rest of the code work
 <div class="fix">
   <div class="see"><b>You see</b><div>A photograph uploaded a moment ago is broken for some people, fine for others.</div></div>
   <div><b>Why</b><div><p>Two or more application servers use <code>local</code> storage, each with its own folder: a file saved on one is not on the other.</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Use <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (recommended), or put <code>BRIGHTSTARS_TENANTS_DIR</code> on shared storage every server mounts. Copy the files already uploaded into the shared place.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Use <code>BEACON_STORAGE_BACKEND=s3</code> (recommended), or put <code>BEACON_TENANTS_DIR</code> on shared storage every server mounts. Copy the files already uploaded into the shared place.</p></div></div>
   <div><b>Check</b><div>A new upload shows on every server.</div></div>
 </div>
 
@@ -68,7 +68,7 @@ writing goes through {{ file('core/storage.py') }}, so the rest of the code work
 <h3 id="picture-too-large">"… is … The limit is … Choose a smaller picture"</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"photo.jpg" is … The limit is … Choose a smaller picture, or reduce this one first.</div></div>
-  <div><b>Why</b><div><p>A single picture may be up to <code>BRIGHTSTARS_MAX_UPLOAD_BYTES</code> (5&nbsp;MB by default); a whole form up to <code>BRIGHTSTARS_MAX_REQUEST_BYTES</code> (8&nbsp;MB); a bulk-import file up to <code>BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES</code> (2&nbsp;MB). Every file box prints its limit and refuses a too-large file before anything is sent ({{ file('core/uploads.py') }}).</p></div></div>
+  <div><b>Why</b><div><p>A single picture may be up to <code>BEACON_MAX_UPLOAD_BYTES</code> (5&nbsp;MB by default); a whole form up to <code>BEACON_MAX_REQUEST_BYTES</code> (8&nbsp;MB); a bulk-import file up to <code>BEACON_MAX_DATA_UPLOAD_BYTES</code> (2&nbsp;MB). Every file box prints its limit and refuses a too-large file before anything is sent ({{ file('core/uploads.py') }}).</p></div></div>
   <div class="do"><b>Fix</b><div><p>Make the picture smaller (any phone's "share as medium size", or an online resizer). Raise the limits only if schools genuinely need it, and raise your proxy's limit to match (nginx <code>client_max_body_size</code>).</p></div></div>
   <div><b>Check</b><div>The picture uploads.</div></div>
 </div>
@@ -84,7 +84,7 @@ writing goes through {{ file('core/storage.py') }}, so the rest of the code work
 <h3 id="whole-form-too-large">"The file you sent is larger than the limit … for one submission"</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>The page you came from, with this message at the top (HTTP 413).</div></div>
-  <div><b>Why</b><div><p>The whole submission was over <code>BRIGHTSTARS_MAX_REQUEST_BYTES</code> (several large photographs at once, usually). It is refused before anything is saved ({{ file('core/request_errors.py') }}).</p></div></div>
+  <div><b>Why</b><div><p>The whole submission was over <code>BEACON_MAX_REQUEST_BYTES</code> (several large photographs at once, usually). It is refused before anything is saved ({{ file('core/request_errors.py') }}).</p></div></div>
   <div class="do"><b>Fix</b><div><p>Send fewer or smaller pictures at a time.</p></div></div>
   <div><b>Check</b><div>The form saves.</div></div>
 </div>

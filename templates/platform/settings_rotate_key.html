@@ -4,7 +4,7 @@
 <p class="crumb"><a href="{{ url_for('platform_settings_actions') }}">&larr; Terminal actions</a></p>
 <div class="page-head">
   <div>
-    <div class="eyebrow">Settings &middot; BRIGHTSTARS_DELIVERY_KEY</div>
+    <div class="eyebrow">Settings &middot; BEACON_DELIVERY_KEY</div>
     <h1>Rotate the delivery key</h1>
     <p class="lede">Every school's own SMTP password, SMS API token and Paystack secret key is encrypted under
       this one key. Changing the environment variable directly would make all of them unreadable at once — this
@@ -15,14 +15,14 @@
 <ol class="wizard-steps">
   <li class="{{ 'done' if result }}">Move every school's secrets from the current key to the new one</li>
   <li class="{{ 'done' if result and all_clear }}">Confirm every school shows 0 skipped</li>
-  <li>Set BRIGHTSTARS_DELIVERY_KEY to the new key (restart required afterwards)</li>
+  <li>Set BEACON_DELIVERY_KEY to the new key (restart required afterwards)</li>
 </ol>
 
 {% if not result %}
 <div class="panel" style="max-width:40rem">
   <form method="post" action="{{ url_for('platform_settings_rotate_key_run') }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <label for="old">Current key <span class="hint">What BRIGHTSTARS_DELIVERY_KEY is right now. If it has never been set, this is BRIGHTSTARS_SECRET.</span></label>
+    <label for="old">Current key <span class="hint">What BEACON_DELIVERY_KEY is right now. If it has never been set, this is BEACON_SECRET.</span></label>
     <input type="text" id="old" name="old" class="mono" autocomplete="off" spellcheck="false" required>
     <label for="new">New key
       <span class="hint"><a href="{{ url_for('platform_settings_rotate_key', generate=1) }}">Generate a random one</a></span></label>
@@ -59,12 +59,12 @@
 
   {% if all_clear %}
     <div class="flash flash-success" style="margin-top:18px">Every school's secrets are readable under the new
-      key. It is now safe to set BRIGHTSTARS_DELIVERY_KEY — nothing has changed yet.</div>
+      key. It is now safe to set BEACON_DELIVERY_KEY — nothing has changed yet.</div>
     <form method="post" action="{{ url_for('platform_settings_rotate_key_apply') }}" style="margin-top:14px">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="new" value="{{ new_key }}">
       <button class="btn btn-primary" type="submit"
-              data-confirm="Set BRIGHTSTARS_DELIVERY_KEY to the new key now? This does not take effect until the application is restarted — restart it right after.">Set BRIGHTSTARS_DELIVERY_KEY to the new key</button>
+              data-confirm="Set BEACON_DELIVERY_KEY to the new key now? This does not take effect until the application is restarted — restart it right after.">Set BEACON_DELIVERY_KEY to the new key</button>
     </form>
   {% else %}
     <div class="errors" role="alert" style="margin-top:18px">Not every school is clear yet. A school listed above

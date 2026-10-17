@@ -1,4 +1,4 @@
-"""Rotating BRIGHTSTARS_DELIVERY_KEY safely.
+"""Rotating BEACON_DELIVERY_KEY safely.
 
 Every school's own mail-server password, SMS API token, Paystack secret key and its staff's bank account numbers,
 pension PINs and tax IDs (core/payroll.py) are encrypted
@@ -39,9 +39,9 @@ def rotate_one_tenant(old_key, new_key):
     payment_rows = db.session.scalars(
         select(SchoolPaymentSetting).where(SchoolPaymentSetting.setting_key.in_(_PAYMENT_KEYS))).all()
 
-    previous = os.environ.get('BRIGHTSTARS_DELIVERY_KEY')
+    previous = os.environ.get('BEACON_DELIVERY_KEY')
     try:
-        os.environ['BRIGHTSTARS_DELIVERY_KEY'] = old_key
+        os.environ['BEACON_DELIVERY_KEY'] = old_key
         plain = {}
         for row in delivery_rows:
             plain[('delivery', row.setting_key)] = delivery.decrypt(row.setting_value)
@@ -53,7 +53,7 @@ def rotate_one_tenant(old_key, new_key):
                 if getattr(row, field):
                     plain[('payroll', row.id, field)] = payroll.decrypt(getattr(row, field))
 
-        os.environ['BRIGHTSTARS_DELIVERY_KEY'] = new_key
+        os.environ['BEACON_DELIVERY_KEY'] = new_key
         rotated, skipped = 0, []
         for row in delivery_rows:
             value = plain[('delivery', row.setting_key)]
@@ -83,6 +83,6 @@ def rotate_one_tenant(old_key, new_key):
         return rotated, skipped
     finally:
         if previous is None:
-            os.environ.pop('BRIGHTSTARS_DELIVERY_KEY', None)
+            os.environ.pop('BEACON_DELIVERY_KEY', None)
         else:
-            os.environ['BRIGHTSTARS_DELIVERY_KEY'] = previous
+            os.environ['BEACON_DELIVERY_KEY'] = previous

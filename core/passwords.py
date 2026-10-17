@@ -20,7 +20,7 @@ administrator admin123 root qwerty qwertyuiop qwerty123 asdfghjkl zxcvbnm ilovey
 football baseball dragon monkey master shadow superman batman trustno1 starwars freedom whatever secret
 abc123 abcd1234 abcdef abcdefgh changeme default guest login user test testing hello hello123 goodluck
 nigeria naija lagos abuja jesus jesus123 godisgood godislove blessed blessing praise mummy daddy family
-school school123 student student123 teacher teacher123 parent parent123 bright brightstars brightstar academy
+school school123 student student123 teacher teacher123 parent parent123 bright brightstars beacon brightstar academy
 classroom exam exams result results principal headteacher
 '''.split())
 

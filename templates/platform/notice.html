@@ -8,7 +8,7 @@
   <meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>{{ title }} &middot; Brightstars Academics</title>
+  <title>{{ title }} &middot; Beacon Academics</title>
   <link rel="icon" type="image/png" href="/static/brand/favicon-32.png">
   <style>
     :root { --paper:#f5f1e8; --surface:#fffefb; --ink:#12163a; --muted:#6b6f87; --rule:#ded8c8; --teal:#0f766e; --red:#b3261e;
@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <header><img src="/static/brand/brightstars-logo.png" alt="Brightstars Academics"></header>
+  <header><img src="{{ platform_logo_url() }}" alt="Beacon Academics"></header>
   <main>
     <svg class="star" viewBox="-10 -10 220 220" aria-hidden="true" focusable="false">
       <polygon points="100,0 124.69,66.02 195.11,69.10 139.94,112.98 158.78,180.90 100,142 41.22,180.90 60.06,112.98 4.89,69.10 75.31,66.02"/>
@@ -73,6 +73,6 @@
       {% endif %}
     </div>
   </main>
-  <footer><span>Brightstars Academics</span><span class="mono">{{ status }}</span></footer>
+  <footer><span>Beacon Academics</span><span class="mono">{{ status }}</span></footer>
 </body>
 </html>

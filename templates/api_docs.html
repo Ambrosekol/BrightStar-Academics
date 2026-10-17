@@ -75,7 +75,7 @@
   seconds; anything else (or no answer) is tried again, up to five times. An address that keeps failing is switched off, and the School
   Admin sees why. The same <code>id</code> may arrive twice; treat a repeat as already handled.</p>
 <h3>Checking a notice really came from the school</h3>
-<p>Every notice has <code>BrightStars-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>. <code>v1</code> is the HMAC-SHA256, with the
+<p>Every notice has <code>Beacon-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>. <code>v1</code> is the HMAC-SHA256, with the
   address's signing secret (shown once, when it was added), of <code>t</code>, a full stop, and the raw body. Check it, and refuse a
   <code>t</code> more than five minutes old:</p>
 <pre><code>import hashlib, hmac, time

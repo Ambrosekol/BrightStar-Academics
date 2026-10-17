@@ -968,7 +968,7 @@ def render_report_cards_pdf(cards):
     school_name = _line(first_school.get('name'), 100)
     buffer = io.BytesIO()
     doc = BaseDocTemplate(buffer, pagesize=A4, title=(school_name + ' - ' if school_name else '') + 'Report Cards',
-                          author=school_name, creator='Brightstars Academics')
+                          author=school_name, creator='Beacon Academics')
     first_frame = Frame(MARGIN_X, BOTTOM_MARGIN, CONTENT_W, PAGE_H - TOP_MARGIN_FIRST - BOTTOM_MARGIN,
                         leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0, id='first_frame')
     later_frame = Frame(MARGIN_X, BOTTOM_MARGIN, CONTENT_W, PAGE_H - TOP_MARGIN_LATER - BOTTOM_MARGIN,

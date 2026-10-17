@@ -7,7 +7,7 @@ not a shared one.
 
 This module is also the single source of truth for *how large* an upload may be
 and for every sentence that tells a person why one was refused. The number is
-read once, here (``BRIGHTSTARS_MAX_UPLOAD_BYTES``, five megabytes unless the
+read once, here (``BEACON_MAX_UPLOAD_BYTES``, five megabytes unless the
 school's host says otherwise); the server checks against it, the pages print it
 under each file box (:func:`upload_hint`), and ``static/upload-limit.js`` reads
 it from the page (:func:`upload_attrs`) so the person is told *before* they
@@ -73,7 +73,7 @@ def _env_bytes(name, default):
 
 def image_limit_bytes():
     """The largest picture a person may upload, in bytes (one file)."""
-    return _env_bytes('BRIGHTSTARS_MAX_UPLOAD_BYTES', DEFAULT_IMAGE_LIMIT_BYTES)
+    return _env_bytes('BEACON_MAX_UPLOAD_BYTES', DEFAULT_IMAGE_LIMIT_BYTES)
 
 
 def request_limit_bytes(scope=''):
@@ -93,12 +93,12 @@ def request_limit_bytes(scope=''):
         configured=current_app.config.get('MAX_CONTENT_LENGTH')
     except RuntimeError:
         configured=None
-    return int(configured) if configured else _env_bytes('BRIGHTSTARS_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
+    return int(configured) if configured else _env_bytes('BEACON_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
 
 
 def data_upload_limit_bytes():
     """The largest a bulk-data upload (a CSV import) may be, in bytes (one file)."""
-    return _env_bytes('BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES', DEFAULT_DATA_LIMIT_BYTES)
+    return _env_bytes('BEACON_MAX_DATA_UPLOAD_BYTES', DEFAULT_DATA_LIMIT_BYTES)
 
 
 def attachment_limit_bytes():
@@ -285,7 +285,7 @@ def validate_image_upload(file_obj):
         raise ValueError(wrong_type_message(name))
     # Defense in depth: enforce a conservative upload limit and validate the
     # actual image signature before persisting the file.
-    max_bytes=image_limit_bytes()  # BRIGHTSTARS_MAX_UPLOAD_BYTES, five megabytes by default
+    max_bytes=image_limit_bytes()  # BEACON_MAX_UPLOAD_BYTES, five megabytes by default
     stream=getattr(file_obj,'stream',None)
     if stream is None:
         raise ValueError('Invalid upload.')

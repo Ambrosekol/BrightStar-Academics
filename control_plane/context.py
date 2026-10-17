@@ -41,7 +41,7 @@ class TenantInfo:
         return self.status == 'active'
 
 
-_current = ContextVar('brightstars_current_tenant', default=None)
+_current = ContextVar('beacon_current_tenant', default=None)
 
 
 def current_tenant(required=True):

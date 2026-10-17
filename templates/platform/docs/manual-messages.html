@@ -10,17 +10,17 @@ message fills in.</p>
 <h2 id="msg-start">Starting the application</h2>
 <div class="table-scroll"><table>
 <tr><th>Message</th><th>What it means</th><th>What to do</th></tr>
-<tr><td>This looks like a real deployment … but BRIGHTSTARS_ENV is …, not "production".</td><td>A real deployment is not running as production.</td><td>Set <code>BRIGHTSTARS_ENV=production</code>. <a href="{{ url_for('docs_page', slug='manual-startup') }}#not-production">More</a></td></tr>
-<tr><td>BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.</td><td>The signing secret is missing or short.</td><td>Generate one and set it on every server. <a href="{{ url_for('docs_page', slug='manual-startup') }}#weak-secret">More</a></td></tr>
-<tr><td>BRIGHTSTARS_PLATFORM_DB is not set.</td><td>No registry database URL.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#no-platform-db">More</a></td></tr>
+<tr><td>This looks like a real deployment … but BEACON_ENV is …, not "production".</td><td>A real deployment is not running as production.</td><td>Set <code>BEACON_ENV=production</code>. <a href="{{ url_for('docs_page', slug='manual-startup') }}#not-production">More</a></td></tr>
+<tr><td>BEACON_SECRET must be set to a strong secret (at least 32 characters) in production.</td><td>The signing secret is missing or short.</td><td>Generate one and set it on every server. <a href="{{ url_for('docs_page', slug='manual-startup') }}#weak-secret">More</a></td></tr>
+<tr><td>BEACON_PLATFORM_DB is not set.</td><td>No registry database URL.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#no-platform-db">More</a></td></tr>
 <tr><td>Could not reach PostgreSQL to create the platform registry: …</td><td>The registry database cannot be reached.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#registry-unreachable">More</a></td></tr>
-<tr><td>Could not reach PostgreSQL to create this school's database: …</td><td>Creating a school could not reach or create its database.</td><td>Same causes as the registry; check the role may <code>CREATE DATABASE</code> and <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code>.</td></tr>
-<tr><td>BRIGHTSTARS_TRUSTED_PROXIES is "…", which is not a number this application can use.</td><td>Not a whole number 0–5.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#bad-trusted-proxies">More</a></td></tr>
-<tr><td>BRIGHTSTARS_STORAGE_BACKEND is "…", but only "local" or "s3" is understood.</td><td>Unknown storage kind.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#bad-storage">More</a></td></tr>
-<tr><td>BRIGHTSTARS_S3_BUCKET (or _ACCESS_KEY_ID, _SECRET_ACCESS_KEY) is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.</td><td>S3 chosen without its settings.</td><td>Set them. <a href="{{ url_for('docs_page', slug='manual-env') }}#brightstars-s3">More</a></td></tr>
+<tr><td>Could not reach PostgreSQL to create this school's database: …</td><td>Creating a school could not reach or create its database.</td><td>Same causes as the registry; check the role may <code>CREATE DATABASE</code> and <code>BEACON_PG_MAINTENANCE_DB</code>.</td></tr>
+<tr><td>BEACON_TRUSTED_PROXIES is "…", which is not a number this application can use.</td><td>Not a whole number 0–5.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#bad-trusted-proxies">More</a></td></tr>
+<tr><td>BEACON_STORAGE_BACKEND is "…", but only "local" or "s3" is understood.</td><td>Unknown storage kind.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#bad-storage">More</a></td></tr>
+<tr><td>BEACON_S3_BUCKET (or _ACCESS_KEY_ID, _SECRET_ACCESS_KEY) is not set. Required when BEACON_STORAGE_BACKEND=s3.</td><td>S3 chosen without its settings.</td><td>Set them. <a href="{{ url_for('docs_page', slug='manual-env') }}#beacon-s3">More</a></td></tr>
 <tr><td>Environment variable … is not set; it holds a school database URL.</td><td>A school points at <code>env:NAME</code> and that variable is missing on this server.</td><td>Set it on every server. <a href="{{ url_for('docs_page', slug='manual-database') }}#one-school-500">More</a></td></tr>
 <tr><td>Cannot add NOT NULL column … with no default</td><td>A model change cannot be applied to existing rows.</td><td><a href="{{ url_for('docs_page', slug='manual-startup') }}#not-null-column">More</a></td></tr>
-<tr><td>pg_dump was not found on this machine …</td><td>A school export needs PostgreSQL's <code>pg_dump</code>.</td><td>Install the PostgreSQL client tools, or set <code>BRIGHTSTARS_PG_DUMP</code>.</td></tr>
+<tr><td>pg_dump was not found on this machine …</td><td>A school export needs PostgreSQL's <code>pg_dump</code>.</td><td>Install the PostgreSQL client tools, or set <code>BEACON_PG_DUMP</code>.</td></tr>
 <tr><td>pg_dump failed: …</td><td>The export's database dump failed (often a <code>pg_dump</code> older than the server).</td><td>Install a <code>pg_dump</code> of the same major version as the server, or newer.</td></tr>
 </table></div>
 
@@ -73,7 +73,7 @@ message fills in.</p>
 <tr><td>Platform admin … already exists.</td><td>That console username is taken.</td><td>Choose another.</td></tr>
 <tr><td>A username and a password of at least 10 characters are required.</td><td>Creating a platform admin from the command line.</td><td>Give a longer password (it must also not be a common one).</td></tr>
 <tr><td>A separate database role only applies to a school on PostgreSQL. / Exporting only supports a school on PostgreSQL.</td><td>The school is not on PostgreSQL.</td><td>Not applicable to that school.</td></tr>
-<tr><td>… was removed from the registry, but its database could not be dropped … / its files could not be deleted … — clean this up by hand</td><td>Deleting a school half-finished.</td><td>The school is gone; drop its database (<code>DROP DATABASE brightstars_code;</code>) and remove its folder or bucket prefix by hand.</td></tr>
+<tr><td>… was removed from the registry, but its database could not be dropped … / its files could not be deleted … — clean this up by hand</td><td>Deleting a school half-finished.</td><td>The school is gone; drop its database (<code>DROP DATABASE beacon_code;</code>) and remove its folder or bucket prefix by hand.</td></tr>
 </table></div>
 
 <h2 id="msg-school">Inside a school: setup, students, staff</h2>
@@ -85,7 +85,7 @@ message fills in.</p>
 <tr><td>Select at least one student to archive. / Select at least one archived student to restore.</td><td>Nobody ticked.</td><td>Tick the students.</td></tr>
 <tr><td>Choose a CSV or Excel (.xlsx) file to import.</td><td>No file was chosen.</td><td>Choose the file.</td></tr>
 <tr><td>That file has no header row. Use the template. / The file is missing required column(s): …</td><td>The columns are wrong.</td><td><a href="{{ url_for('docs_page', slug='manual-files') }}#import-missing-columns">More</a></td></tr>
-<tr><td>That file is larger than the … limit.</td><td>Over the import size limit.</td><td>Split it, or raise <code>BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES</code>.</td></tr>
+<tr><td>That file is larger than the … limit.</td><td>Over the import size limit.</td><td>Split it, or raise <code>BEACON_MAX_DATA_UPLOAD_BYTES</code>.</td></tr>
 <tr><td>That file is not readable as plain-text CSV …</td><td>Not UTF-8 text.</td><td><a href="{{ url_for('docs_page', slug='manual-files') }}#import-not-csv">More</a></td></tr>
 <tr><td>Only plain Excel workbooks (.xlsx) and CSV files can be imported. / That workbook contains macros. / … password-protected. / … unpacks to far more than an import needs. / That Excel file could not be read.</td><td>The workbook was refused for safety.</td><td><a href="{{ url_for('docs_page', slug='manual-files') }}#import-excel-refused">More</a></td></tr>
 <tr><td>Class subdivisions are locked. Unlock them first to make changes.</td><td>The set-up is locked.</td><td><a href="{{ url_for('docs_page', slug='manual-portal') }}#subdivisions-locked">More</a></td></tr>
@@ -158,7 +158,7 @@ message fills in.</p>
 <tr><td>Email is not set up yet. Save your mail server settings first.</td><td>No mail account at all.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#email-not-set-up">More</a></td></tr>
 <tr><td>The test message could not be sent: …</td><td>The mail server refused or could not be reached.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#email-test-fails">More</a></td></tr>
 <tr><td>That mail server address is not allowed: it is not a public internet address.</td><td>A private address in production.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#email-private-address">More</a></td></tr>
-<tr><td>SMS is not set up yet. / SMS is not connected to your school's own account yet. / The platform provides SMS for every school …</td><td>Depends on <code>BRIGHTSTARS_SMS_PAYER</code>.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#sms-not-set-up">More</a></td></tr>
+<tr><td>SMS is not set up yet. / SMS is not connected to your school's own account yet. / The platform provides SMS for every school …</td><td>Depends on <code>BEACON_SMS_PAYER</code>.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#sms-not-set-up">More</a></td></tr>
 <tr><td>The API token was not accepted. / The BulkSMS Nigeria wallet has no balance. / The sender name is not registered or approved.</td><td>The SMS provider refused.</td><td><a href="{{ url_for('docs_page', slug='manual-messaging') }}#sms-provider-errors">More</a></td></tr>
 <tr><td>SMS delivery failed: …</td><td>A text could not be sent.</td><td>Read the reason; check the notice log.</td></tr>
 <tr><td>Too many tests just now. / Too many checks just now. Please wait a few minutes.</td><td>Test buttons are limited.</td><td>Wait a few minutes.</td></tr>
@@ -181,7 +181,7 @@ message fills in.</p>
 <tr><td>This candidate has already been admitted. / An admitted candidate cannot be declined (put back on the waitlist).</td><td>Admitting is final.</td><td><a href="{{ url_for('docs_page', slug='manual-entrance') }}#admit-refused">More</a></td></tr>
 <tr><td>… could not be admitted (…).</td><td>Admission failed; nothing was created.</td><td><a href="{{ url_for('docs_page', slug='manual-entrance') }}#admit-refused">More</a></td></tr>
 <tr><td>…'s result was already released.</td><td>Released once.</td><td>Nothing to do.</td></tr>
-<tr><td>Google Chrome was not found. Install it, or set BRIGHTSTARS_CHROME to its full path. / Chrome failed: …</td><td>The result image cannot be drawn.</td><td><a href="{{ url_for('docs_page', slug='manual-entrance') }}#result-image-fails">More</a></td></tr>
+<tr><td>Google Chrome was not found. Install it, or set BEACON_CHROME to its full path. / Chrome failed: …</td><td>The result image cannot be drawn.</td><td><a href="{{ url_for('docs_page', slug='manual-entrance') }}#result-image-fails">More</a></td></tr>
 </table></div>
 
 {% endblock %}

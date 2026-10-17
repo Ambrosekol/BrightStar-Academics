@@ -418,7 +418,7 @@
 </div>
 {% include '_admin_dock.html' %}
 <div id="live-message-toast" class="live-message-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-<script nonce="{{ csp_nonce() }}">window.BRIGHTSTARS_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
+<script nonce="{{ csp_nonce() }}">window.BEACON_CURRENT_ADMIN_ID = "{{ current_admin.id if current_admin else '' }}";</script>
 <script src="{{ url_for('static', filename='interactions.js', v='3') }}"></script>
 <script src="{{ url_for('static', filename='admin.js', v='6L-nav-trail') }}"></script>
 <script src="{{ url_for('static', filename='school-nav.js', v='2') }}"></script>

@@ -3,10 +3,10 @@
 PostgreSQL is the only database this application supports, so the verification
 scripts run against a real server rather than a stand-in. Each run gets its own
 registry database and its own per-school databases, all named with a unique
-prefix, and drops them again on the way out — the real ``brightstars_*``
+prefix, and drops them again on the way out — the real ``beacon_*``
 databases are never touched.
 
-Connection details come from ``BRIGHTSTARS_PLATFORM_DB`` in your .env, so
+Connection details come from ``BEACON_PLATFORM_DB`` in your .env, so
 whatever works for the application works here.
 """
 import os
@@ -28,8 +28,8 @@ load_dotenv(ROOT / '.env')
 # them: a verification run that releases report cards, charges fees or resets passwords would otherwise send real
 # emails and real text messages (to test addresses and numbers, and at the cost of real credit). Blanked here, before
 # the application reads the file, so nothing in a run can use them; a script that tests delivery sets its own.
-for _name in ('BRIGHTSTARS_SMS_API_TOKEN', 'BRIGHTSTARS_SMS_SENDER_ID', 'BRIGHTSTARS_SMTP_HOST', 'BRIGHTSTARS_SMTP_USER',
-              'BRIGHTSTARS_SMTP_PASSWORD', 'BRIGHTSTARS_SMTP_FROM'):
+for _name in ('BEACON_SMS_API_TOKEN', 'BEACON_SMS_SENDER_ID', 'BEACON_SMTP_HOST', 'BEACON_SMTP_USER',
+              'BEACON_SMTP_PASSWORD', 'BEACON_SMTP_FROM'):
     os.environ[_name] = ''
 
 import sqlalchemy as sa  # noqa: E402
@@ -37,13 +37,13 @@ from sqlalchemy.engine import make_url  # noqa: E402
 
 
 def _configured_url():
-    url = os.environ.get('BRIGHTSTARS_PLATFORM_DB', '').strip()
+    url = os.environ.get('BEACON_PLATFORM_DB', '').strip()
     if not url:
-        print('SKIPPED: BRIGHTSTARS_PLATFORM_DB is not set, so there is no PostgreSQL server '
+        print('SKIPPED: BEACON_PLATFORM_DB is not set, so there is no PostgreSQL server '
               'to test against. Set it in .env (see README > Getting started).')
         raise SystemExit(2)
     if make_url(url).get_backend_name() != 'postgresql':
-        print(f'SKIPPED: BRIGHTSTARS_PLATFORM_DB is not a PostgreSQL URL ({url.split("://")[0]}).')
+        print(f'SKIPPED: BEACON_PLATFORM_DB is not a PostgreSQL URL ({url.split("://")[0]}).')
         raise SystemExit(2)
     return make_url(url)
 
@@ -121,11 +121,11 @@ def setup(tag):
         print(f'SKIPPED: could not reach PostgreSQL at {url.host}:{url.port or 5432} — {exc}')
         raise SystemExit(2)
 
-    os.environ['BRIGHTSTARS_PLATFORM_DB'] = url.set(
+    os.environ['BEACON_PLATFORM_DB'] = url.set(
         database=f'{prefix}_platform').render_as_string(hide_password=False)
     # Each school's database is named from this template, so they all carry the
     # run's prefix and can be found and dropped again afterwards.
-    os.environ['BRIGHTSTARS_SCHOOL_DB_TEMPLATE'] = url.set(
+    os.environ['BEACON_SCHOOL_DB_TEMPLATE'] = url.set(
         database=f'{prefix}_{{slug}}').render_as_string(hide_password=False).replace('%7Bslug%7D', '{slug}')  # SQLAlchemy percent-encodes the braces; the template needs them literal
 
     _build_schools_inline()

@@ -251,7 +251,7 @@
     <form method="post" action="{{ url_for('platform_school_force_delete', slug=info.slug) }}"
           data-confirm="Permanently delete {{ info.name }} right now, with NO backup taken first? Its database, its files and every record it holds — students, staff, results, payments — are gone for good, immediately, with no way back.">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-danger" type="submit">Permanently delete school from brightstars</button>
+      <button class="btn btn-danger" type="submit">Permanently delete school from beacon</button>
     </form>
   </div>
 </div>

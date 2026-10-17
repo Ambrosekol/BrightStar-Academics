@@ -28,7 +28,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_classbill_")
+TMP = tempfile.mkdtemp(prefix="beacon_classbill_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -36,15 +36,15 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('classbill')
 atexit.register(DROP_TEST_DATABASES)
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
-for name in ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-             "BRIGHTSTARS_WHATSAPP_TOKEN", "BRIGHTSTARS_WHATSAPP_PHONE_NUMBER_ID", "BRIGHTSTARS_DELIVERY_KEY"):
+for name in ("BEACON_SMTP_HOST", "BEACON_SMTP_USER", "BEACON_SMTP_FROM", "BEACON_SMTP_PASSWORD",
+             "BEACON_WHATSAPP_TOKEN", "BEACON_WHATSAPP_PHONE_NUMBER_ID", "BEACON_DELIVERY_KEY"):
     os.environ.pop(name, None)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)

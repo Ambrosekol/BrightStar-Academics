@@ -37,7 +37,7 @@ _NOTICES = {
                      [('Check the spelling', 'A single wrong letter is enough to land somewhere else.'),
                       ('Use the address your school gave you',
                        'Every school has its own portal address. It is the only place its people sign in.'),
-                      ('Still stuck?', 'Ask your school office, or the person who runs Brightstars Academics for you.')]),
+                      ('Still stuck?', 'Ask your school office, or the person who runs Beacon Academics for you.')]),
     'suspended': (503, 'Portal paused', 'This portal is temporarily unavailable.',
                   [('Nothing has been lost', "The school's records are safe and untouched."),
                    ('Contact the school office', 'They can tell you when the portal will be back.')]),
@@ -57,7 +57,7 @@ def _notice(kind, host=None):
     status, eyebrow, title, steps = _NOTICES[kind]
     lead = None
     if kind == 'unknown_host' and host:
-        lead = 'The address you asked for is not registered with Brightstars Academics.'
+        lead = 'The address you asked for is not registered with Beacon Academics.'
     elif kind == 'suspended':
         lead = "This school's portal has been switched off for the moment."
     dev = None
@@ -188,5 +188,5 @@ def _warn_about_shadowed_domains(app):
     for host in sorted(config.platform_hosts()):
         if tenant_for_host(host) is not None:
             app.logger.warning(
-                'BRIGHTSTARS_PLATFORM_HOSTS contains %s, which is also registered to a school. '
+                'BEACON_PLATFORM_HOSTS contains %s, which is also registered to a school. '
                 'The platform console wins, so that school is unreachable on that hostname.', host)

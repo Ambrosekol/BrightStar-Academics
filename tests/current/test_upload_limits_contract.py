@@ -67,7 +67,7 @@ def test_the_limit_is_read_in_one_place():
         if path in exempt:
             continue
         source = path.read_text(encoding="utf-8")
-        assert "BRIGHTSTARS_MAX_UPLOAD_BYTES" not in source, f"{path.relative_to(ROOT)} reads the upload limit itself"
+        assert "BEACON_MAX_UPLOAD_BYTES" not in source, f"{path.relative_to(ROOT)} reads the upload limit itself"
         assert not re.search(r"5\s*\*\s*1024\s*\*\s*1024", source), f"{path.relative_to(ROOT)} spells the limit out"
 
 

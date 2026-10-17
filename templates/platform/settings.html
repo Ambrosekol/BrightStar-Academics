@@ -37,7 +37,7 @@
           {% endif %}
           <div style="margin-top:8px">
             {% if r.editable %}
-              <a class="btn btn-sm" href="{{ url_for('platform_settings_variable', name=v.name) }}">{{ 'Rotate' if v.name == 'BRIGHTSTARS_DELIVERY_KEY' else 'Edit' }}</a>
+              <a class="btn btn-sm" href="{{ url_for('platform_settings_variable', name=v.name) }}">{{ 'Rotate' if v.name == 'BEACON_DELIVERY_KEY' else 'Edit' }}</a>
             {% else %}
               <a class="btn btn-sm" href="{{ url_for('platform_settings_variable', name=v.name) }}">View</a>
             {% endif %}

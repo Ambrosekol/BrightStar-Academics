@@ -1,6 +1,6 @@
-# Brightstars Academics — Multi-Tenancy
+# Beacon Academics — Multi-Tenancy
 
-Brightstars Academics is the platform. Each school it serves is a **tenant**: it has its
+Beacon Academics is the platform. Each school it serves is a **tenant**: it has its
 own portal address, its own database, and its own folder of files. The platform operators are the only
 super admins; a school manages its own staff and roles.
 
@@ -9,15 +9,15 @@ Two rules shape everything below:
 * **A school gets a portal, not a website.** A school's address serves sign-in
   and the admin, student, parent and candidate areas — nothing else. The
   deployment serves no public website at all: the platform's own marketing site
-  is hosted separately (for example `brightstars.com`), and `/` on a platform
+  is hosted separately (for example `beacon.com`), and `/` on a platform
   hostname redirects to the console.
 * **The platform issues the address.** Every school is given
   `<code>.<portal domain>` when it is created, and it works immediately. A
   school that wants its own domain points a CNAME record at that address.
 
 > **PostgreSQL is the only supported database**, in development and in
-> production. The platform registry is one database (`brightstars_platform`)
-> and every school gets its own (`brightstars_<code>`), created as the school
+> production. The platform registry is one database (`beacon_platform`)
+> and every school gets its own (`beacon_<code>`), created as the school
 > is created. There is no SQLite application database and no `cbt.db`.
 
 ## Status
@@ -71,8 +71,8 @@ current school = theschool  (a ContextVar for the request)
 
 | Hostname | Serves |
 |---|---|
-| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform console under `/platform`; `/` redirects to its sign-in page |
-| `<code>.<BRIGHTSTARS_PORTAL_DOMAIN>` | That school's portal (issued on creation, permanent) |
+| `BEACON_PLATFORM_HOSTS` | The platform console under `/platform`; `/` redirects to its sign-in page |
+| `<code>.<BEACON_PORTAL_DOMAIN>` | That school's portal (issued on creation, permanent) |
 | A school's own domain (CNAME → the above) | The same portal |
 | Anything else | 404, before any application code runs |
 
@@ -80,7 +80,7 @@ current school = theschool  (a ContextVar for the request)
 `NoTenantError` is raised. It never falls back to a default database, because
 guessing a school could show one school's data to another.
 
-**Platform host.** Hostnames in `BRIGHTSTARS_PLATFORM_HOSTS` belong to the
+**Platform host.** Hostnames in `BEACON_PLATFORM_HOSTS` belong to the
 platform, not to any school: they redirect `/` to the console, serve the
 console under `/platform`, shared static assets and `/health`, and 404 for
 everything else. A school's portal is never served there, and a school's
@@ -103,7 +103,7 @@ uploads are never served there either.
 | `control_plane/entry.py` | Platform-admin sign-in, entry tickets, the reserved operator account inside a school |
 | `control_plane/cli.py` | `python -m control_plane …` |
 | `core/storage.py` | `data_dir()`, `uploads_dir()`, `stored_upload_path()` (local backend) and the backend-aware `read_upload_bytes()`, `upload_exists()`, `delete_upload()`, `save_upload_bytes()`, `list_data_names()`, `read_data_text()`, `write_data_bytes()` — per school |
-| `core/object_store.py` | The S3-compatible client used when `BRIGHTSTARS_STORAGE_BACKEND=s3` |
+| `core/object_store.py` | The S3-compatible client used when `BEACON_STORAGE_BACKEND=s3` |
 | `core/branding.py` | The school's own name/motto/logo, exposed to every template as `school_brand` |
 | `core/numbering.py`, `core/numbering_pattern.py` | Each school's numbering rules: a pattern per school in `tenants/<code>/numbering.json`, set on the console, read and checked and never run |
 | `templates/platform/` | The console and the platform website |
@@ -120,8 +120,8 @@ blueprints changed for routing: every query already went through `db.session`.
 
 ## Local development
 
-1. Set in `.env` (see `.env.example`): `BRIGHTSTARS_PLATFORM_DB` and a strong
-   `BRIGHTSTARS_SECRET`.
+1. Set in `.env` (see `.env.example`): `BEACON_PLATFORM_DB` and a strong
+   `BEACON_SECRET`.
 2. Create the registry and yourself:
 
    ```bash
@@ -146,7 +146,7 @@ before serving.
 ## Addresses: the issued portal address, and the school's own domain
 
 **The portal address is issued, immediate and permanent.** Creating a school
-with the code `alpha` registers `alpha.<BRIGHTSTARS_PORTAL_DOMAIN>` as its
+with the code `alpha` registers `alpha.<BEACON_PORTAL_DOMAIN>` as its
 `portal` domain, marked primary. It needs no DNS work by the school, it is the
 address "Enter school" always uses, and it cannot be removed. Point a wildcard
 `*.<portal domain>` at your server once and every future school works the
@@ -156,7 +156,7 @@ moment it is created.
 `add-domain`), then the school creates one DNS record:
 
 ```
-portal.theschool.example.   CNAME   alpha.schools.brightstars.example.
+portal.theschool.example.   CNAME   alpha.schools.beacon.example.
 ```
 
 The console shows exactly that record on the school's page. A school's own
@@ -215,7 +215,7 @@ header gets a 404, not a school.
 * **Proxies.** By default no proxy is trusted: the application uses the address and
   scheme of the connection and ignores every `X-Forwarded-*` header, so the audit log
   (which stores `request.remote_addr`, cut to 64 characters) and the rate limits cannot
-  be fooled by a forged header. `BRIGHTSTARS_TRUSTED_PROXIES=n` (n >= 1, at most 5)
+  be fooled by a forged header. `BEACON_TRUSTED_PROXIES=n` (n >= 1, at most 5)
   wraps the app in werkzeug's `ProxyFix(x_for=n, x_proto=n)` only. Never the host or
   the prefix: the `Host` header chooses the school.
 * **Referrers and caching.** Every response carries `Referrer-Policy: same-origin`; the
@@ -228,13 +228,13 @@ header gets a 404, not a school.
   not let anyone run code on a server that can reach every school's database. Every save is in the
   platform audit trail with the old and the new pattern.
 * **Files are per school.** Uploads, question banks and numbering rules live under
-  `BRIGHTSTARS_TENANTS_DIR/<code>/` (the default `local` storage backend) or under
-  that school's own key prefix in an S3-compatible bucket (`BRIGHTSTARS_STORAGE_BACKEND=s3`
+  `BEACON_TENANTS_DIR/<code>/` (the default `local` storage backend) or under
+  that school's own key prefix in an S3-compatible bucket (`BEACON_STORAGE_BACKEND=s3`
   — see "Storage backend" below); `/static/uploads/…` is served from the requesting
   school's folder either way, and a stored upload value is confined to the school's
   own folder or prefix under either backend (`core/storage.py`'s
   `_sanitize_upload_relative`, shared by both).
-* **Suspending a school** takes effect within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS`
+* **Suspending a school** takes effect within `BEACON_REGISTRY_CACHE_SECONDS`
   (default 10 s) on each worker process; `0` disables the cache.
 * **No credential in the registry (optional).** A school's `db_url` may be
   `env:VARIABLE_NAME`, resolved from the environment at connect time.
@@ -263,9 +263,9 @@ header gets a 404, not a school.
 
 ### Not yet isolated per school
 
-* One `BRIGHTSTARS_SECRET` signs every school's sessions (fine for now; a per-school
+* One `BEACON_SECRET` signs every school's sessions (fine for now; a per-school
   key derived from it is a possible later hardening).
-* `BRIGHTSTARS_SMTP_*` / `BRIGHTSTARS_WHATSAPP_*` are the platform's *shared* account, the
+* `BEACON_SMTP_*` / `BEACON_WHATSAPP_*` are the platform's *shared* account, the
   fallback for a school that has set up none of its own (core/delivery.py).
 * Login rate limiting and presence caches are in process memory (already
   documented as single-worker-only in `core/accounts.py`).
@@ -285,8 +285,8 @@ Recommended starting point: **database per school** until the number of schools
 makes that unwieldy. Because `build_engine()` supports both, switching a school
 later is a data move, not a code change.
 
-The platform registry (`BRIGHTSTARS_PLATFORM_DB`) is its own database, e.g.
-`postgresql+psycopg://user:pass@host/brightstars_platform`.
+The platform registry (`BEACON_PLATFORM_DB`) is its own database, e.g.
+`postgresql+psycopg://user:pass@host/beacon_platform`.
 
 **Managed providers without a database called `postgres`.** Creating a school's database
 (or the registry's own, the first time) runs `CREATE DATABASE` against the server's
@@ -295,7 +295,7 @@ maintenance database, which a stock PostgreSQL install always has one of, named
 database is `defaultdb`, for instance — so `ensure_database_exists()`
 (`control_plane/routing.py`) tries the target database directly first (already there,
 the common case, needs nothing else), and only falls back to a maintenance connection
-for a database that is genuinely missing. Set `BRIGHTSTARS_PG_MAINTENANCE_DB` to whatever
+for a database that is genuinely missing. Set `BEACON_PG_MAINTENANCE_DB` to whatever
 database is guaranteed to exist on your server when it isn't `postgres` (`defaultdb` on
 Aiven).
 
@@ -333,7 +333,7 @@ its column, which the form-submission suite provokes on every route.
   as soon as provisioning or an upgrade is done with the school. Total
   connections ≈ busy schools × pool size × worker processes. For hundreds of
   schools, run PgBouncer in *transaction* mode and set
-  `BRIGHTSTARS_DB_POOLER=pgbouncer` (no application pools, no prepared
+  `BEACON_DB_POOLER=pgbouncer` (no application pools, no prepared
   statements; `move-db-address` repoints existing schools). `search_path` set via
   connection options is not preserved by transaction pooling, so a
   schema-per-school tenant is refused in that mode: use database-per-school.
@@ -341,23 +341,23 @@ its column, which the form-submission suite provokes on every route.
   upgrade-on-deploy (`python -m control_plane upgrade`) and skip it at start.
 * Backups are per database (or per schema) — one school can be restored without
   touching another.
-* More than one application server needs `BRIGHTSTARS_TENANTS_DIR` on shared
-  storage, or `BRIGHTSTARS_STORAGE_BACKEND=s3` (see "Storage backend" below).
+* More than one application server needs `BEACON_TENANTS_DIR` on shared
+  storage, or `BEACON_STORAGE_BACKEND=s3` (see "Storage backend" below).
 
 ## Storage backend
 
-`BRIGHTSTARS_STORAGE_BACKEND` chooses where a school's uploads, question banks and
+`BEACON_STORAGE_BACKEND` chooses where a school's uploads, question banks and
 numbering rules live:
 
-* **`local`** (the default): a folder on this machine, `BRIGHTSTARS_TENANTS_DIR/<code>/`.
+* **`local`** (the default): a folder on this machine, `BEACON_TENANTS_DIR/<code>/`.
   Simplest for a single application server with a persistent disk.
 * **`s3`**: an S3-compatible object store (`core/object_store.py`) — real AWS S3, or
   Cloudflare R2, Backblaze B2, DigitalOcean Spaces or MinIO by also setting
-  `BRIGHTSTARS_S3_ENDPOINT_URL`. Needed whenever the application server's disk is not
+  `BEACON_S3_ENDPOINT_URL`. Needed whenever the application server's disk is not
   persistent (many hosting platforms wipe it on every redeploy or restart), or more
   than one application server must share the same files. Requires
-  `BRIGHTSTARS_S3_BUCKET`, `BRIGHTSTARS_S3_ACCESS_KEY_ID` and
-  `BRIGHTSTARS_S3_SECRET_ACCESS_KEY`; see `.env.example` for the full list, and
+  `BEACON_S3_BUCKET`, `BEACON_S3_ACCESS_KEY_ID` and
+  `BEACON_S3_SECRET_ACCESS_KEY`; see `.env.example` for the full list, and
   `pip install boto3` (or uncomment it in `requirements.txt`).
 
 Every stored database value (`uploads/<folder>/<file>`) is identical under either
@@ -398,6 +398,6 @@ re-activates it and re-randomises its password.
 * Rate limiting and presence caches are per process; put a limit at the reverse proxy as well.
 * Databases that predate the retirement of the school website editor keep its three tables, unused.
 * Question banks are still per-school JSON files (under `tenants/<code>/data/`, or
-  that school's own key prefix in the bucket with `BRIGHTSTARS_STORAGE_BACKEND=s3`).
+  that school's own key prefix in the bucket with `BEACON_STORAGE_BACKEND=s3`).
   A new school starts with none, so its entrance examinations cannot run until
   banks are imported for it.

@@ -1,8 +1,8 @@
-<p align="center"><img src="static/brand/brightstars-logo.png" alt="Brightstars Academics" width="360"></p>
+<p align="center"><img src="static/brand/beacon-logo.png" alt="Beacon Academics" width="360"></p>
 
-# Brightstars Academics
+# Beacon Academics
 
-Brightstars Academics is a school platform. One deployment serves many schools, and each school gets a portal of its
+Beacon Academics is a school platform. One deployment serves many schools, and each school gets a portal of its
 own: its own web address, its own PostgreSQL database and its own files. No school can see, reach or affect another's
 data.
 
@@ -66,8 +66,8 @@ There are two kinds of hostname, and they never overlap.
 
 | Hostname | Serves |
 |---|---|
-| `BRIGHTSTARS_PLATFORM_HOSTS` | The platform console (`/platform`), `/docs`, `/marketing`; `/` opens the console's sign-in |
-| `<school-code>.<BRIGHTSTARS_PORTAL_DOMAIN>` | That school's portal: issued when the school is created, permanent |
+| `BEACON_PLATFORM_HOSTS` | The platform console (`/platform`), `/docs`, `/marketing`; `/` opens the console's sign-in |
+| `<school-code>.<BEACON_PORTAL_DOMAIN>` | That school's portal: issued when the school is created, permanent |
 | A school's own domain, CNAME'd to the above | The same portal |
 | Anything else | `404`, before any application code runs |
 
@@ -103,9 +103,9 @@ the selected school (a ContextVar, for this request only)
 |---|---|
 | **Python 3.10+** | Developed and tested on 3.13 and 3.14. |
 | **PostgreSQL 14+** | Required in development as well as production. Tested against PostgreSQL 18. |
-| A role that may `CREATE DATABASE` | Schools' databases are created on demand. Locally, `postgres` is fine. On a managed provider with no database called `postgres` (Aiven's default is `defaultdb`), set `BRIGHTSTARS_PG_MAINTENANCE_DB`. |
-| Optional: Chrome or Chromium | Draws a candidate's result image. Found automatically, or set `BRIGHTSTARS_CHROME`. |
-| Optional: `pg_dump` | Only for `export-tenant` / `delete-tenant` (a school's export). Set `BRIGHTSTARS_PG_DUMP` if it is not on the `PATH`. |
+| A role that may `CREATE DATABASE` | Schools' databases are created on demand. Locally, `postgres` is fine. On a managed provider with no database called `postgres` (Aiven's default is `defaultdb`), set `BEACON_PG_MAINTENANCE_DB`. |
+| Optional: Chrome or Chromium | Draws a candidate's result image. Found automatically, or set `BEACON_CHROME`. |
+| Optional: `pg_dump` | Only for `export-tenant` / `delete-tenant` (a school's export). Set `BEACON_PG_DUMP` if it is not on the `PATH`. |
 
 No build toolchain, message queue or other service is needed.
 
@@ -132,12 +132,12 @@ Edit `.env`. Four values get you running; `.env.example` documents every other o
 
 | Variable | What to put |
 |---|---|
-| `BRIGHTSTARS_PLATFORM_DB` | Your PostgreSQL URL, e.g. `postgresql+psycopg://postgres:yourpassword@localhost:5432/brightstars_platform` |
-| `BRIGHTSTARS_SECRET` | A real random secret: `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `BRIGHTSTARS_PLATFORM_HOSTS` | `platform.localhost` for development |
-| `BRIGHTSTARS_PORTAL_DOMAIN` | `localhost` for development |
+| `BEACON_PLATFORM_DB` | Your PostgreSQL URL, e.g. `postgresql+psycopg://postgres:yourpassword@localhost:5432/beacon_platform` |
+| `BEACON_SECRET` | A real random secret: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `BEACON_PLATFORM_HOSTS` | `platform.localhost` for development |
+| `BEACON_PORTAL_DOMAIN` | `localhost` for development |
 
-Leave `BRIGHTSTARS_ENV=development` on your own machine. You do not create any database by hand.
+Leave `BEACON_ENV=development` on your own machine. You do not create any database by hand.
 
 ### First run
 
@@ -176,7 +176,7 @@ The issued address always works and cannot be removed. Add the school's own addr
 `add-domain`), then the school creates one DNS record, shown on its console page:
 
 ```
-portal.theschool.example.   CNAME   theschool.schools.brightstars.example.
+portal.theschool.example.   CNAME   theschool.schools.beacon.example.
 ```
 
 Your reverse proxy needs a certificate for each hostname (a wildcard for the portal domain, plus one per school
@@ -318,7 +318,7 @@ Each area is explained for staff in the **staff guide** (`/admin/guide` on any s
   keys made by the School Admin with scopes (only a SHA-256 hash is kept), paged by id, 120 calls a minute per key, no
   session cookie. Docs at `/api/v1/docs`, OpenAPI at `/api/v1/openapi.json`.
 - **Webhooks** (`core/webhooks.py`): `student.created`, `student.archived`, `payment.recorded`, `payment.voided`,
-  `report_card.ready`, signed HMAC-SHA256 (`BrightStars-Signature: t=..,v1=..`), ids only, retried by the job runner,
+  `report_card.ready`, signed HMAC-SHA256 (`Beacon-Signature: t=..,v1=..`), ids only, retried by the job runner,
   switched off after repeated failures. Each delivery resolves the host once, refuses non-public addresses in production
   and connects to exactly the checked address.
 
@@ -421,7 +421,7 @@ numbering policy, e.g. `ABC/2026/0001`).
 What parents receive (receipts, password recovery, alerts) goes out from **the school's own accounts**, set up by the
 School Admin under *Settings › Email & SMS* (a mail server, a BulkSMS Nigeria account), each with a test button.
 
-- **The platform's shared account is the fallback** (`BRIGHTSTARS_SMTP_*`, `BRIGHTSTARS_SMS_*`) for a school that set
+- **The platform's shared account is the fallback** (`BEACON_SMTP_*`, `BEACON_SMS_*`) for a school that set
   up nothing; a half-set-up school never borrows it.
 - **Secrets are encrypted at rest**, per school, and never shown again (`core/delivery.py`). Rotate with
   `rotate-delivery-key`.
@@ -447,7 +447,7 @@ python -m control_plane <command>
   suspend CODE [--reason TEXT]  ·  activate CODE
   create-db-role CODE [--rotate] [--password PW]   a PostgreSQL role owning only this school's database
   set-db-url CODE URL                    point a school at another connection string (or env:VARIABLE_NAME)
-  rotate-delivery-key OLD NEW [CODE]     re-encrypt every school's stored secrets, then set BRIGHTSTARS_DELIVERY_KEY
+  rotate-delivery-key OLD NEW [CODE]     re-encrypt every school's stored secrets, then set BEACON_DELIVERY_KEY
   drop-retired-tables [CODE] [--yes]     show (or drop) the removed website editor's leftover tables
   export-tenant CODE [--output DIR]      a school's whole database (pg_dump) and files, in one folder
   delete-tenant CODE [--output DIR]      permanently remove a school, after exporting it (cannot be undone)
@@ -463,24 +463,24 @@ Everything is read from the environment, loaded from `.env`. `.env.example` docu
 
 | Variable | Purpose |
 |---|---|
-| `BRIGHTSTARS_ENV` | `development` or `production`. **A real deployment must say `production`**: one that looks real and does not refuses to start (see [Security](#5-security-and-sign-ins)). |
-| `BRIGHTSTARS_PLATFORM_DB` | PostgreSQL URL of the platform registry. Required, no default. |
-| `BRIGHTSTARS_SECRET` | Session-signing secret; at least 32 characters in production. |
-| `BRIGHTSTARS_PLATFORM_HOSTS` | Hostnames serving the platform console. |
-| `BRIGHTSTARS_PORTAL_DOMAIN` | Domain each school's address is issued under. |
-| `BRIGHTSTARS_STORAGE_BACKEND` | `local` (default; files under `BRIGHTSTARS_TENANTS_DIR`) or `s3` (any S3-compatible store; `BRIGHTSTARS_S3_*`). |
-| `BRIGHTSTARS_TRUSTED_PROXIES` | How many reverse proxies stand in front (0–5, default 0). See [Operating](#operating). |
-| `BRIGHTSTARS_IDLE_MINUTES` · `BRIGHTSTARS_SESSION_HOURS` | A sign-in ends after this long unused (default 120) and in all (default 12). Never during a running exam. |
-| `BRIGHTSTARS_DELIVERY_KEY` | The key schools' stored mail, SMS and Paystack secrets are encrypted under (defaults to one derived from the secret). |
-| `BRIGHTSTARS_SMTP_*` · `BRIGHTSTARS_SMS_*` | The platform's shared email and SMS account (the fallback). |
-| `BRIGHTSTARS_DB_POOL_SIZE` · `BRIGHTSTARS_DB_MAX_OVERFLOW` | Connections per school per instance (defaults 2 and 3). |
-| `BRIGHTSTARS_REGISTRY_POOL_SIZE` · `BRIGHTSTARS_REGISTRY_MAX_OVERFLOW` | Registry connections per instance (defaults 10 and 20). |
-| `BRIGHTSTARS_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached, which bounds how fast a suspension takes effect. |
-| `BRIGHTSTARS_SCHOOL_DB_TEMPLATE` · `BRIGHTSTARS_PG_MAINTENANCE_DB` | Where schools' databases are created, and which database `CREATE DATABASE` connects through. |
-| `BRIGHTSTARS_MAX_UPLOAD_BYTES` · `BRIGHTSTARS_MAX_DATA_UPLOAD_BYTES` · `BRIGHTSTARS_MAX_REQUEST_BYTES` | Upload and request limits; every file box prints its limit. |
-| `BRIGHTSTARS_ALERT_WEBHOOK` | Where degraded-safety alerts are posted (optional). |
-| `BRIGHTSTARS_CHROME` · `BRIGHTSTARS_PG_DUMP` | The programs for result images and school exports, if not found automatically. |
-| `BRIGHTSTARS_ALLOW_NON_PRODUCTION` | `1` only on a staging server that must run as development. Never on a real deployment. |
+| `BEACON_ENV` | `development` or `production`. **A real deployment must say `production`**: one that looks real and does not refuses to start (see [Security](#5-security-and-sign-ins)). |
+| `BEACON_PLATFORM_DB` | PostgreSQL URL of the platform registry. Required, no default. |
+| `BEACON_SECRET` | Session-signing secret; at least 32 characters in production. |
+| `BEACON_PLATFORM_HOSTS` | Hostnames serving the platform console. |
+| `BEACON_PORTAL_DOMAIN` | Domain each school's address is issued under. |
+| `BEACON_STORAGE_BACKEND` | `local` (default; files under `BEACON_TENANTS_DIR`) or `s3` (any S3-compatible store; `BEACON_S3_*`). |
+| `BEACON_TRUSTED_PROXIES` | How many reverse proxies stand in front (0–5, default 0). See [Operating](#operating). |
+| `BEACON_IDLE_MINUTES` · `BEACON_SESSION_HOURS` | A sign-in ends after this long unused (default 120) and in all (default 12). Never during a running exam. |
+| `BEACON_DELIVERY_KEY` | The key schools' stored mail, SMS and Paystack secrets are encrypted under (defaults to one derived from the secret). |
+| `BEACON_SMTP_*` · `BEACON_SMS_*` | The platform's shared email and SMS account (the fallback). |
+| `BEACON_DB_POOL_SIZE` · `BEACON_DB_MAX_OVERFLOW` | Connections per school per instance (defaults 2 and 3). |
+| `BEACON_REGISTRY_POOL_SIZE` · `BEACON_REGISTRY_MAX_OVERFLOW` | Registry connections per instance (defaults 10 and 20). |
+| `BEACON_REGISTRY_CACHE_SECONDS` | How long a hostname lookup is cached, which bounds how fast a suspension takes effect. |
+| `BEACON_SCHOOL_DB_TEMPLATE` · `BEACON_PG_MAINTENANCE_DB` | Where schools' databases are created, and which database `CREATE DATABASE` connects through. |
+| `BEACON_MAX_UPLOAD_BYTES` · `BEACON_MAX_DATA_UPLOAD_BYTES` · `BEACON_MAX_REQUEST_BYTES` | Upload and request limits; every file box prints its limit. |
+| `BEACON_ALERT_WEBHOOK` | Where degraded-safety alerts are posted (optional). |
+| `BEACON_CHROME` · `BEACON_PG_DUMP` | The programs for result images and school exports, if not found automatically. |
+| `BEACON_ALLOW_NON_PRODUCTION` | `1` only on a staging server that must run as development. Never on a real deployment. |
 
 ---
 
@@ -507,7 +507,7 @@ The full threat map is on `/docs` (*Security*). The essentials:
     connection, a restart), and has 30 minutes more once it ends.
 - **Production means production.** Outside production the app drops protections a public server needs (Secure cookies,
   HSTS, the strong-secret check, refusing private mail hosts). So a start that looks real (gunicorn/waitress/uwsgi, a real
-  portal domain, or a reverse proxy) refuses unless `BRIGHTSTARS_ENV=production`.
+  portal domain, or a reverse proxy) refuses unless `BEACON_ENV=production`.
 - **Uploads**: type and size checked, pictures re-encoded, random names, per-folder access (`core/upload_access.py`), a
   plain 404 on refusal. Excel imports are read defensively (`core/tabular.py`).
 - **Errors** never show internals: designed error pages, and a failure is told in words while the detail goes to the
@@ -522,39 +522,39 @@ Still to do: a second sign-in step for platform operators and School Admins (see
 
 ### Deployment checklist
 
-1. `BRIGHTSTARS_ENV=production`, a strong `BRIGHTSTARS_SECRET`, and `BRIGHTSTARS_DELIVERY_KEY` set.
+1. `BEACON_ENV=production`, a strong `BEACON_SECRET`, and `BEACON_DELIVERY_KEY` set.
 2. `pip install -r requirements.txt` on every deploy (the dependencies change: `openpyxl` and `defusedxml` are recent).
 3. Run under a WSGI server behind a reverse proxy, e.g. `gunicorn -w 4 -b 127.0.0.1:8000 app:app`, never `python app.py`
-   in production. Set `BRIGHTSTARS_TRUSTED_PROXIES` to the number of proxies.
+   in production. Set `BEACON_TRUSTED_PROXIES` to the number of proxies.
 4. As a deploy step, `python -m control_plane upgrade`: it brings every school's schema up to date **and** records a new
    launch (everyone signs in again, except people mid-exam).
 5. TLS for every hostname (a wildcard for the portal domain, one per school domain); pass `Host` through unchanged.
-6. More than one application server: `BRIGHTSTARS_STORAGE_BACKEND=s3`, or shared storage for `BRIGHTSTARS_TENANTS_DIR`.
+6. More than one application server: `BEACON_STORAGE_BACKEND=s3`, or shared storage for `BEACON_TENANTS_DIR`.
 7. A timer running `python -m control_plane sweep-jobs`, for schools quiet enough that nothing else retries their jobs.
    Run it at least hourly in the daytime: it also sends a school's birthday texts on a day nobody opens the portal
    (a weekend or holiday).
-8. More than a few dozen schools: PgBouncer in transaction mode in front of PostgreSQL, `BRIGHTSTARS_DB_POOLER=pgbouncer`,
+8. More than a few dozen schools: PgBouncer in transaction mode in front of PostgreSQL, `BEACON_DB_POOLER=pgbouncer`,
    and existing schools moved with `python -m control_plane move-db-address`. Step by step: the operator manual,
    Deployment, "Hundreds of schools on one server".
 
 ### Operating
 
-- **Backups are per school.** Each school is its own database (`brightstars_<code>`) plus its own files. Restoring one
+- **Backups are per school.** Each school is its own database (`beacon_<code>`) plus its own files. Restoring one
   never touches another. `export-tenant` gives a school everything it is owed.
-- **Suspending** takes a school's portal offline for everyone within `BRIGHTSTARS_REGISTRY_CACHE_SECONDS`; its data
+- **Suspending** takes a school's portal offline for everyone within `BEACON_REGISTRY_CACHE_SECONDS`; its data
   returns on reactivation.
 - **Database connections.** Each school is its own database, and a connection belongs to one database, so without a
   pooler each school has its own small pool in each running instance (plus the registry's). A school's connections
-  close after a minute of quiet (`BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS`), and creating or upgrading schools closes
+  close after a minute of quiet (`BEACON_SCHOOL_ENGINE_IDLE_SECONDS`), and creating or upgrading schools closes
   each one's as soon as it is done, so provisioning or upgrading hundreds of schools holds one at a time. What is left
   multiplies with instances × schools busy in the same minute; when new connections are refused while others sit idle,
   check `SELECT datname, state, count(*) FROM pg_stat_activity GROUP BY 1,2;` against `SHOW max_connections;`.
-  For hundreds of schools, put **PgBouncer** in transaction mode in front and set `BRIGHTSTARS_DB_POOLER=pgbouncer`:
+  For hundreds of schools, put **PgBouncer** in transaction mode in front and set `BEACON_DB_POOLER=pgbouncer`:
   the application then keeps no pools and turns off psycopg's prepared statements, PgBouncer caps the real
   connections for every school and worker together, and `pg_dump` (exporting a school) goes straight to PostgreSQL on
-  `BRIGHTSTARS_DB_DIRECT_PORT`. `move-db-address --from host:5432 --to host:6432 [--apply]` moves the schools that
+  `BEACON_DB_DIRECT_PORT`. `move-db-address --from host:5432 --to host:6432 [--apply]` moves the schools that
   already exist. A school kept as a schema in a shared database is refused in this mode: use a database per school.
-- **Behind a reverse proxy.** Leave `BRIGHTSTARS_TRUSTED_PROXIES=0` unless you run one: then forwarded headers are
+- **Behind a reverse proxy.** Leave `BEACON_TRUSTED_PROXIES=0` unless you run one: then forwarded headers are
   ignored, because anyone can write them. With proxies, set it to how many (1 for nginx or Caddy, 2 with a load
   balancer in front). Only the address and the scheme are believed, never the host.
 - **Limits are shared** by every worker through the registry (`rate_limits`); if the registry cannot be reached each

@@ -174,7 +174,7 @@ def school_account_for(platform_admin):
     from models import Admin, AdminType
 
     username = f"{PLATFORM_ADMIN_USERNAME_PREFIX}{platform_admin['username']}"
-    display = f"{platform_admin['display_name']} (Brightstars Academics)"
+    display = f"{platform_admin['display_name']} (Beacon Academics)"
     role_id = db.session.scalars(
         sa.select(AdminType.id).where(AdminType.is_system == 1).order_by(AdminType.id)).first()
     if role_id is None:

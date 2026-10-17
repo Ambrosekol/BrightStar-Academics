@@ -12,7 +12,7 @@ a judgement call for whoever runs this against their own database, not a portabl
 
 Run against a throwaway database (the default): python tests/verification/load_test_exam_answers.py
 Run against a real school's own database, to test the machine it will really run on:
-    BRIGHTSTARS_PLATFORM_DB=<its platform db> python tests/verification/load_test_exam_answers.py --school CODE
+    BEACON_PLATFORM_DB=<its platform db> python tests/verification/load_test_exam_answers.py --school CODE
 (never point this at a school actually in use - it writes real rows to the answers table)
 """
 import argparse
@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_load_")
+TMP = tempfile.mkdtemp(prefix="beacon_load_")
 
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument("--candidates", type=int, default=300, help="how many candidates 'sit' at once (default 300)")
@@ -41,11 +41,11 @@ teardown = None
 if not args.school:
     PREFIX, teardown = _pg.setup("loadtest")
     os.environ.update({
-        "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-        "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-        "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-        "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-        "BRIGHTSTARS_SECRET": "x" * 40,
+        "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+        "BEACON_PLATFORM_HOSTS": "platform.test",
+        "BEACON_PORTAL_DOMAIN": "portal.test",
+        "BEACON_REGISTRY_CACHE_SECONDS": "0",
+        "BEACON_SECRET": "x" * 40,
     })
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)

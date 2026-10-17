@@ -1,4 +1,4 @@
-"""Environment-driven settings for the Brightstars Academics control plane.
+"""Environment-driven settings for the Beacon Academics control plane.
 
 Read lazily (each call) rather than at import time so a test or verification
 script can set the environment after importing the package.
@@ -24,15 +24,15 @@ load_dotenv(os.path.join(BASE, '.env'))
 def platform_db_url():
     """Where the platform registry (schools, addresses, platform admins) lives.
 
-    PostgreSQL, e.g. ``postgresql+psycopg://user:pass@host/brightstars_platform``.
+    PostgreSQL, e.g. ``postgresql+psycopg://user:pass@host/beacon_platform``.
     Required: there is no default, because a wrong guess here would silently
     create an empty registry and make every school look as if it did not exist.
     """
-    url = os.environ.get('BRIGHTSTARS_PLATFORM_DB', '').strip()
+    url = os.environ.get('BEACON_PLATFORM_DB', '').strip()
     if not url:
         raise RuntimeError(
-            'BRIGHTSTARS_PLATFORM_DB is not set. It is the PostgreSQL URL of the platform '
-            'registry, e.g. postgresql+psycopg://user:password@localhost:5432/brightstars_platform. '
+            'BEACON_PLATFORM_DB is not set. It is the PostgreSQL URL of the platform '
+            'registry, e.g. postgresql+psycopg://user:password@localhost:5432/beacon_platform. '
             'See docs/architecture/MULTI_TENANCY.md.')
     return url
 
@@ -43,7 +43,7 @@ def school_db_url(slug):
     Schools live in their own database on the same server as the registry, named
     after the school, unless a per-school URL was given when it was created.
     """
-    template = os.environ.get('BRIGHTSTARS_SCHOOL_DB_TEMPLATE', '').strip()
+    template = os.environ.get('BEACON_SCHOOL_DB_TEMPLATE', '').strip()
     if template:
         return template.replace('{slug}', slug).replace('{db}', school_db_name(slug))
     from sqlalchemy.engine import make_url
@@ -55,7 +55,7 @@ def school_db_url(slug):
 def school_db_name(slug):
     """The database name for a school. PostgreSQL identifiers cannot contain a
     hyphen unquoted, so the school's code is normalised."""
-    return 'brightstars_' + slug.replace('-', '_')
+    return 'beacon_' + slug.replace('-', '_')
 
 
 def pg_maintenance_db():
@@ -67,7 +67,7 @@ def pg_maintenance_db():
     database is ``defaultdb``, for instance - so set this to whatever database is
     guaranteed to exist on your server when ``postgres`` is not it.
     """
-    return os.environ.get('BRIGHTSTARS_PG_MAINTENANCE_DB', '').strip() or 'postgres'
+    return os.environ.get('BEACON_PG_MAINTENANCE_DB', '').strip() or 'postgres'
 
 
 def branding_cache_seconds():
@@ -78,14 +78,14 @@ def branding_cache_seconds():
     worker process, which never saw the save, keeps serving the old values. Zero disables it.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_BRANDING_CACHE_SECONDS', '10')))
+        return max(0.0, float(os.environ.get('BEACON_BRANDING_CACHE_SECONDS', '10')))
     except ValueError:
         return 10.0
 
 
 def upload_cache_bytes():
     """How many bytes of uploaded-file content each worker process keeps in memory
-    (``BRIGHTSTARS_STORAGE_BACKEND=s3`` only), so a second request for the same image - by any
+    (``BEACON_STORAGE_BACKEND=s3`` only), so a second request for the same image - by any
     visitor, not just the one who asked first - is answered without going back to the bucket.
 
     An upload's own path never changes what it holds (core/storage.py never overwrites one in
@@ -94,13 +94,13 @@ def upload_cache_bytes():
     deleting an upload drops its own entry immediately. 0 disables it.
     """
     try:
-        return max(0, int(os.environ.get('BRIGHTSTARS_UPLOAD_CACHE_BYTES', str(64 * 1024 * 1024))))
+        return max(0, int(os.environ.get('BEACON_UPLOAD_CACHE_BYTES', str(64 * 1024 * 1024))))
     except ValueError:
         return 64 * 1024 * 1024
 
 
 def is_production():
-    return os.environ.get('BRIGHTSTARS_ENV',
+    return os.environ.get('BEACON_ENV',
                           os.environ.get('FLASK_ENV', 'development')).strip().lower() in ('production', 'prod')
 
 
@@ -108,63 +108,63 @@ def storage_backend():
     """Where a school's uploads, question banks and numbering rules are kept:
     ``'local'`` (the default), a folder on this machine under ``tenants_dir()``, or
     ``'s3'``, an S3-compatible object store (AWS S3 itself, or Cloudflare R2, Backblaze B2,
-    DigitalOcean Spaces and MinIO by pointing ``BRIGHTSTARS_S3_ENDPOINT_URL`` at them).
+    DigitalOcean Spaces and MinIO by pointing ``BEACON_S3_ENDPOINT_URL`` at them).
     See docs/architecture/MULTI_TENANCY.md.
     """
-    value = os.environ.get('BRIGHTSTARS_STORAGE_BACKEND', 'local').strip().lower()
+    value = os.environ.get('BEACON_STORAGE_BACKEND', 'local').strip().lower()
     if value not in ('local', 's3'):
         raise RuntimeError(
-            f'BRIGHTSTARS_STORAGE_BACKEND is "{value}", but only "local" or "s3" is understood.')
+            f'BEACON_STORAGE_BACKEND is "{value}", but only "local" or "s3" is understood.')
     return value
 
 
 def s3_bucket():
-    value = os.environ.get('BRIGHTSTARS_S3_BUCKET', '').strip()
+    value = os.environ.get('BEACON_S3_BUCKET', '').strip()
     if not value:
-        raise RuntimeError('BRIGHTSTARS_S3_BUCKET is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+        raise RuntimeError('BEACON_S3_BUCKET is not set. Required when BEACON_STORAGE_BACKEND=s3.')
     return value
 
 
 def s3_endpoint_url():
     """None for real AWS S3; a URL for an S3-compatible provider (Cloudflare R2, Backblaze
     B2, DigitalOcean Spaces, MinIO, ...)."""
-    return os.environ.get('BRIGHTSTARS_S3_ENDPOINT_URL', '').strip() or None
+    return os.environ.get('BEACON_S3_ENDPOINT_URL', '').strip() or None
 
 
 def s3_region():
-    return os.environ.get('BRIGHTSTARS_S3_REGION', '').strip() or 'auto'
+    return os.environ.get('BEACON_S3_REGION', '').strip() or 'auto'
 
 
 def s3_access_key_id():
-    value = os.environ.get('BRIGHTSTARS_S3_ACCESS_KEY_ID', '').strip()
+    value = os.environ.get('BEACON_S3_ACCESS_KEY_ID', '').strip()
     if not value:
-        raise RuntimeError('BRIGHTSTARS_S3_ACCESS_KEY_ID is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+        raise RuntimeError('BEACON_S3_ACCESS_KEY_ID is not set. Required when BEACON_STORAGE_BACKEND=s3.')
     return value
 
 
 def s3_secret_access_key():
-    value = os.environ.get('BRIGHTSTARS_S3_SECRET_ACCESS_KEY', '').strip()
+    value = os.environ.get('BEACON_S3_SECRET_ACCESS_KEY', '').strip()
     if not value:
         raise RuntimeError(
-            'BRIGHTSTARS_S3_SECRET_ACCESS_KEY is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.')
+            'BEACON_S3_SECRET_ACCESS_KEY is not set. Required when BEACON_STORAGE_BACKEND=s3.')
     return value
 
 
 def s3_key_prefix():
     """An optional prefix every school's files are namespaced under in the bucket, so one
     bucket can be shared with other uses. Empty, or ending in '/'."""
-    prefix = os.environ.get('BRIGHTSTARS_S3_PREFIX', '').strip().strip('/')
+    prefix = os.environ.get('BEACON_S3_PREFIX', '').strip().strip('/')
     return f'{prefix}/' if prefix else ''
 
 
 def platform_hosts():
     """Hostnames that serve the platform console instead of a school.
 
-    Comma-separated, no ports, e.g. ``platform.brightstars.example``. The
+    Comma-separated, no ports, e.g. ``platform.beacon.example``. The
     default is a ``.localhost`` name, which browsers resolve to the loopback
     address without any hosts-file edit.
     """
-    raw = os.environ.get('BRIGHTSTARS_PLATFORM_HOSTS', '').strip() or 'platform.localhost'
+    raw = os.environ.get('BEACON_PLATFORM_HOSTS', '').strip() or 'platform.localhost'
     return {h.strip().lower() for h in raw.split(',') if h.strip()}
 
 
@@ -178,7 +178,7 @@ def portal_domain():
     The default suits local development: ``alpha.localhost`` resolves to the
     loopback address in current browsers with no hosts-file edit.
     """
-    return os.environ.get('BRIGHTSTARS_PORTAL_DOMAIN', '').strip().lower().strip('.') or 'localhost'
+    return os.environ.get('BEACON_PORTAL_DOMAIN', '').strip().lower().strip('.') or 'localhost'
 
 
 def portal_hostname(slug):
@@ -188,7 +188,7 @@ def portal_hostname(slug):
 def tenants_dir():
     """Root folder holding each school's own files (question banks, uploads and
     its numbering rules)."""
-    return os.environ.get('BRIGHTSTARS_TENANTS_DIR', '').strip() or os.path.join(BASE, 'tenants')
+    return os.environ.get('BEACON_TENANTS_DIR', '').strip() or os.path.join(BASE, 'tenants')
 
 
 def _bounded_number(name, default, low, high):
@@ -201,18 +201,18 @@ def _bounded_number(name, default, low, high):
 
 
 def idle_minutes():
-    """How long a sign-in may go unused before it ends (``BRIGHTSTARS_IDLE_MINUTES``, default 120).
+    """How long a sign-in may go unused before it ends (``BEACON_IDLE_MINUTES``, default 120).
 
     "Used" means a page or a form; the presence ping an open page sends every 30 seconds does not count, so a
     tab left open on a shared computer still ends. Someone sitting an exam is never signed out by this while
     their paper is running (core/session_guard.py)."""
-    return _bounded_number('BRIGHTSTARS_IDLE_MINUTES', 120, 5, 24 * 60)
+    return _bounded_number('BEACON_IDLE_MINUTES', 120, 5, 24 * 60)
 
 
 def session_hours():
-    """The longest a sign-in lasts, however busy (``BRIGHTSTARS_SESSION_HOURS``, default 12): a working day.
+    """The longest a sign-in lasts, however busy (``BEACON_SESSION_HOURS``, default 12): a working day.
     Someone sitting an exam is kept until their paper ends."""
-    return _bounded_number('BRIGHTSTARS_SESSION_HOURS', 12, 1, 7 * 24)
+    return _bounded_number('BEACON_SESSION_HOURS', 12, 1, 7 * 24)
 
 
 def password_check_cache_seconds():
@@ -228,18 +228,18 @@ def password_check_cache_seconds():
     disables the cache.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS', '30')))
+        return max(0.0, float(os.environ.get('BEACON_PASSWORD_CHECK_CACHE_SECONDS', '30')))
     except ValueError:
         return 30.0
 
 
 def pg_dump_override():
-    """The full path of a ``pg_dump`` program named by ``BRIGHTSTARS_PG_DUMP``, or ''.
+    """The full path of a ``pg_dump`` program named by ``BEACON_PG_DUMP``, or ''.
 
     Used by school exports (control_plane/provisioning.py's ``find_pg_dump``) ahead of the
     automatic search, for a machine whose PostgreSQL client tools are not in a standard place.
     """
-    return os.environ.get('BRIGHTSTARS_PG_DUMP', '').strip()
+    return os.environ.get('BEACON_PG_DUMP', '').strip()
 
 
 def admin_cache_seconds():
@@ -250,7 +250,7 @@ def admin_cache_seconds():
     request within this many seconds. Zero reads the row on every request.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_ADMIN_CACHE_SECONDS', '15')))
+        return max(0.0, float(os.environ.get('BEACON_ADMIN_CACHE_SECONDS', '15')))
     except ValueError:
         return 15.0
 
@@ -261,7 +261,7 @@ def design_cache_seconds():
     changing an image clears it at once in the process that did it, and every other process reads it again within
     this many seconds. Zero reads it for every card."""
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_DESIGN_CACHE_SECONDS', '60')))
+        return max(0.0, float(os.environ.get('BEACON_DESIGN_CACHE_SECONDS', '60')))
     except ValueError:
         return 60.0
 
@@ -271,7 +271,7 @@ def badge_cache_seconds():
     payments) are kept in each process. A count can therefore lag a change by this many seconds.
     Zero counts on every page."""
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_BADGE_CACHE_SECONDS', '10')))
+        return max(0.0, float(os.environ.get('BEACON_BADGE_CACHE_SECONDS', '10')))
     except ValueError:
         return 10.0
 
@@ -289,7 +289,7 @@ def school_engine_idle_seconds():
     there is no pool to keep.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', '60')))
+        return max(0.0, float(os.environ.get('BEACON_SCHOOL_ENGINE_IDLE_SECONDS', '60')))
     except ValueError:
         return 60.0
 
@@ -300,7 +300,7 @@ POOLERS = ('pgbouncer',)
 def db_pooler():
     """``'pgbouncer'`` when PostgreSQL is reached through PgBouncer in transaction mode, else ``''``.
 
-    ``BRIGHTSTARS_DB_POOLER=pgbouncer``. PgBouncer then does the pooling for every worker and every
+    ``BEACON_DB_POOLER=pgbouncer``. PgBouncer then does the pooling for every worker and every
     school together, under one cap, so the application keeps no pool of its own (each connection is
     handed back the moment a request is done with it) and turns off psycopg's prepared statements,
     which a transaction-mode pooler cannot follow from one server connection to the next. A school
@@ -308,22 +308,22 @@ def db_pooler():
     the connection starts, which transaction pooling does not carry over (see routing.build_engine).
     An unknown value is an error rather than a silent default, so a typo is noticed at start-up.
     """
-    value = os.environ.get('BRIGHTSTARS_DB_POOLER', '').strip().lower()
+    value = os.environ.get('BEACON_DB_POOLER', '').strip().lower()
     if value in ('', 'none', 'off'):
         return ''
     if value not in POOLERS:
-        raise RuntimeError(f'BRIGHTSTARS_DB_POOLER must be one of {", ".join(POOLERS)} (or unset), not {value!r}.')
+        raise RuntimeError(f'BEACON_DB_POOLER must be one of {", ".join(POOLERS)} (or unset), not {value!r}.')
     return value
 
 
 def db_direct_port():
-    """The port PostgreSQL itself listens on, behind PgBouncer (``BRIGHTSTARS_DB_DIRECT_PORT``, 5432).
+    """The port PostgreSQL itself listens on, behind PgBouncer (``BEACON_DB_DIRECT_PORT``, 5432).
 
     ``pg_dump`` (exporting a school) sets things for its whole session before it starts reading, which a
     transaction-mode pooler does not keep together, so with ``db_pooler`` set it goes to PostgreSQL
     directly: the same host as the school's address, on this port."""
     try:
-        return int(os.environ.get('BRIGHTSTARS_DB_DIRECT_PORT', '5432'))
+        return int(os.environ.get('BEACON_DB_DIRECT_PORT', '5432'))
     except ValueError:
         return 5432
 
@@ -335,7 +335,7 @@ def registry_cache_seconds():
     seen the school. Zero disables the cache.
     """
     try:
-        return max(0.0, float(os.environ.get('BRIGHTSTARS_REGISTRY_CACHE_SECONDS', '10')))
+        return max(0.0, float(os.environ.get('BEACON_REGISTRY_CACHE_SECONDS', '10')))
     except ValueError:
         return 10.0
 
@@ -344,7 +344,7 @@ MAX_TRUSTED_PROXIES = 5
 
 
 def trusted_proxies():
-    """How many reverse proxies sit in front of the application (``BRIGHTSTARS_TRUSTED_PROXIES``).
+    """How many reverse proxies sit in front of the application (``BEACON_TRUSTED_PROXIES``).
 
     0, the default, means none: the address a request appears to come from is the connection's own,
     and the ``X-Forwarded-*`` headers are ignored, because anyone can send them. A number of 1 or
@@ -353,7 +353,7 @@ def trusted_proxies():
     since a wrong guess here either records forged addresses or records the proxy's address for
     every visitor.
     """
-    raw = os.environ.get('BRIGHTSTARS_TRUSTED_PROXIES', '').strip()
+    raw = os.environ.get('BEACON_TRUSTED_PROXIES', '').strip()
     if not raw:
         return 0
     try:
@@ -362,7 +362,7 @@ def trusted_proxies():
         count = -1
     if not 0 <= count <= MAX_TRUSTED_PROXIES:
         raise RuntimeError(
-            f'BRIGHTSTARS_TRUSTED_PROXIES is "{raw}", which is not a number this application can use. '
+            f'BEACON_TRUSTED_PROXIES is "{raw}", which is not a number this application can use. '
             f'Set it to how many reverse proxies stand in front of the application: 0 (the default, '
             f'none) or a whole number up to {MAX_TRUSTED_PROXIES}.')
     return count

@@ -53,7 +53,7 @@ of the school portal and everything else (tests, examinations) was modelled on i
 </ol>
 <p><strong>Restarts.</strong> A candidate with an unfinished paper is exempt from the "restart signs everyone out" rule; they carry on, and the clock keeps running while the server is off. A paper whose time ran out during a restart is finished from the answers already saved.</p>
 <p><strong>A dropped connection is not the paper being over.</strong> The exam page's own script retries a save that fails over the network or gets an unexpected server error, a bounded number of times, before telling the candidate in plain words rather than losing the answer silently; only a definite refusal from the server (403 the session has ended, 410 time ran out) sends them to their result. {{ route('answer') }} is itself an upsert keyed on (attempt, question), so a retried save of the same answer is never a duplicate.</p>
-<p><strong>Staff controls</strong>: rankings, results, per-subject analytics, CSV/JSON export, a result image (drawn by headless Chrome, <code>BRIGHTSTARS_CHROME</code>), <em>grant retake</em> ({{ route('admin_grant_retake') }}, a one-use permission stored in {{ table('retake_grants') }}) and <em>regrade</em> ({{ route('admin_regrade') }}).</p>
+<p><strong>Staff controls</strong>: rankings, results, per-subject analytics, CSV/JSON export, a result image (drawn by headless Chrome, <code>BEACON_CHROME</code>), <em>grant retake</em> ({{ route('admin_grant_retake') }}, a one-use permission stored in {{ table('retake_grants') }}) and <em>regrade</em> ({{ route('admin_regrade') }}).</p>
 
 <h2 id="departments">SSS departments</h2>
 <p>A candidate entering SSS 1 is registered with a department choice ({{ table('candidates') }}.<code>department_choice</code>:

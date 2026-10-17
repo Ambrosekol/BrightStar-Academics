@@ -10,10 +10,10 @@
 <meta name="theme-color" content="{{ (school_brand.primary if school_brand is defined and school_brand.primary else '#0d2b52') }}">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}">
+<meta name="apple-mobile-web-app-title" content="{{ school_brand.name if school_brand is defined else 'Beacon Academics' }}">
 {%- if pwa_register and csp_nonce is defined %}
 <link rel="stylesheet" href="{{ url_for('static', filename='pwa.css') }}">
-<script src="{{ url_for('static', filename='pwa-install.js') }}" data-name="{{ school_brand.name if school_brand is defined else 'Brightstars Academics' }}" data-icon="{{ pwa_icon_url(192) }}" defer></script>
+<script src="{{ url_for('static', filename='pwa-install.js') }}" data-name="{{ school_brand.name if school_brand is defined else 'Beacon Academics' }}" data-icon="{{ pwa_icon_url(192) }}" defer></script>
 <script nonce="{{ csp_nonce() }}">if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});});}</script>
 {#- Loading between pages. As a page is left (static/page-loading.js) its content gives way to the outline of a page
     (templates/includes/_skeleton.html) under a spinner; it leaves a note, and the next page, reading it first thing

@@ -24,9 +24,9 @@ and always current. Here we explain the <em>shape</em>.</p>
 <p>The single most useful thing to know is that the code has <strong>two separate worlds</strong>.</p>
 <div class="table-scroll"><table>
 <tr><th></th><th>The platform (<code>control_plane/</code>)</th><th>A school (<code>models/</code>, <code>blueprints/</code>, <code>core/</code>)</th></tr>
-<tr><td>Who uses it</td><td>Brightstars operators</td><td>A school's staff, students, parents, candidates</td></tr>
+<tr><td>Who uses it</td><td>Beacon operators</td><td>A school's staff, students, parents, candidates</td></tr>
 <tr><td>Where the data is</td><td>The <em>registry</em> database, one for the whole deployment</td><td>That school's own database. One per school.</td></tr>
-<tr><td>Addresses</td><td><code>BRIGHTSTARS_PLATFORM_HOSTS</code>, paths under <code>/platform</code>, <code>/marketing</code>, <code>/docs</code></td><td><code>&lt;code&gt;.&lt;portal domain&gt;</code>, or the school's own domain</td></tr>
+<tr><td>Addresses</td><td><code>BEACON_PLATFORM_HOSTS</code>, paths under <code>/platform</code>, <code>/marketing</code>, <code>/docs</code></td><td><code>&lt;code&gt;.&lt;portal domain&gt;</code>, or the school's own domain</td></tr>
 <tr><td>Models</td><td>{{ file('control_plane/models.py') }}</td><td>{{ file('models/school.py') }} and its siblings</td></tr>
 <tr><td>Sign-in</td><td>{{ file('control_plane/entry.py') }}</td><td>{{ file('blueprints/auth/routes.py') }}</td></tr>
 </table></div>

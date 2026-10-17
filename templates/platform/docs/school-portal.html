@@ -168,7 +168,7 @@ PRESET_ROLE_NEVER in {{ file('core/security.py') }} keeps payroll off the Financ
   (work out again, a one-off line, reopening) resets to whoever made it. Nobody edits their own pay or payslip. Approved runs refuse changes;
   paid runs are final.</li>
   <li><strong>Secrets</strong>: account numbers, RSA PINs and tax IDs are Fernet-encrypted under an HKDF key per school from
-  <code>BRIGHTSTARS_DELIVERY_KEY</code>, and included in {{ file('core/secrets_rotation.py') }}. They are decrypted only by
+  <code>BEACON_DELIVERY_KEY</code>, and included in {{ file('core/secrets_rotation.py') }}. They are decrypted only by
   {{ route('admin_payroll_run_bank') }} and {{ route('admin_payroll_run_returns') }}, for an approved run, for payroll.manage or
   payroll.approve; both are logged and CSV-defused. Pages with salaries are <code>no-store</code>; opening a run or payslip is logged, and
   logs name what changed, never amounts or numbers.</li>
@@ -259,7 +259,7 @@ through {{ route('admin_report_card_asset_upload') }} and {{ route('admin_report
   embeds every picture and only the details the design shows. {{ route('admin_report_card_studio_preview') }} draws the
   design on screen with a made-up student.</li>
   <li><strong>Cost.</strong> The design and the paths of the images it uses are read once per
-  <code>BRIGHTSTARS_DESIGN_CACHE_SECONDS</code> (default 60) in each process ({{ file('core/short_cache.py') }}, per school),
+  <code>BEACON_DESIGN_CACHE_SECONDS</code> (default 60) in each process ({{ file('core/short_cache.py') }}, per school),
   not for every card; saving, switching, locking or changing an image clears it at once in the process that did it. The
   card page embeds only the student's own photograph and the signatures: the logo is its public address and the design's
   images come from {{ route('report_design_image') }} (anyone signed in at the school - staff, a parent, a student - and

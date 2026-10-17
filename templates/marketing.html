@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Brightstars Academics: admissions to graduation, every school its own</title>
+  <title>Beacon Academics: admissions to graduation, every school its own</title>
   <meta name="description" content="Entrance exams and admissions, results and report cards, attendance, timetables, a library, and fees paid in the office or online — one platform, with every school's own address, database and files kept completely apart.">
-  <meta property="og:title" content="Brightstars Academics: admissions to graduation, every school its own">
+  <meta property="og:title" content="Beacon Academics: admissions to graduation, every school its own">
   <meta property="og:description" content="Entrance exams, admissions, results, attendance, a library and fees — in the office or online — each school running on its own address, its own database, in its own name.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="{{ url_for('static', filename='brand/brightstars-logo.png', _external=True) }}">
+  <meta property="og:image" content="{{ platform_logo_url(external=True) }}">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='marketing.css', v='1') }}">
@@ -47,7 +47,7 @@
 
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="{{ url_for('platform_dashboard') if signed_in_admin else '#top' }}" aria-label="Brightstars Academics"><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></a>
+    <a class="logo" href="{{ url_for('platform_dashboard') if signed_in_admin else '#top' }}" aria-label="Beacon Academics"><img src="{{ platform_logo_url() }}" alt="Beacon Academics"></a>
     <nav aria-label="Sections">
       <a href="#pain">Why schools switch</a>
       <a href="#features">What you get</a>
@@ -55,7 +55,7 @@
       <a href="#how">How it works</a>
       <a href="#switching">Already have a system?</a>
       <a href="#faq">Questions</a>
-      <a class="btn btn-red btn-small" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Brightstars%20Academics') if contact_email else '#talk' }}">Talk to us</a>
+      <a class="btn btn-red btn-small" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Beacon%20Academics') if contact_email else '#talk' }}">Talk to us</a>
     </nav>
   </div>
 </header>
@@ -68,10 +68,10 @@
     <div>
       <div class="eyebrow">The school platform</div>
       <h1>One platform. <em>Every school</em> its own.</h1>
-      <p class="lead">Brightstars Academics runs your entrance exams, results, report cards, fees and parent updates in one place, under your school's own name, in your own colours, on your own web address.</p>
+      <p class="lead">Beacon Academics runs your entrance exams, results, report cards, fees and parent updates in one place, under your school's own name, in your own colours, on your own web address.</p>
       <div class="cta">
         <a class="btn btn-red" href="#how">See how it works</a>
-        <a class="btn btn-line" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Brightstars%20Academics') if contact_email else '#talk' }}">Ask for a walkthrough</a>
+        <a class="btn btn-line" href="{{ ('mailto:' ~ contact_email ~ '?subject=A%20walkthrough%20of%20Beacon%20Academics') if contact_email else '#talk' }}">Ask for a walkthrough</a>
       </div>
       <div class="assure">
         <span>Your school's records kept apart from every other school</span>
@@ -449,11 +449,11 @@
     <div class="copy reveal">
       <div class="eyebrow">Your school, walled off</div>
       <h2>Your records are yours alone.</h2>
-      <p class="lead">Many schools share one system with many others. Brightstars Academics is built the other way round: every school is a separate place, with its own address and its own private store of records.</p>
+      <p class="lead">Many schools share one system with many others. Beacon Academics is built the other way round: every school is a separate place, with its own address and its own private store of records.</p>
       <ul class="checks">
         <li><strong>Your own address.</strong> Your school gets a web address the moment it is created, and can use your own domain too.</li>
         <li><strong>Your own private records.</strong> Students, results, fees and photographs are kept apart from every other school's, not just hidden behind a filter.</li>
-        <li><strong>Your own look.</strong> Your name, logo, two brand colours and up to eight photographs of your school. The Brightstars logo never appears on your portal.</li>
+        <li><strong>Your own look.</strong> Your name, logo, two brand colours and up to eight photographs of your school. The Beacon logo never appears on your portal.</li>
         <li><strong>Your own messages.</strong> Email and SMS go out from your school's own accounts, so parents recognise who is writing.</li>
         <li><strong>Your own rules.</strong> You decide how student numbers and candidate codes are written.</li>
       </ul>
@@ -592,7 +592,7 @@
       <p>You may already have software, or a good mix of spreadsheets and habits. Here is how a school day feels different once everything lives in one place.</p>
     </div>
     <table class="compare reveal">
-      <thead><tr><th></th><th>What many schools live with</th><th class="us">With Brightstars Academics</th></tr></thead>
+      <thead><tr><th></th><th>What many schools live with</th><th class="us">With Beacon Academics</th></tr></thead>
       <tbody>
         <tr><th>Look and feel</th><td class="them">A generic system with someone else's name and colours on it.</td><td class="us">Your name, logo and colours on every page, and on your own web address.</td></tr>
         <tr><th>Your records</th><td class="them">Held in one big shared system alongside other schools' records.</td><td class="us">Kept in a private store of their own, apart from every other school's.</td></tr>
@@ -672,7 +672,7 @@
     <div class="faq reveal">
       <details><summary>Do we need to be technical to use it?</summary><p>No. Staff use ordinary web pages, and each person sees only the screens that matter to their job. Setting up your school is done with you, and you can change your colours, logo and roles yourself afterwards.</p></details>
       <details><summary>Can we use our own web address?</summary><p>Yes. Your school gets an address the moment it is created, and it keeps working. If you would like your own domain as well, you add one simple record with your domain provider and we connect it.</p></details>
-      <details><summary>Will parents receive messages from us or from Brightstars?</summary><p>From you. Emails and text messages leave from your school's own accounts once you connect them, so parents recognise who is writing. The Brightstars logo is never shown on your portal.</p></details>
+      <details><summary>Will parents receive messages from us or from Beacon?</summary><p>From you. Emails and text messages leave from your school's own accounts once you connect them, so parents recognise who is writing. The Beacon logo is never shown on your portal.</p></details>
       <details><summary>What happens on entrance exam day if something goes wrong?</summary><p>Every answer is saved the moment it is chosen, and the clock is kept by the system rather than the candidate's device. A candidate who is mid-paper carries on where they were, even if the system is restarted. Staff can also grant a retake when it is needed.</p></details>
       <details><summary>Do the practice tests count towards a student's grade?</summary><p>Never. Practice is only for preparing: students can take it as often as they like, the questions come in a new order each time, and nothing they do there is recorded or counted.</p></details>
       <details><summary>Can families practise for the entrance exam without registering?</summary><p>Yes. Anyone with your school's practice link chooses the class they are aiming for and starts practising. It uses last year's paper or questions you have set for practice, and it never uses the paper that is about to be sat.</p></details>
@@ -697,9 +697,9 @@
     <h2>See it running for your school.</h2>
     <p>Tell us about your school and we will show you how it would look and feel: your name, your colours, your classes.</p>
     {% if contact_email %}
-      <a class="btn btn-red" href="mailto:{{ contact_email }}?subject=A%20walkthrough%20of%20Brightstars%20Academics">Write to {{ contact_email }}</a>
+      <a class="btn btn-red" href="mailto:{{ contact_email }}?subject=A%20walkthrough%20of%20Beacon%20Academics">Write to {{ contact_email }}</a>
     {% else %}
-      <p style="margin:0"><strong>Ask the Brightstars Academics team for a walkthrough.</strong></p>
+      <p style="margin:0"><strong>Ask the Beacon Academics team for a walkthrough.</strong></p>
     {% endif %}
   </div>
 </section>
@@ -708,13 +708,13 @@
 
 <footer>
   <div class="wrap">
-    <div><img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"></div>
+    <div><img src="{{ platform_logo_url() }}" alt="Beacon Academics"></div>
     <nav aria-label="Footer">
       <a href="#features">What you get</a><a href="#switching">Already have a system?</a><a href="#faq">Questions</a>
       <a href="{{ url_for('privacy') }}">Privacy &amp; data protection</a>
       <a href="{{ url_for('platform_login') }}">Platform sign-in</a>
     </nav>
-    <div>&copy; Brightstars Academics</div>
+    <div>&copy; Beacon Academics</div>
   </div>
 </footer>
 

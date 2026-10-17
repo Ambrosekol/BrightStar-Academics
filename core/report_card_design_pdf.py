@@ -763,7 +763,7 @@ def render_designed_pdf(cards, layout, assets=None):
     c = rl_canvas.Canvas(buffer, pagesize=(width * PT, height * PT), pageCompression=1)
     c.setTitle(((school.get('name') or '') + ' - ' if school.get('name') else '') + 'Report Cards')
     c.setAuthor(school.get('name') or '')
-    c.setCreator('Brightstars Academics')
+    c.setCreator('Beacon Academics')
     pictures = _Pictures()
     if not cards:
         c.setFont(_fonts()[0], 14); c.drawCentredString(width * PT / 2, height * PT / 2, 'No report cards.'); c.showPage()

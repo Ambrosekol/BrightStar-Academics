@@ -32,7 +32,7 @@ def _tenant(slug):
 
 
 def test_a_quiet_school_engine_is_closed_and_rebuilt_on_next_use():
-    os.environ['BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS'] = '60'
+    os.environ['BEACON_SCHOOL_ENGINE_IDLE_SECONDS'] = '60'
     routing.dispose_engines()
     try:
         quiet, busy = _tenant('quiet'), _tenant('busy')
@@ -48,12 +48,12 @@ def test_a_quiet_school_engine_is_closed_and_rebuilt_on_next_use():
         rebuilt = routing.engine_for(quiet)
         assert rebuilt is not first
     finally:
-        os.environ.pop('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', None)
+        os.environ.pop('BEACON_SCHOOL_ENGINE_IDLE_SECONDS', None)
         routing.dispose_engines()
 
 
 def test_idle_engine_eviction_can_be_turned_off():
-    os.environ['BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS'] = '0'
+    os.environ['BEACON_SCHOOL_ENGINE_IDLE_SECONDS'] = '0'
     routing.dispose_engines()
     try:
         tenant = _tenant('kept')
@@ -62,7 +62,7 @@ def test_idle_engine_eviction_can_be_turned_off():
         routing.evict_idle_engines()
         assert routing._engines.get((tenant.db_url, tenant.db_schema)) is engine
     finally:
-        os.environ.pop('BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS', None)
+        os.environ.pop('BEACON_SCHOOL_ENGINE_IDLE_SECONDS', None)
         routing.dispose_engines()
 
 

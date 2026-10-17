@@ -642,7 +642,7 @@ def _read_school_design():
 def school_design():
     """``(layout, {image id: stored path})`` when the school's report cards use its own design, else None.
 
-    Read once per BRIGHTSTARS_DESIGN_CACHE_SECONDS in each process (core/short_cache.py, this school only), not for
+    Read once per BEACON_DESIGN_CACHE_SECONDS in each process (core/short_cache.py, this school only), not for
     every card: a release day's thousands of report card views cost nothing here. Saving, switching, locking or
     changing an image calls forget_design(). The value is shared, so it is never changed by whoever reads it."""
     from control_plane.config import design_cache_seconds

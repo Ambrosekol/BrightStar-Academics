@@ -33,7 +33,7 @@ MAX_ATTEMPTS = 5
 STUCK_RUNNING_AFTER_SECONDS = 300  # a thread that started this long ago and never finished died
 RETRY_FAILED_AFTER_SECONDS = 120   # do not hammer a mail server that just rejected a message
 # How many threads of one kind may run at once in this process. A school's connection pool is small
-# (BRIGHTSTARS_DB_POOL_SIZE + BRIGHTSTARS_DB_MAX_OVERFLOW), so billing a class of a thousand, which
+# (BEACON_DB_POOL_SIZE + BEACON_DB_MAX_OVERFLOW), so billing a class of a thousand, which
 # enqueues a job per small batch, must not start a hundred senders at once and starve the pages.
 # Threads beyond the limit wait their turn holding nothing; their rows stay 'pending' until then.
 MAX_RUNNING_PER_KIND = 2
@@ -102,7 +102,7 @@ def _spawn(job_id, kind):
         except Exception:
             app.logger.exception('Job %s could not even be started', job_id)
 
-    threading.Thread(target=run, name='brightstars-job', daemon=True).start()
+    threading.Thread(target=run, name='beacon-job', daemon=True).start()
 
 
 def _execute(job_id):

@@ -147,28 +147,28 @@ def test_no_code_believes_a_client_written_forwarding_header():
 def test_trusted_proxies_are_off_by_default_and_only_the_client_address_and_scheme_are_believed():
     from control_plane import config
 
-    saved = os.environ.pop("BRIGHTSTARS_TRUSTED_PROXIES", None)
+    saved = os.environ.pop("BEACON_TRUSTED_PROXIES", None)
     try:
         assert config.trusted_proxies() == 0
-        os.environ["BRIGHTSTARS_TRUSTED_PROXIES"] = "2"
+        os.environ["BEACON_TRUSTED_PROXIES"] = "2"
         assert config.trusted_proxies() == 2
         for bad in ("abc", "-1", "1.5", "50"):
-            os.environ["BRIGHTSTARS_TRUSTED_PROXIES"] = bad
+            os.environ["BEACON_TRUSTED_PROXIES"] = bad
             try:
                 config.trusted_proxies()
             except RuntimeError as exc:
-                assert "BRIGHTSTARS_TRUSTED_PROXIES" in str(exc)
+                assert "BEACON_TRUSTED_PROXIES" in str(exc)
             else:
                 raise AssertionError(f"{bad!r} was accepted")
     finally:
-        os.environ.pop("BRIGHTSTARS_TRUSTED_PROXIES", None)
+        os.environ.pop("BEACON_TRUSTED_PROXIES", None)
         if saved is not None:
-            os.environ["BRIGHTSTARS_TRUSTED_PROXIES"] = saved
+            os.environ["BEACON_TRUSTED_PROXIES"] = saved
     # The Host header chooses the school, so it and the prefix are never taken from a proxy.
     assert "x_for=count,x_proto=count,x_host=0,x_prefix=0,x_port=0" in APP
     assert "apply_trusted_proxies(app,trusted_proxies())" in APP
     for setting in (ROOT / "README.md", ROOT / ".env.example"):
-        assert "BRIGHTSTARS_TRUSTED_PROXIES" in setting.read_text(encoding="utf-8")
+        assert "BEACON_TRUSTED_PROXIES" in setting.read_text(encoding="utf-8")
 
 
 def test_every_folder_the_application_writes_uploads_to_has_a_rule_for_who_may_open_it():

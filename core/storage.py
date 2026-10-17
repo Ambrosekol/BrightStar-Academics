@@ -1,7 +1,7 @@
 """Where the current school keeps its files.
 
-Each school gets its own folder under ``BRIGHTSTARS_TENANTS_DIR`` (or, in
-``BRIGHTSTARS_STORAGE_BACKEND=s3`` mode, its own key prefix in an S3-compatible bucket -
+Each school gets its own folder under ``BEACON_TENANTS_DIR`` (or, in
+``BEACON_STORAGE_BACKEND=s3`` mode, its own key prefix in an S3-compatible bucket -
 see ``core/object_store.py``), so one school's question banks and uploaded photos are
 neither readable nor overwritable from another school.
 
@@ -23,7 +23,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # S3 backend only: recently-served upload bytes, per process, so a second request for the same
 # image - by any visitor, not just the one who asked first - never goes back to the bucket.
-# Least-recently-used eviction by total size (BRIGHTSTARS_UPLOAD_CACHE_BYTES), not a TTL: an
+# Least-recently-used eviction by total size (BEACON_UPLOAD_CACHE_BYTES), not a TTL: an
 # upload's path never changes what it holds, so there is nothing here that goes stale on its own.
 _upload_cache = OrderedDict()  # key -> bytes, ordered oldest-used to newest-used
 _upload_cache_size = 0
@@ -95,7 +95,7 @@ def data_dir():
 
 def generated_dir():
     """Folder of the current school's generated files (result images). Always local - see
-    the module docstring - regardless of BRIGHTSTARS_STORAGE_BACKEND."""
+    the module docstring - regardless of BEACON_STORAGE_BACKEND."""
     return _folder('generated')
 
 

@@ -2784,7 +2784,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 /* ============================================================
-   BRIGHTSTARS PUBLIC SITE â€” AUTHORITATIVE SHARED HEADER
+   BEACON PUBLIC SITE â€” AUTHORITATIVE SHARED HEADER
    ============================================================
    The header owns its own typography and geometry.
    It must not inherit page-specific typography/layout rules.
@@ -3159,7 +3159,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 }
 
 /* ============================================================
-   BRIGHTSTARS PUBLIC MOBILE NAVIGATION
+   BEACON PUBLIC MOBILE NAVIGATION
    Authoritative responsive navigation for all public pages.
    Desktop header remains unchanged.
    ============================================================ */
@@ -3339,7 +3339,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
 
 
 
-/* BRIGHTSTARS PRACTICE ZONE V1 */
+/* BEACON PRACTICE ZONE V1 */
 
 .cr-practice-zone{
     width:100%;
@@ -3596,7 +3596,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
     }
 }
 
-/* BRIGHTSTARS HOMEPAGE DISCOVER CTA V1 */
+/* BEACON HOMEPAGE DISCOVER CTA V1 */
 
 .cr-discover-cta{
     min-height:190px;
@@ -3666,7 +3666,7 @@ a{color:inherit}.top{height:70px;background:var(--navy);color:#fff;display:flex;
     }
 }
 
-/* BRIGHTSTARS FINAL CONTACT CTA V1 */
+/* BEACON FINAL CONTACT CTA V1 */
 
 .cr-final .cr-button-white{
     display:inline-flex;
@@ -4378,7 +4378,7 @@ a.cr-button-outline:hover * {
 }
 
 /* ============================================================
-   BRIGHTSTARS PREMIUM ADMIN UI V1
+   BEACON PREMIUM ADMIN UI V1
    Visual refinement layer
    No Bootstrap dependency
    No application/data logic changes
@@ -4918,12 +4918,12 @@ a.cr-button-outline:hover * {
 }
 
 /* ============================================================
-   END BRIGHTSTARS PREMIUM ADMIN UI V1
+   END BEACON PREMIUM ADMIN UI V1
    ============================================================ */
 
 
 /* =========================================================
-   BRIGHTSTARS PREMIUM MESSAGING WORKSPACE
+   BEACON PREMIUM MESSAGING WORKSPACE
    ========================================================= */
 
 /* Main Chat Container Layout */
@@ -5145,7 +5145,7 @@ a.cr-button-outline:hover * {
 }
 
 /* =========================================================
-   BRIGHTSTARS CHAT ATTACHMENTS & MEDIA STYLES
+   BEACON CHAT ATTACHMENTS & MEDIA STYLES
    ========================================================= */
 
 .chat-attach-btn {

@@ -116,7 +116,7 @@
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
           <div class="field"><label for="sms_sender_id">Sender name <span class="optional">3 to 11 letters and digits</span></label>
-            <input id="sms_sender_id" name="sms_sender_id" value="{{ sms.sender_id }}" maxlength="11" placeholder="BRIGHTSTAR" autocomplete="off" spellcheck="false" required>
+            <input id="sms_sender_id" name="sms_sender_id" value="{{ sms.sender_id }}" maxlength="11" placeholder="BEACON" autocomplete="off" spellcheck="false" required>
             <small>It must be registered and approved on your BulkSMS Nigeria account.</small></div>
           <div class="field"><label for="sms_gateway">Route</label>
             <select id="sms_gateway" name="sms_gateway">{% for value, label in sms_gateways %}<option value="{{ value }}" {% if value == sms.gateway %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>

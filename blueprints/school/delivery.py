@@ -4,7 +4,7 @@ What parents receive — payment receipts, password-recovery emails, alerts abou
 should come from the school. This page lets the school's administrators enter their own mail
 server and BulkSMS Nigeria account, check that they work, and remove them again (the school
 then goes back to the platform's shared account, if there is one). Whether schools use their own SMS
-account or the platform's is decided by the platform (BRIGHTSTARS_SMS_PAYER, see core/delivery.py).
+account or the platform's is decided by the platform (BEACON_SMS_PAYER, see core/delivery.py).
 
 Restricted to the school's own top-level administrator (``is_school_admin``) - not a permission a
 custom role can be given, since these accounts can send messages that look like they come from the

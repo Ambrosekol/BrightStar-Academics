@@ -57,7 +57,7 @@ class PaystackError(Exception):
 # ----------------------------------------------------------------- secrets at rest
 
 def _cipher():
-    material = os.environ.get('BRIGHTSTARS_DELIVERY_KEY', '').strip() or current_app.secret_key
+    material = os.environ.get('BEACON_DELIVERY_KEY', '').strip() or current_app.secret_key
     if isinstance(material, str):
         material = material.encode()
     key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None,
@@ -145,7 +145,7 @@ def _request(secret_key, method, path, payload=None, timeout=15):
                  'Accept': 'application/json',
                  # Paystack sits behind Cloudflare, which answers urllib's default
                  # "Python-urllib/x.y" agent with an empty 403 before Paystack ever sees the key.
-                 'User-Agent': 'BrightStarsAcademics/1.0 (+https://paystack.com)'})
+                 'User-Agent': 'BeaconAcademics/1.0 (+https://paystack.com)'})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return response.status, json.loads(response.read().decode())

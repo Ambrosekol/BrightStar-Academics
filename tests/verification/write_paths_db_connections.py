@@ -18,7 +18,7 @@ import tempfile
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_dbconn_")
+TMP = tempfile.mkdtemp(prefix="beacon_dbconn_")
 
 import _pg  # noqa: E402
 
@@ -26,11 +26,11 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('dbconn')
 atexit.register(DROP_TEST_DATABASES)
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
 })
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
@@ -51,7 +51,7 @@ def check(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail and not ok else ""), flush=True)
 
 
-ADMIN = _pg._admin_engine(make_url(os.environ["BRIGHTSTARS_PLATFORM_DB"]))
+ADMIN = _pg._admin_engine(make_url(os.environ["BEACON_PLATFORM_DB"]))
 
 
 def open_to_schools():

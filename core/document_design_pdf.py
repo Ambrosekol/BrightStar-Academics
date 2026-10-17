@@ -73,7 +73,7 @@ def render_document(doc, layout, assets=None, revoked=False):
     c = rl_canvas.Canvas(buffer, pagesize=(width * PT, height * PT), pageCompression=1)
     c.setTitle(f"{doc.get('school_name') or ''} - {doc.get('document_title') or 'Document'} {doc.get('serial_no') or ''}".strip(' -'))
     c.setAuthor(doc.get('school_name') or '')
-    c.setCreator('Brightstars Academics')
+    c.setCreator('Beacon Academics')
     paint = rd._Paint({'primary': doc.get('primary'), 'accent': doc.get('accent')})
     view = view_data(doc)
     report = dict(view['report'], data=view['data'])

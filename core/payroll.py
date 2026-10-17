@@ -14,7 +14,7 @@ relief, through the bands, divided by twelve. A member of staff whose pay change
 over or under; the accountant settles that at the year's end, as with any annualised payroll.
 
 Bank account numbers, pension PINs and tax IDs are encrypted at rest under a key derived, for this school alone, from
-BRIGHTSTARS_DELIVERY_KEY (the same key the school's other secrets use, so core/secrets_rotation.py moves them too).
+BEACON_DELIVERY_KEY (the same key the school's other secrets use, so core/secrets_rotation.py moves them too).
 """
 
 import base64
@@ -92,7 +92,7 @@ def naira_input(kobo):
 def _cipher():
     from flask import current_app
     from control_plane.context import current_tenant
-    material = os.environ.get('BRIGHTSTARS_DELIVERY_KEY', '').strip() or current_app.secret_key
+    material = os.environ.get('BEACON_DELIVERY_KEY', '').strip() or current_app.secret_key
     if isinstance(material, str):
         material = material.encode()
     key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None,

@@ -18,6 +18,18 @@
   ],
   "releases": [
     {
+      "version": "2.41.1",
+      "date": "2026-10-17",
+      "title": "We are now Beacon Academics",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "The platform has a new name: Beacon Academics. The name now appears on the sign-in page, the documents and the messages the platform sends. Your school's own name, logo and colours are unchanged. If you use the API or webhooks, the notice headers are now called Beacon-Event, Beacon-Delivery and Beacon-Signature.",
+          "help": "welcome"
+        }
+      ]
+    },
+    {
       "version": "2.41.0",
       "date": "2026-10-15",
       "title": "Data protection, a full export of the school's data, and an API",

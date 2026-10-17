@@ -32,17 +32,17 @@ import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_results_")
+TMP = tempfile.mkdtemp(prefix="beacon_results_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup('results')
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -152,7 +152,7 @@ def fake_run(command, **kwargs):
 import subprocess  # noqa: E402
 
 subprocess.run = fake_run
-os.environ["BRIGHTSTARS_CHROME"] = sys.executable   # any file that exists: nothing real is launched
+os.environ["BEACON_CHROME"] = sys.executable   # any file that exists: nothing real is launched
 
 # ---------------------------------------------------------------- three schools
 pv.create_platform_admin("ops", "Ops", "a-long-platform-password")
@@ -323,7 +323,7 @@ check("a school with no logo still gets a share page, without a logo picture",
       share_g.status_code == 200 and "data:image" not in share_g.get_data(as_text=True).split("<body")[-1][:4000])
 
 # ================================================================ a server with no Chrome
-os.environ["BRIGHTSTARS_CHROME"] = os.path.join(TMP, "no-such-chrome.exe")
+os.environ["BEACON_CHROME"] = os.path.join(TMP, "no-such-chrome.exe")
 check("a named Chrome that does not exist is treated as no Chrome", E._find_chrome() is None)
 n = len(CAPTURED)
 r = result_image("alpha", ids["Ada Photo"])
@@ -332,9 +332,9 @@ check("with no Chrome the admin gets a plain error page, not a crash", r.status_
 check("…that reveals no path, no exception and no program name",
       TMP not in body and "no-such-chrome" not in body and "Traceback" not in body and "RuntimeError" not in body)
 check("…and leaves nothing behind in the school's folder", tenant_files("alpha") == before and len(CAPTURED) == n)
-os.environ["BRIGHTSTARS_CHROME"] = sys.executable
-check("BRIGHTSTARS_CHROME names the program to use", str(E._find_chrome()) == sys.executable)
-os.environ.pop("BRIGHTSTARS_CHROME")
+os.environ["BEACON_CHROME"] = sys.executable
+check("BEACON_CHROME names the program to use", str(E._find_chrome()) == sys.executable)
+os.environ.pop("BEACON_CHROME")
 found = E._find_chrome()
 check("with nothing set, Chrome is looked for in the usual places (Windows, Linux, macOS names)",
       found is None or os.path.isfile(str(found)))

@@ -391,12 +391,12 @@ def _school_logo_data_uri():
 def _find_chrome():
     """The Chrome or Chromium program that draws result images, or None.
 
-    ``BRIGHTSTARS_CHROME`` names it outright; otherwise the usual Windows install folders and then
+    ``BEACON_CHROME`` names it outright; otherwise the usual Windows install folders and then
     the names a Linux or macOS server would have it under are tried.
     """
     import shutil
 
-    named=os.environ.get('BRIGHTSTARS_CHROME','').strip()
+    named=os.environ.get('BEACON_CHROME','').strip()
     if named:
         return Path(named) if Path(named).is_file() else None
     for path in (r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -429,7 +429,7 @@ def _chrome_result_png(candidate, papers, total_score, total_max, pct,
 
     if chrome is None:
         raise RuntimeError(
-            "Google Chrome was not found. Install it, or set BRIGHTSTARS_CHROME to its full path."
+            "Google Chrome was not found. Install it, or set BEACON_CHROME to its full path."
         )
 
     # In the school's own folder, which nothing serves: the route that asks for the image reads

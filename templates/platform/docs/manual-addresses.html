@@ -15,15 +15,15 @@ they are quick to find. Three questions settle almost all of them:</p>
 
 <h3 id="address-not-found">"We couldn't find that address." (Address not found, 404)</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>A page titled "We couldn't find that address." with "The address you asked for is not registered with Brightstars Academics."</div></div>
+  <div class="see"><b>You see</b><div>A page titled "We couldn't find that address." with "The address you asked for is not registered with Beacon Academics."</div></div>
   <div><b>Why</b><div><p>The address reached the server, but no school has it: it was typed wrongly, the school's own
   domain was never added, it was removed, or the school was deleted. It also appears for plain
   <code>localhost</code> in development, where the page adds the console's address and the shape of a school's.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Check the spelling against <code>python -m control_plane list</code>.</li>
     <li>A school's own domain (<code>portal.theschool.example</code>): add it on the school's page in the console ({{ route('platform_school_domains') }}) or with <code>python -m control_plane add-domain CODE portal.theschool.example</code>.</li>
-    <li>If every school shows this at once: the application is reading the wrong (or an empty) registry. Check <code>BRIGHTSTARS_PLATFORM_DB</code> points at the real one; see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</li>
-    <li>If it shows for the issued address <code>CODE.&lt;portal domain&gt;</code>: check <code>BRIGHTSTARS_PORTAL_DOMAIN</code> is the domain you issued addresses under. Changing it later does not move existing addresses.</li>
+    <li>If every school shows this at once: the application is reading the wrong (or an empty) registry. Check <code>BEACON_PLATFORM_DB</code> points at the real one; see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</li>
+    <li>If it shows for the issued address <code>CODE.&lt;portal domain&gt;</code>: check <code>BEACON_PORTAL_DOMAIN</code> is the domain you issued addresses under. Changing it later does not move existing addresses.</li>
   </ol></div></div>
   <div><b>Check</b><div>The school's sign-in page opens at that address.</div></div>
 </div>
@@ -33,7 +33,7 @@ they are quick to find. Three questions settle almost all of them:</p>
   <div class="see"><b>You see</b><div>"Portal paused · This portal is temporarily unavailable. · Nothing has been lost."</div></div>
   <div><b>Why</b><div><p>The school is suspended. Its data is untouched; everyone (staff, parents, students) is kept out until it is reactivated.</p></div></div>
   <div class="do"><b>Fix</b><div><p>If it should be open: reactivate it on its console page ({{ route('platform_school_status') }}) or with
-  <code>python -m control_plane activate CODE</code>. It takes effect within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>
+  <code>python -m control_plane activate CODE</code>. It takes effect within <code>BEACON_REGISTRY_CACHE_SECONDS</code>
   (10 by default) on every worker. To find out who suspended it and why, read the activity log ({{ route('platform_activity') }}).</p></div></div>
   <div><b>Check</b><div>The sign-in page opens within a few seconds.</div></div>
 </div>
@@ -41,7 +41,7 @@ they are quick to find. Three questions settle almost all of them:</p>
 <h3 id="page-not-found">"There's nothing at this address." (Page not found)</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>"Page not found · There's nothing at this address."</div></div>
-  <div><b>Why</b><div><p>The address belongs to the platform console (a <code>BRIGHTSTARS_PLATFORM_HOSTS</code> name) but the page
+  <div><b>Why</b><div><p>The address belongs to the platform console (a <code>BEACON_PLATFORM_HOSTS</code> name) but the page
   is a school page; or a school address was asked for <code>/school/…</code> (schools have no public website). School
   pages never open on the console's address, and the console never opens on a school's.</p></div></div>
   <div class="do"><b>Fix</b><div><p>Use the school's own address for school pages, and the platform host for <code>/platform</code>, <code>/docs</code> and <code>/marketing</code>.</p></div></div>
@@ -91,7 +91,7 @@ they are quick to find. Three questions settle almost all of them:</p>
   <div><b>Why</b><div><p>Behind a proxy, every connection comes from the proxy. Unless told how many proxies to trust, the
   application (rightly) ignores <code>X-Forwarded-For</code>, so everyone shares one address and one sign-in allowance.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> to how many proxies of yours a request passes (1 for one nginx/Caddy; 2 with a load balancer in front). Restart.</li>
+    <li>Set <code>BEACON_TRUSTED_PROXIES</code> to how many proxies of yours a request passes (1 for one nginx/Caddy; 2 with a load balancer in front). Restart.</li>
     <li>Make sure the proxy sends <code>X-Forwarded-For</code> and <code>X-Forwarded-Proto</code> (nginx: <code>proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;</code>).</li>
   </ol></div></div>
   <div><b>Check</b><div>New activity-log entries show real visitor addresses.</div></div>
@@ -102,7 +102,7 @@ they are quick to find. Three questions settle almost all of them:</p>
 <div class="fix">
   <div class="see"><b>You see</b><div>A password-reset email or the console's "Enter school" goes to <code>http://…</code>.</div></div>
   <div><b>Why</b><div><p>The proxy terminates TLS and talks plain HTTP to the application; without trusting it, the application believes the request was http.</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Same as above: <code>BRIGHTSTARS_TRUSTED_PROXIES</code> and <code>X-Forwarded-Proto</code>.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Same as above: <code>BEACON_TRUSTED_PROXIES</code> and <code>X-Forwarded-Proto</code>.</p></div></div>
   <div><b>Check</b><div>A new reset email's link starts with <code>https://</code>.</div></div>
 </div>
 
@@ -119,7 +119,7 @@ they are quick to find. Three questions settle almost all of them:</p>
   <div class="see"><b>You see</b><div>The proxy's own 502/504 page.</div></div>
   <div><b>Why</b><div><p>502: the application is not running or not listening where the proxy expects. 504: it is running but a request took longer than the proxy waits.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>502: <code>systemctl status brightstars</code>; if it is down, see {{ page('manual-startup', "It won't start, or a deploy failed") }}. Check the proxy's upstream address matches gunicorn's <code>-b</code>.</li>
+    <li>502: <code>systemctl status beacon</code>; if it is down, see {{ page('manual-startup', "It won't start, or a deploy failed") }}. Check the proxy's upstream address matches gunicorn's <code>-b</code>.</li>
     <li>504: find the slow page in the log; usually a database that is out of connections or very slow (see {{ page('manual-database', 'Databases and connections') }}). Raise the proxy's timeout (<code>proxy_read_timeout 120s;</code>) and gunicorn's <code>--timeout</code> only for genuinely long work such as a class's report-card PDF.</li>
   </ol></div></div>
   <div><b>Check</b><div><code>curl -s http://127.0.0.1:8000/health</code> on the server answers, and the page loads through the proxy.</div></div>

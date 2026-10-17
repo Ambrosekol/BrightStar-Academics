@@ -1,6 +1,6 @@
 """Contract: school exports find a pg_dump that is the same major version as the server or newer.
 
-The lookup is: BRIGHTSTARS_PG_DUMP if set, then pg_dump on the PATH, then the standard install
+The lookup is: BEACON_PG_DUMP if set, then pg_dump on the PATH, then the standard install
 places (the newest version first). These checks use temporary folders and monkeypatching, so they
 need no PostgreSQL install.
 """
@@ -28,13 +28,13 @@ def test_the_override_names_the_program_and_must_be_a_file():
     with tempfile.TemporaryDirectory() as tmp:
         program = Path(tmp) / 'pg_dump'
         program.write_text('')
-        os.environ['BRIGHTSTARS_PG_DUMP'] = str(program)
+        os.environ['BEACON_PG_DUMP'] = str(program)
         try:
             assert provisioning.find_pg_dump() == program
-            os.environ['BRIGHTSTARS_PG_DUMP'] = str(Path(tmp) / 'missing')
+            os.environ['BEACON_PG_DUMP'] = str(Path(tmp) / 'missing')
             assert provisioning.find_pg_dump() is None
         finally:
-            os.environ.pop('BRIGHTSTARS_PG_DUMP', None)
+            os.environ.pop('BEACON_PG_DUMP', None)
 
 
 def test_installs_are_listed_newest_version_first():
@@ -52,7 +52,7 @@ def test_the_path_is_tried_before_the_install_folders():
         on_path.write_text('')
         original = shutil.which
         shutil.which = lambda name, *a, **k: str(on_path) if name == 'pg_dump' else original(name, *a, **k)
-        os.environ.pop('BRIGHTSTARS_PG_DUMP', None)
+        os.environ.pop('BEACON_PG_DUMP', None)
         try:
             assert provisioning.find_pg_dump() == on_path
         finally:
@@ -63,7 +63,7 @@ def test_nothing_found_gives_none_rather_than_a_guess():
     original_which = shutil.which
     original_program_files = os.environ.get('ProgramFiles')
     shutil.which = lambda name, *a, **k: None
-    os.environ.pop('BRIGHTSTARS_PG_DUMP', None)
+    os.environ.pop('BEACON_PG_DUMP', None)
     try:
         with tempfile.TemporaryDirectory() as tmp:
             assert provisioning._installs_newest_first(Path(tmp) / 'absent', 'bin/pg_dump') == []

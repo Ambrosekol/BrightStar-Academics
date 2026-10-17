@@ -11,7 +11,7 @@
   candidate, platform admin) and never the sign-in that made the change.
 * Every response names a Referrer-Policy; the password-reset pages are never cached and never
   send a referrer.
-* BRIGHTSTARS_TRUSTED_PROXIES: off by default, so a forged X-Forwarded-* header changes nothing;
+* BEACON_TRUSTED_PROXIES: off by default, so a forged X-Forwarded-* header changes nothing;
   on, only the client address and the scheme are believed (never the host); a bad value stops the
   application starting; the audit log records the connection's address, cut to 64 characters.
 
@@ -29,20 +29,20 @@ from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_sessguard_")
+TMP = tempfile.mkdtemp(prefix="beacon_sessguard_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup("sessguard")
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
-os.environ.pop("BRIGHTSTARS_TRUSTED_PROXIES", None)
+os.environ.pop("BEACON_TRUSTED_PROXIES", None)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 os.chdir(ROOT)
@@ -708,21 +708,21 @@ finally:
     A.app.wsgi_app = original_wsgi
 
 for raw, expected in (("", 0), ("0", 0), (" 2 ", 2), ("5", 5)):
-    os.environ["BRIGHTSTARS_TRUSTED_PROXIES"] = raw
-    check(f'BRIGHTSTARS_TRUSTED_PROXIES="{raw}" is {expected}', cp_config.trusted_proxies() == expected)
+    os.environ["BEACON_TRUSTED_PROXIES"] = raw
+    check(f'BEACON_TRUSTED_PROXIES="{raw}" is {expected}', cp_config.trusted_proxies() == expected)
 for raw in ("abc", "-1", "1.5", "6", "yes", "99999999999999999999"):
-    os.environ["BRIGHTSTARS_TRUSTED_PROXIES"] = raw
+    os.environ["BEACON_TRUSTED_PROXIES"] = raw
     try:
         cp_config.trusted_proxies()
-        check(f'BRIGHTSTARS_TRUSTED_PROXIES="{raw}" is refused', False)
+        check(f'BEACON_TRUSTED_PROXIES="{raw}" is refused', False)
     except RuntimeError as exc:
-        check(f'BRIGHTSTARS_TRUSTED_PROXIES="{raw}" is refused with a plain message',
-              "BRIGHTSTARS_TRUSTED_PROXIES" in str(exc) and "reverse prox" in str(exc))
-env = {**os.environ, "BRIGHTSTARS_TRUSTED_PROXIES": "lots"}
+        check(f'BEACON_TRUSTED_PROXIES="{raw}" is refused with a plain message',
+              "BEACON_TRUSTED_PROXIES" in str(exc) and "reverse prox" in str(exc))
+env = {**os.environ, "BEACON_TRUSTED_PROXIES": "lots"}
 done = subprocess.run([sys.executable, "-c", "import app"], cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
 check("the application refuses to start on a bad value, saying why",
-      done.returncode != 0 and "BRIGHTSTARS_TRUSTED_PROXIES" in done.stderr)
-os.environ.pop("BRIGHTSTARS_TRUSTED_PROXIES", None)
+      done.returncode != 0 and "BEACON_TRUSTED_PROXIES" in done.stderr)
+os.environ.pop("BEACON_TRUSTED_PROXIES", None)
 
 # ================================================================ how long a sign-in lasts (security audit M2)
 import time as _time  # noqa: E402

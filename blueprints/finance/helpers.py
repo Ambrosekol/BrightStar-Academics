@@ -263,7 +263,7 @@ def _read_receipt_design():
 def school_receipt_design():
     """``(layout, {image id: stored path})`` when the school's receipts use its own design (the receipt studio), else
     None. Kept like the report card design (blueprints/school/report_card_data.school_design): read once per
-    BRIGHTSTARS_DESIGN_CACHE_SECONDS in each process, cleared at once by any change in the studio."""
+    BEACON_DESIGN_CACHE_SECONDS in each process, cleared at once by any change in the studio."""
     from control_plane.config import design_cache_seconds
     from core.short_cache import remember
     return remember(RECEIPT_DESIGN_CACHE,design_cache_seconds(),_read_receipt_design)

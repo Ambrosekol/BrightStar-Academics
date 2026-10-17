@@ -23,7 +23,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_payroll_")
+TMP = tempfile.mkdtemp(prefix="beacon_payroll_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -31,12 +31,12 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup("payroll")
 atexit.register(DROP_TEST_DATABASES)
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -311,9 +311,9 @@ with A.app.app_context():
         from core import payroll as P
         from core.secrets_rotation import rotate_one_tenant
         from models import StaffPay, db
-        old = os.environ.get("BRIGHTSTARS_DELIVERY_KEY", "").strip() or (A.app.secret_key if isinstance(A.app.secret_key, str) else A.app.secret_key.decode())
+        old = os.environ.get("BEACON_DELIVERY_KEY", "").strip() or (A.app.secret_key if isinstance(A.app.secret_key, str) else A.app.secret_key.decode())
         rotated, skipped = rotate_one_tenant(old, "n" * 48)
-        os.environ["BRIGHTSTARS_DELIVERY_KEY"] = "n" * 48
+        os.environ["BEACON_DELIVERY_KEY"] = "n" * 48
         acct = P.decrypt(db.session.scalars(sa.select(StaffPay).where(StaffPay.staff_id == BELLO)).first().account_number_enc)
         db.session.remove()
 check("rotating the key re-encrypts the bank numbers, PINs and tax IDs, and they still read", rotated >= 6 and not skipped and acct == "0123456789",

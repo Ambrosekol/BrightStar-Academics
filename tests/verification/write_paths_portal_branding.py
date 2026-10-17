@@ -13,7 +13,7 @@ signed-in preview.
 
 It also covers a school's own administrators making the same changes from their admin
 area — the permission that guards it, the audit trail, and that one school's change can
-never reach another's. And that the Brightstars logo appears on the console's pages and
+never reach another's. And that the Beacon logo appears on the console's pages and
 never on a school's portal.
 
 Run:  python tests/verification/write_paths_portal_branding.py
@@ -27,17 +27,17 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_branding_")
+TMP = tempfile.mkdtemp(prefix="beacon_branding_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup('branding')
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -121,11 +121,11 @@ def setting(slug, key):
 pv.create_platform_admin("ops", "Ops Team", "a-long-platform-password")
 c_pl, u_pl = client("platform.test")
 
-# ------------------------------------------- the Brightstars logo, platform pages
+# ------------------------------------------- the Beacon logo, platform pages
 login = c_pl.get("/platform/login", base_url=u_pl).get_data(as_text=True)
-check("the console sign-in page shows the Brightstars logo", "brand/brightstars-logo.png" in login)
+check("the console sign-in page shows the Beacon logo", "brand/beacon-logo.png" in login)
 check("…and the star as its browser-tab icon", "brand/favicon-32.png" in login)
-r = c_pl.get("/static/brand/brightstars-logo.png", base_url=u_pl)
+r = c_pl.get("/static/brand/beacon-logo.png", base_url=u_pl)
 check("the logo file is served on the platform host as a PNG",
       r.status_code == 200 and r.mimetype == "image/png" and r.data[:8] == b"\x89PNG\r\n\x1a\n")
 
@@ -133,7 +133,7 @@ token = csrf(c_pl, u_pl, "/platform/login")
 c_pl.post("/platform/login", data={"username": "ops", "password": "a-long-platform-password",
                                    "_csrf_token": token}, base_url=u_pl)
 dash = c_pl.get("/platform", base_url=u_pl).get_data(as_text=True)
-check("the signed-in console header shows the Brightstars logo", "brand/brightstars-logo.png" in dash)
+check("the signed-in console header shows the Beacon logo", "brand/beacon-logo.png" in dash)
 
 # ------------------------------------- creating a school with photographs and colours
 photos = [upload("front.jpg", kind="jpg", marker=1), upload("hall.png", marker=2),
@@ -161,7 +161,7 @@ check("…and is coloured with the school's own colours",
       "--brand: #7a1f3d" in page and "--brand-accent: #0b6e4f" in page)
 check("every page carries the school's theme so menus and buttons follow it",
       '<style id="school-theme">' in page and "--navy:#7a1f3d" in page and "--blue:#0b6e4f" in page)
-check("the Brightstars logo never appears on a school's portal", "brightstars-logo" not in page)
+check("the Beacon logo never appears on a school's portal", "beacon-logo" not in page)
 # The colours must reach the pages behind the sign-in too, where the menus and buttons are.
 token = csrf(c_pl, u_pl, "/platform/schools/maroon")
 r = c_pl.post("/platform/schools/maroon/enter", data={"_csrf_token": token}, base_url=u_pl)
@@ -173,8 +173,8 @@ check("the school's admin area carries its colours as well",
       and "--navy:#7a1f3d" in admin_html and admin_html.index("school-theme") < admin_html.index("<body"),
       str(admin_page.status_code))
 check("…and shows the school's own logo, not the platform's",
-      "maroon_logo_" in admin_html and "brightstars-logo" not in admin_html,
-      f"school logo: {'maroon_logo_' in admin_html}, platform logo: {'brightstars-logo' in admin_html}; img: {re.findall(r'<img[^>]*>', admin_html)[:3]}")
+      "maroon_logo_" in admin_html and "beacon-logo" not in admin_html,
+      f"school logo: {'maroon_logo_' in admin_html}, platform logo: {'beacon-logo' in admin_html}; img: {re.findall(r'<img[^>]*>', admin_html)[:3]}")
 c_m.get("/logout", base_url=u_m)
 served = [c_m.get("/static/" + p, base_url=u_m) for p in stored]
 check("the photographs are served to visitors of that school's portal",

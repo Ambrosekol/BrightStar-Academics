@@ -23,17 +23,17 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_team_")
+TMP = tempfile.mkdtemp(prefix="beacon_team_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup('team')
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -541,7 +541,7 @@ check("a removed admin's password cannot be reset until they are restored",
       "restore them first" in r.get_data(as_text=True))
 
 # the dashboard survives a school whose database cannot be reached
-ghost_url = make_url(os.environ["BRIGHTSTARS_PLATFORM_DB"]).set(database="bs_test_no_such_database").render_as_string(hide_password=False)
+ghost_url = make_url(os.environ["BEACON_PLATFORM_DB"]).set(database="bs_test_no_such_database").render_as_string(hide_password=False)
 with platform_session() as s:
     t = Tenant(slug="ghost", name="Ghost School", status="active", db_url=ghost_url, storage_key="ghost", created_at="2020-01-01T00:00:00+00:00")
     t.domains = [TenantDomain(hostname="ghost.portal.test", kind=DOMAIN_PORTAL, is_primary=1, created_at="2020-01-01T00:00:00+00:00")]
@@ -584,20 +584,20 @@ body = r.get_data(as_text=True)
 check("an unregistered address gets a designed page with the right status",
       r.status_code == 404 and r.mimetype == "text/html" and "We couldn't find that address" in _html.unescape(body))
 check("…that says it is not registered, and names the address", "not registered" in body and "localhost" in body)
-check("…and carries the Brightstars logo", "/static/brand/brightstars-logo.png" in body)
+check("…and carries the Beacon logo", "/static/brand/beacon-logo.png" in body)
 check("…and works with no stylesheet or script of its own to fetch", "<link rel=\"stylesheet\"" not in body and "<script" not in body)
-r = client().get("/static/brand/brightstars-logo.png", base_url="http://localhost:5000")
+r = client().get("/static/brand/beacon-logo.png", base_url="http://localhost:5000")
 check("the logo is served even on an address that belongs to nobody",
       r.status_code == 200 and r.mimetype == "image/png")
 check("…but nothing else in static is", client().get("/static/admin.css", base_url="http://localhost:5000").status_code == 404
       and client().get("/static/uploads/x.png", base_url="http://localhost:5000").status_code == 404)
 check("in development it points at the platform console and the school address form",
       "Development" in body and "platform.test" in body and "school-code" in body)
-os.environ["BRIGHTSTARS_ENV"] = "production"
+os.environ["BEACON_ENV"] = "production"
 try:
     prod = client().get("/login", base_url="http://localhost:5000").get_data(as_text=True)
 finally:
-    os.environ["BRIGHTSTARS_ENV"] = "development"
+    os.environ["BEACON_ENV"] = "development"
 check("in production that hint is never shown, so the console's address is not advertised",
       "Development" not in prod and "platform.test" not in prod)
 from jinja2 import select_autoescape  # noqa: E402,F401
@@ -610,16 +610,16 @@ sup.post("/platform/schools/beta/status", data={"_csrf_token": csrf(sup, "/platf
 r = client().get("/login", base_url="http://beta.portal.test")
 check("a suspended school gets a designed 503, not a blank line",
       r.status_code == 503 and "temporarily unavailable" in r.get_data(as_text=True).lower()
-      and "brightstars-logo.png" in r.get_data(as_text=True))
+      and "beacon-logo.png" in r.get_data(as_text=True))
 r = client().get("/school/about", base_url="http://alpha.portal.test")
 check("a page that does not exist gets the designed 404 too",
       r.status_code == 404 and "nothing at this address" in _html.unescape(r.get_data(as_text=True)).lower())
 r = sup.get("/nope", base_url=PL)
-check("…and so does an unknown path on the platform host", r.status_code == 404 and "brightstars-logo.png" in r.get_data(as_text=True))
+check("…and so does an unknown path on the platform host", r.status_code == 404 and "beacon-logo.png" in r.get_data(as_text=True))
 
 # the sign-in page
 page = client().get("/platform/login", base_url=PL).get_data(as_text=True)
-check("the sign-in page shows the logo, and its form", "brightstars-logo.png" in page and 'name="username"' in page
+check("the sign-in page shows the logo, and its form", "beacon-logo.png" in page and 'name="username"' in page
       and 'name="password"' in page)
 check("…and names no one who works there", "amaka" not in page.lower() and "tunde" not in page.lower())
 r = sign_in(client(), "second", "wrong-again")

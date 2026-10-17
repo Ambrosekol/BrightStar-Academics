@@ -58,7 +58,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # a failure may quot
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_finance_")
+TMP = tempfile.mkdtemp(prefix="beacon_finance_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -66,12 +66,12 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('finance')
 atexit.register(DROP_TEST_DATABASES)  # even if this script stops half way, its databases go
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -93,10 +93,10 @@ from werkzeug.security import generate_password_hash  # noqa: E402
 
 # app.py has just read the developer's .env, which may hold real mail and SMS credentials. A test
 # must never be able to reach them: start from a platform with no shared account at all.
-for name in ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-             "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
-             "BRIGHTSTARS_DELIVERY_KEY",
-             "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS",
+for name in ("BEACON_SMTP_HOST", "BEACON_SMTP_USER", "BEACON_SMTP_FROM", "BEACON_SMTP_PASSWORD",
+             "BEACON_SMS_API_TOKEN", "BEACON_SMS_SENDER_ID", "BEACON_SMS_GATEWAY", "BEACON_SMS_PAYER",
+             "BEACON_DELIVERY_KEY",
+             "BEACON_SMTP_PORT", "BEACON_SMTP_SSL", "BEACON_SMTP_STARTTLS",
              ):
     os.environ.pop(name, None)
 

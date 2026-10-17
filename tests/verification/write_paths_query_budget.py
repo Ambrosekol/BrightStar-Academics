@@ -17,7 +17,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_qbudget_")
+TMP = tempfile.mkdtemp(prefix="beacon_qbudget_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -25,19 +25,19 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup("qbudget")
 atexit.register(DROP_TEST_DATABASES)
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
     # Counts and permissions are kept for their usual few seconds in production; here for the whole run, so a slow
     # machine never sees one run out between the warm-up and the measured view and count it as a page's own query.
-    "BRIGHTSTARS_BADGE_CACHE_SECONDS": "3600",
-    "BRIGHTSTARS_ADMIN_CACHE_SECONDS": "3600",
+    "BEACON_BADGE_CACHE_SECONDS": "3600",
+    "BEACON_ADMIN_CACHE_SECONDS": "3600",
     # The school's branding is read again when its short-lived copy runs out; the run is long enough for that to land
     # between the two measurements of a page and look like growth, so it is kept for the whole run.
-    "BRIGHTSTARS_BRANDING_CACHE_SECONDS": "3600",
+    "BEACON_BRANDING_CACHE_SECONDS": "3600",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)

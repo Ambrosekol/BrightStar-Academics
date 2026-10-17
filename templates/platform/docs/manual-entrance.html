@@ -70,11 +70,11 @@ the server; each attempt keeps a frozen copy of its questions, so editing a bank
 
 <h3 id="result-image-fails">The result image cannot be made: "Google Chrome was not found…"</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>Sharing or downloading a candidate's result image fails; the log says "Google Chrome was not found. Install it, or set BRIGHTSTARS_CHROME to its full path." (or "Chrome failed: …").</div></div>
+  <div class="see"><b>You see</b><div>Sharing or downloading a candidate's result image fails; the log says "Google Chrome was not found. Install it, or set BEACON_CHROME to its full path." (or "Chrome failed: …").</div></div>
   <div><b>Why</b><div><p>The result image is drawn by a headless Chrome or Chromium on the server.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Install it: <code>sudo apt install chromium</code> (or Google Chrome).</li>
-    <li>If it is somewhere unusual, set <code>BRIGHTSTARS_CHROME</code> to its full path.</li>
+    <li>If it is somewhere unusual, set <code>BEACON_CHROME</code> to its full path.</li>
     <li>"Chrome failed": run it by hand as the service user (<code>chromium --headless=new --screenshot=/tmp/x.png about:blank</code>) to see why; missing fonts or a sandbox restriction are common on minimal servers.</li>
   </ol></div></div>
   <div><b>Check</b><div>The candidate's result image downloads.</div></div>

@@ -27,18 +27,18 @@ import urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_delivery_")
+TMP = tempfile.mkdtemp(prefix="beacon_delivery_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup('delivery')
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -57,10 +57,10 @@ from models import AuditLog  # noqa: E402
 
 # app.py has just read the developer's .env, which may hold real mail credentials. A test of email
 # must never be able to reach them, so start from a platform with no shared account at all.
-for name in ("BRIGHTSTARS_SMTP_HOST", "BRIGHTSTARS_SMTP_USER", "BRIGHTSTARS_SMTP_FROM", "BRIGHTSTARS_SMTP_PASSWORD",
-             "BRIGHTSTARS_SMS_API_TOKEN", "BRIGHTSTARS_SMS_SENDER_ID", "BRIGHTSTARS_SMS_GATEWAY", "BRIGHTSTARS_SMS_PAYER",
-             "BRIGHTSTARS_DELIVERY_KEY",
-             "BRIGHTSTARS_SMTP_PORT", "BRIGHTSTARS_SMTP_SSL", "BRIGHTSTARS_SMTP_STARTTLS", "BRIGHTSTARS_SMTP_STARTTLS"):
+for name in ("BEACON_SMTP_HOST", "BEACON_SMTP_USER", "BEACON_SMTP_FROM", "BEACON_SMTP_PASSWORD",
+             "BEACON_SMS_API_TOKEN", "BEACON_SMS_SENDER_ID", "BEACON_SMS_GATEWAY", "BEACON_SMS_PAYER",
+             "BEACON_DELIVERY_KEY",
+             "BEACON_SMTP_PORT", "BEACON_SMTP_SSL", "BEACON_SMTP_STARTTLS", "BEACON_SMTP_STARTTLS"):
     os.environ.pop(name, None)
 
 results = []
@@ -204,11 +204,11 @@ check("…and nothing can be sent", in_school(info_alpha, delivery.email_setting
       and in_school(info_alpha, delivery.sms_settings) is None)
 
 # ================================================================ the platform's shared account
-os.environ.update({"BRIGHTSTARS_SMTP_HOST": "127.0.0.1", "BRIGHTSTARS_SMTP_PORT": str(platform_mail.server_address[1]),
-                   "BRIGHTSTARS_SMTP_USER": "platform-user", "BRIGHTSTARS_SMTP_PASSWORD": "platform-secret-pw",
-                   "BRIGHTSTARS_SMTP_FROM": "noreply@platform.example", "BRIGHTSTARS_SMTP_STARTTLS": "0",
-                   "BRIGHTSTARS_SMS_API_TOKEN": "platform-sms-token", "BRIGHTSTARS_SMS_SENDER_ID": "PLATFORM",
-                   "BRIGHTSTARS_SMS_PAYER": "school"})
+os.environ.update({"BEACON_SMTP_HOST": "127.0.0.1", "BEACON_SMTP_PORT": str(platform_mail.server_address[1]),
+                   "BEACON_SMTP_USER": "platform-user", "BEACON_SMTP_PASSWORD": "platform-secret-pw",
+                   "BEACON_SMTP_FROM": "noreply@platform.example", "BEACON_SMTP_STARTTLS": "0",
+                   "BEACON_SMS_API_TOKEN": "platform-sms-token", "BEACON_SMS_SENDER_ID": "PLATFORM",
+                   "BEACON_SMS_PAYER": "school"})
 html = page(alpha, ALPHA)
 check("a school with none of its own is told it uses the platform's shared account, and from which address",
       "Using the platform's shared account" in html and "noreply@platform.example" in html)
@@ -285,12 +285,12 @@ cipher_text = stored(info_alpha, "smtp_password")
 check("a stored secret means nothing in another school",
       in_school(info_beta, lambda: delivery.decrypt(cipher_text)) == ""
       and in_school(info_alpha, lambda: delivery.decrypt(cipher_text)) == "a-new-password")
-os.environ["BRIGHTSTARS_DELIVERY_KEY"] = "a-different-key-entirely"
+os.environ["BEACON_DELIVERY_KEY"] = "a-different-key-entirely"
 check("nor under a different key", in_school(info_alpha, lambda: delivery.decrypt(cipher_text)) == "")
 after_rotation = page(alpha, ALPHA)
 check("an unreadable password is reported as not saved, so the admin is prompted to re-enter it",
       "A password is saved" not in after_rotation)
-os.environ.pop("BRIGHTSTARS_DELIVERY_KEY")
+os.environ.pop("BEACON_DELIVERY_KEY")
 check("…and it works again once the key is back", in_school(info_alpha, lambda: delivery.decrypt(cipher_text)) == "a-new-password")
 check("a value that was never encrypted is never accepted as a secret", in_school(info_alpha, lambda: delivery.decrypt("plain-text")) == "")
 
@@ -312,7 +312,7 @@ for label, form in bad.items():
 # ================================================================ the server cannot be aimed at its own network
 import socket  # noqa: E402
 
-os.environ["BRIGHTSTARS_ENV"] = "production"
+os.environ["BEACON_ENV"] = "production"
 try:
     for host in ("127.0.0.1", "localhost", "10.0.0.5", "192.168.1.10", "169.254.169.254", "172.16.0.1"):
         try:
@@ -383,7 +383,7 @@ try:
     with engine_for(info_alpha).begin() as conn:
         conn.execute(sa.text("UPDATE school_delivery_settings SET setting_value = '127.0.0.1' WHERE setting_key = 'smtp_host'"))
 finally:
-    os.environ["BRIGHTSTARS_ENV"] = "development"
+    os.environ["BEACON_ENV"] = "development"
 
 # ================================================================ never borrowing the platform's account
 with engine_for(info_alpha).begin() as conn:
@@ -427,7 +427,7 @@ check("a first save with no token is refused", "Enter the API token" in r.get_da
 check("…and leaves the school unable to send (the platform's account is not borrowed)", in_school(info_beta, delivery.sms_settings) is None)
 post(beta, BETA, "/admin/school/delivery/sms/save", sms_sender_id="BETASCH", sms_gateway="direct-refund", sms_api_token="beta-sms-token")
 post(beta, BETA, "/admin/school/delivery/sms/clear")
-os.environ["BRIGHTSTARS_SMS_PAYER"] = "school"
+os.environ["BEACON_SMS_PAYER"] = "school"
 
 seen = {}
 
@@ -578,7 +578,7 @@ try:
           and "Olà's" in sent and all(ord(ch) < 0x2000 for ch in sent), sent)
 
     # who pays: 'either' lets a school without its own account use the platform's
-    os.environ["BRIGHTSTARS_SMS_PAYER"] = "either"
+    os.environ["BEACON_SMS_PAYER"] = "either"
     ok, detail = in_school(info_beta, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
     check("payer 'either': a school with no account of its own texts through the platform's (its token and sender name)",
           ok and seen["auth"] == "Bearer platform-sms-token" and seen["body"]["from"] == "PLATFORM", str(seen))
@@ -586,7 +586,7 @@ try:
     check("…while a school that has its own still uses its own", ok and seen["auth"] == "Bearer alpha-sms-token")
 
     # who pays: 'platform' means the platform's account for everyone, and schools have nothing to set up
-    os.environ["BRIGHTSTARS_SMS_PAYER"] = "platform"
+    os.environ["BEACON_SMS_PAYER"] = "platform"
     ok, detail = in_school(info_alpha, lambda: A.sys.modules["core.notifications"]._notify_guardian_sms("08030000001", "hello"))
     check("payer 'platform': even a school with its own saved account texts through the platform's",
           ok and seen["auth"] == "Bearer platform-sms-token" and seen["body"]["from"] == "PLATFORM", str(seen))
@@ -603,7 +603,7 @@ try:
     status = in_school(info_alpha, delivery.status)["sms"]
     check("…the page is handed no token at all", "token" not in {k for k in status if k != "has_token"} and status["payer"] == "platform"
           and status["can_configure"] is False)
-    os.environ["BRIGHTSTARS_SMS_PAYER"] = "school"
+    os.environ["BEACON_SMS_PAYER"] = "school"
 finally:
     urllib.request.urlopen = real_urlopen
 r = post(alpha, ALPHA, "/admin/school/delivery/sms/clear")
@@ -656,11 +656,11 @@ check("test messages are rate-limited", "Too many tests just now" in last)
 check("another school is unaffected by all of this",
       stored(info_beta, "smtp_host") is None and in_school(info_beta, delivery.email_settings).source == "platform")
 
-# ================================================================ rotating BRIGHTSTARS_DELIVERY_KEY (Hardening)
+# ================================================================ rotating BEACON_DELIVERY_KEY (Hardening)
 from core.secrets_rotation import rotate_one_tenant  # noqa: E402
 
 before_password = in_school(info_alpha, delivery.email_settings).password
-old_key = A.app.secret_key  # BRIGHTSTARS_DELIVERY_KEY was stripped from the environment at setup,
+old_key = A.app.secret_key  # BEACON_DELIVERY_KEY was stripped from the environment at setup,
                             # so everything so far was actually encrypted under this fallback.
 new_key = "a-brand-new-delivery-key-" + "z" * 20
 
@@ -669,31 +669,31 @@ with A.app.app_context(), tenant_context(info_alpha):
 check("rotating with the real old key moves the school's own secret (the SMS token was cleared above)",
       rotated == 1 and skipped == [], (rotated, skipped))
 
-os.environ["BRIGHTSTARS_DELIVERY_KEY"] = new_key
+os.environ["BEACON_DELIVERY_KEY"] = new_key
 try:
     check("after rotation, the same plaintext still comes back - under the new key",
           in_school(info_alpha, delivery.email_settings).password == before_password, before_password)
 finally:
-    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+    os.environ.pop("BEACON_DELIVERY_KEY", None)
 
-os.environ["BRIGHTSTARS_DELIVERY_KEY"] = old_key
+os.environ["BEACON_DELIVERY_KEY"] = old_key
 try:
     check("…and the old key can no longer read it at all",
           in_school(info_alpha, delivery.email_settings).password != before_password)
 finally:
-    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+    os.environ.pop("BEACON_DELIVERY_KEY", None)
 
 # A wrong old key must never blank a setting it cannot actually read.
 with A.app.app_context(), tenant_context(info_alpha):
     rotated2, skipped2 = rotate_one_tenant("definitely-the-wrong-old-key", "yet-another-new-key")
 check("a wrong old key rotates nothing and reports exactly what it could not read",
       rotated2 == 0 and skipped2 == ["smtp_password"], (rotated2, skipped2))
-os.environ["BRIGHTSTARS_DELIVERY_KEY"] = new_key
+os.environ["BEACON_DELIVERY_KEY"] = new_key
 try:
     check("…and the real setting, under its real key, is untouched by that failed attempt",
           in_school(info_alpha, delivery.email_settings).password == before_password)
 finally:
-    os.environ.pop("BRIGHTSTARS_DELIVERY_KEY", None)
+    os.environ.pop("BEACON_DELIVERY_KEY", None)
 
 school_mail and school_mail.shutdown()
 platform_mail.shutdown()

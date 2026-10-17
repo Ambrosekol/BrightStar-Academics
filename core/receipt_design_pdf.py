@@ -99,7 +99,7 @@ def render_designed_receipt(sheet, layout, assets=None):
     c = rl_canvas.Canvas(buffer, pagesize=(width * PT, height * PT), pageCompression=1)
     c.setTitle(f"{school.get('name') or ''} - Receipt {sheet.get('number') or ''}".strip(' -'))
     c.setAuthor(school.get('name') or '')
-    c.setCreator('Brightstars Academics')
+    c.setCreator('Beacon Academics')
     paint = rd._Paint({'primary': sheet.get('primary'), 'accent': sheet.get('accent')})
     view = view_data(sheet)
 

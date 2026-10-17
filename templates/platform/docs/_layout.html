@@ -4,7 +4,7 @@
   <meta charset="utf-8">{% include 'includes/_pwa_head.html' %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>{{ title }} &middot; Docs &middot; Brightstars Academics</title>
+  <title>{{ title }} &middot; Docs &middot; Beacon Academics</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css', v='1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='platform.css', v='4') }}">
@@ -12,8 +12,8 @@
 </head>
 <body class="docs">
 <header class="docs-top">
-  <a class="docs-brand" href="{{ url_for('platform_dashboard') }}" aria-label="Brightstars Academics">
-    <img src="{{ url_for('static', filename='brand/brightstars-logo.png') }}" alt="Brightstars Academics"><span>Docs</span>
+  <a class="docs-brand" href="{{ url_for('platform_dashboard') }}" aria-label="Beacon Academics">
+    <img src="{{ platform_logo_url() }}" alt="Beacon Academics"><span>Docs</span>
   </a>
   <form class="docs-search" action="{{ url_for('docs_search') }}" method="get" role="search">
     <input type="search" name="q" value="{{ query or '' }}" placeholder="Search pages, files, routes, tables, permissions" aria-label="Search the documentation" autocomplete="off">

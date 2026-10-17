@@ -326,7 +326,7 @@ def openapi(base):
                                'responses': {'200': {'description': 'OK'}, '401': {'description': 'No valid key'},
                                              '403': {'description': 'The key may not read this'},
                                              '429': {'description': 'Too many calls'}}}}
-    return {'openapi': '3.0.3', 'info': {'title': 'Brightstars Academics school API', 'version': '1',
+    return {'openapi': '3.0.3', 'info': {'title': 'Beacon Academics school API', 'version': '1',
                                          'description': 'Read-only. Each school has its own address and its own keys.'},
             'servers': [{'url': base}], 'paths': paths,
             'components': {'securitySchemes': {'bearer': {'type': 'http', 'scheme': 'bearer'}}}}

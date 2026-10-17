@@ -38,7 +38,7 @@ from datetime import datetime, timezone
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_privacy_")
+TMP = tempfile.mkdtemp(prefix="beacon_privacy_")
 
 import _pg  # noqa: E402
 
@@ -46,13 +46,13 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('privacy')
 atexit.register(DROP_TEST_DATABASES)
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_DESIGN_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_DESIGN_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -420,11 +420,11 @@ check("an address is added and its signing secret shown once", SECRET and one("S
 op.post("/admin/finance/payments/new", {"student_id": ADA, "session_id": SESSION, "amount": "25000", "category": "School Fees",
                                         "method": "Cash", "reference": "", "paid_at": "", "notes": "", "payer_name": "Mrs Okafor"},
         page="/admin/finance/payments/new")
-hit = [b for h, b in received if h.get("BrightStars-Event") == "payment.recorded"]
+hit = [b for h, b in received if h.get("Beacon-Event") == "payment.recorded"]
 check("recording a payment tells the address", len(hit) == 1, str(len(received)))
 if hit:
     headers = next(h for h, b in received if b == hit[0])
-    t, v1 = (dict(p.split("=", 1) for p in headers["BrightStars-Signature"].split(","))[k] for k in ("t", "v1"))
+    t, v1 = (dict(p.split("=", 1) for p in headers["Beacon-Signature"].split(","))[k] for k in ("t", "v1"))
     expected = hmac.new(SECRET.encode(), t.encode() + b"." + hit[0], hashlib.sha256).hexdigest()
     payload = json.loads(hit[0])
     check("…signed with the address's secret", hmac.compare_digest(expected, v1))
@@ -432,7 +432,7 @@ if hit:
           and payload["data"]["amount"] == 25000 and payload["data"]["student_id"] == ADA and b"Okafor" not in hit[0])
 EP = one("SELECT id FROM webhook_endpoints")
 op.post(f"/admin/school/api/webhooks/{EP}", {"action": "test"}, page="/admin/school/api")
-check("a test reaches it", any(h.get("BrightStars-Event") == "ping" for h, b in received))
+check("a test reaches it", any(h.get("Beacon-Event") == "ping" for h, b in received))
 ANSWER[0] = 500
 ar = op.post("/admin/school/students/archive", {"student_ids": str(BISI), "reason": "Left the school"})
 last = sql("SELECT status, attempts, response_code FROM webhook_deliveries WHERE event = 'student.archived'")
@@ -442,13 +442,13 @@ check("an address that answers 500 is noted and tried again later", last and las
 errors.seen[:] = [e for e in errors.seen if "answered 500" not in str(e)]   # the failure asked for above, logged on purpose
 ANSWER[0] = 200
 from core import webhooks as _hooks  # noqa: E402
-os.environ["BRIGHTSTARS_ENV"] = "production"
+os.environ["BEACON_ENV"] = "production"
 try:
     _hooks._resolve("127.0.0.1", 80)
     refused = False
 except ValueError:
     refused = True
-os.environ["BRIGHTSTARS_ENV"] = "development"
+os.environ["BEACON_ENV"] = "development"
 check("in production an address on the server's own network is refused", refused)
 server.shutdown()
 

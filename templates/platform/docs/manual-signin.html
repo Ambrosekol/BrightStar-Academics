@@ -10,8 +10,8 @@ which one happened:</p>
 <tr><th>Message on the sign-in page</th><th>What ended it</th><th>Read</th></tr>
 <tr><td>The system was restarted, please sign in again.</td><td>A restart, an <code>upgrade</code> or <code>new-launch</code></td><td><a href="#restarted">below</a></td></tr>
 <tr><td>Your password was changed, please sign in again.</td><td>The account's password changed somewhere else</td><td><a href="#password-changed">below</a></td></tr>
-<tr><td>You were signed out after a while without using the portal, please sign in again.</td><td>Idle for <code>BRIGHTSTARS_IDLE_MINUTES</code> (120)</td><td><a href="#idle">below</a></td></tr>
-<tr><td>Your sign-in has run out, please sign in again.</td><td>Older than <code>BRIGHTSTARS_SESSION_HOURS</code> (12)</td><td><a href="#expired">below</a></td></tr>
+<tr><td>You were signed out after a while without using the portal, please sign in again.</td><td>Idle for <code>BEACON_IDLE_MINUTES</code> (120)</td><td><a href="#idle">below</a></td></tr>
+<tr><td>Your sign-in has run out, please sign in again.</td><td>Older than <code>BEACON_SESSION_HOURS</code> (12)</td><td><a href="#expired">below</a></td></tr>
 <tr><td>That sign-in was ended by signing out, please sign in again.</td><td>Someone signed out of this sign-in (perhaps in another tab, or a copy of the cookie)</td><td><a href="#ended">below</a></td></tr>
 </table></div>
 <div class="note"><p><strong>Nobody sitting an exam is ever signed out</strong> by a restart, the idle limit or the
@@ -24,14 +24,14 @@ connection or a server restart, and has 30 minutes more once the paper ends to s
 <div class="fix">
   <div class="see"><b>You see</b><div>Everyone, at once, meets the sign-in page with this message.</div></div>
   <div><b>Why</b><div><p>The server was started again, an <code>upgrade</code> ran, or someone pressed <em>Sign everyone out</em> ({{ route('platform_settings_new_launch') }}). Each records a new launch id ({{ file('control_plane/launch.py') }}), deliberately ending older sign-ins.</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Nothing is broken; people sign in again. Schedule deploys and restarts outside school hours. If it happens with no restart, check the server is not crash-looping (<code>systemctl status brightstars</code>, uptime) and see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Nothing is broken; people sign in again. Schedule deploys and restarts outside school hours. If it happens with no restart, check the server is not crash-looping (<code>systemctl status beacon</code>, uptime) and see {{ page('manual-startup', "It won't start, or a deploy failed") }}.</p></div></div>
   <div><b>Check</b><div>Sign-ins succeed and stay.</div></div>
 </div>
 
 <h3 id="password-changed">"Your password was changed, please sign in again."</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>One person is signed out in one browser while still signed in where they changed it.</div></div>
-  <div><b>Why</b><div><p>The account's password changed: by the person, by an administrator resetting it, or by a reset link. Every <em>other</em> browser signed in to that account is signed out (within <code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>), on purpose.</p></div></div>
+  <div><b>Why</b><div><p>The account's password changed: by the person, by an administrator resetting it, or by a reset link. Every <em>other</em> browser signed in to that account is signed out (within <code>BEACON_PASSWORD_CHECK_CACHE_SECONDS</code>), on purpose.</p></div></div>
   <div class="do"><b>Fix</b><div><p>Sign in with the new password. If the person did not change it, treat it as a possible break-in: see {{ page('manual-emergencies', 'Emergency playbooks') }}.</p></div></div>
   <div><b>Check</b><div>The activity log shows who changed it, and when.</div></div>
 </div>
@@ -39,16 +39,16 @@ connection or a server restart, and has 30 minutes more once the paper ends to s
 <h3 id="idle">"You were signed out after a while without using the portal"</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>A person who left a page open returns to the sign-in page with this message.</div></div>
-  <div><b>Why</b><div><p>No page was opened or form sent for <code>BRIGHTSTARS_IDLE_MINUTES</code> (120 by default). The small check an open page makes every 30 seconds does not count, so a tab left open on a shared computer still ends.</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Normal behaviour. If teachers write very long report comments without saving, either ask them to save as they go, or raise <code>BRIGHTSTARS_IDLE_MINUTES</code> (in the console, {{ route('platform_settings') }}). Lowering it suits schools with shared computers.</p></div></div>
+  <div><b>Why</b><div><p>No page was opened or form sent for <code>BEACON_IDLE_MINUTES</code> (120 by default). The small check an open page makes every 30 seconds does not count, so a tab left open on a shared computer still ends.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Normal behaviour. If teachers write very long report comments without saving, either ask them to save as they go, or raise <code>BEACON_IDLE_MINUTES</code> (in the console, {{ route('platform_settings') }}). Lowering it suits schools with shared computers.</p></div></div>
   <div><b>Check</b><div>The new value applies to the next request after a restart.</div></div>
 </div>
 
 <h3 id="expired">"Your sign-in has run out, please sign in again."</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>A person who has been busy all day is asked to sign in again.</div></div>
-  <div><b>Why</b><div><p>A sign-in lasts at most <code>BRIGHTSTARS_SESSION_HOURS</code> (12 by default), however busy, so a forgotten sign-in cannot last for days.</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Normal. Raise <code>BRIGHTSTARS_SESSION_HOURS</code> if a working day is longer than 12 hours.</p></div></div>
+  <div><b>Why</b><div><p>A sign-in lasts at most <code>BEACON_SESSION_HOURS</code> (12 by default), however busy, so a forgotten sign-in cannot last for days.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Normal. Raise <code>BEACON_SESSION_HOURS</code> if a working day is longer than 12 hours.</p></div></div>
   <div><b>Check</b><div>Sign in again and carry on.</div></div>
 </div>
 
@@ -63,10 +63,10 @@ connection or a server restart, and has 30 minutes more once the paper ends to s
 <h3 id="signed-out-every-request">Signed in, then signed out again on the next page</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>Sign-in "works" but the next click goes back to the sign-in page, with no message.</div></div>
-  <div><b>Why</b><div><p>The sign-in cookie is not coming back. Usual causes: <code>BRIGHTSTARS_ENV=production</code> (cookies marked Secure) while the site is served over plain http; several servers with different <code>BRIGHTSTARS_SECRET</code>s behind one load balancer; or the browser blocks cookies for the site.</p></div></div>
+  <div><b>Why</b><div><p>The sign-in cookie is not coming back. Usual causes: <code>BEACON_ENV=production</code> (cookies marked Secure) while the site is served over plain http; several servers with different <code>BEACON_SECRET</code>s behind one load balancer; or the browser blocks cookies for the site.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Serve the site over https (and set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application knows it is https).</li>
-    <li>Give every server the <strong>same</strong> <code>BRIGHTSTARS_SECRET</code>.</li>
+    <li>Serve the site over https (and set <code>BEACON_TRUSTED_PROXIES</code> so the application knows it is https).</li>
+    <li>Give every server the <strong>same</strong> <code>BEACON_SECRET</code>.</li>
     <li>Make sure the proxy passes the <code>Host</code> header unchanged (a sign-in belongs to the school of the address it was made on).</li>
   </ol></div></div>
   <div><b>Check</b><div>In the browser's developer tools, the <code>session</code> cookie is set after sign-in and sent with the next request.</div></div>
@@ -100,7 +100,7 @@ connection or a server restart, and has 30 minutes more once the paper ends to s
   <p>Right passwords never count against the last two, so a computer room signing in from one address is fine unless many people get their passwords wrong.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Usually: wait 15 minutes.</li>
-    <li>A whole school locked out at once: almost always the reverse proxy hiding real addresses. Set <code>BRIGHTSTARS_TRUSTED_PROXIES</code>; see {{ page('manual-addresses', 'Addresses, domains and proxies') }}.</li>
+    <li>A whole school locked out at once: almost always the reverse proxy hiding real addresses. Set <code>BEACON_TRUSTED_PROXIES</code>; see {{ page('manual-addresses', 'Addresses, domains and proxies') }}.</li>
     <li>To lift every limit right now (for example after fixing the proxy): in the registry database, <code>DELETE FROM rate_limits;</code>. Only hashes are stored, so you cannot pick out one person; clearing all is safe.</li>
     <li>If one account keeps tripping it, someone may be guessing its password: check the activity log, and consider changing the password.</li>
   </ol></div></div>

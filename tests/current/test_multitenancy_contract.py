@@ -21,11 +21,11 @@ def test_multitenancy_cannot_be_switched_off():
     """There is no flag: one school per database, chosen per request, is the
     architecture. A toggle would mean a second, untested code path."""
     import control_plane.config as config
-    for name in ("multitenancy_enabled", "BRIGHTSTARS_MULTITENANT"):
+    for name in ("multitenancy_enabled", "BEACON_MULTITENANT"):
         assert not hasattr(config, name)
     for rel in ("app.py", "core/storage.py", "control_plane/routing.py",
                 "control_plane/resolver.py", "core/branding.py"):
-        assert "BRIGHTSTARS_MULTITENANT" not in (ROOT / rel).read_text(encoding="utf-8")
+        assert "BEACON_MULTITENANT" not in (ROOT / rel).read_text(encoding="utf-8")
 
 
 def test_the_platform_registry_url_must_be_configured():
@@ -33,7 +33,7 @@ def test_the_platform_registry_url_must_be_configured():
     look as though it did not exist."""
     import os
     import control_plane.config as config
-    saved = os.environ.pop("BRIGHTSTARS_PLATFORM_DB", None)
+    saved = os.environ.pop("BEACON_PLATFORM_DB", None)
     try:
         try:
             config.platform_db_url()
@@ -43,7 +43,7 @@ def test_the_platform_registry_url_must_be_configured():
             raise AssertionError("platform_db_url() must refuse to guess")
     finally:
         if saved is not None:
-            os.environ["BRIGHTSTARS_PLATFORM_DB"] = saved
+            os.environ["BEACON_PLATFORM_DB"] = saved
 
 
 def test_school_resolver_is_installed_before_any_other_request_hook():
@@ -93,7 +93,7 @@ def test_files_are_scoped_per_school():
     assert "data_dir()" in core_entrance and "from app import DATA" not in core_entrance
     uploads = (ROOT / "core" / "uploads.py").read_text(encoding="utf-8")
     # save_upload_bytes() (core/storage.py) is the per-school-scoping entry point every upload
-    # goes through, under either storage backend (BRIGHTSTARS_STORAGE_BACKEND).
+    # goes through, under either storage backend (BEACON_STORAGE_BACKEND).
     assert "save_upload_bytes(" in uploads
     assert "@app.route('/static/uploads/<path:filename>')" in APP
 
@@ -104,7 +104,7 @@ def test_no_account_is_ever_seeded_into_a_school():
     assert "def init_admin_security():" in APP
     security = APP[APP.index("def init_admin_security():"):APP.index("def admin_role_names")]
     assert "generate_password_hash" not in security
-    assert "BRIGHTSTARS_ADMIN_PASSWORD" not in APP and "ADMIN_PASSWORD" not in APP
+    assert "BEACON_ADMIN_PASSWORD" not in APP and "ADMIN_PASSWORD" not in APP
 
 
 def test_the_code_base_carries_no_school_name_of_its_own():
@@ -212,16 +212,16 @@ def test_a_school_gets_a_portal_not_a_website():
 def test_every_school_gets_an_issued_portal_hostname():
     from control_plane import config
     import os
-    saved = os.environ.get('BRIGHTSTARS_PORTAL_DOMAIN')
-    os.environ['BRIGHTSTARS_PORTAL_DOMAIN'] = 'Schools.Example.COM.'
+    saved = os.environ.get('BEACON_PORTAL_DOMAIN')
+    os.environ['BEACON_PORTAL_DOMAIN'] = 'Schools.Example.COM.'
     try:
         # Case and a trailing dot are normalised, so the generated hostname is
         # always what the registry lookup will actually match.
         assert config.portal_hostname('alpha') == 'alpha.schools.example.com'
     finally:
-        os.environ.pop('BRIGHTSTARS_PORTAL_DOMAIN', None)
+        os.environ.pop('BEACON_PORTAL_DOMAIN', None)
         if saved is not None:
-            os.environ['BRIGHTSTARS_PORTAL_DOMAIN'] = saved
+            os.environ['BEACON_PORTAL_DOMAIN'] = saved
     provisioning = (ROOT / "control_plane" / "provisioning.py").read_text(encoding="utf-8")
     # The portal hostname is issued on creation and can never be removed.
     assert "config.portal_hostname(slug)" in provisioning
@@ -253,7 +253,7 @@ def test_every_school_file_lives_in_one_folder():
 
 def test_each_school_gets_its_own_postgresql_database():
     from control_plane import config
-    assert config.school_db_name("st-marys") == "brightstars_st_marys"
+    assert config.school_db_name("st-marys") == "beacon_st_marys"
     routing = (ROOT / "control_plane" / "routing.py").read_text(encoding="utf-8")
     assert "CREATE DATABASE" in routing and "AUTOCOMMIT" in routing
 
@@ -308,11 +308,11 @@ def test_the_gallery_only_serves_files_from_the_schools_own_branding_folder():
         assert theme.parse_gallery(hostile) == [], hostile
 
 
-def test_the_brightstars_logo_belongs_to_the_platform_and_never_to_a_school():
-    logo = "brand/brightstars-logo.png"
-    assert (ROOT / "static" / "brand" / "brightstars-logo.png").is_file()
+def test_the_beacon_logo_belongs_to_the_platform_and_never_to_a_school():
+    from core.branding import PLATFORM_LOGO
+    assert (ROOT / "static" / PLATFORM_LOGO).is_file()
     for page in ("base.html", "login.html"):
-        assert logo in (ROOT / "templates" / "platform" / page).read_text(encoding="utf-8"), page
+        assert "platform_logo_url" in (ROOT / "templates" / "platform" / page).read_text(encoding="utf-8"), page
     # A school's portal must look like the school's own, not like the platform's. The public
     # marketing page and the privacy statement are the platform's own, not any school's, so they
     # are allowed to carry the mark (the privacy statement renders identically wherever it is
@@ -320,7 +320,8 @@ def test_the_brightstars_logo_belongs_to_the_platform_and_never_to_a_school():
     for template in (ROOT / "templates").glob("*.html"):
         if template.name in ("marketing.html", "privacy.html"):
             continue
-        assert "brightstars-logo" not in template.read_text(encoding="utf-8", errors="ignore"), template.name
+        text = template.read_text(encoding="utf-8", errors="ignore")
+        assert "platform_logo_url" not in text and "beacon-logo" not in text, template.name
 
 
 def test_creating_a_school_checks_its_images_and_colours_before_building_anything():
@@ -507,7 +508,7 @@ def test_a_school_delivery_secret_is_encrypted_isolated_and_never_returned():
         if path.name == "delivery.py":
             continue
         body = path.read_text(encoding="utf-8")
-        assert "BRIGHTSTARS_SMTP" not in body and "BRIGHTSTARS_SMS" not in body, path.name
+        assert "BEACON_SMTP" not in body and "BEACON_SMS" not in body, path.name
 
 
 def test_the_uploads_route_decides_on_the_path_it_will_actually_serve():

@@ -1,7 +1,7 @@
-"""A small S3-compatible object store client, used when ``BRIGHTSTARS_STORAGE_BACKEND=s3``.
+"""A small S3-compatible object store client, used when ``BEACON_STORAGE_BACKEND=s3``.
 
 Works against real AWS S3 or any S3-compatible provider (Cloudflare R2, Backblaze B2,
-DigitalOcean Spaces, MinIO) by pointing ``BRIGHTSTARS_S3_ENDPOINT_URL`` at it. Every function
+DigitalOcean Spaces, MinIO) by pointing ``BEACON_S3_ENDPOINT_URL`` at it. Every function
 here takes a full object key (the tenant's own prefix is added by the caller, in
 core/storage.py) and does one thing: no directories, no symlinks, no partial writes - just
 bytes in, bytes out, one key at a time. A single PUT or GET is already atomic on every

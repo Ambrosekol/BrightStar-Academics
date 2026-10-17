@@ -43,18 +43,18 @@ import logging  # noqa: E402
 import shutil  # noqa: E402
 import tempfile  # noqa: E402
 
-TMP = tempfile.mkdtemp(prefix="brightstars_ratelimits_")
+TMP = tempfile.mkdtemp(prefix="beacon_ratelimits_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup("ratelimits")
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -204,7 +204,7 @@ class Capture(logging.Handler):
 capture = Capture()
 ratelimit.log.addHandler(capture)
 ratelimit.log.setLevel(logging.WARNING)
-real_url = os.environ["BRIGHTSTARS_PLATFORM_DB"]
+real_url = os.environ["BEACON_PLATFORM_DB"]
 password = make_url(real_url).password or ""
 
 original_session = ratelimit.platform_session
@@ -237,7 +237,7 @@ check("when the registry is back the shared count is used again (it has not seen
 
 # a registry that really is unreachable: nothing listens on that port
 dispose_platform_engine()
-os.environ["BRIGHTSTARS_PLATFORM_DB"] = make_url(real_url).set(host="127.0.0.1", port=1).render_as_string(hide_password=False)
+os.environ["BEACON_PLATFORM_DB"] = make_url(real_url).set(host="127.0.0.1", port=1).render_as_string(hide_password=False)
 ratelimit._registry_down_until = 0.0
 capture.lines.clear()
 ratelimit._last_warning = float("-inf")
@@ -249,7 +249,7 @@ try:
     more = tries("t-unreachable-2", 20, 50, 60)
     quick = time.monotonic() - started
 finally:
-    os.environ["BRIGHTSTARS_PLATFORM_DB"] = real_url
+    os.environ["BEACON_PLATFORM_DB"] = real_url
     dispose_platform_engine()
     ratelimit._registry_down_until = 0.0
 check("with the server itself unreachable, the limit is still enforced and nobody is locked out",

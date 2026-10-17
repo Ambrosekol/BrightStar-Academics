@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 def format_display_date(value):
     """
-    Central Brightstars Academics display-date policy.
+    Central Beacon Academics display-date policy.
 
     Storage/API values remain ISO:
         YYYY-MM-DD

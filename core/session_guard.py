@@ -18,9 +18,9 @@ place, before any route runs:
    so it holds however the password was changed (the person, an administrator, a reset link, a
    command). The person changing their own password is stamped again on the spot and stays in.
 
-3. **A sign-in does not last for ever.** It ends after ``BRIGHTSTARS_IDLE_MINUTES`` without use (default
+3. **A sign-in does not last for ever.** It ends after ``BEACON_IDLE_MINUTES`` without use (default
    120; the presence ping an open page sends does not count as use, so a tab left open on a shared computer
-   still ends) and after ``BRIGHTSTARS_SESSION_HOURS`` in all (default 12). Someone sitting an exam is the
+   still ends) and after ``BEACON_SESSION_HOURS`` in all (default 12). Someone sitting an exam is the
    exception again: while their paper is running neither limit signs them out, so a power cut, a dropped
    connection or the server going down mid-exam never costs a candidate or a student their paper. When
    the paper ends they get a short while more (``EXAM_GRACE``) to see their result.
@@ -138,7 +138,7 @@ def _read_fingerprint(kind, account_id):
 # Every request from a signed-in person used to read this straight from the database (see
 # _read_fingerprint above); on a remote database that is one extra round-trip on nearly every
 # request in the app, most of which did not otherwise need one. Cached per (school, kind,
-# account) for BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS, the same way core/branding.py caches a
+# account) for BEACON_PASSWORD_CHECK_CACHE_SECONDS, the same way core/branding.py caches a
 # school's branding. The tradeoff this buys: a password change (by the person, an administrator,
 # or a reset link) can take up to that long to sign out a *different* session; the person's own
 # session is exempted by _invalidate_fingerprint_cache below, called from refresh_password_stamp,

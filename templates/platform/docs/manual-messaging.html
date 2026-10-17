@@ -6,8 +6,8 @@
 a timetable released, a password-reset link. Three pieces are involved, and a problem is always in one of them:</p>
 <ol>
   <li><strong>The account it is sent from.</strong> A school's own mail server and BulkSMS Nigeria account (Settings ›
-  Email &amp; SMS, {{ route('admin_school_delivery') }}), or the platform's shared account (<code>BRIGHTSTARS_SMTP_*</code>,
-  <code>BRIGHTSTARS_SMS_*</code>) as a fallback. Rules in {{ file('core/delivery.py') }}.</li>
+  Email &amp; SMS, {{ route('admin_school_delivery') }}), or the platform's shared account (<code>BEACON_SMTP_*</code>,
+  <code>BEACON_SMS_*</code>) as a fallback. Rules in {{ file('core/delivery.py') }}.</li>
   <li><strong>The background job that sends it</strong> ({{ file('core/jobs.py') }}, table {{ table('background_jobs') }}).
   Nobody waits for a mail server: the work is written down first, then sent, and retried if it fails.</li>
   <li><strong>The address it goes to</strong>: the guardian email and phone on the student's record, or the parent account's.</li>
@@ -20,8 +20,8 @@ a timetable released, a password-reset link. Three pieces are involved, and a pr
 <h3 id="email-not-set-up">"Email is not set up yet. Save your mail server settings first."</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>Email is not set up yet. Save your mail server settings first.</div></div>
-  <div><b>Why</b><div><p>The school has no mail server of its own saved, and the platform has no shared one (<code>BRIGHTSTARS_SMTP_HOST</code> empty).</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Either the School Admin enters the school's mail server (host, port, user, password, sender), or you set the platform's shared account in the console ({{ route('platform_settings') }}): <code>BRIGHTSTARS_SMTP_HOST</code>, <code>_PORT</code>, <code>_USER</code>, <code>_PASSWORD</code>, <code>_FROM</code>, and <code>_STARTTLS</code> or <code>_SSL</code>.</p></div></div>
+  <div><b>Why</b><div><p>The school has no mail server of its own saved, and the platform has no shared one (<code>BEACON_SMTP_HOST</code> empty).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Either the School Admin enters the school's mail server (host, port, user, password, sender), or you set the platform's shared account in the console ({{ route('platform_settings') }}): <code>BEACON_SMTP_HOST</code>, <code>_PORT</code>, <code>_USER</code>, <code>_PASSWORD</code>, <code>_FROM</code>, and <code>_STARTTLS</code> or <code>_SSL</code>.</p></div></div>
   <div><b>Check</b><div><em>Send a test</em> on the Email &amp; SMS page delivers.</div></div>
 </div>
 <div class="note"><p>A school that has started entering its own mail server never falls back to the platform's,
@@ -62,8 +62,8 @@ even if its own is incomplete: its parents' mail is never quietly sent from the 
 <h3 id="sms-not-set-up">"SMS is not set up yet" / "SMS is not connected to your school's own account yet"</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>SMS is not set up yet. Save your SMS settings first. — or — SMS is not connected to your school's own account yet. — or — The platform provides SMS for every school, so there is no balance for the school to check.</div></div>
-  <div><b>Why</b><div><p><code>BRIGHTSTARS_SMS_PAYER</code> decides who pays: <code>school</code> (each school connects its own BulkSMS Nigeria account), <code>platform</code> (the platform's one account texts for every school; schools enter nothing), or <code>either</code> (a school's own when it has one, else the platform's).</p></div></div>
-  <div class="do"><b>Fix</b><div><p>With <code>school</code>: the School Admin saves the API token and sender name on Email &amp; SMS. With <code>platform</code>: set <code>BRIGHTSTARS_SMS_API_TOKEN</code> and <code>BRIGHTSTARS_SMS_SENDER_ID</code> in the console.</p></div></div>
+  <div><b>Why</b><div><p><code>BEACON_SMS_PAYER</code> decides who pays: <code>school</code> (each school connects its own BulkSMS Nigeria account), <code>platform</code> (the platform's one account texts for every school; schools enter nothing), or <code>either</code> (a school's own when it has one, else the platform's).</p></div></div>
+  <div class="do"><b>Fix</b><div><p>With <code>school</code>: the School Admin saves the API token and sender name on Email &amp; SMS. With <code>platform</code>: set <code>BEACON_SMS_API_TOKEN</code> and <code>BEACON_SMS_SENDER_ID</code> in the console.</p></div></div>
   <div><b>Check</b><div><em>Check balance</em> shows the wallet; a test text arrives.</div></div>
 </div>
 
@@ -112,7 +112,7 @@ minutes (its thread died in a restart) is tried again. Retries happen when the s
 <h3 id="secrets-unreadable">A school's saved mail password / SMS token / Paystack key "is not saved" any more</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>The Email &amp; SMS or Online payments page shows a secret as not saved, though it was.</div></div>
-  <div><b>Why</b><div><p>Stored secrets are encrypted per school under <code>BRIGHTSTARS_DELIVERY_KEY</code>, or, if that is not set, a key derived from <code>BRIGHTSTARS_SECRET</code>. Changing whichever is in use without re-encrypting makes every stored secret unreadable.</p></div></div>
+  <div><b>Why</b><div><p>Stored secrets are encrypted per school under <code>BEACON_DELIVERY_KEY</code>, or, if that is not set, a key derived from <code>BEACON_SECRET</code>. Changing whichever is in use without re-encrypting makes every stored secret unreadable.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>If you still have the old value: put it back, restart, and then rotate properly (next entry).</li>
     <li>If not: each school re-enters its secrets (nothing else is lost).</li>
@@ -122,11 +122,11 @@ minutes (its thread died in a restart) is tried again. Retries happen when the s
 
 <h3 id="rotate-delivery-key">Rotating the delivery key safely</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>You need to change <code>BRIGHTSTARS_DELIVERY_KEY</code> (a leak, a policy).</div></div>
+  <div class="see"><b>You see</b><div>You need to change <code>BEACON_DELIVERY_KEY</code> (a leak, a policy).</div></div>
   <div><b>Why</b><div><p>Every school's stored secrets must be re-encrypted under the new key <em>before</em> the setting changes.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li><code>python -m control_plane rotate-delivery-key OLD NEW</code> (or the console's {{ route('platform_settings_rotate_key') }}).</li>
-    <li>Then set <code>BRIGHTSTARS_DELIVERY_KEY=NEW</code> on every server and restart. Never change the variable first.</li>
+    <li>Then set <code>BEACON_DELIVERY_KEY=NEW</code> on every server and restart. Never change the variable first.</li>
   </ol></div></div>
   <div><b>Check</b><div>A school's test email still sends.</div></div>
 </div>
@@ -137,7 +137,7 @@ minutes (its thread died in a restart) is tried again. Retries happen when the s
 <div class="fix">
   <div class="see"><b>You see</b><div>You want a message on your phone or in Slack when something goes wrong.</div></div>
   <div><b>Why</b><div><p>Four things always log a warning ({{ file('core/alerting.py') }}): <code>registry_unreachable</code>, <code>job_exhausted_retries</code>, <code>delivery_failure_burst</code> (many failed sends for one school), and <code>sign_in_refusal_streak</code> (sign-in limits hit).</p></div></div>
-  <div class="do"><b>Fix</b><div><p>Set <code>BRIGHTSTARS_ALERT_WEBHOOK</code> to a URL that accepts a JSON POST (a Slack "Incoming Webhook" address works as is). Each alert is also posted there, without slowing the request.</p></div></div>
+  <div class="do"><b>Fix</b><div><p>Set <code>BEACON_ALERT_WEBHOOK</code> to a URL that accepts a JSON POST (a Slack "Incoming Webhook" address works as is). Each alert is also posted there, without slowing the request.</p></div></div>
   <div><b>Check</b><div>A test: sign in wrongly enough times from one address to trip the limit, and the alert arrives.</div></div>
 </div>
 

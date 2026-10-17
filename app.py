@@ -52,6 +52,15 @@ load_dotenv(os.path.join(BASE,'.env'))
 app=Flask(__name__)
 from core.names import full_name as _full_name  # noqa: E402
 app.jinja_env.globals['full_name'] = _full_name
+from core.branding import PLATFORM_LOGO as _PLATFORM_LOGO  # noqa: E402
+
+
+def _platform_logo_url(external=False):
+    """The platform logo's address; the one setting is PLATFORM_LOGO in core/branding.py."""
+    return url_for('static', filename=_PLATFORM_LOGO, _external=True) if external else '/static/' + _PLATFORM_LOGO
+
+
+app.jinja_env.globals['platform_logo_url'] = _platform_logo_url
 # Static files the browser can keep, and compressed responses (core/speed.py).
 from core import speed as _speed  # noqa: E402
 _speed.init_app(app)
@@ -69,7 +78,7 @@ app.jinja_env.finalize = lambda value: int(value) if isinstance(value, float) an
 # makes the later import resolve to this exact, already-running instance.
 sys.modules.setdefault('app', sys.modules[__name__])
 
-ENVIRONMENT=os.environ.get('BRIGHTSTARS_ENV', os.environ.get('FLASK_ENV','development')).strip().lower()
+ENVIRONMENT=os.environ.get('BEACON_ENV', os.environ.get('FLASK_ENV','development')).strip().lower()
 
 # Names that only ever point at a developer's own machine (or are reserved for testing): a portal domain like these
 # is not a real deployment.
@@ -86,45 +95,45 @@ def production_signs(environ=None, loaded_modules=None):
     server=environ.get('SERVER_SOFTWARE','').lower()
     if any(name in loaded_modules for name in ('gunicorn','waitress','uwsgi')) or any(name in server for name in ('gunicorn','waitress','uwsgi')):
         signs.append('it is running under a production web server (gunicorn, waitress or uwsgi)')
-    domain=environ.get('BRIGHTSTARS_PORTAL_DOMAIN','').strip().lower().rstrip('.')
+    domain=environ.get('BEACON_PORTAL_DOMAIN','').strip().lower().rstrip('.')
     if domain and not (domain.endswith(_DEV_DOMAIN_ENDINGS) or domain.replace('.','').isdigit()):
         signs.append(f'its portal domain is {domain}')
     try:
-        proxies=int(environ.get('BRIGHTSTARS_TRUSTED_PROXIES','0').strip() or 0)
+        proxies=int(environ.get('BEACON_TRUSTED_PROXIES','0').strip() or 0)
     except ValueError:
         proxies=0
     if proxies>0:
-        signs.append('a reverse proxy is set in front of it (BRIGHTSTARS_TRUSTED_PROXIES)')
+        signs.append('a reverse proxy is set in front of it (BEACON_TRUSTED_PROXIES)')
     return signs
 
 
 def refuse_unsafe_environment(environment, environ=None, loaded_modules=None):
     """Refuse to start a real deployment that is not running as production. Outside production the app quietly
     drops protections a public server needs (Secure cookies, HSTS, the strong-secret check, refusing a school's mail
-    server on a private address), so a deployment that forgot BRIGHTSTARS_ENV=production must not start at all.
-    A staging server that really means it sets BRIGHTSTARS_ALLOW_NON_PRODUCTION=1."""
+    server on a private address), so a deployment that forgot BEACON_ENV=production must not start at all.
+    A staging server that really means it sets BEACON_ALLOW_NON_PRODUCTION=1."""
     environ=os.environ if environ is None else environ
-    if environment in ('production','prod') or environ.get('BRIGHTSTARS_ALLOW_NON_PRODUCTION','').strip()=='1':
+    if environment in ('production','prod') or environ.get('BEACON_ALLOW_NON_PRODUCTION','').strip()=='1':
         return
     signs=production_signs(environ, loaded_modules)
     if signs:
         raise RuntimeError(
-            'This looks like a real deployment (' + '; '.join(signs) + ') but BRIGHTSTARS_ENV is '
-            f'"{environment or "not set"}", not "production". Set BRIGHTSTARS_ENV=production. (A staging server that '
-            'must run as development sets BRIGHTSTARS_ALLOW_NON_PRODUCTION=1.)')
+            'This looks like a real deployment (' + '; '.join(signs) + ') but BEACON_ENV is '
+            f'"{environment or "not set"}", not "production". Set BEACON_ENV=production. (A staging server that '
+            'must run as development sets BEACON_ALLOW_NON_PRODUCTION=1.)')
 
 
 refuse_unsafe_environment(ENVIRONMENT)
-_config_secret=os.environ.get('BRIGHTSTARS_SECRET','').strip()
+_config_secret=os.environ.get('BEACON_SECRET','').strip()
 if ENVIRONMENT in ('production','prod') and len(_config_secret) < 32:
-    raise RuntimeError('BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.')
+    raise RuntimeError('BEACON_SECRET must be set to a strong secret (at least 32 characters) in production.')
 app.secret_key=_config_secret or secrets.token_hex(32)
 
 
 def apply_trusted_proxies(flask_app, count):
     """Believe the address and scheme that ``count`` reverse proxies in front of us report.
 
-    Off by default (``BRIGHTSTARS_TRUSTED_PROXIES`` = 0): the X-Forwarded-* headers are then ignored,
+    Off by default (``BEACON_TRUSTED_PROXIES`` = 0): the X-Forwarded-* headers are then ignored,
     because anyone can send them and a forged one would be written into the audit log and counted
     by the rate limits. Only the client address and the scheme are taken from them. Never the host
     or the path prefix: the Host header is what chooses the school, so it must stay exactly as the
@@ -1004,7 +1013,7 @@ def _portal_front_door():
 
 @app.route('/')
 def index():
-    # Neither kind of address is a website. The platform's own site (brightstars.com)
+    # Neither kind of address is a website. The platform's own site (beacon.com)
     # is hosted elsewhere, so its console address opens straight on the console; a
     # school's address is a portal, whose front door is the sign-in page, or
     # wherever the visitor was already signed in.
@@ -1096,7 +1105,7 @@ def apply_school_theme(response):
 
 
 app.config.update(
-    MAX_CONTENT_LENGTH=int(os.environ.get('BRIGHTSTARS_MAX_REQUEST_BYTES', 8 * 1024 * 1024)),
+    MAX_CONTENT_LENGTH=int(os.environ.get('BEACON_MAX_REQUEST_BYTES', 8 * 1024 * 1024)),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=(ENVIRONMENT in ('production','prod')),
@@ -1368,7 +1377,7 @@ import blueprints.store.routes  # noqa: F401,E402
 import blueprints.pwa  # noqa: F401,E402
 import blueprints.portal_shell  # noqa: F401,E402
 
-# ---------------- the Brightstars Academics platform console ----------------
+# ---------------- the Beacon Academics platform console ----------------
 # Served only on the platform hostnames. Imported here, at the end, because its
 # routes are registered on this module's `app` and it uses names defined above.
 import control_plane.console  # noqa: F401,E402

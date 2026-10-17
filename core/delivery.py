@@ -2,17 +2,17 @@
 alerts parents get about their child's account.
 
 Email goes out through a mail server; SMS goes out through BulkSMS Nigeria. Who pays for the SMS is
-decided by the platform, not by each school, with one setting (BRIGHTSTARS_SMS_PAYER):
+decided by the platform, not by each school, with one setting (BEACON_SMS_PAYER):
 
 * ``school``   - every school connects its own BulkSMS Nigeria account and pays for its own messages.
                  A school that has not connected one simply cannot send SMS, and says so. (The default.)
-* ``platform`` - the platform's one account (BRIGHTSTARS_SMS_API_TOKEN / BRIGHTSTARS_SMS_SENDER_ID)
+* ``platform`` - the platform's one account (BEACON_SMS_API_TOKEN / BEACON_SMS_SENDER_ID)
                  sends for every school, and the platform carries the cost. Schools are not asked for
                  SMS details at all.
 * ``either``   - a school's own account is used when it has one, and the platform's otherwise.
 
 Email works the way it always has: a school's own mail server, else the platform's shared one
-(BRIGHTSTARS_SMTP_*).
+(BEACON_SMTP_*).
 
 Three things here are security-sensitive, and each has a reason:
 
@@ -100,10 +100,10 @@ class SmsSettings:
 def _cipher():
     """The encryption key for the current school's secrets.
 
-    Derived from the application's secret (or BRIGHTSTARS_DELIVERY_KEY, so rotating the session
+    Derived from the application's secret (or BEACON_DELIVERY_KEY, so rotating the session
     secret need not strand stored credentials) and the school's code.
     """
-    material = os.environ.get('BRIGHTSTARS_DELIVERY_KEY', '').strip() or current_app.secret_key
+    material = os.environ.get('BEACON_DELIVERY_KEY', '').strip() or current_app.secret_key
     if isinstance(material, str):
         material = material.encode()
     key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None,
@@ -155,12 +155,12 @@ def _int(value, default):
 
 def _platform_security(port):
     """The platform's shared server: implicit TLS on 465, else STARTTLS, unless overridden."""
-    override = os.environ.get('BRIGHTSTARS_SMTP_SSL', '').strip()
+    override = os.environ.get('BEACON_SMTP_SSL', '').strip()
     if override:
-        return 'ssl' if override != '0' else ('none' if os.environ.get('BRIGHTSTARS_SMTP_STARTTLS', '1') == '0' else 'starttls')
+        return 'ssl' if override != '0' else ('none' if os.environ.get('BEACON_SMTP_STARTTLS', '1') == '0' else 'starttls')
     if port == 465:
         return 'ssl'
-    return 'none' if os.environ.get('BRIGHTSTARS_SMTP_STARTTLS', '1') == '0' else 'starttls'
+    return 'none' if os.environ.get('BEACON_SMTP_STARTTLS', '1') == '0' else 'starttls'
 
 
 def email_settings():
@@ -174,30 +174,30 @@ def email_settings():
             return None  # half set up: do not fall back to the platform's account
         return EmailSettings(host, _int(own.get('smtp_port'), 587), user, own.get('smtp_password', ''), sender,
                              own.get('smtp_security') or 'starttls', 'school')
-    host = os.environ.get('BRIGHTSTARS_SMTP_HOST', '').strip()
-    user = os.environ.get('BRIGHTSTARS_SMTP_USER', '').strip()
-    sender = os.environ.get('BRIGHTSTARS_SMTP_FROM', user).strip()
+    host = os.environ.get('BEACON_SMTP_HOST', '').strip()
+    user = os.environ.get('BEACON_SMTP_USER', '').strip()
+    sender = os.environ.get('BEACON_SMTP_FROM', user).strip()
     if not host or not sender:
         return None
-    port = _int(os.environ.get('BRIGHTSTARS_SMTP_PORT', '587') or 587, 587)
-    return EmailSettings(host, port, user, os.environ.get('BRIGHTSTARS_SMTP_PASSWORD', ''), sender,
+    port = _int(os.environ.get('BEACON_SMTP_PORT', '587') or 587, 587)
+    return EmailSettings(host, port, user, os.environ.get('BEACON_SMTP_PASSWORD', ''), sender,
                          _platform_security(port), 'platform')
 
 
 def sms_payer():
     """Who pays for SMS: ``school``, ``platform`` or ``either`` (see the module docstring)."""
-    value = os.environ.get('BRIGHTSTARS_SMS_PAYER', 'school').strip().lower()
+    value = os.environ.get('BEACON_SMS_PAYER', 'school').strip().lower()
     return value if value in SMS_PAYERS else 'school'
 
 
 def _platform_gateway():
-    value = os.environ.get('BRIGHTSTARS_SMS_GATEWAY', '').strip()
+    value = os.environ.get('BEACON_SMS_GATEWAY', '').strip()
     return value if value in dict(SMS_GATEWAYS) else DEFAULT_SMS_GATEWAY
 
 
 def _platform_sms():
-    token = os.environ.get('BRIGHTSTARS_SMS_API_TOKEN', '').strip()
-    sender = os.environ.get('BRIGHTSTARS_SMS_SENDER_ID', '').strip()
+    token = os.environ.get('BEACON_SMS_API_TOKEN', '').strip()
+    sender = os.environ.get('BEACON_SMS_SENDER_ID', '').strip()
     if not token or not sender:
         return None
     return SmsSettings(token, sender, _platform_gateway(), 'platform')

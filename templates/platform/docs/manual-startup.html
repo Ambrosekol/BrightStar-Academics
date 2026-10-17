@@ -5,7 +5,7 @@
 <p>The application checks its own settings as it starts, and refuses to start rather than run in a state that would be
 unsafe or silently wrong. That is good news when something is wrong: the message it prints says exactly which setting,
 and this page says what to do about it. Read the <strong>last lines</strong> of the output (or of your service's log,
-for example <code>journalctl -u brightstars -n 50</code> under systemd): the cause is the final <code>RuntimeError</code>
+for example <code>journalctl -u beacon -n 50</code> under systemd): the cause is the final <code>RuntimeError</code>
 or <code>ProvisioningError</code> line.</p>
 
 <div class="tip"><p>Every setting mentioned here is explained in full, with its default and the symptom when it is wrong,
@@ -14,46 +14,46 @@ from <code>.env</code> in the project folder; a variable set in the environment 
 
 <h2 id="refuses">The application refuses to start</h2>
 
-<h3 id="not-production">"This looks like a real deployment … but BRIGHTSTARS_ENV is …, not production"</h3>
+<h3 id="not-production">"This looks like a real deployment … but BEACON_ENV is …, not production"</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>RuntimeError: This looks like a real deployment (it is running under a production web server …; its portal domain is …; a reverse proxy is set in front of it …) but BRIGHTSTARS_ENV is "development", not "production".</div></div>
+  <div class="see"><b>You see</b><div>RuntimeError: This looks like a real deployment (it is running under a production web server …; its portal domain is …; a reverse proxy is set in front of it …) but BEACON_ENV is "development", not "production".</div></div>
   <div><b>Why</b><div><p>Outside production the application drops protections a public server needs: cookies are not
   marked Secure, there is no HSTS, the strong-secret check is skipped, and a school's mail server may point at a private
   address. So when the start looks like a real deployment (it runs under gunicorn, waitress or uwsgi; its
-  <code>BRIGHTSTARS_PORTAL_DOMAIN</code> is a real domain; or <code>BRIGHTSTARS_TRUSTED_PROXIES</code> is above 0), it
-  will not start unless <code>BRIGHTSTARS_ENV=production</code> (<code>refuse_unsafe_environment</code> in
+  <code>BEACON_PORTAL_DOMAIN</code> is a real domain; or <code>BEACON_TRUSTED_PROXIES</code> is above 0), it
+  will not start unless <code>BEACON_ENV=production</code> (<code>refuse_unsafe_environment</code> in
   {{ file('app.py') }}). The message lists which of those it saw.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>On a real server: set <code>BRIGHTSTARS_ENV=production</code> (in the service's environment or <code>.env</code>), and restart.</li>
-    <li>On a developer machine that tripped it by mistake: use <code>BRIGHTSTARS_PORTAL_DOMAIN=localhost</code> (or a <code>.test</code> / <code>.local</code> name), <code>BRIGHTSTARS_TRUSTED_PROXIES=0</code>, and run <code>python app.py</code> rather than gunicorn.</li>
-    <li>Only on a staging server that genuinely must run as development: <code>BRIGHTSTARS_ALLOW_NON_PRODUCTION=1</code>. Never on a real deployment.</li>
+    <li>On a real server: set <code>BEACON_ENV=production</code> (in the service's environment or <code>.env</code>), and restart.</li>
+    <li>On a developer machine that tripped it by mistake: use <code>BEACON_PORTAL_DOMAIN=localhost</code> (or a <code>.test</code> / <code>.local</code> name), <code>BEACON_TRUSTED_PROXIES=0</code>, and run <code>python app.py</code> rather than gunicorn.</li>
+    <li>Only on a staging server that genuinely must run as development: <code>BEACON_ALLOW_NON_PRODUCTION=1</code>. Never on a real deployment.</li>
   </ol></div></div>
   <div><b>Check</b><div>The application starts, and on a real deployment every response carries a <code>Strict-Transport-Security</code> header.</div></div>
 </div>
 
-<h3 id="weak-secret">"BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production."</h3>
+<h3 id="weak-secret">"BEACON_SECRET must be set to a strong secret (at least 32 characters) in production."</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>RuntimeError: BRIGHTSTARS_SECRET must be set to a strong secret (at least 32 characters) in production.</div></div>
+  <div class="see"><b>You see</b><div>RuntimeError: BEACON_SECRET must be set to a strong secret (at least 32 characters) in production.</div></div>
   <div><b>Why</b><div><p>The secret signs every sign-in cookie. A short or missing secret in production would let someone forge a sign-in.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Generate one: <code>python -c "import secrets; print(secrets.token_hex(32))"</code></li>
-    <li>Set it as <code>BRIGHTSTARS_SECRET</code> on <strong>every</strong> server of the deployment (they must share it, or a sign-in made on one is refused on another).</li>
+    <li>Set it as <code>BEACON_SECRET</code> on <strong>every</strong> server of the deployment (they must share it, or a sign-in made on one is refused on another).</li>
     <li>Restart. Everyone is signed out once, because the old cookies were signed with the old secret.</li>
   </ol></div></div>
   <div><b>Check</b><div>The application starts, and you can sign in and stay signed in across pages.</div></div>
 </div>
-<div class="warn"><p>Changing <code>BRIGHTSTARS_SECRET</code> also changes the default key schools' stored mail, SMS and
-Paystack secrets are encrypted under, unless <code>BRIGHTSTARS_DELIVERY_KEY</code> is set. Set
-<code>BRIGHTSTARS_DELIVERY_KEY</code> <em>before</em> you ever rotate the secret, or every school must re-enter those
+<div class="warn"><p>Changing <code>BEACON_SECRET</code> also changes the default key schools' stored mail, SMS and
+Paystack secrets are encrypted under, unless <code>BEACON_DELIVERY_KEY</code> is set. Set
+<code>BEACON_DELIVERY_KEY</code> <em>before</em> you ever rotate the secret, or every school must re-enter those
 secrets. See {{ page('manual-messaging', 'Email, SMS, background jobs and alerts') }}.</p></div>
 
-<h3 id="no-platform-db">"BRIGHTSTARS_PLATFORM_DB is not set"</h3>
+<h3 id="no-platform-db">"BEACON_PLATFORM_DB is not set"</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>RuntimeError: BRIGHTSTARS_PLATFORM_DB is not set. It is the PostgreSQL URL of the platform registry …</div></div>
+  <div class="see"><b>You see</b><div>RuntimeError: BEACON_PLATFORM_DB is not set. It is the PostgreSQL URL of the platform registry …</div></div>
   <div><b>Why</b><div><p>The registry database records which schools exist and where their databases are. It has no
   default on purpose: a wrong guess would create an empty registry and every school would look as if it did not exist.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Set <code>BRIGHTSTARS_PLATFORM_DB=postgresql+psycopg://USER:PASSWORD@HOST:5432/brightstars_platform</code> (the <code>+psycopg</code> part is required).</li>
+    <li>Set <code>BEACON_PLATFORM_DB=postgresql+psycopg://USER:PASSWORD@HOST:5432/beacon_platform</code> (the <code>+psycopg</code> part is required).</li>
     <li>On a new server, run <code>python -m control_plane init</code> once to create it.</li>
     <li>On an existing deployment, make sure it points at the <strong>same</strong> registry as before (check the database name). Pointing at a new, empty one makes every school answer "Address not found".</li>
   </ol></div></div>
@@ -63,32 +63,32 @@ secrets. See {{ page('manual-messaging', 'Email, SMS, background jobs and alerts
 <h3 id="registry-unreachable">"Could not reach PostgreSQL to create the platform registry"</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>RuntimeError: Could not reach PostgreSQL to create the platform registry: … (connection refused / password authentication failed / could not translate host name …)</div></div>
-  <div><b>Why</b><div><p>The URL in <code>BRIGHTSTARS_PLATFORM_DB</code> cannot be reached or its credentials are wrong. The text after the colon is PostgreSQL's own reason.</p></div></div>
+  <div><b>Why</b><div><p>The URL in <code>BEACON_PLATFORM_DB</code> cannot be reached or its credentials are wrong. The text after the colon is PostgreSQL's own reason.</p></div></div>
   <div class="do"><b>Fix</b><div><ul>
     <li><em>connection refused / timeout</em>: PostgreSQL is not running, or a firewall blocks port 5432. Start it; on a managed database, allow your server's IP address.</li>
     <li><em>password authentication failed</em>: wrong user or password in the URL. A password with <code>@</code>, <code>:</code> or <code>/</code> must be URL-encoded (<code>@</code> becomes <code>%40</code>).</li>
-    <li><em>database "postgres" does not exist</em>: the provider has no maintenance database by that name (Aiven calls it <code>defaultdb</code>). Set <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> to one that exists.</li>
+    <li><em>database "postgres" does not exist</em>: the provider has no maintenance database by that name (Aiven calls it <code>defaultdb</code>). Set <code>BEACON_PG_MAINTENANCE_DB</code> to one that exists.</li>
     <li><em>permission denied to create database</em>: the role needs <code>CREATEDB</code>, or create the registry database by hand and keep the URL pointing at it.</li>
     <li><em>SSL required</em>: add <code>?sslmode=require</code> to the URL.</li>
   </ul></div></div>
   <div><b>Check</b><div><code>psql "&lt;the same URL without +psycopg&gt;" -c "select 1"</code> works from the server.</div></div>
 </div>
 
-<h3 id="bad-trusted-proxies">"BRIGHTSTARS_TRUSTED_PROXIES is …, which is not a number this application can use"</h3>
+<h3 id="bad-trusted-proxies">"BEACON_TRUSTED_PROXIES is …, which is not a number this application can use"</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>RuntimeError: BRIGHTSTARS_TRUSTED_PROXIES is "lots", which is not a number this application can use …</div></div>
+  <div class="see"><b>You see</b><div>RuntimeError: BEACON_TRUSTED_PROXIES is "lots", which is not a number this application can use …</div></div>
   <div><b>Why</b><div><p>It must be a whole number from 0 to 5: how many reverse proxies of yours stand in front of the application.</p></div></div>
   <div class="do"><b>Fix</b><div><p>Set it to <code>0</code> with no proxy, <code>1</code> behind a single nginx or Caddy, <code>2</code> with a load balancer in front of that. See {{ page('manual-addresses', 'Addresses, domains and proxies') }}.</p></div></div>
   <div><b>Check</b><div>The application starts; the activity log shows visitors' real addresses, not the proxy's.</div></div>
 </div>
 
-<h3 id="bad-storage">"BRIGHTSTARS_STORAGE_BACKEND is …" or "BRIGHTSTARS_S3_… is not set"</h3>
+<h3 id="bad-storage">"BEACON_STORAGE_BACKEND is …" or "BEACON_S3_… is not set"</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div>RuntimeError: BRIGHTSTARS_STORAGE_BACKEND is "aws", but only "local" or "s3" is understood. — or — BRIGHTSTARS_S3_BUCKET is not set. Required when BRIGHTSTARS_STORAGE_BACKEND=s3.</div></div>
+  <div class="see"><b>You see</b><div>RuntimeError: BEACON_STORAGE_BACKEND is "aws", but only "local" or "s3" is understood. — or — BEACON_S3_BUCKET is not set. Required when BEACON_STORAGE_BACKEND=s3.</div></div>
   <div><b>Why</b><div><p>Schools' files (uploads, question banks, numbering rules) are kept either in a local folder or in an S3-compatible bucket. With <code>s3</code>, the bucket and both keys are required ({{ file('control_plane/config.py') }}).</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Use exactly <code>local</code> or <code>s3</code>.</li>
-    <li>For <code>s3</code>, set <code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ACCESS_KEY_ID</code>, <code>BRIGHTSTARS_S3_SECRET_ACCESS_KEY</code>, and for a provider that is not AWS (Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO) <code>BRIGHTSTARS_S3_ENDPOINT_URL</code> (and usually <code>BRIGHTSTARS_S3_REGION=auto</code>).</li>
+    <li>For <code>s3</code>, set <code>BEACON_S3_BUCKET</code>, <code>BEACON_S3_ACCESS_KEY_ID</code>, <code>BEACON_S3_SECRET_ACCESS_KEY</code>, and for a provider that is not AWS (Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO) <code>BEACON_S3_ENDPOINT_URL</code> (and usually <code>BEACON_S3_REGION=auto</code>).</li>
   </ol></div></div>
   <div><b>Check</b><div>A school's logo shows on its sign-in page. If it does not, see {{ page('manual-files', 'Files, uploads, storage and imports') }}.</div></div>
 </div>
@@ -122,7 +122,7 @@ this server yet".</p></div>
   <div><b>Why</b><div><p>Another process (often the previous copy of the application that did not stop) is listening on the port.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Find it: <code>sudo ss -ltnp | grep :8000</code> (or <code>:5000</code> for <code>python app.py</code>).</li>
-    <li>Stop it through your service manager (<code>sudo systemctl stop brightstars</code>), or kill the stray process.</li>
+    <li>Stop it through your service manager (<code>sudo systemctl stop beacon</code>), or kill the stray process.</li>
     <li>Start again. For the built-in server, <code>PORT</code> chooses another port.</li>
   </ol></div></div>
   <div><b>Check</b><div><code>curl -s http://127.0.0.1:8000/health</code> answers <code>{"status":"ok"}</code>.</div></div>
@@ -140,7 +140,7 @@ this server yet".</p></div>
     <li><code>pip install -r requirements.txt</code></li>
     <li><code>python tests/current/run_current.py</code> (fast; no database needed) to catch a broken checkout.</li>
     <li><code>python -m control_plane upgrade</code>: brings every school's database and the registry up to date, then records a new launch (everyone signs in again, except people sitting an exam).</li>
-    <li>Restart the application servers (<code>sudo systemctl restart brightstars</code>).</li>
+    <li>Restart the application servers (<code>sudo systemctl restart beacon</code>).</li>
     <li>Check: <code>/health</code> answers, a school's sign-in page opens, you can sign in to the console.</li>
   </ol></div></div>
   <div><b>Check</b><div>The sign-in page footer shows the new version (the newest release in <code>release_notes.json</code>).</div></div>
@@ -190,14 +190,14 @@ this server yet".</p></div>
 
 <h3 id="restart-loop">The service keeps restarting</h3>
 <div class="fix">
-  <div class="see"><b>You see</b><div><code>systemctl status brightstars</code> shows it starting and stopping again; gunicorn logs "Worker failed to boot".</div></div>
+  <div class="see"><b>You see</b><div><code>systemctl status beacon</code> shows it starting and stopping again; gunicorn logs "Worker failed to boot".</div></div>
   <div><b>Why</b><div><p>A start-up check fails every time (one of the messages above), or a worker crashes on import.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Stop the service so the log stops scrolling: <code>sudo systemctl stop brightstars</code>.</li>
+    <li>Stop the service so the log stops scrolling: <code>sudo systemctl stop beacon</code>.</li>
     <li>Run the import by hand, as the service user, in the project folder, with the same environment: <code>python -c "import app"</code>. The real error appears.</li>
     <li>Fix it from the matching entry on this page, then start the service.</li>
   </ol></div></div>
-  <div><b>Check</b><div><code>systemctl status brightstars</code> stays "active (running)".</div></div>
+  <div><b>Check</b><div><code>systemctl status beacon</code> stays "active (running)".</div></div>
 </div>
 
 <h2 id="studio-deploys">After deploying the design studios</h2>

@@ -10,8 +10,8 @@ receiving system reads anything more through the API, with a key that limits wha
 
 Every notice is POSTed as JSON with two headers the receiver checks before trusting it:
 
-    BrightStars-Event: payment.recorded
-    BrightStars-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<body>" with the endpoint's secret>
+    Beacon-Event: payment.recorded
+    Beacon-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<body>" with the endpoint's secret>
 
 Sending to an address the school typed is a way into the server's own network if left open, so each delivery: needs
 https (http only outside production), resolves the host once and refuses any address that is not on the public internet
@@ -49,7 +49,7 @@ TIMEOUT_SECONDS = 8
 DISABLE_AFTER = 15
 KEEP_DAYS = 30
 MAX_PER_SCHOOL = 10
-USER_AGENT = 'BrightstarsAcademics-Webhooks/1'
+USER_AGENT = 'BeaconAcademics-Webhooks/1'
 
 
 def _now():
@@ -192,7 +192,7 @@ def payment_data(payment):
 
 def send_test(endpoint):
     """A 'ping' to one address, sent now. Returns the delivery row."""
-    return _queue([endpoint], 'ping', {'message': 'A test from Brightstars Academics.'})[0]
+    return _queue([endpoint], 'ping', {'message': 'A test from Beacon Academics.'})[0]
 
 
 @job_handler('webhook_deliver')
@@ -213,9 +213,9 @@ def deliver(delivery_id):
         return
     body = row.payload_json.encode()
     timestamp = str(int(time.time()))
-    headers = {'Content-Type': 'application/json', 'User-Agent': USER_AGENT, 'BrightStars-Event': row.event,
-               'BrightStars-Delivery': str(row.id),
-               'BrightStars-Signature': f't={timestamp},v1={sign(secret, timestamp, body)}'}
+    headers = {'Content-Type': 'application/json', 'User-Agent': USER_AGENT, 'Beacon-Event': row.event,
+               'Beacon-Delivery': str(row.id),
+               'Beacon-Signature': f't={timestamp},v1={sign(secret, timestamp, body)}'}
     row.attempts = (row.attempts or 0) + 1
     try:
         code = _post(endpoint.url, body, headers)

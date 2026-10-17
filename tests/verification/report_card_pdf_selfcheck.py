@@ -63,7 +63,7 @@ def _read_fixture_picture(path):
 
 _storage.read_upload_bytes = _read_fixture_picture
 
-OUT = os.environ.get("REPORT_CARD_SAMPLE_DIR") or os.path.join(tempfile.gettempdir(), "brightstars_report_card_selfcheck")
+OUT = os.environ.get("REPORT_CARD_SAMPLE_DIR") or os.path.join(tempfile.gettempdir(), "beacon_report_card_selfcheck")
 os.makedirs(OUT, exist_ok=True)
 PICS = os.path.join(OUT, "pictures")
 os.makedirs(PICS, exist_ok=True)

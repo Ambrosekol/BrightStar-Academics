@@ -49,8 +49,8 @@ def platform_engine():
             # much larger than a single tenant's (control_plane/routing.py's build_engine).
             _engine = build_engine(
                 url, connect_timeout=REGISTRY_CONNECT_TIMEOUT,
-                pool_size=int(os.environ.get('BRIGHTSTARS_REGISTRY_POOL_SIZE', '10')),
-                max_overflow=int(os.environ.get('BRIGHTSTARS_REGISTRY_MAX_OVERFLOW', '20')))
+                pool_size=int(os.environ.get('BEACON_REGISTRY_POOL_SIZE', '10')),
+                max_overflow=int(os.environ.get('BEACON_REGISTRY_MAX_OVERFLOW', '20')))
             _engine_url = url
         return _engine
 

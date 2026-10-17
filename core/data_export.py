@@ -127,7 +127,7 @@ def _school_zip(zf, export_id):
     return {'tables': tables, 'files': files, 'file_bytes': size}
 
 
-_README = """Everything this school keeps in Brightstars Academics, as it was on {when}.
+_README = """Everything this school keeps in Beacon Academics, as it was on {when}.
 
 data/   one spreadsheet (CSV, UTF-8) for each of the {tables} tables of the school's database: {rows} rows in all.
         Open them in Excel or Google Sheets, or load them into another system. Columns that link tables are named after
@@ -155,7 +155,7 @@ def build(export_id, request_id=None):
     if not _claim(export_id):
         return
     export = db.session.get(DataExport, export_id)
-    fd, temp_path = tempfile.mkstemp(prefix='brightstars-export-', suffix='.zip')
+    fd, temp_path = tempfile.mkstemp(prefix='beacon-export-', suffix='.zip')
     os.close(fd)
     try:
         with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zf:

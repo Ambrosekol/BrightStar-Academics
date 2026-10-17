@@ -1,4 +1,4 @@
-"""Brightstars Academics control plane: many schools, one deployment.
+"""Beacon Academics control plane: many schools, one deployment.
 
 * ``models`` / ``registry`` - the platform registry (schools, their domains,
   platform admins) in its own database.

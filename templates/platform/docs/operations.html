@@ -22,34 +22,34 @@
 <p>The mechanism is the <em>launch id</em> ({{ file('control_plane/launch.py') }}). To sign everyone out without restarting, run <code>python -m control_plane new-launch</code>, or press the same button on the console's {{ route('platform_settings_new_launch') }}. If the registry cannot be read, or no launch was ever recorded, <strong>nobody is signed out</strong>.</p>
 
 <h2 id="suspend">Suspending a school</h2>
-<p>Suspending takes a school's portal offline for everyone. It takes effect within <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code> (default 10) on each worker, because host lookups are cached per worker. Data is untouched and returns on reactivation. A suspended school's address shows a designed "portal paused" page with HTTP 503.</p>
+<p>Suspending takes a school's portal offline for everyone. It takes effect within <code>BEACON_REGISTRY_CACHE_SECONDS</code> (default 10) on each worker, because host lookups are cached per worker. Data is untouched and returns on reactivation. A suspended school's address shows a designed "portal paused" page with HTTP 503.</p>
 
 <h2 id="jobs">Background jobs</h2>
 <p>Work that should not hold up a request - sending a receipt, a notice - runs as a durable, database-backed job ({{ file('core/jobs.py') }}), not a thread that dies with the process. A stuck job of one kind is opportunistically retried the next time something of the <em>same</em> kind is enqueued; a school quiet enough that nothing else would ever trigger that needs its own nudge, which <code>python -m control_plane sweep-jobs [CODE]</code> gives every stuck job of every kind, across one school or all of them - meant for a cron or systemd timer, with no new service to deploy or keep running. Also a button on the console's {{ route('platform_settings_sweep_jobs') }}, for a one-off nudge with no terminal.</p>
-<p>Alerting ({{ file('core/alerting.py') }}) watches the log lines that mean something needs a look: the registry unreachable, a job that used up its retries, a burst of delivery failures for one school, a sign-in rate limit actually being hit. They always log; set <code>BRIGHTSTARS_ALERT_WEBHOOK</code> to also have each one post there (Slack's own incoming-webhook shape works as-is).</p>
+<p>Alerting ({{ file('core/alerting.py') }}) watches the log lines that mean something needs a look: the registry unreachable, a job that used up its retries, a burst of delivery failures for one school, a sign-in rate limit actually being hit. They always log; set <code>BEACON_ALERT_WEBHOOK</code> to also have each one post there (Slack's own incoming-webhook shape works as-is).</p>
 
 <h2 id="limits">Rate limits</h2>
-<p>Sign-in (schools and console), password recovery and the email/SMS test buttons allow a number of tries per stretch of time, for example 8 sign-ins per 5 minutes per address and username. The counts live in the registry (table <code>rate_limits</code>), so several workers or a restart cannot multiply or reset them. Each is a fixed window; only a hash of the key is stored. If the registry cannot be reached each worker counts in its own memory and logs a warning at most once a minute; nobody is locked out. A limit at the reverse proxy is still worthwhile, and behind a proxy set <code>BRIGHTSTARS_TRUSTED_PROXIES</code> so the application sees real visitor addresses (or every visitor shares one count).</p>
+<p>Sign-in (schools and console), password recovery and the email/SMS test buttons allow a number of tries per stretch of time, for example 8 sign-ins per 5 minutes per address and username. The counts live in the registry (table <code>rate_limits</code>), so several workers or a restart cannot multiply or reset them. Each is a fixed window; only a hash of the key is stored. If the registry cannot be reached each worker counts in its own memory and logs a warning at most once a minute; nobody is locked out. A limit at the reverse proxy is still worthwhile, and behind a proxy set <code>BEACON_TRUSTED_PROXIES</code> so the application sees real visitor addresses (or every visitor shares one count).</p>
 
 <h2 id="passwords">Passwords</h2>
 <ul>
   <li>Whoever changes their own password stays signed in where they did it; <strong>every other browser signed in to that account is signed out</strong>. The same happens when an administrator resets someone's login, when an emailed reset link is used, and for a platform admin's password. It is judged from the stored hash, so it holds however the password changed.</li>
   <li>Accounts created or reset by someone else start on a temporary password that must be replaced before anything else opens.</li>
-  <li>The password check is kept per worker for <code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>, so an ordinary request does not read the database. When a kept copy disagrees with the signed-in session, the database is read again before anyone is signed out, so a stale copy never ends a fresh sign-in.</li>
+  <li>The password check is kept per worker for <code>BEACON_PASSWORD_CHECK_CACHE_SECONDS</code>, so an ordinary request does not read the database. When a kept copy disagrees with the signed-in session, the database is read again before anyone is signed out, so a stale copy never ends a fresh sign-in.</li>
 </ul>
 
 <h2 id="caches">Caches, and how quickly a change shows</h2>
 <p>Several things are read once and kept per worker, so that a busy portal does not ask the database the same question on every page. Each lifetime is a setting, and <code>0</code> turns the cache off. A school's own change clears what that school has kept on the worker that handled the change; other workers catch up when the lifetime runs out.</p>
 <table>
 <tr><th>What</th><th>Kept for</th><th>How quickly a change shows</th></tr>
-<tr><td>Hostname to school</td><td><code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>, 10</td><td>Suspensions and new addresses, within that time on each worker.</td></tr>
-<tr><td>A school's branding</td><td><code>BRIGHTSTARS_BRANDING_CACHE_SECONDS</code>, 10</td><td>Saving branding clears it on the worker that saved it.</td></tr>
-<tr><td>Password fingerprint (sign-out after a password change)</td><td><code>BRIGHTSTARS_PASSWORD_CHECK_CACHE_SECONDS</code>, 30</td><td>Other sessions of that account end within that time.</td></tr>
-<tr><td>Administrator account, permissions and scopes</td><td><code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>, 15</td><td>A deactivation, role or permission change applies within that time on other workers, and at once on the worker that made it.</td></tr>
-<tr><td>Admin page counts (notifications, open controls, unallocated payments)</td><td><code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>, 10</td><td>Within that time on other workers; at once where the change was made.</td></tr>
+<tr><td>Hostname to school</td><td><code>BEACON_REGISTRY_CACHE_SECONDS</code>, 10</td><td>Suspensions and new addresses, within that time on each worker.</td></tr>
+<tr><td>A school's branding</td><td><code>BEACON_BRANDING_CACHE_SECONDS</code>, 10</td><td>Saving branding clears it on the worker that saved it.</td></tr>
+<tr><td>Password fingerprint (sign-out after a password change)</td><td><code>BEACON_PASSWORD_CHECK_CACHE_SECONDS</code>, 30</td><td>Other sessions of that account end within that time.</td></tr>
+<tr><td>Administrator account, permissions and scopes</td><td><code>BEACON_ADMIN_CACHE_SECONDS</code>, 15</td><td>A deactivation, role or permission change applies within that time on other workers, and at once on the worker that made it.</td></tr>
+<tr><td>Admin page counts (notifications, open controls, unallocated payments)</td><td><code>BEACON_BADGE_CACHE_SECONDS</code>, 10</td><td>Within that time on other workers; at once where the change was made.</td></tr>
 <tr><td>Who is online (presence)</td><td>Written at most every 20 seconds per session; the 30-second heartbeat keeps it current</td><td>Within about 30 seconds.</td></tr>
 <tr><td>Purchases waiting to be collected (the badge on Store › Purchase claims)</td><td>30 seconds</td><td>At once on the worker where a sale, a collection or a cancellation happened; within 30 seconds elsewhere.</td></tr>
-<tr><td>A school's idle database connections</td><td><code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code>, 600</td><td>Not a freshness setting: connections are closed after this long unused and rebuilt on the next request.</td></tr>
+<tr><td>A school's idle database connections</td><td><code>BEACON_SCHOOL_ENGINE_IDLE_SECONDS</code>, 600</td><td>Not a freshness setting: connections are closed after this long unused and rebuilt on the next request.</td></tr>
 </table>
 
 <h2 id="speed">Page speed: what is not asked twice</h2>
@@ -69,7 +69,7 @@
   ({{ file('app.py') }}'s <code>uploaded_file</code>).</li>
   <li><strong>Compression.</strong> Pages, fragments loaded in place, JSON and static text files are gzip-compressed for a
   browser that accepts it; a static file is compressed once per version and kept in the worker. Set
-  <code>BRIGHTSTARS_GZIP=0</code> where a proxy already compresses.</li>
+  <code>BEACON_GZIP=0</code> where a proxy already compresses.</li>
 </ul>
 
 <h2 id="pwa">The portal as an installable app</h2>
@@ -103,8 +103,8 @@ to make every installed copy drop its cached files.</p>
 <tr><td>Everyone reports being signed out</td><td>A restart, or <code>new-launch</code>. Expected.</td></tr>
 <tr><td>Parents say they received nothing</td><td>The school has no email/SMS set up and the deployment has no shared account; or the guardian's email or phone is missing on the student; or SMS's 24-hour rule. The delivery log says which.</td></tr>
 <tr><td>A school cannot be entered</td><td>The entry ticket is single-use and short-lived: go back to the console and press <em>Enter school</em> again. If the school cannot be reached, the console says so.</td></tr>
-<tr><td>Every visitor seems to share one sign-in limit</td><td>Behind a proxy with <code>BRIGHTSTARS_TRUSTED_PROXIES</code> at 0.</td></tr>
+<tr><td>Every visitor seems to share one sign-in limit</td><td>Behind a proxy with <code>BEACON_TRUSTED_PROXIES</code> at 0.</td></tr>
 <tr><td>"Cannot add NOT NULL column" at upgrade</td><td>A model added a required column with no default. Give it a default.</td></tr>
-<tr><td>A receipt or notice never seems to send</td><td>Run <code>sweep-jobs [CODE]</code> to give it another try at once rather than waiting for ordinary traffic to trigger the opportunistic retry; if it keeps failing, the job's own log line explains why, and enough failures in a row raise an alert if <code>BRIGHTSTARS_ALERT_WEBHOOK</code> is set.</td></tr>
+<tr><td>A receipt or notice never seems to send</td><td>Run <code>sweep-jobs [CODE]</code> to give it another try at once rather than waiting for ordinary traffic to trigger the opportunistic retry; if it keeps failing, the job's own log line explains why, and enough failures in a row raise an alert if <code>BEACON_ALERT_WEBHOOK</code> is set.</td></tr>
 </table></div>
 {% endblock %}

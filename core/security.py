@@ -478,7 +478,7 @@ def clear_school_admin_caches():
 
 
 def _cached_active_admin(admin_id):
-    """``_load_active_admin``, kept for BRIGHTSTARS_ADMIN_CACHE_SECONDS in each process. Only an account
+    """``_load_active_admin``, kept for BEACON_ADMIN_CACHE_SECONDS in each process. Only an account
     that exists is kept: a new, or newly reactivated, account is seen at once. The key includes the school,
     because the same administrator id means different people in different schools."""
     seconds = config.admin_cache_seconds()
@@ -648,7 +648,7 @@ def admin_has_permission(admin_id, code):
 
 
 def _cached_permission_codes(admin_id):
-    """The permission codes an administrator holds, read once and kept for BRIGHTSTARS_ADMIN_CACHE_SECONDS.
+    """The permission codes an administrator holds, read once and kept for BEACON_ADMIN_CACHE_SECONDS.
     A permission may come from the account's own admin type, from an assigned role, or as a direct
     override; ``admin_permission_codes`` reads all three. A school's own writes clear this at once."""
     return _per_request('perms', admin_id, lambda: remember('admin-perms', config.admin_cache_seconds(), admin_permission_codes, admin_id))
@@ -983,7 +983,7 @@ def audit_log(action,module,target_type=None,target_id=None,details=None,success
             target_id=str(target_id) if target_id is not None else None,
             details=json.dumps(details,ensure_ascii=False,sort_keys=True) if isinstance(details,(dict,list)) else (str(details) if details else None),
             # The address the connection came from, never a header the visitor could write: behind a
-            # proxy we trust, BRIGHTSTARS_TRUSTED_PROXIES makes remote_addr the visitor's real one.
+            # proxy we trust, BEACON_TRUSTED_PROXIES makes remote_addr the visitor's real one.
             ip_address=(request.remote_addr or '')[:64],
             user_agent=request.headers.get('User-Agent','')[:500],
             success=1 if success else 0,

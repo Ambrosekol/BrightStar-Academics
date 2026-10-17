@@ -21,7 +21,7 @@ from control_plane.routing import build_engine  # noqa: E402
 
 
 def test_a_school_s_own_pool_defaults_small():
-    for var in ("BRIGHTSTARS_DB_POOL_SIZE", "BRIGHTSTARS_DB_MAX_OVERFLOW"):
+    for var in ("BEACON_DB_POOL_SIZE", "BEACON_DB_MAX_OVERFLOW"):
         os.environ.pop(var, None)
     engine = build_engine("postgresql://user:pass@localhost/does_not_need_to_exist")
     try:
@@ -32,8 +32,8 @@ def test_a_school_s_own_pool_defaults_small():
 
 
 def test_a_school_s_pool_is_tunable_by_environment_variable():
-    os.environ["BRIGHTSTARS_DB_POOL_SIZE"] = "7"
-    os.environ["BRIGHTSTARS_DB_MAX_OVERFLOW"] = "11"
+    os.environ["BEACON_DB_POOL_SIZE"] = "7"
+    os.environ["BEACON_DB_MAX_OVERFLOW"] = "11"
     try:
         engine = build_engine("postgresql://user:pass@localhost/does_not_need_to_exist")
         try:
@@ -42,8 +42,8 @@ def test_a_school_s_pool_is_tunable_by_environment_variable():
         finally:
             engine.dispose()
     finally:
-        os.environ.pop("BRIGHTSTARS_DB_POOL_SIZE", None)
-        os.environ.pop("BRIGHTSTARS_DB_MAX_OVERFLOW", None)
+        os.environ.pop("BEACON_DB_POOL_SIZE", None)
+        os.environ.pop("BEACON_DB_MAX_OVERFLOW", None)
 
 
 def test_an_explicit_pool_size_overrides_the_environment_default():
@@ -63,8 +63,8 @@ def test_the_registry_engine_asks_for_the_larger_numbers():
     start = source.index("def platform_engine")
     end = source.index("\ndef ", start + 1)
     body = source[start:end]
-    assert "BRIGHTSTARS_REGISTRY_POOL_SIZE" in body
-    assert "BRIGHTSTARS_REGISTRY_MAX_OVERFLOW" in body
+    assert "BEACON_REGISTRY_POOL_SIZE" in body
+    assert "BEACON_REGISTRY_MAX_OVERFLOW" in body
 
 
 # ---------------------------------------------------------------- behind PgBouncer
@@ -100,15 +100,15 @@ def _refused(exc_type, phrase, fn, *args, **kwargs):
 
 
 def _with_pooler(value, fn):
-    old = os.environ.get("BRIGHTSTARS_DB_POOLER")
-    os.environ["BRIGHTSTARS_DB_POOLER"] = value
+    old = os.environ.get("BEACON_DB_POOLER")
+    os.environ["BEACON_DB_POOLER"] = value
     try:
         return fn()
     finally:
         if old is None:
-            os.environ.pop("BRIGHTSTARS_DB_POOLER", None)
+            os.environ.pop("BEACON_DB_POOLER", None)
         else:
-            os.environ["BRIGHTSTARS_DB_POOLER"] = old
+            os.environ["BEACON_DB_POOLER"] = old
 
 
 def test_behind_pgbouncer_a_school_keeps_no_pool_and_no_prepared_statements():
@@ -141,7 +141,7 @@ def test_an_unknown_pooler_is_an_error_not_a_silent_default():
     from control_plane import config
 
     def check():
-        _refused(RuntimeError, "BRIGHTSTARS_DB_POOLER", config.db_pooler)
+        _refused(RuntimeError, "BEACON_DB_POOLER", config.db_pooler)
     _with_pooler("pgbouncr", check)
     assert _with_pooler("", config.db_pooler) == ""
 
@@ -157,7 +157,7 @@ def test_without_a_pooler_a_school_keeps_its_small_pool():
 # ---------------------------------------------------------------- closing a school's connections
 def test_idle_school_connections_close_after_a_minute_by_default():
     from control_plane import config
-    os.environ.pop("BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS", None)
+    os.environ.pop("BEACON_SCHOOL_ENGINE_IDLE_SECONDS", None)
     assert config.school_engine_idle_seconds() == 60
 
 
@@ -199,5 +199,5 @@ def test_exporting_a_school_goes_to_postgresql_itself_not_through_pgbouncer():
     body = source[start:source.index("\ndef ", start + 1)]
     assert "config.db_direct_port() if config.db_pooler()" in body
     from control_plane import config
-    os.environ.pop("BRIGHTSTARS_DB_DIRECT_PORT", None)
+    os.environ.pop("BEACON_DB_DIRECT_PORT", None)
     assert config.db_direct_port() == 5432

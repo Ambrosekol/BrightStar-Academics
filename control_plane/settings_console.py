@@ -141,7 +141,7 @@ def platform_settings_variable(name):
     if request.method == 'POST':
         if not _may_edit(variable):
             abort(403)
-        if variable.name == 'BRIGHTSTARS_DELIVERY_KEY':
+        if variable.name == 'BEACON_DELIVERY_KEY':
             # Never set directly: an unrotated change makes every school's saved secrets
             # unreadable at once. The rotation wizard is the only door to this one.
             abort(400)
@@ -412,8 +412,8 @@ def platform_settings_rotate_key_apply():
               'against every school first, with 0 skipped everywhere, before setting the '
               'environment variable.', 'error')
         return redirect(url_for('platform_settings_rotate_key'))
-    env_file.write_value('BRIGHTSTARS_DELIVERY_KEY', new)
-    _log_action('rotate-delivery-key: BRIGHTSTARS_DELIVERY_KEY set to the new key')
-    flash('BRIGHTSTARS_DELIVERY_KEY is now the new key. This will not take effect on the running '
+    env_file.write_value('BEACON_DELIVERY_KEY', new)
+    _log_action('rotate-delivery-key: BEACON_DELIVERY_KEY set to the new key')
+    flash('BEACON_DELIVERY_KEY is now the new key. This will not take effect on the running '
           'application until it is restarted - restart it now.', 'success')
     return redirect(url_for('platform_settings'))

@@ -43,7 +43,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # a failure may quot
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_posts_")
+TMP = tempfile.mkdtemp(prefix="beacon_posts_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -52,13 +52,13 @@ import atexit  # noqa: E402
 
 atexit.register(DROP_TEST_DATABASES)  # even if this script stops half way, its databases go
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
     # Each school brings its own SMS account here, whatever the developer's .env says about the platform's.
-    "BRIGHTSTARS_SMS_PAYER": "school", "BRIGHTSTARS_SMS_API_TOKEN": "", "BRIGHTSTARS_SMS_SENDER_ID": "",
+    "BEACON_SMS_PAYER": "school", "BEACON_SMS_API_TOKEN": "", "BEACON_SMS_SENDER_ID": "",
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)

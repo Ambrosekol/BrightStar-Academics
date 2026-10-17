@@ -52,7 +52,7 @@ def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, m
     SQLAlchemy's own single-app defaults (a pool of 5, up to 10 more on top) would let a hundred
     schools open a thousand-plus connections per worker process just sitting idle. Every school
     here is one admin office at a time, not a high-traffic site of its own, so a school's own pool
-    defaults small (BRIGHTSTARS_DB_POOL_SIZE / BRIGHTSTARS_DB_MAX_OVERFLOW raise it for a deployment
+    defaults small (BEACON_DB_POOL_SIZE / BEACON_DB_MAX_OVERFLOW raise it for a deployment
     that genuinely needs more); the one shared registry engine, asked on nearly every request
     regardless of school (control_plane/registry.py), passes its own larger numbers explicitly
     instead. Per recommendations.html's Scale table.
@@ -80,9 +80,9 @@ def build_engine(db_url, db_schema=None, connect_timeout=None, pool_size=None, m
     else:
         options['pool_pre_ping'] = True
         options['pool_size'] = pool_size if pool_size is not None else int(
-            os.environ.get('BRIGHTSTARS_DB_POOL_SIZE', '2'))
+            os.environ.get('BEACON_DB_POOL_SIZE', '2'))
         options['max_overflow'] = max_overflow if max_overflow is not None else int(
-            os.environ.get('BRIGHTSTARS_DB_MAX_OVERFLOW', '3'))
+            os.environ.get('BEACON_DB_MAX_OVERFLOW', '3'))
         if db_schema:
             if not _SCHEMA_RE.match(db_schema):
                 raise ValueError(f'Invalid database schema name: {db_schema!r}')
@@ -106,7 +106,7 @@ def ensure_database_exists(db_url):
     A stock PostgreSQL install always has one built in, named ``postgres`` (the
     default here), but a managed provider does not always ship one under that
     name - Aiven's default database is ``defaultdb``, for instance - so
-    ``BRIGHTSTARS_PG_MAINTENANCE_DB`` names it when it is not called ``postgres``.
+    ``BEACON_PG_MAINTENANCE_DB`` names it when it is not called ``postgres``.
     Every database name here is built from our own validated slug, and is quoted
     regardless.
     """
@@ -140,7 +140,7 @@ EVICTION_CHECK_SECONDS = 60
 
 def engine_for(tenant):
     """The (cached) engine for one school. Also closes the engines of schools that have been quiet
-    for longer than ``BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS``; see ``evict_idle_engines``."""
+    for longer than ``BEACON_SCHOOL_ENGINE_IDLE_SECONDS``; see ``evict_idle_engines``."""
     key = (tenant.db_url, tenant.db_schema)
     now = time.monotonic()
     engine = _engines.get(key)

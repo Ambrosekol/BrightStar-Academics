@@ -1,6 +1,6 @@
-"""The Brightstars Academics platform console.
+"""The Beacon Academics platform console.
 
-Served only on the platform hostnames (``BRIGHTSTARS_PLATFORM_HOSTS``): a
+Served only on the platform hostnames (``BEACON_PLATFORM_HOSTS``): a
 school's own domain never exposes any of it. Platform admins sign in here
 against the registry database, create and suspend schools, manage their
 domains, and enter any school.
@@ -819,7 +819,7 @@ def _school_url(hostname, path):
     """An absolute URL on a school's own domain, keeping this request's scheme
     and port so it works behind TLS in production and on :5000 locally."""
     # Never taken from a request header: anyone can send one. Behind a proxy we trust, the scheme is
-    # already right (BRIGHTSTARS_TRUSTED_PROXIES, see app.py); in production the portal is https.
+    # already right (BEACON_TRUSTED_PROXIES, see app.py); in production the portal is https.
     scheme = 'https' if config.is_production() else request.scheme
     port = urlsplit(f'//{request.host}').port
     if port and port not in (80, 443):
@@ -860,7 +860,7 @@ def platform_entry(token):
     stamp_session(fingerprint='operator')
     audit_log('platform_admin_entered_school', 'authentication', 'admin', admin_id,
               {'platform_admin': platform_admin['username'], 'school': tenant.slug})
-    flash(f"You are in {tenant.name} as a Brightstars Academics operator.", 'success')
+    flash(f"You are in {tenant.name} as a Beacon Academics operator.", 'success')
     return redirect(url_for('admin_workspace_home'))
 
 

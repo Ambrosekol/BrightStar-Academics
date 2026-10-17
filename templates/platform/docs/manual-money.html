@@ -43,7 +43,7 @@
   <div class="see"><b>You see</b><div>"This action is not available to you" when a Finance Records Officer opens a student's account.</div></div>
   <div><b>Why</b><div><p>By design. A whole account shows every payment, whoever recorded it, so it needs {{ perm('finance.view_all') }}. A cashier ({{ perm('finance.view_own') }}) sees and works with their own payments.</p></div></div>
   <div class="do"><b>Fix</b><div><p>If the person needs to see every account, give them a role with <em>View all finance</em> (the Finance Manager role has it).</p></div></div>
-  <div><b>Check</b><div>They can open accounts after their role changes (within <code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>).</div></div>
+  <div><b>Check</b><div>They can open accounts after their role changes (within <code>BEACON_ADMIN_CACHE_SECONDS</code>).</div></div>
 </div>
 
 <h3 id="new-students-list">A student is missing from, or stuck on, "New students to bill"</h3>

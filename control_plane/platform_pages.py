@@ -1,6 +1,6 @@
 """The pages the platform serves besides its console: ``/marketing``, ``/docs`` and ``/privacy``.
 
-* ``/marketing`` is public: the page a school (or anyone) is shown to understand what Brightstars
+* ``/marketing`` is public: the page a school (or anyone) is shown to understand what Beacon
   Academics is. It is on the platform hostnames only, like the console, because a school's own address
   is a portal and never a website.
 * ``/docs`` is the platform's own documentation: how it works, how to run it, how to change it, and a
@@ -132,7 +132,7 @@ def _manual_index():
         groups, current = [], None
         for level, anchor, heading in re.findall(r'<h([23])[^>]*\bid="([^"]+)"[^>]*>(.*?)</h\1>', _render(slug), re.S):
             if slug == 'manual-env' and (anchor.startswith('cat-') or anchor in ('registered', 'unregistered')
-                                         or _plain(heading).startswith(('BRIGHTSTARS_', 'PORT'))):
+                                         or _plain(heading).startswith(('BEACON_', 'PORT'))):
                 continue      # one entry per variable is a reference, not a symptom: the page itself lists them
             if level == '2':
                 current = {'heading': _plain(heading), 'items': []}
@@ -259,11 +259,11 @@ def _search(query):
 @app.route('/marketing')
 @platform_host_only
 def marketing():
-    """The public marketing page. ``BRIGHTSTARS_CONTACT_EMAIL``, when set, is where its buttons write to.
+    """The public marketing page. ``BEACON_CONTACT_EMAIL``, when set, is where its buttons write to.
 
     Reachable signed out, so the logo goes to the console dashboard only for a platform admin who
     happens to already be signed in; everyone else gets the page's own top, same as before."""
-    return render_template('marketing.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip(),
+    return render_template('marketing.html', contact_email=os.environ.get('BEACON_CONTACT_EMAIL', '').strip(),
                            signed_in_admin=bool(current_platform_admin()))
 
 
@@ -271,4 +271,4 @@ def marketing():
 def privacy():
     """The platform's data-protection statement. Deliberately unguarded (see the module docstring):
     reachable on a platform hostname and on every school's own address alike, signed in or not."""
-    return render_template('privacy.html', contact_email=os.environ.get('BRIGHTSTARS_CONTACT_EMAIL', '').strip())
+    return render_template('privacy.html', contact_email=os.environ.get('BEACON_CONTACT_EMAIL', '').strip())

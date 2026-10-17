@@ -8,23 +8,23 @@
 
 <h2 id="shape">What you are deploying</h2>
 <div class="flow"><span class="node">Browser</span><span class="arrow">&rarr;</span><span class="node">TLS-terminating reverse proxy<br><small>nginx, Caddy, a load balancer</small></span><span class="arrow">&rarr;</span><span class="node">WSGI server<br><small>several worker processes</small></span><span class="arrow">&rarr;</span><span class="node">PostgreSQL<br><small>registry + one database per school</small></span></div>
-<p>Plus a school's files, on disk that every worker sees (<code>BRIGHTSTARS_TENANTS_DIR</code>) or in an S3-compatible bucket (<code>BRIGHTSTARS_STORAGE_BACKEND=s3</code>) — see "5. Files" below.</p>
+<p>Plus a school's files, on disk that every worker sees (<code>BEACON_TENANTS_DIR</code>) or in an S3-compatible bucket (<code>BEACON_STORAGE_BACKEND=s3</code>) — see "5. Files" below.</p>
 
 <h2 id="dns">1. Names and certificates</h2>
 <ul>
-  <li><strong>The platform address</strong>, for operators, the console, the marketing page and these docs: for example <code>platform.brightstars.com</code>. Put it in <code>BRIGHTSTARS_PLATFORM_HOSTS</code>. Keep the company's public website (<code>brightstars.com</code>) on separate hosting; the platform serves only <code>/platform</code>, <code>/marketing</code> and <code>/docs</code> here.</li>
-  <li><strong>The portal domain</strong>, under which every school is issued an address: for example <code>schools.brightstars.com</code>, so a school called <code>alpha</code> is at <code>alpha.schools.brightstars.com</code>. Set <code>BRIGHTSTARS_PORTAL_DOMAIN</code> to it and create a <strong>wildcard DNS record</strong> <code>*.schools.brightstars.com</code> pointing at the proxy.</li>
+  <li><strong>The platform address</strong>, for operators, the console, the marketing page and these docs: for example <code>platform.beacon.com</code>. Put it in <code>BEACON_PLATFORM_HOSTS</code>. Keep the company's public website (<code>beacon.com</code>) on separate hosting; the platform serves only <code>/platform</code>, <code>/marketing</code> and <code>/docs</code> here.</li>
+  <li><strong>The portal domain</strong>, under which every school is issued an address: for example <code>schools.beacon.com</code>, so a school called <code>alpha</code> is at <code>alpha.schools.beacon.com</code>. Set <code>BEACON_PORTAL_DOMAIN</code> to it and create a <strong>wildcard DNS record</strong> <code>*.schools.beacon.com</code> pointing at the proxy.</li>
   <li><strong>Certificates.</strong> A wildcard certificate for the portal domain, one for the platform address, and one for each school's own domain that is added later (Let's Encrypt with the DNS challenge handles the wildcard; a proxy like Caddy can issue per-domain certificates on demand).</li>
-  <li><strong>A school's own domain</strong>: the school adds one CNAME (<code>portal.theirschool.example. CNAME alpha.schools.brightstars.com.</code>); you register the hostname in the console.</li>
+  <li><strong>A school's own domain</strong>: the school adds one CNAME (<code>portal.theirschool.example. CNAME alpha.schools.beacon.com.</code>); you register the hostname in the console.</li>
 </ul>
 <div class="warn"><p>The proxy must pass the original <code>Host</code> header through <strong>unchanged</strong>. The <code>Host</code> header is what selects the school. A proxy that rewrites it makes every request "address not found" or, worse, the wrong school.</p></div>
 
 <h2 id="postgres">2. PostgreSQL</h2>
 <ul>
   <li>PostgreSQL 14 or newer (tested on 18). One server can hold the registry and every school's database.</li>
-  <li>A role that can <code>CREATE DATABASE</code>. Schools' databases are created on demand. A separate, less privileged role for schools is possible with <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code> when the databases are created elsewhere.</li>
-  <li>Creating a database that does not exist yet needs a connection to one that already does, first (<code>CREATE DATABASE</code> cannot run inside a transaction). A stock install always has one called <code>postgres</code>, the default; a managed provider that does not ship one under that name (Aiven's default database is <code>defaultdb</code>, for instance) needs <code>BRIGHTSTARS_PG_MAINTENANCE_DB</code> set to whichever one is guaranteed to exist. This only matters the first time — the registry's own database and an already-created school's database are tried directly first.</li>
-  <li><strong>Connections multiply.</strong> Each school has its own connection pool in each worker, so without a pooler the connections open at once are roughly <em>workers &times; schools used in the last minute &times; up to 5</em>. A school's connections close after a minute of quiet (<code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code>, 60), and creating or upgrading a school closes its connections as soon as it is done. Beyond a few dozen busy schools, put PgBouncer in front (below).</li>
+  <li>A role that can <code>CREATE DATABASE</code>. Schools' databases are created on demand. A separate, less privileged role for schools is possible with <code>BEACON_SCHOOL_DB_TEMPLATE</code> when the databases are created elsewhere.</li>
+  <li>Creating a database that does not exist yet needs a connection to one that already does, first (<code>CREATE DATABASE</code> cannot run inside a transaction). A stock install always has one called <code>postgres</code>, the default; a managed provider that does not ship one under that name (Aiven's default database is <code>defaultdb</code>, for instance) needs <code>BEACON_PG_MAINTENANCE_DB</code> set to whichever one is guaranteed to exist. This only matters the first time — the registry's own database and an already-created school's database are tried directly first.</li>
+  <li><strong>Connections multiply.</strong> Each school has its own connection pool in each worker, so without a pooler the connections open at once are roughly <em>workers &times; schools used in the last minute &times; up to 5</em>. A school's connections close after a minute of quiet (<code>BEACON_SCHOOL_ENGINE_IDLE_SECONDS</code>, 60), and creating or upgrading a school closes its connections as soon as it is done. Beyond a few dozen busy schools, put PgBouncer in front (below).</li>
   <li>Back up the registry and every school's database. Restoring one school never touches another.</li>
 </ul>
 
@@ -48,20 +48,20 @@ max_db_connections = 2
 max_user_connections = 80       ; all schools together, when they share one role (the default)
 server_idle_timeout = 15        ; a quiet school's real connections close after 15 seconds
 ignore_startup_parameters = extra_float_digits</code></pre>
-  <code>userlist.txt</code> holds the application's role and its password, one line: <code>"brightstars" "SCRAM-SHA-256$..."</code> (copy the value from <code>SELECT passwd FROM pg_shadow WHERE usename = 'brightstars';</code>). Make it readable by PgBouncer only.</li>
+  <code>userlist.txt</code> holds the application's role and its password, one line: <code>"beacon" "SCRAM-SHA-256$..."</code> (copy the value from <code>SELECT passwd FROM pg_shadow WHERE usename = 'beacon';</code>). Make it readable by PgBouncer only.</li>
   <li><strong>Size PostgreSQL</strong> so <code>max_connections</code> is above <code>max_user_connections</code> plus room for backups and your own sessions (for example 80 and 120). The 80 are shared by whichever schools are busy at that moment; a school busy for a few seconds holds one or two of them for those seconds only.</li>
   <li><strong>Point the application at it</strong> and tell it so, on every worker:
-<pre><code>BRIGHTSTARS_PLATFORM_DB=postgresql+psycopg://brightstars:...@127.0.0.1:6432/brightstars_platform
-BRIGHTSTARS_DB_POOLER=pgbouncer
-BRIGHTSTARS_DB_DIRECT_PORT=5432     # PostgreSQL itself, for exporting a school with pg_dump</code></pre>
-  New schools are created at the same address as the registry. A <code>BRIGHTSTARS_SCHOOL_DB_TEMPLATE</code>, if you use one, must name port 6432 too.</li>
+<pre><code>BEACON_PLATFORM_DB=postgresql+psycopg://beacon:...@127.0.0.1:6432/beacon_platform
+BEACON_DB_POOLER=pgbouncer
+BEACON_DB_DIRECT_PORT=5432     # PostgreSQL itself, for exporting a school with pg_dump</code></pre>
+  New schools are created at the same address as the registry. A <code>BEACON_SCHOOL_DB_TEMPLATE</code>, if you use one, must name port 6432 too.</li>
   <li><strong>Move the schools that already exist.</strong> Each school's address was written down when it was created, so they still name port 5432. Check first, then apply:
 <pre><code>python -m control_plane move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432
 python -m control_plane move-db-address --from 127.0.0.1:5432 --to 127.0.0.1:6432 --apply</code></pre>
   A school whose address is an <code>env:</code> reference is listed and left alone: change that variable instead.</li>
-  <li><strong>Restart the workers</strong>, then check: <code>psql -p 6432 -U brightstars pgbouncer -c "SHOW POOLS;"</code> lists the schools in use and their real connections.</li>
+  <li><strong>Restart the workers</strong>, then check: <code>psql -p 6432 -U beacon pgbouncer -c "SHOW POOLS;"</code> lists the schools in use and their real connections.</li>
 </ol>
-<div class="warn"><p><strong>A school kept as a schema inside a shared database cannot go through PgBouncer in transaction mode</strong>: its schema is chosen when a connection starts, which transaction pooling does not keep. The application refuses to open such a school with <code>BRIGHTSTARS_DB_POOLER=pgbouncer</code> rather than risk its queries reaching another schema. Use a database per school (the default).</p></div>
+<div class="warn"><p><strong>A school kept as a schema inside a shared database cannot go through PgBouncer in transaction mode</strong>: its schema is chosen when a connection starts, which transaction pooling does not keep. The application refuses to open such a school with <code>BEACON_DB_POOLER=pgbouncer</code> rather than risk its queries reaching another schema. Use a database per school (the default).</p></div>
 <p><strong>Schools with their own database role</strong> (<code>create-db-role</code>): PgBouncer must be able to check each role's password. Instead of listing every role in <code>userlist.txt</code>, let it look them up, with a role that can do only that. Run as a superuser in the <code>postgres</code> database:</p>
 <pre><code>CREATE ROLE pgbouncer_auth LOGIN PASSWORD '&lt;a long random password&gt;';
 CREATE SCHEMA pgbouncer AUTHORIZATION pgbouncer_auth;
@@ -71,25 +71,25 @@ CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(usename name, p
 REVOKE ALL ON FUNCTION pgbouncer.get_auth(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(text) TO pgbouncer_auth;</code></pre>
 <p>then add to <code>[pgbouncer]</code>: <code>auth_user = pgbouncer_auth</code>, <code>auth_dbname = postgres</code> and <code>auth_query = SELECT usename, passwd FROM pgbouncer.get_auth($1)</code>, and put only <code>pgbouncer_auth</code> in <code>userlist.txt</code>. A superuser can never sign in through PgBouncer this way, which is as it should be: the application's role does not need to be one. With a role per school, <code>max_user_connections</code> is per school, so the total is set by <code>max_db_connections</code> &times; the schools busy at once; keep <code>max_connections</code> above what you expect at your busiest.</p>
-<p>Nothing else changes: the application uses no session features that transaction pooling breaks (no advisory locks, <code>LISTEN</code>, session <code>SET</code>s or temporary tables), and turns off psycopg's prepared statements itself. Creating and deleting schools go through PgBouncer like everything else; exporting one with <code>pg_dump</code> goes straight to PostgreSQL on <code>BRIGHTSTARS_DB_DIRECT_PORT</code>.</p>
+<p>Nothing else changes: the application uses no session features that transaction pooling breaks (no advisory locks, <code>LISTEN</code>, session <code>SET</code>s or temporary tables), and turns off psycopg's prepared statements itself. Creating and deleting schools go through PgBouncer like everything else; exporting one with <code>pg_dump</code> goes straight to PostgreSQL on <code>BEACON_DB_DIRECT_PORT</code>.</p>
 
 <h2 id="env">3. Environment</h2>
 <p>Everything is read from environment variables (loaded from <code>.env</code> if present; a real environment variable always wins). Minimum for production:</p>
-<pre><code>BRIGHTSTARS_ENV=production
-BRIGHTSTARS_SECRET=&lt;64 hex characters from secrets.token_hex(32)&gt;
-BRIGHTSTARS_PLATFORM_DB=postgresql+psycopg://brightstars:...@db-host:5432/brightstars_platform
-BRIGHTSTARS_PLATFORM_HOSTS=platform.brightstars.com
-BRIGHTSTARS_PORTAL_DOMAIN=schools.brightstars.com
-BRIGHTSTARS_TENANTS_DIR=/var/lib/brightstars/tenants
-BRIGHTSTARS_TRUSTED_PROXIES=1
-BRIGHTSTARS_DELIVERY_KEY=&lt;a different long random string&gt;
-BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
+<pre><code>BEACON_ENV=production
+BEACON_SECRET=&lt;64 hex characters from secrets.token_hex(32)&gt;
+BEACON_PLATFORM_DB=postgresql+psycopg://beacon:...@db-host:5432/beacon_platform
+BEACON_PLATFORM_HOSTS=platform.beacon.com
+BEACON_PORTAL_DOMAIN=schools.beacon.com
+BEACON_TENANTS_DIR=/var/lib/beacon/tenants
+BEACON_TRUSTED_PROXIES=1
+BEACON_DELIVERY_KEY=&lt;a different long random string&gt;
+BEACON_CONTACT_EMAIL=hello@beacon.com</code></pre>
 <ul>
-  <li><strong><code>BRIGHTSTARS_ENV=production</code></strong> makes session cookies <code>Secure</code>, adds HSTS, and makes the application <em>refuse to start</em> if the secret is under 32 characters.</li>
-  <li><strong><code>BRIGHTSTARS_TRUSTED_PROXIES</code></strong> is how many reverse proxies you run in front (usually 1). Leave it 0 with none. Too high lets a visitor forge their address in the audit log and dodge the sign-in limits; too low records the proxy's address for everyone. Behind a TLS-terminating proxy it is also what makes links in emails and the "Enter school" redirect use <code>https</code>.</li>
-  <li><strong><code>BRIGHTSTARS_DELIVERY_KEY</code></strong> encrypts schools' saved mail and SMS secrets independently of the session secret. <strong>Set it before any school saves credentials and never change it afterwards.</strong> Without it the key derives from <code>BRIGHTSTARS_SECRET</code>, so rotating that secret would make every saved credential unreadable.</li>
-  <li><code>BRIGHTSTARS_CONTACT_EMAIL</code> is optional: the address the marketing page's buttons write to. Without it the page shows the buttons without a mail link.</li>
-  <li>Optional shared mail and SMS accounts (<code>BRIGHTSTARS_SMTP_*</code>, <code>BRIGHTSTARS_SMS_*</code>) are the fallback for schools that have set up none. See the full list in the {{ page('reference-config', 'configuration reference') }}.</li>
+  <li><strong><code>BEACON_ENV=production</code></strong> makes session cookies <code>Secure</code>, adds HSTS, and makes the application <em>refuse to start</em> if the secret is under 32 characters.</li>
+  <li><strong><code>BEACON_TRUSTED_PROXIES</code></strong> is how many reverse proxies you run in front (usually 1). Leave it 0 with none. Too high lets a visitor forge their address in the audit log and dodge the sign-in limits; too low records the proxy's address for everyone. Behind a TLS-terminating proxy it is also what makes links in emails and the "Enter school" redirect use <code>https</code>.</li>
+  <li><strong><code>BEACON_DELIVERY_KEY</code></strong> encrypts schools' saved mail and SMS secrets independently of the session secret. <strong>Set it before any school saves credentials and never change it afterwards.</strong> Without it the key derives from <code>BEACON_SECRET</code>, so rotating that secret would make every saved credential unreadable.</li>
+  <li><code>BEACON_CONTACT_EMAIL</code> is optional: the address the marketing page's buttons write to. Without it the page shows the buttons without a mail link.</li>
+  <li>Optional shared mail and SMS accounts (<code>BEACON_SMTP_*</code>, <code>BEACON_SMS_*</code>) are the fallback for schools that have set up none. See the full list in the {{ page('reference-config', 'configuration reference') }}.</li>
 </ul>
 
 <h2 id="first">4. First launch</h2>
@@ -105,13 +105,13 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <div class="why"><p><strong>Why "upgrade" is a deploy step.</strong> The launch id (which signs everyone out after a restart) must be written once, before any worker serves a request; workers only read it. If you start workers directly, nothing writes it, and nobody is ever signed out for a restart. Also, a new release may add columns; upgrade adds them to every school's database before requests arrive.</p></div>
 
 <h2 id="storage">5. Files</h2>
-<p>A school's uploads, question banks and numbering rules live under one of two storage backends, chosen with <code>BRIGHTSTARS_STORAGE_BACKEND</code> ({{ file('core/storage.py') }}):</p>
+<p>A school's uploads, question banks and numbering rules live under one of two storage backends, chosen with <code>BEACON_STORAGE_BACKEND</code> ({{ file('core/storage.py') }}):</p>
 <ul>
-  <li><strong><code>local</code></strong> (the default): a folder on disk, <code>BRIGHTSTARS_TENANTS_DIR/&lt;code&gt;/</code>. Simplest for one application server with persistent disk. With more than one server this folder <strong>must be shared storage</strong> visible to every one of them.</li>
-  <li><strong><code>s3</code></strong>: an S3-compatible object store ({{ file('core/object_store.py') }}) — real AWS S3, or Cloudflare R2, Backblaze B2, DigitalOcean Spaces or MinIO by also setting <code>BRIGHTSTARS_S3_ENDPOINT_URL</code>. Needed whenever the application server's own disk is not persistent (many hosting platforms wipe it on every redeploy or restart) or more than one server must share the same files, with no shared disk to arrange at all. Requires <code>BRIGHTSTARS_S3_BUCKET</code>, <code>BRIGHTSTARS_S3_ACCESS_KEY_ID</code> and <code>BRIGHTSTARS_S3_SECRET_ACCESS_KEY</code> (see the {{ page('reference-config', 'configuration reference') }}), and <code>boto3</code> installed (already in <code>requirements.txt</code>).</li>
+  <li><strong><code>local</code></strong> (the default): a folder on disk, <code>BEACON_TENANTS_DIR/&lt;code&gt;/</code>. Simplest for one application server with persistent disk. With more than one server this folder <strong>must be shared storage</strong> visible to every one of them.</li>
+  <li><strong><code>s3</code></strong>: an S3-compatible object store ({{ file('core/object_store.py') }}) — real AWS S3, or Cloudflare R2, Backblaze B2, DigitalOcean Spaces or MinIO by also setting <code>BEACON_S3_ENDPOINT_URL</code>. Needed whenever the application server's own disk is not persistent (many hosting platforms wipe it on every redeploy or restart) or more than one server must share the same files, with no shared disk to arrange at all. Requires <code>BEACON_S3_BUCKET</code>, <code>BEACON_S3_ACCESS_KEY_ID</code> and <code>BEACON_S3_SECRET_ACCESS_KEY</code> (see the {{ page('reference-config', 'configuration reference') }}), and <code>boto3</code> installed (already in <code>requirements.txt</code>).</li>
 </ul>
 <p>Every stored database value (<code>uploads/&lt;folder&gt;/&lt;file&gt;</code>) is identical under either backend, so switching later does not touch a school's database — it does mean moving existing files into the new backend by hand. A school's <code>generated/</code> folder (Chrome-rendered result images) is always local under either backend: nothing in it is ever served beyond the one request that made it. Back it up together with the databases; a school is its database plus its files.</p>
-<p>On the <code>s3</code> backend, every uploaded file's bytes are also cached in each worker's own memory once served ({{ file('core/storage.py') }}, <code>BRIGHTSTARS_UPLOAD_CACHE_BYTES</code>, 64&nbsp;MB by default), so a shared image — a school's logo, shown on every page — is fetched from the bucket once per worker rather than once per request. Both the browser's own cache (a year, <code>immutable</code> — <code>app.py</code>'s <code>uploaded_file</code>) and this in-memory one rely on the same fact: an upload's path never changes what it holds, so neither needs to expire on a timer, only make room for newer files once full.</p>
+<p>On the <code>s3</code> backend, every uploaded file's bytes are also cached in each worker's own memory once served ({{ file('core/storage.py') }}, <code>BEACON_UPLOAD_CACHE_BYTES</code>, 64&nbsp;MB by default), so a shared image — a school's logo, shown on every page — is fetched from the bucket once per worker rather than once per request. Both the browser's own cache (a year, <code>immutable</code> — <code>app.py</code>'s <code>uploaded_file</code>) and this in-memory one rely on the same fact: an upload's path never changes what it holds, so neither needs to expire on a timer, only make room for newer files once full.</p>
 
 <h2 id="health">6. Health and monitoring</h2>
 <ul>
@@ -123,14 +123,14 @@ BRIGHTSTARS_CONTACT_EMAIL=hello@brightstars.com</code></pre>
 <h2 id="checklist">Production checklist</h2>
 <div class="table-scroll"><table>
 <tr><th>Check</th><th>Why</th></tr>
-<tr><td><code>BRIGHTSTARS_ENV=production</code> and a 32+ character secret</td><td>Secure cookies, HSTS, refusal to start on a weak secret.</td></tr>
-<tr><td><code>BRIGHTSTARS_DELIVERY_KEY</code> set before any credentials are saved</td><td>Independent of secret rotation.</td></tr>
-<tr><td>Proxy passes <code>Host</code> unchanged; <code>BRIGHTSTARS_TRUSTED_PROXIES</code> matches the proxy count</td><td>School selection; true client addresses.</td></tr>
+<tr><td><code>BEACON_ENV=production</code> and a 32+ character secret</td><td>Secure cookies, HSTS, refusal to start on a weak secret.</td></tr>
+<tr><td><code>BEACON_DELIVERY_KEY</code> set before any credentials are saved</td><td>Independent of secret rotation.</td></tr>
+<tr><td>Proxy passes <code>Host</code> unchanged; <code>BEACON_TRUSTED_PROXIES</code> matches the proxy count</td><td>School selection; true client addresses.</td></tr>
 <tr><td>Wildcard DNS and certificate for the portal domain</td><td>Every new school works the moment it is created.</td></tr>
 <tr><td><code>upgrade</code> runs before workers start, on every release</td><td>Schema and launch id.</td></tr>
-<tr><td>Tenants folder on shared storage, or <code>BRIGHTSTARS_STORAGE_BACKEND=s3</code> (if more than one server)</td><td>Every server sees every school's files.</td></tr>
+<tr><td>Tenants folder on shared storage, or <code>BEACON_STORAGE_BACKEND=s3</code> (if more than one server)</td><td>Every server sees every school's files.</td></tr>
 <tr><td>Backups of the registry, each school database and <code>tenants/</code></td><td>A school is a database plus a folder.</td></tr>
-<tr><td>More than a few dozen schools: PgBouncer in transaction mode, <code>BRIGHTSTARS_DB_POOLER=pgbouncer</code>, existing schools moved with <code>move-db-address</code> (<a href="#pgbouncer">above</a>)</td><td>Otherwise connections run out as schools are added, long before the server is busy.</td></tr>
+<tr><td>More than a few dozen schools: PgBouncer in transaction mode, <code>BEACON_DB_POOLER=pgbouncer</code>, existing schools moved with <code>move-db-address</code> (<a href="#pgbouncer">above</a>)</td><td>Otherwise connections run out as schools are added, long before the server is busy.</td></tr>
 <tr><td>Shared mail and SMS accounts configured, or each school told to set up its own</td><td>Without one, a school cannot email parents.</td></tr>
 <tr><td>Chrome or Chromium installed, if candidates' result <em>images</em> are wanted</td><td>The one feature that shells out to a browser.</td></tr>
 <tr><td>Contract suite and the end-to-end scripts pass against a copy of production settings</td><td>See {{ page('testing', 'Testing') }}.</td></tr>

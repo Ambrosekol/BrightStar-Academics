@@ -7,7 +7,7 @@
 is recorded on both sides. For "a teacher cannot see X", remember you see <em>everything</em>; check the teacher's own
 roles and duties instead (below).</p>
 <div class="note"><p>Changes to staff, roles and permissions show at once on the server that saved them and within
-<code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code> (15) elsewhere; menu counts within <code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>
+<code>BEACON_ADMIN_CACHE_SECONDS</code> (15) elsewhere; menu counts within <code>BEACON_BADGE_CACHE_SECONDS</code>
 (10). If something "did not save", wait a few seconds and reload before assuming it failed.</p></div>
 
 <h2 id="access">Staff access</h2>
@@ -222,7 +222,7 @@ roles and duties instead (below).</p>
 <h3 id="design-not-used">Report cards or receipts still use the standard design</h3>
 <div class="fix">
   <div class="see"><b>You see</b><div>The school designed and saved its own, but PDFs and pages look the standard way.</div></div>
-  <div><b>Why</b><div><p>A design is used only while switched on (<em>Use this design</em>, <code>in_use</code> on {{ table('report_card_designs') }} / {{ table('receipt_designs') }}), and always as last <em>saved</em>. Workers keep it for <code>BRIGHTSTARS_DESIGN_CACHE_SECONDS</code> (60): the worker that saved or switched shows it at once, others within that time.</p></div></div>
+  <div><b>Why</b><div><p>A design is used only while switched on (<em>Use this design</em>, <code>in_use</code> on {{ table('report_card_designs') }} / {{ table('receipt_designs') }}), and always as last <em>saved</em>. Workers keep it for <code>BEACON_DESIGN_CACHE_SECONDS</code> (60): the worker that saved or switched shows it at once, others within that time.</p></div></div>
   <div class="do"><b>Fix</b><div><ol><li>In the studio, check the switch says <em>In use</em>; press Save after the last change.</li><li>Wait a minute, then reload.</li></ol></div></div>
   <div><b>Check</b><div>A new PDF carries the design.</div></div>
 </div>

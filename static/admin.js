@@ -615,7 +615,7 @@ window.reorderBankQuestion = function (button, order) {
         threadEl.innerHTML = messages.map(m => {
             const mine =
                 String(m.sender_admin_id) ===
-                String(window.BRIGHTSTARS_CURRENT_ADMIN_ID || '');
+                String(window.BEACON_CURRENT_ADMIN_ID || '');
 
             const body = escapeHtml(m.body || '').replace(/\n/g, '<br>');
             let attachment = '';

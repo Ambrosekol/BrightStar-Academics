@@ -712,7 +712,7 @@ def _installs_newest_first(root, program):
 def find_pg_dump():
     """The ``pg_dump`` program to run for an export, or None if this machine has none.
 
-    In order: ``BRIGHTSTARS_PG_DUMP`` if set (and it must be a file), then ``pg_dump`` on the PATH,
+    In order: ``BEACON_PG_DUMP`` if set (and it must be a file), then ``pg_dump`` on the PATH,
     then the usual install places - on Windows the newest ``C:\\Program Files\\PostgreSQL\\<version>``
     installation, on Linux the newest ``/usr/lib/postgresql/<version>`` (the Debian and Ubuntu
     layout) and then ``/usr/bin`` and ``/usr/local/bin``. The newest is preferred because a server
@@ -756,7 +756,7 @@ def export_tenant_data(slug, output_dir):
     if pg_dump is None:
         raise ProvisioningError(
             'pg_dump was not found on this machine. Install the PostgreSQL client tools (the '
-            'server package is not required), or point BRIGHTSTARS_PG_DUMP at its pg_dump program, '
+            'server package is not required), or point BEACON_PG_DUMP at its pg_dump program, '
             'and try again.')
 
     stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
@@ -797,8 +797,8 @@ def export_tenant_data(slug, output_dir):
         'candidate and staff photographs, signatures, branding, receipt attachments).\n\n'
         'To bring this school up again elsewhere: create its database, restore database.sql into it,\n'
         'point a new tenant at that database (control_plane create-tenant --db-url ...), then copy\n'
-        'files/ back into that new tenant\'s own folder (under BRIGHTSTARS_TENANTS_DIR, or into its\n'
-        'key prefix in the bucket if BRIGHTSTARS_STORAGE_BACKEND=s3).\n',
+        'files/ back into that new tenant\'s own folder (under BEACON_TENANTS_DIR, or into its\n'
+        'key prefix in the bucket if BEACON_STORAGE_BACKEND=s3).\n',
         encoding='utf-8')
     return str(export_dir)
 

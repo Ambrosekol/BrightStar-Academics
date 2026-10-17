@@ -73,7 +73,7 @@ go deeper.</p>
   <div class="see"><b>You see</b><div>"Something Went Wrong" (500 Server Error) for a page.</div></div>
   <div><b>Why</b><div><p>An unexpected error. The page never shows details (they could leak data), but the full traceback is written to the log.</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Read the log at that moment: <code>journalctl -u brightstars --since "10 min ago"</code> (or wherever gunicorn's output goes).</li>
+    <li>Read the log at that moment: <code>journalctl -u beacon --since "10 min ago"</code> (or wherever gunicorn's output goes).</li>
     <li>The last lines of the traceback name the file and line; the line just above <code>Error:</code> names the cause.</li>
     <li>A database error (<code>UndefinedColumn</code>, <code>IntegrityError</code>) usually means an upgrade is missing or bad data; anything else is a code bug: reproduce it locally (next entry).</li>
   </ol></div></div>

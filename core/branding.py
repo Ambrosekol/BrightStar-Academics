@@ -28,7 +28,11 @@ from core.public_settings import _public_settings, forget_public_settings
 
 logger = logging.getLogger(__name__)
 
-PLATFORM_NAME = 'Brightstars Academics'
+PLATFORM_NAME = 'Beacon Academics'
+# THE platform logo. Every platform page (console, sign-in, marketing, privacy, error notices)
+# reads this one line through platform_logo_url(); to change the logo, drop the new file in
+# static/brand/ and change the filename here. It never appears on a school's own portal.
+PLATFORM_LOGO = 'brand/beacon-logo.png'
 # Used only until a school uploads its own logo.
 PLACEHOLDER_LOGO = 'images/school_placeholder_logo.svg'
 RECEIPT_PREFIX_KEY = 'receipt_prefix'
@@ -36,7 +40,7 @@ RECEIPT_PREFIX_KEY = 'receipt_prefix'
 # A school's computed branding, per process, the same pattern as the hostname cache in
 # control_plane/registry.py: a plain dict of tenant id -> (expiry, brand dict), no extra
 # infrastructure. store_branding() clears one school's own entry the moment it saves a change;
-# the TTL (BRIGHTSTARS_BRANDING_CACHE_SECONDS) only bounds how long a *different* worker
+# the TTL (BEACON_BRANDING_CACHE_SECONDS) only bounds how long a *different* worker
 # process, which never saw that save, keeps serving the old values.
 _brand_cache = {}
 _BRAND_CACHE_MAX = 2048
@@ -266,7 +270,7 @@ def max_branding_request_bytes():
     from core.uploads import DEFAULT_REQUEST_LIMIT_BYTES, _env_bytes, image_limit_bytes
 
     one = image_limit_bytes()
-    default = _env_bytes('BRIGHTSTARS_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
+    default = _env_bytes('BEACON_MAX_REQUEST_BYTES', DEFAULT_REQUEST_LIMIT_BYTES)
     return max(default, one * (theme.MAX_GALLERY_IMAGES + 1) + 1024 * 1024)
 
 

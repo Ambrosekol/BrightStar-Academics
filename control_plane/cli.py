@@ -4,7 +4,7 @@ Each command is described in ``COMMANDS`` below: its group, a one-line summary (
 ``python -m control_plane`` or ``--help``), a longer description and examples (shown by
 ``python -m control_plane <command> --help``). The parser is built from that table, so the help can
 never fall out of step with the commands. Database locations come from the environment:
-BRIGHTSTARS_PLATFORM_DB for the registry and, per school, ``--db-url``. See
+BEACON_PLATFORM_DB for the registry and, per school, ``--db-url``. See
 docs/architecture/MULTI_TENANCY.md.
 """
 
@@ -28,7 +28,7 @@ GROUPS = (
 
 COMMANDS = [
     ('setup', 'init', 'Create the platform registry tables (once, on a new server)',
-     """Creates the platform's own tables in the registry database (BRIGHTSTARS_PLATFORM_DB): the list
+     """Creates the platform's own tables in the registry database (BEACON_PLATFORM_DB): the list
 of schools, their addresses, the platform admins and the audit log. Safe to run again: anything already
 there is left as it is. Every other command does this for itself, so it is only needed on its own when
 you want to check the registry database can be reached.""",
@@ -53,7 +53,7 @@ addresses (the portal address and any domain of its own) and where its database 
     ('schools', 'create-tenant', 'Create a new school: its database, its folder and its portal address',
      """Registers a new school and builds everything it needs: its own database (with every table and the
 standard classes and roles), its own folder of files, the standard entrance question banks, and its portal
-address (CODE.<BRIGHTSTARS_PORTAL_DOMAIN>), which works at once. With --admin-username it also creates the
+address (CODE.<BEACON_PORTAL_DOMAIN>), which works at once. With --admin-username it also creates the
 school's first School Admin and prints their one-time password, shown once.
 
 CODE is the school's short code (letters, numbers and dashes, such as "greenfield" or "unity"): it becomes
@@ -90,7 +90,7 @@ removed: it always works.""",
     ('schools', 'suspend', "Take a school's portal offline (its data is kept)",
      """Takes a school's portal offline for everyone: staff, parents and students see a notice instead.
 Nothing is deleted; activate brings it back exactly as it was. Takes effect within
-BRIGHTSTARS_REGISTRY_CACHE_SECONDS on every server.""",
+BEACON_REGISTRY_CACHE_SECONDS on every server.""",
      [f'{PROG} suspend greenfield --reason "Subscription unpaid"'],
      [(('code',), dict(help="the school's code")),
       (('--reason',), dict(help='why, kept in the platform audit log'))]),
@@ -120,7 +120,7 @@ that stopped, webhooks to resend. Ordinary traffic already does this; a school q
 else to happen needs this. It also sends the day's birthday texts to parents, so a weekend or holiday
 birthday is not missed. Run it at least hourly in the daytime from cron or a systemd timer.""",
      [f'{PROG} sweep-jobs', f'{PROG} sweep-jobs greenfield',
-      '# crontab, every 30 minutes:  */30 * * * *  cd /srv/brightstars && venv/bin/python -m control_plane sweep-jobs'],
+      '# crontab, every 30 minutes:  */30 * * * *  cd /srv/beacon && venv/bin/python -m control_plane sweep-jobs'],
      [(('code',), dict(nargs='?', help='one school only (default: every school)'))]),
 
     ('maintenance', 'drop-retired-tables', "Show (or remove) tables left behind by removed features",
@@ -149,7 +149,7 @@ existing role a new password the same way.""",
 it from an environment variable (so the password is not stored in the registry). Takes effect on each
 server once its registry cache expires.""",
      [f'{PROG} set-db-url greenfield env:GREENFIELD_DB_URL',
-      f'{PROG} set-db-url greenfield "postgresql+psycopg://school_greenfield:...@db2:5432/brightstars_greenfield"'],
+      f'{PROG} set-db-url greenfield "postgresql+psycopg://school_greenfield:...@db2:5432/beacon_greenfield"'],
      [(('code',), dict(help="the school's code")),
       (('url',), dict(help='a PostgreSQL URL, or env:VARIABLE_NAME'))]),
 
@@ -166,7 +166,7 @@ env: variable, or on another server, are listed and left alone.""",
 
     ('security', 'rotate-delivery-key', "Change the key that encrypts schools' email, SMS and Paystack secrets",
      """Re-encrypts every school's stored mail password, SMS token and Paystack keys from the OLD key to
-the NEW one. Order matters: run this first, THEN set BRIGHTSTARS_DELIVERY_KEY=NEW on every server and
+the NEW one. Order matters: run this first, THEN set BEACON_DELIVERY_KEY=NEW on every server and
 restart. Never change the environment variable first, or the stored secrets can no longer be read.""",
      [f'{PROG} rotate-delivery-key "$OLD_KEY" "$NEW_KEY"'],
      [(('old',), dict(help='the key in use now')),
@@ -176,7 +176,7 @@ restart. Never change the environment variable first, or the stored secrets can 
     ('leaving', 'export-tenant', "Save a school's whole database and files into a folder",
      """Writes everything one school owns into a new folder: its whole database (database.sql, made with
 pg_dump) and its uploaded files, with a README on how to bring it back. What a school leaving the
-platform is owed. Needs pg_dump on this machine (or BRIGHTSTARS_PG_DUMP).""",
+platform is owed. Needs pg_dump on this machine (or BEACON_PG_DUMP).""",
      [f'{PROG} export-tenant greenfield --output /backups'],
      [(('code',), dict(help="the school's code")),
       (('--output',), dict(default='.', metavar='DIR', help='where to create the export folder (default: here)'))]),
@@ -199,7 +199,7 @@ exported, or a test school that was never real. Cannot be undone.""",
 def overview():
     """The grouped list of commands shown by ``python -m control_plane`` and ``--help``."""
     width = max(len(name) for _, name, *_ in COMMANDS) + 2
-    lines = ['Manage the Brightstars Academics platform from the server.', '',
+    lines = ['Manage the Beacon Academics platform from the server.', '',
              f'Usage:  {PROG} <command> [options]',
              f'        {PROG} <command> --help      what a command does, with examples', '']
     for key, title in GROUPS:
@@ -213,7 +213,7 @@ def overview():
               f'  New school:      {PROG} create-tenant <code> "<Name>" --admin-username admin',
               f'  Each release:    {PROG} upgrade',
               f'  On a timer:      {PROG} sweep-jobs', '',
-              'Database locations come from the environment: BRIGHTSTARS_PLATFORM_DB for the registry; each',
+              'Database locations come from the environment: BEACON_PLATFORM_DB for the registry; each',
               "school's own database is created beside it unless create-tenant is given --db-url."]
     return '\n'.join(lines)
 
@@ -254,7 +254,7 @@ def main(argv=None):
             init_platform_db()
             print('Platform registry ready.')
         elif args.command == 'create-platform-admin':
-            password = os.environ.get('BRIGHTSTARS_NEW_ADMIN_PASSWORD') or getpass.getpass('Password (min 10 chars): ')
+            password = os.environ.get('BEACON_NEW_ADMIN_PASSWORD') or getpass.getpass('Password (min 10 chars): ')
             role = pv.create_platform_admin(args.username, args.display_name, password,
                                             superadmin=args.superadmin)
             print(f'Platform admin {args.username} created as '
@@ -410,7 +410,7 @@ def main(argv=None):
                     continue
                 note = f', could not read: {", ".join(skipped)}' if skipped else ''
                 print(f'{info.slug:<16} {rotated} secret(s) rotated{note}')
-            print('Once every school above shows 0 unreadable, set BRIGHTSTARS_DELIVERY_KEY to NEW '
+            print('Once every school above shows 0 unreadable, set BEACON_DELIVERY_KEY to NEW '
                   'everywhere and restart - not before.')
         elif args.command == 'export-tenant':
             path = pv.export_tenant_data(args.code, args.output)

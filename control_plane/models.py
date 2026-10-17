@@ -1,7 +1,7 @@
 """Platform registry tables: which schools exist, which domains reach them, and
 who may administer the platform itself.
 
-These live in their own database (``BRIGHTSTARS_PLATFORM_DB``) with their own
+These live in their own database (``BEACON_PLATFORM_DB``) with their own
 declarative base, entirely separate from the per-school schema in ``models/``.
 Nothing here is ever created inside a school's database, and a school's
 database never contains a row describing another school.
@@ -29,7 +29,7 @@ class Tenant(PlatformBase):
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     # Short, URL-safe, permanent identifier. Also names the school's folder
-    # under BRIGHTSTARS_TENANTS_DIR, so it must never be reused or renamed.
+    # under BEACON_TENANTS_DIR, so it must never be reused or renamed.
     slug = mapped_column(Text, nullable=False)
     name = mapped_column(Text, nullable=False)
     status = mapped_column(Text, nullable=False, default=TENANT_ACTIVE, server_default=text("'active'"))
@@ -93,7 +93,7 @@ ROLE_ADMIN = 'admin'
 
 
 class PlatformAdmin(PlatformBase):
-    """A Brightstars Academics operator. Not a school account: a platform admin
+    """A Beacon Academics operator. Not a school account: a platform admin
     exists once, here, and may enter any school.
 
     Removing an admin only ever switches ``active`` off. The row stays, so the

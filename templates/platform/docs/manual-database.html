@@ -4,10 +4,10 @@
 
 <p>There are two kinds of database, and it matters which one a problem is in:</p>
 <ul>
-  <li><strong>The registry</strong> (<code>BRIGHTSTARS_PLATFORM_DB</code>): which schools exist and their addresses, the
+  <li><strong>The registry</strong> (<code>BEACON_PLATFORM_DB</code>): which schools exist and their addresses, the
   platform team, the shared sign-in limits, ended sign-ins and the launch id. If it is down, nothing can be routed and
   the console does not open.</li>
-  <li><strong>One database per school</strong> (named <code>brightstars_&lt;code&gt;</code> by default, or wherever its
+  <li><strong>One database per school</strong> (named <code>beacon_&lt;code&gt;</code> by default, or wherever its
   <code>db_url</code> points): everything inside that school. If one is down, only that school is affected.</li>
 </ul>
 <p>Handy commands, run on the database server with <code>psql</code>:</p>
@@ -24,9 +24,9 @@ SELECT pid, now() - query_start AS running, left(query, 120) FROM pg_stat_activi
   <div><b>Why</b><div><p>The registry database is down or unreachable. With no registry the application cannot tell which school an address belongs to. (The sign-in limits fall back to each worker's own count, and nobody is signed out because of it.)</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
     <li>Is PostgreSQL running? <code>sudo systemctl status postgresql</code> (or your provider's status page).</li>
-    <li>Can the app server reach it? <code>psql "&lt;BRIGHTSTARS_PLATFORM_DB without +psycopg&gt;" -c "select 1"</code>.</li>
+    <li>Can the app server reach it? <code>psql "&lt;BEACON_PLATFORM_DB without +psycopg&gt;" -c "select 1"</code>.</li>
     <li>Out of disk on the database server is a common cause: <code>df -h</code>.</li>
-    <li>If <code>BRIGHTSTARS_ALERT_WEBHOOK</code> is set, a <code>registry_unreachable</code> alert was posted when it started.</li>
+    <li>If <code>BEACON_ALERT_WEBHOOK</code> is set, a <code>registry_unreachable</code> alert was posted when it started.</li>
   </ol></div></div>
   <div><b>Check</b><div><code>python -m control_plane list</code> answers; schools open.</div></div>
 </div>
@@ -51,10 +51,10 @@ SELECT pid, now() - query_start AS running, left(query, 120) FROM pg_stat_activi
   <div class="see"><b>You see</b><div>Random pages fail with <code>FATAL: sorry, too many clients already</code> or <code>remaining connection slots are reserved</code>, while the database is not busy.</div></div>
   <div><b>Why</b><div><p>Each school gets its own small connection pool in every running worker, and the registry has one more ({{ file('control_plane/routing.py') }}). The total is roughly <em>schools in use × (pool + overflow) × workers</em> + the registry's pool × workers. With many schools or workers it exceeds PostgreSQL's <code>max_connections</code> (often only 20–100 on a small managed plan).</p></div></div>
   <div class="do"><b>Fix</b><div><ol>
-    <li>Right now: restart the application (closes its connections), or close idle ones: <code>SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND datname LIKE 'brightstars_%';</code> (this only rolls back unfinished work; nothing saved is lost).</li>
-    <li>Lasting: lower the pools: <code>BRIGHTSTARS_DB_POOL_SIZE=1</code>, <code>BRIGHTSTARS_DB_MAX_OVERFLOW=1</code>, and <code>BRIGHTSTARS_REGISTRY_POOL_SIZE</code>/<code>_MAX_OVERFLOW</code> to fit; fewer gunicorn workers with more threads.</li>
+    <li>Right now: restart the application (closes its connections), or close idle ones: <code>SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND datname LIKE 'beacon_%';</code> (this only rolls back unfinished work; nothing saved is lost).</li>
+    <li>Lasting: lower the pools: <code>BEACON_DB_POOL_SIZE=1</code>, <code>BEACON_DB_MAX_OVERFLOW=1</code>, and <code>BEACON_REGISTRY_POOL_SIZE</code>/<code>_MAX_OVERFLOW</code> to fit; fewer gunicorn workers with more threads.</li>
     <li>Lasting, at scale: put <strong>PgBouncer</strong> in transaction mode in front of PostgreSQL (Aiven and most providers offer one). Use a database per school (the default), not a schema per school, with PgBouncer.</li>
-    <li><code>BRIGHTSTARS_SCHOOL_ENGINE_IDLE_SECONDS</code> (600) closes a quiet school's connections after that long; lower it if many schools are rarely used.</li>
+    <li><code>BEACON_SCHOOL_ENGINE_IDLE_SECONDS</code> (600) closes a quiet school's connections after that long; lower it if many schools are rarely used.</li>
   </ol></div></div>
   <div><b>Check</b><div>The first query above shows connections well under <code>max_connections</code> at a busy time.</div></div>
 </div>
@@ -95,7 +95,7 @@ SELECT pid, now() - query_start AS running, left(query, 120) FROM pg_stat_activi
     <li>Put the application and the database in the same region (a round trip across continents adds 100–300&nbsp;ms per query).</li>
     <li>Check the slowest queries (the third query at the top of this page) and the database's CPU.</li>
     <li>Check the server is not swapping: <code>free -h</code>; give gunicorn fewer workers if memory is short.</li>
-    <li>Raise the cache lifetimes a little on a very busy deployment (<code>BRIGHTSTARS_ADMIN_CACHE_SECONDS</code>, <code>BRIGHTSTARS_BADGE_CACHE_SECONDS</code>, <code>BRIGHTSTARS_REGISTRY_CACHE_SECONDS</code>), knowing changes then take that long to show on other workers.</li>
+    <li>Raise the cache lifetimes a little on a very busy deployment (<code>BEACON_ADMIN_CACHE_SECONDS</code>, <code>BEACON_BADGE_CACHE_SECONDS</code>, <code>BEACON_REGISTRY_CACHE_SECONDS</code>), knowing changes then take that long to show on other workers.</li>
   </ol></div></div>
   <div><b>Check</b><div>A staff Overview loads in well under a second.</div></div>
 </div>

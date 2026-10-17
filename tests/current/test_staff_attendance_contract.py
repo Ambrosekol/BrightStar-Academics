@@ -43,7 +43,7 @@ def test_a_clock_in_is_checked_on_the_server():
 
 def test_each_school_keeps_its_own_time():
     assert "current_tenant(required=False)" in CORE and "zone_of(getattr(tenant, 'timezone', None))" in CORE
-    assert "BRIGHTSTARS_TIMEZONE" not in (ROOT / "control_plane" / "config.py").read_text(encoding="utf-8")
+    assert "BEACON_TIMEZONE" not in (ROOT / "control_plane" / "config.py").read_text(encoding="utf-8")
     zones = (ROOT / "control_plane" / "timezones.py").read_text(encoding="utf-8")
     assert "DEFAULT = 'Africa/Lagos'" in zones and "value if value in NAMES else None" in zones
     console = (ROOT / "control_plane" / "console.py").read_text(encoding="utf-8")

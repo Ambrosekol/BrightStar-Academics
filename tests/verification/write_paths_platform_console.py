@@ -1,4 +1,4 @@
-"""The Brightstars Academics platform console, end to end.
+"""The Beacon Academics platform console, end to end.
 
 Drives the real console through HTTP: signing in as a platform admin, creating
 a school (with its branding and logo) through the form, managing its portal and
@@ -25,17 +25,17 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_console_")
+TMP = tempfile.mkdtemp(prefix="beacon_console_")
 
 import _pg  # noqa: E402  (same folder)
 
 PREFIX, DROP_TEST_DATABASES = _pg.setup('console')
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test,ops.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test,ops.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
 })
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
@@ -240,7 +240,7 @@ check("every file belonging to the school is in tenants/<code>/",
 check("the school's data lives in a PostgreSQL database of its own",
       make_url(alpha.db_url).get_backend_name() == "postgresql"
       and make_url(alpha.db_url).database != make_url(
-          os.environ["BRIGHTSTARS_PLATFORM_DB"]).database,
+          os.environ["BEACON_PLATFORM_DB"]).database,
       make_url(alpha.db_url).database)
 check("the school's page shows the operator that folder", root in c_pl.get("/platform/schools/alpha", base_url=u_pl).get_data(as_text=True))
 
@@ -521,7 +521,7 @@ finally:
 # A school's own dedicated role must reach only its own database - not the platform registry,
 # and not another school's - even though PostgreSQL grants CONNECT everywhere by default unless
 # told otherwise (the exact gap create_school_role/init_platform_db now close).
-registry_as_role = make_url(chosen_url).set(database=make_url(os.environ["BRIGHTSTARS_PLATFORM_DB"]).database)
+registry_as_role = make_url(chosen_url).set(database=make_url(os.environ["BEACON_PLATFORM_DB"]).database)
 registry_engine = sa.create_engine(registry_as_role)
 denied = None
 try:

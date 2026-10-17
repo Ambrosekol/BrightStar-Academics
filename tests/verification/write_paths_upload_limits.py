@@ -30,7 +30,7 @@ After they submit
   and what was sent, back on the form the person was on, never a bare error page; from anywhere the
   server cannot safely send them back to it is a friendly page with the same words, and a script asking
   for JSON gets the words as JSON;
-* the limit is one setting: changing BRIGHTSTARS_MAX_UPLOAD_BYTES changes the hint, the attribute and the
+* the limit is one setting: changing BEACON_MAX_UPLOAD_BYTES changes the hint, the attribute and the
   refusal together.
 
 Run:  python tests/verification/write_paths_upload_limits.py
@@ -52,7 +52,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # a failure may quot
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP = tempfile.mkdtemp(prefix="brightstars_uploadlimits_")
+TMP = tempfile.mkdtemp(prefix="beacon_uploadlimits_")
 
 import _pg  # noqa: E402  (same folder)
 
@@ -60,16 +60,16 @@ PREFIX, DROP_TEST_DATABASES = _pg.setup('uploadlimits')
 atexit.register(DROP_TEST_DATABASES)  # even if this script stops half way, its databases go
 atexit.register(shutil.rmtree, TMP, True)
 os.environ.update({
-    "BRIGHTSTARS_TENANTS_DIR": os.path.join(TMP, "tenants"),
-    "BRIGHTSTARS_PLATFORM_HOSTS": "platform.test",
-    "BRIGHTSTARS_PORTAL_DOMAIN": "portal.test",
-    "BRIGHTSTARS_REGISTRY_CACHE_SECONDS": "0",
-    "BRIGHTSTARS_SECRET": "x" * 40,
-    "BRIGHTSTARS_ENV": "development",
+    "BEACON_TENANTS_DIR": os.path.join(TMP, "tenants"),
+    "BEACON_PLATFORM_HOSTS": "platform.test",
+    "BEACON_PORTAL_DOMAIN": "portal.test",
+    "BEACON_REGISTRY_CACHE_SECONDS": "0",
+    "BEACON_SECRET": "x" * 40,
+    "BEACON_ENV": "development",
 })
 # The defaults are what is being tested: five megabytes a picture, eight a submission.
-os.environ.pop("BRIGHTSTARS_MAX_UPLOAD_BYTES", None)
-os.environ.pop("BRIGHTSTARS_MAX_REQUEST_BYTES", None)
+os.environ.pop("BEACON_MAX_UPLOAD_BYTES", None)
+os.environ.pop("BEACON_MAX_REQUEST_BYTES", None)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 os.chdir(ROOT)
@@ -518,18 +518,18 @@ check("a message attachment over the limit sends the person back to the messages
 
 # =============================================================== 3. one setting changes every word
 print("\n--- one setting")
-os.environ["BRIGHTSTARS_MAX_UPLOAD_BYTES"] = str(2 * MB)
+os.environ["BEACON_MAX_UPLOAD_BYTES"] = str(2 * MB)
 try:
     case = CASES[0]
     body = op.text(case["page"])
-    check("changing BRIGHTSTARS_MAX_UPLOAD_BYTES changes the hint and the attribute together",
+    check("changing BEACON_MAX_UPLOAD_BYTES changes the hint and the attribute together",
           "up to 2 MB" in body and f'data-upload-limit="{2 * MB}"' in body and "up to 5 MB" not in body)
     before, r, seen = send(case, 3 * MB)
     check("…and the refusal", '"picture.png" is 3 MB. The limit is 2 MB.' in seen and case["stored"]() == before, seen[:160])
     before, r, seen = send(case, 2 * MB - 1024)
     check("…and what is now allowed", case["stored"]() != before)
 finally:
-    os.environ.pop("BRIGHTSTARS_MAX_UPLOAD_BYTES", None)
+    os.environ.pop("BEACON_MAX_UPLOAD_BYTES", None)
 check("with the setting removed the limit is five megabytes again", uploads.image_limit_bytes() == 5 * MB)
 
 # =============================================================== 4. the script, served and run in a real browser
@@ -548,7 +548,7 @@ def chrome():
 
 CHROME = chrome()
 if not CHROME:
-    print("SKIP the upload script in a real browser: Chrome was not found (set BRIGHTSTARS_CHROME).")
+    print("SKIP the upload script in a real browser: Chrome was not found (set BEACON_CHROME).")
 else:
     SCRIPT_URL = "file:///" + os.path.join(ROOT, "static", "upload-limit.js").replace(os.sep, "/")
     page = f"""<!doctype html><html><body><form id="f">

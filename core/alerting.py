@@ -1,7 +1,7 @@
 """A single, minimal hook for the handful of log lines that mean something is degraded enough for
 a person to want to know right away, not just a line to notice later while reading the log.
 
-Set BRIGHTSTARS_ALERT_WEBHOOK to any URL that accepts a JSON POST (Slack's own "Incoming Webhook"
+Set BEACON_ALERT_WEBHOOK to any URL that accepts a JSON POST (Slack's own "Incoming Webhook"
 address works with no changes, since the payload is ``{"text": "..."}``) and every alert() call
 also posts there - fire-and-forget, in a thread of its own, so a slow or unreachable webhook never
 adds a moment to the request that triggered it, and never turns a real problem into a second one.
@@ -25,7 +25,7 @@ import os
 import threading
 import urllib.request
 
-_log = logging.getLogger('brightstars.alert')
+_log = logging.getLogger('beacon.alert')
 
 
 def alert(category, message, **details):
@@ -34,7 +34,7 @@ def alert(category, message, **details):
         _log.warning('[%s] %s %s', category, message, details or '')
     except Exception:
         pass
-    webhook = os.environ.get('BRIGHTSTARS_ALERT_WEBHOOK', '').strip()
+    webhook = os.environ.get('BEACON_ALERT_WEBHOOK', '').strip()
     if not webhook:
         return
     text = f'[{category}] {message}' + (f' — {details}' if details else '')
@@ -49,7 +49,7 @@ def alert(category, message, **details):
         except Exception:
             pass  # the alert already reached the log; the webhook is a bonus, not a guarantee
 
-    threading.Thread(target=_send, name='brightstars-alert', daemon=True).start()
+    threading.Thread(target=_send, name='beacon-alert', daemon=True).start()
 
 
 def note_delivery_failure(channel, detail=''):

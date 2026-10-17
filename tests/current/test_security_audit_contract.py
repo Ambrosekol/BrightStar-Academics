@@ -28,21 +28,21 @@ def _guard():
 
 def test_a_real_deployment_must_run_as_production():
     refuse = _guard()
-    developer = {"BRIGHTSTARS_PORTAL_DOMAIN": "localhost", "BRIGHTSTARS_STORAGE_BACKEND": "s3"}
+    developer = {"BEACON_PORTAL_DOMAIN": "localhost", "BEACON_STORAGE_BACKEND": "s3"}
     refuse("development", developer, {})                                  # a developer's machine, even on S3
-    refuse("development", {"BRIGHTSTARS_PORTAL_DOMAIN": "portal.test"}, {})
-    for environ, modules in (({"BRIGHTSTARS_PORTAL_DOMAIN": "myschools.ng"}, {}),
+    refuse("development", {"BEACON_PORTAL_DOMAIN": "portal.test"}, {})
+    for environ, modules in (({"BEACON_PORTAL_DOMAIN": "myschools.ng"}, {}),
                              ({}, {"gunicorn": object()}),
                              ({"SERVER_SOFTWARE": "waitress"}, {}),
-                             ({"BRIGHTSTARS_TRUSTED_PROXIES": "1"}, {})):
+                             ({"BEACON_TRUSTED_PROXIES": "1"}, {})):
         try:
             refuse("development", environ, modules)
         except RuntimeError as exc:
-            assert "BRIGHTSTARS_ENV=production" in str(exc)
+            assert "BEACON_ENV=production" in str(exc)
         else:
             raise AssertionError(f"a real deployment ({environ}, {list(modules)}) was allowed to start as development")
         refuse("production", environ, modules)                           # as production it starts
-    refuse("development", {"BRIGHTSTARS_PORTAL_DOMAIN": "myschools.ng", "BRIGHTSTARS_ALLOW_NON_PRODUCTION": "1"}, {})
+    refuse("development", {"BEACON_PORTAL_DOMAIN": "myschools.ng", "BEACON_ALLOW_NON_PRODUCTION": "1"}, {})
 
 
 def test_weak_new_passwords_are_refused():

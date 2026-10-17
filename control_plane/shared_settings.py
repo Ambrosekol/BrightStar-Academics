@@ -40,10 +40,10 @@ _ENCRYPTED = 'enc:v1:'
 
 # Describe this server, or are needed before the registry can be reached: never shared.
 SERVER_ONLY = frozenset({
-    'BRIGHTSTARS_PLATFORM_DB', 'BRIGHTSTARS_SECRET', 'BRIGHTSTARS_DELIVERY_KEY', 'BRIGHTSTARS_ENV',
-    'BRIGHTSTARS_TENANTS_DIR', 'BRIGHTSTARS_TRUSTED_PROXIES', 'PORT', 'BRIGHTSTARS_CHROME',
-    'BRIGHTSTARS_PG_DUMP', 'BRIGHTSTARS_DB_POOL_SIZE', 'BRIGHTSTARS_DB_MAX_OVERFLOW',
-    'BRIGHTSTARS_REGISTRY_POOL_SIZE', 'BRIGHTSTARS_REGISTRY_MAX_OVERFLOW',
+    'BEACON_PLATFORM_DB', 'BEACON_SECRET', 'BEACON_DELIVERY_KEY', 'BEACON_ENV',
+    'BEACON_TENANTS_DIR', 'BEACON_TRUSTED_PROXIES', 'PORT', 'BEACON_CHROME',
+    'BEACON_PG_DUMP', 'BEACON_DB_POOL_SIZE', 'BEACON_DB_MAX_OVERFLOW',
+    'BEACON_REGISTRY_POOL_SIZE', 'BEACON_REGISTRY_MAX_OVERFLOW',
 })
 
 _lock = threading.Lock()
@@ -56,13 +56,13 @@ def is_shared(variable):
 
 
 def server_name():
-    return os.environ.get('BRIGHTSTARS_SERVER_NAME', '').strip() or socket.gethostname()
+    return os.environ.get('BEACON_SERVER_NAME', '').strip() or socket.gethostname()
 
 
 # ---------------------------------------------------------------- secrets at rest
 
 def _cipher():
-    material = os.environ.get('BRIGHTSTARS_DELIVERY_KEY', '').strip() or current_app.secret_key
+    material = os.environ.get('BEACON_DELIVERY_KEY', '').strip() or current_app.secret_key
     if isinstance(material, str):
         material = material.encode()
     key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None,
