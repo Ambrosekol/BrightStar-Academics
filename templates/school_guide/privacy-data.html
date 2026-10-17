@@ -6,17 +6,16 @@ and a family's right to a copy of it or to have it erased. This page covers what
 requests, a full copy of the school's own data, and the API that lets the school's own systems read its data.</p>
 
 <h2 id="consents">What families allow</h2>
-<p>For each child, a parent decides three things in their portal, under <strong>Privacy &amp; my data</strong>, and can
-change their mind at any time:</p>
+<p>For each child, a parent decides three things in their portal, under <strong>Privacy &amp; my data</strong>. All three
+are <strong>allowed until a parent says no</strong>, and a parent can change their mind at any time:</p>
 <ul>
   <li><strong>Photos in publicity</strong>: whether the school may use the child's photograph on its website, social
-  media, brochures and banners. Not allowed until the parent says yes. ID cards and report cards use the photograph
-  regardless; this is about publicity. The school uses the list (below) to know whose pictures it may publish.</li>
-  <li><strong>Optional messages</strong>: birthday greetings and any other optional text or email. Sent until the parent
-  says no. Messages about fees, results, attendance and safety always go.</li>
+  media, brochures and banners. ID cards and report cards use the photograph regardless; this is about publicity.
+  Check the list (below) before publishing a picture: some families will have said no.</li>
+  <li><strong>Optional messages</strong>: birthday greetings and any other optional text or email. Messages about fees,
+  results, attendance and safety always go.</li>
   <li><strong>Exam registration</strong>: whether the child's details and photograph may be shared with WAEC, NECO or the
-  BECE examining body. Not allowed until the parent (or a signed form) says yes; see
-  <a href="#exam">Exam registration</a> below.</li>
+  BECE examining body; see <a href="#exam">Exam registration</a> below.</li>
 </ul>
 <p>A parent is also asked, on their home page, to read the privacy notice and confirm it; they are asked again whenever it
 changes.</p>
@@ -57,10 +56,11 @@ thirty days, as the law requires. Check that it really comes from the child's pa
 {{ shot('privacy-requests', 'Privacy & data requests: each request with the date it must be answered by. Erasing asks for the admission number.') }}
 
 <h2 id="exam">Exam registration</h2>
-<p>On <a href="{{ url_for('admin_school_exam_registration') }}">Exam registration</a> a candidate whose family has not
-allowed sharing shows <em>Missing: consent to share</em>, and is left out of both downloads (the candidates' spreadsheet
-and the photographs ZIP). Under <strong>Consent to share</strong>, tick the candidates whose families signed a form,
-say what the school holds (<em>Signed forms collected 14 October</em>), and record it; they are included at once.</p>
+<p>On <a href="{{ url_for('admin_school_exam_registration') }}">Exam registration</a> every candidate is included unless
+their family has said no to sharing: such a candidate shows <em>Missing: consent to share</em> and is left out of both
+downloads (the candidates' spreadsheet and the photographs ZIP). If the family changes its mind, the parent allows it again
+in their portal, or, under <strong>Consent to share</strong>, tick the candidate, say what the school holds (<em>Signed form
+collected 14 October</em>), and record it; they are included at once.</p>
 {{ shot('exam-consent', 'A candidate without consent to share is marked, left out of the downloads, and can be recorded from a signed form.') }}
 
 <h2 id="export">Export all the school's data</h2>
@@ -96,13 +96,14 @@ automatically.</p>
 <dl class="guide-faq">
   <dt>A parent says they cannot find Privacy &amp; my data.</dt>
   <dd>It is in the parent portal's menu, under <em>The school</em>. On a phone, open the menu (it is not in the bottom bar).</dd>
-  <dt>A child's photograph shows "Not allowed" but the family agreed.</dt>
-  <dd>Nobody has recorded it yet. Ask the parent to allow it in their portal, or record the signed form on the student's
+  <dt>A child's photograph shows "Not allowed" but the family now agrees.</dt>
+  <dd>A parent said no earlier. Ask them to allow it again in their portal, or record their signed form on the student's
   Consents tab.</dd>
   <dt>A family stopped getting birthday texts.</dt>
   <dd>A parent withdrew <em>Optional messages</em>. Only they (or a new signed form) can turn it back on.</dd>
   <dt>A candidate is missing from the exam registration download.</dt>
-  <dd>Their family has not allowed sharing. Record the signed form under <em>Consent to share</em> on Exam registration.</dd>
+  <dd>Their family said no to sharing. If they change their mind, record the signed form under <em>Consent to share</em>
+  on Exam registration, or the parent allows it again in their portal.</dd>
   <dt>I cannot erase a child's data.</dt>
   <dd>Only the School Admin can, and the admission number must be typed exactly as shown. A head teacher can see and
   decline requests, and approve copies.</dd>

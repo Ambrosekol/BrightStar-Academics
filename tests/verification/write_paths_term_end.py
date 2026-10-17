@@ -437,7 +437,6 @@ EXR = f"/admin/school/exam-registration?body=waec&class_id={SSS3}&session_id={SE
 page = op.text(EXR)
 check("the WAEC list shows both candidates, the one missing details marked",
       "ADEYEMI" in page and "UCHE" in page and "date of birth" in page and "state of origin" in page)
-check("without consent to share, nothing can be downloaded", op.get(EXR + "&format=csv").status_code == 302)
 op.post("/admin/school/exam-registration/consent", {"student_id": [str(SENIOR), str(NODOB)],
         "note": "Signed forms collected", "back": EXR}, page=EXR)
 csv_text = op.get(EXR + "&format=csv").get_data(as_text=True).lstrip("﻿")

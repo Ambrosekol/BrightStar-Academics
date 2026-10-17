@@ -12,9 +12,10 @@ pointed out, so it can be put right on the student's record before registration.
 The exam bodies' own portals change their formats from year to year; this gives the details they all ask for, clean
 and checked, rather than imitating one portal's file.
 
-Sharing a child's details with an exam body needs the family's consent (core/privacy.py, 'exam_sharing'): a candidate
-without it is listed with that missing and left out of both downloads. Consent comes from the parent portal, or from
-signed forms recorded here for several candidates at once.
+Sharing a child's details with an exam body follows the family's consent (core/privacy.py, 'exam_sharing'), which is
+given unless a parent has withdrawn it: a candidate whose family said no is listed with that missing and left out of
+both downloads. A parent allows it again in their portal, or the school records a signed form here, for several
+candidates at once.
 
 Who: school.exam_registration (the head teacher, the academic administrator and the records officers; the School Admin
 always). It is personal data: every download is in the activity log.

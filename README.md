@@ -303,8 +303,9 @@ Each area is explained for staff in the **staff guide** (`/admin/guide` on any s
 
 ### Data protection, exports and the API
 
-- **Consents** (`core/privacy.py`): per child, photos in publicity (opt-in), optional messages such as birthday texts
-  (opt-out), sharing with WAEC/NECO/BECE (opt-in; exam registration leaves out candidates without it). Given by a parent in
+- **Consents** (`core/privacy.py`): per child, photos in publicity, optional messages such as birthday texts, and
+  sharing with WAEC/NECO/BECE, each allowed until a parent says no (exam registration leaves out candidates whose family
+  said no). Withdrawn or given again by a parent in
   the portal (Privacy & my data) or recorded from a signed form on the student's Consents tab; every decision is kept. The
   privacy notice's version is the date on `templates/privacy.html` (`NOTICE_VERSION`); parents confirm each new one.
 - **Families' requests**: a copy of a child's data (a ZIP built in the background, downloaded from the portal for seven

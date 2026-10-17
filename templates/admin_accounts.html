@@ -5,7 +5,9 @@
 {% block content %}
 {# Staff: everyone who signs in to the school's side of the portal. Shown inside Settings (the frame and its
    "Add staff" button come from templates/admin_base.html); the figures filter, the search narrows, and adding or
-   managing someone opens a pop-up (static/inplace.js) that can open a role's pop-up on top of it. #}
+   managing someone opens a pop-up (static/inplace.js) that can open a role's pop-up on top of it. The pop-up's frame
+   is styled by academics.css, which this page must load itself (the pop-up's own pages come and go). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='settings.css', v='3') }}">
 {% set keep_q = q or None %}
 <nav class="sf-k" aria-label="Filter staff">

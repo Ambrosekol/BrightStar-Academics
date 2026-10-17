@@ -6,9 +6,9 @@ asks the school, and the school decides. Three things are kept here:
 * **Consents.** Each decision is a new ``ConsentRecord`` row and never changes, so the latest row for a child (or, for
   the privacy notice, a parent) and a purpose is the consent in force and the rows before it are its history. A parent
   gives or withdraws one in the portal; staff record one from a signed paper form, which is how a family that never
-  signs in gives it. Each purpose has a default for a child nobody has decided for (``PURPOSES``): publicity photos and
-  sharing with an exam body are asked for first (opt-in); optional messages are sent until withdrawn (opt-out), since
-  they are part of the school's ordinary contact with a family and the parent can stop them at any time.
+  signs in gives it. Each purpose has a default for a child nobody has decided for (``PURPOSES``): every one is
+  allowed until a parent withdraws it in the portal (or the school records a signed form saying no); the privacy
+  notice says so, and the parent can change any of them at any time.
 * **Requests.** A parent asks for a copy of a child's data, or for it to be erased. The school has thirty days
   (``DUE_DAYS``). A copy is built in the background (``family_export``) and downloaded from the portal; an erasure is
   carried out at once when the School Admin approves it.
@@ -38,18 +38,18 @@ from models import (
 
 # The privacy notice's version is the date on templates/privacy.html ("Last updated"); a parent who confirmed an older
 # one is asked again. tests/current checks the two agree.
-NOTICE_VERSION = '2026-10-15'
+NOTICE_VERSION = '2026-10-17'
 
 PURPOSES = {
     'privacy_notice': {'title': 'Privacy notice', 'per': 'parent', 'default': False,
                        'text': 'I have read how the school and the platform use my family\'s information.'},
-    'photos_media': {'title': 'Photos in publicity', 'per': 'student', 'default': False,
+    'photos_media': {'title': 'Photos in publicity', 'per': 'student', 'default': True,
                      'text': "The school may use my child's photograph in its publicity: the website, social media, "
                              "brochures and banners. (ID cards and report cards use it regardless.)"},
     'optional_messages': {'title': 'Optional messages', 'per': 'student', 'default': True,
                           'text': 'Birthday wishes and other optional texts and emails. Messages about fees, results, '
                                   'attendance and safety are always sent.'},
-    'exam_sharing': {'title': 'Exam registration', 'per': 'student', 'default': False,
+    'exam_sharing': {'title': 'Exam registration', 'per': 'student', 'default': True,
                      'text': "The school may share my child's details and photograph with WAEC, NECO or the BECE "
                              "examining body to register them for an external examination."},
 }

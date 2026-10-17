@@ -3,7 +3,7 @@
 A. Consents: a parent is asked to read the privacy notice until they confirm it; they allow or withdraw each purpose for
    their own children only; the school records a signed form (and must say what it holds); a teacher cannot; the
    consents spreadsheet is defused; an optional message goes only where it is allowed; exam registration leaves out a
-   candidate without consent to share, and signed forms recorded for several candidates let them in.
+   candidate whose family said no, and signed forms recorded for several candidates let them back in.
 B. Requests: a parent asks for a copy; a duplicate, or a child not theirs, is refused; the school approves and the copy
    is built: the child's record, released results only, the asker's own details, no password; another parent cannot
    download it. Erasure needs the parent's tick; only the School Admin erases, confirmed by the admission number; the
@@ -241,7 +241,7 @@ check("Privacy & my data lists their children with a switch for each purpose", "
       and "Exam registration" in page and "Chithree" not in page)
 mum.post("/parent/privacy/notice", {}, page="/parent/privacy")
 check("confirming the notice is recorded with its version, and the prompt goes",
-      one("SELECT notice_version FROM consent_records WHERE parent_id = :p AND purpose = 'privacy_notice'", p=MUM) == "2026-10-15"
+      one("SELECT notice_version FROM consent_records WHERE parent_id = :p AND purpose = 'privacy_notice'", p=MUM) == "2026-10-17"
       and "Please read the privacy notice" not in mum.text("/parent/dashboard"))
 mum.post("/parent/privacy/consent", {"student_id": ADA, "purpose": "photos_media", "granted": "1"}, page="/parent/privacy")
 mum.post("/parent/privacy/consent", {"student_id": BISI, "purpose": "optional_messages", "granted": "0"}, page="/parent/privacy")
@@ -268,14 +268,21 @@ rows = list(csv.reader(io.StringIO(op.get("/admin/school/privacy/consents.csv").
 check("the consents spreadsheet lists every student, a formula-looking name defused",
       len(rows) == 6 and not any(cell.startswith("=") for row in rows for cell in row) and "allowed" in rows[1][3], str(rows[:3]))
 EXR = f"/admin/school/exam-registration?body=waec&class_id={SSS3}&session_id={SESSION}"
-check("exam registration says who has no consent to share", "consent to share" in op.text(EXR))
-r = op.get(EXR + "&format=csv")
-check("…and with nobody consenting there is nothing to download", r.status_code == 302)
-op.post("/admin/school/exam-registration/consent", {"student_id": [str(S1)], "note": "Signed forms collected 14 October",
+def exam_csv():
+    return list(csv.reader(io.StringIO(op.get(EXR + "&format=csv").get_data(as_text=True).lstrip("\ufeff"))))
+
+
+rows = exam_csv()
+check("every consent is allowed until a family says no: both candidates are in the exam registration CSV",
+      len(rows) == 3, str(rows))
+op.post(f"/admin/school/students/{S2}/consent", {"purpose": "exam_sharing", "granted": "0", "note": "Signed: do not share"},
+        page=f"/admin/school/students/{S2}")
+rows = exam_csv()
+check("a candidate whose family said no is marked and left out of the CSV",
+      "consent to share" in op.text(EXR) and len(rows) == 2 and rows[1][1] == "Adeyemi", str(rows))
+op.post("/admin/school/exam-registration/consent", {"student_id": [str(S2)], "note": "Signed form collected 14 October",
                                                     "back": EXR}, page=EXR)
-csv_rows = list(csv.reader(io.StringIO(op.get(EXR + "&format=csv").get_data(as_text=True).lstrip("﻿"))))
-check("signed forms recorded for a candidate let them, and only them, into the CSV",
-      len(csv_rows) == 2 and csv_rows[1][1] == "Adeyemi", str(csv_rows))
+check("…and recording their signed form lets them back in", len(exam_csv()) == 3)
 
 # ================================================================ B. requests
 mum.post("/parent/privacy/request", {"student_id": ADA, "kind": "export", "reason": "For our records"}, page="/parent/privacy")
@@ -457,6 +464,24 @@ r = op.post("/admin/school/documents/issue", {"kind": "testimonial", "student_id
             page="/admin/school/documents/issue", extra="idem")
 check("a form protected against double submission, shown again with what to correct, answers normally",
       r.status_code == 200 and "conduct" in r.get_data(as_text=True).lower(), str(r.status_code))
+
+# ================================================================ G. resetting a staff password
+TEACHER_ID = one("SELECT id FROM admins WHERE username = 'subject.teacher'")
+old_hash = one("SELECT password_hash FROM admins WHERE id = :i", i=TEACHER_ID)
+token = csrf_from(op.text(f"/admin/administration/admins/{TEACHER_ID}/edit?modal=1"))
+r = op.client.post(f"/admin/administration/admins/{TEACHER_ID}/credentials/reset", data={"_csrf_token": token},
+                   base_url=ALPHA, headers={"X-Fragment": "1", "X-Modal": "1"})
+body = r.get_data(as_text=True)
+shown = (re.search(r'class="credential-password">([^<]+)<', body) or [None, None])[1]
+check("resetting from the staff pop-up answers with the new password, inside the pop-up",
+      r.status_code == 200 and shown and "Done" in body and "<html" not in body.lower()[:200], str(r.status_code))
+check("…and the password really changed", one("SELECT password_hash FROM admins WHERE id = :i", i=TEACHER_ID) != old_hash)
+r = op.client.post(f"/admin/administration/admins/{TEACHER_ID}/credentials/reset", data={"_csrf_token": token}, base_url=ALPHA)
+page = r.get_data(as_text=True)
+check("as a page of its own it sits in the portal's frame, with the menu and the loading outline",
+      r.status_code == 200 and "page-loading.js" in page and "credential-password" in page and "Done, back to staff" in page)
+check("…and points the address back at the staff list, so a reload cannot reset the password again",
+      "history.replaceState" in page and "/admin/administration/admins" in page)
 
 # ================================================================ every page opens
 for path in ("/admin/school/privacy", "/admin/school/data-export", "/admin/school/api", "/admin/settings", f"/admin/school/students/{ADA}"):

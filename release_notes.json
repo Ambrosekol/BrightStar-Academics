@@ -18,6 +18,27 @@
   ],
   "releases": [
     {
+      "version": "2.41.2",
+      "date": "2026-10-17",
+      "title": "Resetting a staff password works from the staff pop-up; consents allowed unless a family says no",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Reset password and Suspend in a member of staff's pop-up (Settings, Staff) now do what they say. Before, they only saved the form, so no new password was made. The new one-time password now shows in the pop-up, with Copy and Print. Reset from the staff list, it opens as an ordinary portal page, and reloading it no longer makes yet another password.",
+          "help": "staff-admin"
+        },
+        {
+          "audience": "staff",
+          "text": "Photos in publicity, optional messages and sharing with WAEC, NECO or BECE are now allowed for every child unless a family says no. Exam registration includes every candidate except those whose family said no. Parents are asked to read the updated privacy notice.",
+          "help": "privacy-data"
+        },
+        {
+          "audience": "family",
+          "text": "The school may now use your child's photo in its publicity, send optional messages such as birthday greetings, and share your child's details with WAEC, NECO or BECE for exam registration, unless you say no. You can say no, or change your mind, at any time under Privacy & my data. Please read the updated privacy notice there."
+        }
+      ]
+    },
+    {
       "version": "2.41.1",
       "date": "2026-10-17",
       "title": "We are now Beacon Academics",

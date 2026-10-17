@@ -230,9 +230,9 @@ def _after_staff_save(endpoint):
 
 
 def _credentials_page(**context):
-    """New sign-in details: inside the pop-up or page they were made from when fetched in place, else a page of their own."""
-    template = 'admin_staff_credentials.html' if request.headers.get('X-Fragment') == '1' else 'admin_credentials.html'
-    return render_template(template, **context)
+    """New sign-in details: in the pop-up they were made from, or a page of its own in the portal's frame
+    (templates/admin_credentials.html answers both, like every other page)."""
+    return render_template('admin_credentials.html', **context)
 
 
 @app.route('/admin/administration/admins')

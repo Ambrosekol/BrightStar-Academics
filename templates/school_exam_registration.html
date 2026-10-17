@@ -54,9 +54,11 @@
 {% if without_consent %}
 <section class="fi-p" aria-labelledby="erConsent">
   <h2 id="erConsent" style="font-size:1rem;margin:0 0 4px">Consent to share <small class="ac-hint">{{ without_consent|length }} without it</small></h2>
-  <p class="ac-hint" style="margin:0 0 8px">Sharing a candidate's details with {{ bodies[body][0] }} needs their family's consent.
-    {{ without_consent|length }} candidate{{ '' if without_consent|length == 1 else 's' }} without it {{ 'is' if without_consent|length == 1 else 'are' }}
-    left out of both downloads until it is given: by a parent in their portal, or from a signed form the school keeps, recorded here.</p>
+  {% set n = without_consent|length %}
+  <p class="ac-hint" style="margin:0 0 8px">{{ n }} {{ "candidate's family has" if n == 1 else "candidates' families have" }}
+    said no to sharing their details with {{ bodies[body][0] }}, so {{ 'that candidate is' if n == 1 else 'they are' }} left out of
+    both downloads. If a family changes its mind, the parent allows it again in their portal, or record the signed form the
+    school keeps here.</p>
   <form method="post" action="{{ url_for('admin_school_exam_registration_consent') }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="back" value="{{ request.full_path }}">

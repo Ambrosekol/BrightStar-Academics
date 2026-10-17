@@ -1350,7 +1350,7 @@ check("…and edited", count("admin_type_permissions", "admin_type_id = :r", r=R
 r = op.post(f"{ADMIN_ROOT}/admins/new", {"username": "clerk1", "display_name": "Clerk One", "email": "clerk1@posts.test",
                                         "phone": "08099990000", "whatsapp": "08099990000", "admin_type_ids": [ROLE],
                                         "scope_type": "global"})
-CLERK_TEMP = grab(r'Temporary Password</span><strong class="credential-password">(.+?)</strong>', r.body, "the new staff member's password")
+CLERK_TEMP = grab(r'credential-password">(.+?)</strong>', r.body, "the new staff member's password")
 CLERK = one("SELECT id FROM admins WHERE username = 'clerk1'")
 check("a staff account was created", CLERK is not None and count("admin_role_assignments", "admin_id = :a", a=CLERK) == 1)
 op.post(f"{ADMIN_ROOT}/admins/{CLERK}/edit", {"display_name": "Clerk One (JSS)", "email": "clerk1@posts.test", "phone": "08099990000",
@@ -1360,7 +1360,7 @@ check("a staff account was edited and limited to one class",
       count("admin_scopes", "admin_id = :a AND scope_type = 'class' AND scope_value = 'JSS 1'", a=CLERK) == 1
       and count("admin_permissions", "admin_id = :a", a=CLERK) == 1)
 r = op.post(f"{ADMIN_ROOT}/admins/{CLERK}/credentials/reset", {})
-CLERK_TEMP = grab(r'Temporary Password</span><strong class="credential-password">(.+?)</strong>', r.body, "the staff member's new password")
+CLERK_TEMP = grab(r'credential-password">(.+?)</strong>', r.body, "the staff member's new password")
 op.post(f"{ADMIN_ROOT}/admins/{CLERK}/toggle", {})
 check("a staff account can be suspended", one("SELECT active FROM admins WHERE id = :a", a=CLERK) == 0)
 op.post(f"{ADMIN_ROOT}/admins/{CLERK}/toggle", {})

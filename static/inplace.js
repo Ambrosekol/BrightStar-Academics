@@ -246,14 +246,19 @@
         if (!(form instanceof HTMLFormElement) || form.getAttribute("target") || "full" in form.dataset) return;
         var layer = layerOf(form);
         if (!body.contains(form) && !layer) return;
-        var url = new URL(form.getAttribute("action") || (layer ? layer.url || layer.path : window.location.href), window.location.href);
+        // A button may send the form somewhere of its own (formaction / formmethod: Reset password, Suspend), as a
+        // browser would; without this it was sent to the form's own address and simply saved the form.
+        var by = e.submitter && e.submitter.hasAttribute ? e.submitter : null;
+        var action = (by && by.getAttribute("formaction")) || form.getAttribute("action");
+        var method = ((by && by.getAttribute("formmethod")) || form.getAttribute("method") || "get").toLowerCase();
+        var url = new URL(action || (layer ? layer.url || layer.path : window.location.href), window.location.href);
         if (!here() || !inScope(url)) return;
         var data = e.submitter ? new FormData(form, e.submitter) : new FormData(form);
         e.preventDefault();
         // The button pressed shows a spinner until the answer arrives.
         var button = e.submitter || form.querySelector("button[type=submit], button:not([type])");
         if (button && button.classList) { button.classList.add("is-busy"); button.setAttribute("data-inplace-busy", ""); }
-        if ((form.getAttribute("method") || "get").toLowerCase() === "get") {
+        if (method === "get") {
             url.search = new URLSearchParams(data).toString();
             if (layer) url.searchParams.set("modal", "1");
             load(url.href, { method: "GET" }, !layer, layer);
