@@ -18,6 +18,22 @@
   ],
   "releases": [
     {
+      "version": "2.42.0",
+      "date": "2026-10-17",
+      "title": "Learning simulations for students, Primary 1 to SSS 3",
+      "changes": [
+        {
+          "audience": "staff",
+          "text": "Students from Primary 1 to SSS 3 now have Simulations in their portal: over a hundred hands-on science and maths experiments from PhET (University of Colorado Boulder), each shown only to the classes it suits and, in SSS, to the right departments. It is on for every class. The School Admin or a head teacher can turn it off for the school or for single classes, hide a simulation, or change who sees one, under Settings, Your school, Learning simulations.",
+          "help": "work"
+        },
+        {
+          "audience": "student",
+          "text": "New: Simulations in your menu. Try hands-on science and maths experiments for your class right in the portal: pick a topic or search, then play. Nothing is marked, so explore as much as you like. You need the internet to use them."
+        }
+      ]
+    },
+    {
       "version": "2.41.2",
       "date": "2026-10-17",
       "title": "Resetting a staff password works from the staff pop-up; consents allowed unless a family says no",

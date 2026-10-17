@@ -1,0 +1,146 @@
+"""The learning simulations on offer (core/simulations.py has the rules): each of PhET's HTML5 simulations that suits a
+class from Primary 1 to SSS 3, with the classes and SSS departments it is suggested for.
+
+This file is data only. To add a simulation, add a row: its name is the last part of its address on PhET
+(https://phet.colorado.edu/en/simulations/<name>), its title is PhET's, and the classes are level_order numbers
+(1-6 Primary 1-6, 7-9 JSS 1-3, 10-12 SSS 1-3). A school can still hide any row or change its classes and
+departments under Settings > Your school > Learning simulations; this is only where every school starts.
+tests/current/test_simulations_contract.py checks the rows are well formed.
+"""
+
+# The topics a student filters by. Plain words, so they read as well in Primary 2 as in SSS 3.
+TOPICS = {
+    'maths': 'Mathematics',
+    'motion': 'Forces, motion & energy',
+    'electricity': 'Electricity & magnetism',
+    'waves': 'Light, sound & waves',
+    'matter': 'Matter, atoms & chemistry',
+    'life': 'Living things',
+    'earth': 'Earth & space',
+}
+
+S, A, C = 'Science', 'Art', 'Commercial'
+ALL = (S, A, C)
+
+# (PhET's name for it, its title, topic, first class, last class, SSS departments). The classes follow PhET's own
+# grade bands (Elementary, Middle and High School) laid over the Nigerian curriculum: Primary 1-6 as Grades 1-6,
+# JSS 1-3 as Grades 7-9 and SSS 1-3 as Grades 10-12. Every SSS student takes General Mathematics; physics,
+# chemistry and further mathematics are the Science department's; biology is taken in Science and often in Art.
+CATALOGUE = (
+    # Mathematics
+    ('make-a-ten', 'Make a Ten', 'maths', 1, 2, ALL),
+    ('number-play', 'Number Play', 'maths', 1, 2, ALL),
+    ('number-compare', 'Number Compare', 'maths', 1, 2, ALL),
+    ('number-pairs', 'Number Pairs', 'maths', 1, 2, ALL),
+    ('arithmetic', 'Arithmetic', 'maths', 2, 5, ALL),
+    ('area-model-introduction', 'Area Model Introduction', 'maths', 3, 4, ALL),
+    ('area-builder', 'Area Builder', 'maths', 3, 6, ALL),
+    ('build-a-fraction', 'Build a Fraction', 'maths', 3, 6, ALL),
+    ('fractions-intro', 'Fractions: Intro', 'maths', 3, 5, ALL),
+    ('fraction-matcher', 'Fraction Matcher', 'maths', 3, 7, ALL),
+    ('fractions-equality', 'Fractions: Equality', 'maths', 4, 6, ALL),
+    ('area-model-multiplication', 'Area Model Multiplication', 'maths', 4, 6, ALL),
+    ('fractions-mixed-numbers', 'Fractions: Mixed Numbers', 'maths', 5, 7, ALL),
+    ('area-model-decimals', 'Area Model Decimals', 'maths', 5, 7, ALL),
+    ('equality-explorer-basics', 'Equality Explorer: Basics', 'maths', 5, 7, ALL),
+    ('function-builder-basics', 'Function Builder: Basics', 'maths', 5, 7, ALL),
+    ('proportion-playground', 'Proportion Playground', 'maths', 5, 8, ALL),
+    ('quadrilateral', 'Quadrilateral', 'maths', 5, 8, ALL),
+    ('number-line-integers', 'Number Line: Integers', 'maths', 6, 8, ALL),
+    ('ratio-and-proportion', 'Ratio and Proportion', 'maths', 6, 8, ALL),
+    ('unit-rates', 'Unit Rates', 'maths', 6, 8, ALL),
+    ('mean-share-and-balance', 'Mean: Share and Balance', 'maths', 6, 8, ALL),
+    ('number-line-distance', 'Number Line: Distance', 'maths', 7, 8, ALL),
+    ('number-line-operations', 'Number Line: Operations', 'maths', 7, 8, ALL),
+    ('expression-exchange', 'Expression Exchange', 'maths', 7, 9, ALL),
+    ('equality-explorer', 'Equality Explorer', 'maths', 7, 9, ALL),
+    ('center-and-variability', 'Center and Variability', 'maths', 7, 10, ALL),
+    ('area-model-algebra', 'Area Model Algebra', 'maths', 8, 10, ALL),
+    ('function-builder', 'Function Builder', 'maths', 8, 10, ALL),
+    ('plinko-probability', 'Plinko Probability', 'maths', 8, 12, ALL),
+    ('equality-explorer-two-variables', 'Equality Explorer: Two Variables', 'maths', 9, 10, ALL),
+    ('graphing-lines', 'Graphing Lines', 'maths', 9, 11, ALL),
+    ('graphing-slope-intercept', 'Graphing Slope-Intercept', 'maths', 9, 11, ALL),
+    ('graphing-quadratics', 'Graphing Quadratics', 'maths', 10, 12, ALL),
+    ('least-squares-regression', 'Least-Squares Regression', 'maths', 11, 12, ALL),
+    ('trig-tour', 'Trig Tour', 'maths', 11, 12, ALL),
+    ('calculus-grapher', 'Calculus Grapher', 'maths', 12, 12, (S,)),
+    # Forces, motion and energy
+    ('forces-and-motion-basics', 'Forces and Motion: Basics', 'motion', 3, 9, (S,)),
+    ('friction', 'Friction', 'motion', 4, 8, (S,)),
+    ('balancing-act', 'Balancing Act', 'motion', 4, 9, (S,)),
+    ('density', 'Density', 'motion', 5, 10, (S,)),
+    ('energy-skate-park-basics', 'Energy Skate Park: Basics', 'motion', 5, 9, (S,)),
+    ('energy-forms-and-changes', 'Energy Forms and Changes', 'motion', 5, 10, (S,)),
+    ('pendulum-lab', 'Pendulum Lab', 'motion', 6, 12, (S,)),
+    ('masses-and-springs-basics', 'Masses and Springs: Basics', 'motion', 6, 8, (S,)),
+    ('gravity-force-lab-basics', 'Gravity Force Lab: Basics', 'motion', 6, 8, (S,)),
+    ('buoyancy-basics', 'Buoyancy: Basics', 'motion', 7, 9, (S,)),
+    ('under-pressure', 'Under Pressure', 'motion', 7, 11, (S,)),
+    ('projectile-motion', 'Projectile Motion', 'motion', 7, 12, (S,)),
+    ('collision-lab', 'Collision Lab', 'motion', 9, 12, (S,)),
+    ('buoyancy', 'Buoyancy', 'motion', 10, 12, (S,)),
+    ('energy-skate-park', 'Energy Skate Park', 'motion', 10, 12, (S,)),
+    ('hookes-law', "Hooke's Law", 'motion', 10, 12, (S,)),
+    ('masses-and-springs', 'Masses and Springs', 'motion', 10, 12, (S,)),
+    ('gravity-force-lab', 'Gravity Force Lab', 'motion', 10, 12, (S,)),
+    ('vector-addition', 'Vector Addition', 'motion', 10, 12, (S,)),
+    # Electricity and magnetism
+    ('balloons-and-static-electricity', 'Balloons and Static Electricity', 'electricity', 4, 10, (S,)),
+    ('john-travoltage', 'John Travoltage', 'electricity', 4, 8, (S,)),
+    ('magnet-and-compass', 'Magnet and Compass', 'electricity', 4, 8, (S,)),
+    ('magnets-and-electromagnets', 'Magnets and Electromagnets', 'electricity', 5, 10, (S,)),
+    ('circuit-construction-kit-dc', 'Circuit Construction Kit: DC', 'electricity', 6, 12, (S,)),
+    ('ohms-law', "Ohm's Law", 'electricity', 8, 11, (S,)),
+    ('resistance-in-a-wire', 'Resistance in a Wire', 'electricity', 8, 11, (S,)),
+    ('faradays-law', "Faraday's Law", 'electricity', 9, 12, (S,)),
+    ('generator', 'Generator', 'electricity', 9, 12, (S,)),
+    ('charges-and-fields', 'Charges and Fields', 'electricity', 10, 12, (S,)),
+    ('coulombs-law', "Coulomb's Law", 'electricity', 10, 12, (S,)),
+    ('faradays-electromagnetic-lab', "Faraday's Electromagnetic Lab", 'electricity', 10, 12, (S,)),
+    ('capacitor-lab-basics', 'Capacitor Lab: Basics', 'electricity', 11, 12, (S,)),
+    ('circuit-construction-kit-ac', 'Circuit Construction Kit: AC', 'electricity', 11, 12, (S,)),
+    # Light, sound and waves
+    ('color-vision', 'Color Vision', 'waves', 4, 8, (S,)),
+    ('waves-intro', 'Waves Intro', 'waves', 5, 8, (S,)),
+    ('geometric-optics-basics', 'Geometric Optics: Basics', 'waves', 6, 8, (S,)),
+    ('bending-light', 'Bending Light', 'waves', 7, 12, (S,)),
+    ('wave-interference', 'Wave Interference', 'waves', 8, 12, (S,)),
+    ('wave-on-a-string', 'Wave on a String', 'waves', 8, 12, (S,)),
+    ('geometric-optics', 'Geometric Optics', 'waves', 10, 12, (S,)),
+    # Matter, atoms and chemistry
+    ('states-of-matter-basics', 'States of Matter: Basics', 'matter', 4, 9, (S,)),
+    ('gases-intro', 'Gases Intro', 'matter', 6, 8, (S,)),
+    ('concentration', 'Concentration', 'matter', 7, 11, (S,)),
+    ('ph-scale-basics', 'pH Scale: Basics', 'matter', 7, 9, (S,)),
+    ('build-an-atom', 'Build an Atom', 'matter', 7, 11, (S,)),
+    ('diffusion', 'Diffusion', 'matter', 8, 11, (S,)),
+    ('build-a-molecule', 'Build a Molecule', 'matter', 8, 11, (S,)),
+    ('reactants-products-and-leftovers', 'Reactants, Products and Leftovers', 'matter', 8, 11, (S,)),
+    ('isotopes-and-atomic-mass', 'Isotopes and Atomic Mass', 'matter', 9, 12, (S,)),
+    ('balancing-chemical-equations', 'Balancing Chemical Equations', 'matter', 9, 12, (S,)),
+    ('states-of-matter', 'States of Matter', 'matter', 10, 12, (S,)),
+    ('gas-properties', 'Gas Properties', 'matter', 10, 12, (S,)),
+    ('ph-scale', 'pH Scale', 'matter', 10, 12, (S,)),
+    ('acid-base-solutions', 'Acid-Base Solutions', 'matter', 10, 12, (S,)),
+    ('molarity', 'Molarity', 'matter', 10, 12, (S,)),
+    ('molecule-shapes-basics', 'Molecule Shapes: Basics', 'matter', 10, 11, (S,)),
+    ('beers-law-lab', "Beer's Law Lab", 'matter', 11, 12, (S,)),
+    ('molecule-shapes', 'Molecule Shapes', 'matter', 11, 12, (S,)),
+    ('molecule-polarity', 'Molecule Polarity', 'matter', 11, 12, (S,)),
+    ('build-a-nucleus', 'Build a Nucleus', 'matter', 11, 12, (S,)),
+    ('alpha-decay', 'Alpha Decay', 'matter', 11, 12, (S,)),
+    ('beta-decay', 'Beta Decay', 'matter', 11, 12, (S,)),
+    ('rutherford-scattering', 'Rutherford Scattering', 'matter', 12, 12, (S,)),
+    # Living things
+    ('natural-selection', 'Natural Selection', 'life', 6, 12, (S, A)),
+    ('membrane-transport', 'Membrane Transport', 'life', 10, 12, (S, A)),
+    ('gene-expression-essentials', 'Gene Expression Essentials', 'life', 11, 12, (S, A)),
+    ('neuron', 'Neuron', 'life', 11, 12, (S, A)),
+    # Earth and space
+    ('gravity-and-orbits', 'Gravity and Orbits', 'earth', 5, 10, (S,)),
+    ('greenhouse-effect', 'Greenhouse Effect', 'earth', 6, 12, ALL),
+    ('my-solar-system', 'My Solar System', 'earth', 7, 12, (S,)),
+    ('molecules-and-light', 'Molecules and Light', 'earth', 9, 12, (S,)),
+    ('keplers-laws', "Kepler's Laws", 'earth', 11, 12, (S,)),
+)

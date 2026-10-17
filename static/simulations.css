@@ -1,0 +1,40 @@
+/* Learning simulations in the student portal (templates/student_simulations.html, student_simulation.html).
+   Built on the portal's own tokens (academics.css), so it follows the school's colours and dark mode. */
+
+.sim-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; }
+.sim-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--ac-line); background: var(--ac-surface); color: var(--ac-ink);
+  font-size: .86rem; text-decoration: none; white-space: nowrap;
+}
+.sim-chip small { color: var(--ac-muted); font-size: .78rem; }
+.sim-chip:hover { border-color: var(--ac-accent); }
+.sim-chip.is-on { background: var(--ac-accent-tint); border-color: var(--ac-accent); color: var(--ac-accent-strong); font-weight: 600; }
+.sim-search { display: flex; gap: 6px; margin-left: auto; min-width: 0; }
+.sim-search input { min-width: 0; width: 220px; max-width: 100%; }
+
+.sim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.sim-card {
+  display: flex; flex-direction: column; border: 1px solid var(--ac-line); border-radius: 12px; overflow: hidden;
+  background: var(--ac-surface); color: var(--ac-ink); text-decoration: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sim-card:hover, .sim-card:focus-visible { border-color: var(--ac-accent); box-shadow: 0 4px 14px var(--ac-shadow); }
+.sim-card img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: var(--ac-wash); }
+.sim-card b { padding: 10px 12px 2px; font-size: .95rem; line-height: 1.3; }
+.sim-card small { padding: 0 12px 12px; color: var(--ac-muted); font-size: .8rem; }
+
+.sim-stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: calc(100vh - 220px); min-height: 320px;
+  border: 1px solid var(--ac-line); border-radius: 12px; overflow: hidden; background: #000;
+}
+.sim-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.sim-credit { margin: 10px 0 0; color: var(--ac-muted); font-size: .8rem; }
+.sim-credit a { color: inherit; }
+
+@media (max-width: 640px) {
+  .sim-search { margin-left: 0; width: 100%; }
+  .sim-search input { flex: 1; width: auto; }
+  .sim-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .sim-stage { aspect-ratio: 3 / 4; max-height: none; min-height: 420px; }
+}

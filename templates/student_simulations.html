@@ -1,0 +1,51 @@
+{% extends 'student_base.html' %}
+{% block title %}Simulations{% endblock %}
+{#- The learning simulations for the student's class (and in SSS their department), from PhET (core/simulations.py):
+    a topic filter, a search and a card for each. Opening one is a whole page with PhET let in (see
+    blueprints/student_portal/simulations.py), so the cards are not loaded in place. -#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='simulations.css', v='1') }}">
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <h1>Simulations</h1>
+    <p>Hands-on science and maths experiments for {{ student.class_name }}{% if department %} ({{ department }}){% endif %}. Try things out, change them and see what happens. Nothing here is marked.</p>
+  </div></div>
+</header>
+
+{% if switched_off %}
+<section class="ac-panel"><div class="ac-empty"><strong>Simulations are not available for your class</strong>Your school has not turned them on for {{ student.class_name or 'your class' }}.</div></section>
+{% elif not total %}
+<section class="ac-panel"><div class="ac-empty"><strong>No simulations for your class yet</strong>Ask your teacher which ones you can use.</div></section>
+{% else %}
+<nav class="sim-filters" aria-label="Topics">
+  <a class="sim-chip {{ 'is-on' if not topic }}" href="{{ url_for('student_simulations', q=query or None) }}" data-full>All <small>{{ total }}</small></a>
+  {% for key, label, count in topics %}
+  <a class="sim-chip {{ 'is-on' if topic == key }}" href="{{ url_for('student_simulations', topic=key, q=query or None) }}" data-full>{{ label }} <small>{{ count }}</small></a>
+  {% endfor %}
+  <form class="sim-search" method="get" action="{{ url_for('student_simulations') }}" role="search" data-full>
+    {% if topic %}<input type="hidden" name="topic" value="{{ topic }}">{% endif %}
+    <input class="ac-input" type="search" name="q" value="{{ query }}" placeholder="Search simulations" aria-label="Search simulations" maxlength="60">
+    <button class="ac-btn ac-btn--sm" type="submit">Search</button>
+  </form>
+</nav>
+
+<section class="ac-panel">
+  <div class="pf-ph"><h2>{{ (topics|selectattr(0, 'equalto', topic)|first)[1] if topic else 'Every topic' }}<small>{{ simulations|length }}</small></h2></div>
+  {% if simulations %}
+  <div class="sim-grid">
+    {% for s in simulations %}
+    <a class="sim-card" href="{{ url_for('student_simulation', slug=s.slug) }}" data-full>
+      <img src="{{ picture_url(s.slug) }}" alt="" loading="lazy" width="300" height="200">
+      <b>{{ s.title }}</b><small>{{ s.topic_label }}</small>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="ac-empty"><strong>Nothing matches “{{ query }}”</strong><a href="{{ url_for('student_simulations', topic=topic or None) }}" data-full>Show them all</a></div>
+  {% endif %}
+  <p class="sim-credit">Simulations by <a href="https://phet.colorado.edu" target="_blank" rel="noopener">{{ credit }}</a>, licensed <a href="{{ licence_url }}" target="_blank" rel="noopener">CC BY 4.0</a>. You need the internet to use them.</p>
+</section>
+{% endif %}
+</div>
+{% endblock %}

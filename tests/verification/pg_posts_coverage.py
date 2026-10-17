@@ -26,6 +26,9 @@ EXEMPT = {
     "/admin/documents/studio/assets": "see write_paths_term_end.py",
     "/admin/documents/studio/assets/<int:asset_id>/delete": "see write_paths_term_end.py",
     "/admin/school/documents/issue": "see write_paths_term_end.py",
+    # Learning simulations: the switches, the list and putting it back, by a head teacher, the School Admin and a
+    # subject teacher refused, in write_paths_simulations.py.
+    "/admin/school/simulations": "see write_paths_simulations.py",
     "/admin/school/api/deliveries/<int:delivery_id>/resend": "see write_paths_privacy_api.py",
     "/admin/school/api/keys": "see write_paths_privacy_api.py",
     "/admin/school/api/keys/<int:key_id>/revoke": "see write_paths_privacy_api.py",

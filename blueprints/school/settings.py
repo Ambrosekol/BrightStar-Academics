@@ -15,7 +15,7 @@ from flask import g, render_template, request, session, url_for
 
 from app import _admin_workspace_for_path, _notification_counts, _school_current_session, app
 from core import delivery, payments
-from core.security import admin_has_permission, admin_required, current_admin, is_school_admin
+from core.security import admin_has_permission, admin_required, current_admin, holds_level, is_school_admin
 
 NEUTRAL, GOOD, WARN = 'neutral', 'good', 'warn'
 SETTINGS_HOME = '/admin/settings'
@@ -79,6 +79,14 @@ def _api_status():
     if not keys and not hooks:
         return ('Not in use', NEUTRAL)
     return (f"{keys} key{'' if keys == 1 else 's'}, {hooks} webhook{'' if hooks == 1 else 's'}", GOOD)
+
+
+def _simulations_status():
+    from core import simulations
+    s = simulations.settings()
+    if not s['enabled']:
+        return ('Off', NEUTRAL)
+    return (f"On, {len(s['classes_off'])} class{'' if len(s['classes_off']) == 1 else 'es'} off", GOOD) if s['classes_off'] else ('On', GOOD)
 
 
 def _reminders_status():
@@ -167,6 +175,9 @@ def _groups(me, workspace, statuses=True):
             E('API & webhooks', "Read-only keys for the school's own developers or a partner, and addresses told when a payment, a student or a report card changes.",
               'admin_school_api', 'nav-api', admin, _api_status,
               'api key developer integration webhook partner accounting'),
+            E('Learning simulations', "Hands-on science and maths simulations from PhET in the student portal, by class and SSS department. On until you turn it off.",
+              'admin_school_simulations', 'nav-simulations', admin or holds_level(me['id'], 'head_teacher'), _simulations_status,
+              'phet simulation science maths experiment virtual lab student portal'),
             E('Class subdivisions', 'Split a JSS or SSS class into subdivisions (JSS 1A, JSS 2 Gold, SS 1A Science), each with its own class teacher, then lock them.',
               'admin_school_subdivisions', 'set-subdivisions', admin, _subdivisions_status, 'subdivision arm stream jss sss split class teacher lock'),
         ]),

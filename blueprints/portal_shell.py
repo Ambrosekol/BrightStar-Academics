@@ -23,6 +23,16 @@ def _initials(name):
     return ((words[0][:1] if words else '?') + (words[-1][:1] if len(words) > 1 else '')).upper()
 
 
+def _simulations_open(student):
+    """Whether the menu shows Simulations: the school and the student's class have them on (core/simulations.py)."""
+    from core import simulations
+    try:
+        return simulations.open_for_class(student['class_id'])
+    except Exception:
+        app.logger.exception('Could not tell whether simulations are open')
+        return False
+
+
 def _student():
     from app import _student_with_enrolment
     from core.names import full_name
@@ -42,7 +52,8 @@ def _student():
             I('Tests', url_for('student_assessment_list', kind='tests'), 'nav-academics', _active('/student/tests')),
             I('Examinations', url_for('student_assessment_list', kind='examinations'), 'nav-reportcard', _active('/student/examinations')),
             I('Practice', url_for('student_assessment_list', kind='practice'), 'nav-practice', _active('/student/practice')),
-        ]},
+        ] + ([I('Simulations', url_for('student_simulations'), 'nav-simulations', _active('/student/simulations'))]
+             if _simulations_open(st) else [])},
         {'label': 'My school', 'items': [
             I('Timetable', url_for('student_timetable'), 'nav-timetable', _active('/student/timetable')),
             I('Attendance', url_for('student_attendance'), 'nav-attendance', _active('/student/attendance')),
@@ -55,7 +66,9 @@ def _student():
                    'initials': _initials(name), 'photo': st['photo_path']},
         'sections': sections, 'tabs': tabs,
         'password_url': url_for('student_password_change'),
-        # Exact addresses: a test, a practice run or an assignment being taken always loads as a whole page.
+        # Exact addresses: a test, a practice run or an assignment being taken always loads as a whole page. So do the
+        # simulations: their pages let PhET in (blueprints/student_portal/simulations.py), which a page loaded in
+        # place could not, as it keeps the policy of the page it was loaded into.
         'scope': ['=/student/dashboard', '=/student/tests', '=/student/examinations', '=/student/practice',
                   '/student/timetable', '/student/attendance'],
     }

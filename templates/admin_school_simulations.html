@@ -1,0 +1,68 @@
+{% extends "admin_base.html" %}
+{% block title %}Learning simulations — {{ school_brand.name }}{% endblock %}
+{% block content %}
+{#- Settings > Your school > Learning simulations (blueprints/school/simulations.py), for the School Admin and a head
+    teacher: whether students see the PhET simulations, class by class, and which ones each class (and in SSS each
+    department) sees. -#}
+<link rel="stylesheet" href="{{ url_for('static', filename='academics.css', v='14') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='finance.css', v='5') }}">
+<div class="ac fi">
+
+<section class="ac-panel" aria-labelledby="simSwitch">
+  <h2 id="simSwitch">Simulations in the student portal <small>{{ 'On' if s.enabled else 'Off' }}</small></h2>
+  <form method="post" action="{{ url_for('admin_school_simulations', topic=topic) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="switches">
+    <p class="fi-inline"><label class="fi-switch"><input type="checkbox" name="enabled" value="1" {% if s.enabled %}checked{% endif %}><span>On for the school</span></label></p>
+    <p class="ac-hint" style="margin:6px 0 10px">Students see hands-on science and maths simulations from
+      <a href="https://phet.colorado.edu" target="_blank" rel="noopener">{{ credit }}</a> under <em>Simulations</em> in their menu:
+      only the ones for their own class, and in SSS only their department's. They need the internet to use them. Untick a class to
+      keep it from that class only.</p>
+    {% if classes %}
+    <div class="fi-inline" style="flex-wrap:wrap;gap:6px 18px;margin-bottom:10px">
+      {% for c in classes %}<label><input type="checkbox" name="class_on" value="{{ c.id }}" {% if c.id not in s.classes_off %}checked{% endif %}> {{ c.name }}</label>{% endfor %}
+    </div>
+    {% endif %}
+    <button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Save</button>
+  </form>
+</section>
+
+<section class="ac-panel" aria-labelledby="simList">
+  <h2 id="simList">Which simulations each class sees <small>{{ total }} in all{% if changed %} · {{ changed }} changed{% endif %}</small></h2>
+  <p class="ac-hint" style="margin:0 0 10px">Each one starts at the classes PhET suggests for it. Untick <em>Shown</em> to hide one from every
+    class, or change its first and last class. For one that reaches SSS, tick the departments it is for: a student whose department
+    has not been set yet sees every SSS simulation for their class.</p>
+  <nav class="fi-inline" style="flex-wrap:wrap;gap:6px;margin-bottom:10px" aria-label="Topics">
+    {% for key, label, count in topics %}
+    <a class="ac-btn ac-btn--sm{% if key == topic %} ac-btn--primary{% endif %}" href="{{ url_for('admin_school_simulations', topic=key) }}">{{ label }} ({{ count }})</a>
+    {% endfor %}
+  </nav>
+  <form method="post" action="{{ url_for('admin_school_simulations', topic=topic) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="catalogue">
+    <div class="ac-scroll"><table class="ac-t">
+      <thead><tr><th>Simulation</th><th>Shown</th><th>From</th><th>To</th><th>SSS departments</th></tr></thead>
+      <tbody>{% for e in rows %}<tr>
+        <td><input type="hidden" name="slug" value="{{ e.slug }}">
+          <a class="ac-title" href="{{ about_url(e.slug) }}" target="_blank" rel="noopener">{{ e.title }}</a>
+          <small>Suggested: {{ levels[e.suggested[0]] }}{% if e.suggested[1] != e.suggested[0] %} to {{ levels[e.suggested[1]] }}{% endif %}{% if e.changed %} · changed{% endif %}</small></td>
+        <td><input type="checkbox" name="show_{{ e.slug }}" value="1" aria-label="Show {{ e.title }}" {% if not e.hidden %}checked{% endif %}></td>
+        <td><select class="ac-select" name="lo_{{ e.slug }}" aria-label="{{ e.title }}: first class">
+          {% for n, name in levels.items() %}<option value="{{ n }}" {% if n == e.lo %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>
+        <td><select class="ac-select" name="hi_{{ e.slug }}" aria-label="{{ e.title }}: last class">
+          {% for n, name in levels.items() %}<option value="{{ n }}" {% if n == e.hi %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>
+        <td>{% if e.hi >= first_senior %}<input type="hidden" name="has_dept_{{ e.slug }}" value="1">
+          {% for d in departments %}<label style="white-space:nowrap;margin-right:10px"><input type="checkbox" name="dept_{{ e.slug }}" value="{{ d }}" {% if d in e.departments %}checked{% endif %}> {{ d }}</label>{% endfor %}
+          {% else %}<span class="ac-hint">Not in SSS</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    <p style="margin:10px 0 0"><button class="ac-btn ac-btn--sm ac-btn--primary" type="submit">Save these {{ rows|length }}</button></p>
+  </form>
+  {% if changed %}
+  <form method="post" action="{{ url_for('admin_school_simulations', topic=topic) }}" style="margin-top:10px"
+        data-confirm="Put every simulation back to its suggested classes and departments, and show any that were hidden?">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="reset">
+    <button class="ac-link" type="submit">Put every simulation back as suggested</button>
+  </form>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

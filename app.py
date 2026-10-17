@@ -1346,6 +1346,8 @@ import blueprints.parents.report_cards  # noqa: F401,E402
 import blueprints.student_portal.attendance  # noqa: F401,E402
 import blueprints.parents.attendance  # noqa: F401,E402
 import blueprints.student_portal.timetable  # noqa: F401,E402
+import blueprints.student_portal.simulations  # noqa: F401,E402
+import blueprints.school.simulations  # noqa: F401,E402
 import blueprints.parents.timetable  # noqa: F401,E402
 
 

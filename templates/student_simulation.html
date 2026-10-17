@@ -1,0 +1,26 @@
+{% extends 'student_base.html' %}
+{% block title %}{{ sim.title }} · Simulations{% endblock %}
+{#- One learning simulation, embedded from PhET (core/simulations.py). The page's Content-Security-Policy lets in
+    phet.colorado.edu for this frame and nothing else (blueprints/student_portal/simulations.py). -#}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='simulations.css', v='1') }}">
+<div class="ac pf">
+<header class="ac-top">
+  <div class="pf-title"><div>
+    <span class="acq-kind"><span class="pf-back"><a href="{{ url_for('student_simulations', topic=sim.topic) }}" data-full>Simulations</a> / </span>{{ sim.topic_label }}</span>
+    <h1>{{ sim.title }}</h1>
+  </div></div>
+  <div class="ac-top__act">
+    <a class="ac-btn ac-btn--sm" href="{{ run_url }}" target="_blank" rel="noopener">Open full screen</a>
+  </div>
+</header>
+
+<div class="sim-stage">
+  <iframe src="{{ run_url }}" title="{{ sim.title }} simulation" allow="fullscreen" allowfullscreen
+          referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-downloads"></iframe>
+</div>
+<p class="sim-credit"><a href="{{ about_url }}" target="_blank" rel="noopener">{{ sim.title }}</a> by
+  <a href="https://phet.colorado.edu" target="_blank" rel="noopener">{{ credit }}</a>, licensed
+  <a href="{{ licence_url }}" target="_blank" rel="noopener">CC BY 4.0</a>. If it does not appear, check your internet connection and reload the page.</p>
+</div>
+{% endblock %}
